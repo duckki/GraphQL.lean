@@ -1,0 +1,9 @@
+name = "graphql-lean"
+version = "0.1.0"
+defaultTargets = ["GraphQL", "Federation"]
+
+[[lean_lib]]
+name = "GraphQL"
+
+[[lean_lib]]
+name = "Federation"

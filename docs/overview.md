@@ -62,14 +62,72 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
 - `GraphQL.ResponseShape`: response shapes plus shape-to-shape inclusion and equivalence.
 - `GraphQL.Minimization`: finite-candidate operation minimization and the minimality theorem shape.
 
+### Plain GraphQL Flow
+
+The current Part 1 flow is:
+
+1. `GraphQL.Schema` and `GraphQL.Operation` define raw syntax.
+2. `GraphQL.SchemaWellFormedness`, `GraphQL.FieldMerge`, and `GraphQL.Validation` state well-formedness and operation validity.
+3. `GraphQL.Execution` gives bounded execution as a function, parameterized by abstract resolvers.
+4. `GraphQL.ResponseShape` defines structural response shapes, shape inclusion, equivalence, and computable boolean checks for inclusion/equivalence.
+5. `GraphQL.NormalForm` and `GraphQL.Minimization` provide the normalization/minimization proof scaffolding.
+
+Validation assumptions should be used when proving semantic facts about later stages. Raw syntax remains permissive; validation supplies the invariants that later proofs should rely on.
+
+### Response Shape Model
+
+Response shapes currently distinguish only:
+
+- `scalar`
+- `object fields`
+
+This intentionally ignores concrete scalar values, object identities, resolver behavior, nullability, and error propagation. It is the structural shape needed for query equivalence and minimization, not a full response-value model.
+
+`GraphQL.ResponseShape` provides two views of inclusion:
+
+- propositional inclusion, `Shape.includes required available`
+- computable inclusion, `Shape.includesBool required available`
+
+The module proves soundness and completeness bridges between those two forms. Equivalence is inclusion in both directions, again with both propositional and boolean APIs.
+
+Shape merging is also structural. When two fields have the same response name, their child shapes are merged recursively. This is intended to match the post-validation field-merge view used by future shape semantics and minimization candidates.
+
+### Concrete Shape Requires Runtime Data
+
+A concrete response shape cannot be derived from only a schema and an operation.
+
+The missing information is the runtime data:
+
+- abstract fields can resolve to different object runtime types,
+- inline fragments and fragment spreads are included or skipped based on those runtime object types,
+- lists can contain elements with different runtime object types,
+- resolver results determine whether child selections are applied to null, an object, or a list of objects.
+
+For that reason, this project currently treats operation-to-shape mapping as abstract in `GraphQL.Minimization`. A later concrete semantics should choose one of these approaches:
+
+- define response shape from executed responses,
+- define response shape from an explicit data model and execution relation,
+- define a family of possible shapes indexed by runtime object choices,
+- define an over-approximation or envelope shape separately from concrete response shape.
+
 ### Minimization Plan
 
 The intended minimization proof split is:
 
-1. Define a finite candidate generator for fragment-introducing rewrites of a fragment-free operation.
-2. Prove the generator is sound: every generated operation has the same response shape as the input.
-3. Prove the generator is complete: every operation equivalent to the input, up to fragment-name alpha-renaming and the chosen size metric, appears in the candidate set.
-4. Use the generic finite minimizer theorem to prove the selected output is minimal.
+The pieces already in place are:
+
+- response-shape inclusion and equivalence, with boolean/propositional bridges,
+- a generic finite minimizer theorem over any finite list of equivalent candidates.
+
+The remaining proof ladder is:
+
+1. Choose the concrete shape semantics: executed-response shape, data-model-indexed shape, possible-shape family, or explicit approximation.
+2. Strengthen validation around fragments so the chosen semantics can assume fragment references terminate and are well-scoped.
+3. Prove normalization preserves the chosen shape semantics.
+4. Define a finite candidate generator for fragment-introducing rewrites of a fragment-free operation.
+5. Prove generator soundness: every generated operation has the same shape semantics as the input.
+6. Prove generator completeness for the chosen normal form, modulo fragment-name alpha-renaming and the operation size metric.
+7. Instantiate the generic finite minimizer theorem with that candidate generator.
 
 The normal-form work is the bridge to this proof. Fragment minimization should operate over normalized or canonicalized selection sets so equivalence is tractable.
 

@@ -17,6 +17,39 @@ def lookup (name : Name) : List (Name × Shape) -> Option Shape
       if fieldName = name then some shape else lookup name rest
 
 mutual
+  def size : Shape -> Nat
+    | .scalar => 1
+    | .object fields => 1 + fieldsSize fields
+
+  def fieldsSize : List (Name × Shape) -> Nat
+    | [] => 0
+    | (_name, shape) :: rest => shape.size + fieldsSize rest
+end
+
+def mergeWithFuel : Nat -> Shape -> Shape -> Shape
+  | 0, left, _right => left
+  | _fuel + 1, .scalar, .scalar => .scalar
+  | fuel + 1, .object leftFields, .object rightFields =>
+      .object (rightFields.foldl
+        (fun fields (name, shape) =>
+          let matching := fields.filter (fun field => field.fst == name)
+          let rest := fields.filter (fun field => !(field.fst == name))
+          match matching with
+          | [] => fields ++ [(name, shape)]
+          | (_existingName, existingShape) :: _ =>
+              rest ++ [(name, mergeWithFuel fuel existingShape shape)])
+        leftFields)
+  | _fuel + 1, left, _right => left
+
+def merge (left right : Shape) : Shape :=
+  mergeWithFuel (left.size + right.size) left right
+
+def mergeFields (left right : List (Name × Shape)) : List (Name × Shape) :=
+  match merge (.object left) (.object right) with
+  | .object fields => fields
+  | .scalar => []
+
+mutual
   def includesBool : Shape -> Shape -> Bool
     | .scalar, .scalar => true
     | .object requiredFields, .object availableFields =>

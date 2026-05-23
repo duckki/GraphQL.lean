@@ -165,6 +165,20 @@ theorem scalar_not_conformsToType_of_possibleTypes_nonempty (schema : Schema)
       scalar_not_conformsToType_of_possibleTypes_nonempty schema value
         inner hnonempty hconforms
 
+theorem object_conformsToType_typeIncludesObject (schema : Schema)
+    (runtimeType : Name) (id : ObjectId) (parentType : Name) :
+    ∀ (typeRef : TypeRef),
+      typeRef.namedType = parentType ->
+        Value.conformsToType schema (.object runtimeType id) typeRef ->
+          schema.typeIncludesObject parentType runtimeType
+  | .named typeName, hnamed, hconforms => by
+      simpa [← hnamed] using hconforms
+  | .list _inner, _hnamed, hconforms => by
+      cases hconforms
+  | .nonNull inner, hnamed, hconforms => by
+      exact object_conformsToType_typeIncludesObject schema runtimeType id
+        parentType inner hnamed hconforms
+
 namespace Store
 
 theorem resolveValue_ne_scalar_of_compositeLookupField (schema : Schema)

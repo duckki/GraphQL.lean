@@ -1,4 +1,4 @@
-import GraphQL.DataModel
+import GraphQL.DataModel.Store
 
 /-!
 Spec reference: GraphQL September 2025.

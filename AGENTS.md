@@ -54,7 +54,9 @@ soundness and normal-form preservation past single-field base cases.
 
 Directive-specific data-model proofs live in `GraphQL/DataModel/Directives.lean`.
 That module currently proves single-leaf response-shape soundness for modeled
-`@skip` and `@include` directive lists whose shape condition parses.
+`@skip` and `@include` directive lists whose shape condition parses, both on
+direct fields and untyped inline fragments. It also proves normal-form
+response-shape preservation for direct directive-bearing single fields.
 
 The latest successful checks were:
 

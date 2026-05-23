@@ -972,6 +972,11 @@ theorem lookupIncludingVariant_self_cons (header : VariantHeader)
     lookupIncludingVariant header ((header, shape) :: rest) = some shape := by
   simp [lookupIncludingVariant, VariantHeader.includedByBool_self]
 
+theorem lookupField_self_cons (responseName : Name)
+    (variants : List Variant) (rest : List (Name × List Variant)) :
+    lookupField responseName ((responseName, variants) :: rest) = some variants := by
+  simp [lookupField]
+
 theorem includesVariantsBool_singleton_empty_self (header : VariantHeader) :
     includesVariantsBool [(header, empty)] [(header, empty)] = true := by
   simp [includesVariantsBool, lookupIncludingVariant_self_cons, empty_includesBool]

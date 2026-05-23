@@ -100,7 +100,8 @@ The next proof ladder is:
    store-backed execution conforms to `ResponseShape.Shape.ofSemanticOperation`.
    This target is named `DataModel.responseShapeCorrectForTypedExecution`.
    Done for empty selections, no-directive single-leaf selections, and parsed
-   `@skip`/`@include` single-leaf selections at a known root runtime type.
+   `@skip`/`@include` single-leaf selections at a known root runtime type,
+   including directives on direct fields and on untyped inline fragments.
 3. Prove response-shape stability under semantic lowering from raw operations,
    assuming validation supplies fragment existence and acyclicity.
 4. Prove normalizer output satisfies `NormalForm.semanticOperationNormal` under
@@ -110,7 +111,9 @@ The next proof ladder is:
    with or without modeled directives, and inline-fragment single-leaf
    selections without directives.
 6. Prove normal form preserves response shape:
-   `DataModel.normalFormPreservesResponseShape`.
+   `DataModel.normalFormPreservesResponseShape`. Done for direct single-leaf
+   selections with or without modeled directives, and inline-fragment single-leaf
+   selections without directives.
 7. Only after those proofs, revisit operation equivalence and minimization.
 
 ## Related Documentation

@@ -33,16 +33,15 @@ and correctness predicates for operation equivalence and ground normal form.
 model while preserving runtime object type names in response objects. Untyped
 data-model execution is tied directly to `GraphQL.Execution` through
 store-backed resolvers. Data-model operation equivalence has reflexivity,
-symmetry, and transitivity theorems.
+symmetry, and transitivity theorems. Typed execution has erasure theorems ending
+at `DataModel.TypedExecution.executeOperation_erase`.
 
 `GraphQL.ResponseShape` now resets child-shape possible runtime types to the
 field return type through `ResponseShape.Condition.forChildType`. Keep this
 behavior when working on response-shape soundness.
 
-The next proof boundary is the erasure theorem from typed execution to the
-existing untyped execution response, followed by
-`DataModel.responseShapeCorrectForTypedExecution` and
-`DataModel.normalFormPreservesResponseShape`.
+The next proof boundary is `DataModel.responseShapeCorrectForTypedExecution`,
+followed by `DataModel.normalFormPreservesResponseShape`.
 
 The latest successful checks were:
 

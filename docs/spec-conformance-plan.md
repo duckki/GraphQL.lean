@@ -71,7 +71,9 @@ coerced arguments, and deterministic store-backed resolution.
 model while retaining runtime object type names in response objects. The untyped
 data-model execution functions are definitionally tied to `GraphQL.Execution`
 through store-backed resolvers, and data-model operation equivalence has
-reflexivity, symmetry, and transitivity theorems.
+reflexivity, symmetry, and transitivity theorems. Typed execution also has
+erasure theorems through `TypedExecution.executeOperation_erase`, connecting
+typed responses back to the existing `GraphQL.Execution.Response` semantics.
 
 `GraphQL.ResponseShape.Condition.forChildType` is important for nested object
 fields: child shapes must reset possible runtime types to the field return type
@@ -82,9 +84,8 @@ instead of inheriting the parent object's possible types.
 The next proof ladder is:
 
 1. Prove data-model execution matches the intended resolver execution for
-   store-backed resolvers. The untyped execution wrapper is already tied to
-   store-backed resolvers; the remaining bridge is an erasure theorem from
-   `DataModel.TypedExecution` responses to `GraphQL.Execution.Response`.
+   store-backed resolvers. Done for the current model via the typed-execution
+   erasure theorems.
 2. Prove response-shape soundness: every typed response produced by valid
    store-backed execution conforms to `ResponseShape.Shape.ofSemanticOperation`.
    This target is named `DataModel.responseShapeCorrectForTypedExecution`.

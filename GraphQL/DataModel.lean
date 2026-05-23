@@ -414,6 +414,166 @@ def executeOperation (schema : Schema) (store : Store)
   executeSemanticQuery schema store variableValues
     (Semantic.fromOperation operation) root
 
+theorem completeValue_erase (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues)
+    (fuel : Nat) (parentType : Name) (selectionSet : List Semantic.Selection)
+    (value : Value) :
+    TypedResponse.erase
+        (completeValue schema store variableValues fuel parentType selectionSet value)
+      = Execution.completeValue schema store.resolvers variableValues fuel
+        parentType selectionSet value.toExecutionValue := by
+  induction fuel using Nat.strongRecOn generalizing parentType selectionSet value with
+  | ind fuel ih =>
+      have hField :
+          ∀ k, k < fuel ->
+            ∀ source responseName fields,
+              TypedResponse.eraseFields
+                  (executeField schema store variableValues k source responseName fields)
+                = Execution.executeField schema store.resolvers variableValues k
+                  source.toExecutionValue responseName fields := by
+        intro k hk source responseName fields
+        cases fields with
+        | nil =>
+            simp [executeField, Execution.executeField]
+        | cons field fields =>
+            cases k with
+            | zero =>
+                simp [executeField, Execution.executeField]
+            | succ k' =>
+                have hk' : k' < fuel := Nat.lt_trans (Nat.lt_succ_self k') hk
+                have hcomplete :=
+                  ih k' hk'
+                    ((schema.fieldReturnType? field.parentType field.fieldName).getD
+                      field.fieldName)
+                    (Execution.mergedFieldSelectionSet (field :: fields))
+                    (store.resolveValue field.fieldName field.arguments source)
+                simp [executeField, Execution.executeField, Store.resolvers,
+                  Store.resolveValue_toExecutionValue, hcomplete]
+      have hCollected :
+          ∀ k, k < fuel ->
+            ∀ source groups,
+              TypedResponse.eraseFields
+                  (executeCollectedFields schema store variableValues k source groups)
+                = Execution.executeCollectedFields schema store.resolvers variableValues k
+                  source.toExecutionValue groups := by
+        intro k hk source groups
+        induction groups with
+        | nil =>
+            simp [executeCollectedFields, Execution.executeCollectedFields]
+        | cons group rest ihGroups =>
+            cases group with
+            | mk responseName fields =>
+                simp [executeCollectedFields, Execution.executeCollectedFields,
+                  TypedResponse.eraseFields_append,
+                  hField k hk source responseName fields, ihGroups]
+      have hSelection :
+          ∀ k, k < fuel ->
+            ∀ parentType source selectionSet,
+              TypedResponse.eraseFields
+                  (executeSelectionSet schema store variableValues k
+                    parentType source selectionSet)
+                = Execution.executeSelectionSet schema store.resolvers variableValues k
+                  parentType source.toExecutionValue selectionSet := by
+        intro k hk parentType source selectionSet
+        simp [executeSelectionSet, Execution.executeSelectionSet,
+          hCollected k hk source]
+      cases fuel with
+      | zero =>
+          simp [completeValue, Execution.completeValue, shallowTypedResponse_erase]
+      | succ fuel' =>
+          cases value with
+          | null =>
+              simp [completeValue, Execution.completeValue]
+          | scalar value =>
+              simp [completeValue, Execution.completeValue]
+          | object runtimeType id =>
+              have hselection :=
+                hSelection fuel' (Nat.lt_succ_self fuel') runtimeType
+                  (Value.object runtimeType id) selectionSet
+              simp [completeValue, Execution.completeValue, hselection]
+          | list values =>
+              have hvalues :
+                  TypedResponse.eraseList
+                      (values.map
+                        (fun value =>
+                          completeValue schema store variableValues fuel'
+                            parentType selectionSet value))
+                    = values.map
+                        ((fun value =>
+                          Execution.completeValue schema store.resolvers variableValues fuel'
+                            parentType selectionSet value) ∘ Value.toExecutionValue) := by
+                induction values with
+                | nil =>
+                    simp
+                | cons value rest ihValues =>
+                    have hvalue :=
+                      ih fuel' (Nat.lt_succ_self fuel') parentType selectionSet value
+                    simp [hvalue, ihValues]
+              simp [completeValue, Execution.completeValue, hvalues]
+
+theorem executeField_eraseFields (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (fuel : Nat) (source : Value)
+    (responseName : Name) (fields : List Execution.ExecutableField) :
+    TypedResponse.eraseFields
+        (executeField schema store variableValues fuel source responseName fields)
+      = Execution.executeField schema store.resolvers variableValues fuel
+        source.toExecutionValue responseName fields := by
+  cases fields with
+  | nil =>
+      simp [executeField, Execution.executeField]
+  | cons field fields =>
+      cases fuel with
+      | zero =>
+          simp [executeField, Execution.executeField]
+      | succ fuel' =>
+          simp [executeField, Execution.executeField, Store.resolvers,
+            Store.resolveValue_toExecutionValue, completeValue_erase]
+
+theorem executeCollectedFields_eraseFields (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (fuel : Nat) (source : Value)
+    (groups : List (Name × List Execution.ExecutableField)) :
+    TypedResponse.eraseFields
+        (executeCollectedFields schema store variableValues fuel source groups)
+      = Execution.executeCollectedFields schema store.resolvers variableValues fuel
+        source.toExecutionValue groups := by
+  induction groups with
+  | nil =>
+      simp [executeCollectedFields, Execution.executeCollectedFields]
+  | cons group rest ih =>
+      cases group with
+      | mk responseName fields =>
+          simp [executeCollectedFields, Execution.executeCollectedFields,
+            TypedResponse.eraseFields_append, executeField_eraseFields, ih]
+
+theorem executeSelectionSet_eraseFields (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues)
+    (fuel : Nat) (parentType : Name) (source : Value)
+    (selectionSet : List Semantic.Selection) :
+    TypedResponse.eraseFields
+        (executeSelectionSet schema store variableValues fuel parentType source selectionSet)
+      = Execution.executeSelectionSet schema store.resolvers variableValues fuel
+        parentType source.toExecutionValue selectionSet := by
+  simp [executeSelectionSet, Execution.executeSelectionSet, executeCollectedFields_eraseFields]
+
+theorem executeSemanticQuery_erase (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues)
+    (operation : Semantic.Operation) (root : Root) :
+    TypedResponse.erase
+        (executeSemanticQuery schema store variableValues operation root)
+      = DataModel.executeSemanticQuery schema store variableValues operation root := by
+  simp [executeSemanticQuery, DataModel.executeSemanticQuery,
+    Execution.executeSemanticQuery, Root.toExecutionValue, executeSelectionSet_eraseFields]
+
+theorem executeOperation_erase (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues)
+    (operation : Operation) (root : Root) :
+    TypedResponse.erase
+        (executeOperation schema store variableValues operation root)
+      = DataModel.executeOperation schema store variableValues operation root := by
+  simp [executeOperation, DataModel.executeOperation, Execution.executeQuery]
+  exact executeSemanticQuery_erase schema store variableValues
+    (Semantic.fromOperation operation) root
+
 end TypedExecution
 
 def possibleTypesHoldBool (possibleTypes : Option (List Name))

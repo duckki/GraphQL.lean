@@ -52,6 +52,10 @@ inline-fragment single-leaf selections without directives. The next proof
 boundary is to extend response-shape soundness and normal-form preservation past
 single-field base cases.
 
+Directive-specific data-model proofs live in `GraphQL/DataModel/Directives.lean`.
+That module currently proves single-leaf response-shape soundness for modeled
+`@skip` and `@include` directive lists whose shape condition parses.
+
 The latest successful checks were:
 
 ```sh
@@ -65,6 +69,7 @@ lake lint
 - `docs/overview.md`: module map and architecture overview.
 - `docs/references.md`: GraphCoQL reference notes and proof-strategy context.
 - `GraphQL/DataModel.lean`: typed store model and correctness predicates.
+- `GraphQL/DataModel/Directives.lean`: `@skip`/`@include` response-shape proofs.
 - `GraphQL/ResponseShape.lean`: response-shape construction and inclusion.
 - `GraphQL/NormalForm.lean`: ground normal form scaffold.
 - `GraphQL/Execution.lean`: resolver-based execution used by the data model.

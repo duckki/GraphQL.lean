@@ -8,6 +8,7 @@ import GraphQL.NormalForm
 import GraphQL.ResponseShape
 import GraphQL.Execution
 import GraphQL.DataModel
+import GraphQL.DataModel.Directives
 import GraphQL.Minimization
 
 /-!

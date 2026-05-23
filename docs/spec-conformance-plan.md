@@ -62,6 +62,8 @@ The main modules are:
 - `GraphQL.NormalForm`: ground normal form predicates and normalizer scaffold.
 - `GraphQL.DataModel`: typed object-store model, store-backed resolvers, typed
   response trees, response-shape conformance checks, and correctness predicates.
+- `GraphQL.DataModel.Directives`: directive-sensitive response-shape soundness
+  proofs for modeled `@skip` and `@include` base cases.
 
 `GraphQL.DataModel` is the current bridge from resolver execution to proof
 semantics. It models typed object identities, field facts keyed by already
@@ -97,6 +99,8 @@ The next proof ladder is:
 2. Prove response-shape soundness: every typed response produced by valid
    store-backed execution conforms to `ResponseShape.Shape.ofSemanticOperation`.
    This target is named `DataModel.responseShapeCorrectForTypedExecution`.
+   Done for empty selections, no-directive single-leaf selections, and parsed
+   `@skip`/`@include` single-leaf selections at a known root runtime type.
 3. Prove response-shape stability under semantic lowering from raw operations,
    assuming validation supplies fragment existence and acyclicity.
 4. Prove normalizer output satisfies `NormalForm.semanticOperationNormal` under

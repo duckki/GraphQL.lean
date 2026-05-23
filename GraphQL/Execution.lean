@@ -50,13 +50,11 @@ def directivesAllowWithVariablesBool (variableValues : VariableValues)
     (directives : List DirectiveApplication) : Bool :=
   directives.all (fun directive => directiveAllowsBool variableValues directive)
 
-def responseForValue : Value -> List (Name × Response) -> Response
-  | .null, _ => .null
-  | .scalar value, [] => .scalar value
-  | .scalar _value, fields => .object fields
-  | .object _typeName _identity, fields => .object fields
-  | .list values, fields =>
-      .list (values.map (fun value => responseForValue value fields))
+def shallowResponse : Value -> Response
+  | .null => .null
+  | .scalar value => .scalar value
+  | .object _typeName _identity => .object []
+  | .list values => .list (values.map shallowResponse)
 
 def runtimeObjectType? : Value -> Option Name
   | .object typeName _identity => some typeName
@@ -69,16 +67,34 @@ def typeConditionAppliesBool (schema : Schema) (parentType : Name)
   | none => schema.typesOverlapBool parentType typeCondition
 
 mutual
+  def completeValue (schema : Schema) (resolvers : Resolvers)
+      (variableValues : VariableValues) (fragments : List FragmentDefinition) :
+      Nat -> Name -> List Selection -> Value -> Response
+    | 0, _parentType, _selectionSet, value => shallowResponse value
+    | _fuel + 1, _parentType, _selectionSet, .null => .null
+    | _fuel + 1, _parentType, _selectionSet, .scalar value => .scalar value
+    | fuel + 1, _parentType, selectionSet, source@(.object runtimeType _identity) =>
+        .object (executeSelectionSet schema resolvers variableValues fragments
+          fuel runtimeType source selectionSet)
+    | fuel + 1, parentType, selectionSet, .list values =>
+        .list (values.map
+          (fun value =>
+            completeValue schema resolvers variableValues fragments
+              fuel parentType selectionSet value))
+
   def executeSelection (schema : Schema) (resolvers : Resolvers)
       (variableValues : VariableValues) (fragments : List FragmentDefinition)
       (fuel : Nat) (parentType : Name) (source : Value) : Selection -> List (Name × Response)
     | .field responseName fieldName arguments directives selectionSet =>
         if directivesAllowWithVariablesBool variableValues directives then
-          let resolved := resolvers.resolve parentType fieldName arguments source
-          let childType := (schema.fieldReturnType? parentType fieldName).getD fieldName
-          let childFields := executeSelectionSet schema resolvers variableValues fragments
-            fuel childType resolved selectionSet
-          [(responseName, responseForValue resolved childFields)]
+          match fuel with
+          | 0 => []
+          | fuel' + 1 =>
+              let resolved := resolvers.resolve parentType fieldName arguments source
+              let childType := (schema.fieldReturnType? parentType fieldName).getD fieldName
+              [(responseName,
+                completeValue schema resolvers variableValues fragments
+                  fuel' childType selectionSet resolved)]
         else
           []
     | .fragmentSpread fragmentName directives =>
@@ -98,17 +114,23 @@ mutual
           []
     | .inlineFragment none directives selectionSet =>
         if directivesAllowWithVariablesBool variableValues directives then
-          executeSelectionSet schema resolvers variableValues fragments
-            fuel parentType source selectionSet
+          match fuel with
+          | 0 => []
+          | fuel' + 1 =>
+              executeSelectionSet schema resolvers variableValues fragments
+                fuel' parentType source selectionSet
         else
           []
     | .inlineFragment (some typeCondition) directives selectionSet =>
         if directivesAllowWithVariablesBool variableValues directives then
-          if typeConditionAppliesBool schema parentType source typeCondition then
-            executeSelectionSet schema resolvers variableValues fragments
-              fuel typeCondition source selectionSet
-          else
-            []
+          match fuel with
+          | 0 => []
+          | fuel' + 1 =>
+              if typeConditionAppliesBool schema parentType source typeCondition then
+                executeSelectionSet schema resolvers variableValues fragments
+                  fuel' typeCondition source selectionSet
+              else
+                []
         else
           []
 
@@ -121,11 +143,14 @@ mutual
           ++ executeSelectionSet schema resolvers variableValues fragments fuel parentType source rest
 end
 
+def executionFuel (operation : Operation) : Nat :=
+  operation.size * 3 + 1
+
 def executeOperation (schema : Schema) (resolvers : Resolvers)
     (variableValues : VariableValues) (operation : Operation)
     (source : Value) : Response :=
-  .object (executeSelectionSet schema resolvers variableValues operation.fragments operation.size
-    operation.rootType source operation.selectionSet)
+  .object (executeSelectionSet schema resolvers variableValues operation.fragments
+    (executionFuel operation) operation.rootType source operation.selectionSet)
 
 end Execution
 

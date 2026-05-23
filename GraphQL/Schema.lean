@@ -18,8 +18,8 @@ namespace GraphQL
 abbrev Name := String
 
 -- Spec 2.12 `Type`, `NamedType`, `ListType`, `NonNullType`: partial; syntax is
--- represented, and invalid nested non-null is rejected by `TypeRef.wellFormed`/validity
--- predicates rather than by construction.
+-- represented, and invalid nested non-null is rejected by `TypeRef.wellFormed` and
+-- input/output type predicates rather than by construction.
 inductive TypeRef where
   | named : Name -> TypeRef
   | list : TypeRef -> TypeRef
@@ -178,13 +178,15 @@ def fields? : TypeDefinition -> Option (List FieldDefinition)
 -- Spec 5.5.2.3 `GetPossibleTypes`: partial; object and union cases are direct, interface
 -- cases depend on the stored `implementations` list rather than deriving it from object
 -- declarations.
-def possibleObjectNames : TypeDefinition -> List Name
+def getPossibleTypes : TypeDefinition -> List Name
   | .object objectType => [objectType.name]
   | .interface interfaceType => interfaceType.implementations
   | .union unionType => unionType.members
   | _ => []
 
-def isLeaf : TypeDefinition -> Prop
+-- Spec 5.3 field selection and 5.3.2 response-shape rules use the leaf type category;
+-- faithful for scalar and enum definitions in the modeled type universe.
+def isLeafType : TypeDefinition -> Prop
   | .builtinScalar _ => True
   | .customScalar _ => True
   | .enum _ => True
@@ -192,20 +194,22 @@ def isLeaf : TypeDefinition -> Prop
 
 -- Spec note in 5.3.2 and type-system usage of composite types: faithful for
 -- object/interface/union in the modeled type universe.
-def isComposite : TypeDefinition -> Prop
+def isCompositeType : TypeDefinition -> Prop
   | .object _ => True
   | .interface _ => True
   | .union _ => True
   | _ => False
 
-def isInput : TypeDefinition -> Prop
+-- Spec 3.4.2 `IsInputType`: faithful for the modeled named type categories.
+def isInputType : TypeDefinition -> Prop
   | .builtinScalar _ => True
   | .customScalar _ => True
   | .enum _ => True
   | .inputObject _ => True
   | _ => False
 
-def isOutput : TypeDefinition -> Prop
+-- Spec 3.4.2 `IsOutputType`: faithful for the modeled named type categories.
+def isOutputType : TypeDefinition -> Prop
   | .builtinScalar _ => True
   | .customScalar _ => True
   | .object _ => True
@@ -266,18 +270,18 @@ def fieldReturnType? (schema : Schema) (parentType fieldName : Name) : Option Na
   pure field.outputType.namedType
 
 -- Spec 5.5.2.3 `GetPossibleTypes`: partial; delegates to
--- `TypeDefinition.possibleObjectNames`, so interface fidelity depends on stored
+-- `TypeDefinition.getPossibleTypes`, so interface fidelity depends on stored
 -- implementors.
-def possibleObjectNames (schema : Schema) (typeName : Name) : List Name :=
+def getPossibleTypes (schema : Schema) (typeName : Name) : List Name :=
   match schema.lookupType typeName with
-  | some typeDefinition => typeDefinition.possibleObjectNames
+  | some typeDefinition => typeDefinition.getPossibleTypes
   | none => []
 
 def typeIncludesObject (schema : Schema) (typeName objectName : Name) : Prop :=
-  objectName ∈ schema.possibleObjectNames typeName
+  objectName ∈ schema.getPossibleTypes typeName
 
 def typeIncludesObjectBool (schema : Schema) (typeName objectName : Name) : Bool :=
-  (schema.possibleObjectNames typeName).contains objectName
+  (schema.getPossibleTypes typeName).contains objectName
 
 -- Spec 5.5.2.3 Fragment Spread Is Possible: faithful at the set-overlap level for modeled
 -- possible-object lists.
@@ -287,7 +291,7 @@ def typesOverlap (schema : Schema) (left right : Name) : Prop :=
       ∧ schema.typeIncludesObject right objectName
 
 def typesOverlapBool (schema : Schema) (left right : Name) : Bool :=
-  (schema.possibleObjectNames left).any
+  (schema.getPossibleTypes left).any
     (fun objectName => schema.typeIncludesObjectBool right objectName)
 
 def typeExists (schema : Schema) (typeName : Name) : Prop :=
@@ -301,32 +305,37 @@ def interfaceType (schema : Schema) (typeName : Name) : Prop :=
   ∃ interfaceType,
     schema.lookupType typeName = some (.interface interfaceType)
 
-def inputType (schema : Schema) (typeName : Name) : Prop :=
+-- Spec 3.4.2 `IsInputType`: schema-level lookup wrapper for named types.
+def isInputType (schema : Schema) (typeName : Name) : Prop :=
   ∃ typeDefinition,
     schema.lookupType typeName = some typeDefinition
-      ∧ typeDefinition.isInput
+      ∧ typeDefinition.isInputType
 
-def outputType (schema : Schema) (typeName : Name) : Prop :=
+-- Spec 3.4.2 `IsOutputType`: schema-level lookup wrapper for named types.
+def isOutputType (schema : Schema) (typeName : Name) : Prop :=
   ∃ typeDefinition,
     schema.lookupType typeName = some typeDefinition
-      ∧ typeDefinition.isOutput
+      ∧ typeDefinition.isOutputType
 
-def compositeType (schema : Schema) (typeName : Name) : Prop :=
+-- Spec composite type category: schema-level lookup wrapper for object/interface/union.
+def isCompositeType (schema : Schema) (typeName : Name) : Prop :=
   ∃ typeDefinition,
     schema.lookupType typeName = some typeDefinition
-      ∧ typeDefinition.isComposite
+      ∧ typeDefinition.isCompositeType
 
-def leafType (schema : Schema) (typeName : Name) : Prop :=
+-- Spec leaf type category used by field validation and `SameResponseShape`: schema-level
+-- lookup wrapper for scalar/enum types.
+def isLeafType (schema : Schema) (typeName : Name) : Prop :=
   ∃ typeDefinition,
     schema.lookupType typeName = some typeDefinition
-      ∧ typeDefinition.isLeaf
+      ∧ typeDefinition.isLeafType
 
 end Schema
 
 namespace TypeRef
 
--- Spec 2.12 / 3.12 `NonNullType`: faithful for rejecting a non-null wrapper around
--- another non-null wrapper.
+-- Local syntax invariant, not a named spec function: rejects a non-null wrapper around
+-- another non-null wrapper as required by Spec 2.12 and 3.12 `NonNullType`.
 def wellFormed : TypeRef -> Prop
   | .named _ => True
   | .list inner => inner.wellFormed
@@ -335,19 +344,19 @@ def wellFormed : TypeRef -> Prop
 
 -- Spec 3.4.2 `IsInputType`: faithful for the modeled type categories and wrapping-type
 -- recursion.
-def validInput : TypeRef -> Schema -> Prop
-  | .named name, schema => schema.inputType name
-  | .list inner, schema => inner.validInput schema
+def isInputType : TypeRef -> Schema -> Prop
+  | .named name, schema => schema.isInputType name
+  | .list inner, schema => inner.isInputType schema
   | .nonNull (.nonNull _), _schema => False
-  | .nonNull inner, schema => inner.validInput schema
+  | .nonNull inner, schema => inner.isInputType schema
 
 -- Spec 3.4.2 `IsOutputType`: faithful for the modeled type categories and wrapping-type
 -- recursion.
-def validOutput : TypeRef -> Schema -> Prop
-  | .named name, schema => schema.outputType name
-  | .list inner, schema => inner.validOutput schema
+def isOutputType : TypeRef -> Schema -> Prop
+  | .named name, schema => schema.isOutputType name
+  | .list inner, schema => inner.isOutputType schema
   | .nonNull (.nonNull _), _schema => False
-  | .nonNull inner, schema => inner.validOutput schema
+  | .nonNull inner, schema => inner.isOutputType schema
 
 end TypeRef
 

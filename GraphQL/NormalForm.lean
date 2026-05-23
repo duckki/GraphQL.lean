@@ -138,7 +138,7 @@ where
                       :: normalizedRest
                 | some (.interface _) | some (.union _) =>
                     let grounded :=
-                      (schema.possibleObjectNames typeCondition).map
+                      (schema.getPossibleTypes typeCondition).map
                         (fun objectName =>
                           Semantic.Selection.inlineFragment (some objectName) directives
                             (normalizeSelectionSet schema fuel objectName subselections))

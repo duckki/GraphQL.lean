@@ -42,7 +42,7 @@ def allows : DirectiveApplication -> Prop
   | .include ifArgument => ifArgument.staticBoolean? = some true
 
 -- Spec 3.13.1/3.13.2 directive runtime meaning: partial; variables are treated as false
--- here and handled more faithfully by `Execution.directiveAllowsBool`.
+-- here and handled more faithfully by `Execution.directiveAllowsSelectionBool`.
 def allowsBool : DirectiveApplication -> Bool
   | .skip ifArgument =>
       match ifArgument.staticBoolean? with

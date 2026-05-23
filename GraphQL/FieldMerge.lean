@@ -28,17 +28,17 @@ deriving Repr
 
 -- Spec 5.3.2 `SameResponseShape`: mostly faithful for wrapping structure and leaf
 -- named-type equality, using the modeled schema's leaf/output predicates.
-def fieldShapeCompatible (schema : Schema) : TypeRef -> TypeRef -> Prop
-  | .nonNull left, .nonNull right => fieldShapeCompatible schema left right
+def sameResponseShape (schema : Schema) : TypeRef -> TypeRef -> Prop
+  | .nonNull left, .nonNull right => sameResponseShape schema left right
   | .nonNull _, _ => False
   | _, .nonNull _ => False
-  | .list left, .list right => fieldShapeCompatible schema left right
+  | .list left, .list right => sameResponseShape schema left right
   | .list _, _ => False
   | _, .list _ => False
   | .named left, .named right =>
-      schema.outputType left
-        ∧ schema.outputType right
-        ∧ ((schema.leafType left ∨ schema.leafType right) -> left = right)
+      schema.isOutputType left
+        ∧ schema.isOutputType right
+        ∧ ((schema.isLeafType left ∨ schema.isLeafType right) -> left = right)
 
 -- Spec 5.3.2 `CollectFieldsAndFragmentNames` / 6.3.2 `CollectFields`: partial validation
 -- helper; it expands modeled fragments but does not apply directives or runtime
@@ -75,7 +75,7 @@ def collectFields (schema : Schema) (fragments : List FragmentDefinition) :
 
 -- Spec 5.3.2 `FieldsInSetCanMerge`: partial; captures pairwise response-shape, same
 -- field/arguments on overlapping parent types, and recursive merged subselection checks.
-def selectionSetFieldsCanMerge (schema : Schema) (fragments : List FragmentDefinition) :
+def fieldsInSetCanMerge (schema : Schema) (fragments : List FragmentDefinition) :
     Nat -> Name -> List Selection -> Prop
   | 0, _parentType, _selectionSet => True
   | fuel + 1, parentType, selectionSet =>
@@ -83,14 +83,15 @@ def selectionSetFieldsCanMerge (schema : Schema) (fragments : List FragmentDefin
       ∀ left, left ∈ fields ->
         ∀ right, right ∈ fields ->
           left.responseName = right.responseName ->
-            scopedFieldsPairCanMerge fuel left right
+            fieldsForNameCanMerge fuel left right
 
 where
-  scopedFieldsPairCanMerge (fuel : Nat) (left right : ScopedField) : Prop :=
-    fieldShapeCompatible schema left.outputType right.outputType
+  -- Spec 5.3.2 same-response-name field pair check inside `FieldsInSetCanMerge`.
+  fieldsForNameCanMerge (fuel : Nat) (left right : ScopedField) : Prop :=
+    sameResponseShape schema left.outputType right.outputType
       ∧ (schema.typesOverlap left.parentType right.parentType ->
         left.fieldName = right.fieldName ∧ left.arguments = right.arguments)
-      ∧ selectionSetFieldsCanMerge schema fragments fuel left.outputType.namedType
+      ∧ fieldsInSetCanMerge schema fragments fuel left.outputType.namedType
         (left.selectionSet ++ right.selectionSet)
 
 end FieldMerge

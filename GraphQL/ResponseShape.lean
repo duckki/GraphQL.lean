@@ -901,7 +901,7 @@ theorem equivalentBool_complete {left right : Shape} :
 
 def restrictConditionToType (schema : Schema) (condition : Condition)
     (typeCondition : Name) : Condition :=
-  let allowedTypes := schema.possibleObjectNames typeCondition
+  let allowedTypes := schema.getPossibleTypes typeCondition
   let possibleTypes :=
     match condition.possibleTypes with
     | none => allowedTypes
@@ -974,7 +974,7 @@ def semanticOperationShapeFuel (operation : Semantic.Operation) : Nat :=
 
 def semanticOperationInitialCondition (schema : Schema)
     (operation : Semantic.Operation) : Condition :=
-  { possibleTypes := some (schema.possibleObjectNames operation.rootType),
+  { possibleTypes := some (schema.getPossibleTypes operation.rootType),
     booleanLiterals := [] }
 
 -- Spec-inspired operation response summary: non-spec abstraction of the semantic

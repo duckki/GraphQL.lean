@@ -58,7 +58,9 @@ def inputValueBoolean? (variableValues : VariableValues) : InputValue -> Option 
       value.staticBoolean?
   | value => value.staticBoolean?
 
-def directiveAllowsBool (variableValues : VariableValues) : DirectiveApplication -> Bool
+-- Spec 6.3.2 `CollectFields` inline `@skip`/`@include` checks: local per-directive
+-- helper, not a named spec algorithm.
+def directiveAllowsSelectionBool (variableValues : VariableValues) : DirectiveApplication -> Bool
   | .skip ifArgument =>
       match inputValueBoolean? variableValues ifArgument with
       | some value => !value
@@ -68,9 +70,11 @@ def directiveAllowsBool (variableValues : VariableValues) : DirectiveApplication
       | some value => value
       | none => false
 
-def directivesAllowWithVariablesBool (variableValues : VariableValues)
+-- Spec 6.3.2 `CollectFields` inline directive checks: local helper over one selection's
+-- directive list, not a named spec algorithm.
+def selectionDirectivesAllowBool (variableValues : VariableValues)
     (directives : List DirectiveApplication) : Bool :=
-  directives.all (fun directive => directiveAllowsBool variableValues directive)
+  directives.all (fun directive => directiveAllowsSelectionBool variableValues directive)
 
 -- Spec 6.4.3 `CompleteValue`: partial fallback for exhausted fuel; converts internal
 -- values structurally without type-directed coercion or errors.
@@ -86,7 +90,7 @@ def runtimeObjectType? : Value -> Option Name
 
 -- Spec 6.3.2 `DoesFragmentTypeApply`: partial; faithful when runtime object type is
 -- known, but falls back to parent/type overlap for non-object placeholder values.
-def typeConditionAppliesBool (schema : Schema) (parentType : Name)
+def doesFragmentTypeApplyBool (schema : Schema) (parentType : Name)
     (source : Value) (typeCondition : Name) : Bool :=
   match runtimeObjectType? source with
   | some objectName => schema.typeIncludesObjectBool typeCondition objectName
@@ -158,7 +162,7 @@ mutual
       (fuel : Nat) (parentType : Name) (source : Value) :
       List Semantic.Selection -> List (Name × Response)
     | selectionSet =>
-        executeGroupedFieldSet schema resolvers variableValues fuel source
+        executeCollectedFields schema resolvers variableValues fuel source
           (collectFields schema variableValues fuel parentType source selectionSet)
 
   -- Spec 6.3.2 `CollectFields` selection step: partial; handles built-in directives and
@@ -169,7 +173,7 @@ mutual
     | 0, _parentType, _source, _selection => []
     | _fuel + 1, parentType, _source,
         .field responseName fieldName arguments directives selectionSet =>
-        if directivesAllowWithVariablesBool variableValues directives then
+        if selectionDirectivesAllowBool variableValues directives then
           [(responseName, [{
             parentType := parentType,
             responseName := responseName,
@@ -180,14 +184,14 @@ mutual
         else
           []
     | fuel + 1, parentType, source, .inlineFragment none directives selectionSet =>
-        if directivesAllowWithVariablesBool variableValues directives then
+        if selectionDirectivesAllowBool variableValues directives then
           collectFields schema variableValues fuel parentType source selectionSet
         else
           []
     | fuel + 1, parentType, source,
         .inlineFragment (some typeCondition) directives selectionSet =>
-        if directivesAllowWithVariablesBool variableValues directives then
-          if typeConditionAppliesBool schema parentType source typeCondition then
+        if selectionDirectivesAllowBool variableValues directives then
+          if doesFragmentTypeApplyBool schema parentType source typeCondition then
             collectFields schema variableValues fuel typeCondition source selectionSet
           else
             []
@@ -208,7 +212,7 @@ mutual
 
   -- Spec 6.4 `ExecuteField`: partial; resolves one grouped response name once and
   -- completes with merged subselections.
-  def executeGroupedField (schema : Schema) (resolvers : Resolvers)
+  def executeField (schema : Schema) (resolvers : Resolvers)
       (variableValues : VariableValues) (fuel : Nat) (source : Value)
       (responseName : Name) : List ExecutableField -> List (Name × Response)
     | [] => []
@@ -227,35 +231,37 @@ mutual
 
   -- Spec 6.3.3 `ExecuteCollectedFields`: partial; executes each response-name group in
   -- stored order, without serial/parallel distinction or errors.
-  def executeGroupedFieldSet (schema : Schema) (resolvers : Resolvers)
+  def executeCollectedFields (schema : Schema) (resolvers : Resolvers)
       (variableValues : VariableValues) (fuel : Nat) (source : Value) :
       List (Name × List ExecutableField) -> List (Name × Response)
     | [] => []
     | (responseName, fields) :: rest =>
-        executeGroupedField schema resolvers variableValues fuel source responseName fields
-          ++ executeGroupedFieldSet schema resolvers variableValues fuel source rest
+        executeField schema resolvers variableValues fuel source responseName fields
+          ++ executeCollectedFields schema resolvers variableValues fuel source rest
 end
 
-def semanticExecutionFuel (operation : Semantic.Operation) : Nat :=
+-- Local fuel bound for the partial `ExecuteQuery` model over semantic operations.
+def executeSemanticQueryFuel (operation : Semantic.Operation) : Nat :=
   operation.size * 3 + 1
 
 -- Spec 6.2.1 `ExecuteQuery` / 6.3.1 `ExecuteRootSelectionSet`: partial; executes a
 -- semantic operation as normal data-only object response.
-def executeSemanticOperation (schema : Schema) (resolvers : Resolvers)
+def executeSemanticQuery (schema : Schema) (resolvers : Resolvers)
     (variableValues : VariableValues) (operation : Semantic.Operation)
     (source : Value) : Response :=
   .object (executeSelectionSet schema resolvers variableValues
-    (semanticExecutionFuel operation) operation.rootType source operation.selectionSet)
+    (executeSemanticQueryFuel operation) operation.rootType source operation.selectionSet)
 
-def executionFuel (operation : Operation) : Nat :=
-  semanticExecutionFuel (Semantic.fromOperation operation)
+-- Local fuel bound for executing source operations after semantic lowering.
+def executeQueryFuel (operation : Operation) : Nat :=
+  executeSemanticQueryFuel (Semantic.fromOperation operation)
 
--- Spec 6.2/6.3 operation execution: partial; first inlines fragments, then executes using
--- the semantic operation model.
-def executeOperation (schema : Schema) (resolvers : Resolvers)
+-- Spec 6.2.1 `ExecuteQuery` / 6.3 operation execution: partial; first inlines fragments,
+-- then executes using the semantic operation model.
+def executeQuery (schema : Schema) (resolvers : Resolvers)
     (variableValues : VariableValues) (operation : Operation)
     (source : Value) : Response :=
-  executeSemanticOperation schema resolvers variableValues
+  executeSemanticQuery schema resolvers variableValues
     (Semantic.fromOperation operation) source
 
 end Execution

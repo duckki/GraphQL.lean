@@ -69,6 +69,35 @@ def entailsAllBool (stronger weaker : List BooleanLiteral) : Bool :=
 def compatibleBool (left right : List BooleanLiteral) : Bool :=
   !(hasContradictionBool (left ++ right))
 
+theorem eqBool_self (literal : BooleanLiteral) :
+    eqBool literal literal = true := by
+  cases literal <;> simp [eqBool]
+
+theorem containsBool_of_mem {literal : BooleanLiteral}
+    {literals : List BooleanLiteral} :
+    literal ∈ literals -> containsBool literal literals = true := by
+  intro hmem
+  induction literals with
+  | nil =>
+      cases hmem
+  | cons head rest ih =>
+      cases hmem with
+      | head =>
+          simp [containsBool, eqBool_self]
+      | tail _ htail =>
+          simp [containsBool, ih htail]
+
+theorem containsBool_self (literal : BooleanLiteral)
+    (literals : List BooleanLiteral) :
+    containsBool literal (literal :: literals) = true := by
+  exact containsBool_of_mem (by simp)
+
+theorem entailsAllBool_self (literals : List BooleanLiteral) :
+    entailsAllBool literals literals = true := by
+  simp [entailsAllBool]
+  intro literal hmem
+  exact containsBool_of_mem hmem
+
 end BooleanLiteral
 
 -- Spec-inspired runtime condition: combines 5.5.2.3 possible object types with 3.13
@@ -167,6 +196,25 @@ def subsetBool (left right : Condition) : Bool :=
   possibleTypesSubsetBool left.possibleTypes right.possibleTypes
     && BooleanLiteral.entailsAllBool left.booleanLiterals right.booleanLiterals
 
+theorem namesSubsetBool_self (names : List Name) :
+    namesSubsetBool names names = true := by
+  simp [namesSubsetBool]
+
+theorem possibleTypesSubsetBool_self (possibleTypes : Option (List Name)) :
+    possibleTypesSubsetBool possibleTypes possibleTypes = true := by
+  cases possibleTypes with
+  | none =>
+      rfl
+  | some names =>
+      simp [possibleTypesSubsetBool, namesSubsetBool_self]
+
+theorem subsetBool_self (condition : Condition) :
+    subsetBool condition condition = true := by
+  cases condition with
+  | mk possibleTypes booleanLiterals =>
+      simp [subsetBool, possibleTypesSubsetBool_self,
+        BooleanLiteral.entailsAllBool_self]
+
 def intersect? (left right : Condition) : Option Condition :=
   let combined := left.and right
   if combined.satisfiableBool then some combined else none
@@ -246,6 +294,101 @@ def eqBool (left right : SelectedField) : Bool :=
   (left.fieldName == right.fieldName)
     && argumentsEqBool left.arguments right.arguments
 
+mutual
+  def inputValueSize : InputValue -> Nat
+    | .list values => inputValuesSize values + 1
+    | .object fields => inputFieldsSize fields + 1
+    | _ => 1
+
+  def inputValuesSize : List InputValue -> Nat
+    | [] => 0
+    | value :: rest => inputValueSize value + inputValuesSize rest + 1
+
+  def inputFieldsSize : List (Name × InputValue) -> Nat
+    | [] => 0
+    | (_name, value) :: rest => inputValueSize value + inputFieldsSize rest + 1
+end
+
+set_option linter.unusedSimpArgs false in
+mutual
+  theorem inputValueEqBool_self (value : InputValue) :
+      inputValueEqBool value value = true := by
+    cases value with
+    | null =>
+        simp [inputValueEqBool]
+    | int value =>
+        simp [inputValueEqBool]
+    | float value =>
+        simp [inputValueEqBool]
+    | string value =>
+        simp [inputValueEqBool]
+    | boolean value =>
+        cases value <;> simp [inputValueEqBool]
+    | enum value =>
+        simp [inputValueEqBool]
+    | list values =>
+        simp [inputValueEqBool, inputValuesEqBool_self values]
+    | object fields =>
+        simp [inputValueEqBool, inputFieldsEqBool_self fields]
+    | «variable» name =>
+        simp [inputValueEqBool]
+  termination_by inputValueSize value
+  decreasing_by
+    simp_wf
+    all_goals simp [inputValueSize, inputValuesSize, inputFieldsSize]
+    all_goals omega
+
+  theorem inputValuesEqBool_self (values : List InputValue) :
+      inputValuesEqBool values values = true := by
+    cases values with
+    | nil =>
+        simp [inputValuesEqBool]
+    | cons value rest =>
+        simp [inputValuesEqBool, inputValueEqBool_self value,
+          inputValuesEqBool_self rest]
+  termination_by inputValuesSize values
+  decreasing_by
+    simp_wf
+    all_goals simp [inputValueSize, inputValuesSize, inputFieldsSize]
+    all_goals omega
+
+  theorem inputFieldsEqBool_self (fields : List (Name × InputValue)) :
+      inputFieldsEqBool fields fields = true := by
+    cases fields with
+    | nil =>
+        simp [inputFieldsEqBool]
+    | cons field rest =>
+        cases field with
+        | mk name value =>
+            simp [inputFieldsEqBool, inputValueEqBool_self value,
+              inputFieldsEqBool_self rest]
+  termination_by inputFieldsSize fields
+  decreasing_by
+    simp_wf
+    all_goals simp [inputValueSize, inputValuesSize, inputFieldsSize]
+    all_goals omega
+end
+
+theorem argumentEqBool_self (argument : Argument) :
+    argumentEqBool argument argument = true := by
+  cases argument with
+  | mk name value =>
+      simp [argumentEqBool, inputValueEqBool_self value]
+
+theorem argumentsEqBool_self (arguments : List Argument) :
+    argumentsEqBool arguments arguments = true := by
+  induction arguments with
+  | nil =>
+      simp [argumentsEqBool]
+  | cons argument rest ih =>
+      simp [argumentsEqBool, argumentEqBool_self argument, ih]
+
+theorem eqBool_self (field : SelectedField) :
+    eqBool field field = true := by
+  cases field with
+  | mk fieldName arguments =>
+      simp [eqBool, argumentsEqBool_self]
+
 end SelectedField
 
 def selectedField (fieldName : Name) (arguments : List Argument) :
@@ -279,6 +422,13 @@ def compatibleBool (left right : VariantHeader) : Bool :=
 -- match.
 def includedByBool (required available : VariantHeader) : Bool :=
   conditionSubsetBool required available && selectedFieldEqBool required available
+
+theorem includedByBool_self (header : VariantHeader) :
+    includedByBool header header = true := by
+  cases header with
+  | mk condition selectedField =>
+      simp [includedByBool, conditionSubsetBool, selectedFieldEqBool,
+        Condition.subsetBool_self, SelectedField.eqBool_self]
 
 def intersect? (left right : VariantHeader) : Option VariantHeader := do
   let condition <- Condition.intersect? left.fst right.fst
@@ -816,6 +966,33 @@ theorem empty_equivalent : equivalent empty empty := by
 
 theorem empty_equivalentBool : equivalentBool empty empty = true := by
   simp [equivalentBool, empty_includesBool]
+
+theorem lookupIncludingVariant_self_cons (header : VariantHeader)
+    (shape : Shape) (rest : List Variant) :
+    lookupIncludingVariant header ((header, shape) :: rest) = some shape := by
+  simp [lookupIncludingVariant, VariantHeader.includedByBool_self]
+
+theorem includesVariantsBool_singleton_empty_self (header : VariantHeader) :
+    includesVariantsBool [(header, empty)] [(header, empty)] = true := by
+  simp [includesVariantsBool, lookupIncludingVariant_self_cons, empty_includesBool]
+
+theorem includesFieldsBool_singleton_empty_self (responseName : Name)
+    (header : VariantHeader) :
+    includesFieldsBool [(responseName, [(header, empty)])]
+      [(responseName, [(header, empty)])] = true := by
+  simp [includesFieldsBool, lookupField, includesVariantsBool_singleton_empty_self]
+
+theorem includesBool_singleton_empty_self (responseName : Name)
+    (header : VariantHeader) :
+    includesBool ⟨[(responseName, [(header, empty)])]⟩
+      ⟨[(responseName, [(header, empty)])]⟩ = true := by
+  simp [includesBool, includesFieldsBool_singleton_empty_self]
+
+theorem equivalentBool_singleton_empty_self (responseName : Name)
+    (header : VariantHeader) :
+    equivalentBool ⟨[(responseName, [(header, empty)])]⟩
+      ⟨[(responseName, [(header, empty)])]⟩ = true := by
+  simp [equivalentBool, includesBool_singleton_empty_self]
 
 mutual
   theorem includesBool_sound {required available : Shape} :

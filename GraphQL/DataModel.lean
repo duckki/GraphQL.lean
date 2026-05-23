@@ -1241,6 +1241,66 @@ theorem normalFormPreservesResponseShapeBool_complete (schema : Schema)
   intro h
   exact ResponseShape.Shape.equivalentBool_complete h
 
+set_option linter.unusedSimpArgs false in
+theorem normalFormPreservesResponseShapeBool_singleLeafNoDirectives (schema : Schema)
+    (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument) :
+    normalFormPreservesResponseShapeBool schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := [.field responseName fieldName arguments [] []] } = true := by
+  by_cases hempty : schema.getPossibleTypes rootType = []
+  · simp [normalFormPreservesResponseShapeBool,
+      NormalForm.normalizeSemanticOperation_singleLeaf,
+      ResponseShape.Shape.ofSemanticOperation,
+      ResponseShape.Shape.semanticOperationShapeFuel,
+      ResponseShape.Shape.semanticSelectionSetShape,
+      ResponseShape.Shape.collectSelectionSetShapeFields,
+      ResponseShape.Shape.collectSelectionShapeFields,
+      ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+      ResponseShape.Shape.empty, ResponseShape.Condition.satisfiableBool,
+      ResponseShape.Condition.hasContradictionBool,
+      ResponseShape.BooleanLiteral.hasContradictionBool,
+      ResponseShape.Condition.possibleTypesEmptyBool,
+      ResponseShape.Condition.and, ResponseShape.Shape.semanticOperationInitialCondition,
+      hempty, ResponseShape.Shape.equivalentBool, ResponseShape.Shape.includesBool,
+      ResponseShape.Shape.includesFieldsBool]
+  · simpa [normalFormPreservesResponseShapeBool,
+      NormalForm.normalizeSemanticOperation_singleLeaf,
+      ResponseShape.Shape.ofSemanticOperation,
+      ResponseShape.Shape.semanticOperationShapeFuel,
+      ResponseShape.Shape.semanticSelectionSetShape,
+      ResponseShape.Shape.collectSelectionSetShapeFields,
+      ResponseShape.Shape.collectSelectionShapeFields,
+      ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+      ResponseShape.Shape.empty, ResponseShape.Condition.satisfiableBool,
+      ResponseShape.Condition.hasContradictionBool,
+      ResponseShape.BooleanLiteral.hasContradictionBool,
+      ResponseShape.Condition.possibleTypesEmptyBool,
+      ResponseShape.Condition.and, ResponseShape.Shape.semanticOperationInitialCondition,
+      hempty, ResponseShape.Shape.mergeFields, ResponseShape.Shape.merge,
+      ResponseShape.Shape.size, ResponseShape.Shape.fieldsSize,
+      ResponseShape.Shape.variantsSize, ResponseShape.Shape.mergeWithFuel,
+      ResponseShape.Shape.mergeFieldsWithFuel]
+    using ResponseShape.Shape.equivalentBool_singleton_empty_self responseName
+      ({ possibleTypes := some (schema.getPossibleTypes rootType), booleanLiterals := [] },
+        ResponseShape.selectedField fieldName arguments)
+
+theorem normalFormPreservesResponseShape_singleLeafNoDirectives (schema : Schema)
+    (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument) :
+    normalFormPreservesResponseShape schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := [.field responseName fieldName arguments [] []] } := by
+  exact normalFormPreservesResponseShapeBool_sound schema _
+    (normalFormPreservesResponseShapeBool_singleLeafNoDirectives schema name rootType
+      variableDefinitions responseName fieldName arguments)
+
 def responseShapeCorrectForTypedResponse (schema : Schema)
     (operation : Semantic.Operation)
     (variableValues : Execution.VariableValues)

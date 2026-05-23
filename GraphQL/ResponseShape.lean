@@ -293,6 +293,122 @@ def responseKeyVariantsCompatibleBool :
       variantsPairwiseCompatibleBool variants
         && responseKeyVariantsCompatibleBool rest
 
+def variantHeaderCompatible (left right : Variant) : Prop :=
+  variantHeadersCompatibleBool left right = true
+
+def variantCompatibleWithAll (variant : Variant) (variants : List Variant) : Prop :=
+  ∀ other, other ∈ variants -> variantHeaderCompatible variant other
+
+inductive VariantsPairwiseCompatible : List Variant -> Prop where
+  | nil : VariantsPairwiseCompatible []
+  | cons {variant : Variant} {rest : List Variant} :
+      variantCompatibleWithAll variant rest ->
+        VariantsPairwiseCompatible rest ->
+          VariantsPairwiseCompatible (variant :: rest)
+
+inductive ResponseKeyVariantsCompatible :
+    List (Name × List Variant) -> Prop where
+  | nil : ResponseKeyVariantsCompatible []
+  | cons {responseName : Name} {variants : List Variant}
+      {rest : List (Name × List Variant)} :
+      VariantsPairwiseCompatible variants ->
+        ResponseKeyVariantsCompatible rest ->
+          ResponseKeyVariantsCompatible ((responseName, variants) :: rest)
+
+theorem variantCompatibleWithAllBool_sound {variant : Variant}
+    {variants : List Variant} :
+    variantCompatibleWithAllBool variant variants = true ->
+      variantCompatibleWithAll variant variants := by
+  induction variants with
+  | nil =>
+      intro _h other hmem
+      cases hmem
+  | cons head rest _ih =>
+      intro h other hmem
+      simp [variantCompatibleWithAllBool] at h
+      cases hmem with
+      | head =>
+          exact h.left
+      | tail _ htail =>
+          cases other with
+          | mk header shape =>
+              cases header with
+              | mk condition selectedField =>
+                  exact h.right condition selectedField shape htail
+
+theorem variantCompatibleWithAllBool_complete {variant : Variant}
+    {variants : List Variant} :
+    variantCompatibleWithAll variant variants ->
+      variantCompatibleWithAllBool variant variants = true := by
+  induction variants with
+  | nil =>
+      intro _h
+      simp [variantCompatibleWithAllBool]
+  | cons head rest _ih =>
+      intro h
+      simp [variantCompatibleWithAllBool]
+      exact And.intro
+        (h head (by simp))
+        (by
+          intro condition selectedField shape hmem
+          exact h ((condition, selectedField), shape) (by simp [hmem]))
+
+theorem variantsPairwiseCompatibleBool_sound {variants : List Variant} :
+    variantsPairwiseCompatibleBool variants = true ->
+      VariantsPairwiseCompatible variants := by
+  induction variants with
+  | nil =>
+      intro _h
+      exact VariantsPairwiseCompatible.nil
+  | cons variant rest ih =>
+      intro h
+      simp [variantsPairwiseCompatibleBool] at h
+      exact VariantsPairwiseCompatible.cons
+        (variantCompatibleWithAllBool_sound h.left)
+        (ih h.right)
+
+theorem variantsPairwiseCompatibleBool_complete {variants : List Variant} :
+    VariantsPairwiseCompatible variants ->
+      variantsPairwiseCompatibleBool variants = true := by
+  intro h
+  cases h with
+  | nil =>
+      simp [variantsPairwiseCompatibleBool]
+  | cons hall hrest =>
+      simp [variantsPairwiseCompatibleBool,
+        variantCompatibleWithAllBool_complete hall,
+        variantsPairwiseCompatibleBool_complete hrest]
+
+theorem responseKeyVariantsCompatibleBool_sound
+    {fields : List (Name × List Variant)} :
+    responseKeyVariantsCompatibleBool fields = true ->
+      ResponseKeyVariantsCompatible fields := by
+  induction fields with
+  | nil =>
+      intro _h
+      exact ResponseKeyVariantsCompatible.nil
+  | cons field rest ih =>
+      cases field with
+      | mk responseName variants =>
+          intro h
+          simp [responseKeyVariantsCompatibleBool] at h
+          exact ResponseKeyVariantsCompatible.cons
+            (variantsPairwiseCompatibleBool_sound h.left)
+            (ih h.right)
+
+theorem responseKeyVariantsCompatibleBool_complete
+    {fields : List (Name × List Variant)} :
+    ResponseKeyVariantsCompatible fields ->
+      responseKeyVariantsCompatibleBool fields = true := by
+  intro h
+  cases h with
+  | nil =>
+      simp [responseKeyVariantsCompatibleBool]
+  | cons hvariants hrest =>
+      simp [responseKeyVariantsCompatibleBool,
+        variantsPairwiseCompatibleBool_complete hvariants,
+        responseKeyVariantsCompatibleBool_complete hrest]
+
 mutual
   def wellFormedBool : Shape -> Bool
     | .scalar => true
@@ -311,8 +427,120 @@ mutual
         shape.wellFormedBool && variantsWellFormedBool rest
 end
 
+mutual
+  inductive WellFormed : Shape -> Prop where
+    | scalar : WellFormed .scalar
+    | object {fields : List (Name × List Variant)} :
+        ResponseKeyVariantsCompatible fields ->
+          FieldsWellFormed fields ->
+            WellFormed (.object fields)
+
+  inductive FieldsWellFormed :
+      List (Name × List Variant) -> Prop where
+    | nil : FieldsWellFormed []
+    | cons {responseName : Name} {variants : List Variant}
+        {rest : List (Name × List Variant)} :
+        VariantsWellFormed variants ->
+          FieldsWellFormed rest ->
+            FieldsWellFormed ((responseName, variants) :: rest)
+
+  inductive VariantsWellFormed : List Variant -> Prop where
+    | nil : VariantsWellFormed []
+    | cons {header : VariantHeader} {shape : Shape} {rest : List Variant} :
+        WellFormed shape ->
+          VariantsWellFormed rest ->
+            VariantsWellFormed ((header, shape) :: rest)
+end
+
 def wellFormed (shape : Shape) : Prop :=
-  wellFormedBool shape = true
+  WellFormed shape
+
+mutual
+  theorem wellFormedBool_sound {shape : Shape} :
+      wellFormedBool shape = true -> WellFormed shape := by
+    cases shape with
+    | scalar =>
+        intro _h
+        exact WellFormed.scalar
+    | object fields =>
+        intro h
+        simp [wellFormedBool] at h
+        exact WellFormed.object
+          (responseKeyVariantsCompatibleBool_sound h.left)
+          (fieldsWellFormedBool_sound h.right)
+
+  theorem fieldsWellFormedBool_sound
+      {fields : List (Name × List Variant)} :
+      fieldsWellFormedBool fields = true -> FieldsWellFormed fields := by
+    cases fields with
+    | nil =>
+        intro _h
+        exact FieldsWellFormed.nil
+    | cons field rest =>
+        cases field with
+        | mk responseName variants =>
+            intro h
+            simp [fieldsWellFormedBool] at h
+            exact FieldsWellFormed.cons
+              (variantsWellFormedBool_sound h.left)
+              (fieldsWellFormedBool_sound h.right)
+
+  theorem variantsWellFormedBool_sound {variants : List Variant} :
+      variantsWellFormedBool variants = true ->
+        VariantsWellFormed variants := by
+    cases variants with
+    | nil =>
+        intro _h
+        exact VariantsWellFormed.nil
+    | cons variant rest =>
+        cases variant with
+        | mk header shape =>
+            intro h
+            simp [variantsWellFormedBool] at h
+            exact VariantsWellFormed.cons
+              (wellFormedBool_sound h.left)
+              (variantsWellFormedBool_sound h.right)
+end
+
+mutual
+  theorem wellFormedBool_complete {shape : Shape} :
+      WellFormed shape -> wellFormedBool shape = true := by
+    intro h
+    cases h with
+    | scalar =>
+        simp [wellFormedBool]
+    | object hcompatible hfields =>
+        simp [wellFormedBool,
+          responseKeyVariantsCompatibleBool_complete hcompatible,
+          fieldsWellFormedBool_complete hfields]
+
+  theorem fieldsWellFormedBool_complete
+      {fields : List (Name × List Variant)} :
+      FieldsWellFormed fields -> fieldsWellFormedBool fields = true := by
+    intro h
+    cases h with
+    | nil =>
+        simp [fieldsWellFormedBool]
+    | cons hvariants hrest =>
+        simp [fieldsWellFormedBool,
+          variantsWellFormedBool_complete hvariants,
+          fieldsWellFormedBool_complete hrest]
+
+  theorem variantsWellFormedBool_complete {variants : List Variant} :
+      VariantsWellFormed variants -> variantsWellFormedBool variants = true := by
+    intro h
+    cases h with
+    | nil =>
+        simp [variantsWellFormedBool]
+    | cons hshape hrest =>
+        simp [variantsWellFormedBool,
+          wellFormedBool_complete hshape,
+          variantsWellFormedBool_complete hrest]
+end
+
+theorem wellFormed_iff_bool {shape : Shape} :
+    wellFormed shape <-> wellFormedBool shape = true := by
+  exact Iff.intro wellFormedBool_complete wellFormedBool_sound
 
 mutual
   def size : Shape -> Nat

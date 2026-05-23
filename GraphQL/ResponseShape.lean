@@ -108,6 +108,10 @@ def possibleTypesEmptyBool : Option (List Name) -> Bool
 def withPossibleTypes (condition : Condition) (possibleTypes : List Name) : Condition :=
   { condition with possibleTypes := some possibleTypes }
 
+def forChildType (schema : Schema) (condition : Condition) (childType : Name) : Condition :=
+  { possibleTypes := some (schema.getPossibleTypes childType),
+    booleanLiterals := condition.booleanLiterals }
+
 def and (left right : Condition) : Condition :=
   {
     possibleTypes :=
@@ -928,7 +932,9 @@ mutual
                 | [] => empty
                 | _ =>
                     ⟨collectSelectionSetShapeFields schema fuel
-                      childType fieldCondition selectionSet⟩
+                      childType
+                      (Condition.forChildType schema fieldCondition childType)
+                      selectionSet⟩
               [(responseName, [((fieldCondition, selectedField fieldName arguments), childShape)])]
             else
               []

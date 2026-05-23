@@ -19,6 +19,7 @@ flowchart TD
   NormalForm["GraphQL.NormalForm"]
   ResponseShape["GraphQL.ResponseShape"]
   Execution["GraphQL.Execution"]
+  DataModel["GraphQL.DataModel"]
   Minimization["GraphQL.Minimization"]
   GraphQLRoot["GraphQL"]
 
@@ -34,6 +35,9 @@ flowchart TD
   Semantic --> NormalForm
   Semantic --> Execution
   Semantic --> ResponseShape
+  Execution --> DataModel
+  NormalForm --> DataModel
+  ResponseShape --> DataModel
   Operation --> Minimization
 
   SchemaWF --> GraphQLRoot
@@ -42,6 +46,7 @@ flowchart TD
   NormalForm --> GraphQLRoot
   ResponseShape --> GraphQLRoot
   Execution --> GraphQLRoot
+  DataModel --> GraphQLRoot
   Minimization --> GraphQLRoot
 
   GraphQLRoot --> FederationComposition
@@ -63,6 +68,7 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
 - `GraphQL.NormalForm`: ground-typed normal form and non-redundancy predicates over semantic selection sets, plus a bounded normalization pass for field merging and abstract-type grounding.
 - `GraphQL.ResponseShape`: a semantic selection-set summary between raw operation syntax and ground-type normal form. It records response names, conditional field variants, child shapes, condition overlap/subset/contradiction utilities, shape inclusion, and shape equivalence.
 - `GraphQL.Execution`: execution over semantic selections as a function parameterized by abstract resolver functions. It collects executable fields by response name, resolves each response name once, passes field arguments to resolvers, and applies `@skip` / `@include` filtering for fields and inline fragments.
+- `GraphQL.DataModel`: an extensional, typed object-store model for the scoped conformance target. It represents object identities, field facts keyed by already-coerced arguments, store-backed resolvers, typed response trees, response-shape conformance checks, and predicates for data-model equivalence of semantic operations.
 - `GraphQL.Minimization`: finite-candidate operation minimization parameterized by an explicit operation-equivalence predicate, plus the generic minimality theorem.
 
 ### Plain GraphQL Flow
@@ -74,7 +80,8 @@ The current Part 1 flow is:
 3. `GraphQL.SchemaWellFormedness`, `GraphQL.FieldMerge`, and `GraphQL.Validation` state well-formedness and operation validity.
 4. `GraphQL.ResponseShape` summarizes semantic selection sets as unnormalized conditional response-name variants.
 5. `GraphQL.Execution` gives bounded execution over semantic selections by first collecting fields by response name, then resolving each response name once.
-6. `GraphQL.NormalForm` and `GraphQL.Minimization` provide the normalization/minimization proof scaffolding.
+6. `GraphQL.DataModel` constrains execution to a typed object store so response-shape and normal-form correctness can be stated against deterministic data.
+7. `GraphQL.NormalForm` and `GraphQL.Minimization` provide the normalization/minimization proof scaffolding.
 
 Normalization consumes the fragment-inlined semantic form and clears retained fragment definitions from the normalized raw operation. Inline fragments without type conditions are flattened only when they have no directives; directive-bearing inline fragments are retained so their runtime condition is preserved.
 

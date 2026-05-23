@@ -1,0 +1,59 @@
+# Repo Agent Memory
+
+This repo is a Lean formalization workspace for GraphQL, with federation planned
+later.
+
+## Current Priority
+
+Spec conformance is the current priority, but only for the scoped plain GraphQL
+fragment described in `docs/spec-conformance-plan.md`.
+
+Current explicit skips:
+
+- mutation,
+- subscription,
+- custom directives beyond modeled `@skip` and `@include`,
+- coercion, assuming values are already coerced and type-conformant,
+- introspection and meta-fields,
+- execution errors and response `errors` / `extensions`,
+- minimization,
+- federation.
+
+The immediate proof goal is to formalize the data model enough to prove
+response-shape analysis and ground normal form correctness.
+
+## Current Status
+
+`GraphQL.DataModel` has been added as the proof-facing data model. It defines
+typed object identities, field facts keyed by already-coerced arguments,
+store-backed resolvers, typed response trees, response-shape conformance checks,
+and correctness predicates for operation equivalence and ground normal form.
+
+`GraphQL.ResponseShape` now resets child-shape possible runtime types to the
+field return type through `ResponseShape.Condition.forChildType`. Keep this
+behavior when working on response-shape soundness.
+
+The latest successful checks were:
+
+```sh
+lake build
+lake lint
+```
+
+## Where To Look
+
+- `docs/spec-conformance-plan.md`: current goals, skips, status, and proof plan.
+- `docs/overview.md`: module map and architecture overview.
+- `docs/references.md`: GraphCoQL reference notes and proof-strategy context.
+- `GraphQL/DataModel.lean`: typed store model and correctness predicates.
+- `GraphQL/ResponseShape.lean`: response-shape construction and inclusion.
+- `GraphQL/NormalForm.lean`: ground normal form scaffold.
+- `GraphQL/Execution.lean`: resolver-based execution used by the data model.
+- `GraphQL/Validation.lean`: current operation validity assumptions.
+
+## Development Notes
+
+Keep raw syntax permissive and put invariants in validation or well-formedness
+predicates. Prefer small, proof-friendly definitions over feature expansion.
+When adding scope, update `docs/spec-conformance-plan.md` first.
+

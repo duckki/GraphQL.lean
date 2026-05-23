@@ -7,6 +7,7 @@ import GraphQL.Validation
 import GraphQL.NormalForm
 import GraphQL.ResponseShape
 import GraphQL.Execution
+import GraphQL.DataModel
 import GraphQL.Minimization
 
 /-!

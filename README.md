@@ -8,6 +8,9 @@ Canonical GraphQL specification reference:
 For the project structure, dependency diagram, and module overview, see
 [docs/overview.md](docs/overview.md).
 
+For the current spec-conformance scope and proof plan, see
+[docs/spec-conformance-plan.md](docs/spec-conformance-plan.md).
+
 ## Build
 
 Build all Lean targets:

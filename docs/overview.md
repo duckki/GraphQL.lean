@@ -108,6 +108,7 @@ The condition utility layer supports the next canonicalization step:
 - boolean-literal contradiction detection,
 - boolean-condition implication by literal containment,
 - condition satisfiability, overlap, subset, and checked intersection.
+- variant overlap, selected-field agreement, and per-response-key pairwise compatibility checks.
 
 ### Shape And Normal Form
 

@@ -216,6 +216,25 @@ def eqBool (left right : VariantHeader) : Bool :=
   Condition.eqBool left.fst right.fst
     && SelectedField.eqBool left.snd right.snd
 
+def conditionsOverlapBool (left right : VariantHeader) : Bool :=
+  Condition.overlapsBool left.fst right.fst
+
+def conditionSubsetBool (left right : VariantHeader) : Bool :=
+  Condition.subsetBool left.fst right.fst
+
+def selectedFieldEqBool (left right : VariantHeader) : Bool :=
+  SelectedField.eqBool left.snd right.snd
+
+def compatibleBool (left right : VariantHeader) : Bool :=
+  !(conditionsOverlapBool left right) || selectedFieldEqBool left right
+
+def intersect? (left right : VariantHeader) : Option VariantHeader := do
+  let condition <- Condition.intersect? left.fst right.fst
+  if selectedFieldEqBool left right then
+    some (condition, left.snd)
+  else
+    none
+
 end VariantHeader
 
 /--
@@ -232,6 +251,8 @@ deriving Repr
 
 namespace Shape
 
+abbrev Variant := VariantHeader × Shape
+
 def lookupField (responseName : Name) :
     List (Name × List (VariantHeader × Shape)) -> Option (List (VariantHeader × Shape))
   | [] => none
@@ -246,6 +267,31 @@ def lookupVariant (header : VariantHeader) :
         some shape
       else
         lookupVariant header rest
+
+def variantHeadersCompatibleBool (left right : Variant) : Bool :=
+  VariantHeader.compatibleBool left.fst right.fst
+
+def variantConditionsOverlapBool (left right : Variant) : Bool :=
+  VariantHeader.conditionsOverlapBool left.fst right.fst
+
+def variantsSelectSameFieldBool (left right : Variant) : Bool :=
+  VariantHeader.selectedFieldEqBool left.fst right.fst
+
+def variantCompatibleWithAllBool (variant : Variant) : List Variant -> Bool :=
+  fun variants => variants.all (fun other => variantHeadersCompatibleBool variant other)
+
+def variantsPairwiseCompatibleBool : List Variant -> Bool
+  | [] => true
+  | variant :: rest =>
+      variantCompatibleWithAllBool variant rest
+        && variantsPairwiseCompatibleBool rest
+
+def responseKeyVariantsCompatibleBool :
+    List (Name × List Variant) -> Bool
+  | [] => true
+  | (_responseName, variants) :: rest =>
+      variantsPairwiseCompatibleBool variants
+        && responseKeyVariantsCompatibleBool rest
 
 mutual
   def size : Shape -> Nat

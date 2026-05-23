@@ -27,18 +27,17 @@ flowchart TD
 
   Schema --> SchemaWF
   Schema --> Operation
-  Schema --> ResponseShape
   Operation --> FieldMerge
   FieldMerge --> Validation
   Operation --> NormalForm
   Validation --> Execution
-  ResponseShape --> Execution
+  Operation --> ResponseShape
   Operation --> Minimization
-  ResponseShape --> Minimization
 
   SchemaWF --> GraphQLRoot
   Validation --> GraphQLRoot
   NormalForm --> GraphQLRoot
+  ResponseShape --> GraphQLRoot
   Execution --> GraphQLRoot
   Minimization --> GraphQLRoot
 
@@ -58,9 +57,9 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
 - `GraphQL.FieldMerge`: same-response-name field collection and merge compatibility, including response-shape compatibility and recursive subfield merge checks.
 - `GraphQL.Validation`: validation as a proposition over a schema and operation, including variable definitions, duplicate argument checks, required argument checks, recursive input/output type checks, non-empty required selection sets, field merge checks, and fragment applicability by possible-object overlap.
 - `GraphQL.NormalForm`: ground-typed normal form and non-redundancy predicates plus a bounded normalization pass for field merging and abstract-type grounding.
+- `GraphQL.ResponseShape`: an operation summary between raw operation syntax and ground-type normal form. It records response keys, conditional field variants, child shapes, shape inclusion, and shape equivalence.
 - `GraphQL.Execution`: execution as a function parameterized by abstract resolver functions, with field arguments passed to resolvers and `@skip` / `@include` filtering for fields, named spreads, and inline spreads.
-- `GraphQL.ResponseShape`: response shapes plus shape-to-shape inclusion and equivalence.
-- `GraphQL.Minimization`: finite-candidate operation minimization and the minimality theorem shape.
+- `GraphQL.Minimization`: finite-candidate operation minimization parameterized by an explicit operation-equivalence predicate, plus the generic minimality theorem.
 
 ### Plain GraphQL Flow
 
@@ -68,8 +67,8 @@ The current Part 1 flow is:
 
 1. `GraphQL.Schema` and `GraphQL.Operation` define raw syntax.
 2. `GraphQL.SchemaWellFormedness`, `GraphQL.FieldMerge`, and `GraphQL.Validation` state well-formedness and operation validity.
-3. `GraphQL.Execution` gives bounded execution as a function, parameterized by abstract resolvers.
-4. `GraphQL.ResponseShape` defines structural response shapes, shape inclusion, equivalence, and computable boolean checks for inclusion/equivalence.
+3. `GraphQL.ResponseShape` summarizes operations as unnormalized conditional response-key variants.
+4. `GraphQL.Execution` gives bounded execution as a function, parameterized by abstract resolvers.
 5. `GraphQL.NormalForm` and `GraphQL.Minimization` provide the normalization/minimization proof scaffolding.
 
 Validation assumptions should be used when proving semantic facts about later stages. Raw syntax remains permissive; validation supplies the invariants that later proofs should rely on.
@@ -81,7 +80,16 @@ Response shapes currently distinguish only:
 - `scalar`
 - `object fields`
 
-This intentionally ignores concrete scalar values, object identities, resolver behavior, nullability, and error propagation. It is the structural shape needed for query equivalence and minimization, not a full response-value model.
+Object shapes are keyed by response name. Each key maps to one or more conditional variants. A variant records:
+
+- the selected field definition, modeled as `fieldName` plus arguments,
+- a type condition, modeled as an optional set/list of possible object types,
+- a boolean condition, modeled as a conjunction of boolean variable literals `v` or `not v`,
+- the child response shape for that variant.
+
+Variants under a response key are interpreted disjunctively and are not normalized. Their conditions may overlap, and both variants may be true. For example, a key may contain `field(arg: 1)` on `{T}` with child `{a}` and another `field(arg: 1)` on `{T, U}` with child `{b}`.
+
+This intentionally ignores concrete scalar values, object identities, list/null completion, resolver internals, and error propagation. It is a structural operation summary, not a full response-value model and not a definition of operation equivalence.
 
 `GraphQL.ResponseShape` provides two views of inclusion:
 
@@ -90,25 +98,15 @@ This intentionally ignores concrete scalar values, object identities, resolver b
 
 The module proves soundness and completeness bridges between those two forms. Equivalence is inclusion in both directions, again with both propositional and boolean APIs.
 
-Shape merging is also structural. When two fields have the same response name, their child shapes are merged recursively. This is intended to match the post-validation field-merge view used by future shape semantics and minimization candidates.
+Shape merging is also structural. Object shapes merge by response name; variants under the same key merge only when their type condition, boolean condition, and selected field definition match. This is intentionally weaker than normal-form construction because overlapping variants are preserved instead of normalized away.
 
-### Concrete Shape Requires Runtime Data
+Response-shape equivalence is weaker than operation equivalence. Operation equivalence should be determined through normal forms or a separate semantic equivalence theorem. Shape equivalence can be used as a supporting invariant, but it is not sufficient by itself.
 
-A concrete response shape cannot be derived from only a schema and an operation.
+### Shape And Normal Form
 
-The missing information is the runtime data:
+`GraphQL.ResponseShape` is an intermediate summary of an operation. It is closer to operation syntax than ground-type normal form: it records response-key variants with type and boolean conditions, but it does not split or normalize overlapping conditions.
 
-- abstract fields can resolve to different object runtime types,
-- inline fragments and fragment spreads are included or skipped based on those runtime object types,
-- lists can contain elements with different runtime object types,
-- resolver results determine whether child selections are applied to null, an object, or a list of objects.
-
-For that reason, this project currently treats operation-to-shape mapping as abstract in `GraphQL.Minimization`. A later concrete semantics should choose one of these approaches:
-
-- define response shape from executed responses,
-- define response shape from an explicit data model and execution relation,
-- define a family of possible shapes indexed by runtime object choices,
-- define an over-approximation or envelope shape separately from concrete response shape.
+Operation equivalence should be determined by normal forms or a separate semantic equivalence theorem. Shape equivalence is useful as a supporting invariant and as a staging point for minimization, but it is not sufficient by itself.
 
 ### Minimization Plan
 
@@ -117,15 +115,15 @@ The intended minimization proof split is:
 The pieces already in place are:
 
 - response-shape inclusion and equivalence, with boolean/propositional bridges,
-- a generic finite minimizer theorem over any finite list of equivalent candidates.
+- a generic finite minimizer theorem over any finite list of candidates equivalent under an explicit operation-equivalence predicate.
 
 The remaining proof ladder is:
 
-1. Choose the concrete shape semantics: executed-response shape, data-model-indexed shape, possible-shape family, or explicit approximation.
-2. Strengthen validation around fragments so the chosen semantics can assume fragment references terminate and are well-scoped.
-3. Prove normalization preserves the chosen shape semantics.
+1. Strengthen validation around fragments so the chosen semantics can assume fragment references terminate and are well-scoped.
+2. Make normal forms canonical enough to decide operation equivalence up to fragment-name alpha-renaming.
+3. Prove normalization preserves execution semantics and response shape as a supporting invariant.
 4. Define a finite candidate generator for fragment-introducing rewrites of a fragment-free operation.
-5. Prove generator soundness: every generated operation has the same shape semantics as the input.
+5. Prove generator soundness: every generated operation has the same normal-form semantics as the input.
 6. Prove generator completeness for the chosen normal form, modulo fragment-name alpha-renaming and the operation size metric.
 7. Instantiate the generic finite minimizer theorem with that candidate generator.
 

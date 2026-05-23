@@ -1,34 +1,35 @@
 import GraphQL.Operation
-import GraphQL.ResponseShape
 
 namespace GraphQL
 
 namespace Minimization
 
-abbrev Shape := ResponseShape.Shape
-
-structure Candidate (inputShape : Shape) where
+structure Candidate (equivalentToInput : Operation -> Prop) where
   operation : Operation
-  shape : Shape
-  sameShape : ResponseShape.Shape.equivalent shape inputShape
+  equivalent : equivalentToInput operation
 
-def Candidate.size {inputShape : Shape} (candidate : Candidate inputShape) : Nat :=
+def Candidate.size {equivalentToInput : Operation -> Prop}
+    (candidate : Candidate equivalentToInput) : Nat :=
   candidate.operation.size
 
-def chooseSmaller {inputShape : Shape} (left right : Candidate inputShape) :
-    Candidate inputShape :=
+def chooseSmaller {equivalentToInput : Operation -> Prop}
+    (left right : Candidate equivalentToInput) :
+    Candidate equivalentToInput :=
   if left.size ≤ right.size then left else right
 
-def minimizeFrom {inputShape : Shape} (best : Candidate inputShape) :
-    List (Candidate inputShape) -> Candidate inputShape
+def minimizeFrom {equivalentToInput : Operation -> Prop}
+    (best : Candidate equivalentToInput) :
+    List (Candidate equivalentToInput) -> Candidate equivalentToInput
   | [] => best
   | candidate :: rest => minimizeFrom (chooseSmaller best candidate) rest
 
-def minimize? {inputShape : Shape} : List (Candidate inputShape) -> Option (Candidate inputShape)
+def minimize? {equivalentToInput : Operation -> Prop} :
+    List (Candidate equivalentToInput) -> Option (Candidate equivalentToInput)
   | [] => none
   | candidate :: rest => some (minimizeFrom candidate rest)
 
-theorem chooseSmaller_le_left {inputShape : Shape} (left right : Candidate inputShape) :
+theorem chooseSmaller_le_left {equivalentToInput : Operation -> Prop}
+    (left right : Candidate equivalentToInput) :
     (chooseSmaller left right).size ≤ left.size := by
   unfold chooseSmaller
   by_cases h : left.size ≤ right.size
@@ -36,15 +37,18 @@ theorem chooseSmaller_le_left {inputShape : Shape} (left right : Candidate input
   · simp [h]
     exact Nat.le_of_lt (Nat.lt_of_not_ge h)
 
-theorem chooseSmaller_le_right {inputShape : Shape} (left right : Candidate inputShape) :
+theorem chooseSmaller_le_right {equivalentToInput : Operation -> Prop}
+    (left right : Candidate equivalentToInput) :
     (chooseSmaller left right).size ≤ right.size := by
   unfold chooseSmaller
   by_cases h : left.size ≤ right.size
   · simp [h]
   · simp [h]
 
-theorem minimizeFrom_minimal {inputShape : Shape} (best : Candidate inputShape) :
-    ∀ (rest : List (Candidate inputShape)) (candidate : Candidate inputShape),
+theorem minimizeFrom_minimal {equivalentToInput : Operation -> Prop}
+    (best : Candidate equivalentToInput) :
+    ∀ (rest : List (Candidate equivalentToInput))
+      (candidate : Candidate equivalentToInput),
       candidate = best ∨ candidate ∈ rest ->
         (minimizeFrom best rest).size ≤ candidate.size := by
   intro rest
@@ -74,8 +78,9 @@ theorem minimizeFrom_minimal {inputShape : Shape} (best : Candidate inputShape) 
           | tail _ htail =>
               exact ih next candidate (Or.inr htail)
 
-theorem minimize?_minimal {inputShape : Shape} (candidates : List (Candidate inputShape))
-    (output : Candidate inputShape) :
+theorem minimize?_minimal {equivalentToInput : Operation -> Prop}
+    (candidates : List (Candidate equivalentToInput))
+    (output : Candidate equivalentToInput) :
     minimize? candidates = some output ->
       ∀ candidate, candidate ∈ candidates -> output.size ≤ candidate.size := by
   intro h candidate hmem
@@ -91,15 +96,15 @@ theorem minimize?_minimal {inputShape : Shape} (candidates : List (Candidate inp
         | tail _ htail => exact Or.inr htail)
 
 structure FragmentMinimizerSpec where
-  shapeOf : Operation -> Shape
-  candidates : (input : Operation) -> List (Candidate (shapeOf input))
+  equivalent : Operation -> Operation -> Prop
+  candidates : (input : Operation) -> List (Candidate (equivalent input))
 
 def minimizeOperation? (spec : FragmentMinimizerSpec) (input : Operation) :
-    Option (Candidate (spec.shapeOf input)) :=
+    Option (Candidate (spec.equivalent input)) :=
   minimize? (spec.candidates input)
 
 theorem minimizeOperation?_minimal (spec : FragmentMinimizerSpec) (input : Operation)
-    (output : Candidate (spec.shapeOf input)) :
+    (output : Candidate (spec.equivalent input)) :
     minimizeOperation? spec input = some output ->
       ∀ candidate, candidate ∈ spec.candidates input -> output.size ≤ candidate.size := by
   intro h

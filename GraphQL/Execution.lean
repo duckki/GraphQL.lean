@@ -1,5 +1,4 @@
 import GraphQL.Validation
-import GraphQL.ResponseShape
 
 namespace GraphQL
 

@@ -582,6 +582,32 @@ def possibleTypesHoldBool (possibleTypes : Option (List Name))
   | none => true
   | some names => names.contains runtimeType
 
+theorem possibleTypesHoldBool_none (runtimeType : Name) :
+    possibleTypesHoldBool none runtimeType = true := by
+  rfl
+
+theorem possibleTypesHoldBool_some_of_mem {runtimeType : Name}
+    {possibleTypes : List Name} :
+    runtimeType ∈ possibleTypes ->
+      possibleTypesHoldBool (some possibleTypes) runtimeType = true := by
+  intro hmem
+  exact (List.contains_iff_mem.mpr hmem)
+
+theorem possibleTypesHoldBool_of_typeIncludesObject (schema : Schema)
+    {typeName runtimeType : Name} :
+    schema.typeIncludesObject typeName runtimeType ->
+      possibleTypesHoldBool (some (schema.getPossibleTypes typeName))
+        runtimeType = true := by
+  intro h
+  exact possibleTypesHoldBool_some_of_mem h
+
+theorem possibleTypes_nonempty_of_typeIncludesObject (schema : Schema)
+    {typeName runtimeType : Name} :
+    schema.typeIncludesObject typeName runtimeType ->
+      ¬ schema.getPossibleTypes typeName = [] := by
+  intro h hempty
+  simp [Schema.typeIncludesObject, hempty] at h
+
 def booleanLiteralHoldsBool (variableValues : Execution.VariableValues) :
     ResponseShape.BooleanLiteral -> Bool
   | .positive name =>
@@ -598,6 +624,226 @@ def conditionHoldsBool (variableValues : Execution.VariableValues)
   possibleTypesHoldBool condition.possibleTypes runtimeType
     && condition.booleanLiterals.all
       (fun literal => booleanLiteralHoldsBool variableValues literal)
+
+theorem conditionHoldsBool_withPossibleTypes (variableValues : Execution.VariableValues)
+    {runtimeType : Name} {condition : ResponseShape.Condition}
+    {possibleTypes : List Name} :
+    conditionHoldsBool variableValues runtimeType condition = true ->
+      runtimeType ∈ possibleTypes ->
+        conditionHoldsBool variableValues runtimeType
+          (condition.withPossibleTypes possibleTypes) = true := by
+  intro hcondition hmem
+  simp [conditionHoldsBool, ResponseShape.Condition.withPossibleTypes] at hcondition ⊢
+  exact And.intro (List.contains_iff_mem.mpr hmem) hcondition.right
+
+theorem conditionHoldsBool_and_right_none (variableValues : Execution.VariableValues)
+    (runtimeType : Name) (left right : ResponseShape.Condition) :
+    conditionHoldsBool variableValues runtimeType left = true ->
+      conditionHoldsBool variableValues runtimeType right = true ->
+        right.possibleTypes = none ->
+          conditionHoldsBool variableValues runtimeType (left.and right) = true := by
+  intro hleft hright hpossible
+  cases left with
+  | mk leftTypes leftLiterals =>
+      cases right with
+      | mk rightTypes rightLiterals =>
+          cases rightTypes with
+          | none =>
+              cases leftTypes with
+              | none =>
+                  simp [conditionHoldsBool, ResponseShape.Condition.and,
+                    possibleTypesHoldBool] at hleft hright ⊢
+                  exact And.intro hleft hright
+              | some leftTypes =>
+                  simp [conditionHoldsBool, ResponseShape.Condition.and,
+                    possibleTypesHoldBool] at hleft hright ⊢
+                  exact And.intro hleft.left (And.intro hleft.right hright)
+          | some rightTypes =>
+              cases hpossible
+
+theorem conditionHoldsBool_restrictConditionToType (schema : Schema)
+    (variableValues : Execution.VariableValues) {runtimeType typeCondition : Name}
+    {condition : ResponseShape.Condition} :
+    conditionHoldsBool variableValues runtimeType condition = true ->
+      schema.typeIncludesObject typeCondition runtimeType ->
+        conditionHoldsBool variableValues runtimeType
+          (ResponseShape.Shape.restrictConditionToType schema condition typeCondition) = true := by
+  intro hcondition hoverlap
+  cases condition with
+  | mk possibleTypes literals =>
+      simp [ResponseShape.Shape.restrictConditionToType,
+        ResponseShape.Condition.withPossibleTypes]
+      cases possibleTypes with
+      | none =>
+          exact conditionHoldsBool_withPossibleTypes variableValues hcondition hoverlap
+      | some currentTypes =>
+          have hcurrent : runtimeType ∈ currentTypes := by
+            have hsplit :
+                runtimeType ∈ currentTypes
+                  ∧ (∀ literal, literal ∈ literals ->
+                    booleanLiteralHoldsBool variableValues literal = true) := by
+              simpa [conditionHoldsBool, possibleTypesHoldBool] using hcondition
+            exact hsplit.left
+          have hfiltered :
+              runtimeType ∈ currentTypes.filter
+                (fun name => decide (name ∈ schema.getPossibleTypes typeCondition)) := by
+            exact List.mem_filter.mpr
+              (And.intro hcurrent (by simpa using hoverlap))
+          simpa using conditionHoldsBool_withPossibleTypes variableValues hcondition hfiltered
+
+theorem conditionHoldsBool_forChildType (schema : Schema)
+    (variableValues : Execution.VariableValues) {runtimeType childType : Name}
+    {condition : ResponseShape.Condition} :
+    condition.booleanLiterals.all
+        (fun literal => booleanLiteralHoldsBool variableValues literal) = true ->
+      schema.typeIncludesObject childType runtimeType ->
+      conditionHoldsBool variableValues runtimeType
+        (ResponseShape.Condition.forChildType schema condition childType) = true := by
+  intro hbooleans htype
+  simp [conditionHoldsBool, ResponseShape.Condition.forChildType,
+    possibleTypesHoldBool_of_typeIncludesObject schema htype, hbooleans]
+
+theorem semanticOperationInitialCondition_holds (schema : Schema)
+    (variableValues : Execution.VariableValues)
+    (operation : Semantic.Operation) {runtimeType : Name} :
+    schema.typeIncludesObject operation.rootType runtimeType ->
+      conditionHoldsBool variableValues runtimeType
+        (ResponseShape.Shape.semanticOperationInitialCondition schema operation) = true := by
+  intro h
+  simp [ResponseShape.Shape.semanticOperationInitialCondition, conditionHoldsBool,
+    possibleTypesHoldBool_of_typeIncludesObject schema h]
+
+theorem conditionFromDirective?_possibleTypes_none
+    {directive : DirectiveApplication} {condition : ResponseShape.Condition} :
+    ResponseShape.Condition.fromDirective? directive = some condition ->
+      condition.possibleTypes = none := by
+  intro h
+  cases directive <;> rename_i ifArgument
+  · cases ifArgument <;> simp [ResponseShape.Condition.fromDirective?] at h
+    · rename_i value
+      cases value <;> simp at h
+      · cases h
+        rfl
+    · rename_i name
+      cases h
+      rfl
+  · cases ifArgument <;> simp [ResponseShape.Condition.fromDirective?] at h
+    · rename_i value
+      cases value <;> simp at h
+      · cases h
+        rfl
+    · rename_i name
+      cases h
+      rfl
+
+theorem conditionFromDirective?_holds (variableValues : Execution.VariableValues)
+    (runtimeType : Name) (directive : DirectiveApplication)
+    (condition : ResponseShape.Condition) :
+    ResponseShape.Condition.fromDirective? directive = some condition ->
+      Execution.directiveAllowsSelectionBool variableValues directive = true ->
+        conditionHoldsBool variableValues runtimeType condition = true := by
+  intro hcondition hallows
+  cases directive <;> rename_i ifArgument
+  · cases ifArgument <;> simp [ResponseShape.Condition.fromDirective?,
+      Execution.directiveAllowsSelectionBool, Execution.inputValueBoolean?,
+      conditionHoldsBool, possibleTypesHoldBool, booleanLiteralHoldsBool] at hcondition hallows ⊢
+    · rename_i value
+      cases value <;> simp at hcondition hallows ⊢
+      · cases hcondition
+        exact And.intro rfl (by
+          intro literal hmem
+          cases hmem)
+    · rename_i name
+      cases hcondition
+      exact And.intro rfl (by
+        intro literal hmem
+        simp at hmem
+        subst literal
+        exact hallows)
+  · cases ifArgument <;> simp [ResponseShape.Condition.fromDirective?,
+      Execution.directiveAllowsSelectionBool, Execution.inputValueBoolean?,
+      conditionHoldsBool, possibleTypesHoldBool, booleanLiteralHoldsBool] at hcondition hallows ⊢
+    · rename_i value
+      cases value <;> simp at hcondition hallows ⊢
+      · cases hcondition
+        exact And.intro rfl (by
+          intro literal hmem
+          cases hmem)
+    · rename_i name
+      cases hcondition
+      exact And.intro rfl (by
+        intro literal hmem
+        simp at hmem
+        subst literal
+        exact hallows)
+
+theorem conditionFromDirectives?_possibleTypes_none
+    {directives : List DirectiveApplication} {condition : ResponseShape.Condition} :
+    ResponseShape.Condition.fromDirectives? directives = some condition ->
+      condition.possibleTypes = none := by
+  intro h
+  induction directives generalizing condition with
+  | nil =>
+      simp [ResponseShape.Condition.fromDirectives?] at h
+      cases h
+      rfl
+  | cons directive rest ih =>
+      simp [ResponseShape.Condition.fromDirectives?] at h
+      cases hdirective : ResponseShape.Condition.fromDirective? directive with
+      | none =>
+          simp [hdirective] at h
+      | some directiveCondition =>
+          cases hrest : ResponseShape.Condition.fromDirectives? rest with
+          | none =>
+              simp [hdirective, hrest] at h
+          | some restCondition =>
+              simp [hdirective, hrest] at h
+              rcases h with ⟨_hsat, heq⟩
+              rw [← heq]
+              have hdirectiveNone :=
+                conditionFromDirective?_possibleTypes_none hdirective
+              have hrestNone := ih hrest
+              simp [ResponseShape.Condition.and, hdirectiveNone, hrestNone]
+
+theorem conditionFromDirectives?_holds (variableValues : Execution.VariableValues)
+    (runtimeType : Name) (directives : List DirectiveApplication)
+    (condition : ResponseShape.Condition) :
+    ResponseShape.Condition.fromDirectives? directives = some condition ->
+      Execution.selectionDirectivesAllowBool variableValues directives = true ->
+        conditionHoldsBool variableValues runtimeType condition = true := by
+  intro hcondition hallows
+  induction directives generalizing condition with
+  | nil =>
+      simp [ResponseShape.Condition.fromDirectives?, conditionHoldsBool,
+        possibleTypesHoldBool] at hcondition ⊢
+      cases hcondition
+      exact And.intro rfl (by
+        intro literal hmem
+        cases hmem)
+  | cons directive rest ih =>
+      simp [ResponseShape.Condition.fromDirectives?,
+        Execution.selectionDirectivesAllowBool] at hcondition hallows
+      cases hdirective : ResponseShape.Condition.fromDirective? directive with
+      | none =>
+          simp [hdirective] at hcondition
+      | some directiveCondition =>
+          cases hrest : ResponseShape.Condition.fromDirectives? rest with
+          | none =>
+              simp [hdirective, hrest] at hcondition
+          | some restCondition =>
+              simp [hdirective, hrest] at hcondition
+              rcases hcondition with ⟨_hsat, heq⟩
+              rw [← heq]
+              have hdirectiveHolds :=
+                conditionFromDirective?_holds variableValues runtimeType
+                  directive directiveCondition hdirective hallows.left
+              have hrestAllows :
+                  Execution.selectionDirectivesAllowBool variableValues rest = true := by
+                simpa [Execution.selectionDirectivesAllowBool] using hallows.right
+              have hrestHolds := ih restCondition hrest hrestAllows
+              have hrestNone := conditionFromDirectives?_possibleTypes_none hrest
+              exact conditionHoldsBool_and_right_none variableValues runtimeType
+                directiveCondition restCondition hdirectiveHolds hrestHolds hrestNone
 
 def variantHeaderActiveBool (variableValues : Execution.VariableValues)
     (runtimeType : Name) (header : ResponseShape.VariantHeader) : Bool :=
@@ -642,6 +888,34 @@ mutual
           && typedResponseConformsToShapeBool variableValues fuel value childShape)
         || typedVariantConformsToShapeBool variableValues fuel runtimeType value rest
 end
+
+theorem typedFieldsConformToShapeBool_nil (variableValues : Execution.VariableValues)
+    (fuel : Nat) (runtimeType : Name) (shape : ResponseShape.Shape) :
+    typedFieldsConformToShapeBool variableValues fuel runtimeType [] shape = true := by
+  cases fuel <;> cases shape <;> simp [typedFieldsConformToShapeBool]
+
+theorem typedVariantConformsToShapeBool_singleton
+    (variableValues : Execution.VariableValues) (fuel : Nat) (runtimeType : Name)
+    (value : TypedResponse) (header : ResponseShape.VariantHeader)
+    (childShape : ResponseShape.Shape) :
+    variantHeaderActiveBool variableValues runtimeType header = true ->
+      typedResponseConformsToShapeBool variableValues fuel value childShape = true ->
+        typedVariantConformsToShapeBool variableValues (fuel + 1) runtimeType value
+          [(header, childShape)] = true := by
+  intro hactive hchild
+  simp [typedVariantConformsToShapeBool, hactive, hchild]
+
+theorem typedFieldsConformToShapeBool_singleton
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (runtimeType responseName : Name) (value : TypedResponse)
+    (variants : List ResponseShape.Shape.Variant) :
+    typedVariantConformsToShapeBool variableValues fuel runtimeType value variants = true ->
+      typedFieldsConformToShapeBool variableValues (fuel + 1) runtimeType
+        [(responseName, value)] ⟨[(responseName, variants)]⟩ = true := by
+  intro hvariant
+  simp [typedFieldsConformToShapeBool, ResponseShape.Shape.lookupField, hvariant]
+  exact typedFieldsConformToShapeBool_nil variableValues fuel runtimeType
+    ⟨[(responseName, variants)]⟩
 
 def semanticOperationsEquivalentOnData (schema : Schema)
     (left right : Semantic.Operation) : Prop :=
@@ -713,6 +987,79 @@ def responseShapeCorrectForTypedExecution (schema : Schema)
         typedResponseConformsToShapeBool variableValues (operation.size + 1)
           (TypedExecution.executeSemanticQuery schema store variableValues operation root)
           (ResponseShape.Shape.ofSemanticOperation schema operation) = true
+
+def responseShapeCorrectForTypedExecutionAtRoot (schema : Schema)
+    (operation : Semantic.Operation) : Prop :=
+  ∀ store variableValues root,
+    store.wellTyped schema ->
+      root.wellTyped schema ->
+        schema.typeIncludesObject operation.rootType root.typeName ->
+          typedResponseConformsToShapeBool variableValues (operation.size + 1)
+            (TypedExecution.executeSemanticQuery schema store variableValues operation root)
+            (ResponseShape.Shape.ofSemanticOperation schema operation) = true
+
+theorem responseShapeCorrectForTypedExecution_emptySelection (schema : Schema)
+    (operation : Semantic.Operation) :
+    operation.selectionSet = [] ->
+      responseShapeCorrectForTypedExecution schema operation := by
+  intro hselection store variableValues root _hstore _hroot
+  cases operation with
+  | mk name rootType variableDefinitions selectionSet =>
+      simp at hselection
+      subst selectionSet
+      simp [TypedExecution.executeSemanticQuery, TypedExecution.executeSelectionSet,
+        Execution.executeSemanticQueryFuel, Semantic.Operation.size,
+        Semantic.SelectionSet.size, TypedExecution.executeCollectedFields,
+        Execution.collectFields,
+        ResponseShape.Shape.ofSemanticOperation, ResponseShape.Shape.semanticSelectionSetShape,
+        ResponseShape.Shape.semanticOperationShapeFuel,
+        ResponseShape.Shape.collectSelectionSetShapeFields, typedResponseConformsToShapeBool,
+        typedFieldsConformToShapeBool]
+
+theorem responseShapeCorrectForTypedExecutionAtRoot_emptySelection (schema : Schema)
+    (operation : Semantic.Operation) :
+    operation.selectionSet = [] ->
+      responseShapeCorrectForTypedExecutionAtRoot schema operation := by
+  intro hselection store variableValues root hstore hroot _hrootType
+  exact responseShapeCorrectForTypedExecution_emptySelection schema operation
+    hselection store variableValues root hstore hroot
+
+theorem responseShapeCorrectForTypedExecutionAtRoot_singleLeafNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument) :
+    responseShapeCorrectForTypedExecutionAtRoot schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := [.field responseName fieldName arguments [] []] } := by
+  intro store variableValues root _hstore _hroot hrootType
+  have hrootType' : schema.typeIncludesObject rootType root.typeName := hrootType
+  have hnonempty : ¬ schema.getPossibleTypes rootType = [] :=
+    possibleTypes_nonempty_of_typeIncludesObject schema hrootType'
+  simp [TypedExecution.executeSemanticQuery, Execution.executeSemanticQueryFuel,
+    Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+    TypedExecution.executeSelectionSet, Execution.collectFields, Execution.collectSelection,
+    Execution.selectionDirectivesAllowBool, Execution.mergeExecutableGroups,
+    Execution.addExecutableGroup, Execution.addExecutableFields,
+    TypedExecution.executeCollectedFields, TypedExecution.executeField,
+    Execution.mergedFieldSelectionSet, ResponseShape.Shape.ofSemanticOperation,
+    ResponseShape.Shape.semanticOperationShapeFuel,
+    ResponseShape.Shape.semanticSelectionSetShape,
+    ResponseShape.Shape.collectSelectionSetShapeFields,
+    ResponseShape.Shape.collectSelectionShapeFields,
+    ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+    ResponseShape.Shape.empty, ResponseShape.Condition.satisfiableBool,
+    ResponseShape.Condition.hasContradictionBool,
+    ResponseShape.BooleanLiteral.hasContradictionBool,
+    ResponseShape.Condition.possibleTypesEmptyBool,
+    ResponseShape.Condition.and, ResponseShape.Shape.semanticOperationInitialCondition,
+    hnonempty, ResponseShape.Shape.mergeFields, ResponseShape.Shape.merge,
+    ResponseShape.Shape.size, ResponseShape.Shape.fieldsSize,
+    ResponseShape.Shape.variantsSize, ResponseShape.Shape.mergeWithFuel,
+    ResponseShape.Shape.mergeFieldsWithFuel, typedResponseConformsToShapeBool,
+    typedFieldsConformToShapeBool, typedVariantConformsToShapeBool,
+    ResponseShape.Shape.lookupField]
 
 def normalFormPreservesResponseShape (schema : Schema)
     (operation : Semantic.Operation) : Prop :=

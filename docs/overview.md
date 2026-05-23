@@ -112,6 +112,7 @@ The condition utility layer supports the next canonicalization step:
 - recursive shape well-formedness, which requires those per-key compatibility checks at every object node.
 - response-key uniqueness for object shapes, so each response key owns one variant list even when variants are not normalized.
 - propositional compatibility and well-formedness predicates with soundness/completeness bridges to the boolean checks.
+- response-shape construction prunes unsatisfiable directive/type-condition branches.
 
 ### Shape And Normal Form
 

@@ -150,7 +150,8 @@ def fromDirectives? : List DirectiveApplication -> Option Condition
   | directive :: rest => do
       let directiveCondition <- fromDirective? directive
       let restCondition <- fromDirectives? rest
-      some (directiveCondition.and restCondition)
+      let combined := directiveCondition.and restCondition
+      if combined.satisfiableBool then some combined else none
 
 end Condition
 
@@ -857,14 +858,17 @@ mutual
         | none => []
         | some directiveCondition =>
             let fieldCondition := condition.and directiveCondition
-            let childType := (schema.fieldReturnType? parentType fieldName).getD fieldName
-            let childShape :=
-              match selectionSet with
-              | [] => .scalar
-              | _ =>
-                  .object (operationSelectionSetShape schema fragments fuel
-                    childType fieldCondition selectionSet)
-            [(responseName, [((fieldCondition, selectedField fieldName arguments), childShape)])]
+            if fieldCondition.satisfiableBool then
+              let childType := (schema.fieldReturnType? parentType fieldName).getD fieldName
+              let childShape :=
+                match selectionSet with
+                | [] => .scalar
+                | _ =>
+                    .object (operationSelectionSetShape schema fragments fuel
+                      childType fieldCondition selectionSet)
+              [(responseName, [((fieldCondition, selectedField fieldName arguments), childShape)])]
+            else
+              []
     | fuel + 1, _parentType, condition, .fragmentSpread fragmentName directives =>
         match Condition.fromDirectives? directives with
         | none => []
@@ -900,9 +904,12 @@ mutual
     | 0, _parentType, _condition, _selectionSet => []
     | _fuel + 1, _parentType, _condition, [] => []
     | fuel + 1, parentType, condition, selection :: rest =>
-        mergeFields
-          (operationSelectionShape schema fragments (fuel + 1) parentType condition selection)
-          (operationSelectionSetShape schema fragments (fuel + 1) parentType condition rest)
+        if condition.satisfiableBool then
+          mergeFields
+            (operationSelectionShape schema fragments (fuel + 1) parentType condition selection)
+            (operationSelectionSetShape schema fragments (fuel + 1) parentType condition rest)
+        else
+          []
 end
 
 def operationShapeFuel (operation : Operation) : Nat :=

@@ -49,9 +49,10 @@ behavior when working on response-shape soundness.
 
 Ground normal form correctness is proved for direct single-leaf selections with
 or without modeled directives, inline-fragment single-leaf selections without
-directives, and object-type typed inline fragments with modeled directives. The
-next proof boundary is to extend response-shape soundness and normal-form
-preservation past single-field base cases.
+directives, object-type typed inline fragments with modeled directives, and two
+direct no-directive leaf fields with distinct response names. The next proof
+boundary is to generalize the distinct direct leaf-field case to lists before
+tackling same-response-name field merging.
 
 Directive-specific data-model proofs live in `GraphQL/DataModel/Directives.lean`.
 That module currently proves single-leaf response-shape soundness for modeled
@@ -74,6 +75,7 @@ lake lint
 - `docs/references.md`: GraphCoQL reference notes and proof-strategy context.
 - `GraphQL/DataModel.lean`: typed store model and correctness predicates.
 - `GraphQL/DataModel/Directives.lean`: `@skip`/`@include` response-shape proofs.
+- `GraphQL/DataModel/SelectionSet.lean`: multi-selection response-shape proofs.
 - `GraphQL/ResponseShape.lean`: response-shape construction and inclusion.
 - `GraphQL/NormalForm.lean`: ground normal form scaffold.
 - `GraphQL/Execution.lean`: resolver-based execution used by the data model.

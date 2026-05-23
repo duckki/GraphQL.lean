@@ -64,6 +64,8 @@ The main modules are:
   response trees, response-shape conformance checks, and correctness predicates.
 - `GraphQL.DataModel.Directives`: directive-sensitive response-shape soundness
   proofs for modeled `@skip` and `@include` base cases.
+- `GraphQL.DataModel.SelectionSet`: multi-selection proof cases, starting with
+  distinct direct leaf response names.
 
 `GraphQL.DataModel` is the current bridge from resolver execution to proof
 semantics. It models typed object identities, field facts keyed by already
@@ -102,7 +104,8 @@ The next proof ladder is:
    Done for empty selections, no-directive single-leaf selections, and parsed
    `@skip`/`@include` single-leaf selections at a known root runtime type,
    including directives on direct fields, untyped inline fragments, and typed
-   inline fragments.
+   inline fragments. Also done for two direct no-directive leaf fields with
+   distinct response names.
 3. Prove response-shape stability under semantic lowering from raw operations,
    assuming validation supplies fragment existence and acyclicity.
 4. Prove normalizer output satisfies `NormalForm.semanticOperationNormal` under
@@ -111,12 +114,14 @@ The next proof ladder is:
    `DataModel.groundNormalFormCorrect`. Done for direct single-leaf selections
    with or without modeled directives, inline-fragment single-leaf selections
    without directives, and object-type typed inline fragments with modeled
-   directives.
+   directives. Also done for two direct no-directive leaf fields with distinct
+   response names.
 6. Prove normal form preserves response shape:
    `DataModel.normalFormPreservesResponseShape`. Done for direct single-leaf
    selections with or without modeled directives, and inline-fragment single-leaf
    selections without directives. Also done for object-type typed inline
-   fragments with modeled directives.
+   fragments with modeled directives and two direct no-directive leaf fields
+   with distinct response names.
 7. Only after those proofs, revisit operation equivalence and minimization.
 
 ## Related Documentation

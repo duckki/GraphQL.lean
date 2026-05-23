@@ -217,6 +217,39 @@ theorem normalizeSemanticOperation_singleLeafWithDirectives (schema : Schema)
       Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
       Semantic.Selection.subselections]
 
+theorem normalizeSemanticOperation_twoDistinctLeafNoDirectives (schema : Schema)
+    (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (leftResponseName leftFieldName : Name) (leftArguments : List Argument)
+    (rightResponseName rightFieldName : Name) (rightArguments : List Argument) :
+    leftResponseName ≠ rightResponseName ->
+      normalizeSemanticOperation schema
+        { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := [
+            .field leftResponseName leftFieldName leftArguments [] [],
+            .field rightResponseName rightFieldName rightArguments [] []
+          ] }
+        = { name := name,
+            rootType := rootType,
+            variableDefinitions := variableDefinitions,
+            selectionSet := [
+              .field leftResponseName leftFieldName leftArguments [] [],
+              .field rightResponseName rightFieldName rightArguments [] []
+            ] } := by
+  intro hdistinct
+  have hdistinct' : rightResponseName ≠ leftResponseName := Ne.symm hdistinct
+  cases hleft : schema.fieldReturnType? rootType leftFieldName <;>
+    cases hright : schema.fieldReturnType? rootType rightFieldName <;>
+      simp [hleft, hright, hdistinct', normalizeSemanticOperation,
+        normalizeSelectionSet, mergeFieldSelections.normalizeSelectionSet,
+        mergeFieldSelections, Semantic.Operation.size, Semantic.SelectionSet.size,
+        Semantic.Selection.size, Semantic.SelectionSet.fieldsWithResponseName,
+        Semantic.SelectionSet.withoutFieldsWithResponseName,
+        Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
+        Semantic.Selection.subselections]
+
 theorem normalizeSemanticOperation_inlineFragmentSingleLeaf (schema : Schema)
     (name : Option Name) (rootType : Name)
     (variableDefinitions : List VariableDefinition)

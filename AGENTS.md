@@ -36,12 +36,21 @@ store-backed resolvers. Data-model operation equivalence has reflexivity,
 symmetry, and transitivity theorems. Typed execution has erasure theorems ending
 at `DataModel.TypedExecution.executeOperation_erase`.
 
+`DataModel.groundNormalFormCorrect` now uses
+`DataModel.semanticOperationsEquivalentOnDataWithFuel` with the source
+operation's `Execution.executeSemanticQueryFuel` for both the original and
+normalized operations. This is intentional: normalizing can shrink syntax, and
+the bounded executor should not count that fuel-budget change as a semantic
+change.
+
 `GraphQL.ResponseShape` now resets child-shape possible runtime types to the
 field return type through `ResponseShape.Condition.forChildType`. Keep this
 behavior when working on response-shape soundness.
 
-The next proof boundary is `DataModel.responseShapeCorrectForTypedExecution`,
-followed by `DataModel.normalFormPreservesResponseShape`.
+Ground normal form correctness is proved for direct single-leaf selections and
+inline-fragment single-leaf selections without directives. The next proof
+boundary is to extend response-shape soundness and normal-form preservation past
+single-field base cases.
 
 The latest successful checks were:
 

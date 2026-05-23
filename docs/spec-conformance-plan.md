@@ -75,6 +75,14 @@ reflexivity, symmetry, and transitivity theorems. Typed execution also has
 erasure theorems through `TypedExecution.executeOperation_erase`, connecting
 typed responses back to the existing `GraphQL.Execution.Response` semantics.
 
+`DataModel.groundNormalFormCorrect` is stated over a shared source-operation
+execution fuel budget. This avoids treating normalizer size changes as semantic
+changes in the bounded executor: the original and normalized operations are run
+with `Execution.executeSemanticQueryFuel operation`. The self-budgeted
+`semanticOperationsEquivalentOnData` relation remains available for direct
+operation equivalence, but ground normal form proofs should use
+`semanticOperationsEquivalentOnDataWithFuel`.
+
 `GraphQL.ResponseShape.Condition.forChildType` is important for nested object
 fields: child shapes must reset possible runtime types to the field return type
 instead of inheriting the parent object's possible types.
@@ -94,7 +102,8 @@ The next proof ladder is:
 4. Prove normalizer output satisfies `NormalForm.semanticOperationNormal` under
    schema well-formedness and operation validity assumptions.
 5. Prove ground normal form semantic preservation:
-   `DataModel.groundNormalFormCorrect`.
+   `DataModel.groundNormalFormCorrect`. Done for direct single-leaf selections
+   and inline-fragment single-leaf selections without directives.
 6. Prove normal form preserves response shape:
    `DataModel.normalFormPreservesResponseShape`.
 7. Only after those proofs, revisit operation equivalence and minimization.

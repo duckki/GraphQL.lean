@@ -207,6 +207,12 @@ def executeOperation (schema : Schema) (store : Store)
   Execution.executeQuery schema store.resolvers variableValues
     operation root.toExecutionValue
 
+def executeSemanticQueryWithFuel (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (operation : Semantic.Operation) (root : Root) : Execution.Response :=
+  .object (Execution.executeSelectionSet schema store.resolvers variableValues
+    fuel operation.rootType root.toExecutionValue operation.selectionSet)
+
 theorem executeSemanticQuery_usesStoreResolvers (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues)
     (operation : Semantic.Operation) (root : Root) :
@@ -221,6 +227,14 @@ theorem executeOperation_usesStoreResolvers (schema : Schema) (store : Store)
     executeOperation schema store variableValues operation root
       = Execution.executeQuery schema store.resolvers variableValues
         operation root.toExecutionValue := by
+  rfl
+
+theorem executeSemanticQuery_eq_executeSemanticQueryWithFuel (schema : Schema)
+    (store : Store) (variableValues : Execution.VariableValues)
+    (operation : Semantic.Operation) (root : Root) :
+    executeSemanticQuery schema store variableValues operation root
+      = executeSemanticQueryWithFuel schema store variableValues
+        (Execution.executeSemanticQueryFuel operation) operation root := by
   rfl
 
 -- Typed response trees retain runtime object type so response-shape conditions can be
@@ -408,6 +422,13 @@ def executeSemanticQuery (schema : Schema) (store : Store)
       (Execution.executeSemanticQueryFuel operation) operation.rootType
       (.object root.typeName root.id) operation.selectionSet)
 
+def executeSemanticQueryWithFuel (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (operation : Semantic.Operation) (root : Root) : TypedResponse :=
+  .object root.typeName
+    (executeSelectionSet schema store variableValues fuel operation.rootType
+      (.object root.typeName root.id) operation.selectionSet)
+
 def executeOperation (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues)
     (operation : Operation) (root : Root) : TypedResponse :=
@@ -563,6 +584,16 @@ theorem executeSemanticQuery_erase (schema : Schema) (store : Store)
       = DataModel.executeSemanticQuery schema store variableValues operation root := by
   simp [executeSemanticQuery, DataModel.executeSemanticQuery,
     Execution.executeSemanticQuery, Root.toExecutionValue, executeSelectionSet_eraseFields]
+
+theorem executeSemanticQueryWithFuel_erase (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (operation : Semantic.Operation) (root : Root) :
+    TypedResponse.erase
+        (executeSemanticQueryWithFuel schema store variableValues fuel operation root)
+      = DataModel.executeSemanticQueryWithFuel schema store variableValues fuel
+        operation root := by
+  simp [executeSemanticQueryWithFuel, DataModel.executeSemanticQueryWithFuel,
+    Root.toExecutionValue, executeSelectionSet_eraseFields]
 
 theorem executeOperation_erase (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues)
@@ -949,9 +980,23 @@ def semanticOperationsEquivalentOnData (schema : Schema)
         executeSemanticQuery schema store variableValues left root
           = executeSemanticQuery schema store variableValues right root
 
+def semanticOperationsEquivalentOnDataWithFuel (schema : Schema)
+    (fuel : Nat) (left right : Semantic.Operation) : Prop :=
+  ∀ store variableValues root,
+    store.wellTyped schema ->
+      root.wellTyped schema ->
+        executeSemanticQueryWithFuel schema store variableValues fuel left root
+          = executeSemanticQueryWithFuel schema store variableValues fuel right root
+
 theorem semanticOperationsEquivalentOnData_refl (schema : Schema)
     (operation : Semantic.Operation) :
     semanticOperationsEquivalentOnData schema operation operation := by
+  intro _store _variableValues _root _hstore _hroot
+  rfl
+
+theorem semanticOperationsEquivalentOnDataWithFuel_refl (schema : Schema)
+    (fuel : Nat) (operation : Semantic.Operation) :
+    semanticOperationsEquivalentOnDataWithFuel schema fuel operation operation := by
   intro _store _variableValues _root _hstore _hroot
   rfl
 
@@ -962,11 +1007,28 @@ theorem semanticOperationsEquivalentOnData_symm (schema : Schema)
   intro hequivalent store variableValues root hstore hroot
   exact Eq.symm (hequivalent store variableValues root hstore hroot)
 
+theorem semanticOperationsEquivalentOnDataWithFuel_symm (schema : Schema)
+    {fuel : Nat} {left right : Semantic.Operation} :
+    semanticOperationsEquivalentOnDataWithFuel schema fuel left right ->
+      semanticOperationsEquivalentOnDataWithFuel schema fuel right left := by
+  intro hequivalent store variableValues root hstore hroot
+  exact Eq.symm (hequivalent store variableValues root hstore hroot)
+
 theorem semanticOperationsEquivalentOnData_trans (schema : Schema)
     {left middle right : Semantic.Operation} :
     semanticOperationsEquivalentOnData schema left middle ->
       semanticOperationsEquivalentOnData schema middle right ->
         semanticOperationsEquivalentOnData schema left right := by
+  intro hleft hright store variableValues root hstore hroot
+  exact Eq.trans
+    (hleft store variableValues root hstore hroot)
+    (hright store variableValues root hstore hroot)
+
+theorem semanticOperationsEquivalentOnDataWithFuel_trans (schema : Schema)
+    {fuel : Nat} {left middle right : Semantic.Operation} :
+    semanticOperationsEquivalentOnDataWithFuel schema fuel left middle ->
+      semanticOperationsEquivalentOnDataWithFuel schema fuel middle right ->
+        semanticOperationsEquivalentOnDataWithFuel schema fuel left right := by
   intro hleft hright store variableValues root hstore hroot
   exact Eq.trans
     (hleft store variableValues root hstore hroot)
@@ -993,15 +1055,17 @@ theorem operationsEquivalentOnData_trans (schema : Schema) {left middle right : 
 
 def groundNormalFormCorrect (schema : Schema)
     (operation : Semantic.Operation) : Prop :=
-  semanticOperationsEquivalentOnData schema operation
+  semanticOperationsEquivalentOnDataWithFuel schema
+    (Execution.executeSemanticQueryFuel operation) operation
     (NormalForm.normalizeSemanticOperation schema operation)
 
 theorem normalizedEquivalentOnData_of_groundNormalFormCorrect (schema : Schema)
     (operation : Semantic.Operation) :
     groundNormalFormCorrect schema operation ->
-      semanticOperationsEquivalentOnData schema
+      semanticOperationsEquivalentOnDataWithFuel schema
+        (Execution.executeSemanticQueryFuel operation)
         (NormalForm.normalizeSemanticOperation schema operation) operation := by
-  exact semanticOperationsEquivalentOnData_symm schema
+  exact semanticOperationsEquivalentOnDataWithFuel_symm schema
 
 theorem groundNormalFormCorrect_singleLeafNoDirectives (schema : Schema)
     (name : Option Name) (rootType : Name)
@@ -1014,7 +1078,28 @@ theorem groundNormalFormCorrect_singleLeafNoDirectives (schema : Schema)
         selectionSet := [.field responseName fieldName arguments [] []] } := by
   rw [groundNormalFormCorrect]
   rw [NormalForm.normalizeSemanticOperation_singleLeaf]
-  exact semanticOperationsEquivalentOnData_refl schema _
+  exact semanticOperationsEquivalentOnDataWithFuel_refl schema _ _
+
+theorem groundNormalFormCorrect_inlineFragmentSingleLeafNoDirectives (schema : Schema)
+    (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument) :
+    groundNormalFormCorrect schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := [.inlineFragment none []
+          [.field responseName fieldName arguments [] []]] } := by
+  rw [groundNormalFormCorrect]
+  rw [NormalForm.normalizeSemanticOperation_inlineFragmentSingleLeaf]
+  intro store variableValues root _hstore _hroot
+  simp [executeSemanticQueryWithFuel, Execution.executeSemanticQueryFuel,
+    Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+    Execution.executeSelectionSet, Execution.collectFields, Execution.collectSelection,
+    Execution.selectionDirectivesAllowBool, Execution.mergeExecutableGroups,
+    Execution.addExecutableGroup, Execution.addExecutableFields,
+    Execution.executeCollectedFields, Execution.executeField,
+    Execution.mergedFieldSelectionSet]
 
 def responseShapeCorrectForTypedExecution (schema : Schema)
     (operation : Semantic.Operation) : Prop :=

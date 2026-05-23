@@ -713,6 +713,15 @@ theorem semanticOperationInitialCondition_holds (schema : Schema)
   simp [ResponseShape.Shape.semanticOperationInitialCondition, conditionHoldsBool,
     possibleTypesHoldBool_of_typeIncludesObject schema h]
 
+theorem doesFragmentTypeApplyBool_object (schema : Schema)
+    (parentType runtimeType typeCondition : Name) (id : ObjectId) :
+    Execution.doesFragmentTypeApplyBool schema parentType
+        (Execution.Value.object runtimeType id) typeCondition = true ->
+      schema.typeIncludesObject typeCondition runtimeType := by
+  intro h
+  simpa [Execution.doesFragmentTypeApplyBool, Execution.runtimeObjectType?,
+    Schema.typeIncludesObject, Schema.typeIncludesObjectBool] using h
+
 theorem conditionFromDirective?_possibleTypes_none
     {directive : DirectiveApplication} {condition : ResponseShape.Condition} :
     ResponseShape.Condition.fromDirective? directive = some condition ->
@@ -979,6 +988,19 @@ theorem normalizedEquivalentOnData_of_groundNormalFormCorrect (schema : Schema)
         (NormalForm.normalizeSemanticOperation schema operation) operation := by
   exact semanticOperationsEquivalentOnData_symm schema
 
+theorem groundNormalFormCorrect_singleLeafNoDirectives (schema : Schema)
+    (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument) :
+    groundNormalFormCorrect schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := [.field responseName fieldName arguments [] []] } := by
+  rw [groundNormalFormCorrect]
+  rw [NormalForm.normalizeSemanticOperation_singleLeaf]
+  exact semanticOperationsEquivalentOnData_refl schema _
+
 def responseShapeCorrectForTypedExecution (schema : Schema)
     (operation : Semantic.Operation) : Prop :=
   ∀ store variableValues root,
@@ -1033,6 +1055,44 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_singleLeafNoDirectives
         rootType := rootType,
         variableDefinitions := variableDefinitions,
         selectionSet := [.field responseName fieldName arguments [] []] } := by
+  intro store variableValues root _hstore _hroot hrootType
+  have hrootType' : schema.typeIncludesObject rootType root.typeName := hrootType
+  have hnonempty : ¬ schema.getPossibleTypes rootType = [] :=
+    possibleTypes_nonempty_of_typeIncludesObject schema hrootType'
+  simp [TypedExecution.executeSemanticQuery, Execution.executeSemanticQueryFuel,
+    Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+    TypedExecution.executeSelectionSet, Execution.collectFields, Execution.collectSelection,
+    Execution.selectionDirectivesAllowBool, Execution.mergeExecutableGroups,
+    Execution.addExecutableGroup, Execution.addExecutableFields,
+    TypedExecution.executeCollectedFields, TypedExecution.executeField,
+    Execution.mergedFieldSelectionSet, ResponseShape.Shape.ofSemanticOperation,
+    ResponseShape.Shape.semanticOperationShapeFuel,
+    ResponseShape.Shape.semanticSelectionSetShape,
+    ResponseShape.Shape.collectSelectionSetShapeFields,
+    ResponseShape.Shape.collectSelectionShapeFields,
+    ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+    ResponseShape.Shape.empty, ResponseShape.Condition.satisfiableBool,
+    ResponseShape.Condition.hasContradictionBool,
+    ResponseShape.BooleanLiteral.hasContradictionBool,
+    ResponseShape.Condition.possibleTypesEmptyBool,
+    ResponseShape.Condition.and, ResponseShape.Shape.semanticOperationInitialCondition,
+    hnonempty, ResponseShape.Shape.mergeFields, ResponseShape.Shape.merge,
+    ResponseShape.Shape.size, ResponseShape.Shape.fieldsSize,
+    ResponseShape.Shape.variantsSize, ResponseShape.Shape.mergeWithFuel,
+    ResponseShape.Shape.mergeFieldsWithFuel, typedResponseConformsToShapeBool,
+    typedFieldsConformToShapeBool, typedVariantConformsToShapeBool,
+    ResponseShape.Shape.lookupField]
+
+theorem responseShapeCorrectForTypedExecutionAtRoot_inlineFragmentSingleLeafNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument) :
+    responseShapeCorrectForTypedExecutionAtRoot schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := [.inlineFragment none []
+          [.field responseName fieldName arguments [] []]] } := by
   intro store variableValues root _hstore _hroot hrootType
   have hrootType' : schema.typeIncludesObject rootType root.typeName := hrootType
   have hnonempty : ¬ schema.getPossibleTypes rootType = [] :=

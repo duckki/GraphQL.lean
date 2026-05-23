@@ -173,6 +173,27 @@ theorem normalizeSemanticOperation_variableDefinitions (schema : Schema)
       = operation.variableDefinitions := by
   rfl
 
+theorem normalizeSemanticOperation_singleLeaf (schema : Schema) (name : Option Name)
+    (rootType : Name) (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument) :
+    normalizeSemanticOperation schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := [.field responseName fieldName arguments [] []] }
+      = { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := [.field responseName fieldName arguments [] []] } := by
+  cases hfield : schema.fieldReturnType? rootType fieldName <;>
+    simp [hfield, normalizeSemanticOperation, normalizeSelectionSet,
+      mergeFieldSelections.normalizeSelectionSet, mergeFieldSelections,
+      Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+      Semantic.SelectionSet.fieldsWithResponseName,
+      Semantic.SelectionSet.withoutFieldsWithResponseName,
+      Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
+      Semantic.Selection.subselections]
+
 -- Spec-inspired operation normalization: non-spec transformation; currently clears named
 -- fragments via `Semantic.fromOperation` and has only the fragment-empty theorem below.
 def normalizeOperation (schema : Schema) (operation : GraphQL.Operation) :

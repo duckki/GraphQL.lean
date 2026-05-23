@@ -17,6 +17,23 @@ def lookup (name : Name) : List (Name × Shape) -> Option Shape
       if fieldName = name then some shape else lookup name rest
 
 mutual
+  def includesBool : Shape -> Shape -> Bool
+    | .scalar, .scalar => true
+    | .object requiredFields, .object availableFields =>
+        includesFieldsBool requiredFields availableFields
+    | _, _ => false
+
+  def includesFieldsBool : List (Name × Shape) -> List (Name × Shape) -> Bool
+    | [], _availableFields => true
+    | (name, requiredShape) :: requiredRest, availableFields =>
+        match lookup name availableFields with
+        | none => false
+        | some availableShape =>
+            includesBool requiredShape availableShape
+              && includesFieldsBool requiredRest availableFields
+end
+
+mutual
   inductive Includes : Shape -> Shape -> Prop where
     | scalar : Includes .scalar .scalar
     | object {requiredFields availableFields : List (Name × Shape)} :
@@ -39,6 +56,71 @@ def includes (required available : Shape) : Prop :=
 
 def equivalent (left right : Shape) : Prop :=
   includes left right ∧ includes right left
+
+def equivalentBool (left right : Shape) : Bool :=
+  includesBool left right && includesBool right left
+
+mutual
+  theorem includesBool_sound {required available : Shape} :
+      includesBool required available = true -> Includes required available := by
+    cases required <;> cases available <;> intro h <;> simp [includesBool] at h
+    · exact Includes.scalar
+    · exact Includes.object (includesFieldsBool_sound h)
+
+  theorem includesFieldsBool_sound {required available : List (Name × Shape)} :
+      includesFieldsBool required available = true ->
+        IncludesFields required available := by
+    cases required with
+    | nil =>
+        intro _h
+        exact IncludesFields.nil
+    | cons requiredField requiredRest =>
+        cases requiredField with
+        | mk name requiredShape =>
+            intro h
+            simp [includesFieldsBool] at h
+            cases hlookup : lookup name available with
+            | none =>
+                simp [hlookup] at h
+            | some availableShape =>
+                simp [hlookup] at h
+                exact IncludesFields.cons hlookup
+                  (includesBool_sound h.left)
+                  (includesFieldsBool_sound h.right)
+end
+
+mutual
+  theorem includesBool_complete {required available : Shape} :
+      Includes required available -> includesBool required available = true := by
+    intro h
+    cases h with
+    | scalar =>
+        simp [includesBool]
+    | object hfields =>
+        simp [includesBool, includesFieldsBool_complete hfields]
+
+  theorem includesFieldsBool_complete {required available : List (Name × Shape)} :
+      IncludesFields required available ->
+        includesFieldsBool required available = true := by
+    intro h
+    cases h with
+    | nil =>
+        simp [includesFieldsBool]
+    | cons hlookup hshape hrest =>
+        simp [includesFieldsBool, hlookup, includesBool_complete hshape,
+          includesFieldsBool_complete hrest]
+end
+
+theorem equivalentBool_sound {left right : Shape} :
+    equivalentBool left right = true -> equivalent left right := by
+  intro h
+  simp [equivalentBool] at h
+  exact And.intro (includesBool_sound h.left) (includesBool_sound h.right)
+
+theorem equivalentBool_complete {left right : Shape} :
+    equivalent left right -> equivalentBool left right = true := by
+  intro h
+  simp [equivalentBool, includesBool_complete h.left, includesBool_complete h.right]
 
 theorem scalar_equivalent : equivalent scalar scalar := by
   exact And.intro Includes.scalar Includes.scalar

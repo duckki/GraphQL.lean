@@ -1753,6 +1753,125 @@ theorem normalFormPreservesResponseShape_twoSameLeafNoDirectives
     (normalFormPreservesResponseShapeBool_twoSameLeafNoDirectives schema name rootType
       variableDefinitions responseName fieldName arguments)
 
+set_option linter.unusedSimpArgs false in
+theorem normalFormPreservesResponseShapeBool_twoSameCompositeDistinctLeafNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (parentResponseName parentFieldName : Name) (parentArguments : List Argument)
+    (leftResponseName leftFieldName : Name) (leftArguments : List Argument)
+    (rightResponseName rightFieldName : Name) (rightArguments : List Argument) :
+    leftResponseName ≠ rightResponseName ->
+      normalFormPreservesResponseShapeBool schema
+        { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := [
+            .field parentResponseName parentFieldName parentArguments [] [
+              .field leftResponseName leftFieldName leftArguments [] []
+            ],
+            .field parentResponseName parentFieldName parentArguments [] [
+              .field rightResponseName rightFieldName rightArguments [] []
+            ]
+          ] } = true := by
+  intro hdistinct
+  have hdistinct' : rightResponseName ≠ leftResponseName := Ne.symm hdistinct
+  let childType := (schema.fieldReturnType? rootType parentFieldName).getD parentFieldName
+  rw [normalFormPreservesResponseShapeBool]
+  rw [NormalForm.normalizeSemanticOperation_twoSameCompositeDistinctLeafNoDirectives
+    schema name rootType variableDefinitions parentResponseName parentFieldName
+    parentArguments leftResponseName leftFieldName leftArguments rightResponseName
+    rightFieldName rightArguments hdistinct]
+  by_cases hrootEmpty : schema.getPossibleTypes rootType = []
+  · simp [ResponseShape.Shape.ofSemanticOperation,
+      ResponseShape.Shape.semanticOperationShapeFuel,
+      Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+      ResponseShape.Shape.semanticSelectionSetShape,
+      ResponseShape.Shape.collectSelectionSetShapeFields,
+      ResponseShape.Shape.collectSelectionShapeFields,
+      ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+      ResponseShape.Shape.empty, ResponseShape.Condition.satisfiableBool,
+      ResponseShape.Condition.hasContradictionBool,
+      ResponseShape.BooleanLiteral.hasContradictionBool,
+      ResponseShape.Condition.possibleTypesEmptyBool,
+      ResponseShape.Condition.and, ResponseShape.Shape.semanticOperationInitialCondition,
+      hrootEmpty, ResponseShape.Shape.equivalentBool, ResponseShape.Shape.includesBool,
+      ResponseShape.Shape.includesFieldsBool]
+  · by_cases hchildEmpty : schema.getPossibleTypes childType = []
+    · simp [childType, ResponseShape.Shape.ofSemanticOperation,
+        ResponseShape.Shape.semanticOperationShapeFuel,
+        Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+        ResponseShape.Shape.semanticSelectionSetShape,
+        ResponseShape.Shape.collectSelectionSetShapeFields,
+        ResponseShape.Shape.collectSelectionShapeFields,
+        ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+        ResponseShape.Shape.empty, ResponseShape.Condition.satisfiableBool,
+        ResponseShape.Condition.hasContradictionBool,
+        ResponseShape.BooleanLiteral.hasContradictionBool,
+        ResponseShape.Condition.possibleTypesEmptyBool,
+        ResponseShape.Condition.and, ResponseShape.Shape.semanticOperationInitialCondition,
+        ResponseShape.Condition.forChildType, hrootEmpty, hchildEmpty,
+        ResponseShape.Shape.mergeFields, ResponseShape.Shape.merge,
+        ResponseShape.Shape.size, ResponseShape.Shape.fieldsSize,
+        ResponseShape.Shape.variantsSize, ResponseShape.Shape.mergeWithFuel,
+        ResponseShape.Shape.mergeFieldsWithFuel, ResponseShape.Shape.mergeVariantsWithFuel,
+        ResponseShape.Shape.mergeFields_singleton_empty_self,
+        ResponseShape.Shape.equivalentBool, ResponseShape.Shape.includesBool,
+        ResponseShape.Shape.includesFieldsBool, ResponseShape.Shape.includesVariantsBool,
+        ResponseShape.Shape.lookupField, ResponseShape.Shape.lookupIncludingVariant,
+        ResponseShape.VariantHeader.eqBool_self,
+        ResponseShape.VariantHeader.includedByBool_self,
+        ResponseShape.Shape.empty_includesBool]
+    · simp [childType, ResponseShape.Shape.ofSemanticOperation,
+        ResponseShape.Shape.semanticOperationShapeFuel,
+        Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+        ResponseShape.Shape.semanticSelectionSetShape,
+        ResponseShape.Shape.collectSelectionSetShapeFields,
+        ResponseShape.Shape.collectSelectionShapeFields,
+        ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+        ResponseShape.Shape.empty, ResponseShape.Condition.satisfiableBool,
+        ResponseShape.Condition.hasContradictionBool,
+        ResponseShape.BooleanLiteral.hasContradictionBool,
+        ResponseShape.Condition.possibleTypesEmptyBool,
+        ResponseShape.Condition.and, ResponseShape.Shape.semanticOperationInitialCondition,
+        ResponseShape.Condition.forChildType, hrootEmpty, hchildEmpty, hdistinct, hdistinct',
+        LeafField.mergeFields_parentVariant_twoChildShapeFields,
+        ResponseShape.Shape.mergeFields, ResponseShape.Shape.merge,
+        ResponseShape.Shape.size, ResponseShape.Shape.fieldsSize,
+        ResponseShape.Shape.variantsSize, ResponseShape.Shape.mergeWithFuel,
+        ResponseShape.Shape.mergeFieldsWithFuel, ResponseShape.Shape.mergeVariantsWithFuel,
+        ResponseShape.Shape.equivalentBool, ResponseShape.Shape.includesBool,
+        ResponseShape.Shape.includesFieldsBool, ResponseShape.Shape.includesVariantsBool,
+        ResponseShape.Shape.lookupField, ResponseShape.Shape.lookupIncludingVariant,
+        ResponseShape.VariantHeader.eqBool_self,
+        ResponseShape.VariantHeader.includedByBool_self,
+        ResponseShape.Shape.empty_includesBool]
+
+theorem normalFormPreservesResponseShape_twoSameCompositeDistinctLeafNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (parentResponseName parentFieldName : Name) (parentArguments : List Argument)
+    (leftResponseName leftFieldName : Name) (leftArguments : List Argument)
+    (rightResponseName rightFieldName : Name) (rightArguments : List Argument) :
+    leftResponseName ≠ rightResponseName ->
+      normalFormPreservesResponseShape schema
+        { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := [
+            .field parentResponseName parentFieldName parentArguments [] [
+              .field leftResponseName leftFieldName leftArguments [] []
+            ],
+            .field parentResponseName parentFieldName parentArguments [] [
+              .field rightResponseName rightFieldName rightArguments [] []
+            ]
+          ] } := by
+  intro hdistinct
+  exact normalFormPreservesResponseShapeBool_sound schema _
+    (normalFormPreservesResponseShapeBool_twoSameCompositeDistinctLeafNoDirectives schema name
+      rootType variableDefinitions parentResponseName parentFieldName parentArguments
+      leftResponseName leftFieldName leftArguments rightResponseName rightFieldName
+      rightArguments hdistinct)
+
 theorem normalFormPreservesResponseShapeBool_distinctLeafFieldsNoDirectives
     (schema : Schema) (name : Option Name) (rootType : Name)
     (variableDefinitions : List VariableDefinition) (fields : List LeafField) :

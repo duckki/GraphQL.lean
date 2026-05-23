@@ -71,10 +71,17 @@ field merging has started: identical duplicate direct leaf fields are covered by
 The first composite merge case,
 `NormalForm.normalizeSemanticOperation_twoSameCompositeDistinctLeafNoDirectives`,
 also has ground semantic preservation in
-`DataModel.groundNormalFormCorrect_twoSameCompositeDistinctLeafNoDirectives`.
-The next proof boundary is response-shape preservation for that composite merge,
-using `DataModel.LeafField.mergeFields_parentVariant_twoChildShapeFields` to
-control the identical parent-variant shape merge.
+`DataModel.groundNormalFormCorrect_twoSameCompositeDistinctLeafNoDirectives` and
+normal-form response-shape preservation in
+`DataModel.normalFormPreservesResponseShape_twoSameCompositeDistinctLeafNoDirectives`.
+The next proof boundary is typed response-shape soundness for that composite merge.
+The needed store-resolution bridge has started in `GraphQL.DataModel.Store` with
+`ObjectRecord.lookupField?_some_conformsToLookupField`,
+`Store.resolveValue_conformsToLookupField`,
+`Store.resolveValue_ne_scalar_of_compositeLookupField`,
+`possibleTypes_eq_nil_of_isLeafType`,
+`fieldReturnType?_some_lookupField`, and
+`scalar_not_conformsToType_of_possibleTypes_nonempty`.
 
 Directive-specific data-model proofs live in `GraphQL/DataModel/Directives.lean`.
 That module currently proves single-leaf response-shape soundness for modeled
@@ -96,6 +103,7 @@ lake lint
 - `docs/overview.md`: module map and architecture overview.
 - `docs/references.md`: GraphCoQL reference notes and proof-strategy context.
 - `GraphQL/DataModel.lean`: typed store model and correctness predicates.
+- `GraphQL/DataModel/Store.lean`: store-resolution well-typedness bridge lemmas.
 - `GraphQL/DataModel/Directives.lean`: `@skip`/`@include` response-shape proofs.
 - `GraphQL/DataModel/SelectionSet.lean`: multi-selection response-shape proofs.
 - `GraphQL/ResponseShape.lean`: response-shape construction and inclusion.

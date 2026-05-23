@@ -62,6 +62,8 @@ The main modules are:
 - `GraphQL.NormalForm`: ground normal form predicates and normalizer scaffold.
 - `GraphQL.DataModel`: typed object-store model, store-backed resolvers, typed
   response trees, response-shape conformance checks, and correctness predicates.
+- `GraphQL.DataModel.Store`: store-resolution bridge lemmas for connecting
+  `Store.resolveValue` results to well-typed schema field facts.
 - `GraphQL.DataModel.Directives`: directive-sensitive response-shape soundness
   proofs for modeled `@skip` and `@include` base cases.
 - `GraphQL.DataModel.SelectionSet`: multi-selection proof cases and the
@@ -137,11 +139,19 @@ The current proof ladder is:
    shape preservation. Started with identical duplicate direct leaf fields through
    response-shape soundness, and with two same-response-name composite fields
    whose merged child leaf response names are distinct through ground normal-form
-   semantic preservation. The helper
-   `DataModel.LeafField.mergeFields_parentVariant_twoChildShapeFields` now records
-   the corresponding identical-parent-variant shape merge; next, use it to prove
-   normal-form response-shape preservation for that composite merge case.
-8. Only after those proofs, revisit operation equivalence and minimization.
+   semantic preservation and normal-form response-shape preservation. The helper
+   `DataModel.LeafField.mergeFields_parentVariant_twoChildShapeFields` records the
+   corresponding identical-parent-variant shape merge.
+8. Prove typed response-shape soundness for the same composite merge case. This
+   needs a store-resolution well-typedness lemma connecting `Store.resolveValue`,
+   `Store.wellTyped`, and non-scalar values for composite field return types.
+   Initial bridge lemmas now live in `GraphQL.DataModel.Store`:
+   `ObjectRecord.lookupField?_some_conformsToLookupField`,
+   `Store.resolveValue_conformsToLookupField`,
+   `Store.resolveValue_ne_scalar_of_compositeLookupField`,
+   `possibleTypes_eq_nil_of_isLeafType`, `fieldReturnType?_some_lookupField`, and
+   `scalar_not_conformsToType_of_possibleTypes_nonempty`.
+9. Only after those proofs, revisit operation equivalence and minimization.
 
 ## Related Documentation
 

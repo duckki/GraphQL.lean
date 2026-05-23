@@ -217,6 +217,81 @@ theorem normalizeSemanticOperation_singleLeafWithDirectives (schema : Schema)
       Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
       Semantic.Selection.subselections]
 
+theorem normalizeSemanticOperation_twoSameLeafNoDirectives (schema : Schema)
+    (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument) :
+    normalizeSemanticOperation schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := [
+          .field responseName fieldName arguments [] [],
+          .field responseName fieldName arguments [] []
+        ] }
+      = { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := [.field responseName fieldName arguments [] []] } := by
+  cases hfield : schema.fieldReturnType? rootType fieldName <;>
+    simp [hfield, normalizeSemanticOperation, normalizeSelectionSet,
+      mergeFieldSelections.normalizeSelectionSet, mergeFieldSelections,
+      Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+      Semantic.SelectionSet.fieldsWithResponseName,
+      Semantic.SelectionSet.withoutFieldsWithResponseName,
+      Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
+      Semantic.Selection.subselections]
+
+theorem normalizeSemanticOperation_twoSameCompositeDistinctLeafNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (parentResponseName parentFieldName : Name) (parentArguments : List Argument)
+    (leftResponseName leftFieldName : Name) (leftArguments : List Argument)
+    (rightResponseName rightFieldName : Name) (rightArguments : List Argument) :
+    leftResponseName ≠ rightResponseName ->
+      normalizeSemanticOperation schema
+        { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := [
+            .field parentResponseName parentFieldName parentArguments [] [
+              .field leftResponseName leftFieldName leftArguments [] []
+            ],
+            .field parentResponseName parentFieldName parentArguments [] [
+              .field rightResponseName rightFieldName rightArguments [] []
+            ]
+          ] }
+        = { name := name,
+            rootType := rootType,
+            variableDefinitions := variableDefinitions,
+            selectionSet := [
+              .field parentResponseName parentFieldName parentArguments [] [
+                .field leftResponseName leftFieldName leftArguments [] [],
+                .field rightResponseName rightFieldName rightArguments [] []
+              ]
+            ] } := by
+  intro hdistinct
+  have hdistinct' : rightResponseName ≠ leftResponseName := Ne.symm hdistinct
+  cases hparent : schema.fieldReturnType? rootType parentFieldName with
+  | none =>
+      simp [hparent, normalizeSemanticOperation, normalizeSelectionSet,
+        mergeFieldSelections.normalizeSelectionSet, mergeFieldSelections,
+        Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+        Semantic.SelectionSet.fieldsWithResponseName,
+        Semantic.SelectionSet.withoutFieldsWithResponseName,
+        Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
+        Semantic.Selection.subselections]
+  | some childType =>
+      cases hleft : schema.fieldReturnType? childType leftFieldName <;>
+        cases hright : schema.fieldReturnType? childType rightFieldName <;>
+          simp [hparent, hleft, hright, hdistinct', normalizeSemanticOperation,
+            normalizeSelectionSet, mergeFieldSelections.normalizeSelectionSet,
+            mergeFieldSelections, Semantic.Operation.size, Semantic.SelectionSet.size,
+            Semantic.Selection.size, Semantic.SelectionSet.fieldsWithResponseName,
+            Semantic.SelectionSet.withoutFieldsWithResponseName,
+            Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
+            Semantic.Selection.subselections]
+
 theorem normalizeSemanticOperation_twoDistinctLeafNoDirectives (schema : Schema)
     (name : Option Name) (rootType : Name)
     (variableDefinitions : List VariableDefinition)

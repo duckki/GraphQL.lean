@@ -67,7 +67,9 @@ The main modules are:
 - `GraphQL.DataModel.SelectionSet`: multi-selection proof cases and the
   `LeafField` proof abstraction for direct no-directive leaf fields, including
   list-level `CollectFields`, typed execution factoring lemmas, response-shape
-  construction, and typed response-shape soundness for distinct response names.
+  construction, normal-form response-shape preservation, and typed response-shape
+  soundness for distinct response names. It also contains the initial
+  same-response-name field merging proofs.
 
 `GraphQL.DataModel` is the current bridge from resolver execution to proof
 semantics. It models typed object identities, field facts keyed by already
@@ -95,7 +97,7 @@ instead of inheriting the parent object's possible types.
 
 ## Proof Plan
 
-The next proof ladder is:
+The current proof ladder is:
 
 1. Prove data-model execution matches the intended resolver execution for
    store-backed resolvers. Done for the current model via the typed-execution
@@ -122,16 +124,24 @@ The next proof ladder is:
    response names, the three-field no-directive extension, and any direct
    no-directive leaf-field list with distinct response names through the
    `LeafField` abstraction.
-8. Prove list-level normal-form response-shape preservation for distinct direct
-   no-directive leaf fields using the existing `LeafField` normalization and
-   response-shape construction lemmas.
 6. Prove normal form preserves response shape:
    `DataModel.normalFormPreservesResponseShape`. Done for direct single-leaf
    selections with or without modeled directives, and inline-fragment single-leaf
    selections without directives. Also done for object-type typed inline
    fragments with modeled directives and two direct no-directive leaf fields
    with distinct response names, plus the three-field no-directive extension.
-7. Only after those proofs, revisit operation equivalence and minimization.
+   Also done for any direct no-directive leaf-field list with distinct response
+   names through the `LeafField` abstraction.
+7. Extend the `LeafField` proof boundary to same-response-name field merging,
+   covering execution grouping, shape variant merging, and normal-form response
+   shape preservation. Started with identical duplicate direct leaf fields through
+   response-shape soundness, and with two same-response-name composite fields
+   whose merged child leaf response names are distinct through ground normal-form
+   semantic preservation. The helper
+   `DataModel.LeafField.mergeFields_parentVariant_twoChildShapeFields` now records
+   the corresponding identical-parent-variant shape merge; next, use it to prove
+   normal-form response-shape preservation for that composite merge case.
+8. Only after those proofs, revisit operation equivalence and minimization.
 
 ## Related Documentation
 

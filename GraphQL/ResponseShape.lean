@@ -73,6 +73,14 @@ theorem eqBool_self (literal : BooleanLiteral) :
     eqBool literal literal = true := by
   cases literal <;> simp [eqBool]
 
+theorem listEqBool_self (literals : List BooleanLiteral) :
+    listEqBool literals literals = true := by
+  induction literals with
+  | nil =>
+      simp [listEqBool]
+  | cons literal rest ih =>
+      simp [listEqBool, eqBool_self literal, ih]
+
 theorem containsBool_of_mem {literal : BooleanLiteral}
     {literals : List BooleanLiteral} :
     literal ∈ literals -> containsBool literal literals = true := by
@@ -200,6 +208,22 @@ theorem namesSubsetBool_self (names : List Name) :
     namesSubsetBool names names = true := by
   simp [namesSubsetBool]
 
+theorem namesEqBool_self (names : List Name) :
+    namesEqBool names names = true := by
+  induction names with
+  | nil =>
+      simp [namesEqBool]
+  | cons name rest ih =>
+      simp [namesEqBool, ih]
+
+theorem namesOptionEqBool_self (possibleTypes : Option (List Name)) :
+    namesOptionEqBool possibleTypes possibleTypes = true := by
+  cases possibleTypes with
+  | none =>
+      rfl
+  | some names =>
+      simp [namesOptionEqBool, namesEqBool_self]
+
 theorem possibleTypesSubsetBool_self (possibleTypes : Option (List Name)) :
     possibleTypesSubsetBool possibleTypes possibleTypes = true := by
   cases possibleTypes with
@@ -214,6 +238,12 @@ theorem subsetBool_self (condition : Condition) :
   | mk possibleTypes booleanLiterals =>
       simp [subsetBool, possibleTypesSubsetBool_self,
         BooleanLiteral.entailsAllBool_self]
+
+theorem eqBool_self (condition : Condition) :
+    eqBool condition condition = true := by
+  cases condition with
+  | mk possibleTypes booleanLiterals =>
+      simp [eqBool, namesOptionEqBool_self, BooleanLiteral.listEqBool_self]
 
 def intersect? (left right : Condition) : Option Condition :=
   let combined := left.and right
@@ -404,6 +434,12 @@ namespace VariantHeader
 def eqBool (left right : VariantHeader) : Bool :=
   Condition.eqBool left.fst right.fst
     && SelectedField.eqBool left.snd right.snd
+
+theorem eqBool_self (header : VariantHeader) :
+    eqBool header header = true := by
+  cases header with
+  | mk condition field =>
+      simp [eqBool, Condition.eqBool_self, SelectedField.eqBool_self]
 
 def conditionsOverlapBool (left right : VariantHeader) : Bool :=
   Condition.overlapsBool left.fst right.fst
@@ -877,6 +913,15 @@ def merge (left right : Shape) : Shape :=
 def mergeFields (left right : List (Name × List (VariantHeader × Shape))) :
     List (Name × List (VariantHeader × Shape)) :=
   (merge ⟨left⟩ ⟨right⟩).fields
+
+theorem mergeFields_singleton_empty_self (responseName : Name)
+    (header : VariantHeader) :
+    mergeFields [(responseName, [(header, empty)])]
+      [(responseName, [(header, empty)])]
+      = [(responseName, [(header, empty)])] := by
+  simp [mergeFields, merge, size, fieldsSize, variantsSize, mergeWithFuel,
+    mergeFieldsWithFuel, mergeVariantsWithFuel, VariantHeader.eqBool_self,
+    empty]
 
 -- Spec-inspired response-shape inclusion: non-spec recursive inclusion over response
 -- names, variant conditions, selected fields, and child shapes.

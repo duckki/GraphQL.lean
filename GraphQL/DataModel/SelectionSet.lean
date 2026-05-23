@@ -656,6 +656,27 @@ theorem mergeFields_toShapeFields_append
         + ResponseShape.Shape.size ⟨toShapeFields condition suffix⟩)
       leftFields suffix hfuel hnodup
 
+theorem mergeFields_parentVariant_twoChildShapeFields
+    (parentResponseName : Name) (parentHeader : ResponseShape.VariantHeader)
+    (childCondition : ResponseShape.Condition) (left right : LeafField) :
+    left.responseName ≠ right.responseName ->
+      ResponseShape.Shape.mergeFields
+        [(parentResponseName,
+          [(parentHeader, ⟨toShapeFields childCondition [left]⟩)])]
+        [(parentResponseName,
+          [(parentHeader, ⟨toShapeFields childCondition [right]⟩)])]
+        =
+          [(parentResponseName,
+            [(parentHeader, ⟨toShapeFields childCondition [left, right]⟩)])] := by
+  intro hdistinct
+  cases left
+  cases right
+  simp [toShapeFields, toShapeField, toShapeVariant, ResponseShape.Shape.mergeFields,
+    ResponseShape.Shape.merge, ResponseShape.Shape.size, ResponseShape.Shape.fieldsSize,
+    ResponseShape.Shape.variantsSize, ResponseShape.Shape.mergeWithFuel,
+    ResponseShape.Shape.mergeFieldsWithFuel, ResponseShape.Shape.mergeVariantsWithFuel,
+    ResponseShape.VariantHeader.eqBool_self, ResponseShape.Shape.empty, hdistinct]
+
 theorem collectSelectionShapeFields_toSelection (schema : Schema)
     (fuel : Nat) (parentType : Name) (condition : ResponseShape.Condition)
     (field : LeafField) :
@@ -746,6 +767,27 @@ theorem collectSelectionSetShapeFields_toSelectionSet (schema : Schema) :
             ResponseShape.Shape.collectSelectionSetShapeFields,
             hcondition, hselection, hrest', hmerge'']
 
+theorem collectSelectionSetShapeFields_toSelectionSet_unsat (schema : Schema) :
+    ∀ (fuel : Nat) (parentType : Name) (condition : ResponseShape.Condition)
+      (fields : List LeafField),
+      condition.satisfiableBool = false ->
+        ResponseShape.Shape.collectSelectionSetShapeFields schema fuel
+          parentType condition (toSelectionSet fields) = [] := by
+  intro fuel parentType condition fields
+  induction fields generalizing fuel parentType with
+  | nil =>
+      intro _hcondition
+      cases fuel <;>
+        simp [toSelectionSet, ResponseShape.Shape.collectSelectionSetShapeFields]
+  | cons field rest ih =>
+      intro hcondition
+      cases fuel with
+      | zero =>
+          simp [toSelectionSet, ResponseShape.Shape.collectSelectionSetShapeFields]
+      | succ fuel =>
+          simp [toSelectionSet, ResponseShape.Shape.collectSelectionSetShapeFields,
+            hcondition]
+
 theorem ofSemanticOperation_toSelectionSet (schema : Schema)
     (name : Option Name) (rootType : Name)
     (variableDefinitions : List VariableDefinition) (fields : List LeafField) :
@@ -782,6 +824,96 @@ theorem ofSemanticOperation_toSelectionSet (schema : Schema)
           variableDefinitions := variableDefinitions,
           selectionSet := toSelectionSet fields })
       fields hfuel hcondition hnodup]
+
+theorem includesVariantsBool_toShapeVariant_self
+    (condition : ResponseShape.Condition) (field : LeafField) :
+    ResponseShape.Shape.includesVariantsBool
+      [toShapeVariant condition field] [toShapeVariant condition field] = true := by
+  simpa [toShapeVariant] using
+    ResponseShape.Shape.includesVariantsBool_singleton_empty_self
+      (condition, ResponseShape.selectedField field.fieldName field.arguments)
+
+theorem includesFieldsBool_toShapeFields_append_self
+    (condition : ResponseShape.Condition) :
+    ∀ (shapePrefix suffix : List LeafField),
+      responseNamesNodup (shapePrefix ++ suffix) ->
+        ResponseShape.Shape.includesFieldsBool
+          (toShapeFields condition suffix)
+          (toShapeFields condition (shapePrefix ++ suffix)) = true := by
+  intro shapePrefix suffix
+  induction suffix generalizing shapePrefix with
+  | nil =>
+      intro _hnodup
+      simp [toShapeFields, ResponseShape.Shape.includesFieldsBool]
+  | cons field rest ih =>
+      intro hnodup
+      have hnameParts :
+          (responseNames shapePrefix ++ field.responseName :: responseNames rest).Nodup := by
+        simpa [responseNamesNodup, responseNames, List.map_append] using hnodup
+      simp [List.nodup_append] at hnameParts
+      rcases hnameParts with ⟨_hprefix, _hfieldRest, hseparate⟩
+      have hnotMemPrefix : field.responseName ∉ responseNames shapePrefix := by
+        intro hmem
+        exact (hseparate field.responseName hmem).left rfl
+      have hlookup :
+          ResponseShape.Shape.lookupField field.responseName
+            (toShapeFields condition (shapePrefix ++ field :: rest))
+            = some [toShapeVariant condition field] :=
+        lookupField_toShapeFields_append_cons_self condition shapePrefix field rest
+          hnotMemPrefix
+      have hlookup' :
+          ResponseShape.Shape.lookupField (toShapeField condition field).fst
+            (List.map (toShapeField condition) shapePrefix ++
+              toShapeField condition field :: List.map (toShapeField condition) rest)
+            = some [toShapeVariant condition field] := by
+        simpa [toShapeFields, toShapeField] using hlookup
+      have hvariants :
+          ResponseShape.Shape.includesVariantsBool
+            [toShapeVariant condition field] [toShapeVariant condition field] = true :=
+        includesVariantsBool_toShapeVariant_self condition field
+      have hvariants' :
+          ResponseShape.Shape.includesVariantsBool
+            (toShapeField condition field).snd [toShapeVariant condition field] = true := by
+        simpa [toShapeField] using hvariants
+      have hrestNodup : responseNamesNodup ((shapePrefix ++ [field]) ++ rest) := by
+        simpa [responseNamesNodup, responseNames, List.map_append,
+          List.append_assoc] using hnodup
+      have hrest :=
+        ih (shapePrefix ++ [field]) hrestNodup
+      have hrest' :
+          ResponseShape.Shape.includesFieldsBool
+            (toShapeFields condition rest)
+            (toShapeFields condition (shapePrefix ++ field :: rest)) = true := by
+        simpa [List.append_assoc] using hrest
+      have hrest'' :
+          ResponseShape.Shape.includesFieldsBool
+            (List.map (toShapeField condition) rest)
+            (List.map (toShapeField condition) shapePrefix ++
+              toShapeField condition field :: List.map (toShapeField condition) rest)
+            = true := by
+        simpa [toShapeFields] using hrest'
+      simp [toShapeFields, ResponseShape.Shape.includesFieldsBool,
+        hlookup', hvariants', hrest'']
+
+theorem includesBool_toShapeFields_self
+    (condition : ResponseShape.Condition) (fields : List LeafField) :
+    responseNamesNodup fields ->
+      ResponseShape.Shape.includesBool
+        ⟨toShapeFields condition fields⟩
+        ⟨toShapeFields condition fields⟩ = true := by
+  intro hnodup
+  simpa [ResponseShape.Shape.includesBool] using
+    includesFieldsBool_toShapeFields_append_self condition [] fields hnodup
+
+theorem equivalentBool_toShapeFields_self
+    (condition : ResponseShape.Condition) (fields : List LeafField) :
+    responseNamesNodup fields ->
+      ResponseShape.Shape.equivalentBool
+        ⟨toShapeFields condition fields⟩
+        ⟨toShapeFields condition fields⟩ = true := by
+  intro hnodup
+  simp [ResponseShape.Shape.equivalentBool,
+    includesBool_toShapeFields_self condition fields hnodup]
 
 theorem fieldsWithResponseName_toSelectionSet_notMem
     (responseName : Name) (fields : List LeafField) :
@@ -1262,6 +1394,63 @@ theorem typedFieldsConformToShapeFields
 
 end LeafField
 
+theorem groundNormalFormCorrect_twoSameLeafNoDirectives (schema : Schema)
+    (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument) :
+    groundNormalFormCorrect schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := [
+          .field responseName fieldName arguments [] [],
+          .field responseName fieldName arguments [] []
+        ] } := by
+  rw [groundNormalFormCorrect]
+  rw [NormalForm.normalizeSemanticOperation_twoSameLeafNoDirectives]
+  intro store variableValues root _hstore _hroot
+  simp [executeSemanticQueryWithFuel, Execution.executeSemanticQueryFuel,
+    Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+    Execution.executeSelectionSet, Execution.collectFields, Execution.collectSelection,
+    Execution.selectionDirectivesAllowBool, Execution.mergeExecutableGroups,
+    Execution.addExecutableGroup, Execution.addExecutableFields,
+    Execution.addExecutableField, Execution.executeCollectedFields,
+    Execution.executeField, Execution.mergedFieldSelectionSet]
+
+theorem groundNormalFormCorrect_twoSameCompositeDistinctLeafNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (parentResponseName parentFieldName : Name) (parentArguments : List Argument)
+    (leftResponseName leftFieldName : Name) (leftArguments : List Argument)
+    (rightResponseName rightFieldName : Name) (rightArguments : List Argument) :
+    leftResponseName ≠ rightResponseName ->
+      groundNormalFormCorrect schema
+        { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := [
+            .field parentResponseName parentFieldName parentArguments [] [
+              .field leftResponseName leftFieldName leftArguments [] []
+            ],
+            .field parentResponseName parentFieldName parentArguments [] [
+              .field rightResponseName rightFieldName rightArguments [] []
+            ]
+          ] } := by
+  intro hdistinct
+  rw [groundNormalFormCorrect]
+  rw [NormalForm.normalizeSemanticOperation_twoSameCompositeDistinctLeafNoDirectives
+    schema name rootType variableDefinitions parentResponseName parentFieldName
+    parentArguments leftResponseName leftFieldName leftArguments rightResponseName
+    rightFieldName rightArguments hdistinct]
+  intro store variableValues root _hstore _hroot
+  simp [executeSemanticQueryWithFuel, Execution.executeSemanticQueryFuel,
+    Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+    Execution.executeSelectionSet, Execution.collectFields, Execution.collectSelection,
+    Execution.selectionDirectivesAllowBool, Execution.mergeExecutableGroups,
+    Execution.addExecutableGroup, Execution.addExecutableFields,
+    Execution.addExecutableField, Execution.executeCollectedFields,
+    Execution.executeField, Execution.mergedFieldSelectionSet]
+
 theorem groundNormalFormCorrect_twoDistinctLeafNoDirectives
     (schema : Schema) (name : Option Name) (rootType : Name)
     (variableDefinitions : List VariableDefinition)
@@ -1379,6 +1568,7 @@ theorem normalFormPreservesResponseShapeBool_twoDistinctLeafNoDirectives
       ResponseShape.Shape.equivalentBool, ResponseShape.Shape.includesBool,
       ResponseShape.Shape.includesFieldsBool, ResponseShape.Shape.includesVariantsBool,
       ResponseShape.Shape.lookupField, ResponseShape.Shape.lookupIncludingVariant,
+      ResponseShape.VariantHeader.eqBool_self,
       ResponseShape.VariantHeader.includedByBool_self,
       ResponseShape.Shape.empty_includesBool]
 
@@ -1492,6 +1682,191 @@ theorem normalFormPreservesResponseShape_threeDistinctLeafNoDirectives
       variableDefinitions firstResponseName firstFieldName firstArguments secondResponseName
       secondFieldName secondArguments thirdResponseName thirdFieldName thirdArguments
       hfirstSecond hfirstThird hsecondThird)
+
+set_option linter.unusedSimpArgs false in
+theorem normalFormPreservesResponseShapeBool_twoSameLeafNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument) :
+    normalFormPreservesResponseShapeBool schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := [
+          .field responseName fieldName arguments [] [],
+          .field responseName fieldName arguments [] []
+        ] } = true := by
+  rw [normalFormPreservesResponseShapeBool]
+  rw [NormalForm.normalizeSemanticOperation_twoSameLeafNoDirectives]
+  by_cases hempty : schema.getPossibleTypes rootType = []
+  · simp [ResponseShape.Shape.ofSemanticOperation,
+      ResponseShape.Shape.semanticOperationShapeFuel,
+      Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+      ResponseShape.Shape.semanticSelectionSetShape,
+      ResponseShape.Shape.collectSelectionSetShapeFields,
+      ResponseShape.Shape.collectSelectionShapeFields,
+      ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+      ResponseShape.Shape.empty, ResponseShape.Condition.satisfiableBool,
+      ResponseShape.Condition.hasContradictionBool,
+      ResponseShape.BooleanLiteral.hasContradictionBool,
+      ResponseShape.Condition.possibleTypesEmptyBool,
+      ResponseShape.Condition.and, ResponseShape.Shape.semanticOperationInitialCondition,
+      hempty, ResponseShape.Shape.equivalentBool, ResponseShape.Shape.includesBool,
+      ResponseShape.Shape.includesFieldsBool]
+  · simp [ResponseShape.Shape.ofSemanticOperation,
+      ResponseShape.Shape.semanticOperationShapeFuel,
+      Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+      ResponseShape.Shape.semanticSelectionSetShape,
+      ResponseShape.Shape.collectSelectionSetShapeFields,
+      ResponseShape.Shape.collectSelectionShapeFields,
+      ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+      ResponseShape.Shape.empty, ResponseShape.Condition.satisfiableBool,
+      ResponseShape.Condition.hasContradictionBool,
+      ResponseShape.BooleanLiteral.hasContradictionBool,
+      ResponseShape.Condition.possibleTypesEmptyBool,
+      ResponseShape.Condition.and, ResponseShape.Shape.semanticOperationInitialCondition,
+      hempty, ResponseShape.Shape.mergeFields, ResponseShape.Shape.merge,
+      ResponseShape.Shape.size, ResponseShape.Shape.fieldsSize,
+      ResponseShape.Shape.variantsSize, ResponseShape.Shape.mergeWithFuel,
+      ResponseShape.Shape.mergeFieldsWithFuel, ResponseShape.Shape.mergeVariantsWithFuel,
+      ResponseShape.Shape.mergeFields_singleton_empty_self,
+      ResponseShape.Shape.equivalentBool, ResponseShape.Shape.includesBool,
+      ResponseShape.Shape.includesFieldsBool, ResponseShape.Shape.includesVariantsBool,
+      ResponseShape.Shape.lookupField, ResponseShape.Shape.lookupIncludingVariant,
+      ResponseShape.VariantHeader.eqBool_self,
+      ResponseShape.VariantHeader.includedByBool_self,
+      ResponseShape.Shape.empty_includesBool]
+
+theorem normalFormPreservesResponseShape_twoSameLeafNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument) :
+    normalFormPreservesResponseShape schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := [
+          .field responseName fieldName arguments [] [],
+          .field responseName fieldName arguments [] []
+        ] } := by
+  exact normalFormPreservesResponseShapeBool_sound schema _
+    (normalFormPreservesResponseShapeBool_twoSameLeafNoDirectives schema name rootType
+      variableDefinitions responseName fieldName arguments)
+
+theorem normalFormPreservesResponseShapeBool_distinctLeafFieldsNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition) (fields : List LeafField) :
+    LeafField.responseNamesNodup fields ->
+      normalFormPreservesResponseShapeBool schema
+        { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := LeafField.toSelectionSet fields } = true := by
+  intro hnodup
+  let operation : Semantic.Operation :=
+    { name := name,
+      rootType := rootType,
+      variableDefinitions := variableDefinitions,
+      selectionSet := LeafField.toSelectionSet fields }
+  rw [normalFormPreservesResponseShapeBool]
+  rw [LeafField.normalizeSemanticOperation_toSelectionSet schema name rootType
+    variableDefinitions fields hnodup]
+  by_cases hcondition :
+      ResponseShape.Condition.satisfiableBool
+        (ResponseShape.Shape.semanticOperationInitialCondition schema operation) = true
+  · have hshape :
+        ResponseShape.Shape.ofSemanticOperation schema operation =
+          ⟨LeafField.toShapeFields
+            (ResponseShape.Shape.semanticOperationInitialCondition schema operation)
+            fields⟩ := by
+      simpa [operation] using
+        LeafField.ofSemanticOperation_toSelectionSet schema name rootType variableDefinitions
+          fields hcondition hnodup
+    rw [hshape]
+    exact LeafField.equivalentBool_toShapeFields_self
+      (ResponseShape.Shape.semanticOperationInitialCondition schema operation)
+      fields hnodup
+  · have hconditionFalse :
+        ResponseShape.Condition.satisfiableBool
+          (ResponseShape.Shape.semanticOperationInitialCondition schema operation) = false := by
+      cases h :
+          ResponseShape.Condition.satisfiableBool
+            (ResponseShape.Shape.semanticOperationInitialCondition schema operation) <;>
+        simp [h] at hcondition ⊢
+    have hshape :
+        ResponseShape.Shape.ofSemanticOperation schema operation =
+          ResponseShape.Shape.empty := by
+      have hcollect :
+          ResponseShape.Shape.collectSelectionSetShapeFields schema (fields.length + 1)
+            rootType (ResponseShape.Shape.semanticOperationInitialCondition schema operation)
+            (LeafField.toSelectionSet fields) = [] :=
+        LeafField.collectSelectionSetShapeFields_toSelectionSet_unsat schema
+          (fields.length + 1) rootType
+          (ResponseShape.Shape.semanticOperationInitialCondition schema operation)
+          fields hconditionFalse
+      simp [operation, ResponseShape.Shape.ofSemanticOperation,
+        ResponseShape.Shape.semanticOperationShapeFuel, Semantic.Operation.size,
+        LeafField.toSelectionSet_size, ResponseShape.Shape.semanticSelectionSetShape,
+        hcollect, ResponseShape.Shape.empty]
+    rw [hshape]
+    exact ResponseShape.Shape.empty_equivalentBool
+
+theorem normalFormPreservesResponseShape_distinctLeafFieldsNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition) (fields : List LeafField) :
+    LeafField.responseNamesNodup fields ->
+      normalFormPreservesResponseShape schema
+        { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := LeafField.toSelectionSet fields } := by
+  intro hnodup
+  exact normalFormPreservesResponseShapeBool_sound schema _
+    (normalFormPreservesResponseShapeBool_distinctLeafFieldsNoDirectives schema name rootType
+      variableDefinitions fields hnodup)
+
+set_option linter.unusedSimpArgs false in
+theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameLeafNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument) :
+    responseShapeCorrectForTypedExecutionAtRoot schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := [
+          .field responseName fieldName arguments [] [],
+          .field responseName fieldName arguments [] []
+        ] } := by
+  intro store variableValues root _hstore _hroot hrootType
+  have hrootType' : schema.typeIncludesObject rootType root.typeName := hrootType
+  have hnonempty : ¬ schema.getPossibleTypes rootType = [] :=
+    possibleTypes_nonempty_of_typeIncludesObject schema hrootType'
+  simp [TypedExecution.executeSemanticQuery, Execution.executeSemanticQueryFuel,
+    Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+    TypedExecution.executeSelectionSet, Execution.collectFields, Execution.collectSelection,
+    Execution.selectionDirectivesAllowBool, Execution.mergeExecutableGroups,
+    Execution.addExecutableGroup, Execution.addExecutableFields,
+    Execution.addExecutableField, TypedExecution.executeCollectedFields,
+    TypedExecution.executeField, Execution.mergedFieldSelectionSet,
+    ResponseShape.Shape.ofSemanticOperation,
+    ResponseShape.Shape.semanticOperationShapeFuel,
+    ResponseShape.Shape.semanticSelectionSetShape,
+    ResponseShape.Shape.collectSelectionSetShapeFields,
+    ResponseShape.Shape.collectSelectionShapeFields,
+    ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+    ResponseShape.Shape.empty, ResponseShape.Condition.satisfiableBool,
+    ResponseShape.Condition.hasContradictionBool,
+    ResponseShape.BooleanLiteral.hasContradictionBool,
+    ResponseShape.Condition.possibleTypesEmptyBool,
+    ResponseShape.Condition.and, ResponseShape.Shape.semanticOperationInitialCondition,
+    hnonempty, ResponseShape.Shape.mergeFields, ResponseShape.Shape.merge,
+    ResponseShape.Shape.size, ResponseShape.Shape.fieldsSize,
+    ResponseShape.Shape.variantsSize, ResponseShape.Shape.mergeWithFuel,
+    ResponseShape.Shape.mergeFieldsWithFuel, ResponseShape.Shape.mergeVariantsWithFuel,
+    ResponseShape.VariantHeader.eqBool_self, typedResponseConformsToShapeBool,
+    typedFieldsConformToShapeBool, typedVariantConformsToShapeBool,
+    ResponseShape.Shape.lookupField]
 
 set_option linter.unusedSimpArgs false in
 theorem responseShapeCorrectForTypedExecutionAtRoot_twoDistinctLeafNoDirectives

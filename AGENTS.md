@@ -61,9 +61,20 @@ and conformance counterparts through `toShapeFields`,
 `ofSemanticOperation_toSelectionSet`,
 `typedFieldsConformToShapeFields`, and
 `responseShapeCorrectForTypedExecutionAtRoot_distinctLeafFieldsNoDirectives`.
-The next proof boundary is list-level normal-form response-shape preservation
-for distinct direct leaf fields, before tackling same-response-name field
-merging.
+It also proves list-level normal-form response-shape preservation through
+`normalFormPreservesResponseShape_distinctLeafFieldsNoDirectives`. Same-response-name
+field merging has started: identical duplicate direct leaf fields are covered by
+`NormalForm.normalizeSemanticOperation_twoSameLeafNoDirectives`,
+`DataModel.groundNormalFormCorrect_twoSameLeafNoDirectives`,
+`DataModel.normalFormPreservesResponseShape_twoSameLeafNoDirectives`, and
+`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameLeafNoDirectives`.
+The first composite merge case,
+`NormalForm.normalizeSemanticOperation_twoSameCompositeDistinctLeafNoDirectives`,
+also has ground semantic preservation in
+`DataModel.groundNormalFormCorrect_twoSameCompositeDistinctLeafNoDirectives`.
+The next proof boundary is response-shape preservation for that composite merge,
+using `DataModel.LeafField.mergeFields_parentVariant_twoChildShapeFields` to
+control the identical parent-variant shape merge.
 
 Directive-specific data-model proofs live in `GraphQL/DataModel/Directives.lean`.
 That module currently proves single-leaf response-shape soundness for modeled

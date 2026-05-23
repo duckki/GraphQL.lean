@@ -109,6 +109,7 @@ The condition utility layer supports the next canonicalization step:
 - boolean-condition implication by literal containment,
 - condition satisfiability, overlap, subset, and checked intersection.
 - variant overlap, selected-field agreement, and per-response-key pairwise compatibility checks.
+- recursive shape well-formedness, which requires those per-key compatibility checks at every object node.
 
 ### Shape And Normal Form
 

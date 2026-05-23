@@ -294,6 +294,27 @@ def responseKeyVariantsCompatibleBool :
         && responseKeyVariantsCompatibleBool rest
 
 mutual
+  def wellFormedBool : Shape -> Bool
+    | .scalar => true
+    | .object fields =>
+        responseKeyVariantsCompatibleBool fields
+          && fieldsWellFormedBool fields
+
+  def fieldsWellFormedBool : List (Name × List Variant) -> Bool
+    | [] => true
+    | (_responseName, variants) :: rest =>
+        variantsWellFormedBool variants && fieldsWellFormedBool rest
+
+  def variantsWellFormedBool : List Variant -> Bool
+    | [] => true
+    | (_header, shape) :: rest =>
+        shape.wellFormedBool && variantsWellFormedBool rest
+end
+
+def wellFormed (shape : Shape) : Prop :=
+  wellFormedBool shape = true
+
+mutual
   def size : Shape -> Nat
     | .scalar => 1
     | .object fields => 1 + fieldsSize fields

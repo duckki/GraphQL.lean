@@ -608,6 +608,21 @@ theorem possibleTypes_nonempty_of_typeIncludesObject (schema : Schema)
   intro h hempty
   simp [Schema.typeIncludesObject, hempty] at h
 
+theorem possibleTypes_filter_nonempty_of_typeIncludesObject (schema : Schema)
+    {leftType rightType runtimeType : Name} :
+    schema.typeIncludesObject leftType runtimeType ->
+      schema.typeIncludesObject rightType runtimeType ->
+        ¬ List.filter
+          (fun name => decide (name ∈ schema.getPossibleTypes rightType))
+          (schema.getPossibleTypes leftType) = [] := by
+  intro hleft hright hempty
+  have hmem : runtimeType ∈ List.filter
+      (fun name => decide (name ∈ schema.getPossibleTypes rightType))
+      (schema.getPossibleTypes leftType) := by
+    exact List.mem_filter.mpr ⟨hleft, by simpa using hright⟩
+  rw [hempty] at hmem
+  cases hmem
+
 def booleanLiteralHoldsBool (variableValues : Execution.VariableValues) :
     ResponseShape.BooleanLiteral -> Bool
   | .positive name =>
@@ -1120,6 +1135,83 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_inlineFragmentSingleLeafNoDi
     ResponseShape.Shape.mergeFieldsWithFuel, typedResponseConformsToShapeBool,
     typedFieldsConformToShapeBool, typedVariantConformsToShapeBool,
     ResponseShape.Shape.lookupField]
+
+set_option linter.unusedSimpArgs false in
+theorem responseShapeCorrectForTypedExecutionAtRoot_typedInlineFragmentSingleLeafNoDirectives
+    (schema : Schema) (name : Option Name) (rootType typeCondition : Name)
+    (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument) :
+    responseShapeCorrectForTypedExecutionAtRoot schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := [.inlineFragment (some typeCondition) []
+          [.field responseName fieldName arguments [] []]] } := by
+  intro store variableValues root _hstore _hroot hrootType
+  have hrootType' : schema.typeIncludesObject rootType root.typeName := hrootType
+  have hnonempty : ¬ schema.getPossibleTypes rootType = [] :=
+    possibleTypes_nonempty_of_typeIncludesObject schema hrootType'
+  cases happly : Execution.doesFragmentTypeApplyBool schema rootType
+      (Execution.Value.object root.typeName root.id) typeCondition
+  · simp [TypedExecution.executeSemanticQuery, Execution.executeSemanticQueryFuel,
+      Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+      TypedExecution.executeSelectionSet, Execution.collectFields, Execution.collectSelection,
+      Execution.selectionDirectivesAllowBool, happly, Value.toExecutionValue,
+      Execution.mergeExecutableGroups, Execution.addExecutableGroup,
+      Execution.addExecutableFields, TypedExecution.executeCollectedFields,
+      TypedExecution.executeField, Execution.mergedFieldSelectionSet,
+      ResponseShape.Shape.ofSemanticOperation,
+      ResponseShape.Shape.semanticOperationShapeFuel,
+      ResponseShape.Shape.semanticSelectionSetShape,
+      ResponseShape.Shape.collectSelectionSetShapeFields,
+      ResponseShape.Shape.collectSelectionShapeFields,
+      ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+      ResponseShape.Shape.empty, ResponseShape.Condition.satisfiableBool,
+      ResponseShape.Condition.hasContradictionBool,
+      ResponseShape.BooleanLiteral.hasContradictionBool,
+      ResponseShape.Condition.possibleTypesEmptyBool,
+      ResponseShape.Condition.and, ResponseShape.Shape.semanticOperationInitialCondition,
+      ResponseShape.Shape.restrictConditionToType,
+      ResponseShape.Condition.withPossibleTypes, hnonempty,
+      ResponseShape.Shape.mergeFields, ResponseShape.Shape.merge,
+      ResponseShape.Shape.size, ResponseShape.Shape.fieldsSize,
+      ResponseShape.Shape.variantsSize, ResponseShape.Shape.mergeWithFuel,
+      ResponseShape.Shape.mergeFieldsWithFuel, typedResponseConformsToShapeBool,
+      typedFieldsConformToShapeBool, typedVariantConformsToShapeBool,
+      ResponseShape.Shape.lookupField]
+  · have hfragmentType : schema.typeIncludesObject typeCondition root.typeName :=
+      doesFragmentTypeApplyBool_object schema rootType root.typeName typeCondition root.id happly
+    have hfilteredNonempty : ¬ List.filter
+        (fun name => decide (name ∈ schema.getPossibleTypes typeCondition))
+        (schema.getPossibleTypes rootType) = [] :=
+      possibleTypes_filter_nonempty_of_typeIncludesObject schema hrootType' hfragmentType
+    simp [TypedExecution.executeSemanticQuery, Execution.executeSemanticQueryFuel,
+      Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+      TypedExecution.executeSelectionSet, Execution.collectFields, Execution.collectSelection,
+      Execution.selectionDirectivesAllowBool, happly, Value.toExecutionValue,
+      Execution.mergeExecutableGroups, Execution.addExecutableGroup,
+      Execution.addExecutableFields, TypedExecution.executeCollectedFields,
+      TypedExecution.executeField, Execution.mergedFieldSelectionSet,
+      ResponseShape.Shape.ofSemanticOperation,
+      ResponseShape.Shape.semanticOperationShapeFuel,
+      ResponseShape.Shape.semanticSelectionSetShape,
+      ResponseShape.Shape.collectSelectionSetShapeFields,
+      ResponseShape.Shape.collectSelectionShapeFields,
+      ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+      ResponseShape.Shape.empty, ResponseShape.Condition.satisfiableBool,
+      ResponseShape.Condition.hasContradictionBool,
+      ResponseShape.BooleanLiteral.hasContradictionBool,
+      ResponseShape.Condition.possibleTypesEmptyBool,
+      ResponseShape.Condition.and, ResponseShape.Shape.semanticOperationInitialCondition,
+      ResponseShape.Shape.restrictConditionToType,
+      ResponseShape.Condition.withPossibleTypes, hnonempty, hfilteredNonempty,
+      ResponseShape.Shape.mergeFields, ResponseShape.Shape.merge,
+      ResponseShape.Shape.size, ResponseShape.Shape.fieldsSize,
+      ResponseShape.Shape.variantsSize, ResponseShape.Shape.mergeWithFuel,
+      ResponseShape.Shape.mergeFieldsWithFuel, typedResponseConformsToShapeBool,
+      typedFieldsConformToShapeBool, typedVariantConformsToShapeBool,
+      conditionHoldsBool, possibleTypesHoldBool_of_typeIncludesObject schema hfragmentType,
+      ResponseShape.Shape.lookupField]
 
 def normalFormPreservesResponseShape (schema : Schema)
     (operation : Semantic.Operation) : Prop :=

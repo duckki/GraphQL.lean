@@ -2,14 +2,16 @@
 
 Lean models for GraphQL and, later, GraphQL federation.
 
+Canonical GraphQL specification reference: [GraphQL September 2025 Edition](https://spec.graphql.org/September2025/).
+
 ## Part 1: Plain GraphQL
 
 The current scaffold separates the plain GraphQL work into small modules:
 
-- `GraphQL.Syntax`: schema-independent names, type references, directive applications, operations, fields, named fragment spreads, inline fragments, fragments, and operation size.
-- `GraphQL.Schema`: scalar, enum, object, interface, and union types; field lookup; possible-object inclusion for abstract types.
-- `GraphQL.Validation`: validation as a proposition over a schema and operation, including fragment applicability by possible-object overlap.
-- `GraphQL.Execution`: execution as a function parameterized by abstract resolver functions, with `@skip` / `@include` filtering for fields, named spreads, and inline spreads.
+- `GraphQL.Syntax`: schema-independent names, type references, input values, field arguments, built-in directive applications, operations, fields, named fragment spreads, inline fragments, fragments, and operation size.
+- `GraphQL.Schema`: built-in scalars, custom scalars, enums, objects, interfaces, unions, input objects, field definitions with output types, argument definitions with input types, field lookup, and possible-object inclusion for abstract types.
+- `GraphQL.Validation`: validation as a proposition over a schema and operation, including argument-name checks, input/output type checks, and fragment applicability by possible-object overlap.
+- `GraphQL.Execution`: execution as a function parameterized by abstract resolver functions, with field arguments passed to resolvers and `@skip` / `@include` filtering for fields, named spreads, and inline spreads.
 - `GraphQL.ResponseShape`: response shapes plus shape-to-shape inclusion and equivalence.
 - `GraphQL.Minimization`: finite-candidate operation minimization and the minimality theorem shape.
 

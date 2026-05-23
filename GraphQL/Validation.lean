@@ -10,13 +10,27 @@ def fragmentNamed? (fragments : List FragmentDefinition) (name : Name) : Option 
 def directivesValid (_directives : List DirectiveApplication) : Prop :=
   True
 
+def inputValueValid (schema : Schema) (_value : InputValue) (expectedType : TypeRef) : Prop :=
+  schema.inputType expectedType.namedType
+
+def argumentValid (schema : Schema) (definitions : List InputValueDefinition)
+    (argument : Argument) : Prop :=
+  ∃ definition,
+    Schema.lookupArgumentDefinition definitions argument.name = some definition
+      ∧ inputValueValid schema argument.value definition.inputType
+
+def argumentsValid (schema : Schema) (definitions : List InputValueDefinition)
+    (arguments : List Argument) : Prop :=
+  ∀ argument, argument ∈ arguments -> argumentValid schema definitions argument
+
 mutual
   def selectionValid (schema : Schema) (fragments : List FragmentDefinition)
       (parentType : Name) : Selection -> Prop
-    | .field _responseName fieldName directives selectionSet =>
+    | .field _responseName fieldName arguments directives selectionSet =>
         directivesValid directives
           ∧ ∃ fieldDefinition,
             schema.lookupField parentType fieldName = some fieldDefinition
+              ∧ argumentsValid schema fieldDefinition.arguments arguments
               ∧ fieldSelectionSetValid schema fragments fieldDefinition selectionSet
     | .fragmentSpread fragmentName directives =>
         directivesValid directives
@@ -38,7 +52,7 @@ mutual
 
   def fieldSelectionSetValid (schema : Schema) (fragments : List FragmentDefinition)
       (fieldDefinition : FieldDefinition) (selectionSet : List Selection) : Prop :=
-    let returnType := fieldDefinition.typeRef.namedType
+    let returnType := fieldDefinition.outputType.namedType
     (schema.leafType returnType ∧ selectionSet = [])
       ∨ (schema.compositeType returnType
         ∧ selectionSetValid schema fragments returnType selectionSet)

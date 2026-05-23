@@ -17,20 +17,51 @@ def namedType : TypeRef -> Name
 
 end TypeRef
 
+inductive InputValue where
+  | null
+  | int (value : Int)
+  | float (value : String)
+  | string (value : String)
+  | boolean (value : Bool)
+  | enum (value : Name)
+  | list (values : List InputValue)
+  | object (fields : List (Name × InputValue))
+  | variable (name : Name)
+deriving Repr
+
+namespace InputValue
+
+def staticBoolean? : InputValue -> Option Bool
+  | .boolean value => some value
+  | _ => none
+
+end InputValue
+
+structure Argument where
+  name : Name
+  value : InputValue
+deriving Repr
+
 inductive DirectiveApplication where
-  | skip (ifArgument : Bool)
-  | include (ifArgument : Bool)
-deriving Repr, DecidableEq
+  | skip (ifArgument : InputValue)
+  | include (ifArgument : InputValue)
+deriving Repr
 
 namespace DirectiveApplication
 
 def allows : DirectiveApplication -> Prop
-  | .skip ifArgument => ifArgument = false
-  | .include ifArgument => ifArgument = true
+  | .skip ifArgument => ifArgument.staticBoolean? = some false
+  | .include ifArgument => ifArgument.staticBoolean? = some true
 
 def allowsBool : DirectiveApplication -> Bool
-  | .skip ifArgument => !ifArgument
-  | .include ifArgument => ifArgument
+  | .skip ifArgument =>
+      match ifArgument.staticBoolean? with
+      | some value => !value
+      | none => false
+  | .include ifArgument =>
+      match ifArgument.staticBoolean? with
+      | some value => value
+      | none => false
 
 end DirectiveApplication
 
@@ -44,6 +75,7 @@ inductive Selection where
   | field
       (responseName : Name)
       (fieldName : Name)
+      (arguments : List Argument)
       (directives : List DirectiveApplication)
       (selectionSet : List Selection)
   | fragmentSpread
@@ -70,7 +102,7 @@ deriving Repr
 
 mutual
   def Selection.size : Selection -> Nat
-    | .field _ _ _ selectionSet => 1 + SelectionSet.size selectionSet
+    | .field _ _ _ _ selectionSet => 1 + SelectionSet.size selectionSet
     | .fragmentSpread _ _ => 1
     | .inlineFragment _ _ selectionSet => 1 + SelectionSet.size selectionSet
 
@@ -88,7 +120,7 @@ def Operation.size (operation : Operation) : Nat :=
 
 mutual
   def Selection.fragmentFree : Selection -> Prop
-    | .field _ _ _ selectionSet => SelectionSet.fragmentFree selectionSet
+    | .field _ _ _ _ selectionSet => SelectionSet.fragmentFree selectionSet
     | .fragmentSpread _ _ => False
     | .inlineFragment _ _ selectionSet => SelectionSet.fragmentFree selectionSet
 

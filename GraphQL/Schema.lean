@@ -2,18 +2,26 @@ import GraphQL.Syntax
 
 namespace GraphQL
 
-structure ArgumentDefinition where
-  name : Name
-  typeRef : TypeRef
+inductive BuiltinScalar where
+  | int
+  | float
+  | string
+  | boolean
+  | id
 deriving Repr, DecidableEq
 
-structure FieldDefinition where
-  name : Name
-  typeRef : TypeRef
-  arguments : List ArgumentDefinition := []
-deriving Repr, DecidableEq
+namespace BuiltinScalar
 
-structure ScalarType where
+def name : BuiltinScalar -> Name
+  | .int => "Int"
+  | .float => "Float"
+  | .string => "String"
+  | .boolean => "Boolean"
+  | .id => "ID"
+
+end BuiltinScalar
+
+structure CustomScalarType where
   name : Name
 deriving Repr, DecidableEq
 
@@ -22,39 +30,60 @@ structure EnumType where
   values : List Name
 deriving Repr, DecidableEq
 
+structure InputValueDefinition where
+  name : Name
+  inputType : TypeRef
+  defaultValue : Option InputValue := none
+deriving Repr
+
+structure FieldDefinition where
+  name : Name
+  outputType : TypeRef
+  arguments : List InputValueDefinition := []
+deriving Repr
+
 structure ObjectType where
   name : Name
   fields : List FieldDefinition
   interfaces : List Name := []
-deriving Repr, DecidableEq
+deriving Repr
 
 structure InterfaceType where
   name : Name
   fields : List FieldDefinition
   implementations : List Name
-deriving Repr, DecidableEq
+deriving Repr
 
 structure UnionType where
   name : Name
   members : List Name
 deriving Repr, DecidableEq
 
+structure InputObjectType where
+  name : Name
+  inputFields : List InputValueDefinition
+deriving Repr
+
 inductive TypeDefinition where
-  | scalar : ScalarType -> TypeDefinition
-  | enum : EnumType -> TypeDefinition
+  | builtinScalar : BuiltinScalar -> TypeDefinition
+  | customScalar : CustomScalarType -> TypeDefinition
   | object : ObjectType -> TypeDefinition
   | interface : InterfaceType -> TypeDefinition
   | union : UnionType -> TypeDefinition
-deriving Repr, DecidableEq
+  | enum : EnumType -> TypeDefinition
+  | inputObject : InputObjectType -> TypeDefinition
+deriving Repr
 
 namespace TypeDefinition
 
 def name : TypeDefinition -> Name
-  | .scalar scalarType => scalarType.name
-  | .enum enumType => enumType.name
+  | .builtinScalar scalar => scalar.name
+  | .customScalar scalar => scalar.name
   | .object objectType => objectType.name
   | .interface interfaceType => interfaceType.name
   | .union unionType => unionType.name
+  | .enum enumType => enumType.name
+  | .inputObject inputObjectType => inputObjectType.name
 
 def fields? : TypeDefinition -> Option (List FieldDefinition)
   | .object objectType => some objectType.fields
@@ -65,11 +94,11 @@ def possibleObjectNames : TypeDefinition -> List Name
   | .object objectType => [objectType.name]
   | .interface interfaceType => interfaceType.implementations
   | .union unionType => unionType.members
-  | .scalar _ => []
-  | .enum _ => []
+  | _ => []
 
 def isLeaf : TypeDefinition -> Prop
-  | .scalar _ => True
+  | .builtinScalar _ => True
+  | .customScalar _ => True
   | .enum _ => True
   | _ => False
 
@@ -79,21 +108,49 @@ def isComposite : TypeDefinition -> Prop
   | .union _ => True
   | _ => False
 
+def isInput : TypeDefinition -> Prop
+  | .builtinScalar _ => True
+  | .customScalar _ => True
+  | .enum _ => True
+  | .inputObject _ => True
+  | _ => False
+
+def isOutput : TypeDefinition -> Prop
+  | .builtinScalar _ => True
+  | .customScalar _ => True
+  | .object _ => True
+  | .interface _ => True
+  | .union _ => True
+  | .enum _ => True
+  | _ => False
+
 end TypeDefinition
 
 structure Schema where
   queryType : Name
   types : List TypeDefinition
-deriving Repr, DecidableEq
+deriving Repr
 
 namespace Schema
 
+def builtinScalarDefinitions : List TypeDefinition :=
+  [.builtinScalar .int, .builtinScalar .float, .builtinScalar .string,
+    .builtinScalar .boolean, .builtinScalar .id]
+
+def allTypes (schema : Schema) : List TypeDefinition :=
+  builtinScalarDefinitions ++ schema.types
+
 def lookupType (schema : Schema) (typeName : Name) : Option TypeDefinition :=
-  schema.types.find? (fun typeDefinition => typeDefinition.name == typeName)
+  schema.allTypes.find? (fun typeDefinition => typeDefinition.name == typeName)
 
 def lookupObject (schema : Schema) (typeName : Name) : Option ObjectType := do
   match schema.lookupType typeName with
   | some (.object object) => some object
+  | _ => none
+
+def lookupInputObject (schema : Schema) (typeName : Name) : Option InputObjectType := do
+  match schema.lookupType typeName with
+  | some (.inputObject inputObject) => some inputObject
   | _ => none
 
 def lookupField (schema : Schema) (parentType fieldName : Name) : Option FieldDefinition := do
@@ -101,9 +158,13 @@ def lookupField (schema : Schema) (parentType fieldName : Name) : Option FieldDe
   let fields <- typeDefinition.fields?
   fields.find? (fun field => field.name == fieldName)
 
+def lookupArgumentDefinition (definitions : List InputValueDefinition)
+    (argumentName : Name) : Option InputValueDefinition :=
+  definitions.find? (fun definition => definition.name == argumentName)
+
 def fieldReturnType? (schema : Schema) (parentType fieldName : Name) : Option Name := do
   let field <- schema.lookupField parentType fieldName
-  pure field.typeRef.namedType
+  pure field.outputType.namedType
 
 def possibleObjectNames (schema : Schema) (typeName : Name) : List Name :=
   match schema.lookupType typeName with
@@ -127,6 +188,16 @@ def typesOverlapBool (schema : Schema) (left right : Name) : Bool :=
 
 def typeExists (schema : Schema) (typeName : Name) : Prop :=
   schema.lookupType typeName ≠ none
+
+def inputType (schema : Schema) (typeName : Name) : Prop :=
+  ∃ typeDefinition,
+    schema.lookupType typeName = some typeDefinition
+      ∧ typeDefinition.isInput
+
+def outputType (schema : Schema) (typeName : Name) : Prop :=
+  ∃ typeDefinition,
+    schema.lookupType typeName = some typeDefinition
+      ∧ typeDefinition.isOutput
 
 def compositeType (schema : Schema) (typeName : Name) : Prop :=
   ∃ typeDefinition,

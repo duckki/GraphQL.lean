@@ -20,7 +20,7 @@ inductive Response where
 deriving Repr
 
 structure Resolvers where
-  resolve : Name -> Name -> Value -> Value
+  resolve : Name -> Name -> List Argument -> Value -> Value
 
 def responseForValue : Value -> List (Name × Response) -> Response
   | .null, _ => .null
@@ -43,9 +43,9 @@ def typeConditionAppliesBool (schema : Schema) (parentType : Name)
 mutual
   def executeSelection (schema : Schema) (resolvers : Resolvers) (fragments : List FragmentDefinition)
       (fuel : Nat) (parentType : Name) (source : Value) : Selection -> List (Name × Response)
-    | .field responseName fieldName directives selectionSet =>
+    | .field responseName fieldName arguments directives selectionSet =>
         if directivesAllowBool directives then
-          let resolved := resolvers.resolve parentType fieldName source
+          let resolved := resolvers.resolve parentType fieldName arguments source
           let childType := (schema.fieldReturnType? parentType fieldName).getD fieldName
           let childFields := executeSelectionSet schema resolvers fragments fuel childType resolved selectionSet
           [(responseName, responseForValue resolved childFields)]

@@ -1,9 +1,20 @@
 import GraphQL.Operation
 
+/-!
+Spec reference: GraphQL September 2025.
+- No direct GraphQL spec section defines operation minimization.
+- 2.4 Operations, 2.9 Fragments, 5 Validation, and 6 Execution are the intended semantic
+  background for any future equivalence predicate.
+- Fidelity note: this file is project-specific proof scaffolding. It proves finite-list
+  minimality for candidates already proven equivalent by an external predicate, but it
+  does not define GraphQL operation equivalence or a spec-preserving candidate generator.
+-/
 namespace GraphQL
 
 namespace Minimization
 
+-- Spec-related candidate wrapper: non-spec structure bundling an operation with evidence
+-- for an externally supplied equivalence predicate.
 structure Candidate (equivalentToInput : Operation -> Prop) where
   operation : Operation
   equivalent : equivalentToInput operation
@@ -28,6 +39,8 @@ def minimize? {equivalentToInput : Operation -> Prop} :
   | [] => none
   | candidate :: rest => some (minimizeFrom candidate rest)
 
+-- Spec-independent finite minimization theorem: proves smallest `Operation.size` among
+-- supplied equivalent candidates, not semantic correctness of those candidates.
 theorem chooseSmaller_le_left {equivalentToInput : Operation -> Prop}
     (left right : Candidate equivalentToInput) :
     (chooseSmaller left right).size ≤ left.size := by
@@ -99,6 +112,8 @@ structure FragmentMinimizerSpec where
   equivalent : Operation -> Operation -> Prop
   candidates : (input : Operation) -> List (Candidate (equivalent input))
 
+-- Spec-related minimizer entry point: non-spec; delegates all GraphQL fidelity to
+-- `FragmentMinimizerSpec.equivalent` and `candidates`.
 def minimizeOperation? (spec : FragmentMinimizerSpec) (input : Operation) :
     Option (Candidate (spec.equivalent input)) :=
   minimize? (spec.candidates input)

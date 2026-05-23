@@ -1,9 +1,24 @@
 import GraphQL.Semantic
 
+/-!
+Spec reference: GraphQL September 2025.
+- 6.1-6.2 Executing Requests and Operations: this module executes the modeled single
+  semantic/query-like operation, not full request validation/coercion or
+  mutation/subscription modes.
+- 6.3 Executing Selection Sets: field collection, grouped field execution, and subfield
+  merging are represented over semantic selections.
+- 6.4 Executing Fields: resolver invocation and value completion are approximated;
+  argument coercion, result coercion, asynchronous behavior, and error propagation are
+  omitted.
+- 7 Response: response values model data only, without `errors`, `extensions`, or request
+  error results.
+-/
 namespace GraphQL
 
 namespace Execution
 
+-- Spec 6.4.3 values before completion: non-spec internal value domain used to stand in
+-- for host-language resolver results.
 inductive Value where
   | null
   | scalar (value : String)
@@ -11,6 +26,8 @@ inductive Value where
   | list (values : List Value)
 deriving Repr
 
+-- Spec 7.1 Execution Result `data`: partial; models response data recursively, omitting
+-- errors, extensions, and serialization details.
 inductive Response where
   | null
   | scalar (value : String)
@@ -18,9 +35,13 @@ inductive Response where
   | list (values : List Response)
 deriving Repr
 
+-- Spec 6.4.2 `ResolveFieldValue`: partial; one synchronous resolver function stands in
+-- for object-type field resolvers and receives uncoerced modeled arguments.
 structure Resolvers where
   resolve : Name -> Name -> List Argument -> Value -> Value
 
+-- Spec 6.1.2 `CoerceVariableValues`: partial; variables are assumed already supplied as
+-- modeled input values without coercion or validation.
 abbrev VariableValues := List (Name × InputValue)
 
 def lookupVariableValue? (variableValues : VariableValues) (name : Name) : Option InputValue :=
@@ -29,6 +50,8 @@ def lookupVariableValue? (variableValues : VariableValues) (name : Name) : Optio
   | (variableName, value) :: rest =>
       if variableName = name then some value else lookupVariableValue? rest name
 
+-- Spec 3.13.1 `@skip` / 3.13.2 `@include`: partial; resolves only Boolean literals or
+-- variables bound to Boolean literals.
 def inputValueBoolean? (variableValues : VariableValues) : InputValue -> Option Bool
   | .variable name => do
       let value <- lookupVariableValue? variableValues name
@@ -49,6 +72,8 @@ def directivesAllowWithVariablesBool (variableValues : VariableValues)
     (directives : List DirectiveApplication) : Bool :=
   directives.all (fun directive => directiveAllowsBool variableValues directive)
 
+-- Spec 6.4.3 `CompleteValue`: partial fallback for exhausted fuel; converts internal
+-- values structurally without type-directed coercion or errors.
 def shallowResponse : Value -> Response
   | .null => .null
   | .scalar value => .scalar value
@@ -59,12 +84,16 @@ def runtimeObjectType? : Value -> Option Name
   | .object typeName _identity => some typeName
   | _ => none
 
+-- Spec 6.3.2 `DoesFragmentTypeApply`: partial; faithful when runtime object type is
+-- known, but falls back to parent/type overlap for non-object placeholder values.
 def typeConditionAppliesBool (schema : Schema) (parentType : Name)
     (source : Value) (typeCondition : Name) : Bool :=
   match runtimeObjectType? source with
   | some objectName => schema.typeIncludesObjectBool typeCondition objectName
   | none => schema.typesOverlapBool parentType typeCondition
 
+-- Spec 6.3.2 collected field entries: non-spec helper carrying the data needed to execute
+-- one grouped response name.
 structure ExecutableField where
   parentType : Name
   responseName : Name
@@ -73,6 +102,8 @@ structure ExecutableField where
   selectionSet : List Semantic.Selection
 deriving Repr
 
+-- Spec 6.3.2 collected fields map: partial list-backed ordered map insertion by response
+-- name.
 def addExecutableField (field : ExecutableField) :
     List (Name × List ExecutableField) -> List (Name × List ExecutableField)
   | [] => [(field.responseName, [field])]
@@ -99,7 +130,12 @@ def mergedFieldSelectionSet : List ExecutableField -> List Semantic.Selection
   | [] => []
   | field :: rest => field.selectionSet ++ mergedFieldSelectionSet rest
 
+-- Spec 6.3 `ExecuteRootSelectionSet`, 6.3.2 `CollectFields`, 6.3.3
+-- `ExecuteCollectedFields`, 6.4 `ExecuteField`, and 6.4.3 `CompleteValue`: partial
+-- fuel-bounded execution model without coercion or error propagation.
 mutual
+  -- Spec 6.4.3 `CompleteValue`: partial; ignores declared `fieldType` wrappers and result
+  -- coercion/errors, using the runtime value shape instead.
   def completeValue (schema : Schema) (resolvers : Resolvers)
       (variableValues : VariableValues) :
       Nat -> Name -> List Semantic.Selection -> Value -> Response
@@ -115,6 +151,8 @@ mutual
             completeValue schema resolvers variableValues
               fuel parentType selectionSet value))
 
+  -- Spec 6.3.1 `ExecuteRootSelectionSet` / recursive selection-set execution: partial;
+  -- directly returns data fields and omits error collection.
   def executeSelectionSet (schema : Schema) (resolvers : Resolvers)
       (variableValues : VariableValues)
       (fuel : Nat) (parentType : Name) (source : Value) :
@@ -123,6 +161,8 @@ mutual
         executeGroupedFieldSet schema resolvers variableValues fuel source
           (collectFields schema variableValues fuel parentType source selectionSet)
 
+  -- Spec 6.3.2 `CollectFields` selection step: partial; handles built-in directives and
+  -- inline fragments over semantic syntax, without named fragment tracking.
   def collectSelection (schema : Schema) (variableValues : VariableValues) :
       Nat -> Name -> Value -> Semantic.Selection ->
         List (Name × List ExecutableField)
@@ -154,6 +194,8 @@ mutual
         else
           []
 
+  -- Spec 6.3.2 `CollectFields`: partial; list-backed ordered grouping of executable
+  -- fields by response name.
   def collectFields (schema : Schema) (variableValues : VariableValues) :
       Nat -> Name -> Value -> List Semantic.Selection ->
         List (Name × List ExecutableField)
@@ -164,6 +206,8 @@ mutual
           (collectSelection schema variableValues (fuel + 1) parentType source selection)
           (collectFields schema variableValues (fuel + 1) parentType source rest)
 
+  -- Spec 6.4 `ExecuteField`: partial; resolves one grouped response name once and
+  -- completes with merged subselections.
   def executeGroupedField (schema : Schema) (resolvers : Resolvers)
       (variableValues : VariableValues) (fuel : Nat) (source : Value)
       (responseName : Name) : List ExecutableField -> List (Name × Response)
@@ -181,6 +225,8 @@ mutual
               completeValue schema resolvers variableValues
                 fuel' childType selectionSet resolved)]
 
+  -- Spec 6.3.3 `ExecuteCollectedFields`: partial; executes each response-name group in
+  -- stored order, without serial/parallel distinction or errors.
   def executeGroupedFieldSet (schema : Schema) (resolvers : Resolvers)
       (variableValues : VariableValues) (fuel : Nat) (source : Value) :
       List (Name × List ExecutableField) -> List (Name × Response)
@@ -193,6 +239,8 @@ end
 def semanticExecutionFuel (operation : Semantic.Operation) : Nat :=
   operation.size * 3 + 1
 
+-- Spec 6.2.1 `ExecuteQuery` / 6.3.1 `ExecuteRootSelectionSet`: partial; executes a
+-- semantic operation as normal data-only object response.
 def executeSemanticOperation (schema : Schema) (resolvers : Resolvers)
     (variableValues : VariableValues) (operation : Semantic.Operation)
     (source : Value) : Response :=
@@ -202,6 +250,8 @@ def executeSemanticOperation (schema : Schema) (resolvers : Resolvers)
 def executionFuel (operation : Operation) : Nat :=
   semanticExecutionFuel (Semantic.fromOperation operation)
 
+-- Spec 6.2/6.3 operation execution: partial; first inlines fragments, then executes using
+-- the semantic operation model.
 def executeOperation (schema : Schema) (resolvers : Resolvers)
     (variableValues : VariableValues) (operation : Operation)
     (source : Value) : Response :=

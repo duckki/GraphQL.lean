@@ -1,9 +1,24 @@
 import GraphQL.Semantic
 
+/-!
+Spec reference: GraphQL September 2025.
+- 2.8 Field Alias and 6.3.2 Field Collection: response names are the keys used to group
+  selected fields.
+- 3.13.1 `@skip`, 3.13.2 `@include`, and 5.5.2.3 `GetPossibleTypes`: shape variants record
+  Boolean directive conditions and possible runtime object types.
+- 5.3.2 Field Selection Merging: selected-field compatibility is tracked structurally for
+  same response names.
+- Fidelity note: response shapes are not a GraphQL spec definition. They are a
+  project-specific abstraction of possible response-name variants; they intentionally omit
+  concrete result values, object identity, list/null completion, argument coercion, and
+  execution errors.
+-/
 namespace GraphQL
 
 namespace ResponseShape
 
+-- Spec-inspired Boolean condition atom for 3.13.1 `@skip` and 3.13.2 `@include`; non-spec
+-- helper used to summarize variable-dependent directive conditions.
 inductive BooleanLiteral where
   | positive (name : Name)
   | negative (name : Name)
@@ -11,6 +26,8 @@ deriving Repr
 
 namespace BooleanLiteral
 
+-- Spec-inspired equality over directive-condition literals: non-spec boolean decision
+-- helper.
 def eqBool : BooleanLiteral -> BooleanLiteral -> Bool
   | .positive left, .positive right => left == right
   | .negative left, .negative right => left == right
@@ -54,6 +71,8 @@ def compatibleBool (left right : List BooleanLiteral) : Bool :=
 
 end BooleanLiteral
 
+-- Spec-inspired runtime condition: combines 5.5.2.3 possible object types with 3.13
+-- Boolean directive literals; not a GraphQL spec data structure.
 structure Condition where
   possibleTypes : Option (List Name)
   booleanLiterals : List BooleanLiteral
@@ -134,6 +153,8 @@ def intersect? (left right : Condition) : Option Condition :=
   let combined := left.and right
   if combined.satisfiableBool then some combined else none
 
+-- Spec 3.13.1 `@skip` and 3.13.2 `@include`: partial; converts modeled built-ins into
+-- static/variable Boolean conditions and rejects unsupported argument forms.
 def fromDirective? : DirectiveApplication -> Option Condition
   | .include (.boolean Bool.true) => some empty
   | .include (.boolean Bool.false) => none
@@ -155,6 +176,8 @@ def fromDirectives? : List DirectiveApplication -> Option Condition
 
 end Condition
 
+-- Spec 5.3.2 same-response-name field comparison: partial field identity containing name
+-- and raw arguments, without argument coercion or order-insensitive normalization.
 structure SelectedField where
   fieldName : Name
   arguments : List Argument
@@ -162,6 +185,8 @@ deriving Repr
 
 namespace SelectedField
 
+-- Spec 2.10 input value equality as used by 5.3.2 field argument equality: partial; raw
+-- structural equality, so object-field/argument order is significant here.
 mutual
   def inputValueEqBool : InputValue -> InputValue -> Bool
     | .null, .null => true
@@ -209,6 +234,8 @@ def selectedField (fieldName : Name) (arguments : List Argument) :
     SelectedField :=
   { fieldName := fieldName, arguments := arguments }
 
+-- Spec-inspired variant header: response variant condition plus selected field; not a
+-- GraphQL spec structure.
 abbrev VariantHeader := Condition × SelectedField
 
 namespace VariantHeader
@@ -229,6 +256,9 @@ def selectedFieldEqBool (left right : VariantHeader) : Bool :=
 def compatibleBool (left right : VariantHeader) : Bool :=
   !(conditionsOverlapBool left right) || selectedFieldEqBool left right
 
+-- Spec-inspired shape inclusion: non-spec condition-aware inclusion requiring the
+-- required condition to be covered by the available condition and the selected field to
+-- match.
 def includedByBool (required available : VariantHeader) : Bool :=
   conditionSubsetBool required available && selectedFieldEqBool required available
 
@@ -257,9 +287,13 @@ namespace Shape
 
 abbrev Variant := VariantHeader × Shape
 
+-- Spec 7.1.5 empty `data` object analogue for a leaf/no-field shape: non-spec empty
+-- shape.
 def empty : Shape :=
   ⟨[]⟩
 
+-- Spec 6.3.2 collected fields map lookup by response name: partial list-backed helper for
+-- the response-shape abstraction.
 def lookupField (responseName : Name) :
     List (Name × List (VariantHeader × Shape)) -> Option (List (VariantHeader × Shape))
   | [] => none
@@ -323,6 +357,8 @@ def responseNamesNodupBool :
       responseNameNotInFieldsBool responseName rest
         && responseNamesNodupBool rest
 
+-- Spec-inspired well-formedness: non-spec uniqueness and compatibility predicate for this
+-- module's response-name variant map.
 def responseNameNotInFields (responseName : Name)
     (fields : List (Name × List Variant)) : Prop :=
   responseNameNotInFieldsBool responseName fields = true
@@ -674,6 +710,8 @@ def mergeFields (left right : List (Name × List (VariantHeader × Shape))) :
     List (Name × List (VariantHeader × Shape)) :=
   (merge ⟨left⟩ ⟨right⟩).fields
 
+-- Spec-inspired response-shape inclusion: non-spec recursive inclusion over response
+-- names, variant conditions, selected fields, and child shapes.
 mutual
   def includesBool : Shape -> Shape -> Bool
     | ⟨requiredFields⟩, ⟨availableFields⟩ =>
@@ -750,6 +788,8 @@ theorem empty_includesBool (shape : Shape) : includesBool empty shape = true := 
 def equivalent (left right : Shape) : Prop :=
   includes left right ∧ includes right left
 
+-- Spec-inspired response-shape equivalence: non-spec bidirectional inclusion; weaker than
+-- full GraphQL operation equivalence.
 def equivalentBool (left right : Shape) : Bool :=
   includesBool left right && includesBool right left
 
@@ -868,6 +908,8 @@ def restrictConditionToType (schema : Schema) (condition : Condition)
     | some currentTypes => currentTypes.filter (fun name => allowedTypes.contains name)
   condition.withPossibleTypes possibleTypes
 
+-- Spec 6.3.2 `CollectFields`, 5.5.2.3 `GetPossibleTypes`, and 3.13 built-in directive
+-- conditions: partial response-shape collection over semantic selections.
 mutual
   def collectSelectionShapeFields (schema : Schema) :
       Nat -> Name -> Condition -> Semantic.Selection ->
@@ -935,6 +977,8 @@ def semanticOperationInitialCondition (schema : Schema)
   { possibleTypes := some (schema.possibleObjectNames operation.rootType),
     booleanLiterals := [] }
 
+-- Spec-inspired operation response summary: non-spec abstraction of the semantic
+-- operation's possible response-name shape.
 def ofSemanticOperation (schema : Schema) (operation : Semantic.Operation) : Shape :=
   ⟨semanticSelectionSetShape schema
     (semanticOperationShapeFuel operation) operation.rootType

@@ -1,9 +1,22 @@
 import GraphQL.Operation
 
+/-!
+Spec reference: GraphQL September 2025.
+- 5.3.2 Field Selection Merging: models same-response-name compatibility via
+  response-shape compatibility, field-name/argument equality when parent types overlap,
+  and recursive subfield merge checks.
+- 6.3.2 Field Collection: provides a validation-time field collector for merge analysis,
+  distinct from execution-time field collection.
+- Fidelity note: validation-time collection ignores executable directives and uses a fuel
+  bound; it also follows fragments by declared type condition without the execution
+  algorithm's runtime `DoesFragmentTypeApply` filtering.
+-/
 namespace GraphQL
 
 namespace FieldMerge
 
+-- Spec 5.3.2 `FieldsInSetCanMerge` field-pair context: non-spec helper carrying the
+-- parent type and field data needed by merge checks.
 structure ScopedField where
   parentType : Name
   responseName : Name
@@ -13,6 +26,8 @@ structure ScopedField where
   selectionSet : List Selection
 deriving Repr
 
+-- Spec 5.3.2 `SameResponseShape`: mostly faithful for wrapping structure and leaf
+-- named-type equality, using the modeled schema's leaf/output predicates.
 def fieldShapeCompatible (schema : Schema) : TypeRef -> TypeRef -> Prop
   | .nonNull left, .nonNull right => fieldShapeCompatible schema left right
   | .nonNull _, _ => False
@@ -25,6 +40,9 @@ def fieldShapeCompatible (schema : Schema) : TypeRef -> TypeRef -> Prop
         ∧ schema.outputType right
         ∧ ((schema.leafType left ∨ schema.leafType right) -> left = right)
 
+-- Spec 5.3.2 `CollectFieldsAndFragmentNames` / 6.3.2 `CollectFields`: partial validation
+-- helper; it expands modeled fragments but does not apply directives or runtime
+-- type-condition filtering.
 def collectFields (schema : Schema) (fragments : List FragmentDefinition) :
     Nat -> Name -> List Selection -> List ScopedField
   | 0, _parentType, _selectionSet => []
@@ -55,6 +73,8 @@ def collectFields (schema : Schema) (fragments : List FragmentDefinition) :
             collectFields schema fragments fuel typeCondition selectionSet
       current ++ collectFields schema fragments fuel parentType rest
 
+-- Spec 5.3.2 `FieldsInSetCanMerge`: partial; captures pairwise response-shape, same
+-- field/arguments on overlapping parent types, and recursive merged subselection checks.
 def selectionSetFieldsCanMerge (schema : Schema) (fragments : List FragmentDefinition) :
     Nat -> Name -> List Selection -> Prop
   | 0, _parentType, _selectionSet => True

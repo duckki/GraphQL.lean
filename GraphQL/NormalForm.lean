@@ -1,16 +1,33 @@
 import GraphQL.Semantic
 
+/-!
+Spec reference: GraphQL September 2025.
+- 5.3.2 Field Selection Merging and 6.3.2 Field Collection: normalization merges
+  same-response-name field subselections in the spirit of GraphQL's merge/collect
+  behavior.
+- 5.5.2.3 Fragment Spread Is Possible and `GetPossibleTypes`: abstract type conditions are
+  grounded through possible object types.
+- Fidelity note: GraphQL does not define this normal form. This is a project-specific
+  canonicalization scaffold; it is partial, fuel-bounded, and does not yet prove semantic
+  preservation.
+-/
 namespace GraphQL
 
 namespace NormalForm
 
+-- Spec-inspired normal-form invariant: non-spec predicate requiring a flat field-only
+-- selection layer.
 def selectionsAllFields (selectionSet : List Semantic.Selection) : Prop :=
   ∀ selection, selection ∈ selectionSet -> Semantic.Selection.isField selection
 
+-- Spec-inspired normal-form invariant: non-spec predicate requiring a flat
+-- inline-fragment-only selection layer.
 def selectionsAllInlineFragments (selectionSet : List Semantic.Selection) : Prop :=
   ∀ selection, selection ∈ selectionSet ->
     Semantic.Selection.isInlineFragment selection
 
+-- Spec-inspired `GetPossibleTypes` grounding: non-spec predicate for object-grounded
+-- semantic selections.
 mutual
   def selectionGroundTyped (schema : Schema) : Semantic.Selection -> Prop
     | .field _responseName _fieldName _arguments _directives selectionSet =>
@@ -33,6 +50,8 @@ end
 def responseNamesNodup (selectionSet : List Semantic.Selection) : Prop :=
   (selectionSet.filterMap Semantic.Selection.responseName?).Nodup
 
+-- Spec-inspired fragment grounding invariant: non-spec uniqueness predicate for
+-- inline-fragment type conditions.
 def inlineFragmentTypeConditionsNodup
     (selectionSet : List Semantic.Selection) : Prop :=
   (selectionSet.filterMap (fun selection =>
@@ -41,6 +60,8 @@ def inlineFragmentTypeConditionsNodup
         some typeCondition
     | _ => none)).Nodup
 
+-- Spec-inspired non-redundancy: non-spec predicate used by this project's normal form
+-- rather than by GraphQL itself.
 mutual
   def selectionNonRedundant : Semantic.Selection -> Prop
     | .field _responseName _fieldName _arguments _directives selectionSet =>
@@ -65,6 +86,9 @@ def semanticOperationNormal (schema : Schema)
 def operationNormal (schema : Schema) (operation : GraphQL.Operation) : Prop :=
   semanticOperationNormal schema (Semantic.fromOperation operation)
 
+-- Spec 5.3.2 field merging / 6.3.2 subfield collection: partial normalizer; merges direct
+-- same-response-name fields and recursively normalizes child selections when the return
+-- type is known.
 def mergeFieldSelections (schema : Schema) (fuel : Nat)
     (parentType : Name) (responseName : Name)
     (selectionSet : List Semantic.Selection) : Option Semantic.Selection :=
@@ -133,6 +157,8 @@ def normalizeSemanticOperation (schema : Schema)
     selectionSet := normalizeSelectionSet schema operation.size
       operation.rootType operation.selectionSet }
 
+-- Spec-inspired operation normalization: non-spec transformation; currently clears named
+-- fragments via `Semantic.fromOperation` and has only the fragment-empty theorem below.
 def normalizeOperation (schema : Schema) (operation : GraphQL.Operation) :
     GraphQL.Operation :=
   (normalizeSemanticOperation schema (Semantic.fromOperation operation)).toOperation

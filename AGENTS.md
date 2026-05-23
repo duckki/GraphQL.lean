@@ -116,3 +116,8 @@ lake lint
 Keep raw syntax permissive and put invariants in validation or well-formedness
 predicates. Prefer small, proof-friendly definitions over feature expansion.
 When adding scope, update `docs/spec-conformance-plan.md` first.
+
+Review workflow: going forward, use one reviewable commit at a time. After making
+a commit, stop and let the user review that commit before continuing to the next
+proof or implementation slice, unless the user explicitly asks to continue past
+the review boundary.

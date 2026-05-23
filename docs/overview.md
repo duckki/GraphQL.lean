@@ -32,7 +32,7 @@ flowchart TD
   Operation --> FieldMerge
   FieldMerge --> Validation
   Semantic --> NormalForm
-  Validation --> Execution
+  Semantic --> Execution
   Semantic --> ResponseShape
   Operation --> Minimization
 
@@ -62,7 +62,7 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
 - `GraphQL.Validation`: validation as a proposition over a schema and operation, including variable definitions, duplicate argument checks, required argument checks, recursive input/output type checks, non-empty required selection sets, field merge checks, unique fragment names, spread resolution, acyclic fragment dependencies, and fragment applicability by possible-object overlap.
 - `GraphQL.NormalForm`: ground-typed normal form and non-redundancy predicates over semantic selection sets, plus a bounded normalization pass for field merging and abstract-type grounding.
 - `GraphQL.ResponseShape`: a semantic selection-set summary between raw operation syntax and ground-type normal form. It records response names, conditional field variants, child shapes, condition overlap/subset/contradiction utilities, shape inclusion, and shape equivalence.
-- `GraphQL.Execution`: execution as a function parameterized by abstract resolver functions, with field arguments passed to resolvers and `@skip` / `@include` filtering for fields, named spreads, and inline spreads.
+- `GraphQL.Execution`: execution over semantic selections as a function parameterized by abstract resolver functions. It collects executable fields by response name, resolves each response name once, passes field arguments to resolvers, and applies `@skip` / `@include` filtering for fields and inline fragments.
 - `GraphQL.Minimization`: finite-candidate operation minimization parameterized by an explicit operation-equivalence predicate, plus the generic minimality theorem.
 
 ### Plain GraphQL Flow
@@ -73,10 +73,10 @@ The current Part 1 flow is:
 2. `GraphQL.Semantic` inlines named fragments into a field/inline-fragment-only selection tree for semantic analysis.
 3. `GraphQL.SchemaWellFormedness`, `GraphQL.FieldMerge`, and `GraphQL.Validation` state well-formedness and operation validity.
 4. `GraphQL.ResponseShape` summarizes semantic selection sets as unnormalized conditional response-name variants.
-5. `GraphQL.Execution` gives bounded execution as a function, parameterized by abstract resolvers.
+5. `GraphQL.Execution` gives bounded execution over semantic selections by first collecting fields by response name, then resolving each response name once.
 6. `GraphQL.NormalForm` and `GraphQL.Minimization` provide the normalization/minimization proof scaffolding.
 
-Normalization consumes the fragment-inlined semantic form and clears retained fragment definitions from the normalized raw operation.
+Normalization consumes the fragment-inlined semantic form and clears retained fragment definitions from the normalized raw operation. Inline fragments without type conditions are flattened only when they have no directives; directive-bearing inline fragments are retained so their runtime condition is preserved.
 
 The raw-to-semantic inlining step is currently treated as syntax preparation. A later theorem relating raw-operation normal forms to fragment-inlined normal forms is possible, but not required for the current semantic model.
 
@@ -120,7 +120,7 @@ The condition utility layer supports the next canonicalization step:
 - recursive shape well-formedness, which requires those per-response-name compatibility checks at every child shape.
 - response-name uniqueness for shapes, so each response name owns one variant list even when variants are not normalized.
 - propositional compatibility and well-formedness predicates with soundness/completeness bridges to the boolean checks.
-- response-shape construction prunes unsatisfiable directive/type-condition branches.
+- response-shape construction collects selections into response-name groups and prunes unsatisfiable directive/type-condition branches.
 
 ### Shape And Normal Form
 

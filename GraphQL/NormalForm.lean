@@ -100,8 +100,12 @@ where
         | none =>
             let normalizedRest := normalizeSelectionSet schema fuel parentType rest
             match selection with
-            | .inlineFragment none _directives subselections =>
+            | .inlineFragment none [] subselections =>
                 normalizeSelectionSet schema fuel parentType (subselections ++ rest)
+            | .inlineFragment none directives subselections =>
+                .inlineFragment none directives
+                  (normalizeSelectionSet schema fuel parentType subselections)
+                  :: normalizedRest
             | .inlineFragment (some typeCondition) directives subselections =>
                 match schema.lookupType typeCondition with
                 | some (.object _) =>

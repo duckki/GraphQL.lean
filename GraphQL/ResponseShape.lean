@@ -869,7 +869,7 @@ def restrictConditionToType (schema : Schema) (condition : Condition)
   condition.withPossibleTypes possibleTypes
 
 mutual
-  def semanticSelectionShape (schema : Schema) :
+  def collectSelectionShapeFields (schema : Schema) :
       Nat -> Name -> Condition -> Semantic.Selection ->
         List (Name × List (VariantHeader × Shape))
     | 0, _parentType, _condition, _selection => []
@@ -885,7 +885,7 @@ mutual
                 match selectionSet with
                 | [] => empty
                 | _ =>
-                    ⟨semanticSelectionSetShape schema fuel
+                    ⟨collectSelectionSetShapeFields schema fuel
                       childType fieldCondition selectionSet⟩
               [(responseName, [((fieldCondition, selectedField fieldName arguments), childShape)])]
             else
@@ -894,7 +894,7 @@ mutual
         match Condition.fromDirectives? directives with
         | none => []
         | some directiveCondition =>
-            semanticSelectionSetShape schema fuel parentType
+            collectSelectionSetShapeFields schema fuel parentType
               (condition.and directiveCondition) selectionSet
     | fuel + 1, _parentType, condition,
         .inlineFragment (some typeCondition) directives selectionSet =>
@@ -904,10 +904,10 @@ mutual
             let nextCondition :=
               restrictConditionToType schema (condition.and directiveCondition)
                 typeCondition
-            semanticSelectionSetShape schema fuel
+            collectSelectionSetShapeFields schema fuel
               typeCondition nextCondition selectionSet
 
-  def semanticSelectionSetShape (schema : Schema) :
+  def collectSelectionSetShapeFields (schema : Schema) :
       Nat -> Name -> Condition -> List Semantic.Selection ->
         List (Name × List (VariantHeader × Shape))
     | 0, _parentType, _condition, _selectionSet => []
@@ -915,11 +915,17 @@ mutual
     | fuel + 1, parentType, condition, selection :: rest =>
         if condition.satisfiableBool then
           mergeFields
-            (semanticSelectionShape schema (fuel + 1) parentType condition selection)
-            (semanticSelectionSetShape schema (fuel + 1) parentType condition rest)
+            (collectSelectionShapeFields schema (fuel + 1) parentType condition selection)
+            (collectSelectionSetShapeFields schema (fuel + 1) parentType condition rest)
         else
           []
 end
+
+def semanticSelectionSetShape (schema : Schema) (fuel : Nat)
+    (parentType : Name) (condition : Condition)
+    (selectionSet : List Semantic.Selection) :
+    List (Name × List (VariantHeader × Shape)) :=
+  collectSelectionSetShapeFields schema fuel parentType condition selectionSet
 
 def semanticOperationShapeFuel (operation : Semantic.Operation) : Nat :=
   operation.size + 1

@@ -49,10 +49,13 @@ behavior when working on response-shape soundness.
 
 Ground normal form correctness is proved for direct single-leaf selections with
 or without modeled directives, inline-fragment single-leaf selections without
-directives, object-type typed inline fragments with modeled directives, and two
-direct no-directive leaf fields with distinct response names. The next proof
-boundary is to generalize the distinct direct leaf-field case to lists before
-tackling same-response-name field merging.
+directives, object-type typed inline fragments with modeled directives, two or
+three direct no-directive leaf fields with distinct response names, and any
+direct no-directive leaf-field list with distinct response names through
+`DataModel.LeafField`. `DataModel.LeafField` also proves those lists are already
+normal semantic selection sets. The next proof boundary is list-level
+response-shape soundness for distinct direct leaf fields before tackling
+same-response-name field merging.
 
 Directive-specific data-model proofs live in `GraphQL/DataModel/Directives.lean`.
 That module currently proves single-leaf response-shape soundness for modeled

@@ -250,6 +250,48 @@ theorem normalizeSemanticOperation_twoDistinctLeafNoDirectives (schema : Schema)
         Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
         Semantic.Selection.subselections]
 
+theorem normalizeSemanticOperation_threeDistinctLeafNoDirectives (schema : Schema)
+    (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (firstResponseName firstFieldName : Name) (firstArguments : List Argument)
+    (secondResponseName secondFieldName : Name) (secondArguments : List Argument)
+    (thirdResponseName thirdFieldName : Name) (thirdArguments : List Argument) :
+    firstResponseName ≠ secondResponseName ->
+      firstResponseName ≠ thirdResponseName ->
+      secondResponseName ≠ thirdResponseName ->
+        normalizeSemanticOperation schema
+          { name := name,
+            rootType := rootType,
+            variableDefinitions := variableDefinitions,
+            selectionSet := [
+              .field firstResponseName firstFieldName firstArguments [] [],
+              .field secondResponseName secondFieldName secondArguments [] [],
+              .field thirdResponseName thirdFieldName thirdArguments [] []
+            ] }
+          = { name := name,
+              rootType := rootType,
+              variableDefinitions := variableDefinitions,
+              selectionSet := [
+                .field firstResponseName firstFieldName firstArguments [] [],
+                .field secondResponseName secondFieldName secondArguments [] [],
+                .field thirdResponseName thirdFieldName thirdArguments [] []
+              ] } := by
+  intro hfirstSecond hfirstThird hsecondThird
+  have hsecondFirst : secondResponseName ≠ firstResponseName := Ne.symm hfirstSecond
+  have hthirdFirst : thirdResponseName ≠ firstResponseName := Ne.symm hfirstThird
+  have hthirdSecond : thirdResponseName ≠ secondResponseName := Ne.symm hsecondThird
+  cases hfirst : schema.fieldReturnType? rootType firstFieldName <;>
+    cases hsecond : schema.fieldReturnType? rootType secondFieldName <;>
+      cases hthird : schema.fieldReturnType? rootType thirdFieldName <;>
+        simp [hfirst, hsecond, hthird, hsecondFirst, hthirdFirst, hthirdSecond,
+          normalizeSemanticOperation,
+          normalizeSelectionSet, mergeFieldSelections.normalizeSelectionSet,
+          mergeFieldSelections, Semantic.Operation.size, Semantic.SelectionSet.size,
+          Semantic.Selection.size, Semantic.SelectionSet.fieldsWithResponseName,
+          Semantic.SelectionSet.withoutFieldsWithResponseName,
+          Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
+          Semantic.Selection.subselections]
+
 theorem normalizeSemanticOperation_inlineFragmentSingleLeaf (schema : Schema)
     (name : Option Name) (rootType : Name)
     (variableDefinitions : List VariableDefinition)

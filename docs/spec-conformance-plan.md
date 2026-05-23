@@ -64,8 +64,8 @@ The main modules are:
   response trees, response-shape conformance checks, and correctness predicates.
 - `GraphQL.DataModel.Directives`: directive-sensitive response-shape soundness
   proofs for modeled `@skip` and `@include` base cases.
-- `GraphQL.DataModel.SelectionSet`: multi-selection proof cases, starting with
-  distinct direct leaf response names.
+- `GraphQL.DataModel.SelectionSet`: multi-selection proof cases and the
+  `LeafField` proof abstraction for direct no-directive leaf fields.
 
 `GraphQL.DataModel` is the current bridge from resolver execution to proof
 semantics. It models typed object identities, field facts keyed by already
@@ -105,23 +105,26 @@ The next proof ladder is:
    `@skip`/`@include` single-leaf selections at a known root runtime type,
    including directives on direct fields, untyped inline fragments, and typed
    inline fragments. Also done for two direct no-directive leaf fields with
-   distinct response names.
+   distinct response names, and the three-field no-directive extension.
 3. Prove response-shape stability under semantic lowering from raw operations,
    assuming validation supplies fragment existence and acyclicity.
 4. Prove normalizer output satisfies `NormalForm.semanticOperationNormal` under
-   schema well-formedness and operation validity assumptions.
+   schema well-formedness and operation validity assumptions. Done for any
+   direct no-directive leaf-field list with distinct response names.
 5. Prove ground normal form semantic preservation:
    `DataModel.groundNormalFormCorrect`. Done for direct single-leaf selections
    with or without modeled directives, inline-fragment single-leaf selections
    without directives, and object-type typed inline fragments with modeled
    directives. Also done for two direct no-directive leaf fields with distinct
-   response names.
+   response names, the three-field no-directive extension, and any direct
+   no-directive leaf-field list with distinct response names through the
+   `LeafField` abstraction.
 6. Prove normal form preserves response shape:
    `DataModel.normalFormPreservesResponseShape`. Done for direct single-leaf
    selections with or without modeled directives, and inline-fragment single-leaf
    selections without directives. Also done for object-type typed inline
    fragments with modeled directives and two direct no-directive leaf fields
-   with distinct response names.
+   with distinct response names, plus the three-field no-directive extension.
 7. Only after those proofs, revisit operation equivalence and minimization.
 
 ## Related Documentation

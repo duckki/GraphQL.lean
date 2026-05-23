@@ -104,6 +104,23 @@ end
 def Operation.fragmentFree (operation : Operation) : Prop :=
   operation.fragments = [] ∧ SelectionSet.fragmentFree operation.selectionSet
 
+mutual
+  def Selection.fragmentSpreadNames : Selection -> List Name
+    | .field _responseName _fieldName _arguments _directives selectionSet =>
+        SelectionSet.fragmentSpreadNames selectionSet
+    | .fragmentSpread fragmentName _directives => [fragmentName]
+    | .inlineFragment _typeCondition _directives selectionSet =>
+        SelectionSet.fragmentSpreadNames selectionSet
+
+  def SelectionSet.fragmentSpreadNames : List Selection -> List Name
+    | [] => []
+    | selection :: rest =>
+        selection.fragmentSpreadNames ++ SelectionSet.fragmentSpreadNames rest
+end
+
+def FragmentDefinition.fragmentSpreadNames (fragment : FragmentDefinition) : List Name :=
+  SelectionSet.fragmentSpreadNames fragment.selectionSet
+
 namespace QueryAux
 
 def responseName? : Selection -> Option Name

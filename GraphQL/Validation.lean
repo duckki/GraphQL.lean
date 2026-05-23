@@ -63,6 +63,42 @@ def argumentsValid (schema : Schema) (definitions : List InputValueDefinition)
 def fragmentsSize (fragments : List FragmentDefinition) : Nat :=
   fragments.foldl (fun total fragment => total + fragment.size) 0
 
+def fragmentNamesNodup (fragments : List FragmentDefinition) : Prop :=
+  (fragments.map FragmentDefinition.name).Nodup
+
+def fragmentSpreadNamesResolve (fragments : List FragmentDefinition)
+    (spreadNames : List Name) : Prop :=
+  ∀ fragmentName, fragmentName ∈ spreadNames ->
+    ∃ fragmentDefinition,
+      fragmentNamed? fragments fragmentName = some fragmentDefinition
+
+def selectionSetFragmentSpreadsResolve (fragments : List FragmentDefinition)
+    (selectionSet : List Selection) : Prop :=
+  fragmentSpreadNamesResolve fragments (SelectionSet.fragmentSpreadNames selectionSet)
+
+def fragmentSpreadsResolve (fragments : List FragmentDefinition) : Prop :=
+  ∀ fragment, fragment ∈ fragments ->
+    fragmentSpreadNamesResolve fragments fragment.fragmentSpreadNames
+
+def fragmentDependencyAcyclicFrom (fragments : List FragmentDefinition) :
+    Nat -> List Name -> Name -> Prop
+  | 0, _path, _fragmentName => False
+  | fuel + 1, path, fragmentName =>
+      fragmentName ∉ path
+        ∧ ∃ fragment,
+          fragmentNamed? fragments fragmentName = some fragment
+            ∧ ∀ dependency, dependency ∈ fragment.fragmentSpreadNames ->
+              fragmentDependencyAcyclicFrom fragments fuel (fragmentName :: path) dependency
+
+def fragmentDependenciesAcyclic (fragments : List FragmentDefinition) : Prop :=
+  ∀ fragment, fragment ∈ fragments ->
+    fragmentDependencyAcyclicFrom fragments (fragments.length + 1) [] fragment.name
+
+def fragmentsValid (fragments : List FragmentDefinition) : Prop :=
+  fragmentNamesNodup fragments
+    ∧ fragmentSpreadsResolve fragments
+    ∧ fragmentDependenciesAcyclic fragments
+
 mutual
   def selectionValid (schema : Schema) (fragments : List FragmentDefinition)
       (variableDefinitions : List VariableDefinition) (parentType : Name) : Selection -> Prop
@@ -120,7 +156,9 @@ def operationValid (schema : Schema) (operation : Operation) : Prop :=
   operation.rootType = schema.queryType
     ∧ schema.compositeType operation.rootType
     ∧ variableDefinitionsValid schema operation.variableDefinitions
+    ∧ fragmentsValid operation.fragments
     ∧ operation.selectionSet ≠ []
+    ∧ selectionSetFragmentSpreadsResolve operation.fragments operation.selectionSet
     ∧ selectionSetValid schema operation.fragments operation.variableDefinitions
       operation.rootType operation.selectionSet
     ∧ FieldMerge.selectionSetFieldsCanMerge schema operation.fragments operation.size

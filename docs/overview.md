@@ -53,9 +53,9 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
 
 - `GraphQL.Schema`: shared names, type references, input values, built-in scalars, custom scalars, enums, objects, interfaces, unions, input objects, field definitions with output types, argument definitions with input types, field lookup, and possible-object inclusion for abstract types.
 - `GraphQL.SchemaWellFormedness`: schema-level invariants separated from raw schema syntax, including unique type/field/argument names, root query object type, valid type references, and object/interface/union consistency.
-- `GraphQL.Operation`: operation syntax, field arguments, variable definitions, built-in directive applications, selections, named fragment spreads, inline fragments, fragments, operation size, and shared selection helpers for response names, filtering, and selection-set merging.
+- `GraphQL.Operation`: operation syntax, field arguments, variable definitions, built-in directive applications, selections, named fragment spreads, inline fragments, fragments, operation size, fragment-spread collection, and shared selection helpers for response names, filtering, and selection-set merging.
 - `GraphQL.FieldMerge`: same-response-name field collection and merge compatibility, including response-shape compatibility and recursive subfield merge checks.
-- `GraphQL.Validation`: validation as a proposition over a schema and operation, including variable definitions, duplicate argument checks, required argument checks, recursive input/output type checks, non-empty required selection sets, field merge checks, and fragment applicability by possible-object overlap.
+- `GraphQL.Validation`: validation as a proposition over a schema and operation, including variable definitions, duplicate argument checks, required argument checks, recursive input/output type checks, non-empty required selection sets, field merge checks, unique fragment names, spread resolution, acyclic fragment dependencies, and fragment applicability by possible-object overlap.
 - `GraphQL.NormalForm`: ground-typed normal form and non-redundancy predicates plus a bounded normalization pass for field merging and abstract-type grounding.
 - `GraphQL.ResponseShape`: an operation summary between raw operation syntax and ground-type normal form. It records response keys, conditional field variants, child shapes, shape inclusion, and shape equivalence.
 - `GraphQL.Execution`: execution as a function parameterized by abstract resolver functions, with field arguments passed to resolvers and `@skip` / `@include` filtering for fields, named spreads, and inline spreads.
@@ -119,13 +119,12 @@ The pieces already in place are:
 
 The remaining proof ladder is:
 
-1. Strengthen validation around fragments so the chosen semantics can assume fragment references terminate and are well-scoped.
-2. Make normal forms canonical enough to decide operation equivalence up to fragment-name alpha-renaming.
-3. Prove normalization preserves execution semantics and response shape as a supporting invariant.
-4. Define a finite candidate generator for fragment-introducing rewrites of a fragment-free operation.
-5. Prove generator soundness: every generated operation has the same normal-form semantics as the input.
-6. Prove generator completeness for the chosen normal form, modulo fragment-name alpha-renaming and the operation size metric.
-7. Instantiate the generic finite minimizer theorem with that candidate generator.
+1. Make normal forms canonical enough to decide operation equivalence up to fragment-name alpha-renaming.
+2. Prove normalization preserves execution semantics and response shape as a supporting invariant.
+3. Define a finite candidate generator for fragment-introducing rewrites of a fragment-free operation.
+4. Prove generator soundness: every generated operation has the same normal-form semantics as the input.
+5. Prove generator completeness for the chosen normal form, modulo fragment-name alpha-renaming and the operation size metric.
+6. Instantiate the generic finite minimizer theorem with that candidate generator.
 
 The normal-form work is the bridge to this proof. Fragment minimization should operate over normalized or canonicalized selection sets so equivalence is tractable.
 

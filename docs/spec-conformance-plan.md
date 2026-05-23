@@ -107,7 +107,8 @@ The next proof ladder is:
    schema well-formedness and operation validity assumptions.
 5. Prove ground normal form semantic preservation:
    `DataModel.groundNormalFormCorrect`. Done for direct single-leaf selections
-   and inline-fragment single-leaf selections without directives.
+   with or without modeled directives, and inline-fragment single-leaf
+   selections without directives.
 6. Prove normal form preserves response shape:
    `DataModel.normalFormPreservesResponseShape`.
 7. Only after those proofs, revisit operation equivalence and minimization.

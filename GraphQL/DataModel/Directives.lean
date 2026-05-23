@@ -39,6 +39,20 @@ theorem conditionFromDirectives?_satisfiable
               rw [← heq]
               exact hsat
 
+theorem groundNormalFormCorrect_singleLeafWithDirectives (schema : Schema)
+    (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument)
+    (directives : List DirectiveApplication) :
+    groundNormalFormCorrect schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := [.field responseName fieldName arguments directives []] } := by
+  rw [groundNormalFormCorrect]
+  rw [NormalForm.normalizeSemanticOperation_singleLeafWithDirectives]
+  exact semanticOperationsEquivalentOnDataWithFuel_refl schema _ _
+
 set_option linter.unusedSimpArgs false in
 theorem responseShapeCorrectForTypedExecutionAtRoot_singleLeafWithDirectives
     (schema : Schema) (name : Option Name) (rootType : Name)

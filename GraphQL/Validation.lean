@@ -1,4 +1,4 @@
-import GraphQL.Schema
+import GraphQL.FieldMerge
 
 namespace GraphQL
 
@@ -60,6 +60,9 @@ def argumentsValid (schema : Schema) (definitions : List InputValueDefinition)
         ∃ argument,
           argumentNamed? arguments definition.name = some argument)
 
+def fragmentsSize (fragments : List FragmentDefinition) : Nat :=
+  fragments.foldl (fun total fragment => total + fragment.size) 0
+
 mutual
   def selectionValid (schema : Schema) (fragments : List FragmentDefinition)
       (variableDefinitions : List VariableDefinition) (parentType : Name) : Selection -> Prop
@@ -109,6 +112,9 @@ def fragmentValid (schema : Schema) (fragments : List FragmentDefinition)
     ∧ fragment.selectionSet ≠ []
     ∧ selectionSetValid schema fragments variableDefinitions
       fragment.typeCondition fragment.selectionSet
+    ∧ FieldMerge.selectionSetFieldsCanMerge schema fragments
+      (fragment.size + fragmentsSize fragments)
+      fragment.typeCondition fragment.selectionSet
 
 def operationValid (schema : Schema) (operation : Operation) : Prop :=
   operation.rootType = schema.queryType
@@ -116,6 +122,8 @@ def operationValid (schema : Schema) (operation : Operation) : Prop :=
     ∧ variableDefinitionsValid schema operation.variableDefinitions
     ∧ operation.selectionSet ≠ []
     ∧ selectionSetValid schema operation.fragments operation.variableDefinitions
+      operation.rootType operation.selectionSet
+    ∧ FieldMerge.selectionSetFieldsCanMerge schema operation.fragments operation.size
       operation.rootType operation.selectionSet
     ∧ ∀ fragment, fragment ∈ operation.fragments ->
       fragmentValid schema operation.fragments operation.variableDefinitions fragment

@@ -57,7 +57,7 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
 - `GraphQL.FieldMerge`: same-response-name field collection and merge compatibility, including response-shape compatibility and recursive subfield merge checks.
 - `GraphQL.Validation`: validation as a proposition over a schema and operation, including variable definitions, duplicate argument checks, required argument checks, recursive input/output type checks, non-empty required selection sets, field merge checks, unique fragment names, spread resolution, acyclic fragment dependencies, and fragment applicability by possible-object overlap.
 - `GraphQL.NormalForm`: ground-typed normal form and non-redundancy predicates plus a bounded normalization pass for field merging and abstract-type grounding.
-- `GraphQL.ResponseShape`: an operation summary between raw operation syntax and ground-type normal form. It records response keys, conditional field variants, child shapes, condition overlap/subset/contradiction utilities, shape inclusion, and shape equivalence.
+- `GraphQL.ResponseShape`: a selection-set summary between raw operation syntax and ground-type normal form. It records response names, conditional field variants, child shapes, condition overlap/subset/contradiction utilities, shape inclusion, and shape equivalence.
 - `GraphQL.Execution`: execution as a function parameterized by abstract resolver functions, with field arguments passed to resolvers and `@skip` / `@include` filtering for fields, named spreads, and inline spreads.
 - `GraphQL.Minimization`: finite-candidate operation minimization parameterized by an explicit operation-equivalence predicate, plus the generic minimality theorem.
 
@@ -67,7 +67,7 @@ The current Part 1 flow is:
 
 1. `GraphQL.Schema` and `GraphQL.Operation` define raw syntax.
 2. `GraphQL.SchemaWellFormedness`, `GraphQL.FieldMerge`, and `GraphQL.Validation` state well-formedness and operation validity.
-3. `GraphQL.ResponseShape` summarizes operations as unnormalized conditional response-key variants.
+3. `GraphQL.ResponseShape` summarizes selection sets as unnormalized conditional response-name variants.
 4. `GraphQL.Execution` gives bounded execution as a function, parameterized by abstract resolvers.
 5. `GraphQL.NormalForm` and `GraphQL.Minimization` provide the normalization/minimization proof scaffolding.
 
@@ -77,21 +77,16 @@ Validation assumptions should be used when proving semantic facts about later st
 
 ### Response Shape Model
 
-Response shapes currently distinguish only:
-
-- `scalar`
-- `object fields`
-
-Object shapes are keyed by response name. Each key maps to one or more conditional variants. A variant records:
+Response shapes summarize selection sets as a list of response-name entries. A response name is the key on the output object, and each response name maps to one or more conditional variants. A variant records:
 
 - the selected field definition, modeled as `fieldName` plus arguments,
 - a type condition, modeled as an optional set/list of possible object types,
 - a boolean condition, modeled as a conjunction of boolean variable literals `v` or `not v`,
 - the child response shape for that variant.
 
-Variants under a response key are interpreted disjunctively and are not normalized. Their conditions may overlap, and both variants may be true. For example, a key may contain `field(arg: 1)` on `{T}` with child `{a}` and another `field(arg: 1)` on `{T, U}` with child `{b}`.
+Variants under a response name are interpreted disjunctively and are not normalized. Their conditions may overlap, and both variants may be true. For example, a response name may contain `field(arg: 1)` on `{T}` with child `{a}` and another `field(arg: 1)` on `{T, U}` with child `{b}`.
 
-This intentionally ignores concrete scalar values, object identities, list/null completion, resolver internals, and error propagation. It is a structural operation summary, not a full response-value model and not a definition of operation equivalence.
+This intentionally ignores concrete scalar values, object identities, list/null completion, resolver internals, and error propagation. It is a structural selection-set summary, not a full response-value model and not a definition of operation equivalence.
 
 `GraphQL.ResponseShape` provides two views of inclusion:
 
@@ -100,7 +95,7 @@ This intentionally ignores concrete scalar values, object identities, list/null 
 
 The module proves soundness and completeness bridges between those two forms. Equivalence is inclusion in both directions, again with both propositional and boolean APIs.
 
-Shape merging is also structural. Object shapes merge by response name; variants under the same key merge only when their type condition, boolean condition, and selected field definition match. This is intentionally weaker than normal-form construction because overlapping variants are preserved instead of normalized away.
+Shape merging is also structural. Shapes merge by response name; variants under the same response name merge only when their type condition, boolean condition, and selected field definition match. This is intentionally weaker than normal-form construction because overlapping variants are preserved instead of normalized away.
 
 Response-shape equivalence is weaker than operation equivalence. Operation equivalence should be determined through normal forms or a separate semantic equivalence theorem. Shape equivalence can be used as a supporting invariant, but it is not sufficient by itself.
 
@@ -110,15 +105,15 @@ The condition utility layer supports the next canonicalization step:
 - boolean-literal contradiction detection,
 - boolean-condition implication by literal containment,
 - condition satisfiability, overlap, subset, and checked intersection.
-- variant overlap, selected-field agreement, and per-response-key pairwise compatibility checks.
-- recursive shape well-formedness, which requires those per-key compatibility checks at every object node.
-- response-key uniqueness for object shapes, so each response key owns one variant list even when variants are not normalized.
+- variant overlap, selected-field agreement, and per-response-name pairwise compatibility checks.
+- recursive shape well-formedness, which requires those per-response-name compatibility checks at every child shape.
+- response-name uniqueness for shapes, so each response name owns one variant list even when variants are not normalized.
 - propositional compatibility and well-formedness predicates with soundness/completeness bridges to the boolean checks.
 - response-shape construction prunes unsatisfiable directive/type-condition branches.
 
 ### Shape And Normal Form
 
-`GraphQL.ResponseShape` is an intermediate summary of an operation. It is closer to operation syntax than ground-type normal form: it records response-key variants with type and boolean conditions, but it does not split or normalize overlapping conditions.
+`GraphQL.ResponseShape` is an intermediate summary of a selection set. It is closer to operation syntax than ground-type normal form: it records response-name variants with type and boolean conditions, but it does not split or normalize overlapping conditions.
 
 Operation equivalence should be determined by normal forms or a separate semantic equivalence theorem. Shape equivalence is useful as a supporting invariant and as a staging point for minimization, but it is not sufficient by itself.
 

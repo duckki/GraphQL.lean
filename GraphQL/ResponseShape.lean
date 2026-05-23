@@ -239,15 +239,15 @@ def intersect? (left right : VariantHeader) : Option VariantHeader := do
 end VariantHeader
 
 /--
-`Shape` summarizes an operation before ground-type normal form. It is not itself
-normalized: variants under a response key are interpreted disjunctively, and
-their conditions may overlap. For example, one response key may contain both a
-variant for `field(arg: 1)` under `{T}` with child `{a}` and a variant for the
-same field under `{T, U}` with child `{b}`; both variants may be true.
+`Shape` summarizes a selection set before ground-type normal form. It is not
+itself normalized: variants under a response name are interpreted
+disjunctively, and their conditions may overlap. For example, one response name
+may contain both a variant for `field(arg: 1)` under `{T}` with child `{a}` and
+a variant for the same field under `{T, U}` with child `{b}`; both variants may
+be true.
 -/
-inductive Shape where
-  | scalar
-  | object (fields : List (Name × List (VariantHeader × Shape)))
+structure Shape where
+  fields : List (Name × List (VariantHeader × Shape))
 deriving Repr
 
 namespace Shape
@@ -287,12 +287,12 @@ def variantsPairwiseCompatibleBool : List Variant -> Bool
       variantCompatibleWithAllBool variant rest
         && variantsPairwiseCompatibleBool rest
 
-def responseKeyVariantsCompatibleBool :
+def responseNameVariantsCompatibleBool :
     List (Name × List Variant) -> Bool
   | [] => true
   | (_responseName, variants) :: rest =>
       variantsPairwiseCompatibleBool variants
-        && responseKeyVariantsCompatibleBool rest
+        && responseNameVariantsCompatibleBool rest
 
 def responseNameNotInFieldsBool (responseName : Name) :
     List (Name × List Variant) -> Bool
@@ -361,14 +361,14 @@ inductive VariantsPairwiseCompatible : List Variant -> Prop where
         VariantsPairwiseCompatible rest ->
           VariantsPairwiseCompatible (variant :: rest)
 
-inductive ResponseKeyVariantsCompatible :
+inductive ResponseNameVariantsCompatible :
     List (Name × List Variant) -> Prop where
-  | nil : ResponseKeyVariantsCompatible []
+  | nil : ResponseNameVariantsCompatible []
   | cons {responseName : Name} {variants : List Variant}
       {rest : List (Name × List Variant)} :
       VariantsPairwiseCompatible variants ->
-        ResponseKeyVariantsCompatible rest ->
-          ResponseKeyVariantsCompatible ((responseName, variants) :: rest)
+        ResponseNameVariantsCompatible rest ->
+          ResponseNameVariantsCompatible ((responseName, variants) :: rest)
 
 theorem variantCompatibleWithAllBool_sound {variant : Variant}
     {variants : List Variant} :
@@ -434,42 +434,41 @@ theorem variantsPairwiseCompatibleBool_complete {variants : List Variant} :
         variantCompatibleWithAllBool_complete hall,
         variantsPairwiseCompatibleBool_complete hrest]
 
-theorem responseKeyVariantsCompatibleBool_sound
+theorem responseNameVariantsCompatibleBool_sound
     {fields : List (Name × List Variant)} :
-    responseKeyVariantsCompatibleBool fields = true ->
-      ResponseKeyVariantsCompatible fields := by
+    responseNameVariantsCompatibleBool fields = true ->
+      ResponseNameVariantsCompatible fields := by
   induction fields with
   | nil =>
       intro _h
-      exact ResponseKeyVariantsCompatible.nil
+      exact ResponseNameVariantsCompatible.nil
   | cons field rest ih =>
       cases field with
       | mk responseName variants =>
           intro h
-          simp [responseKeyVariantsCompatibleBool] at h
-          exact ResponseKeyVariantsCompatible.cons
+          simp [responseNameVariantsCompatibleBool] at h
+          exact ResponseNameVariantsCompatible.cons
             (variantsPairwiseCompatibleBool_sound h.left)
             (ih h.right)
 
-theorem responseKeyVariantsCompatibleBool_complete
+theorem responseNameVariantsCompatibleBool_complete
     {fields : List (Name × List Variant)} :
-    ResponseKeyVariantsCompatible fields ->
-      responseKeyVariantsCompatibleBool fields = true := by
+    ResponseNameVariantsCompatible fields ->
+      responseNameVariantsCompatibleBool fields = true := by
   intro h
   cases h with
   | nil =>
-      simp [responseKeyVariantsCompatibleBool]
+      simp [responseNameVariantsCompatibleBool]
   | cons hvariants hrest =>
-      simp [responseKeyVariantsCompatibleBool,
+      simp [responseNameVariantsCompatibleBool,
         variantsPairwiseCompatibleBool_complete hvariants,
-        responseKeyVariantsCompatibleBool_complete hrest]
+        responseNameVariantsCompatibleBool_complete hrest]
 
 mutual
   def wellFormedBool : Shape -> Bool
-    | .scalar => true
-    | .object fields =>
+    | ⟨fields⟩ =>
         responseNamesNodupBool fields
-          && (responseKeyVariantsCompatibleBool fields
+          && (responseNameVariantsCompatibleBool fields
             && fieldsWellFormedBool fields)
 
   def fieldsWellFormedBool : List (Name × List Variant) -> Bool
@@ -485,12 +484,11 @@ end
 
 mutual
   inductive WellFormed : Shape -> Prop where
-    | scalar : WellFormed .scalar
-    | object {fields : List (Name × List Variant)} :
+    | shape {fields : List (Name × List Variant)} :
         ResponseNamesNodup fields ->
-          ResponseKeyVariantsCompatible fields ->
+          ResponseNameVariantsCompatible fields ->
           FieldsWellFormed fields ->
-            WellFormed (.object fields)
+            WellFormed ⟨fields⟩
 
   inductive FieldsWellFormed :
       List (Name × List Variant) -> Prop where
@@ -516,15 +514,12 @@ mutual
   theorem wellFormedBool_sound {shape : Shape} :
       wellFormedBool shape = true -> WellFormed shape := by
     cases shape with
-    | scalar =>
-        intro _h
-        exact WellFormed.scalar
-    | object fields =>
+    | mk fields =>
         intro h
         simp [wellFormedBool] at h
-        exact WellFormed.object
+        exact WellFormed.shape
           (responseNamesNodupBool_sound h.left)
-          (responseKeyVariantsCompatibleBool_sound h.right.left)
+          (responseNameVariantsCompatibleBool_sound h.right.left)
           (fieldsWellFormedBool_sound h.right.right)
 
   theorem fieldsWellFormedBool_sound
@@ -565,12 +560,10 @@ mutual
       WellFormed shape -> wellFormedBool shape = true := by
     intro h
     cases h with
-    | scalar =>
-        simp [wellFormedBool]
-    | object hnodup hcompatible hfields =>
+    | shape hnodup hcompatible hfields =>
         simp [wellFormedBool,
           responseNamesNodupBool_complete hnodup,
-          responseKeyVariantsCompatibleBool_complete hcompatible,
+          responseNameVariantsCompatibleBool_complete hcompatible,
           fieldsWellFormedBool_complete hfields]
 
   theorem fieldsWellFormedBool_complete
@@ -603,8 +596,7 @@ theorem wellFormed_iff_bool {shape : Shape} :
 
 mutual
   def size : Shape -> Nat
-    | .scalar => 1
-    | .object fields => 1 + fieldsSize fields
+    | ⟨fields⟩ => 1 + fieldsSize fields
 
   def fieldsSize : List (Name × List (VariantHeader × Shape)) -> Nat
     | [] => 0
@@ -618,10 +610,8 @@ end
 mutual
   def mergeWithFuel : Nat -> Shape -> Shape -> Shape
     | 0, left, _right => left
-    | _fuel + 1, .scalar, .scalar => .scalar
-    | fuel + 1, .object leftFields, .object rightFields =>
-        .object (mergeFieldsWithFuel fuel leftFields rightFields)
-    | _fuel + 1, left, _right => left
+    | fuel + 1, ⟨leftFields⟩, ⟨rightFields⟩ =>
+        ⟨mergeFieldsWithFuel fuel leftFields rightFields⟩
 
   def mergeFieldsWithFuel : Nat ->
       List (Name × List (VariantHeader × Shape)) ->
@@ -661,16 +651,12 @@ def merge (left right : Shape) : Shape :=
 
 def mergeFields (left right : List (Name × List (VariantHeader × Shape))) :
     List (Name × List (VariantHeader × Shape)) :=
-  match merge (.object left) (.object right) with
-  | .object fields => fields
-  | _ => []
+  (merge ⟨left⟩ ⟨right⟩).fields
 
 mutual
   def includesBool : Shape -> Shape -> Bool
-    | .scalar, .scalar => true
-    | .object requiredFields, .object availableFields =>
+    | ⟨requiredFields⟩, ⟨availableFields⟩ =>
         includesFieldsBool requiredFields availableFields
-    | _, _ => false
 
   def includesFieldsBool :
       List (Name × List (VariantHeader × Shape)) ->
@@ -697,10 +683,9 @@ end
 
 mutual
   inductive Includes : Shape -> Shape -> Prop where
-    | scalar : Includes .scalar .scalar
-    | object {requiredFields availableFields : List (Name × List (VariantHeader × Shape))} :
+    | shape {requiredFields availableFields : List (Name × List (VariantHeader × Shape))} :
         IncludesFields requiredFields availableFields ->
-          Includes (.object requiredFields) (.object availableFields)
+          Includes ⟨requiredFields⟩ ⟨availableFields⟩
 
   inductive IncludesFields :
       List (Name × List (VariantHeader × Shape)) ->
@@ -740,9 +725,13 @@ def equivalentBool (left right : Shape) : Bool :=
 mutual
   theorem includesBool_sound {required available : Shape} :
       includesBool required available = true -> Includes required available := by
-    cases required <;> cases available <;> intro h <;> simp [includesBool] at h
-    · exact Includes.scalar
-    · exact Includes.object (includesFieldsBool_sound h)
+    cases required with
+    | mk requiredFields =>
+        cases available with
+        | mk availableFields =>
+            intro h
+            simp [includesBool] at h
+            exact Includes.shape (includesFieldsBool_sound h)
 
   theorem includesFieldsBool_sound
       {required available : List (Name × List (VariantHeader × Shape))} :
@@ -794,9 +783,7 @@ mutual
       Includes required available -> includesBool required available = true := by
     intro h
     cases h with
-    | scalar =>
-        simp [includesBool]
-    | object hfields =>
+    | shape hfields =>
         simp [includesBool, includesFieldsBool_complete hfields]
 
   theorem includesFieldsBool_complete
@@ -835,9 +822,6 @@ theorem equivalentBool_complete {left right : Shape} :
   intro h
   simp [equivalentBool, includesBool_complete h.left, includesBool_complete h.right]
 
-theorem scalar_equivalent : equivalent scalar scalar := by
-  exact And.intro Includes.scalar Includes.scalar
-
 def restrictConditionToType (schema : Schema) (condition : Condition)
     (typeCondition : Name) : Condition :=
   let allowedTypes := schema.possibleObjectNames typeCondition
@@ -860,12 +844,9 @@ mutual
             let fieldCondition := condition.and directiveCondition
             if fieldCondition.satisfiableBool then
               let childType := (schema.fieldReturnType? parentType fieldName).getD fieldName
-              let childShape :=
-                match selectionSet with
-                | [] => .scalar
-                | _ =>
-                    .object (operationSelectionSetShape schema fragments fuel
-                      childType fieldCondition selectionSet)
+              let childShape : Shape :=
+                ⟨operationSelectionSetShape schema fragments fuel
+                  childType fieldCondition selectionSet⟩
               [(responseName, [((fieldCondition, selectedField fieldName arguments), childShape)])]
             else
               []
@@ -920,9 +901,9 @@ def operationInitialCondition (schema : Schema) (operation : Operation) : Condit
     booleanLiterals := [] }
 
 def ofOperation (schema : Schema) (operation : Operation) : Shape :=
-  .object (operationSelectionSetShape schema operation.fragments
+  ⟨operationSelectionSetShape schema operation.fragments
     (operationShapeFuel operation) operation.rootType
-    (operationInitialCondition schema operation) operation.selectionSet)
+    (operationInitialCondition schema operation) operation.selectionSet⟩
 
 end Shape
 

@@ -57,7 +57,7 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
 - `GraphQL.FieldMerge`: same-response-name field collection and merge compatibility, including response-shape compatibility and recursive subfield merge checks.
 - `GraphQL.Validation`: validation as a proposition over a schema and operation, including variable definitions, duplicate argument checks, required argument checks, recursive input/output type checks, non-empty required selection sets, field merge checks, unique fragment names, spread resolution, acyclic fragment dependencies, and fragment applicability by possible-object overlap.
 - `GraphQL.NormalForm`: ground-typed normal form and non-redundancy predicates plus a bounded normalization pass for field merging and abstract-type grounding.
-- `GraphQL.ResponseShape`: an operation summary between raw operation syntax and ground-type normal form. It records response keys, conditional field variants, child shapes, shape inclusion, and shape equivalence.
+- `GraphQL.ResponseShape`: an operation summary between raw operation syntax and ground-type normal form. It records response keys, conditional field variants, child shapes, condition overlap/subset/contradiction utilities, shape inclusion, and shape equivalence.
 - `GraphQL.Execution`: execution as a function parameterized by abstract resolver functions, with field arguments passed to resolvers and `@skip` / `@include` filtering for fields, named spreads, and inline spreads.
 - `GraphQL.Minimization`: finite-candidate operation minimization parameterized by an explicit operation-equivalence predicate, plus the generic minimality theorem.
 
@@ -101,6 +101,13 @@ The module proves soundness and completeness bridges between those two forms. Eq
 Shape merging is also structural. Object shapes merge by response name; variants under the same key merge only when their type condition, boolean condition, and selected field definition match. This is intentionally weaker than normal-form construction because overlapping variants are preserved instead of normalized away.
 
 Response-shape equivalence is weaker than operation equivalence. Operation equivalence should be determined through normal forms or a separate semantic equivalence theorem. Shape equivalence can be used as a supporting invariant, but it is not sufficient by itself.
+
+The condition utility layer supports the next canonicalization step:
+
+- type-condition subset and overlap over optional possible-type sets,
+- boolean-literal contradiction detection,
+- boolean-condition implication by literal containment,
+- condition satisfiability, overlap, subset, and checked intersection.
 
 ### Shape And Normal Form
 

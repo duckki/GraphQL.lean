@@ -16,11 +16,41 @@ def eqBool : BooleanLiteral -> BooleanLiteral -> Bool
   | .negative left, .negative right => left == right
   | _, _ => false
 
+def negatesBool : BooleanLiteral -> BooleanLiteral -> Bool
+  | .positive left, .negative right => left == right
+  | .negative left, .positive right => left == right
+  | _, _ => false
+
+def variableName : BooleanLiteral -> Name
+  | .positive name => name
+  | .negative name => name
+
 def listEqBool : List BooleanLiteral -> List BooleanLiteral -> Bool
   | [], [] => true
   | left :: leftRest, right :: rightRest =>
       eqBool left right && listEqBool leftRest rightRest
   | _, _ => false
+
+def containsBool (literal : BooleanLiteral) : List BooleanLiteral -> Bool
+  | [] => false
+  | candidate :: rest =>
+      eqBool literal candidate || containsBool literal rest
+
+def containsNegationBool (literal : BooleanLiteral) : List BooleanLiteral -> Bool
+  | [] => false
+  | candidate :: rest =>
+      negatesBool literal candidate || containsNegationBool literal rest
+
+def hasContradictionBool : List BooleanLiteral -> Bool
+  | [] => false
+  | literal :: rest =>
+      containsNegationBool literal rest || hasContradictionBool rest
+
+def entailsAllBool (stronger weaker : List BooleanLiteral) : Bool :=
+  weaker.all (fun literal => containsBool literal stronger)
+
+def compatibleBool (left right : List BooleanLiteral) : Bool :=
+  !(hasContradictionBool (left ++ right))
 
 end BooleanLiteral
 
@@ -33,6 +63,28 @@ namespace Condition
 
 def empty : Condition :=
   { possibleTypes := none, booleanLiterals := [] }
+
+def namesSubsetBool (left right : List Name) : Bool :=
+  left.all (fun name => right.contains name)
+
+def namesOverlapBool (left right : List Name) : Bool :=
+  left.any (fun name => right.contains name)
+
+def possibleTypesSubsetBool : Option (List Name) -> Option (List Name) -> Bool
+  | none, none => true
+  | none, some _right => false
+  | some _left, none => true
+  | some left, some right => namesSubsetBool left right
+
+def possibleTypesOverlapBool : Option (List Name) -> Option (List Name) -> Bool
+  | none, none => true
+  | none, some right => right != []
+  | some left, none => left != []
+  | some left, some right => namesOverlapBool left right
+
+def possibleTypesEmptyBool : Option (List Name) -> Bool
+  | none => false
+  | some names => names == []
 
 def withPossibleTypes (condition : Condition) (possibleTypes : List Name) : Condition :=
   { condition with possibleTypes := some possibleTypes }
@@ -62,6 +114,25 @@ def namesOptionEqBool : Option (List Name) -> Option (List Name) -> Bool
 def eqBool (left right : Condition) : Bool :=
   namesOptionEqBool left.possibleTypes right.possibleTypes
     && BooleanLiteral.listEqBool left.booleanLiterals right.booleanLiterals
+
+def hasContradictionBool (condition : Condition) : Bool :=
+  possibleTypesEmptyBool condition.possibleTypes
+    || BooleanLiteral.hasContradictionBool condition.booleanLiterals
+
+def satisfiableBool (condition : Condition) : Bool :=
+  !(condition.hasContradictionBool)
+
+def overlapsBool (left right : Condition) : Bool :=
+  possibleTypesOverlapBool left.possibleTypes right.possibleTypes
+    && BooleanLiteral.compatibleBool left.booleanLiterals right.booleanLiterals
+
+def subsetBool (left right : Condition) : Bool :=
+  possibleTypesSubsetBool left.possibleTypes right.possibleTypes
+    && BooleanLiteral.entailsAllBool left.booleanLiterals right.booleanLiterals
+
+def intersect? (left right : Condition) : Option Condition :=
+  let combined := left.and right
+  if combined.satisfiableBool then some combined else none
 
 def fromDirective? : DirectiveApplication -> Option Condition
   | .include (.boolean Bool.true) => some empty

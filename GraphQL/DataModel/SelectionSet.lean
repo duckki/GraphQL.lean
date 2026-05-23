@@ -437,6 +437,352 @@ theorem lookupField_toShapeFields_cons_self
       = some [toShapeVariant condition field] := by
   simp [toShapeFields, toShapeField, ResponseShape.Shape.lookupField]
 
+theorem lookupField_toShapeFields_append_cons_self
+    (condition : ResponseShape.Condition) (shapePrefix : List LeafField)
+    (field : LeafField) (rest : List LeafField) :
+    field.responseName ∉ responseNames shapePrefix ->
+      ResponseShape.Shape.lookupField field.responseName
+        (toShapeFields condition (shapePrefix ++ field :: rest))
+        = some [toShapeVariant condition field] := by
+  intro hnotMem
+  induction shapePrefix with
+  | nil =>
+      simp [toShapeFields, toShapeField, ResponseShape.Shape.lookupField]
+  | cons existing shapePrefix ih =>
+      have hhead : existing.responseName ≠ field.responseName := by
+        intro hsame
+        apply hnotMem
+        simp [responseNames, hsame]
+      have hheadBool : (existing.responseName == field.responseName) = false := by
+        by_cases hsame : existing.responseName = field.responseName
+        · exact False.elim (hhead hsame)
+        · simp [hsame]
+      have hprefix : field.responseName ∉ responseNames shapePrefix := by
+        intro hmem
+        apply hnotMem
+        simp [responseNames]
+        right
+        simpa [responseNames] using hmem
+      have ih' :
+          ResponseShape.Shape.lookupField field.responseName
+            (List.map (toShapeField condition) shapePrefix ++
+              (field.responseName, [toShapeVariant condition field]) ::
+                List.map (toShapeField condition) rest)
+            = some [toShapeVariant condition field] := by
+        simpa [toShapeFields] using ih hprefix
+      simp [toShapeFields, toShapeField, ResponseShape.Shape.lookupField,
+        hheadBool, ih']
+
+theorem shapeFieldFilter_eq_nil_notMem
+    (condition : ResponseShape.Condition) (responseName : Name)
+    (fields : List LeafField) :
+    responseName ∉ responseNames fields ->
+      (toShapeFields condition fields).filter
+        (fun field => field.fst == responseName) = [] := by
+  intro hnotMem
+  induction fields with
+  | nil =>
+      simp [toShapeFields]
+  | cons field rest ih =>
+      have hfield : field.responseName ≠ responseName := by
+        intro hsame
+        apply hnotMem
+        simp [responseNames, hsame]
+      have hfieldBool : (field.responseName == responseName) = false := by
+        by_cases hsame : field.responseName = responseName
+        · exact False.elim (hfield hsame)
+        · simp [hsame]
+      have hrest : responseName ∉ responseNames rest := by
+        intro hmem
+        apply hnotMem
+        simp [responseNames]
+        right
+        simpa [responseNames] using hmem
+      have hrestAll : ∀ a, a ∈ rest -> ¬a.responseName = responseName := by
+        intro existing hexisting hsame
+        apply hrest
+        simp [responseNames]
+        exact ⟨existing, hexisting, hsame⟩
+      simpa [toShapeFields, toShapeField, hfieldBool] using hrestAll
+
+theorem shapeFieldFilter_ne_eq_self_notMem
+    (condition : ResponseShape.Condition) (responseName : Name)
+    (fields : List LeafField) :
+    responseName ∉ responseNames fields ->
+      (toShapeFields condition fields).filter
+        (fun field => !(field.fst == responseName)) = toShapeFields condition fields := by
+  intro hnotMem
+  induction fields with
+  | nil =>
+      simp [toShapeFields]
+  | cons field rest ih =>
+      have hfield : field.responseName ≠ responseName := by
+        intro hsame
+        apply hnotMem
+        simp [responseNames, hsame]
+      have hfieldBool : (field.responseName == responseName) = false := by
+        by_cases hsame : field.responseName = responseName
+        · exact False.elim (hfield hsame)
+        · simp [hsame]
+      have hrest : responseName ∉ responseNames rest := by
+        intro hmem
+        apply hnotMem
+        simp [responseNames]
+        right
+        simpa [responseNames] using hmem
+      have hrestAll : ∀ a, a ∈ rest -> ¬a.responseName = responseName := by
+        intro existing hexisting hsame
+        apply hrest
+        simp [responseNames]
+        exact ⟨existing, hexisting, hsame⟩
+      simpa [toShapeFields, toShapeField, hfieldBool] using hrestAll
+
+theorem mergeFieldsWithFuel_toShapeFields_append
+    (condition : ResponseShape.Condition) :
+    ∀ (fuel : Nat) (leftFields suffix : List LeafField),
+      suffix.length <= fuel ->
+        responseNamesNodup (leftFields ++ suffix) ->
+          ResponseShape.Shape.mergeFieldsWithFuel fuel
+            (toShapeFields condition leftFields)
+            (toShapeFields condition suffix)
+            = toShapeFields condition (leftFields ++ suffix) := by
+  intro fuel leftFields suffix
+  induction suffix generalizing fuel leftFields with
+  | nil =>
+      intro _hfuel _hnodup
+      cases fuel <;> simp [toShapeFields, ResponseShape.Shape.mergeFieldsWithFuel]
+  | cons field rest ih =>
+      intro hfuel hnodup
+      cases fuel with
+      | zero =>
+          simp at hfuel
+      | succ fuel =>
+          have hrestFuel : rest.length <= fuel := Nat.le_of_succ_le_succ hfuel
+          have hnameParts :
+              (responseNames leftFields ++ field.responseName :: responseNames rest).Nodup := by
+            simpa [responseNamesNodup, responseNames, List.map_append] using hnodup
+          simp [List.nodup_append] at hnameParts
+          rcases hnameParts with ⟨_hleft, _hfieldRest, hseparate⟩
+          have hnotMemLeft : field.responseName ∉ responseNames leftFields := by
+            intro hmem
+            exact (hseparate field.responseName hmem).left rfl
+          have hmatching :
+              (toShapeFields condition leftFields).filter
+                (fun shapeField => shapeField.fst == field.responseName) = [] :=
+            shapeFieldFilter_eq_nil_notMem condition field.responseName leftFields
+              hnotMemLeft
+          have hmatching' :
+              List.filter (fun shapeField => shapeField.fst == field.responseName)
+                (List.map (toShapeField condition) leftFields) = [] := by
+            simpa [toShapeFields] using hmatching
+          have hremaining :
+              (toShapeFields condition leftFields).filter
+                (fun shapeField => !(shapeField.fst == field.responseName))
+                = toShapeFields condition leftFields :=
+            shapeFieldFilter_ne_eq_self_notMem condition field.responseName leftFields
+              hnotMemLeft
+          have hremaining' :
+              List.filter (fun shapeField => !(shapeField.fst == field.responseName))
+                (List.map (toShapeField condition) leftFields)
+                = List.map (toShapeField condition) leftFields := by
+            simpa [toShapeFields] using hremaining
+          have hrestNodup : responseNamesNodup ((leftFields ++ [field]) ++ rest) := by
+            simpa [responseNamesNodup, responseNames, List.map_append,
+              List.append_assoc] using hnodup
+          have htail :
+              ResponseShape.Shape.mergeFieldsWithFuel fuel
+                (toShapeFields condition leftFields ++ [toShapeField condition field])
+                (toShapeFields condition rest)
+                = toShapeFields condition ((leftFields ++ [field]) ++ rest) := by
+            simpa [toShapeFields, List.map_append] using
+              ih fuel (leftFields ++ [field]) hrestFuel hrestNodup
+          have htail' :
+              ResponseShape.Shape.mergeFieldsWithFuel fuel
+                (List.map (toShapeField condition) leftFields ++
+                  [(field.responseName, [toShapeVariant condition field])])
+                (List.map (toShapeField condition) rest)
+                =
+                  List.map (toShapeField condition) leftFields ++
+                    (field.responseName, [toShapeVariant condition field]) ::
+                      List.map (toShapeField condition) rest := by
+            simpa [toShapeFields, toShapeField, List.map_append,
+              List.append_assoc] using htail
+          simp [toShapeFields, toShapeField, ResponseShape.Shape.mergeFieldsWithFuel,
+            hmatching', hremaining', htail']
+
+theorem shapeFieldsSize_toShapeFields
+    (condition : ResponseShape.Condition) (fields : List LeafField) :
+    ResponseShape.Shape.fieldsSize (toShapeFields condition fields)
+      = fields.length := by
+  induction fields with
+  | nil =>
+      simp [toShapeFields, ResponseShape.Shape.fieldsSize]
+  | cons field rest ih =>
+      have ih' :
+          ResponseShape.Shape.fieldsSize (List.map (toShapeField condition) rest)
+            = rest.length := by
+        simpa [toShapeFields] using ih
+      simp [toShapeFields, toShapeField, toShapeVariant,
+        ResponseShape.Shape.fieldsSize, ResponseShape.Shape.variantsSize,
+        ResponseShape.Shape.empty, ResponseShape.Shape.size, ih', Nat.add_comm]
+
+theorem mergeFields_toShapeFields_append
+    (condition : ResponseShape.Condition)
+    (leftFields suffix : List LeafField) :
+    responseNamesNodup (leftFields ++ suffix) ->
+      ResponseShape.Shape.mergeFields
+        (toShapeFields condition leftFields)
+        (toShapeFields condition suffix)
+        = toShapeFields condition (leftFields ++ suffix) := by
+  intro hnodup
+  have hfuel :
+      suffix.length <=
+        ResponseShape.Shape.fieldsSize (toShapeFields condition leftFields)
+          + ResponseShape.Shape.size ⟨toShapeFields condition suffix⟩ := by
+    simp [ResponseShape.Shape.size, shapeFieldsSize_toShapeFields]
+    omega
+  have hfuelEq :
+      ResponseShape.Shape.size ⟨toShapeFields condition leftFields⟩
+        + ResponseShape.Shape.size ⟨toShapeFields condition suffix⟩
+        =
+          (ResponseShape.Shape.fieldsSize (toShapeFields condition leftFields)
+            + ResponseShape.Shape.size ⟨toShapeFields condition suffix⟩) + 1 := by
+    simp [ResponseShape.Shape.size]
+    omega
+  rw [ResponseShape.Shape.mergeFields, ResponseShape.Shape.merge, hfuelEq]
+  simp [ResponseShape.Shape.mergeWithFuel]
+  exact mergeFieldsWithFuel_toShapeFields_append condition
+      (ResponseShape.Shape.fieldsSize (toShapeFields condition leftFields)
+        + ResponseShape.Shape.size ⟨toShapeFields condition suffix⟩)
+      leftFields suffix hfuel hnodup
+
+theorem collectSelectionShapeFields_toSelection (schema : Schema)
+    (fuel : Nat) (parentType : Name) (condition : ResponseShape.Condition)
+    (field : LeafField) :
+    condition.satisfiableBool = true ->
+      ResponseShape.Shape.collectSelectionShapeFields schema (fuel + 1)
+        parentType condition field.toSelection
+        = [toShapeField condition field] := by
+  intro hcondition
+  cases condition with
+  | mk possibleTypes booleanLiterals =>
+      cases possibleTypes with
+      | none =>
+          cases field
+          simp [toSelection, toShapeField, toShapeVariant,
+            ResponseShape.Shape.collectSelectionShapeFields,
+            ResponseShape.Condition.fromDirectives?,
+            ResponseShape.Condition.and, ResponseShape.Condition.empty,
+            ResponseShape.Shape.empty, hcondition]
+      | some possibleTypes =>
+          cases field
+          simp [toSelection, toShapeField, toShapeVariant,
+            ResponseShape.Shape.collectSelectionShapeFields,
+            ResponseShape.Condition.fromDirectives?,
+            ResponseShape.Condition.and, ResponseShape.Condition.empty,
+            ResponseShape.Shape.empty, hcondition]
+
+theorem collectSelectionSetShapeFields_toSelectionSet (schema : Schema) :
+    ∀ (fuel : Nat) (parentType : Name) (condition : ResponseShape.Condition)
+      (fields : List LeafField),
+      fields.length <= fuel ->
+        condition.satisfiableBool = true ->
+          responseNamesNodup fields ->
+            ResponseShape.Shape.collectSelectionSetShapeFields schema fuel
+              parentType condition (toSelectionSet fields)
+              = toShapeFields condition fields := by
+  intro fuel parentType condition fields
+  induction fields generalizing fuel parentType with
+  | nil =>
+      intro _hfuel _hcondition _hnodup
+      cases fuel <;>
+        simp [toSelectionSet, toShapeFields,
+          ResponseShape.Shape.collectSelectionSetShapeFields]
+  | cons field rest ih =>
+      intro hfuel hcondition hnodup
+      cases fuel with
+      | zero =>
+          simp at hfuel
+      | succ fuel =>
+          have hrestFuel : rest.length <= fuel + 1 :=
+            Nat.le_trans (Nat.le_of_succ_le_succ hfuel) (Nat.le_succ fuel)
+          have hnodupCons := hnodup
+          simp [responseNamesNodup, responseNames] at hnodupCons
+          rcases hnodupCons with ⟨_hnotMem, hrestNodupRaw⟩
+          have hrestNodup : responseNamesNodup rest := by
+            simpa [responseNamesNodup, responseNames] using hrestNodupRaw
+          have hselection :=
+            collectSelectionShapeFields_toSelection schema fuel parentType condition
+              field hcondition
+          have hrest :=
+            ih (fuel + 1) parentType hrestFuel hcondition hrestNodup
+          have hrest' :
+              ResponseShape.Shape.collectSelectionSetShapeFields schema (fuel + 1)
+                parentType condition (List.map toSelection rest)
+                = toShapeFields condition rest := by
+            simpa [toSelectionSet] using hrest
+          have hmerge :
+              ResponseShape.Shape.mergeFields
+                (toShapeFields condition [field])
+                (toShapeFields condition rest)
+                = toShapeFields condition ([field] ++ rest) :=
+            mergeFields_toShapeFields_append condition [field] rest
+              (by simpa [responseNamesNodup] using hnodup)
+          have hmerge' :
+              ResponseShape.Shape.mergeFields
+                [toShapeField condition field]
+                (toShapeFields condition rest)
+                = toShapeField condition field ::
+                  List.map (toShapeField condition) rest := by
+            simpa [toShapeFields] using hmerge
+          have hmerge'' :
+              ResponseShape.Shape.mergeFields
+                [toShapeField condition field]
+                (List.map (toShapeField condition) rest)
+                = toShapeField condition field ::
+                  List.map (toShapeField condition) rest := by
+            simpa [toShapeFields] using hmerge'
+          simp [toSelectionSet, toShapeFields,
+            ResponseShape.Shape.collectSelectionSetShapeFields,
+            hcondition, hselection, hrest', hmerge'']
+
+theorem ofSemanticOperation_toSelectionSet (schema : Schema)
+    (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition) (fields : List LeafField) :
+    (ResponseShape.Shape.semanticOperationInitialCondition schema
+      { name := name,
+        rootType := rootType,
+        variableDefinitions := variableDefinitions,
+        selectionSet := toSelectionSet fields }).satisfiableBool = true ->
+      responseNamesNodup fields ->
+        ResponseShape.Shape.ofSemanticOperation schema
+          { name := name,
+            rootType := rootType,
+            variableDefinitions := variableDefinitions,
+            selectionSet := toSelectionSet fields }
+          =
+            ⟨toShapeFields
+              (ResponseShape.Shape.semanticOperationInitialCondition schema
+                { name := name,
+                  rootType := rootType,
+                  variableDefinitions := variableDefinitions,
+                  selectionSet := toSelectionSet fields })
+              fields⟩ := by
+  intro hcondition hnodup
+  have hfuel : fields.length <= fields.length + 1 := by omega
+  simp [ResponseShape.Shape.ofSemanticOperation,
+    ResponseShape.Shape.semanticSelectionSetShape,
+    ResponseShape.Shape.semanticOperationShapeFuel, Semantic.Operation.size,
+    toSelectionSet_size,
+    collectSelectionSetShapeFields_toSelectionSet schema (fields.length + 1)
+      rootType
+      (ResponseShape.Shape.semanticOperationInitialCondition schema
+        { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := toSelectionSet fields })
+      fields hfuel hcondition hnodup]
+
 theorem fieldsWithResponseName_toSelectionSet_notMem
     (responseName : Name) (fields : List LeafField) :
     responseName ∉ responseNames fields ->
@@ -829,6 +1175,91 @@ theorem typedResponseFieldConformsToShapeVariant
       (condition, ResponseShape.selectedField field.fieldName field.arguments)
       ResponseShape.Shape.empty hcondition hchild
 
+theorem typedFieldsConformToShapeFields_append
+    (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (executionFuel : Nat)
+    (parentType runtimeType : Name) (source : Value)
+    (condition : ResponseShape.Condition) :
+    ∀ (shapePrefix suffix : List LeafField),
+      responseNamesNodup (shapePrefix ++ suffix) ->
+        conditionHoldsBool variableValues runtimeType condition = true ->
+          typedFieldsConformToShapeBool variableValues suffix.length runtimeType
+            (typedResponseFields schema store variableValues executionFuel parentType
+              source suffix)
+            ⟨toShapeFields condition (shapePrefix ++ suffix)⟩ = true := by
+  intro shapePrefix suffix
+  induction suffix generalizing shapePrefix with
+  | nil =>
+      intro _hnodup _hcondition
+      simp [typedResponseFields, typedFieldsConformToShapeBool]
+  | cons field rest ih =>
+      intro hnodup hcondition
+      have hnameParts :
+          (responseNames shapePrefix ++ field.responseName :: responseNames rest).Nodup := by
+        simpa [responseNamesNodup, responseNames, List.map_append] using hnodup
+      simp [List.nodup_append] at hnameParts
+      rcases hnameParts with ⟨_hprefix, _hfieldRest, hseparate⟩
+      have hnotMemPrefix : field.responseName ∉ responseNames shapePrefix := by
+        intro hmem
+        exact (hseparate field.responseName hmem).left rfl
+      have hlookup :
+          ResponseShape.Shape.lookupField field.responseName
+            (toShapeFields condition (shapePrefix ++ field :: rest))
+            = some [toShapeVariant condition field] :=
+        lookupField_toShapeFields_append_cons_self condition shapePrefix field rest
+          hnotMemPrefix
+      have hvariant :
+          typedVariantConformsToShapeBool variableValues rest.length runtimeType
+            (TypedExecution.completeValue schema store variableValues executionFuel
+              ((schema.fieldReturnType? parentType field.fieldName).getD field.fieldName)
+              [] (store.resolveValue field.fieldName field.arguments source))
+            [toShapeVariant condition field] = true := by
+        cases hfuel : rest.length with
+        | zero =>
+            simp [typedVariantConformsToShapeBool]
+        | succ shapeFuel =>
+            simpa [hfuel] using
+              typedResponseFieldConformsToShapeVariant schema store variableValues
+                shapeFuel executionFuel parentType runtimeType source condition field
+                hcondition
+      have hrestNodup : responseNamesNodup ((shapePrefix ++ [field]) ++ rest) := by
+        simpa [responseNamesNodup, responseNames, List.map_append,
+          List.append_assoc] using hnodup
+      have hrest :=
+        ih (shapePrefix ++ [field]) hrestNodup hcondition
+      have hrest' :
+          typedFieldsConformToShapeBool variableValues rest.length runtimeType
+            (typedResponseFields schema store variableValues executionFuel parentType
+              source rest)
+            ⟨toShapeFields condition (shapePrefix ++ field :: rest)⟩ = true := by
+        simpa [List.append_assoc] using hrest
+      have hrest'' :
+          typedFieldsConformToShapeBool variableValues rest.length runtimeType
+            (List.map
+              (typedResponseField schema store variableValues executionFuel parentType
+                source)
+              rest)
+            ⟨toShapeFields condition (shapePrefix ++ field :: rest)⟩ = true := by
+        simpa [typedResponseFields] using hrest'
+      simp [typedResponseFields, typedResponseField, typedFieldsConformToShapeBool,
+        hlookup, hvariant, hrest'']
+
+theorem typedFieldsConformToShapeFields
+    (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (executionFuel : Nat)
+    (parentType runtimeType : Name) (source : Value)
+    (condition : ResponseShape.Condition) (fields : List LeafField) :
+    responseNamesNodup fields ->
+      conditionHoldsBool variableValues runtimeType condition = true ->
+        typedFieldsConformToShapeBool variableValues fields.length runtimeType
+          (typedResponseFields schema store variableValues executionFuel parentType
+            source fields)
+          ⟨toShapeFields condition fields⟩ = true := by
+  intro hnodup hcondition
+  simpa using
+    typedFieldsConformToShapeFields_append schema store variableValues executionFuel
+      parentType runtimeType source condition [] fields hnodup hcondition
+
 end LeafField
 
 theorem groundNormalFormCorrect_twoDistinctLeafNoDirectives
@@ -1205,6 +1636,62 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_threeDistinctLeafNoDirective
     possibleTypesHoldBool_of_typeIncludesObject schema hrootType',
     hfirstComplete, hsecondComplete, hthirdComplete,
     ResponseShape.Shape.lookupField]
+
+theorem responseShapeCorrectForTypedExecutionAtRoot_distinctLeafFieldsNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition) (fields : List LeafField) :
+    LeafField.responseNamesNodup fields ->
+      responseShapeCorrectForTypedExecutionAtRoot schema
+        { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := LeafField.toSelectionSet fields } := by
+  intro hnodup store variableValues root _hstore _hroot hrootType
+  let operation : Semantic.Operation :=
+    { name := name,
+      rootType := rootType,
+      variableDefinitions := variableDefinitions,
+      selectionSet := LeafField.toSelectionSet fields }
+  have hrootType' : schema.typeIncludesObject rootType root.typeName := hrootType
+  have hnonempty : ¬ schema.getPossibleTypes rootType = [] :=
+    possibleTypes_nonempty_of_typeIncludesObject schema hrootType'
+  have hconditionSat :
+      ResponseShape.Condition.satisfiableBool
+        (ResponseShape.Shape.semanticOperationInitialCondition schema operation) = true := by
+    simp [operation, ResponseShape.Shape.semanticOperationInitialCondition,
+      ResponseShape.Condition.satisfiableBool,
+      ResponseShape.Condition.hasContradictionBool,
+      ResponseShape.Condition.possibleTypesEmptyBool,
+      ResponseShape.BooleanLiteral.hasContradictionBool, hnonempty]
+  have hconditionHolds :
+      conditionHoldsBool variableValues root.typeName
+        (ResponseShape.Shape.semanticOperationInitialCondition schema operation) = true :=
+    semanticOperationInitialCondition_holds schema variableValues operation hrootType'
+  have hexec :
+      TypedExecution.executeSemanticQuery schema store variableValues operation root
+        =
+          .object root.typeName
+            (LeafField.typedResponseFields schema store variableValues
+              (fields.length * 3) rootType (.object root.typeName root.id) fields) := by
+    simpa [operation] using
+      LeafField.executeSemanticQuery_toSelectionSet schema store variableValues name rootType
+        variableDefinitions fields root hnodup
+  have hshape :
+      ResponseShape.Shape.ofSemanticOperation schema operation
+        =
+          ⟨LeafField.toShapeFields
+            (ResponseShape.Shape.semanticOperationInitialCondition schema operation)
+            fields⟩ := by
+    simpa [operation] using
+      LeafField.ofSemanticOperation_toSelectionSet schema name rootType variableDefinitions
+        fields hconditionSat hnodup
+  rw [hexec, hshape]
+  simp [operation, Semantic.Operation.size, LeafField.toSelectionSet_size,
+    typedResponseConformsToShapeBool]
+  exact LeafField.typedFieldsConformToShapeFields schema store variableValues
+    (fields.length * 3) rootType root.typeName (.object root.typeName root.id)
+    (ResponseShape.Shape.semanticOperationInitialCondition schema operation)
+    fields hnodup hconditionHolds
 
 end DataModel
 

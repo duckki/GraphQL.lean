@@ -55,12 +55,15 @@ direct no-directive leaf-field list with distinct response names through
 `DataModel.LeafField`. `DataModel.LeafField` also proves those lists are already
 normal semantic selection sets and factors their typed execution through
 `collectFields_toSelectionSet`, `executeSelectionSet_toSelectionSet`, and
-`executeSemanticQuery_toSelectionSet`. It also has the initial response-shape
-counterparts `toShapeFields`, `lookupField_toShapeFields_*`, and
-`typedResponseFieldConformsToShapeVariant`. The next proof boundary is the
-list-level response-shape construction theorem for distinct direct leaf fields,
-then full list-level response-shape soundness, before tackling same-response-name
-field merging.
+`executeSemanticQuery_toSelectionSet`. It also has response-shape construction
+and conformance counterparts through `toShapeFields`,
+`collectSelectionSetShapeFields_toSelectionSet`,
+`ofSemanticOperation_toSelectionSet`,
+`typedFieldsConformToShapeFields`, and
+`responseShapeCorrectForTypedExecutionAtRoot_distinctLeafFieldsNoDirectives`.
+The next proof boundary is list-level normal-form response-shape preservation
+for distinct direct leaf fields, before tackling same-response-name field
+merging.
 
 Directive-specific data-model proofs live in `GraphQL/DataModel/Directives.lean`.
 That module currently proves single-leaf response-shape soundness for modeled

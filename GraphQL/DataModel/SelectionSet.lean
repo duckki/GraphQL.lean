@@ -31,6 +31,49 @@ def responseNames (fields : List LeafField) : List Name :=
 def responseNamesNodup (fields : List LeafField) : Prop :=
   (responseNames fields).Nodup
 
+def toExecutableField (parentType : Name) (field : LeafField) :
+    Execution.ExecutableField :=
+  {
+    parentType := parentType,
+    responseName := field.responseName,
+    fieldName := field.fieldName,
+    arguments := field.arguments,
+    selectionSet := []
+  }
+
+def toExecutableGroups (parentType : Name) (fields : List LeafField) :
+    List (Name × List Execution.ExecutableField) :=
+  fields.map (fun field => (field.responseName, [toExecutableField parentType field]))
+
+def typedResponseField (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (parentType : Name) (source : Value) (field : LeafField) :
+    Name × TypedResponse :=
+  (field.responseName,
+    TypedExecution.completeValue schema store variableValues fuel
+      ((schema.fieldReturnType? parentType field.fieldName).getD field.fieldName) []
+      (store.resolveValue field.fieldName field.arguments source))
+
+def typedResponseFields (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (parentType : Name) (source : Value) (fields : List LeafField) :
+    List (Name × TypedResponse) :=
+  fields.map (typedResponseField schema store variableValues fuel parentType source)
+
+def toShapeVariant (condition : ResponseShape.Condition) (field : LeafField) :
+    ResponseShape.Shape.Variant :=
+  ((condition, ResponseShape.selectedField field.fieldName field.arguments),
+    ResponseShape.Shape.empty)
+
+def toShapeField (condition : ResponseShape.Condition) (field : LeafField) :
+    Name × List ResponseShape.Shape.Variant :=
+  (field.responseName, [toShapeVariant condition field])
+
+def toShapeFields (condition : ResponseShape.Condition)
+    (fields : List LeafField) :
+    List (Name × List ResponseShape.Shape.Variant) :=
+  fields.map (toShapeField condition)
+
 @[simp]
 theorem toSelection_responseName? (field : LeafField) :
     field.toSelection.responseName? = some field.responseName := by
@@ -86,6 +129,313 @@ theorem selectionsAllFields_toSelectionSet (fields : List LeafField) :
   rcases hselection with ⟨field, _hfield, rfl⟩
   cases field
   simp [toSelection, Semantic.Selection.isField]
+
+theorem collectSelection_toSelection (schema : Schema)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (parentType : Name) (source : Execution.Value) (field : LeafField) :
+    Execution.collectSelection schema variableValues (fuel + 1) parentType source
+      field.toSelection = [(field.responseName, [toExecutableField parentType field])] := by
+  cases field
+  simp [toSelection, toExecutableField, Execution.collectSelection,
+    Execution.selectionDirectivesAllowBool]
+
+theorem executeCollectedFields_toExecutableGroups
+    (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (parentType : Name) (source : Value) (fields : List LeafField) :
+    TypedExecution.executeCollectedFields schema store variableValues (fuel + 1) source
+      (toExecutableGroups parentType fields)
+      = typedResponseFields schema store variableValues fuel parentType source fields := by
+  induction fields with
+  | nil =>
+      simp [toExecutableGroups, typedResponseFields,
+        TypedExecution.executeCollectedFields]
+  | cons field rest ih =>
+      have ih' :
+          TypedExecution.executeCollectedFields schema store variableValues (fuel + 1) source
+            (List.map
+              (fun field =>
+                (field.responseName, [toExecutableField parentType field]))
+              rest)
+            = List.map
+                (typedResponseField schema store variableValues fuel parentType source)
+                rest := by
+        simpa [toExecutableGroups, typedResponseFields] using ih
+      have ih'' :
+          TypedExecution.executeCollectedFields schema store variableValues (fuel + 1) source
+            (List.map
+              (fun field =>
+                (field.responseName,
+                  [{
+                    parentType := parentType,
+                    responseName := field.responseName,
+                    fieldName := field.fieldName,
+                    arguments := field.arguments,
+                    selectionSet := []
+                  }]))
+              rest)
+            = List.map
+                (typedResponseField schema store variableValues fuel parentType source)
+                rest := by
+        simpa [toExecutableField] using ih'
+      simp [toExecutableGroups, typedResponseFields, typedResponseField,
+        toExecutableField, TypedExecution.executeCollectedFields,
+        TypedExecution.executeField, Execution.mergedFieldSelectionSet, ih'']
+
+theorem addExecutableField_toExecutableGroups_append
+    (parentType : Name) (field : LeafField) (fields : List LeafField) :
+    field.responseName ∉ responseNames fields ->
+      Execution.addExecutableField (toExecutableField parentType field)
+        (toExecutableGroups parentType fields)
+        = toExecutableGroups parentType (fields ++ [field]) := by
+  intro hnotMem
+  induction fields with
+  | nil =>
+      simp [toExecutableGroups, toExecutableField, Execution.addExecutableField]
+  | cons existing rest ih =>
+      have hhead : existing.responseName ≠ field.responseName := by
+        intro hsame
+        apply hnotMem
+        simp [responseNames, hsame]
+      have hheadBool : (existing.responseName == field.responseName) = false := by
+        by_cases hsame : existing.responseName = field.responseName
+        · exact False.elim (hhead hsame)
+        · simp [hsame]
+      have hrest : field.responseName ∉ responseNames rest := by
+        intro hmem
+        apply hnotMem
+        simp [responseNames]
+        right
+        simpa [responseNames] using hmem
+      have ih' :
+          Execution.addExecutableField
+            {
+              parentType := parentType,
+              responseName := field.responseName,
+              fieldName := field.fieldName,
+              arguments := field.arguments,
+              selectionSet := []
+            }
+            (List.map
+              (fun field =>
+                (field.responseName,
+                  [{
+                    parentType := parentType,
+                    responseName := field.responseName,
+                    fieldName := field.fieldName,
+                    arguments := field.arguments,
+                    selectionSet := []
+                  }]))
+              rest)
+            =
+              List.map
+                (fun field =>
+                  (field.responseName,
+                    [{
+                      parentType := parentType,
+                      responseName := field.responseName,
+                      fieldName := field.fieldName,
+                      arguments := field.arguments,
+                      selectionSet := []
+                    }]))
+                rest ++
+              [(field.responseName,
+                [{
+                  parentType := parentType,
+                  responseName := field.responseName,
+                  fieldName := field.fieldName,
+                  arguments := field.arguments,
+                  selectionSet := []
+                }])] := by
+        simpa [toExecutableGroups, toExecutableField] using ih hrest
+      simp [toExecutableGroups, toExecutableField, Execution.addExecutableField,
+        hheadBool, ih']
+
+theorem addExecutableGroup_toExecutableGroups_append
+    (parentType : Name) (field : LeafField) (fields : List LeafField) :
+    field.responseName ∉ responseNames fields ->
+      Execution.addExecutableGroup
+        (field.responseName, [toExecutableField parentType field])
+        (toExecutableGroups parentType fields)
+        = toExecutableGroups parentType (fields ++ [field]) := by
+  intro hnotMem
+  simp [Execution.addExecutableGroup, Execution.addExecutableFields,
+    addExecutableField_toExecutableGroups_append parentType field fields hnotMem]
+
+theorem mergeExecutableGroups_toExecutableGroups_append
+    (parentType : Name) (leftFields suffix : List LeafField) :
+    responseNamesNodup (leftFields ++ suffix) ->
+      Execution.mergeExecutableGroups
+        (toExecutableGroups parentType leftFields)
+        (toExecutableGroups parentType suffix)
+        = toExecutableGroups parentType (leftFields ++ suffix) := by
+  induction suffix generalizing leftFields with
+  | nil =>
+      intro _hnodup
+      simp [toExecutableGroups, Execution.mergeExecutableGroups]
+  | cons field rest ih =>
+      intro hnodup
+      have hnameParts :
+          (responseNames leftFields ++ field.responseName :: responseNames rest).Nodup := by
+        simpa [responseNamesNodup, responseNames, List.map_append] using hnodup
+      simp [List.nodup_append] at hnameParts
+      rcases hnameParts with ⟨_hprefix, _hfieldRest, hseparate⟩
+      have hnotMemPrefix : field.responseName ∉ responseNames leftFields := by
+        intro hmem
+        exact (hseparate field.responseName hmem).left rfl
+      have hrestNodup : responseNamesNodup ((leftFields ++ [field]) ++ rest) := by
+        simpa [responseNamesNodup, responseNames, List.map_append,
+          List.append_assoc] using hnodup
+      have hhead :=
+        addExecutableGroup_toExecutableGroups_append parentType field leftFields
+          hnotMemPrefix
+      have htail := ih (leftFields ++ [field]) hrestNodup
+      rw [toExecutableGroups, Execution.mergeExecutableGroups]
+      change Execution.mergeExecutableGroups
+        (Execution.addExecutableGroup
+          (field.responseName, [toExecutableField parentType field])
+          (toExecutableGroups parentType leftFields))
+        (toExecutableGroups parentType rest)
+          = toExecutableGroups parentType (leftFields ++ field :: rest)
+      rw [hhead, htail]
+      simp [toExecutableGroups, List.append_assoc]
+
+theorem collectFields_toSelectionSet (schema : Schema)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (parentType : Name) (source : Execution.Value) (fields : List LeafField) :
+    responseNamesNodup fields ->
+      Execution.collectFields schema variableValues (fuel + 1) parentType source
+        (toSelectionSet fields)
+        = toExecutableGroups parentType fields := by
+  intro hnodup
+  induction fields with
+  | nil =>
+      simp [toSelectionSet, toExecutableGroups, Execution.collectFields]
+  | cons field rest ih =>
+      have hnodupCons := hnodup
+      simp [responseNamesNodup, responseNames] at hnodupCons
+      rcases hnodupCons with ⟨_hnotMem, hrestNodupRaw⟩
+      have hrestNodup : responseNamesNodup rest := by
+        simpa [responseNamesNodup, responseNames] using hrestNodupRaw
+      have hcollectSelection :=
+        collectSelection_toSelection schema variableValues fuel parentType source field
+      have hcollectRest :=
+        ih hrestNodup
+      have hcollectRest' :
+          Execution.collectFields schema variableValues (fuel + 1) parentType source
+            (List.map toSelection rest)
+            = toExecutableGroups parentType rest := by
+        simpa [toSelectionSet] using hcollectRest
+      have hmerge :
+          Execution.mergeExecutableGroups
+            (toExecutableGroups parentType [field])
+            (toExecutableGroups parentType rest)
+            = toExecutableGroups parentType ([field] ++ rest) :=
+        mergeExecutableGroups_toExecutableGroups_append parentType [field] rest
+          (by simpa [responseNamesNodup] using hnodup)
+      have hmerge' :
+          Execution.mergeExecutableGroups
+            [(field.responseName, [toExecutableField parentType field])]
+            (toExecutableGroups parentType rest)
+            =
+              (field.responseName, [toExecutableField parentType field]) ::
+                List.map
+                  (fun field =>
+                    (field.responseName, [toExecutableField parentType field]))
+                  rest := by
+        simpa [toExecutableGroups] using hmerge
+      have hmerge'' :
+          Execution.mergeExecutableGroups
+            [(field.responseName, [toExecutableField parentType field])]
+            (List.map
+              (fun field =>
+                (field.responseName, [toExecutableField parentType field]))
+              rest)
+            =
+              (field.responseName, [toExecutableField parentType field]) ::
+                List.map
+                  (fun field =>
+                    (field.responseName, [toExecutableField parentType field]))
+                  rest := by
+        simpa [toExecutableGroups] using hmerge'
+      simp [toSelectionSet, toExecutableGroups, Execution.collectFields,
+        hcollectSelection, hcollectRest', hmerge'']
+
+theorem executeSelectionSet_toSelectionSet
+    (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (parentType : Name) (source : Value) (fields : List LeafField) :
+    responseNamesNodup fields ->
+      TypedExecution.executeSelectionSet schema store variableValues (fuel + 1)
+        parentType source (toSelectionSet fields)
+        = typedResponseFields schema store variableValues fuel parentType source fields := by
+  intro hnodup
+  simp [TypedExecution.executeSelectionSet,
+    collectFields_toSelectionSet schema variableValues fuel parentType
+      source.toExecutionValue fields hnodup,
+    executeCollectedFields_toExecutableGroups]
+
+theorem executeSemanticQuery_toSelectionSet
+    (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues)
+    (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition) (fields : List LeafField)
+    (root : Root) :
+    responseNamesNodup fields ->
+      TypedExecution.executeSemanticQuery schema store variableValues
+        { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := toSelectionSet fields }
+        root
+        = .object root.typeName
+          (typedResponseFields schema store variableValues (fields.length * 3)
+            rootType (.object root.typeName root.id) fields) := by
+  intro hnodup
+  simp [TypedExecution.executeSemanticQuery, Execution.executeSemanticQueryFuel,
+    Semantic.Operation.size, toSelectionSet_size,
+    executeSelectionSet_toSelectionSet schema store variableValues (fields.length * 3)
+      rootType (.object root.typeName root.id) fields hnodup]
+
+theorem lookupField_toShapeFields_notMem
+    (condition : ResponseShape.Condition) (responseName : Name)
+    (fields : List LeafField) :
+    responseName ∉ responseNames fields ->
+      ResponseShape.Shape.lookupField responseName
+        (toShapeFields condition fields) = none := by
+  intro hnotMem
+  induction fields with
+  | nil =>
+      simp [toShapeFields, ResponseShape.Shape.lookupField]
+  | cons field rest ih =>
+      have hfield : field.responseName ≠ responseName := by
+        intro hsame
+        apply hnotMem
+        simp [responseNames, hsame]
+      have hfieldBool : (field.responseName == responseName) = false := by
+        by_cases hsame : field.responseName = responseName
+        · exact False.elim (hfield hsame)
+        · simp [hsame]
+      have hrest : responseName ∉ responseNames rest := by
+        intro hmem
+        apply hnotMem
+        simp [responseNames]
+        right
+        simpa [responseNames] using hmem
+      have ih' :
+          ResponseShape.Shape.lookupField responseName
+            (List.map (toShapeField condition) rest) = none := by
+        simpa [toShapeFields] using ih hrest
+      simp [toShapeFields, toShapeField, ResponseShape.Shape.lookupField,
+        hfieldBool, ih']
+
+theorem lookupField_toShapeFields_cons_self
+    (condition : ResponseShape.Condition) (field : LeafField)
+    (rest : List LeafField) :
+    ResponseShape.Shape.lookupField field.responseName
+      (toShapeFields condition (field :: rest))
+      = some [toShapeVariant condition field] := by
+  simp [toShapeFields, toShapeField, ResponseShape.Shape.lookupField]
 
 theorem fieldsWithResponseName_toSelectionSet_notMem
     (responseName : Name) (fields : List LeafField) :
@@ -445,6 +795,41 @@ theorem typedResponseConformsToShapeBool_completeValue_emptySelection_empty
       ResponseShape.Shape.empty = true := by
   exact typedResponseConformsToShapeBool_completeValue_emptySelection_emptyWithFuel
     schema store variableValues 1 fuel parentType value
+
+namespace LeafField
+
+theorem typedResponseFieldConformsToShapeVariant
+    (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues)
+    (shapeFuel executionFuel : Nat) (parentType runtimeType : Name)
+    (source : Value) (condition : ResponseShape.Condition)
+    (field : LeafField) :
+    conditionHoldsBool variableValues runtimeType condition = true ->
+      typedVariantConformsToShapeBool variableValues (shapeFuel + 1) runtimeType
+        (TypedExecution.completeValue schema store variableValues executionFuel
+          ((schema.fieldReturnType? parentType field.fieldName).getD field.fieldName) []
+          (store.resolveValue field.fieldName field.arguments source))
+        [toShapeVariant condition field] = true := by
+  intro hcondition
+  have hchild :
+      typedResponseConformsToShapeBool variableValues shapeFuel
+        (TypedExecution.completeValue schema store variableValues executionFuel
+          ((schema.fieldReturnType? parentType field.fieldName).getD field.fieldName) []
+          (store.resolveValue field.fieldName field.arguments source))
+        ResponseShape.Shape.empty = true :=
+    typedResponseConformsToShapeBool_completeValue_emptySelection_emptyWithFuel
+      schema store variableValues shapeFuel executionFuel
+      ((schema.fieldReturnType? parentType field.fieldName).getD field.fieldName)
+      (store.resolveValue field.fieldName field.arguments source)
+  simpa [toShapeVariant, variantHeaderActiveBool] using
+    typedVariantConformsToShapeBool_singleton variableValues shapeFuel runtimeType
+      (TypedExecution.completeValue schema store variableValues executionFuel
+        ((schema.fieldReturnType? parentType field.fieldName).getD field.fieldName) []
+        (store.resolveValue field.fieldName field.arguments source))
+      (condition, ResponseShape.selectedField field.fieldName field.arguments)
+      ResponseShape.Shape.empty hcondition hchild
+
+end LeafField
 
 theorem groundNormalFormCorrect_twoDistinctLeafNoDirectives
     (schema : Schema) (name : Option Name) (rootType : Name)

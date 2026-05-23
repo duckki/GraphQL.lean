@@ -65,7 +65,9 @@ The main modules are:
 - `GraphQL.DataModel.Directives`: directive-sensitive response-shape soundness
   proofs for modeled `@skip` and `@include` base cases.
 - `GraphQL.DataModel.SelectionSet`: multi-selection proof cases and the
-  `LeafField` proof abstraction for direct no-directive leaf fields.
+  `LeafField` proof abstraction for direct no-directive leaf fields, including
+  list-level `CollectFields`, typed execution factoring lemmas, and initial
+  response-shape lookup/variant-conformance lemmas.
 
 `GraphQL.DataModel` is the current bridge from resolver execution to proof
 semantics. It models typed object identities, field facts keyed by already
@@ -119,6 +121,10 @@ The next proof ladder is:
    response names, the three-field no-directive extension, and any direct
    no-directive leaf-field list with distinct response names through the
    `LeafField` abstraction.
+8. Prove the list-level response-shape construction theorem for distinct direct
+   no-directive leaf fields, then use it with the existing `LeafField`
+   execution and lookup factoring lemmas to finish list-level typed
+   response-shape soundness.
 6. Prove normal form preserves response shape:
    `DataModel.normalFormPreservesResponseShape`. Done for direct single-leaf
    selections with or without modeled directives, and inline-fragment single-leaf

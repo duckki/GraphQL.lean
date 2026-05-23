@@ -117,7 +117,8 @@ Keep raw syntax permissive and put invariants in validation or well-formedness
 predicates. Prefer small, proof-friendly definitions over feature expansion.
 When adding scope, update `docs/spec-conformance-plan.md` first.
 
-Review workflow: going forward, use one reviewable commit at a time. After making
-a commit, stop and let the user review that commit before continuing to the next
-proof or implementation slice, unless the user explicitly asks to continue past
-the review boundary.
+Review workflow: do not commit before review. Prepare one reviewable slice at a
+time, run the relevant checks, summarize the diff, and wait for the user to ask
+for the commit. After committing, stop again for review before continuing to the
+next proof or implementation slice, unless the user explicitly asks to continue
+past that review boundary.

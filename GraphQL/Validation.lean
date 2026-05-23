@@ -10,28 +10,65 @@ def fragmentNamed? (fragments : List FragmentDefinition) (name : Name) : Option 
 def directivesValid (_directives : List DirectiveApplication) : Prop :=
   True
 
-def inputValueValid (schema : Schema) (_value : InputValue) (expectedType : TypeRef) : Prop :=
-  schema.inputType expectedType.namedType
+def variableDefinitionNamed? (variableDefinitions : List VariableDefinition)
+    (name : Name) : Option VariableDefinition :=
+  variableDefinitions.find? (fun variableDefinition => variableDefinition.name == name)
+
+def inputValueValid (schema : Schema) (variableDefinitions : List VariableDefinition)
+    (value : InputValue) (expectedType : TypeRef) : Prop :=
+  expectedType.validInput schema
+    ∧ match value with
+      | .variable variableName =>
+          ∃ variableDefinition,
+            variableDefinitionNamed? variableDefinitions variableName = some variableDefinition
+      | _ => True
+
+def variableDefinitionValid (schema : Schema)
+    (variableDefinition : VariableDefinition) : Prop :=
+  variableDefinition.typeRef.validInput schema
+    ∧ match variableDefinition.defaultValue with
+      | none => True
+      | some defaultValue => inputValueValid schema [] defaultValue variableDefinition.typeRef
+
+def variableDefinitionsValid (schema : Schema)
+    (variableDefinitions : List VariableDefinition) : Prop :=
+  (variableDefinitions.map VariableDefinition.name).Nodup
+    ∧ ∀ variableDefinition, variableDefinition ∈ variableDefinitions ->
+      variableDefinitionValid schema variableDefinition
 
 def argumentValid (schema : Schema) (definitions : List InputValueDefinition)
-    (argument : Argument) : Prop :=
+    (variableDefinitions : List VariableDefinition) (argument : Argument) : Prop :=
   ∃ definition,
     Schema.lookupArgumentDefinition definitions argument.name = some definition
-      ∧ inputValueValid schema argument.value definition.inputType
+      ∧ inputValueValid schema variableDefinitions argument.value definition.inputType
+
+def argumentNamed? (arguments : List Argument) (name : Name) : Option Argument :=
+  arguments.find? (fun argument => argument.name == name)
+
+def argumentDefinitionRequired (definition : InputValueDefinition) : Prop :=
+  match definition.inputType with
+  | .nonNull _ => definition.defaultValue = none
+  | _ => False
 
 def argumentsValid (schema : Schema) (definitions : List InputValueDefinition)
-    (arguments : List Argument) : Prop :=
-  ∀ argument, argument ∈ arguments -> argumentValid schema definitions argument
+    (variableDefinitions : List VariableDefinition) (arguments : List Argument) : Prop :=
+  (arguments.map Argument.name).Nodup
+    ∧ (∀ argument, argument ∈ arguments ->
+      argumentValid schema definitions variableDefinitions argument)
+    ∧ (∀ definition, definition ∈ definitions ->
+      argumentDefinitionRequired definition ->
+        ∃ argument,
+          argumentNamed? arguments definition.name = some argument)
 
 mutual
   def selectionValid (schema : Schema) (fragments : List FragmentDefinition)
-      (parentType : Name) : Selection -> Prop
+      (variableDefinitions : List VariableDefinition) (parentType : Name) : Selection -> Prop
     | .field _responseName fieldName arguments directives selectionSet =>
         directivesValid directives
           ∧ ∃ fieldDefinition,
             schema.lookupField parentType fieldName = some fieldDefinition
-              ∧ argumentsValid schema fieldDefinition.arguments arguments
-              ∧ fieldSelectionSetValid schema fragments fieldDefinition selectionSet
+              ∧ argumentsValid schema fieldDefinition.arguments variableDefinitions arguments
+              ∧ fieldSelectionSetValid schema fragments variableDefinitions fieldDefinition selectionSet
     | .fragmentSpread fragmentName directives =>
         directivesValid directives
           ∧ ∃ fragmentDefinition,
@@ -39,35 +76,49 @@ mutual
               ∧ schema.typesOverlap parentType fragmentDefinition.typeCondition
     | .inlineFragment none directives selectionSet =>
         directivesValid directives
-          ∧ selectionSetValid schema fragments parentType selectionSet
+          ∧ selectionSet ≠ []
+          ∧ selectionSetValid schema fragments variableDefinitions parentType selectionSet
     | .inlineFragment (some typeCondition) directives selectionSet =>
         directivesValid directives
           ∧ schema.compositeType typeCondition
           ∧ schema.typesOverlap parentType typeCondition
-          ∧ selectionSetValid schema fragments typeCondition selectionSet
+          ∧ selectionSet ≠ []
+          ∧ selectionSetValid schema fragments variableDefinitions typeCondition selectionSet
 
   def selectionSetValid (schema : Schema) (fragments : List FragmentDefinition)
+      (variableDefinitions : List VariableDefinition)
       (parentType : Name) (selectionSet : List Selection) : Prop :=
-    ∀ selection, selection ∈ selectionSet -> selectionValid schema fragments parentType selection
+    ∀ selection, selection ∈ selectionSet ->
+      selectionValid schema fragments variableDefinitions parentType selection
 
   def fieldSelectionSetValid (schema : Schema) (fragments : List FragmentDefinition)
+      (variableDefinitions : List VariableDefinition)
       (fieldDefinition : FieldDefinition) (selectionSet : List Selection) : Prop :=
     let returnType := fieldDefinition.outputType.namedType
-    (schema.leafType returnType ∧ selectionSet = [])
+    fieldDefinition.outputType.validOutput schema
+      ∧ ((schema.leafType returnType ∧ selectionSet = [])
       ∨ (schema.compositeType returnType
-        ∧ selectionSetValid schema fragments returnType selectionSet)
+        ∧ selectionSet ≠ []
+        ∧ selectionSetValid schema fragments variableDefinitions returnType selectionSet))
 end
 
 def fragmentValid (schema : Schema) (fragments : List FragmentDefinition)
+    (variableDefinitions : List VariableDefinition)
     (fragment : FragmentDefinition) : Prop :=
   schema.compositeType fragment.typeCondition
-    ∧ selectionSetValid schema fragments fragment.typeCondition fragment.selectionSet
+    ∧ fragment.selectionSet ≠ []
+    ∧ selectionSetValid schema fragments variableDefinitions
+      fragment.typeCondition fragment.selectionSet
 
 def operationValid (schema : Schema) (operation : Operation) : Prop :=
   operation.rootType = schema.queryType
     ∧ schema.compositeType operation.rootType
-    ∧ selectionSetValid schema operation.fragments operation.rootType operation.selectionSet
-    ∧ ∀ fragment, fragment ∈ operation.fragments -> fragmentValid schema operation.fragments fragment
+    ∧ variableDefinitionsValid schema operation.variableDefinitions
+    ∧ operation.selectionSet ≠ []
+    ∧ selectionSetValid schema operation.fragments operation.variableDefinitions
+      operation.rootType operation.selectionSet
+    ∧ ∀ fragment, fragment ∈ operation.fragments ->
+      fragmentValid schema operation.fragments operation.variableDefinitions fragment
 
 end Validation
 

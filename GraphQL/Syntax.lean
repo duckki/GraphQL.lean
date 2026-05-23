@@ -42,6 +42,12 @@ structure Argument where
   value : InputValue
 deriving Repr
 
+structure VariableDefinition where
+  name : Name
+  typeRef : TypeRef
+  defaultValue : Option InputValue := none
+deriving Repr
+
 inductive DirectiveApplication where
   | skip (ifArgument : InputValue)
   | include (ifArgument : InputValue)
@@ -96,6 +102,7 @@ deriving Repr
 structure Operation where
   name : Option Name := none
   rootType : Name
+  variableDefinitions : List VariableDefinition := []
   selectionSet : List Selection
   fragments : List FragmentDefinition := []
 deriving Repr

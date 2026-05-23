@@ -22,6 +22,34 @@ deriving Repr
 structure Resolvers where
   resolve : Name -> Name -> List Argument -> Value -> Value
 
+abbrev VariableValues := List (Name × InputValue)
+
+def lookupVariableValue? (variableValues : VariableValues) (name : Name) : Option InputValue :=
+  match variableValues with
+  | [] => none
+  | (variableName, value) :: rest =>
+      if variableName = name then some value else lookupVariableValue? rest name
+
+def inputValueBoolean? (variableValues : VariableValues) : InputValue -> Option Bool
+  | .variable name => do
+      let value <- lookupVariableValue? variableValues name
+      value.staticBoolean?
+  | value => value.staticBoolean?
+
+def directiveAllowsBool (variableValues : VariableValues) : DirectiveApplication -> Bool
+  | .skip ifArgument =>
+      match inputValueBoolean? variableValues ifArgument with
+      | some value => !value
+      | none => false
+  | .include ifArgument =>
+      match inputValueBoolean? variableValues ifArgument with
+      | some value => value
+      | none => false
+
+def directivesAllowWithVariablesBool (variableValues : VariableValues)
+    (directives : List DirectiveApplication) : Bool :=
+  directives.all (fun directive => directiveAllowsBool variableValues directive)
+
 def responseForValue : Value -> List (Name × Response) -> Response
   | .null, _ => .null
   | .scalar value, [] => .scalar value
@@ -41,18 +69,20 @@ def typeConditionAppliesBool (schema : Schema) (parentType : Name)
   | none => schema.typesOverlapBool parentType typeCondition
 
 mutual
-  def executeSelection (schema : Schema) (resolvers : Resolvers) (fragments : List FragmentDefinition)
+  def executeSelection (schema : Schema) (resolvers : Resolvers)
+      (variableValues : VariableValues) (fragments : List FragmentDefinition)
       (fuel : Nat) (parentType : Name) (source : Value) : Selection -> List (Name × Response)
     | .field responseName fieldName arguments directives selectionSet =>
-        if directivesAllowBool directives then
+        if directivesAllowWithVariablesBool variableValues directives then
           let resolved := resolvers.resolve parentType fieldName arguments source
           let childType := (schema.fieldReturnType? parentType fieldName).getD fieldName
-          let childFields := executeSelectionSet schema resolvers fragments fuel childType resolved selectionSet
+          let childFields := executeSelectionSet schema resolvers variableValues fragments
+            fuel childType resolved selectionSet
           [(responseName, responseForValue resolved childFields)]
         else
           []
     | .fragmentSpread fragmentName directives =>
-        if directivesAllowBool directives then
+        if directivesAllowWithVariablesBool variableValues directives then
           match fuel with
           | 0 => []
           | fuel' + 1 =>
@@ -60,37 +90,41 @@ mutual
               | none => []
               | some fragment =>
                   if typeConditionAppliesBool schema parentType source fragment.typeCondition then
-                    executeSelectionSet schema resolvers fragments fuel'
+                    executeSelectionSet schema resolvers variableValues fragments fuel'
                       fragment.typeCondition source fragment.selectionSet
                   else
                     []
         else
           []
     | .inlineFragment none directives selectionSet =>
-        if directivesAllowBool directives then
-          executeSelectionSet schema resolvers fragments fuel parentType source selectionSet
+        if directivesAllowWithVariablesBool variableValues directives then
+          executeSelectionSet schema resolvers variableValues fragments
+            fuel parentType source selectionSet
         else
           []
     | .inlineFragment (some typeCondition) directives selectionSet =>
-        if directivesAllowBool directives then
+        if directivesAllowWithVariablesBool variableValues directives then
           if typeConditionAppliesBool schema parentType source typeCondition then
-            executeSelectionSet schema resolvers fragments fuel typeCondition source selectionSet
+            executeSelectionSet schema resolvers variableValues fragments
+              fuel typeCondition source selectionSet
           else
             []
         else
           []
 
-  def executeSelectionSet (schema : Schema) (resolvers : Resolvers) (fragments : List FragmentDefinition)
+  def executeSelectionSet (schema : Schema) (resolvers : Resolvers)
+      (variableValues : VariableValues) (fragments : List FragmentDefinition)
       (fuel : Nat) (parentType : Name) (source : Value) : List Selection -> List (Name × Response)
     | [] => []
     | selection :: rest =>
-        executeSelection schema resolvers fragments fuel parentType source selection
-          ++ executeSelectionSet schema resolvers fragments fuel parentType source rest
+        executeSelection schema resolvers variableValues fragments fuel parentType source selection
+          ++ executeSelectionSet schema resolvers variableValues fragments fuel parentType source rest
 end
 
-def executeOperation (schema : Schema) (resolvers : Resolvers) (operation : Operation)
+def executeOperation (schema : Schema) (resolvers : Resolvers)
+    (variableValues : VariableValues) (operation : Operation)
     (source : Value) : Response :=
-  .object (executeSelectionSet schema resolvers operation.fragments operation.size
+  .object (executeSelectionSet schema resolvers variableValues operation.fragments operation.size
     operation.rootType source operation.selectionSet)
 
 end Execution

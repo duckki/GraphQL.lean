@@ -153,6 +153,11 @@ def lookupInputObject (schema : Schema) (typeName : Name) : Option InputObjectTy
   | some (.inputObject inputObject) => some inputObject
   | _ => none
 
+def lookupInterface (schema : Schema) (typeName : Name) : Option InterfaceType := do
+  match schema.lookupType typeName with
+  | some (.interface interfaceType) => some interfaceType
+  | _ => none
+
 def lookupField (schema : Schema) (parentType fieldName : Name) : Option FieldDefinition := do
   let typeDefinition <- schema.lookupType parentType
   let fields <- typeDefinition.fields?
@@ -189,6 +194,14 @@ def typesOverlapBool (schema : Schema) (left right : Name) : Bool :=
 def typeExists (schema : Schema) (typeName : Name) : Prop :=
   schema.lookupType typeName ≠ none
 
+def objectType (schema : Schema) (typeName : Name) : Prop :=
+  ∃ objectType,
+    schema.lookupType typeName = some (.object objectType)
+
+def interfaceType (schema : Schema) (typeName : Name) : Prop :=
+  ∃ interfaceType,
+    schema.lookupType typeName = some (.interface interfaceType)
+
 def inputType (schema : Schema) (typeName : Name) : Prop :=
   ∃ typeDefinition,
     schema.lookupType typeName = some typeDefinition
@@ -210,5 +223,27 @@ def leafType (schema : Schema) (typeName : Name) : Prop :=
       ∧ typeDefinition.isLeaf
 
 end Schema
+
+namespace TypeRef
+
+def wellFormed : TypeRef -> Prop
+  | .named _ => True
+  | .list inner => inner.wellFormed
+  | .nonNull (.nonNull _) => False
+  | .nonNull inner => inner.wellFormed
+
+def validInput : TypeRef -> Schema -> Prop
+  | .named name, schema => schema.inputType name
+  | .list inner, schema => inner.validInput schema
+  | .nonNull (.nonNull _), _schema => False
+  | .nonNull inner, schema => inner.validInput schema
+
+def validOutput : TypeRef -> Schema -> Prop
+  | .named name, schema => schema.outputType name
+  | .list inner, schema => inner.validOutput schema
+  | .nonNull (.nonNull _), _schema => False
+  | .nonNull inner, schema => inner.validOutput schema
+
+end TypeRef
 
 end GraphQL

@@ -1,4 +1,4 @@
-import GraphQL.Operation
+import GraphQL.Semantic
 
 namespace GraphQL
 
@@ -869,8 +869,8 @@ def restrictConditionToType (schema : Schema) (condition : Condition)
   condition.withPossibleTypes possibleTypes
 
 mutual
-  def operationSelectionShape (schema : Schema) (fragments : List FragmentDefinition) :
-      Nat -> Name -> Condition -> Selection ->
+  def semanticSelectionShape (schema : Schema) :
+      Nat -> Name -> Condition -> Semantic.Selection ->
         List (Name × List (VariantHeader × Shape))
     | 0, _parentType, _condition, _selection => []
     | fuel + 1, parentType, condition,
@@ -885,28 +885,16 @@ mutual
                 match selectionSet with
                 | [] => empty
                 | _ =>
-                    ⟨operationSelectionSetShape schema fragments fuel
+                    ⟨semanticSelectionSetShape schema fuel
                       childType fieldCondition selectionSet⟩
               [(responseName, [((fieldCondition, selectedField fieldName arguments), childShape)])]
             else
               []
-    | fuel + 1, _parentType, condition, .fragmentSpread fragmentName directives =>
-        match Condition.fromDirectives? directives with
-        | none => []
-        | some directiveCondition =>
-            match QueryAux.findFragment? fragments fragmentName with
-            | none => []
-            | some fragment =>
-                let nextCondition :=
-                  restrictConditionToType schema (condition.and directiveCondition)
-                    fragment.typeCondition
-                operationSelectionSetShape schema fragments fuel
-                  fragment.typeCondition nextCondition fragment.selectionSet
     | fuel + 1, parentType, condition, .inlineFragment none directives selectionSet =>
         match Condition.fromDirectives? directives with
         | none => []
         | some directiveCondition =>
-            operationSelectionSetShape schema fragments fuel parentType
+            semanticSelectionSetShape schema fuel parentType
               (condition.and directiveCondition) selectionSet
     | fuel + 1, _parentType, condition,
         .inlineFragment (some typeCondition) directives selectionSet =>
@@ -916,34 +904,38 @@ mutual
             let nextCondition :=
               restrictConditionToType schema (condition.and directiveCondition)
                 typeCondition
-            operationSelectionSetShape schema fragments fuel
+            semanticSelectionSetShape schema fuel
               typeCondition nextCondition selectionSet
 
-  def operationSelectionSetShape (schema : Schema) (fragments : List FragmentDefinition) :
-      Nat -> Name -> Condition -> List Selection ->
+  def semanticSelectionSetShape (schema : Schema) :
+      Nat -> Name -> Condition -> List Semantic.Selection ->
         List (Name × List (VariantHeader × Shape))
     | 0, _parentType, _condition, _selectionSet => []
     | _fuel + 1, _parentType, _condition, [] => []
     | fuel + 1, parentType, condition, selection :: rest =>
         if condition.satisfiableBool then
           mergeFields
-            (operationSelectionShape schema fragments (fuel + 1) parentType condition selection)
-            (operationSelectionSetShape schema fragments (fuel + 1) parentType condition rest)
+            (semanticSelectionShape schema (fuel + 1) parentType condition selection)
+            (semanticSelectionSetShape schema (fuel + 1) parentType condition rest)
         else
           []
 end
 
-def operationShapeFuel (operation : Operation) : Nat :=
+def semanticOperationShapeFuel (operation : Semantic.Operation) : Nat :=
   operation.size + 1
 
-def operationInitialCondition (schema : Schema) (operation : Operation) : Condition :=
+def semanticOperationInitialCondition (schema : Schema)
+    (operation : Semantic.Operation) : Condition :=
   { possibleTypes := some (schema.possibleObjectNames operation.rootType),
     booleanLiterals := [] }
 
-def ofOperation (schema : Schema) (operation : Operation) : Shape :=
-  ⟨operationSelectionSetShape schema operation.fragments
-    (operationShapeFuel operation) operation.rootType
-    (operationInitialCondition schema operation) operation.selectionSet⟩
+def ofSemanticOperation (schema : Schema) (operation : Semantic.Operation) : Shape :=
+  ⟨semanticSelectionSetShape schema
+    (semanticOperationShapeFuel operation) operation.rootType
+    (semanticOperationInitialCondition schema operation) operation.selectionSet⟩
+
+def ofOperation (schema : Schema) (operation : GraphQL.Operation) : Shape :=
+  ofSemanticOperation schema (Semantic.fromOperation operation)
 
 end Shape
 

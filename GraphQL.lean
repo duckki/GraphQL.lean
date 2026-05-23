@@ -1,6 +1,7 @@
 import GraphQL.Schema
 import GraphQL.SchemaWellFormedness
 import GraphQL.Operation
+import GraphQL.Semantic
 import GraphQL.FieldMerge
 import GraphQL.Validation
 import GraphQL.NormalForm

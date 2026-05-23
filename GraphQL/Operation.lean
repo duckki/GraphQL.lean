@@ -121,7 +121,7 @@ end
 def FragmentDefinition.fragmentSpreadNames (fragment : FragmentDefinition) : List Name :=
   SelectionSet.fragmentSpreadNames fragment.selectionSet
 
-namespace QueryAux
+namespace Selection
 
 def responseName? : Selection -> Option Name
   | .field responseName _fieldName _arguments _directives _selectionSet => some responseName
@@ -140,30 +140,35 @@ def isInlineFragment : Selection -> Prop
   | .inlineFragment .. => True
   | _ => False
 
+end Selection
+
+namespace SelectionSet
+
 def fieldsWithResponseName (responseName : Name) (selectionSet : List Selection) :
     List Selection :=
   selectionSet.filter (fun selection =>
-    match responseName? selection with
+    match selection.responseName? with
     | some name => name == responseName
     | none => false)
 
 def withoutFieldsWithResponseName (responseName : Name) (selectionSet : List Selection) :
     List Selection :=
   selectionSet.filter (fun selection =>
-    match responseName? selection with
+    match selection.responseName? with
     | some name => !(name == responseName)
     | none => true)
 
-def findFragment? (fragments : List FragmentDefinition) (name : Name) :
+def mergeSelectionSets (selections : List Selection) : List Selection :=
+  selections.foldl (fun merged selection => merged ++ selection.subselections) []
+
+end SelectionSet
+
+namespace FragmentDefinition
+
+def find? (fragments : List FragmentDefinition) (name : Name) :
     Option FragmentDefinition :=
   fragments.find? (fun fragment => fragment.name == name)
 
-def mergeSelectionSets (selections : List Selection) : List Selection :=
-  selections.foldl (fun merged selection => merged ++ subselections selection) []
-
-def possibleObjectTypeNames (schema : Schema) (typeName : Name) : List Name :=
-  schema.possibleObjectNames typeName
-
-end QueryAux
+end FragmentDefinition
 
 end GraphQL

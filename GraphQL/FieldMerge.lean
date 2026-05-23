@@ -45,7 +45,7 @@ def collectFields (schema : Schema) (fragments : List FragmentDefinition) :
                   selectionSet := selectionSet
                 }]
         | .fragmentSpread fragmentName _directives =>
-            match QueryAux.findFragment? fragments fragmentName with
+            match FragmentDefinition.find? fragments fragmentName with
             | none => []
             | some fragment =>
                 collectFields schema fragments fuel fragment.typeCondition fragment.selectionSet

@@ -293,6 +293,60 @@ def responseKeyVariantsCompatibleBool :
       variantsPairwiseCompatibleBool variants
         && responseKeyVariantsCompatibleBool rest
 
+def responseNameNotInFieldsBool (responseName : Name) :
+    List (Name × List Variant) -> Bool
+  | [] => true
+  | (availableName, _variants) :: rest =>
+      !(availableName == responseName)
+        && responseNameNotInFieldsBool responseName rest
+
+def responseNamesNodupBool :
+    List (Name × List Variant) -> Bool
+  | [] => true
+  | (responseName, _variants) :: rest =>
+      responseNameNotInFieldsBool responseName rest
+        && responseNamesNodupBool rest
+
+def responseNameNotInFields (responseName : Name)
+    (fields : List (Name × List Variant)) : Prop :=
+  responseNameNotInFieldsBool responseName fields = true
+
+inductive ResponseNamesNodup :
+    List (Name × List Variant) -> Prop where
+  | nil : ResponseNamesNodup []
+  | cons {responseName : Name} {variants : List Variant}
+      {rest : List (Name × List Variant)} :
+      responseNameNotInFields responseName rest ->
+        ResponseNamesNodup rest ->
+          ResponseNamesNodup ((responseName, variants) :: rest)
+
+theorem responseNamesNodupBool_sound
+    {fields : List (Name × List Variant)} :
+    responseNamesNodupBool fields = true ->
+      ResponseNamesNodup fields := by
+  induction fields with
+  | nil =>
+      intro _h
+      exact ResponseNamesNodup.nil
+  | cons field rest ih =>
+      cases field with
+      | mk responseName variants =>
+          intro h
+          simp [responseNamesNodupBool] at h
+          exact ResponseNamesNodup.cons h.left (ih h.right)
+
+theorem responseNamesNodupBool_complete
+    {fields : List (Name × List Variant)} :
+    ResponseNamesNodup fields ->
+      responseNamesNodupBool fields = true := by
+  intro h
+  cases h with
+  | nil =>
+      simp [responseNamesNodupBool]
+  | cons hnotIn hrest =>
+      simp [responseNamesNodupBool]
+      exact And.intro hnotIn (responseNamesNodupBool_complete hrest)
+
 def variantHeaderCompatible (left right : Variant) : Prop :=
   variantHeadersCompatibleBool left right = true
 
@@ -413,8 +467,9 @@ mutual
   def wellFormedBool : Shape -> Bool
     | .scalar => true
     | .object fields =>
-        responseKeyVariantsCompatibleBool fields
-          && fieldsWellFormedBool fields
+        responseNamesNodupBool fields
+          && (responseKeyVariantsCompatibleBool fields
+            && fieldsWellFormedBool fields)
 
   def fieldsWellFormedBool : List (Name × List Variant) -> Bool
     | [] => true
@@ -431,7 +486,8 @@ mutual
   inductive WellFormed : Shape -> Prop where
     | scalar : WellFormed .scalar
     | object {fields : List (Name × List Variant)} :
-        ResponseKeyVariantsCompatible fields ->
+        ResponseNamesNodup fields ->
+          ResponseKeyVariantsCompatible fields ->
           FieldsWellFormed fields ->
             WellFormed (.object fields)
 
@@ -466,8 +522,9 @@ mutual
         intro h
         simp [wellFormedBool] at h
         exact WellFormed.object
-          (responseKeyVariantsCompatibleBool_sound h.left)
-          (fieldsWellFormedBool_sound h.right)
+          (responseNamesNodupBool_sound h.left)
+          (responseKeyVariantsCompatibleBool_sound h.right.left)
+          (fieldsWellFormedBool_sound h.right.right)
 
   theorem fieldsWellFormedBool_sound
       {fields : List (Name × List Variant)} :
@@ -509,8 +566,9 @@ mutual
     cases h with
     | scalar =>
         simp [wellFormedBool]
-    | object hcompatible hfields =>
+    | object hnodup hcompatible hfields =>
         simp [wellFormedBool,
+          responseNamesNodupBool_complete hnodup,
           responseKeyVariantsCompatibleBool_complete hcompatible,
           fieldsWellFormedBool_complete hfields]
 

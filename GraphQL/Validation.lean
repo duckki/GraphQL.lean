@@ -17,7 +17,8 @@ namespace Validation
 
 -- Spec 5.5.2.1 Fragment Spread Target Defined: faithful fragment-name lookup helper for
 -- modeled fragments.
-def fragmentNamed? (fragments : List FragmentDefinition) (name : Name) : Option FragmentDefinition :=
+def fragmentNamed? (fragments : List FragmentDefinition)
+    (name : Name) : Option FragmentDefinition :=
   FragmentDefinition.find? fragments name
 
 -- Spec 5.7 Directives: not faithful yet; all modeled directives are accepted without
@@ -145,7 +146,8 @@ mutual
           ∧ ∃ fieldDefinition,
             schema.lookupField parentType fieldName = some fieldDefinition
               ∧ argumentsValid schema fieldDefinition.arguments variableDefinitions arguments
-              ∧ fieldSelectionSetValid schema fragments variableDefinitions fieldDefinition selectionSet
+              ∧ fieldSelectionSetValid schema fragments variableDefinitions
+                fieldDefinition selectionSet
     | .fragmentSpread fragmentName directives =>
         directivesValid directives
           ∧ ∃ fragmentDefinition,

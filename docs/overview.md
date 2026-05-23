@@ -71,6 +71,8 @@ The current Part 1 flow is:
 4. `GraphQL.Execution` gives bounded execution as a function, parameterized by abstract resolvers.
 5. `GraphQL.NormalForm` and `GraphQL.Minimization` provide the normalization/minimization proof scaffolding.
 
+Normalization inlines fragment spreads into the selection set and clears retained fragment definitions from the normalized operation.
+
 Validation assumptions should be used when proving semantic facts about later stages. Raw syntax remains permissive; validation supplies the invariants that later proofs should rely on.
 
 ### Response Shape Model

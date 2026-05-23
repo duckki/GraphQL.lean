@@ -124,7 +124,12 @@ def normalizeSelectionSet (schema : Schema) (fragments : List FragmentDefinition
 def normalizeOperation (schema : Schema) (operation : Operation) : Operation :=
   { operation with
     selectionSet := normalizeSelectionSet schema operation.fragments operation.size
-      operation.rootType operation.selectionSet }
+      operation.rootType operation.selectionSet,
+    fragments := [] }
+
+theorem normalizeOperation_fragments_empty (schema : Schema) (operation : Operation) :
+    (normalizeOperation schema operation).fragments = [] := by
+  rfl
 
 end NormalForm
 

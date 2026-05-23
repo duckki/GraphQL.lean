@@ -229,6 +229,9 @@ def selectedFieldEqBool (left right : VariantHeader) : Bool :=
 def compatibleBool (left right : VariantHeader) : Bool :=
   !(conditionsOverlapBool left right) || selectedFieldEqBool left right
 
+def includedByBool (required available : VariantHeader) : Bool :=
+  conditionSubsetBool required available && selectedFieldEqBool required available
+
 def intersect? (left right : VariantHeader) : Option VariantHeader := do
   let condition <- Condition.intersect? left.fst right.fst
   if selectedFieldEqBool left right then
@@ -254,6 +257,9 @@ namespace Shape
 
 abbrev Variant := VariantHeader × Shape
 
+def empty : Shape :=
+  ⟨[]⟩
+
 def lookupField (responseName : Name) :
     List (Name × List (VariantHeader × Shape)) -> Option (List (VariantHeader × Shape))
   | [] => none
@@ -268,6 +274,15 @@ def lookupVariant (header : VariantHeader) :
         some shape
       else
         lookupVariant header rest
+
+def lookupIncludingVariant (requiredHeader : VariantHeader) :
+    List (VariantHeader × Shape) -> Option Shape
+  | [] => none
+  | (availableHeader, shape) :: rest =>
+      if VariantHeader.includedByBool requiredHeader availableHeader then
+        some shape
+      else
+        lookupIncludingVariant requiredHeader rest
 
 def variantHeadersCompatibleBool (left right : Variant) : Bool :=
   VariantHeader.compatibleBool left.fst right.fst
@@ -510,6 +525,12 @@ end
 def wellFormed (shape : Shape) : Prop :=
   WellFormed shape
 
+theorem empty_wellFormed : wellFormed empty := by
+  exact WellFormed.shape
+    ResponseNamesNodup.nil
+    ResponseNameVariantsCompatible.nil
+    FieldsWellFormed.nil
+
 mutual
   theorem wellFormedBool_sound {shape : Shape} :
       wellFormedBool shape = true -> WellFormed shape := by
@@ -674,7 +695,7 @@ mutual
       List (VariantHeader × Shape) -> List (VariantHeader × Shape) -> Bool
     | [], _availableVariants => true
     | (header, requiredShape) :: requiredRest, availableVariants =>
-        match lookupVariant header availableVariants with
+        match lookupIncludingVariant header availableVariants with
         | none => false
         | some availableShape =>
             includesBool requiredShape availableShape
@@ -707,7 +728,7 @@ mutual
     | cons {header : VariantHeader} {requiredShape : Shape}
         {requiredRest availableVariants : List (VariantHeader × Shape)}
         {availableShape : Shape} :
-        lookupVariant header availableVariants = some availableShape ->
+        lookupIncludingVariant header availableVariants = some availableShape ->
           Includes requiredShape availableShape ->
             IncludesVariants requiredRest availableVariants ->
               IncludesVariants ((header, requiredShape) :: requiredRest) availableVariants
@@ -716,11 +737,27 @@ end
 def includes (required available : Shape) : Prop :=
   Includes required available
 
+theorem empty_includes (shape : Shape) : includes empty shape := by
+  cases shape with
+  | mk fields =>
+      exact Includes.shape IncludesFields.nil
+
+theorem empty_includesBool (shape : Shape) : includesBool empty shape = true := by
+  cases shape with
+  | mk fields =>
+      simp [empty, includesBool, includesFieldsBool]
+
 def equivalent (left right : Shape) : Prop :=
   includes left right ∧ includes right left
 
 def equivalentBool (left right : Shape) : Bool :=
   includesBool left right && includesBool right left
+
+theorem empty_equivalent : equivalent empty empty := by
+  exact And.intro (empty_includes empty) (empty_includes empty)
+
+theorem empty_equivalentBool : equivalentBool empty empty = true := by
+  simp [equivalentBool, empty_includesBool]
 
 mutual
   theorem includesBool_sound {required available : Shape} :
@@ -768,7 +805,7 @@ mutual
         | mk header requiredShape =>
             intro h
             simp [includesVariantsBool] at h
-            cases hlookup : lookupVariant header available with
+            cases hlookup : lookupIncludingVariant header available with
             | none =>
                 simp [hlookup] at h
             | some availableShape =>
@@ -845,8 +882,11 @@ mutual
             if fieldCondition.satisfiableBool then
               let childType := (schema.fieldReturnType? parentType fieldName).getD fieldName
               let childShape : Shape :=
-                ⟨operationSelectionSetShape schema fragments fuel
-                  childType fieldCondition selectionSet⟩
+                match selectionSet with
+                | [] => empty
+                | _ =>
+                    ⟨operationSelectionSetShape schema fragments fuel
+                      childType fieldCondition selectionSet⟩
               [(responseName, [((fieldCondition, selectedField fieldName arguments), childShape)])]
             else
               []

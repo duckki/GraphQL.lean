@@ -84,6 +84,8 @@ Response shapes summarize selection sets as a list of response-name entries. A r
 - a boolean condition, modeled as a conjunction of boolean variable literals `v` or `not v`,
 - the child response shape for that variant.
 
+The empty selection set is represented by `Shape.empty`; leaf fields use that empty child shape.
+
 Variants under a response name are interpreted disjunctively and are not normalized. Their conditions may overlap, and both variants may be true. For example, a response name may contain `field(arg: 1)` on `{T}` with child `{a}` and another `field(arg: 1)` on `{T, U}` with child `{b}`.
 
 This intentionally ignores concrete scalar values, object identities, list/null completion, resolver internals, and error propagation. It is a structural selection-set summary, not a full response-value model and not a definition of operation equivalence.
@@ -94,6 +96,8 @@ This intentionally ignores concrete scalar values, object identities, list/null 
 - computable inclusion, `Shape.includesBool required available`
 
 The module proves soundness and completeness bridges between those two forms. Equivalence is inclusion in both directions, again with both propositional and boolean APIs.
+
+Variant inclusion is condition-aware: a required variant can be covered by an available variant with the same selected field when the required runtime condition is a subset of the available runtime condition.
 
 Shape merging is also structural. Shapes merge by response name; variants under the same response name merge only when their type condition, boolean condition, and selected field definition match. This is intentionally weaker than normal-form construction because overlapping variants are preserved instead of normalized away.
 

@@ -112,6 +112,20 @@ def forChildType (schema : Schema) (condition : Condition) (childType : Name) : 
   { possibleTypes := some (schema.getPossibleTypes childType),
     booleanLiterals := condition.booleanLiterals }
 
+@[simp]
+theorem forChildType_possibleTypes (schema : Schema)
+    (condition : Condition) (childType : Name) :
+    (forChildType schema condition childType).possibleTypes
+      = some (schema.getPossibleTypes childType) := by
+  rfl
+
+@[simp]
+theorem forChildType_booleanLiterals (schema : Schema)
+    (condition : Condition) (childType : Name) :
+    (forChildType schema condition childType).booleanLiterals
+      = condition.booleanLiterals := by
+  rfl
+
 def and (left right : Condition) : Condition :=
   {
     possibleTypes :=

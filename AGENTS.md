@@ -29,9 +29,20 @@ typed object identities, field facts keyed by already-coerced arguments,
 store-backed resolvers, typed response trees, response-shape conformance checks,
 and correctness predicates for operation equivalence and ground normal form.
 
+`GraphQL.DataModel.TypedExecution` now provides typed execution over the store
+model while preserving runtime object type names in response objects. Untyped
+data-model execution is tied directly to `GraphQL.Execution` through
+store-backed resolvers. Data-model operation equivalence has reflexivity,
+symmetry, and transitivity theorems.
+
 `GraphQL.ResponseShape` now resets child-shape possible runtime types to the
 field return type through `ResponseShape.Condition.forChildType`. Keep this
 behavior when working on response-shape soundness.
+
+The next proof boundary is the erasure theorem from typed execution to the
+existing untyped execution response, followed by
+`DataModel.responseShapeCorrectForTypedExecution` and
+`DataModel.normalFormPreservesResponseShape`.
 
 The latest successful checks were:
 
@@ -56,4 +67,3 @@ lake lint
 Keep raw syntax permissive and put invariants in validation or well-formedness
 predicates. Prefer small, proof-friendly definitions over feature expansion.
 When adding scope, update `docs/spec-conformance-plan.md` first.
-

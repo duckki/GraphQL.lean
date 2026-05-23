@@ -67,6 +67,12 @@ The main modules are:
 semantics. It models typed object identities, field facts keyed by already
 coerced arguments, and deterministic store-backed resolution.
 
+`GraphQL.DataModel.TypedExecution` now gives typed execution over the same data
+model while retaining runtime object type names in response objects. The untyped
+data-model execution functions are definitionally tied to `GraphQL.Execution`
+through store-backed resolvers, and data-model operation equivalence has
+reflexivity, symmetry, and transitivity theorems.
+
 `GraphQL.ResponseShape.Condition.forChildType` is important for nested object
 fields: child shapes must reset possible runtime types to the field return type
 instead of inheriting the parent object's possible types.
@@ -76,22 +82,24 @@ instead of inheriting the parent object's possible types.
 The next proof ladder is:
 
 1. Prove data-model execution matches the intended resolver execution for
-   store-backed resolvers. The definitions already share the resolver path, so
-   this should mostly establish the assumptions and notation needed by later
-   theorems.
+   store-backed resolvers. The untyped execution wrapper is already tied to
+   store-backed resolvers; the remaining bridge is an erasure theorem from
+   `DataModel.TypedExecution` responses to `GraphQL.Execution.Response`.
 2. Prove response-shape soundness: every typed response produced by valid
    store-backed execution conforms to `ResponseShape.Shape.ofSemanticOperation`.
+   This target is named `DataModel.responseShapeCorrectForTypedExecution`.
 3. Prove response-shape stability under semantic lowering from raw operations,
    assuming validation supplies fragment existence and acyclicity.
 4. Prove normalizer output satisfies `NormalForm.semanticOperationNormal` under
    schema well-formedness and operation validity assumptions.
 5. Prove ground normal form semantic preservation:
    `DataModel.groundNormalFormCorrect`.
-6. Only after those proofs, revisit operation equivalence and minimization.
+6. Prove normal form preserves response shape:
+   `DataModel.normalFormPreservesResponseShape`.
+7. Only after those proofs, revisit operation equivalence and minimization.
 
 ## Related Documentation
 
 - `docs/overview.md`: project structure and module dependency map.
 - `docs/references.md`: GraphCoQL notes and proof strategy references.
 - `README.md`: build, lint, and entry-point information.
-

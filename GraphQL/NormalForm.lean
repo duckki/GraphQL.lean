@@ -157,6 +157,22 @@ def normalizeSemanticOperation (schema : Schema)
     selectionSet := normalizeSelectionSet schema operation.size
       operation.rootType operation.selectionSet }
 
+theorem normalizeSemanticOperation_name (schema : Schema)
+    (operation : Semantic.Operation) :
+    (normalizeSemanticOperation schema operation).name = operation.name := by
+  rfl
+
+theorem normalizeSemanticOperation_rootType (schema : Schema)
+    (operation : Semantic.Operation) :
+    (normalizeSemanticOperation schema operation).rootType = operation.rootType := by
+  rfl
+
+theorem normalizeSemanticOperation_variableDefinitions (schema : Schema)
+    (operation : Semantic.Operation) :
+    (normalizeSemanticOperation schema operation).variableDefinitions
+      = operation.variableDefinitions := by
+  rfl
+
 -- Spec-inspired operation normalization: non-spec transformation; currently clears named
 -- fragments via `Semantic.fromOperation` and has only the fragment-empty theorem below.
 def normalizeOperation (schema : Schema) (operation : GraphQL.Operation) :

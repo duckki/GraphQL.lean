@@ -5,7 +5,7 @@ namespace GraphQL
 namespace Validation
 
 def fragmentNamed? (fragments : List FragmentDefinition) (name : Name) : Option FragmentDefinition :=
-  fragments.find? (fun fragment => fragment.name == name)
+  QueryAux.findFragment? fragments name
 
 def directivesValid (_directives : List DirectiveApplication) : Prop :=
   True

@@ -1,6 +1,41 @@
-import GraphQL.Syntax
-
 namespace GraphQL
+
+abbrev Name := String
+
+inductive TypeRef where
+  | named : Name -> TypeRef
+  | list : TypeRef -> TypeRef
+  | nonNull : TypeRef -> TypeRef
+deriving Repr, DecidableEq
+
+namespace TypeRef
+
+def namedType : TypeRef -> Name
+  | .named name => name
+  | .list inner => inner.namedType
+  | .nonNull inner => inner.namedType
+
+end TypeRef
+
+inductive InputValue where
+  | null
+  | int (value : Int)
+  | float (value : String)
+  | string (value : String)
+  | boolean (value : Bool)
+  | enum (value : Name)
+  | list (values : List InputValue)
+  | object (fields : List (Name × InputValue))
+  | variable (name : Name)
+deriving Repr
+
+namespace InputValue
+
+def staticBoolean? : InputValue -> Option Bool
+  | .boolean value => some value
+  | _ => none
+
+end InputValue
 
 inductive BuiltinScalar where
   | int

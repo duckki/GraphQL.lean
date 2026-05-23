@@ -1,41 +1,6 @@
+import GraphQL.Schema
+
 namespace GraphQL
-
-abbrev Name := String
-
-inductive TypeRef where
-  | named : Name -> TypeRef
-  | list : TypeRef -> TypeRef
-  | nonNull : TypeRef -> TypeRef
-deriving Repr, DecidableEq
-
-namespace TypeRef
-
-def namedType : TypeRef -> Name
-  | .named name => name
-  | .list inner => inner.namedType
-  | .nonNull inner => inner.namedType
-
-end TypeRef
-
-inductive InputValue where
-  | null
-  | int (value : Int)
-  | float (value : String)
-  | string (value : String)
-  | boolean (value : Bool)
-  | enum (value : Name)
-  | list (values : List InputValue)
-  | object (fields : List (Name × InputValue))
-  | variable (name : Name)
-deriving Repr
-
-namespace InputValue
-
-def staticBoolean? : InputValue -> Option Bool
-  | .boolean value => some value
-  | _ => none
-
-end InputValue
 
 structure Argument where
   name : Name
@@ -138,5 +103,50 @@ end
 
 def Operation.fragmentFree (operation : Operation) : Prop :=
   operation.fragments = [] ∧ SelectionSet.fragmentFree operation.selectionSet
+
+namespace QueryAux
+
+def responseName? : Selection -> Option Name
+  | .field responseName _fieldName _arguments _directives _selectionSet => some responseName
+  | _ => none
+
+def subselections : Selection -> List Selection
+  | .field _responseName _fieldName _arguments _directives selectionSet => selectionSet
+  | .inlineFragment _typeCondition _directives selectionSet => selectionSet
+  | .fragmentSpread _fragmentName _directives => []
+
+def isField : Selection -> Prop
+  | .field .. => True
+  | _ => False
+
+def isInlineFragment : Selection -> Prop
+  | .inlineFragment .. => True
+  | _ => False
+
+def fieldsWithResponseName (responseName : Name) (selectionSet : List Selection) :
+    List Selection :=
+  selectionSet.filter (fun selection =>
+    match responseName? selection with
+    | some name => name == responseName
+    | none => false)
+
+def withoutFieldsWithResponseName (responseName : Name) (selectionSet : List Selection) :
+    List Selection :=
+  selectionSet.filter (fun selection =>
+    match responseName? selection with
+    | some name => !(name == responseName)
+    | none => true)
+
+def findFragment? (fragments : List FragmentDefinition) (name : Name) :
+    Option FragmentDefinition :=
+  fragments.find? (fun fragment => fragment.name == name)
+
+def mergeSelectionSets (selections : List Selection) : List Selection :=
+  selections.foldl (fun merged selection => merged ++ subselections selection) []
+
+def possibleObjectTypeNames (schema : Schema) (typeName : Name) : List Name :=
+  schema.possibleObjectNames typeName
+
+end QueryAux
 
 end GraphQL

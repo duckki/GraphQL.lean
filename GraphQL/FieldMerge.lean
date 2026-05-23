@@ -1,4 +1,4 @@
-import GraphQL.Schema
+import GraphQL.Operation
 
 namespace GraphQL
 
@@ -45,7 +45,7 @@ def collectFields (schema : Schema) (fragments : List FragmentDefinition) :
                   selectionSet := selectionSet
                 }]
         | .fragmentSpread fragmentName _directives =>
-            match fragments.find? (fun fragment => fragment.name == fragmentName) with
+            match QueryAux.findFragment? fragments fragmentName with
             | none => []
             | some fragment =>
                 collectFields schema fragments fuel fragment.typeCondition fragment.selectionSet

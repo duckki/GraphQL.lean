@@ -1,3 +1,4 @@
+import GraphQL.Operation
 import GraphQL.ResponseShape
 
 namespace GraphQL

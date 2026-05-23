@@ -1,4 +1,4 @@
-import GraphQL.Syntax
+import GraphQL.Schema
 
 namespace GraphQL
 

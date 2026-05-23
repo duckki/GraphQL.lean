@@ -101,19 +101,22 @@ The next proof ladder is:
    This target is named `DataModel.responseShapeCorrectForTypedExecution`.
    Done for empty selections, no-directive single-leaf selections, and parsed
    `@skip`/`@include` single-leaf selections at a known root runtime type,
-   including directives on direct fields and on untyped inline fragments.
+   including directives on direct fields, untyped inline fragments, and typed
+   inline fragments.
 3. Prove response-shape stability under semantic lowering from raw operations,
    assuming validation supplies fragment existence and acyclicity.
 4. Prove normalizer output satisfies `NormalForm.semanticOperationNormal` under
    schema well-formedness and operation validity assumptions.
 5. Prove ground normal form semantic preservation:
    `DataModel.groundNormalFormCorrect`. Done for direct single-leaf selections
-   with or without modeled directives, and inline-fragment single-leaf
-   selections without directives.
+   with or without modeled directives, inline-fragment single-leaf selections
+   without directives, and object-type typed inline fragments with modeled
+   directives.
 6. Prove normal form preserves response shape:
    `DataModel.normalFormPreservesResponseShape`. Done for direct single-leaf
    selections with or without modeled directives, and inline-fragment single-leaf
-   selections without directives.
+   selections without directives. Also done for object-type typed inline
+   fragments with modeled directives.
 7. Only after those proofs, revisit operation equivalence and minimization.
 
 ## Related Documentation

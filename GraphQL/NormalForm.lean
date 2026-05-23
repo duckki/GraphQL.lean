@@ -240,6 +240,33 @@ theorem normalizeSemanticOperation_inlineFragmentSingleLeaf (schema : Schema)
       Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
       Semantic.Selection.subselections]
 
+theorem normalizeSemanticOperation_typedInlineFragmentSingleLeafObjectWithDirectives
+    (schema : Schema) (name : Option Name) (rootType typeCondition : Name)
+    (variableDefinitions : List VariableDefinition)
+    (responseName fieldName : Name) (arguments : List Argument)
+    (directives : List DirectiveApplication) (objectType : ObjectType) :
+    schema.lookupType typeCondition = some (.object objectType) ->
+      normalizeSemanticOperation schema
+        { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := [.inlineFragment (some typeCondition) directives
+            [.field responseName fieldName arguments [] []]] }
+        = { name := name,
+            rootType := rootType,
+            variableDefinitions := variableDefinitions,
+            selectionSet := [.inlineFragment (some typeCondition) directives
+              [.field responseName fieldName arguments [] []]] } := by
+  intro htype
+  cases hfield : schema.fieldReturnType? typeCondition fieldName <;>
+    simp [htype, hfield, normalizeSemanticOperation, normalizeSelectionSet,
+      mergeFieldSelections.normalizeSelectionSet, mergeFieldSelections,
+      Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+      Semantic.SelectionSet.fieldsWithResponseName,
+      Semantic.SelectionSet.withoutFieldsWithResponseName,
+      Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
+      Semantic.Selection.subselections]
+
 -- Spec-inspired operation normalization: non-spec transformation; currently clears named
 -- fragments via `Semantic.fromOperation` and has only the fragment-empty theorem below.
 def normalizeOperation (schema : Schema) (operation : GraphQL.Operation) :

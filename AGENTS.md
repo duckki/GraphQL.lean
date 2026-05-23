@@ -48,15 +48,17 @@ field return type through `ResponseShape.Condition.forChildType`. Keep this
 behavior when working on response-shape soundness.
 
 Ground normal form correctness is proved for direct single-leaf selections with
-or without modeled directives, and inline-fragment single-leaf selections
-without directives. The next proof boundary is to extend response-shape
-soundness and normal-form preservation past single-field base cases.
+or without modeled directives, inline-fragment single-leaf selections without
+directives, and object-type typed inline fragments with modeled directives. The
+next proof boundary is to extend response-shape soundness and normal-form
+preservation past single-field base cases.
 
 Directive-specific data-model proofs live in `GraphQL/DataModel/Directives.lean`.
 That module currently proves single-leaf response-shape soundness for modeled
 `@skip` and `@include` directive lists whose shape condition parses, both on
-direct fields and untyped inline fragments. It also proves normal-form
-response-shape preservation for direct directive-bearing single fields.
+direct fields, untyped inline fragments, and typed inline fragments. It also
+proves normal-form response-shape preservation for direct directive-bearing
+single fields and object-type typed inline fragments.
 
 The latest successful checks were:
 

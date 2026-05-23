@@ -139,13 +139,16 @@ The current proof ladder is:
    shape preservation. Started with identical duplicate direct leaf fields through
    response-shape soundness, and with two same-response-name composite fields
    whose merged child leaf response names are distinct through ground normal-form
-   semantic preservation and normal-form response-shape preservation. The helper
+   semantic preservation, normal-form response-shape preservation, and typed
+   response-shape soundness for named composite-output fields. The helper
    `DataModel.LeafField.mergeFields_parentVariant_twoChildShapeFields` records the
    corresponding identical-parent-variant shape merge.
-8. Prove typed response-shape soundness for the same composite merge case. This
-   needs a store-resolution well-typedness lemma connecting `Store.resolveValue`,
-   `Store.wellTyped`, and non-scalar values for composite field return types.
-   Initial bridge lemmas now live in `GraphQL.DataModel.Store`:
+8. Extend typed response-shape soundness for the same composite merge case from
+   named composite-output fields to list-valued composite outputs. This needs a
+   complete-value/list conformance lemma so lists of conforming object values are
+   checked against the same child response shape elementwise. Bridge lemmas now
+   live in `GraphQL.DataModel.Store`:
+   `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
    `ObjectRecord.lookupField?_some_conformsToLookupField`,
    `Store.resolveValue_conformsToLookupField`,
    `Store.resolveValue_ne_scalar_of_compositeLookupField`,

@@ -74,8 +74,12 @@ also has ground semantic preservation in
 `DataModel.groundNormalFormCorrect_twoSameCompositeDistinctLeafNoDirectives` and
 normal-form response-shape preservation in
 `DataModel.normalFormPreservesResponseShape_twoSameCompositeDistinctLeafNoDirectives`.
-The next proof boundary is typed response-shape soundness for that composite merge.
-The needed store-resolution bridge has started in `GraphQL.DataModel.Store` with
+Typed response-shape soundness for the named composite-output version is covered by
+`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeafNoDirectives`.
+The next proof boundary is extending that composite merge case to list-valued
+composite outputs by proving the needed `completeValue`/list conformance facts.
+The store-resolution bridge in `GraphQL.DataModel.Store` includes
+`lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
 `ObjectRecord.lookupField?_some_conformsToLookupField`,
 `Store.resolveValue_conformsToLookupField`,
 `Store.resolveValue_ne_scalar_of_compositeLookupField`,

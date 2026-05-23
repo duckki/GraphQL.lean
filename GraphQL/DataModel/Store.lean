@@ -11,6 +11,26 @@ namespace GraphQL
 
 namespace DataModel
 
+theorem lookupType_name_eq (schema : Schema) {typeName : Name}
+    {typeDefinition : TypeDefinition} :
+    schema.lookupType typeName = some typeDefinition ->
+      typeDefinition.name = typeName := by
+  intro hlookup
+  have hmatch := List.find?_some hlookup
+  simpa [Schema.lookupType] using hmatch
+
+theorem typeIncludesObject_eq_of_lookupObjectType (schema : Schema)
+    {typeName runtimeType : Name} {objectType : ObjectType} :
+    schema.lookupType typeName = some (.object objectType) ->
+      schema.typeIncludesObject typeName runtimeType ->
+        runtimeType = typeName := by
+  intro hlookup hinclude
+  have htypeName : objectType.name = typeName :=
+    lookupType_name_eq schema hlookup
+  simp [Schema.typeIncludesObject, Schema.getPossibleTypes, hlookup,
+    TypeDefinition.getPossibleTypes, htypeName] at hinclude
+  exact hinclude
+
 namespace ObjectRecord
 
 theorem lookupFieldIn?_some_conformsToLookupField (schema : Schema)

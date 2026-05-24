@@ -1274,6 +1274,68 @@ theorem typedResponseConformsToShapeBool_completeValue_emptySelection_empty
   exact typedResponseConformsToShapeBool_completeValue_emptySelection_emptyWithFuel
     schema store variableValues 1 fuel parentType value
 
+theorem typedResponseConformsToShapeBool_completeValue_namedComposite_oneFuel
+    (schema : Schema) (store : Store) (variableValues : Execution.VariableValues)
+    (executionFuel : Nat) (parentType childType : Name)
+    (selectionSet : List Semantic.Selection) (shape : ResponseShape.Shape)
+    (value : Value) :
+    Value.conformsToType schema value (.named childType) ->
+      ¬ schema.getPossibleTypes childType = [] ->
+        typedResponseConformsToShapeBool variableValues 1
+          (TypedExecution.completeValue schema store variableValues executionFuel
+            parentType selectionSet value)
+          shape = true := by
+  intro hconforms hchildNonempty
+  cases value with
+  | null =>
+      cases executionFuel <;>
+        simp [TypedExecution.completeValue, shallowTypedResponse,
+          typedResponseConformsToShapeBool]
+  | scalar scalarValue =>
+      exact False.elim
+        ((scalar_not_conformsToType_of_possibleTypes_nonempty schema scalarValue
+          (.named childType) (by simpa [TypeRef.namedType] using hchildNonempty))
+          hconforms)
+  | object runtimeType id =>
+      cases executionFuel <;>
+        simp [TypedExecution.completeValue, shallowTypedResponse,
+          typedResponseConformsToShapeBool, typedFieldsConformToShapeBool]
+  | list values =>
+      cases hconforms
+
+theorem typedResponseConformsToShapeBool_completeValue_namedComposite_listOneFuel
+    (schema : Schema) (store : Store) (variableValues : Execution.VariableValues)
+    (executionFuel : Nat) (parentType childType : Name)
+    (selectionSet : List Semantic.Selection) (shape : ResponseShape.Shape)
+    (values : List Value) :
+    (∀ value, value ∈ values -> Value.conformsToType schema value (.named childType)) ->
+      ¬ schema.getPossibleTypes childType = [] ->
+        (values.map
+          (TypedExecution.completeValue schema store variableValues executionFuel
+            parentType selectionSet)).all
+          (fun response =>
+            typedResponseConformsToShapeBool variableValues 1 response shape) = true := by
+  intro hconforms hchildNonempty
+  induction values with
+  | nil =>
+      simp
+  | cons value rest ih =>
+      have hvalue :
+          typedResponseConformsToShapeBool variableValues 1
+            (TypedExecution.completeValue schema store variableValues executionFuel
+              parentType selectionSet value)
+            shape = true :=
+        typedResponseConformsToShapeBool_completeValue_namedComposite_oneFuel
+          schema store variableValues executionFuel parentType childType selectionSet
+          shape value (hconforms value (by simp)) hchildNonempty
+      have hrestConforms :
+          ∀ value, value ∈ rest ->
+            Value.conformsToType schema value (.named childType) := by
+        intro restValue hmem
+        exact hconforms restValue (by simp [hmem])
+      have hrest := ih hrestConforms
+      simp [hvalue, hrest]
+
 namespace LeafField
 
 theorem typedResponseFieldConformsToShapeVariant
@@ -2145,6 +2207,191 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeaf
       | inr hconforms =>
           rw [hresolved, hparentOutput] at hconforms
           cases hconforms
+
+set_option linter.unusedSimpArgs false in
+theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinctLeafNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (parentResponseName parentFieldName childType : Name)
+    (parentArguments : List Argument)
+    (leftResponseName leftFieldName : Name) (leftArguments : List Argument)
+    (rightResponseName rightFieldName : Name) (rightArguments : List Argument)
+    (rootObject : ObjectType) (parentFieldDefinition : FieldDefinition) :
+    schema.lookupType rootType = some (.object rootObject) ->
+      schema.lookupField rootType parentFieldName = some parentFieldDefinition ->
+      parentFieldDefinition.outputType = .list (.named childType) ->
+      ¬ schema.getPossibleTypes childType = [] ->
+      leftResponseName ≠ rightResponseName ->
+        responseShapeCorrectForTypedExecutionAtRoot schema
+          { name := name,
+            rootType := rootType,
+            variableDefinitions := variableDefinitions,
+            selectionSet := [
+              .field parentResponseName parentFieldName parentArguments [] [
+                .field leftResponseName leftFieldName leftArguments [] []
+              ],
+              .field parentResponseName parentFieldName parentArguments [] [
+                .field rightResponseName rightFieldName rightArguments [] []
+              ]
+            ] } := by
+  intro hrootObject hparentField hparentOutput hchildNonempty hdistinct store
+    variableValues root hstore _hroot hrootType
+  have hdistinct' : rightResponseName ≠ leftResponseName := Ne.symm hdistinct
+  have hrootEq : root.typeName = rootType :=
+    typeIncludesObject_eq_of_lookupObjectType schema hrootObject hrootType
+  have hrootPossibleNonempty : ¬ schema.getPossibleTypes rootType = [] :=
+    possibleTypes_nonempty_of_typeIncludesObject schema hrootType
+  have hparentFieldRoot :
+      schema.lookupField root.typeName parentFieldName = some parentFieldDefinition := by
+    simpa [hrootEq] using hparentField
+  have hnotScalar :
+      ∀ value,
+        store.resolveValue parentFieldName parentArguments
+            (Value.object root.typeName root.id) ≠ .scalar value := by
+    intro value
+    exact Store.resolveValue_ne_scalar_of_compositeLookupField schema store root.typeName
+      root.id parentFieldName parentArguments parentFieldDefinition value hstore
+      hparentFieldRoot (by simpa [hparentOutput, TypeRef.namedType] using hchildNonempty)
+  have hresolvedConforms :
+      store.resolveValue parentFieldName parentArguments
+          (Value.object root.typeName root.id) = .null
+        ∨ Value.conformsToType schema
+          (store.resolveValue parentFieldName parentArguments
+            (Value.object root.typeName root.id))
+          parentFieldDefinition.outputType :=
+    Store.resolveValue_conformsToLookupField schema store root.typeName root.id
+      parentFieldName parentArguments parentFieldDefinition hstore hparentFieldRoot
+  cases hresolved :
+      store.resolveValue parentFieldName parentArguments
+        (Value.object root.typeName root.id) with
+  | null =>
+      simp [TypedExecution.executeSemanticQuery, Execution.executeSemanticQueryFuel,
+        Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+        TypedExecution.executeSelectionSet, Execution.collectFields,
+        Execution.collectSelection, Execution.selectionDirectivesAllowBool,
+        Execution.mergeExecutableGroups, Execution.addExecutableGroup,
+        Execution.addExecutableFields, Execution.addExecutableField,
+        Execution.mergedFieldSelectionSet, TypedExecution.executeCollectedFields,
+        TypedExecution.executeField, TypedExecution.completeValue, hresolved,
+        ResponseShape.Shape.ofSemanticOperation,
+        ResponseShape.Shape.semanticOperationShapeFuel,
+        ResponseShape.Shape.semanticSelectionSetShape,
+        ResponseShape.Shape.collectSelectionSetShapeFields,
+        ResponseShape.Shape.collectSelectionShapeFields,
+        ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+        ResponseShape.Shape.empty, ResponseShape.Condition.satisfiableBool,
+        ResponseShape.Condition.hasContradictionBool,
+        ResponseShape.BooleanLiteral.hasContradictionBool,
+        ResponseShape.Condition.possibleTypesEmptyBool,
+        ResponseShape.Condition.and, ResponseShape.Condition.forChildType,
+        ResponseShape.Shape.semanticOperationInitialCondition, hrootPossibleNonempty,
+        hchildNonempty, hdistinct, hdistinct', hparentField, hparentOutput,
+        Schema.fieldReturnType?, TypeRef.namedType,
+        LeafField.mergeFields_parentVariant_twoChildShapeFields,
+        ResponseShape.Shape.mergeFields,
+        ResponseShape.Shape.merge, ResponseShape.Shape.size,
+        ResponseShape.Shape.fieldsSize, ResponseShape.Shape.variantsSize,
+        ResponseShape.Shape.mergeWithFuel, ResponseShape.Shape.mergeFieldsWithFuel,
+        ResponseShape.Shape.mergeVariantsWithFuel,
+        ResponseShape.VariantHeader.eqBool_self, typedResponseConformsToShapeBool,
+        typedFieldsConformToShapeBool, typedVariantConformsToShapeBool,
+        variantHeaderActiveBool, conditionHoldsBool,
+        possibleTypesHoldBool_of_typeIncludesObject schema hrootType,
+        ResponseShape.Shape.lookupField]
+  | scalar value =>
+      exact False.elim (hnotScalar value hresolved)
+  | object runtimeType id =>
+      cases hresolvedConforms with
+      | inl hnull =>
+          rw [hresolved] at hnull
+          cases hnull
+      | inr hconforms =>
+          rw [hresolved, hparentOutput] at hconforms
+          cases hconforms
+  | list values =>
+      have hvaluesConform :
+          ∀ value, value ∈ values ->
+            Value.conformsToType schema value (.named childType) := by
+        cases hresolvedConforms with
+        | inl hnull =>
+            rw [hresolved] at hnull
+            cases hnull
+        | inr hconforms =>
+            rw [hresolved, hparentOutput] at hconforms
+            exact hconforms
+      have hlistConforms :
+          (values.map
+            (TypedExecution.completeValue schema store variableValues 11 childType
+              [
+                .field leftResponseName leftFieldName leftArguments [] [],
+                .field rightResponseName rightFieldName rightArguments [] []
+              ])).all
+            (fun response =>
+              typedResponseConformsToShapeBool variableValues 1 response
+                { fields := [
+                  (leftResponseName,
+                    [(({ possibleTypes := some (schema.getPossibleTypes childType),
+                          booleanLiterals := [] },
+                        ResponseShape.selectedField leftFieldName leftArguments),
+                      { fields := [] })]),
+                  (rightResponseName,
+                    [(({ possibleTypes := some (schema.getPossibleTypes childType),
+                          booleanLiterals := [] },
+                        ResponseShape.selectedField rightFieldName rightArguments),
+                      { fields := [] })])
+                ] }) = true :=
+        typedResponseConformsToShapeBool_completeValue_namedComposite_listOneFuel
+          schema store variableValues 11 childType childType
+          [
+            .field leftResponseName leftFieldName leftArguments [] [],
+            .field rightResponseName rightFieldName rightArguments [] []
+          ]
+          { fields := [
+            (leftResponseName,
+              [(({ possibleTypes := some (schema.getPossibleTypes childType),
+                    booleanLiterals := [] },
+                  ResponseShape.selectedField leftFieldName leftArguments),
+                { fields := [] })]),
+            (rightResponseName,
+              [(({ possibleTypes := some (schema.getPossibleTypes childType),
+                    booleanLiterals := [] },
+                  ResponseShape.selectedField rightFieldName rightArguments),
+                { fields := [] })])
+          ] }
+          values hvaluesConform hchildNonempty
+      simp [TypedExecution.executeSemanticQuery, Execution.executeSemanticQueryFuel,
+        Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+        TypedExecution.executeSelectionSet, Execution.collectFields,
+        Execution.collectSelection, Execution.selectionDirectivesAllowBool,
+        Execution.mergeExecutableGroups, Execution.addExecutableGroup,
+        Execution.addExecutableFields, Execution.addExecutableField,
+        Execution.mergedFieldSelectionSet, TypedExecution.executeCollectedFields,
+        TypedExecution.executeField, TypedExecution.completeValue, hresolved,
+        ResponseShape.Shape.ofSemanticOperation,
+        ResponseShape.Shape.semanticOperationShapeFuel,
+        ResponseShape.Shape.semanticSelectionSetShape,
+        ResponseShape.Shape.collectSelectionSetShapeFields,
+        ResponseShape.Shape.collectSelectionShapeFields,
+        ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+        ResponseShape.Shape.empty, ResponseShape.Condition.satisfiableBool,
+        ResponseShape.Condition.hasContradictionBool,
+        ResponseShape.BooleanLiteral.hasContradictionBool,
+        ResponseShape.Condition.possibleTypesEmptyBool,
+        ResponseShape.Condition.and, ResponseShape.Condition.forChildType,
+        ResponseShape.Shape.semanticOperationInitialCondition, hrootPossibleNonempty,
+        hchildNonempty, hdistinct, hdistinct', hparentField, hparentOutput,
+        Schema.fieldReturnType?, TypeRef.namedType,
+        LeafField.mergeFields_parentVariant_twoChildShapeFields,
+        ResponseShape.Shape.mergeFields,
+        ResponseShape.Shape.merge, ResponseShape.Shape.size,
+        ResponseShape.Shape.fieldsSize, ResponseShape.Shape.variantsSize,
+        ResponseShape.Shape.mergeWithFuel, ResponseShape.Shape.mergeFieldsWithFuel,
+        ResponseShape.Shape.mergeVariantsWithFuel,
+        ResponseShape.VariantHeader.eqBool_self, typedResponseConformsToShapeBool,
+        typedFieldsConformToShapeBool, typedVariantConformsToShapeBool,
+        variantHeaderActiveBool, conditionHoldsBool,
+        possibleTypesHoldBool_of_typeIncludesObject schema hrootType,
+        hlistConforms, ResponseShape.Shape.lookupField]
 
 set_option linter.unusedSimpArgs false in
 theorem responseShapeCorrectForTypedExecutionAtRoot_twoDistinctLeafNoDirectives

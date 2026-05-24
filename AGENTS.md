@@ -76,8 +76,12 @@ normal-form response-shape preservation in
 `DataModel.normalFormPreservesResponseShape_twoSameCompositeDistinctLeafNoDirectives`.
 Typed response-shape soundness for the named composite-output version is covered by
 `DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeafNoDirectives`.
-The next proof boundary is extending that composite merge case to list-valued
-composite outputs by proving the needed `completeValue`/list conformance facts.
+The one-level list-valued composite-output version is covered by
+`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinctLeafNoDirectives`,
+using `typedResponseConformsToShapeBool_completeValue_namedComposite_listOneFuel`.
+The next proof boundary is unifying the named/list composite merge proofs across
+non-null wrappers and, after that, lifting the child selection set from the
+two-leaf case to the `LeafField` list abstraction.
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
 `ObjectRecord.lookupField?_some_conformsToLookupField`,

@@ -18,12 +18,27 @@ structure Argument where
   value : InputValue
 deriving Repr
 
+namespace Argument
+
+-- Spec 5.3.2 field argument comparison: arguments are a set by name; source order is not
+-- semantically relevant.
+def equivalent (left right : Argument) : Prop :=
+  left.name = right.name ∧ left.value.equivalent right.value
+
+def argumentsEquivalent (left right : List Argument) : Prop :=
+  (∀ argument, argument ∈ left ->
+    ∃ argument', argument' ∈ right ∧ argument.equivalent argument')
+    ∧ (∀ argument, argument ∈ right ->
+      ∃ argument', argument' ∈ left ∧ argument'.equivalent argument)
+
+end Argument
+
 -- Spec 2.11 `VariableDefinition`: partial; name, type, and default are represented, but
 -- descriptions and directives are omitted.
 structure VariableDefinition where
   name : Name
   typeRef : TypeRef
-  defaultValue : Option InputValue := none
+  defaultValue : Option ConstInputValue := none
 deriving Repr
 
 -- Spec 3.13.1 `@skip` and 3.13.2 `@include`: partial; only these two built-in executable

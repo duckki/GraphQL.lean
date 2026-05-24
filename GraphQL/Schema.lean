@@ -3,7 +3,8 @@ Spec reference: GraphQL September 2025.
 - 2.1.8 Names: names identify schema and executable elements; this model stores raw
   strings and leaves grammar/reserved-name checks to well-formedness/validation work.
 - 2.10 Input Values and 2.12 Type References: value and type-reference syntax are
-  represented directly, with coercion and source parsing out of scope.
+  represented directly, constant values are separated for defaults, and coercion/source
+  parsing are out of scope.
 - 3.3-3.13 Type System: schema and type definitions cover core GraphQL types, wrapping
   types, built-in scalars, and the `@skip`/`@include` scalar dependencies, but omit
   descriptions, arbitrary directives, extensions, introspection, mutation/subscription
@@ -53,6 +54,72 @@ deriving Repr
 
 namespace InputValue
 
+mutual
+  def size : InputValue -> Nat
+    | .null => 1
+    | .int _ => 1
+    | .float _ => 1
+    | .string _ => 1
+    | .boolean _ => 1
+    | .enum _ => 1
+    | .list values => 1 + valuesSize values
+    | .object fields => 1 + objectFieldsSize fields
+    | .variable _ => 1
+
+  def valuesSize : List InputValue -> Nat
+    | [] => 0
+    | value :: rest => value.size + valuesSize rest
+
+  def objectFieldsSize : List (Name × InputValue) -> Nat
+    | [] => 0
+    | (_name, value) :: rest => value.size + objectFieldsSize rest
+end
+
+mutual
+  -- Spec 2.10 input value equality for semantic analysis: list order matters, object field
+  -- order does not. Validation is responsible for rejecting duplicate input object fields.
+  def equivalentWithFuel : Nat -> InputValue -> InputValue -> Prop
+    | 0, _left, _right => False
+    | _fuel + 1, .null, .null => True
+    | _fuel + 1, .int left, .int right => left = right
+    | _fuel + 1, .float left, .float right => left = right
+    | _fuel + 1, .string left, .string right => left = right
+    | _fuel + 1, .boolean left, .boolean right => left = right
+    | _fuel + 1, .enum left, .enum right => left = right
+    | fuel + 1, .list left, .list right =>
+        valuesEquivalentWithFuel fuel left right
+    | fuel + 1, .object left, .object right =>
+        objectFieldsEquivalentWithFuel fuel left right
+    | _fuel + 1, .variable left, .variable right => left = right
+    | _fuel + 1, _left, _right => False
+
+  def valuesEquivalentWithFuel : Nat -> List InputValue -> List InputValue -> Prop
+    | 0, _left, _right => False
+    | _fuel + 1, [], [] => True
+    | fuel + 1, left :: lefts, right :: rights =>
+        equivalentWithFuel fuel left right
+          ∧ valuesEquivalentWithFuel fuel lefts rights
+    | _fuel + 1, _left, _right => False
+
+  def objectFieldsEquivalentWithFuel :
+      Nat -> List (Name × InputValue) -> List (Name × InputValue) -> Prop
+    | 0, _left, _right => False
+    | fuel + 1, left, right =>
+        (∀ name value, (name, value) ∈ left ->
+          ∃ value', (name, value') ∈ right
+            ∧ equivalentWithFuel fuel value value')
+          ∧ (∀ name value, (name, value) ∈ right ->
+            ∃ value', (name, value') ∈ left
+              ∧ equivalentWithFuel fuel value' value)
+end
+
+def equivalent (left right : InputValue) : Prop :=
+  equivalentWithFuel (left.size + right.size + 1) left right
+
+def objectFieldsEquivalent (left right : List (Name × InputValue)) : Prop :=
+  objectFieldsEquivalentWithFuel
+    (objectFieldsSize left + objectFieldsSize right + 1) left right
+
 -- Spec 3.13.1 `@skip` / 3.13.2 `@include` `if` argument: partial; this only recognizes
 -- statically provided Boolean literals.
 def staticBoolean? : InputValue -> Option Bool
@@ -60,6 +127,45 @@ def staticBoolean? : InputValue -> Option Bool
   | _ => none
 
 end InputValue
+
+-- Spec 2.10 `Value Const`: default values must be constant and therefore exclude
+-- variables. Coercion and literal type conformance are still validation concerns.
+inductive ConstInputValue where
+  | null
+  | int (value : Int)
+  | float (value : String)
+  | string (value : String)
+  | boolean (value : Bool)
+  | enum (value : Name)
+  | list (values : List ConstInputValue)
+  | object (fields : List (Name × ConstInputValue))
+deriving Repr
+
+namespace ConstInputValue
+
+mutual
+  def toInputValue : ConstInputValue -> InputValue
+    | .null => .null
+    | .int value => .int value
+    | .float value => .float value
+    | .string value => .string value
+    | .boolean value => .boolean value
+    | .enum value => .enum value
+    | .list values => .list (valuesToInputValues values)
+    | .object fields => .object (objectFieldsToInputFields fields)
+
+  def valuesToInputValues : List ConstInputValue -> List InputValue
+    | [] => []
+    | value :: rest => value.toInputValue :: valuesToInputValues rest
+
+  def objectFieldsToInputFields :
+      List (Name × ConstInputValue) -> List (Name × InputValue)
+    | [] => []
+    | (name, value) :: rest =>
+        (name, value.toInputValue) :: objectFieldsToInputFields rest
+end
+
+end ConstInputValue
 
 -- Spec 3.5.1-3.5.5 built-in scalars: faithful for the five required scalar names, without
 -- modeling coercion behavior.
@@ -102,7 +208,7 @@ deriving Repr, DecidableEq
 structure InputValueDefinition where
   name : Name
   inputType : TypeRef
-  defaultValue : Option InputValue := none
+  defaultValue : Option ConstInputValue := none
 deriving Repr
 
 -- Spec 3.6 `FieldDefinition`: partial; name, return type, and arguments are represented,
@@ -122,13 +228,13 @@ structure ObjectType where
   interfaces : List Name := []
 deriving Repr
 
--- Spec 3.7 `InterfaceTypeDefinition`: partial and inverted; fields are faithful, but
--- `implementations` stores implementors rather than the spec's declared implemented
--- interfaces.
+-- Spec 3.7 `InterfaceTypeDefinition`: partial; fields and declared implemented interfaces
+-- are represented, while descriptions, directives, extensions, and validation details are
+-- omitted.
 structure InterfaceType where
   name : Name
   fields : List FieldDefinition
-  implementations : List Name
+  interfaces : List Name := []
 deriving Repr
 
 -- Spec 3.8 `UnionTypeDefinition`: partial; member object names are represented, but
@@ -174,15 +280,6 @@ def fields? : TypeDefinition -> Option (List FieldDefinition)
   | .object objectType => some objectType.fields
   | .interface interfaceType => some interfaceType.fields
   | _ => none
-
--- Spec 5.5.2.3 `GetPossibleTypes`: partial; object and union cases are direct, interface
--- cases depend on the stored `implementations` list rather than deriving it from object
--- declarations.
-def getPossibleTypes : TypeDefinition -> List Name
-  | .object objectType => [objectType.name]
-  | .interface interfaceType => interfaceType.implementations
-  | .union unionType => unionType.members
-  | _ => []
 
 -- Spec 5.3 field selection and 5.3.2 response-shape rules use the leaf type category;
 -- faithful for scalar and enum definitions in the modeled type universe.
@@ -256,6 +353,65 @@ def lookupInterface (schema : Schema) (typeName : Name) : Option InterfaceType :
   | some (.interface interfaceType) => some interfaceType
   | _ => none
 
+def interfaceTypeImplementsInterfaceWithFuel (schema : Schema) :
+    Nat -> Name -> Name -> Prop
+  | 0, _interfaceName, _targetName => False
+  | fuel + 1, interfaceName, targetName =>
+      interfaceName = targetName
+        ∨ ∃ interfaceType,
+          schema.lookupInterface interfaceName = some interfaceType
+            ∧ ∃ parentName,
+              parentName ∈ interfaceType.interfaces
+                ∧ interfaceTypeImplementsInterfaceWithFuel
+                  schema fuel parentName targetName
+
+def interfaceTypeImplementsInterface (schema : Schema)
+    (interfaceName targetName : Name) : Prop :=
+  interfaceTypeImplementsInterfaceWithFuel
+    schema (schema.types.length + 1) interfaceName targetName
+
+def interfaceTypeImplementsInterfaceWithFuelBool (schema : Schema) :
+    Nat -> Name -> Name -> Bool
+  | 0, _interfaceName, _targetName => false
+  | fuel + 1, interfaceName, targetName =>
+      (interfaceName == targetName)
+        || match schema.lookupInterface interfaceName with
+          | some interfaceType =>
+              interfaceType.interfaces.any
+                (fun parentName =>
+                  interfaceTypeImplementsInterfaceWithFuelBool
+                    schema fuel parentName targetName)
+          | none => false
+
+def interfaceTypeImplementsInterfaceBool (schema : Schema)
+    (interfaceName targetName : Name) : Bool :=
+  interfaceTypeImplementsInterfaceWithFuelBool
+    schema (schema.types.length + 1) interfaceName targetName
+
+def objectTypeImplementsInterface (schema : Schema)
+    (objectType : ObjectType) (interfaceName : Name) : Prop :=
+  ∃ declaredInterfaceName,
+    declaredInterfaceName ∈ objectType.interfaces
+      ∧ schema.interfaceTypeImplementsInterface declaredInterfaceName interfaceName
+
+def objectTypeImplementsInterfaceBool (schema : Schema)
+    (objectType : ObjectType) (interfaceName : Name) : Bool :=
+  objectType.interfaces.any
+    (fun declaredInterfaceName =>
+      schema.interfaceTypeImplementsInterfaceBool declaredInterfaceName interfaceName)
+
+def objectTypes (schema : Schema) : List ObjectType :=
+  schema.types.filterMap (fun typeDefinition =>
+    match typeDefinition with
+    | .object objectType => some objectType
+    | _ => none)
+
+def objectTypesImplementingInterface (schema : Schema) (interfaceName : Name) :
+    List Name :=
+  (schema.objectTypes.filter
+    (fun objectType =>
+      schema.objectTypeImplementsInterfaceBool objectType interfaceName)).map ObjectType.name
+
 def lookupField (schema : Schema) (parentType fieldName : Name) : Option FieldDefinition := do
   let typeDefinition <- schema.lookupType parentType
   let fields <- typeDefinition.fields?
@@ -269,13 +425,15 @@ def fieldReturnType? (schema : Schema) (parentType fieldName : Name) : Option Na
   let field <- schema.lookupField parentType fieldName
   pure field.outputType.namedType
 
--- Spec 5.5.2.3 `GetPossibleTypes`: partial; delegates to
--- `TypeDefinition.getPossibleTypes`, so interface fidelity depends on stored
--- implementors.
+-- Spec 5.5.2.3 `GetPossibleTypes`: object and union cases are direct; interface cases are
+-- derived from object type declarations in the schema.
 def getPossibleTypes (schema : Schema) (typeName : Name) : List Name :=
   match schema.lookupType typeName with
-  | some typeDefinition => typeDefinition.getPossibleTypes
-  | none => []
+  | some (.object objectType) => [objectType.name]
+  | some (.interface interfaceType) =>
+      schema.objectTypesImplementingInterface interfaceType.name
+  | some (.union unionType) => unionType.members
+  | _ => []
 
 def typeIncludesObject (schema : Schema) (typeName objectName : Name) : Prop :=
   objectName ∈ schema.getPossibleTypes typeName

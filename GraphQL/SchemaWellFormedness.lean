@@ -8,9 +8,9 @@ Spec reference: GraphQL September 2025.
 - 3.6-3.10 Object, Interface, Union, Enum, and Input Object validation: modeled partially,
   mostly for uniqueness and type-reference well-formedness.
 - Fidelity note: several normative rules are omitted, including reserved `__` names,
-  non-empty object/interface/input-field lists, interface field/type covariance, interface
-  cycles, input-object cycles/default cycles, directive validation, extensions, OneOf,
-  mutation/subscription roots, and introspection.
+  non-empty object/interface/input-field lists, interface field/type covariance,
+  interface cycles, input-object cycles/default cycles, directive validation,
+  extensions, OneOf, mutation/subscription roots, and introspection.
 -/
 namespace GraphQL
 
@@ -43,26 +43,22 @@ def fieldDefinitionsWellFormed (schema : Schema) (fields : List FieldDefinition)
   namesAreUnique (fields.map FieldDefinition.name)
     ∧ ∀ field, field ∈ fields -> fieldDefinitionWellFormed schema field
 
--- Spec 3.6 object type rules: partial; checks fields and inverse interface
--- membership but not interface field implementation compatibility or non-empty fields.
+-- Spec 3.6 object type rules: partial; checks fields and declared interface existence,
+-- but not interface field implementation compatibility or non-empty fields.
 def objectTypeWellFormed (schema : Schema) (objectType : ObjectType) : Prop :=
   fieldDefinitionsWellFormed schema objectType.fields
     ∧ namesAreUnique objectType.interfaces
     ∧ ∀ interfaceName, interfaceName ∈ objectType.interfaces ->
-      ∃ interfaceType,
-        schema.lookupInterface interfaceName = some interfaceType
-          ∧ objectType.name ∈ interfaceType.implementations
+      schema.interfaceType interfaceName
 
--- Spec 3.7 interface type rules: partial; this model stores implementors, so it
--- checks inverse object membership rather than the spec's interface-implements-interface
--- rules.
+-- Spec 3.7 interface type rules: partial; checks fields and declared interface existence,
+-- but not interface field implementation compatibility, cycles, or non-empty fields.
 def interfaceTypeWellFormed (schema : Schema) (interfaceType : InterfaceType) : Prop :=
   fieldDefinitionsWellFormed schema interfaceType.fields
-    ∧ namesAreUnique interfaceType.implementations
-    ∧ ∀ objectName, objectName ∈ interfaceType.implementations ->
-      ∃ objectType,
-        schema.lookupObject objectName = some objectType
-          ∧ interfaceType.name ∈ objectType.interfaces
+    ∧ namesAreUnique interfaceType.interfaces
+    ∧ ∀ implementedInterfaceName,
+      implementedInterfaceName ∈ interfaceType.interfaces ->
+        schema.interfaceType implementedInterfaceName
 
 -- Spec 3.8 union type rules: partial; checks unique object members but does not
 -- enforce non-empty member lists or directives/extensions.

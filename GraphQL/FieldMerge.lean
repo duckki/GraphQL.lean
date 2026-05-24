@@ -3,8 +3,8 @@ import GraphQL.Operation
 /-!
 Spec reference: GraphQL September 2025.
 - 5.3.2 Field Selection Merging: models same-response-name compatibility via
-  response-shape compatibility, field-name/argument equality when parent types overlap,
-  and recursive subfield merge checks.
+  response-shape compatibility, field-name/argument equality when required by the spec's
+  parent-type condition, and recursive subfield merge checks.
 - 6.3.2 Field Collection: provides a validation-time field collector for merge analysis,
   distinct from execution-time field collection.
 - Fidelity note: validation-time collection ignores executable directives and uses a fuel
@@ -89,8 +89,11 @@ where
   -- Spec 5.3.2 same-response-name field pair check inside `FieldsInSetCanMerge`.
   fieldsForNameCanMerge (fuel : Nat) (left right : ScopedField) : Prop :=
     sameResponseShape schema left.outputType right.outputType
-      ∧ (schema.typesOverlap left.parentType right.parentType ->
-        left.fieldName = right.fieldName ∧ left.arguments = right.arguments)
+      ∧ ((left.parentType = right.parentType
+          ∨ ¬ schema.objectType left.parentType
+          ∨ ¬ schema.objectType right.parentType) ->
+        left.fieldName = right.fieldName
+          ∧ Argument.argumentsEquivalent left.arguments right.arguments)
       ∧ fieldsInSetCanMerge schema fragments fuel left.outputType.namedType
         (left.selectionSet ++ right.selectionSet)
 

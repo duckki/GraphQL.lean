@@ -27,8 +27,8 @@ theorem typeIncludesObject_eq_of_lookupObjectType (schema : Schema)
   intro hlookup hinclude
   have htypeName : objectType.name = typeName :=
     lookupType_name_eq schema hlookup
-  simp [Schema.typeIncludesObject, Schema.getPossibleTypes, hlookup,
-    TypeDefinition.getPossibleTypes, htypeName] at hinclude
+  simp [Schema.typeIncludesObject, Schema.getPossibleTypes, hlookup, htypeName]
+    at hinclude
   exact hinclude
 
 namespace ObjectRecord
@@ -154,8 +154,8 @@ theorem possibleTypes_eq_nil_of_isLeafType (schema : Schema) {typeName : Name} :
   intro hleaf
   rcases hleaf with ⟨typeDefinition, hlookup, hleafType⟩
   cases typeDefinition <;>
-    simp [Schema.getPossibleTypes, hlookup, TypeDefinition.getPossibleTypes,
-      TypeDefinition.isLeafType] at hleafType ⊢
+    simp [Schema.getPossibleTypes, hlookup, TypeDefinition.isLeafType]
+      at hleafType ⊢
 
 theorem fieldReturnType?_some_lookupField (schema : Schema)
     {parentType fieldName childType : Name} :

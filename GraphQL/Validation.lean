@@ -44,6 +44,12 @@ def valueIsCorrectType (schema : Schema) (variableDefinitions : List VariableDef
             getVariableDefinition? variableDefinitions variableName = some variableDefinition
       | _ => True
 
+-- Spec 2.10 `Value Const` / 5.6.1 defaults: defaults are structurally constant. Literal
+-- coercion remains outside the current fragment, matching `valueIsCorrectType`.
+def constValueIsCorrectType (schema : Schema)
+    (_value : ConstInputValue) (expectedType : TypeRef) : Prop :=
+  expectedType.isInputType schema
+
 -- Spec 5.8.2 Variables Are Input Types: partial; also validates default values using the
 -- simplified `valueIsCorrectType`.
 def variableDefinitionValid (schema : Schema)
@@ -51,7 +57,8 @@ def variableDefinitionValid (schema : Schema)
   variableDefinition.typeRef.isInputType schema
     ∧ match variableDefinition.defaultValue with
       | none => True
-      | some defaultValue => valueIsCorrectType schema [] defaultValue variableDefinition.typeRef
+      | some defaultValue =>
+          constValueIsCorrectType schema defaultValue variableDefinition.typeRef
 
 -- Spec 5.8.1 Variable Uniqueness and 5.8.2 Variables Are Input Types: partial; omits
 -- all-variables-used and usage compatibility.

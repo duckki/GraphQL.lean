@@ -26,13 +26,16 @@ def getVariableDefinition? (variableDefinitions : List VariableDefinition)
     (name : Name) : Option VariableDefinition :=
   variableDefinitions.find? (fun variableDefinition => variableDefinition.name == name)
 
+-- Spec 5.8.5 helper for non-null variable defaults.
 def constInputValueNonNull : ConstInputValue -> Prop
   | value => value.nonNull
 
+-- Spec 5.4.3 / 5.6.4 helper: null does not satisfy a required input entry.
 def inputValueNonNull : InputValue -> Prop
   | .null => False
   | _ => True
 
+-- Spec 5.6.2 input object field lookup helper for required-field validation.
 def getInputObjectField? (fields : List (Name × InputValue))
     (name : Name) : Option InputValue :=
   match fields with
@@ -44,6 +47,7 @@ def getInputObjectField? (fields : List (Name × InputValue))
 def isRequiredInputValueDefinition (definition : InputValueDefinition) : Prop :=
   definition.isRequired
 
+-- Spec 5.8.5 nullable-variable exception: a default exists and is not null.
 def defaultValueNonNull (defaultValue : Option ConstInputValue) : Prop :=
   ∃ value, defaultValue = some value ∧ value.nonNull
 
@@ -79,9 +83,9 @@ def variableUsageAllowed (schema : Schema)
           areInputTypesCompatible variableDefinition.typeRef locationType
 
 mutual
-  -- Spec 5.6.1 Values of Correct Type, 5.6.2-5.6.4 input object rules, and 5.8.3
-  -- / 5.8.5 variable usage compatibility. Literal coercion remains deliberately shallow,
-  -- but input-object structure is checked recursively.
+  -- Spec 5.6.1 Values of Correct Type, 5.6.2-5.6.4 input object rules, 5.8.3
+  -- variable definition lookup, and 5.8.5 variable usage compatibility. Literal coercion
+  -- remains deliberately shallow, but input-object structure is checked recursively.
   def valueIsCorrectTypeWithFuel (schema : Schema)
       (variableDefinitions : List VariableDefinition) :
       Nat -> InputValue -> TypeRef -> Option ConstInputValue -> Prop
@@ -119,6 +123,8 @@ mutual
             | _value, .named typeName =>
                 schema.lookupInputObject typeName = none
 
+  -- Spec 5.6.2-5.6.4 input object validation: supplied fields are unique, known,
+  -- recursively well-typed, and all required fields are supplied as non-null values.
   def inputObjectFieldsValidWithFuel (schema : Schema)
       (variableDefinitions : List VariableDefinition) :
       Nat -> List InputValueDefinition -> List (Name × InputValue) -> Prop
@@ -136,6 +142,8 @@ mutual
                 getInputObjectField? fields definition.name = some value
                   ∧ inputValueNonNull value)
 
+  -- Spec 5.6.1 list input rule: an object value can be checked as one list item at a
+  -- list location.
   def inputObjectAsListItemValidWithFuel (schema : Schema)
       (variableDefinitions : List VariableDefinition) :
       Nat -> List (Name × InputValue) -> TypeRef -> Prop
@@ -145,6 +153,8 @@ mutual
           (.object fields) inner none
 end
 
+-- Spec 5.6.1 / 5.8.5 value validity at a specific input location, including that
+-- location's default value for the nullable-variable exception.
 def valueIsCorrectTypeAtLocation (schema : Schema)
     (variableDefinitions : List VariableDefinition)
     (value : InputValue) (expectedType : TypeRef)
@@ -162,9 +172,13 @@ def constValueIsCorrectType (schema : Schema)
     (value : ConstInputValue) (expectedType : TypeRef) : Prop :=
   value.isCorrectType schema expectedType
 
+-- Spec 3.13.1 `@skip` / 3.13.2 `@include`: both modeled directives define `if:
+-- Boolean!`.
 def booleanNonNullType : TypeRef :=
   .nonNull (.named "Boolean")
 
+-- Spec 3.13.1 / 3.13.2 directive `if` argument validation for the modeled executable
+-- directives, using the same variable-usage rule as field/input-object arguments.
 def directiveIfArgumentValid (schema : Schema)
     (variableDefinitions : List VariableDefinition) : InputValue -> Prop
   | .boolean _ => True
@@ -174,10 +188,12 @@ def directiveIfArgumentValid (schema : Schema)
           ∧ variableUsageAllowed schema variableDefinition booleanNonNullType none
   | _ => False
 
+-- Non-spec helper exposing the modeled directive name for non-repeatability checks.
 def directiveName : DirectiveApplication -> Name
   | .skip _ => "skip"
   | .include _ => "include"
 
+-- Spec 3.13.1 / 3.13.2 directive validation for the modeled built-ins.
 def directiveValid (schema : Schema)
     (variableDefinitions : List VariableDefinition) : DirectiveApplication -> Prop
   | .skip ifArgument =>
@@ -195,7 +211,7 @@ def directivesValid (schema : Schema)
       directiveValid schema variableDefinitions directive
 
 -- Spec 5.8.2 Variables Are Input Types: partial; also validates default values using the
--- simplified `valueIsCorrectType`.
+-- scoped constant default-value predicate.
 def variableDefinitionValid (schema : Schema)
     (variableDefinition : VariableDefinition) : Prop :=
   variableDefinition.typeRef.isInputType schema
@@ -205,15 +221,15 @@ def variableDefinitionValid (schema : Schema)
           constValueIsCorrectType schema defaultValue variableDefinition.typeRef
 
 -- Spec 5.8.1 Variable Uniqueness and 5.8.2 Variables Are Input Types: partial; omits
--- all-variables-used and usage compatibility.
+-- all-variables-used. Usage compatibility is checked at each value location.
 def variableDefinitionsValid (schema : Schema)
     (variableDefinitions : List VariableDefinition) : Prop :=
   (variableDefinitions.map VariableDefinition.name).Nodup
     ∧ ∀ variableDefinition, variableDefinition ∈ variableDefinitions ->
       variableDefinitionValid schema variableDefinition
 
--- Spec 5.4.1 Argument Names and 5.6.1 Values of Correct Type: partial; validates defined
--- argument names and simplified value validity.
+-- Spec 5.4.1 Argument Names, 5.6.1 Values of Correct Type, and 5.8.5 variable usage:
+-- validates defined argument names and value compatibility at the argument location.
 def argumentValid (schema : Schema) (definitions : List InputValueDefinition)
     (variableDefinitions : List VariableDefinition) (argument : Argument) : Prop :=
   ∃ definition,
@@ -230,7 +246,7 @@ def isRequiredArgument (definition : InputValueDefinition) : Prop :=
   isRequiredInputValueDefinition definition
 
 -- Spec 5.4.1-5.4.3 Argument validation: partial; handles names, uniqueness, required
--- arguments, and simplified value validity.
+-- arguments, value validity, and variable usage compatibility at argument locations.
 def argumentsValid (schema : Schema) (definitions : List InputValueDefinition)
     (variableDefinitions : List VariableDefinition) (arguments : List Argument) : Prop :=
   (arguments.map Argument.name).Nodup

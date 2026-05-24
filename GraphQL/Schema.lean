@@ -149,6 +149,7 @@ deriving Repr
 namespace ConstInputValue
 
 mutual
+  -- Non-spec structural metric used to fuel recursive constant validation.
   def size : ConstInputValue -> Nat
     | .null => 1
     | .int _ => 1
@@ -168,11 +169,13 @@ mutual
     | (_name, value) :: rest => value.size + objectFieldsSize rest
 end
 
+-- Spec 5.4.3 / 5.6.4 helper: null does not satisfy a required input entry.
 def nonNull : ConstInputValue -> Prop
   | .null => False
   | _ => True
 
 mutual
+  -- Non-spec embedding from constant values into the general input-value syntax.
   def toInputValue : ConstInputValue -> InputValue
     | .null => .null
     | .int value => .int value
@@ -460,6 +463,7 @@ def lookupArgumentDefinition (definitions : List InputValueDefinition)
     (argumentName : Name) : Option InputValueDefinition :=
   definitions.find? (fun definition => definition.name == argumentName)
 
+-- Spec 3.6 / 3.7 field implementation checks use field lookup by name.
 def lookupFieldDefinition (definitions : List FieldDefinition)
     (fieldName : Name) : Option FieldDefinition :=
   definitions.find? (fun definition => definition.name == fieldName)
@@ -563,6 +567,7 @@ end TypeRef
 
 namespace Schema
 
+-- Spec 5.6.2 input object field lookup helper for constant/default validation.
 def getConstInputObjectField? (fields : List (Name × ConstInputValue))
     (name : Name) : Option ConstInputValue :=
   match fields with
@@ -599,6 +604,8 @@ mutual
             | _value, .named typeName =>
                 schema.lookupInputObject typeName = none
 
+  -- Spec 3.6.1 / 3.10 default-value validity through 5.6.2-5.6.4 input object rules:
+  -- object fields must be unique, known, correctly typed, and include required fields.
   def constInputObjectFieldsValidWithFuel (schema : Schema) :
       Nat -> List InputValueDefinition -> List (Name × ConstInputValue) -> Prop
     | 0, _definitions, _fields => False
@@ -615,6 +622,8 @@ mutual
                 getConstInputObjectField? fields definition.name = some value
                   ∧ value.nonNull)
 
+  -- Spec 5.6.1 list input rule analogue for constants: a non-list value can be checked
+  -- as a single list item at a list location.
   def constInputObjectAsListItemValidWithFuel (schema : Schema) :
       Nat -> List (Name × ConstInputValue) -> TypeRef -> Prop
     | 0, _fields, _inner => False
@@ -622,6 +631,7 @@ mutual
         constInputValueIsCorrectTypeWithFuel schema fuel (.object fields) inner
 end
 
+-- Spec 3.6.1 / 3.10 default-value validity wrapper with a structural fuel budget.
 def constInputValueIsCorrectType (schema : Schema)
     (value : ConstInputValue) (expectedType : TypeRef) : Prop :=
   constInputValueIsCorrectTypeWithFuel schema
@@ -641,6 +651,9 @@ def namedOutputTypeSubtype (schema : Schema)
         schema.typeIncludesObject implementation objectName ->
           schema.typeIncludesObject expected objectName)
 
+-- Spec 3.6 / 3.7 field return covariance with GraphQL wrapper rules: implementation
+-- non-null may refine nullable, expected non-null requires implementation non-null, and
+-- list wrappers must match recursively.
 def outputTypeSubtype (schema : Schema) :
     TypeRef -> TypeRef -> Prop
   | .nonNull implementationInner, .nonNull expectedInner =>
@@ -659,6 +672,7 @@ end Schema
 
 namespace ConstInputValue
 
+-- Spec 3.6.1 / 3.10 default-value validity exposed from the constant-value namespace.
 def isCorrectType (value : ConstInputValue)
     (schema : Schema) (expectedType : TypeRef) : Prop :=
   schema.constInputValueIsCorrectType value expectedType

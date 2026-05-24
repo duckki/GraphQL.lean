@@ -16,6 +16,7 @@ namespace GraphQL
 
 namespace SchemaWellFormedness
 
+-- Spec 3.6-3.10 type validation repeatedly requires non-empty definition/member lists.
 def listNonempty {α : Type} (values : List α) : Prop :=
   values ≠ []
 
@@ -33,6 +34,8 @@ def inputValueDefinitionWellFormed (schema : Schema)
       | none => True
       | some defaultValue => defaultValue.isCorrectType schema definition.inputType
 
+-- Spec 3.6.1 / 3.10 input value definition lists: names are unique and every definition
+-- has an input type and valid default when present. Empty field argument lists are valid.
 def inputValueDefinitionsWellFormed (schema : Schema)
     (definitions : List InputValueDefinition) : Prop :=
   namesAreUnique (definitions.map InputValueDefinition.name)
@@ -45,6 +48,8 @@ def fieldDefinitionWellFormed (schema : Schema) (field : FieldDefinition) : Prop
   field.outputType.isOutputType schema
     ∧ inputValueDefinitionsWellFormed schema field.arguments
 
+-- Spec 3.6 / 3.7 output field lists must be non-empty, uniquely named, and individually
+-- well-formed. Field argument lists themselves may be empty.
 def fieldDefinitionsWellFormed (schema : Schema) (fields : List FieldDefinition) : Prop :=
   listNonempty fields
     ∧ namesAreUnique (fields.map FieldDefinition.name)

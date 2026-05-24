@@ -14,10 +14,12 @@ The current conformance target includes:
 - query operation execution semantics,
 - object, interface, union, enum, scalar, input object, list, and non-null type
   references as already represented in `GraphQL.Schema`,
-- schema well-formedness predicates separated from raw schema syntax,
+- schema well-formedness predicates separated from raw schema syntax, including
+  default-value validity, non-empty type member/field lists, and
+  object/interface implementation compatibility,
 - field selection validation, argument name validation, required argument
-  presence, leaf and composite selection shape, fragment applicability, and field
-  merge compatibility,
+  presence, variable-use compatibility at input locations, leaf and composite
+  selection shape, fragment applicability, and field merge compatibility,
 - named fragments and inline fragments, lowered through `GraphQL.Semantic`,
 - variables and the built-in executable directives `@skip` and `@include`,
 - possible-object semantics for abstract types,
@@ -34,8 +36,10 @@ These are out of scope for the current conformance pass:
 - subscription execution,
 - custom directives and directive definitions beyond modeled `@skip` and
   `@include`,
-- input coercion and result coercion,
-- assuming invalid or uncoerced variable/argument values are rejected here,
+- full input coercion and result coercion,
+- scalar and enum literal coercion details; validation records structural
+  input-object and variable/input-type compatibility, while assuming values are
+  already coerced where scalar semantics would matter,
 - introspection and meta-fields,
 - execution errors, request errors, `errors`, `extensions`, and null bubbling,
 - serialization details,
@@ -49,12 +53,18 @@ explicitly instead of trying to recover full coercion behavior.
 The main modules are:
 
 - `GraphQL.Schema`: raw schema syntax, type references, type categories, lookup,
-  and possible-object helpers.
-- `GraphQL.SchemaWellFormedness`: partial schema well-formedness predicates.
+  possible-object helpers, constant default-value validation, and output subtype
+  helpers for interface implementation checks.
+- `GraphQL.SchemaWellFormedness`: schema well-formedness predicates for the
+  scoped fragment, including uniqueness, non-empty definition/member lists,
+  valid type references/defaults, query root existence, and object/interface
+  implementation compatibility.
 - `GraphQL.Operation`: raw operation syntax, named fragments, variables, and
   modeled directive applications.
 - `GraphQL.Semantic`: fragment-inlined semantic operation syntax.
-- `GraphQL.Validation`: operation validity predicates for the current fragment.
+- `GraphQL.Validation`: operation validity predicates for the current fragment,
+  including recursive input-object validation and spec-style variable-use
+  compatibility with the nullable-variable default exception.
 - `GraphQL.FieldMerge`: same-response-name merge compatibility checks.
 - `GraphQL.Execution`: bounded resolver-based execution.
 - `GraphQL.ResponseShape`: response-name variant summaries, condition utilities,

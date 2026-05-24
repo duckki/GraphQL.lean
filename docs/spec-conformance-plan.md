@@ -147,7 +147,12 @@ The current proof ladder is:
    record the corresponding identical-parent-variant shape merge and list
    complete-value conformance bridge. The theorem bodies are factored through
    `_ofObjectOutput` and `_ofListOutput` variants so wrapper-specific cases stay
-   thin.
+   thin. Reusable `LeafField` helpers now lift the parent-variant shape merge and
+   object `completeValue` response-shape check from the hard-coded two-child case
+   to arbitrary direct leaf-field lists:
+   `LeafField.mergeFields_parentVariant_childShapeFields_append`,
+   `LeafField.mergeWithFuel_parentVariant_childShapeFields_append`, and
+   `LeafField.typedResponseConformsToShape_completeValue_objectSelectionSet`.
 8. Lift typed response-shape soundness for the same composite merge case from the
    current two distinct child leaf fields to the `LeafField` list abstraction.
    Bridge lemmas now live in `GraphQL.DataModel.Store`:

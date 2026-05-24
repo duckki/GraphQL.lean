@@ -656,6 +656,87 @@ theorem mergeFields_toShapeFields_append
         + ResponseShape.Shape.size ⟨toShapeFields condition suffix⟩)
       leftFields suffix hfuel hnodup
 
+theorem mergeWithFuel_parentVariant_childShapeFields_append
+    (fuel : Nat) (parentResponseName : Name)
+    (parentHeader : ResponseShape.VariantHeader)
+    (childCondition : ResponseShape.Condition) (leftFields rightFields : List LeafField) :
+    rightFields.length + 4 <= fuel ->
+      responseNamesNodup (leftFields ++ rightFields) ->
+        (ResponseShape.Shape.mergeWithFuel fuel
+          ⟨[(parentResponseName,
+            [(parentHeader, ⟨toShapeFields childCondition leftFields⟩)])]⟩
+          ⟨[(parentResponseName,
+            [(parentHeader, ⟨toShapeFields childCondition rightFields⟩)])]⟩).fields
+        =
+          [(parentResponseName,
+            [(parentHeader,
+              ⟨toShapeFields childCondition (leftFields ++ rightFields)⟩)])] := by
+  intro hfuel hnodup
+  cases fuel with
+  | zero =>
+      omega
+  | succ fuel =>
+      cases fuel with
+      | zero =>
+          omega
+      | succ fuel =>
+          cases fuel with
+          | zero =>
+              omega
+          | succ fuel =>
+              cases fuel with
+              | zero =>
+                  omega
+              | succ childFuel =>
+                  have hchildFuel : rightFields.length <= childFuel := by
+                    omega
+                  have hchildren :
+                      ResponseShape.Shape.mergeFieldsWithFuel childFuel
+                        (toShapeFields childCondition leftFields)
+                        (toShapeFields childCondition rightFields)
+                        = toShapeFields childCondition (leftFields ++ rightFields) :=
+                    mergeFieldsWithFuel_toShapeFields_append childCondition childFuel
+                      leftFields rightFields hchildFuel hnodup
+                  simp [ResponseShape.Shape.mergeWithFuel,
+                    ResponseShape.Shape.mergeFieldsWithFuel,
+                    ResponseShape.Shape.mergeVariantsWithFuel,
+                    ResponseShape.VariantHeader.eqBool_self, hchildren]
+
+theorem mergeFields_parentVariant_childShapeFields_append
+    (parentResponseName : Name) (parentHeader : ResponseShape.VariantHeader)
+    (childCondition : ResponseShape.Condition) (leftFields rightFields : List LeafField) :
+    responseNamesNodup (leftFields ++ rightFields) ->
+      ResponseShape.Shape.mergeFields
+        [(parentResponseName,
+          [(parentHeader, ⟨toShapeFields childCondition leftFields⟩)])]
+        [(parentResponseName,
+          [(parentHeader, ⟨toShapeFields childCondition rightFields⟩)])]
+        =
+          [(parentResponseName,
+            [(parentHeader,
+              ⟨toShapeFields childCondition (leftFields ++ rightFields)⟩)])] := by
+  intro hnodup
+  have hfuel :
+      rightFields.length + 4 <=
+        ResponseShape.Shape.size
+          ⟨[(parentResponseName,
+            [(parentHeader, ⟨toShapeFields childCondition leftFields⟩)])]⟩
+        + ResponseShape.Shape.size
+          ⟨[(parentResponseName,
+            [(parentHeader, ⟨toShapeFields childCondition rightFields⟩)])]⟩ := by
+    simp [ResponseShape.Shape.size, ResponseShape.Shape.fieldsSize,
+      ResponseShape.Shape.variantsSize, shapeFieldsSize_toShapeFields]
+    omega
+  simpa [ResponseShape.Shape.mergeFields, ResponseShape.Shape.merge] using
+    mergeWithFuel_parentVariant_childShapeFields_append
+      (ResponseShape.Shape.size
+          ⟨[(parentResponseName,
+            [(parentHeader, ⟨toShapeFields childCondition leftFields⟩)])]⟩
+        + ResponseShape.Shape.size
+          ⟨[(parentResponseName,
+            [(parentHeader, ⟨toShapeFields childCondition rightFields⟩)])]⟩)
+      parentResponseName parentHeader childCondition leftFields rightFields hfuel hnodup
+
 theorem mergeFields_parentVariant_twoChildShapeFields
     (parentResponseName : Name) (parentHeader : ResponseShape.VariantHeader)
     (childCondition : ResponseShape.Condition) (left right : LeafField) :
@@ -669,13 +750,10 @@ theorem mergeFields_parentVariant_twoChildShapeFields
           [(parentResponseName,
             [(parentHeader, ⟨toShapeFields childCondition [left, right]⟩)])] := by
   intro hdistinct
-  cases left
-  cases right
-  simp [toShapeFields, toShapeField, toShapeVariant, ResponseShape.Shape.mergeFields,
-    ResponseShape.Shape.merge, ResponseShape.Shape.size, ResponseShape.Shape.fieldsSize,
-    ResponseShape.Shape.variantsSize, ResponseShape.Shape.mergeWithFuel,
-    ResponseShape.Shape.mergeFieldsWithFuel, ResponseShape.Shape.mergeVariantsWithFuel,
-    ResponseShape.VariantHeader.eqBool_self, ResponseShape.Shape.empty, hdistinct]
+  simpa using
+    mergeFields_parentVariant_childShapeFields_append parentResponseName parentHeader
+      childCondition [left] [right] (by
+        simp [responseNamesNodup, responseNames, hdistinct])
 
 theorem collectSelectionShapeFields_toSelection (schema : Schema)
     (fuel : Nat) (parentType : Name) (condition : ResponseShape.Condition)
@@ -1453,6 +1531,36 @@ theorem typedFieldsConformToShapeFields
   simpa using
     typedFieldsConformToShapeFields_append schema store variableValues executionFuel
       parentType runtimeType source condition [] fields hnodup hcondition
+
+theorem typedResponseConformsToShape_completeValue_objectSelectionSet
+    (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (executionFuel : Nat)
+    (declaredParentType runtimeType : Name) (id : ObjectId)
+    (condition : ResponseShape.Condition) (fields : List LeafField) :
+    responseNamesNodup fields ->
+      conditionHoldsBool variableValues runtimeType condition = true ->
+        typedResponseConformsToShapeBool variableValues (fields.length + 1)
+          (TypedExecution.completeValue schema store variableValues (executionFuel + 2)
+            declaredParentType (toSelectionSet fields) (.object runtimeType id))
+          ⟨toShapeFields condition fields⟩ = true := by
+  intro hnodup hcondition
+  have hexec :
+      TypedExecution.executeSelectionSet schema store variableValues (executionFuel + 1)
+        runtimeType (.object runtimeType id) (toSelectionSet fields)
+      =
+        typedResponseFields schema store variableValues executionFuel runtimeType
+          (.object runtimeType id) fields :=
+    executeSelectionSet_toSelectionSet schema store variableValues executionFuel
+      runtimeType (.object runtimeType id) fields hnodup
+  have hfields :
+      typedFieldsConformToShapeBool variableValues fields.length runtimeType
+        (typedResponseFields schema store variableValues executionFuel runtimeType
+          (.object runtimeType id) fields)
+        ⟨toShapeFields condition fields⟩ = true :=
+    typedFieldsConformToShapeFields schema store variableValues executionFuel runtimeType
+      runtimeType (.object runtimeType id) condition fields hnodup hcondition
+  simpa [TypedExecution.completeValue, typedResponseConformsToShapeBool, hexec]
+    using hfields
 
 end LeafField
 

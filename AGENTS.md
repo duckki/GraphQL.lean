@@ -85,7 +85,10 @@ and
 `DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullListDistinctLeafNoDirectives`,
 with the proof bodies factored through the `_ofObjectOutput` and `_ofListOutput`
 generic theorems. The next proof boundary is lifting the child selection set from
-the two-leaf case to the `LeafField` list abstraction.
+the two-leaf case to the `LeafField` list abstraction. Initial reusable helpers
+for that lift are `LeafField.mergeFields_parentVariant_childShapeFields_append`,
+`LeafField.mergeWithFuel_parentVariant_childShapeFields_append`, and
+`LeafField.typedResponseConformsToShape_completeValue_objectSelectionSet`.
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
 `ObjectRecord.lookupField?_some_conformsToLookupField`,

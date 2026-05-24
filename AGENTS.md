@@ -127,8 +127,12 @@ fields whose child selection sets are arbitrary direct `LeafField` lists:
 `LeafField.normalizeSemanticOperation_twoSameCompositeLeafFieldsNoDirectives`
 and
 `DataModel.groundNormalFormCorrect_twoSameCompositeLeafFieldsNoDirectives`.
-The next boundary is lifting normal-form response-shape preservation for that
-same generalized `LeafField` composite merge case.
+Response-shape helper lemmas for that lift are now available:
+`LeafField.mergeFields_parentVariant_childShape_nil`,
+`LeafField.childShape_toSelectionSet_unsat`, and
+`LeafField.equivalentBool_parentVariant_childShapeFields_self`. The next
+boundary is proving normal-form response-shape preservation for that same
+generalized `LeafField` composite merge case.
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
 `ObjectRecord.lookupField?_some_conformsToLookupField`,

@@ -743,6 +743,17 @@ theorem mergeFields_parentVariant_childShapeFields_append
             [(parentHeader, ⟨toShapeFields childCondition rightFields⟩)])]⟩)
       parentResponseName parentHeader childCondition leftFields rightFields hfuel hnodup
 
+theorem mergeFields_parentVariant_childShape_nil
+    (parentResponseName : Name) (parentHeader : ResponseShape.VariantHeader)
+    (childShape : ResponseShape.Shape) :
+    ResponseShape.Shape.mergeFields
+      [(parentResponseName, [(parentHeader, childShape)])] []
+      = [(parentResponseName, [(parentHeader, childShape)])] := by
+  simp [ResponseShape.Shape.mergeFields, ResponseShape.Shape.merge,
+    ResponseShape.Shape.size, ResponseShape.Shape.fieldsSize,
+    ResponseShape.Shape.variantsSize, ResponseShape.Shape.mergeWithFuel]
+  cases childShape.size <;> rfl
+
 theorem mergeFields_parentVariant_twoChildShapeFields
     (parentResponseName : Name) (parentHeader : ResponseShape.VariantHeader)
     (childCondition : ResponseShape.Condition) (left right : LeafField) :
@@ -897,6 +908,32 @@ theorem collectSelectionSetShapeFields_toSelectionSet_unsat (schema : Schema) :
           simp [toSelectionSet, ResponseShape.Shape.collectSelectionSetShapeFields,
             hcondition]
 
+theorem childShape_toSelectionSet_unsat (schema : Schema)
+    (fuel : Nat) (parentType : Name) (condition : ResponseShape.Condition)
+    (fields : List LeafField) :
+    condition.satisfiableBool = false ->
+      (match toSelectionSet fields with
+      | [] => ResponseShape.Shape.empty
+      | _ =>
+          ⟨ResponseShape.Shape.collectSelectionSetShapeFields schema fuel
+            parentType condition (toSelectionSet fields)⟩)
+        = ResponseShape.Shape.empty := by
+  intro hcondition
+  cases fields with
+  | nil =>
+      simp [toSelectionSet, ResponseShape.Shape.empty]
+  | cons field rest =>
+      have hcollect :
+          ResponseShape.Shape.collectSelectionSetShapeFields schema fuel parentType
+            condition (toSelectionSet (field :: rest)) = [] :=
+        collectSelectionSetShapeFields_toSelectionSet_unsat schema fuel parentType
+          condition (field :: rest) hcondition
+      have hcollect' :
+          ResponseShape.Shape.collectSelectionSetShapeFields schema fuel parentType
+            condition (field.toSelection :: List.map toSelection rest) = [] := by
+        simpa [toSelectionSet] using hcollect
+      simp [toSelectionSet, hcollect', ResponseShape.Shape.empty]
+
 theorem ofSemanticOperation_toSelectionSet (schema : Schema)
     (name : Option Name) (rootType : Name)
     (variableDefinitions : List VariableDefinition) (fields : List LeafField) :
@@ -1023,6 +1060,27 @@ theorem equivalentBool_toShapeFields_self
   intro hnodup
   simp [ResponseShape.Shape.equivalentBool,
     includesBool_toShapeFields_self condition fields hnodup]
+
+theorem equivalentBool_parentVariant_childShapeFields_self
+    (parentResponseName : Name) (parentHeader : ResponseShape.VariantHeader)
+    (childCondition : ResponseShape.Condition) (fields : List LeafField) :
+    responseNamesNodup fields ->
+      ResponseShape.Shape.equivalentBool
+        ⟨[(parentResponseName,
+          [(parentHeader, ⟨toShapeFields childCondition fields⟩)])]⟩
+        ⟨[(parentResponseName,
+          [(parentHeader, ⟨toShapeFields childCondition fields⟩)])]⟩ = true := by
+  intro hnodup
+  have hchild :
+      ResponseShape.Shape.includesFieldsBool
+        (toShapeFields childCondition fields)
+        (toShapeFields childCondition fields) = true := by
+    simpa [ResponseShape.Shape.includesBool] using
+      includesBool_toShapeFields_self childCondition fields hnodup
+  simp [ResponseShape.Shape.equivalentBool, ResponseShape.Shape.includesBool,
+    ResponseShape.Shape.includesFieldsBool, ResponseShape.Shape.includesVariantsBool,
+    ResponseShape.Shape.lookupField, ResponseShape.Shape.lookupIncludingVariant,
+    ResponseShape.VariantHeader.includedByBool_self, hchild]
 
 theorem fieldsWithResponseName_toSelectionSet_notMem
     (responseName : Name) (fields : List LeafField) :

@@ -189,8 +189,12 @@ The current proof ladder is:
    `LeafField.normalizeSemanticOperation_twoSameCompositeLeafFieldsNoDirectives`
    and
    `DataModel.groundNormalFormCorrect_twoSameCompositeLeafFieldsNoDirectives`.
-   Next, lift normal-form response-shape preservation for that same generalized
-   `LeafField` composite merge case.
+   Response-shape helper lemmas for that lift are now available:
+   `LeafField.mergeFields_parentVariant_childShape_nil`,
+   `LeafField.childShape_toSelectionSet_unsat`, and
+   `LeafField.equivalentBool_parentVariant_childShapeFields_self`. Next, prove
+   normal-form response-shape preservation for that same generalized `LeafField`
+   composite merge case.
    Bridge lemmas now live in `GraphQL.DataModel.Store`:
    `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
    `ObjectRecord.lookupField?_some_conformsToLookupField`,

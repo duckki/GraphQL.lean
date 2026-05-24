@@ -114,8 +114,14 @@ The generalized list-output parent theorem is
 `DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeLeafFieldsNoDirectives_ofListOutput`.
 It handles two same-response-name composite parent selections whose child
 selection sets are arbitrary direct `LeafField` lists and whose resolved parent
-value is a list of named child composite values. The next boundary is adding the
-thin named/non-null list-output wrappers.
+value is a list of named child composite values. Thin list-output wrappers now
+cover list and non-null list fields:
+`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListLeafFieldsNoDirectives`
+and
+`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullListLeafFieldsNoDirectives`.
+The next boundary is deciding whether to add compatibility wrappers from the old
+two-leaf theorem names to the generalized `LeafField` wrappers, or move on to
+normal-form/response-shape properties for larger selection sets.
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
 `ObjectRecord.lookupField?_some_conformsToLookupField`,

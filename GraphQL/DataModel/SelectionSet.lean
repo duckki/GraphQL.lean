@@ -1532,14 +1532,107 @@ theorem typedFieldsConformToShapeFields
     typedFieldsConformToShapeFields_append schema store variableValues executionFuel
       parentType runtimeType source condition [] fields hnodup hcondition
 
-theorem typedResponseConformsToShape_completeValue_objectSelectionSet
+theorem typedFieldsConformToShapeFieldsWithFuel_append
     (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues) (executionFuel : Nat)
+    (parentType runtimeType : Name) (source : Value)
+    (condition : ResponseShape.Condition) :
+    ∀ (shapeFuel : Nat) (shapePrefix suffix : List LeafField),
+      responseNamesNodup (shapePrefix ++ suffix) ->
+        conditionHoldsBool variableValues runtimeType condition = true ->
+          typedFieldsConformToShapeBool variableValues shapeFuel runtimeType
+            (typedResponseFields schema store variableValues executionFuel parentType
+              source suffix)
+            ⟨toShapeFields condition (shapePrefix ++ suffix)⟩ = true := by
+  intro shapeFuel
+  induction shapeFuel with
+  | zero =>
+      intro shapePrefix suffix _hnodup _hcondition
+      simp [typedFieldsConformToShapeBool]
+  | succ fuel ih =>
+      intro shapePrefix suffix hnodup hcondition
+      cases suffix with
+      | nil =>
+          simp [typedResponseFields, typedFieldsConformToShapeBool]
+      | cons field rest =>
+          have hnameParts :
+              (responseNames shapePrefix ++ field.responseName :: responseNames rest).Nodup := by
+            simpa [responseNamesNodup, responseNames, List.map_append] using hnodup
+          simp [List.nodup_append] at hnameParts
+          rcases hnameParts with ⟨_hprefix, _hfieldRest, hseparate⟩
+          have hnotMemPrefix : field.responseName ∉ responseNames shapePrefix := by
+            intro hmem
+            exact (hseparate field.responseName hmem).left rfl
+          have hlookup :
+              ResponseShape.Shape.lookupField field.responseName
+                (toShapeFields condition (shapePrefix ++ field :: rest))
+                = some [toShapeVariant condition field] :=
+            lookupField_toShapeFields_append_cons_self condition shapePrefix field rest
+              hnotMemPrefix
+          have hvariant :
+              typedVariantConformsToShapeBool variableValues fuel runtimeType
+                (TypedExecution.completeValue schema store variableValues executionFuel
+                  ((schema.fieldReturnType? parentType field.fieldName).getD field.fieldName)
+                  [] (store.resolveValue field.fieldName field.arguments source))
+                [toShapeVariant condition field] = true := by
+            cases fuel with
+            | zero =>
+                simp [typedVariantConformsToShapeBool]
+            | succ shapeFuel =>
+                exact typedResponseFieldConformsToShapeVariant schema store variableValues
+                  shapeFuel executionFuel parentType runtimeType source condition field
+                  hcondition
+          have hrestNodup : responseNamesNodup ((shapePrefix ++ [field]) ++ rest) := by
+            simpa [responseNamesNodup, responseNames, List.map_append,
+              List.append_assoc] using hnodup
+          have hrest :
+              typedFieldsConformToShapeBool variableValues fuel runtimeType
+                (typedResponseFields schema store variableValues executionFuel parentType
+                  source rest)
+                ⟨toShapeFields condition ((shapePrefix ++ [field]) ++ rest)⟩ = true :=
+            ih (shapePrefix ++ [field]) rest hrestNodup hcondition
+          have hrest' :
+              typedFieldsConformToShapeBool variableValues fuel runtimeType
+                (typedResponseFields schema store variableValues executionFuel parentType
+                  source rest)
+                ⟨toShapeFields condition (shapePrefix ++ field :: rest)⟩ = true := by
+            simpa [List.append_assoc] using hrest
+          have hrest'' :
+              typedFieldsConformToShapeBool variableValues fuel runtimeType
+                (List.map
+                  (typedResponseField schema store variableValues executionFuel parentType
+                    source)
+                  rest)
+                ⟨toShapeFields condition (shapePrefix ++ field :: rest)⟩ = true := by
+            simpa [typedResponseFields] using hrest'
+          simp [typedResponseFields, typedResponseField, typedFieldsConformToShapeBool,
+            hlookup, hvariant, hrest'']
+
+theorem typedFieldsConformToShapeFieldsWithFuel
+    (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (shapeFuel executionFuel : Nat)
+    (parentType runtimeType : Name) (source : Value)
+    (condition : ResponseShape.Condition) (fields : List LeafField) :
+    responseNamesNodup fields ->
+      conditionHoldsBool variableValues runtimeType condition = true ->
+        typedFieldsConformToShapeBool variableValues shapeFuel runtimeType
+          (typedResponseFields schema store variableValues executionFuel parentType
+            source fields)
+          ⟨toShapeFields condition fields⟩ = true := by
+  intro hnodup hcondition
+  simpa using
+    typedFieldsConformToShapeFieldsWithFuel_append schema store variableValues
+      executionFuel parentType runtimeType source condition shapeFuel [] fields hnodup
+      hcondition
+
+theorem typedResponseConformsToShape_completeValue_objectSelectionSetWithFuel
+    (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (shapeFuel executionFuel : Nat)
     (declaredParentType runtimeType : Name) (id : ObjectId)
     (condition : ResponseShape.Condition) (fields : List LeafField) :
     responseNamesNodup fields ->
       conditionHoldsBool variableValues runtimeType condition = true ->
-        typedResponseConformsToShapeBool variableValues (fields.length + 1)
+        typedResponseConformsToShapeBool variableValues (shapeFuel + 1)
           (TypedExecution.completeValue schema store variableValues (executionFuel + 2)
             declaredParentType (toSelectionSet fields) (.object runtimeType id))
           ⟨toShapeFields condition fields⟩ = true := by
@@ -1553,14 +1646,58 @@ theorem typedResponseConformsToShape_completeValue_objectSelectionSet
     executeSelectionSet_toSelectionSet schema store variableValues executionFuel
       runtimeType (.object runtimeType id) fields hnodup
   have hfields :
-      typedFieldsConformToShapeBool variableValues fields.length runtimeType
+      typedFieldsConformToShapeBool variableValues shapeFuel runtimeType
         (typedResponseFields schema store variableValues executionFuel runtimeType
           (.object runtimeType id) fields)
         ⟨toShapeFields condition fields⟩ = true :=
-    typedFieldsConformToShapeFields schema store variableValues executionFuel runtimeType
-      runtimeType (.object runtimeType id) condition fields hnodup hcondition
+    typedFieldsConformToShapeFieldsWithFuel schema store variableValues shapeFuel
+      executionFuel runtimeType runtimeType (.object runtimeType id) condition fields
+      hnodup hcondition
   simpa [TypedExecution.completeValue, typedResponseConformsToShapeBool, hexec]
     using hfields
+
+theorem typedResponseConformsToShape_completeValue_objectSelectionSet
+    (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (executionFuel : Nat)
+    (declaredParentType runtimeType : Name) (id : ObjectId)
+    (condition : ResponseShape.Condition) (fields : List LeafField) :
+    responseNamesNodup fields ->
+      conditionHoldsBool variableValues runtimeType condition = true ->
+        typedResponseConformsToShapeBool variableValues (fields.length + 1)
+          (TypedExecution.completeValue schema store variableValues (executionFuel + 2)
+            declaredParentType (toSelectionSet fields) (.object runtimeType id))
+          ⟨toShapeFields condition fields⟩ = true := by
+  exact typedResponseConformsToShape_completeValue_objectSelectionSetWithFuel
+    schema store variableValues fields.length executionFuel declaredParentType
+    runtimeType id condition fields
+
+theorem typedVariantConformsToShape_parentObjectSelectionSetWithFuel
+    (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (shapeFuel executionFuel : Nat)
+    (parentRuntimeType declaredParentType runtimeType : Name) (id : ObjectId)
+    (parentHeader : ResponseShape.VariantHeader)
+    (childCondition : ResponseShape.Condition) (fields : List LeafField) :
+    responseNamesNodup fields ->
+      variantHeaderActiveBool variableValues parentRuntimeType parentHeader = true ->
+      conditionHoldsBool variableValues runtimeType childCondition = true ->
+        typedVariantConformsToShapeBool variableValues (shapeFuel + 2) parentRuntimeType
+          (TypedExecution.completeValue schema store variableValues (executionFuel + 2)
+            declaredParentType (toSelectionSet fields) (.object runtimeType id))
+          [(parentHeader, ⟨toShapeFields childCondition fields⟩)] = true := by
+  intro hnodup hparentActive hchildCondition
+  have hchild :
+      typedResponseConformsToShapeBool variableValues (shapeFuel + 1)
+        (TypedExecution.completeValue schema store variableValues (executionFuel + 2)
+          declaredParentType (toSelectionSet fields) (.object runtimeType id))
+        ⟨toShapeFields childCondition fields⟩ = true :=
+    typedResponseConformsToShape_completeValue_objectSelectionSetWithFuel schema store
+      variableValues shapeFuel executionFuel declaredParentType runtimeType id
+      childCondition fields hnodup hchildCondition
+  exact typedVariantConformsToShapeBool_singleton variableValues (shapeFuel + 1)
+    parentRuntimeType
+    (TypedExecution.completeValue schema store variableValues (executionFuel + 2)
+      declaredParentType (toSelectionSet fields) (.object runtimeType id))
+    parentHeader ⟨toShapeFields childCondition fields⟩ hparentActive hchild
 
 end LeafField
 

@@ -89,6 +89,11 @@ the two-leaf case to the `LeafField` list abstraction. Initial reusable helpers
 for that lift are `LeafField.mergeFields_parentVariant_childShapeFields_append`,
 `LeafField.mergeWithFuel_parentVariant_childShapeFields_append`, and
 `LeafField.typedResponseConformsToShape_completeValue_objectSelectionSet`.
+The fuel-polymorphic versions
+`LeafField.typedFieldsConformToShapeFieldsWithFuel`,
+`LeafField.typedResponseConformsToShape_completeValue_objectSelectionSetWithFuel`,
+and `LeafField.typedVariantConformsToShape_parentObjectSelectionSetWithFuel`
+are available for the generalized composite merge proof.
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
 `ObjectRecord.lookupField?_some_conformsToLookupField`,

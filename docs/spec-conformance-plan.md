@@ -153,6 +153,11 @@ The current proof ladder is:
    `LeafField.mergeFields_parentVariant_childShapeFields_append`,
    `LeafField.mergeWithFuel_parentVariant_childShapeFields_append`, and
    `LeafField.typedResponseConformsToShape_completeValue_objectSelectionSet`.
+   Fuel-polymorphic variants now cover the response-shape checker fuel used by
+   parent composite fields:
+   `LeafField.typedFieldsConformToShapeFieldsWithFuel`,
+   `LeafField.typedResponseConformsToShape_completeValue_objectSelectionSetWithFuel`,
+   and `LeafField.typedVariantConformsToShape_parentObjectSelectionSetWithFuel`.
 8. Lift typed response-shape soundness for the same composite merge case from the
    current two distinct child leaf fields to the `LeafField` list abstraction.
    Bridge lemmas now live in `GraphQL.DataModel.Store`:

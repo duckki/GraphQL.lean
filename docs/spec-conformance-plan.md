@@ -191,10 +191,14 @@ The current proof ladder is:
    `DataModel.groundNormalFormCorrect_twoSameCompositeLeafFieldsNoDirectives`.
    Response-shape helper lemmas for that lift are now available:
    `LeafField.mergeFields_parentVariant_childShape_nil`,
-   `LeafField.childShape_toSelectionSet_unsat`, and
-   `LeafField.equivalentBool_parentVariant_childShapeFields_self`. Next, prove
-   normal-form response-shape preservation for that same generalized `LeafField`
-   composite merge case.
+   `LeafField.childShape_toSelectionSet_unsat`,
+   `LeafField.equivalentBool_parentVariant_childShapeFields_self`,
+   `LeafField.condition_and_empty`,
+   `LeafField.collectSelectionShapeFields_field_toSelectionSet`, and
+   `LeafField.collectSelectionShapeFields_field_toSelectionSet_unsat`. Next,
+   prove normal-form response-shape preservation for that same generalized
+   `LeafField` composite merge case using those field-level shape collection
+   lemmas.
    Bridge lemmas now live in `GraphQL.DataModel.Store`:
    `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
    `ObjectRecord.lookupField?_some_conformsToLookupField`,

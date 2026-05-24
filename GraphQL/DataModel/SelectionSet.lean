@@ -934,6 +934,74 @@ theorem childShape_toSelectionSet_unsat (schema : Schema)
         simpa [toSelectionSet] using hcollect
       simp [toSelectionSet, hcollect', ResponseShape.Shape.empty]
 
+@[simp]
+theorem condition_and_empty (condition : ResponseShape.Condition) :
+    condition.and ResponseShape.Condition.empty = condition := by
+  cases condition with
+  | mk possibleTypes booleanLiterals =>
+      cases possibleTypes <;>
+        simp [ResponseShape.Condition.and, ResponseShape.Condition.empty]
+
+theorem collectSelectionShapeFields_field_toSelectionSet (schema : Schema)
+    (fuel : Nat) (parentType : Name) (condition : ResponseShape.Condition)
+    (responseName fieldName : Name) (arguments : List Argument)
+    (fields : List LeafField) :
+    let childType := (schema.fieldReturnType? parentType fieldName).getD fieldName
+    let childCondition := ResponseShape.Condition.forChildType schema condition childType
+    condition.satisfiableBool = true ->
+      childCondition.satisfiableBool = true ->
+        fields.length <= fuel ->
+          responseNamesNodup fields ->
+            ResponseShape.Shape.collectSelectionShapeFields schema (fuel + 1)
+              parentType condition
+              (.field responseName fieldName arguments [] (toSelectionSet fields))
+            =
+              [(responseName,
+                [((condition, ResponseShape.selectedField fieldName arguments),
+                  ⟨toShapeFields childCondition fields⟩)])] := by
+  intro childType childCondition hcondition hchildCondition hfuel hnodup
+  have hchildShape :
+      (match toSelectionSet fields with
+      | [] => ResponseShape.Shape.empty
+      | _ =>
+          ⟨ResponseShape.Shape.collectSelectionSetShapeFields schema fuel childType
+            childCondition (toSelectionSet fields)⟩)
+        = ⟨toShapeFields childCondition fields⟩ :=
+    childShape_toSelectionSet schema fuel childType childCondition fields
+      hfuel hchildCondition hnodup
+  simp [ResponseShape.Shape.collectSelectionShapeFields,
+    ResponseShape.Condition.fromDirectives?, hcondition]
+  simpa [childType, childCondition] using hchildShape
+
+theorem collectSelectionShapeFields_field_toSelectionSet_unsat (schema : Schema)
+    (fuel : Nat) (parentType : Name) (condition : ResponseShape.Condition)
+    (responseName fieldName : Name) (arguments : List Argument)
+    (fields : List LeafField) :
+    let childType := (schema.fieldReturnType? parentType fieldName).getD fieldName
+    let childCondition := ResponseShape.Condition.forChildType schema condition childType
+    condition.satisfiableBool = true ->
+      childCondition.satisfiableBool = false ->
+        ResponseShape.Shape.collectSelectionShapeFields schema (fuel + 1)
+          parentType condition
+          (.field responseName fieldName arguments [] (toSelectionSet fields))
+        =
+          [(responseName,
+            [((condition, ResponseShape.selectedField fieldName arguments),
+              ResponseShape.Shape.empty)])] := by
+  intro childType childCondition hcondition hchildCondition
+  have hchildShape :
+      (match toSelectionSet fields with
+      | [] => ResponseShape.Shape.empty
+      | _ =>
+          ⟨ResponseShape.Shape.collectSelectionSetShapeFields schema fuel childType
+            childCondition (toSelectionSet fields)⟩)
+        = ResponseShape.Shape.empty :=
+    childShape_toSelectionSet_unsat schema fuel childType childCondition fields
+      hchildCondition
+  simp [ResponseShape.Shape.collectSelectionShapeFields,
+    ResponseShape.Condition.fromDirectives?, hcondition]
+  simpa [childType, childCondition] using hchildShape
+
 theorem ofSemanticOperation_toSelectionSet (schema : Schema)
     (name : Option Name) (rootType : Name)
     (variableDefinitions : List VariableDefinition) (fields : List LeafField) :

@@ -157,9 +157,17 @@ The current proof ladder is:
    parent composite fields:
    `LeafField.typedFieldsConformToShapeFieldsWithFuel`,
    `LeafField.typedResponseConformsToShape_completeValue_objectSelectionSetWithFuel`,
-   and `LeafField.typedVariantConformsToShape_parentObjectSelectionSetWithFuel`.
+   `LeafField.typedVariantConformsToShape_parentObjectSelectionSetWithFuel`,
+   `LeafField.typedResponseConformsToShape_completeValue_objectSelectionSetAnyFuel`,
+   and `LeafField.typedVariantConformsToShape_parentObjectSelectionSetAnyFuel`.
 8. Lift typed response-shape soundness for the same composite merge case from the
    current two distinct child leaf fields to the `LeafField` list abstraction.
+   The object-output core is now generalized by
+   `DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeLeafFieldsNoDirectives_ofObjectOutput`,
+   using `LeafField.toSelectionSet_append` and
+   `LeafField.childShape_toSelectionSet` to connect child semantic selections
+   to collected child response shapes. Next, add thin named/non-null wrappers
+   for this object-output theorem, then generalize the list-output case.
    Bridge lemmas now live in `GraphQL.DataModel.Store`:
    `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
    `ObjectRecord.lookupField?_some_conformsToLookupField`,

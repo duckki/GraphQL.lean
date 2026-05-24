@@ -93,7 +93,17 @@ The fuel-polymorphic versions
 `LeafField.typedFieldsConformToShapeFieldsWithFuel`,
 `LeafField.typedResponseConformsToShape_completeValue_objectSelectionSetWithFuel`,
 and `LeafField.typedVariantConformsToShape_parentObjectSelectionSetWithFuel`
-are available for the generalized composite merge proof.
+are available for the generalized composite merge proof. The current generalized
+object-output proof is
+`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeLeafFieldsNoDirectives_ofObjectOutput`;
+it handles two same-response-name composite parent selections whose child
+selection sets are arbitrary direct `LeafField` lists with disjoint response
+names. It uses `LeafField.toSelectionSet_append`,
+`LeafField.childShape_toSelectionSet`,
+`LeafField.typedResponseConformsToShape_completeValue_objectSelectionSetAnyFuel`,
+and `LeafField.typedVariantConformsToShape_parentObjectSelectionSetAnyFuel`.
+The next boundary is adding the thin named/non-null object-output wrappers and
+then lifting the list-output case to the same `LeafField` abstraction.
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
 `ObjectRecord.lookupField?_some_conformsToLookupField`,

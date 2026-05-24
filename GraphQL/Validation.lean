@@ -7,8 +7,8 @@ Spec reference: GraphQL September 2025.
   schema and operation syntax.
 - Fidelity note: the model is intentionally partial. It omits document-level
   multi-operation rules, mutation/subscription rules, custom directive definitions, full
-  input coercion and literal type checking, all-variables-used, general variable usage
-  compatibility, fragment-must-be-used, and meta-field rules.
+  input coercion and literal type checking, all-variables-used, fragment-must-be-used,
+  and meta-field rules.
 -/
 namespace GraphQL
 
@@ -27,8 +27,7 @@ def getVariableDefinition? (variableDefinitions : List VariableDefinition)
   variableDefinitions.find? (fun variableDefinition => variableDefinition.name == name)
 
 def constInputValueNonNull : ConstInputValue -> Prop
-  | .null => False
-  | _ => True
+  | value => value.nonNull
 
 def inputValueNonNull : InputValue -> Prop
   | .null => False
@@ -43,32 +42,68 @@ def getInputObjectField? (fields : List (Name × InputValue))
 
 -- Spec 5.4.3 / 5.6.4 required input entries: non-null type with no default.
 def isRequiredInputValueDefinition (definition : InputValueDefinition) : Prop :=
-  match definition.inputType with
-  | .nonNull _ => definition.defaultValue = none
-  | _ => False
+  definition.isRequired
+
+def defaultValueNonNull (defaultValue : Option ConstInputValue) : Prop :=
+  ∃ value, defaultValue = some value ∧ value.nonNull
+
+-- Spec 5.8.5 `AreTypesCompatible`: faithful wrapper-aware variable/location input type
+-- compatibility for the modeled type references.
+def areInputTypesCompatible : TypeRef -> TypeRef -> Prop
+  | .nonNull variableInner, .nonNull locationInner =>
+      areInputTypesCompatible variableInner locationInner
+  | .nonNull variableInner, location =>
+      areInputTypesCompatible variableInner location
+  | _variable, .nonNull _locationInner => False
+  | .list variableInner, .list locationInner =>
+      areInputTypesCompatible variableInner locationInner
+  | .list _variableInner, _location => False
+  | _variable, .list _locationInner => False
+  | .named variableName, .named locationName => variableName = locationName
+
+-- Spec 5.8.5 All Variable Usages Are Allowed: nullable variables can flow to a non-null
+-- location only when the variable definition or the input location has a non-null default.
+def variableUsageAllowed (schema : Schema)
+    (variableDefinition : VariableDefinition)
+    (locationType : TypeRef) (locationDefault : Option ConstInputValue) : Prop :=
+  variableDefinition.typeRef.isInputType schema
+    ∧ locationType.isInputType schema
+    ∧ match locationType, variableDefinition.typeRef with
+      | .nonNull _locationInner, .nonNull _variableInner =>
+          areInputTypesCompatible variableDefinition.typeRef locationType
+      | .nonNull locationInner, _variableType =>
+          (defaultValueNonNull variableDefinition.defaultValue
+              ∨ defaultValueNonNull locationDefault)
+            ∧ areInputTypesCompatible variableDefinition.typeRef locationInner
+      | _locationType, _variableType =>
+          areInputTypesCompatible variableDefinition.typeRef locationType
 
 mutual
   -- Spec 5.6.1 Values of Correct Type, 5.6.2-5.6.4 input object rules, and 5.8.3
-  -- variable existence. Literal coercion remains deliberately shallow, but input-object
-  -- structure is checked recursively.
+  -- / 5.8.5 variable usage compatibility. Literal coercion remains deliberately shallow,
+  -- but input-object structure is checked recursively.
   def valueIsCorrectTypeWithFuel (schema : Schema)
       (variableDefinitions : List VariableDefinition) :
-      Nat -> InputValue -> TypeRef -> Prop
-    | 0, _value, _expectedType => False
-    | fuel + 1, value, expectedType =>
+      Nat -> InputValue -> TypeRef -> Option ConstInputValue -> Prop
+    | 0, _value, _expectedType, _locationDefault => False
+    | fuel + 1, value, expectedType, locationDefault =>
         expectedType.isInputType schema
           ∧ match value, expectedType with
             | .variable variableName, _ =>
                 ∃ variableDefinition,
                   getVariableDefinition? variableDefinitions variableName =
                     some variableDefinition
+                    ∧ variableUsageAllowed schema variableDefinition
+                      expectedType locationDefault
             | .null, .nonNull _ => False
             | .null, _ => True
             | _, .nonNull inner =>
-                valueIsCorrectTypeWithFuel schema variableDefinitions fuel value inner
+                valueIsCorrectTypeWithFuel schema variableDefinitions fuel
+                  value inner none
             | .list values, .list inner =>
                 ∀ item, item ∈ values ->
-                  valueIsCorrectTypeWithFuel schema variableDefinitions fuel item inner
+                  valueIsCorrectTypeWithFuel schema variableDefinitions fuel
+                    item inner none
             | .list _values, _ => False
             | .object fields, .named typeName =>
                 ∃ inputObject,
@@ -79,8 +114,10 @@ mutual
                 inputObjectAsListItemValidWithFuel schema variableDefinitions fuel
                   fields inner
             | _value, .list inner =>
-                valueIsCorrectTypeWithFuel schema variableDefinitions fuel value inner
-            | _value, _expectedType => True
+                valueIsCorrectTypeWithFuel schema variableDefinitions fuel
+                  value inner none
+            | _value, .named typeName =>
+                schema.lookupInputObject typeName = none
 
   def inputObjectFieldsValidWithFuel (schema : Schema)
       (variableDefinitions : List VariableDefinition) :
@@ -92,7 +129,7 @@ mutual
             ∃ definition,
               Schema.lookupArgumentDefinition definitions name = some definition
                 ∧ valueIsCorrectTypeWithFuel schema variableDefinitions fuel
-                  value definition.inputType)
+                  value definition.inputType definition.defaultValue)
           ∧ (∀ definition, definition ∈ definitions ->
             isRequiredInputValueDefinition definition ->
               ∃ value,
@@ -105,31 +142,28 @@ mutual
     | 0, _fields, _inner => False
     | fuel + 1, fields, inner =>
         valueIsCorrectTypeWithFuel schema variableDefinitions fuel
-          (.object fields) inner
+          (.object fields) inner none
 end
+
+def valueIsCorrectTypeAtLocation (schema : Schema)
+    (variableDefinitions : List VariableDefinition)
+    (value : InputValue) (expectedType : TypeRef)
+    (locationDefault : Option ConstInputValue) : Prop :=
+  valueIsCorrectTypeWithFuel schema variableDefinitions
+    (value.size + expectedType.size + 1) value expectedType locationDefault
 
 def valueIsCorrectType (schema : Schema) (variableDefinitions : List VariableDefinition)
     (value : InputValue) (expectedType : TypeRef) : Prop :=
-  valueIsCorrectTypeWithFuel schema variableDefinitions
-    (value.size + expectedType.size + 1) value expectedType
+  valueIsCorrectTypeAtLocation schema variableDefinitions value expectedType none
 
 -- Spec 2.10 `Value Const` / 5.6.1 defaults: defaults are structurally constant and use
 -- the same scoped validation as runtime input values.
 def constValueIsCorrectType (schema : Schema)
     (value : ConstInputValue) (expectedType : TypeRef) : Prop :=
-  valueIsCorrectType schema [] value.toInputValue expectedType
+  value.isCorrectType schema expectedType
 
 def booleanNonNullType : TypeRef :=
   .nonNull (.named "Boolean")
-
-def variableUsableAtNonNullBoolean (schema : Schema)
-    (variableDefinition : VariableDefinition) : Prop :=
-  variableDefinition.typeRef.isInputType schema
-    ∧ (variableDefinition.typeRef = booleanNonNullType
-      ∨ (variableDefinition.typeRef = .named "Boolean"
-        ∧ ∃ defaultValue,
-          variableDefinition.defaultValue = some defaultValue
-            ∧ constInputValueNonNull defaultValue))
 
 def directiveIfArgumentValid (schema : Schema)
     (variableDefinitions : List VariableDefinition) : InputValue -> Prop
@@ -137,7 +171,7 @@ def directiveIfArgumentValid (schema : Schema)
   | .variable variableName =>
       ∃ variableDefinition,
         getVariableDefinition? variableDefinitions variableName = some variableDefinition
-          ∧ variableUsableAtNonNullBoolean schema variableDefinition
+          ∧ variableUsageAllowed schema variableDefinition booleanNonNullType none
   | _ => False
 
 def directiveName : DirectiveApplication -> Name
@@ -184,7 +218,8 @@ def argumentValid (schema : Schema) (definitions : List InputValueDefinition)
     (variableDefinitions : List VariableDefinition) (argument : Argument) : Prop :=
   ∃ definition,
     Schema.lookupArgumentDefinition definitions argument.name = some definition
-      ∧ valueIsCorrectType schema variableDefinitions argument.value definition.inputType
+      ∧ valueIsCorrectTypeAtLocation schema variableDefinitions
+        argument.value definition.inputType definition.defaultValue
 
 def getArgument? (arguments : List Argument) (name : Name) : Option Argument :=
   arguments.find? (fun argument => argument.name == name)

@@ -6,26 +6,32 @@ Spec reference: GraphQL September 2025.
   from schema well-formedness predicates. The spec describes these as validation rules;
   this module names the resulting schema invariants `WellFormed`.
 - 3.6-3.10 Object, Interface, Union, Enum, and Input Object validation: modeled partially,
-  mostly for uniqueness and type-reference well-formedness.
+  covering uniqueness, non-empty member/field lists, default-value validity, and
+  object/interface field implementation compatibility.
 - Fidelity note: several normative rules are omitted, including reserved `__` names,
-  non-empty object/interface/input-field lists, interface field/type covariance,
-  interface cycles, input-object cycles/default cycles, directive validation,
-  extensions, OneOf, mutation/subscription roots, and introspection.
+  interface cycles, input-object cycles/default cycles, directive validation, extensions,
+  OneOf, mutation/subscription roots, and introspection.
 -/
 namespace GraphQL
 
 namespace SchemaWellFormedness
+
+def listNonempty {α : Type} (values : List α) : Prop :=
+  values ≠ []
 
 -- Spec type-system uniqueness clauses: faithful as a generic list-level no-duplicates
 -- predicate.
 def namesAreUnique (names : List Name) : Prop :=
   names.Nodup
 
--- Spec 3.6.1 / 3.10 input value definition rules: partial; checks only
--- `IsInputType`, omitting default-value coercion and directive/name rules.
+-- Spec 3.6.1 / 3.10 input value definition rules: partial; checks `IsInputType` and
+-- constant default validity, omitting directive/name rules and full scalar coercion.
 def inputValueDefinitionWellFormed (schema : Schema)
     (definition : InputValueDefinition) : Prop :=
   definition.inputType.isInputType schema
+    ∧ match definition.defaultValue with
+      | none => True
+      | some defaultValue => defaultValue.isCorrectType schema definition.inputType
 
 def inputValueDefinitionsWellFormed (schema : Schema)
     (definitions : List InputValueDefinition) : Prop :=
@@ -40,41 +46,77 @@ def fieldDefinitionWellFormed (schema : Schema) (field : FieldDefinition) : Prop
     ∧ inputValueDefinitionsWellFormed schema field.arguments
 
 def fieldDefinitionsWellFormed (schema : Schema) (fields : List FieldDefinition) : Prop :=
-  namesAreUnique (fields.map FieldDefinition.name)
+  listNonempty fields
+    ∧ namesAreUnique (fields.map FieldDefinition.name)
     ∧ ∀ field, field ∈ fields -> fieldDefinitionWellFormed schema field
 
--- Spec 3.6 object type rules: partial; checks fields and declared interface existence,
--- but not interface field implementation compatibility or non-empty fields.
+-- Spec 3.6 / 3.7 field implementation argument rules: inherited arguments must exist
+-- with the same input type; additional implementation arguments must not be required.
+def argumentDefinitionsImplement
+    (implementation expected : List InputValueDefinition) : Prop :=
+  (∀ expectedDefinition, expectedDefinition ∈ expected ->
+    ∃ implementationDefinition,
+      Schema.lookupArgumentDefinition implementation expectedDefinition.name =
+        some implementationDefinition
+        ∧ implementationDefinition.inputType = expectedDefinition.inputType)
+    ∧ (∀ implementationDefinition, implementationDefinition ∈ implementation ->
+      Schema.lookupArgumentDefinition expected implementationDefinition.name = none ->
+        ¬ implementationDefinition.isRequired)
+
+-- Spec 3.6 / 3.7 field implementation rules: return type is covariant and arguments
+-- are compatible.
+def fieldDefinitionImplements (schema : Schema)
+    (implementation expected : FieldDefinition) : Prop :=
+  schema.outputTypeSubtype implementation.outputType expected.outputType
+    ∧ argumentDefinitionsImplement implementation.arguments expected.arguments
+
+-- Spec 3.6 / 3.7 object/interface implementation rules: every interface field must be
+-- implemented by name with compatible type and arguments.
+def fieldsImplementInterface (schema : Schema)
+    (implementationFields : List FieldDefinition) (interfaceName : Name) : Prop :=
+  ∃ interfaceType,
+    schema.lookupInterface interfaceName = some interfaceType
+      ∧ ∀ interfaceField, interfaceField ∈ interfaceType.fields ->
+        ∃ implementationField,
+          Schema.lookupFieldDefinition implementationFields interfaceField.name =
+            some implementationField
+            ∧ fieldDefinitionImplements schema implementationField interfaceField
+
+-- Spec 3.6 object type rules: checks non-empty fields, declared interface existence,
+-- and interface field implementation compatibility.
 def objectTypeWellFormed (schema : Schema) (objectType : ObjectType) : Prop :=
   fieldDefinitionsWellFormed schema objectType.fields
     ∧ namesAreUnique objectType.interfaces
     ∧ ∀ interfaceName, interfaceName ∈ objectType.interfaces ->
-      schema.interfaceType interfaceName
+      fieldsImplementInterface schema objectType.fields interfaceName
 
--- Spec 3.7 interface type rules: partial; checks fields and declared interface existence,
--- but not interface field implementation compatibility, cycles, or non-empty fields.
+-- Spec 3.7 interface type rules: checks non-empty fields, declared interface existence,
+-- and interface field implementation compatibility, but not cycles.
 def interfaceTypeWellFormed (schema : Schema) (interfaceType : InterfaceType) : Prop :=
   fieldDefinitionsWellFormed schema interfaceType.fields
     ∧ namesAreUnique interfaceType.interfaces
     ∧ ∀ implementedInterfaceName,
       implementedInterfaceName ∈ interfaceType.interfaces ->
-        schema.interfaceType implementedInterfaceName
+        fieldsImplementInterface schema interfaceType.fields implementedInterfaceName
 
--- Spec 3.8 union type rules: partial; checks unique object members but does not
--- enforce non-empty member lists or directives/extensions.
+-- Spec 3.8 union type rules: checks non-empty unique object members; directives and
+-- extensions are out of scope.
 def unionTypeWellFormed (schema : Schema) (unionType : UnionType) : Prop :=
-  namesAreUnique unionType.members
+  listNonempty unionType.members
+    ∧ namesAreUnique unionType.members
     ∧ ∀ objectName, objectName ∈ unionType.members -> schema.objectType objectName
 
--- Spec 3.9 enum type rules: partial; checks unique values but omits non-empty
--- values, reserved names, directives, and deprecation rules.
+-- Spec 3.9 enum type rules: checks non-empty unique values but omits reserved names,
+-- directives, and deprecation rules.
 def enumTypeWellFormed (enumType : EnumType) : Prop :=
-  namesAreUnique enumType.values
+  listNonempty enumType.values
+    ∧ namesAreUnique enumType.values
 
--- Spec 3.10 input object type rules: partial; checks input field definitions but
--- omits non-empty fields, input-object cycles, default-value cycles, and OneOf rules.
+-- Spec 3.10 input object type rules: checks non-empty input field definitions but omits
+-- input-object cycles, default-value cycles, and OneOf rules.
 def inputObjectTypeWellFormed (schema : Schema) (inputObjectType : InputObjectType) : Prop :=
-  inputValueDefinitionsWellFormed schema inputObjectType.inputFields
+  listNonempty inputObjectType.inputFields
+    ∧ inputValueDefinitionsWellFormed schema inputObjectType.inputFields
 
 -- Spec 3.4-3.10 type well-formedness dispatcher: partial in the same ways as the
 -- per-type predicates.

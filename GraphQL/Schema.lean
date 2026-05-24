@@ -149,6 +149,30 @@ deriving Repr
 namespace ConstInputValue
 
 mutual
+  def size : ConstInputValue -> Nat
+    | .null => 1
+    | .int _ => 1
+    | .float _ => 1
+    | .string _ => 1
+    | .boolean _ => 1
+    | .enum _ => 1
+    | .list values => 1 + valuesSize values
+    | .object fields => 1 + objectFieldsSize fields
+
+  def valuesSize : List ConstInputValue -> Nat
+    | [] => 0
+    | value :: rest => value.size + valuesSize rest
+
+  def objectFieldsSize : List (Name × ConstInputValue) -> Nat
+    | [] => 0
+    | (_name, value) :: rest => value.size + objectFieldsSize rest
+end
+
+def nonNull : ConstInputValue -> Prop
+  | .null => False
+  | _ => True
+
+mutual
   def toInputValue : ConstInputValue -> InputValue
     | .null => .null
     | .int value => .int value
@@ -215,6 +239,16 @@ structure InputValueDefinition where
   inputType : TypeRef
   defaultValue : Option ConstInputValue := none
 deriving Repr
+
+namespace InputValueDefinition
+
+-- Spec 5.4.3 / 5.6.4 required input entries: non-null type with no default.
+def isRequired (definition : InputValueDefinition) : Prop :=
+  match definition.inputType with
+  | .nonNull _ => definition.defaultValue = none
+  | _ => False
+
+end InputValueDefinition
 
 -- Spec 3.6 `FieldDefinition`: partial; name, return type, and arguments are represented,
 -- but descriptions, directives, and deprecation are omitted.
@@ -426,6 +460,10 @@ def lookupArgumentDefinition (definitions : List InputValueDefinition)
     (argumentName : Name) : Option InputValueDefinition :=
   definitions.find? (fun definition => definition.name == argumentName)
 
+def lookupFieldDefinition (definitions : List FieldDefinition)
+    (fieldName : Name) : Option FieldDefinition :=
+  definitions.find? (fun definition => definition.name == fieldName)
+
 def fieldReturnType? (schema : Schema) (parentType fieldName : Name) : Option Name := do
   let field <- schema.lookupField parentType fieldName
   pure field.outputType.namedType
@@ -522,5 +560,109 @@ def isOutputType : TypeRef -> Schema -> Prop
   | .nonNull inner, schema => inner.isOutputType schema
 
 end TypeRef
+
+namespace Schema
+
+def getConstInputObjectField? (fields : List (Name × ConstInputValue))
+    (name : Name) : Option ConstInputValue :=
+  match fields with
+  | [] => none
+  | (fieldName, value) :: rest =>
+      if fieldName = name then some value else getConstInputObjectField? rest name
+
+mutual
+  -- Spec 3.6.1 / 3.10 default-value validity: constants are checked against input
+  -- object definitions recursively, while scalar coercion details remain out of scope.
+  def constInputValueIsCorrectTypeWithFuel (schema : Schema) :
+      Nat -> ConstInputValue -> TypeRef -> Prop
+    | 0, _value, _expectedType => False
+    | fuel + 1, value, expectedType =>
+        expectedType.isInputType schema
+          ∧ match value, expectedType with
+            | .null, .nonNull _ => False
+            | .null, _ => True
+            | _, .nonNull inner =>
+                constInputValueIsCorrectTypeWithFuel schema fuel value inner
+            | .list values, .list inner =>
+                ∀ item, item ∈ values ->
+                  constInputValueIsCorrectTypeWithFuel schema fuel item inner
+            | .list _values, _ => False
+            | .object fields, .named typeName =>
+                ∃ inputObject,
+                  schema.lookupInputObject typeName = some inputObject
+                    ∧ constInputObjectFieldsValidWithFuel schema fuel
+                      inputObject.inputFields fields
+            | .object fields, .list inner =>
+                constInputObjectAsListItemValidWithFuel schema fuel fields inner
+            | _value, .list inner =>
+                constInputValueIsCorrectTypeWithFuel schema fuel value inner
+            | _value, .named typeName =>
+                schema.lookupInputObject typeName = none
+
+  def constInputObjectFieldsValidWithFuel (schema : Schema) :
+      Nat -> List InputValueDefinition -> List (Name × ConstInputValue) -> Prop
+    | 0, _definitions, _fields => False
+    | fuel + 1, definitions, fields =>
+        (fields.map Prod.fst).Nodup
+          ∧ (∀ name value, (name, value) ∈ fields ->
+            ∃ definition,
+              Schema.lookupArgumentDefinition definitions name = some definition
+                ∧ constInputValueIsCorrectTypeWithFuel schema fuel
+                  value definition.inputType)
+          ∧ (∀ definition, definition ∈ definitions ->
+            definition.isRequired ->
+              ∃ value,
+                getConstInputObjectField? fields definition.name = some value
+                  ∧ value.nonNull)
+
+  def constInputObjectAsListItemValidWithFuel (schema : Schema) :
+      Nat -> List (Name × ConstInputValue) -> TypeRef -> Prop
+    | 0, _fields, _inner => False
+    | fuel + 1, fields, inner =>
+        constInputValueIsCorrectTypeWithFuel schema fuel (.object fields) inner
+end
+
+def constInputValueIsCorrectType (schema : Schema)
+    (value : ConstInputValue) (expectedType : TypeRef) : Prop :=
+  constInputValueIsCorrectTypeWithFuel schema
+    (value.size + expectedType.size + 1) value expectedType
+
+-- Spec 3.6 / 3.7 field return covariance for object/interface implementation:
+-- wrappers are structural, leaf named types are invariant, and composite named types
+-- compare by possible runtime object subset.
+def namedOutputTypeSubtype (schema : Schema)
+    (implementation expected : Name) : Prop :=
+  (schema.isLeafType implementation
+    ∧ schema.isLeafType expected
+    ∧ implementation = expected)
+    ∨ (schema.isCompositeType implementation
+      ∧ schema.isCompositeType expected
+      ∧ ∀ objectName,
+        schema.typeIncludesObject implementation objectName ->
+          schema.typeIncludesObject expected objectName)
+
+def outputTypeSubtype (schema : Schema) :
+    TypeRef -> TypeRef -> Prop
+  | .nonNull implementationInner, .nonNull expectedInner =>
+      outputTypeSubtype schema implementationInner expectedInner
+  | .nonNull implementationInner, expected =>
+      outputTypeSubtype schema implementationInner expected
+  | _implementation, .nonNull _expectedInner => False
+  | .list implementationInner, .list expectedInner =>
+      outputTypeSubtype schema implementationInner expectedInner
+  | .list _implementationInner, _expected => False
+  | _implementation, .list _expectedInner => False
+  | .named implementationName, .named expectedName =>
+      namedOutputTypeSubtype schema implementationName expectedName
+
+end Schema
+
+namespace ConstInputValue
+
+def isCorrectType (value : ConstInputValue)
+    (schema : Schema) (expectedType : TypeRef) : Prop :=
+  schema.constInputValueIsCorrectType value expectedType
+
+end ConstInputValue
 
 end GraphQL

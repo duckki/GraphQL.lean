@@ -133,10 +133,15 @@ Response-shape helper lemmas for that lift are now available:
 `LeafField.equivalentBool_parentVariant_childShapeFields_self`,
 `LeafField.condition_and_empty`,
 `LeafField.collectSelectionShapeFields_field_toSelectionSet`, and
-`LeafField.collectSelectionShapeFields_field_toSelectionSet_unsat`. The next
-boundary is proving normal-form response-shape preservation for the same
-generalized `LeafField` composite merge case using those field-level shape
-collection lemmas.
+`LeafField.collectSelectionShapeFields_field_toSelectionSet_unsat`. Normal-form
+response-shape preservation now also covers that same generalized `LeafField`
+composite merge case through
+`DataModel.normalFormPreservesResponseShapeBool_twoSameCompositeLeafFieldsNoDirectives`
+and
+`DataModel.normalFormPreservesResponseShape_twoSameCompositeLeafFieldsNoDirectives`.
+The next boundary is wiring older hard-coded two-child normal-form
+response-shape theorem names through the generalized wrapper, then deciding the
+next merge generalization beyond arbitrary direct child `LeafField` lists.
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
 `ObjectRecord.lookupField?_some_conformsToLookupField`,

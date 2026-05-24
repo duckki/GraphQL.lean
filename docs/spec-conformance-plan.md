@@ -195,10 +195,15 @@ The current proof ladder is:
    `LeafField.equivalentBool_parentVariant_childShapeFields_self`,
    `LeafField.condition_and_empty`,
    `LeafField.collectSelectionShapeFields_field_toSelectionSet`, and
-   `LeafField.collectSelectionShapeFields_field_toSelectionSet_unsat`. Next,
-   prove normal-form response-shape preservation for that same generalized
-   `LeafField` composite merge case using those field-level shape collection
-   lemmas.
+   `LeafField.collectSelectionShapeFields_field_toSelectionSet_unsat`.
+   Normal-form response-shape preservation now also covers that same generalized
+   `LeafField` composite merge case through
+   `DataModel.normalFormPreservesResponseShapeBool_twoSameCompositeLeafFieldsNoDirectives`
+   and
+   `DataModel.normalFormPreservesResponseShape_twoSameCompositeLeafFieldsNoDirectives`.
+   Next, wire older hard-coded two-child normal-form response-shape theorem
+   names through the generalized wrapper, then decide the next merge
+   generalization beyond arbitrary direct child `LeafField` lists.
    Bridge lemmas now live in `GraphQL.DataModel.Store`:
    `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
    `ObjectRecord.lookupField?_some_conformsToLookupField`,

@@ -237,6 +237,7 @@ def argumentValid (schema : Schema) (definitions : List InputValueDefinition)
       ∧ valueIsCorrectTypeAtLocation schema variableDefinitions
         argument.value definition.inputType definition.defaultValue
 
+-- Spec 5.4.3 required argument lookup by name.
 def getArgument? (arguments : List Argument) (name : Name) : Option Argument :=
   arguments.find? (fun argument => argument.name == name)
 
@@ -258,6 +259,7 @@ def argumentsValid (schema : Schema) (definitions : List InputValueDefinition)
           getArgument? arguments definition.name = some argument
             ∧ inputValueNonNull argument.value)
 
+-- Non-spec structural metric over fragments used to fuel validation traversals.
 def fragmentsSize (fragments : List FragmentDefinition) : Nat :=
   fragments.foldl (fun total fragment => total + fragment.size) 0
 

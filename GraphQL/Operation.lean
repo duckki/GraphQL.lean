@@ -25,6 +25,8 @@ namespace Argument
 def equivalent (left right : Argument) : Prop :=
   left.name = right.name ∧ left.value.equivalent right.value
 
+-- Spec 5.3.2 field argument comparison lifted to argument lists as unordered sets by
+-- argument name.
 def argumentsEquivalent (left right : List Argument) : Prop :=
   (∀ argument, argument ∈ left ->
     ∃ argument', argument' ∈ right ∧ argument.equivalent argument')
@@ -70,9 +72,11 @@ def allowsBool : DirectiveApplication -> Bool
 
 end DirectiveApplication
 
+-- Spec 3.13.1/3.13.2 directive runtime meaning lifted to directive lists.
 def directivesAllow (directives : List DirectiveApplication) : Prop :=
   ∀ directive, directive ∈ directives -> directive.allows
 
+-- Boolean counterpart to `directivesAllow`.
 def directivesAllowBool (directives : List DirectiveApplication) : Bool :=
   directives.all (fun directive => directive.allowsBool)
 
@@ -115,6 +119,7 @@ structure Operation where
 deriving Repr
 
 mutual
+  -- Non-spec structural metric used to fuel recursive operation transformations.
   def Selection.size : Selection -> Nat
     | .field _ _ _ _ selectionSet => 1 + SelectionSet.size selectionSet
     | .fragmentSpread _ _ => 1
@@ -125,9 +130,11 @@ mutual
     | selection :: rest => selection.size + SelectionSet.size rest
 end
 
+-- Non-spec structural metric over fragment selection contents.
 def FragmentDefinition.size (fragment : FragmentDefinition) : Nat :=
   SelectionSet.size fragment.selectionSet
 
+-- Non-spec structural metric over operation selections and retained fragments.
 def Operation.size (operation : Operation) : Nat :=
   SelectionSet.size operation.selectionSet
     + operation.fragments.foldl (fun total fragment => total + fragment.size) 0
@@ -145,6 +152,7 @@ mutual
     | selection :: rest => selection.fragmentFree ∧ SelectionSet.fragmentFree rest
 end
 
+-- Spec 2.9 fragments: operation-level wrapper around the fragment-free predicate.
 def Operation.fragmentFree (operation : Operation) : Prop :=
   operation.fragments = [] ∧ SelectionSet.fragmentFree operation.selectionSet
 
@@ -164,6 +172,7 @@ mutual
         selection.fragmentSpreadNames ++ SelectionSet.fragmentSpreadNames rest
 end
 
+-- Spec 5.5.2.2 `DetectFragmentCycles` input: fragment-spread descendants of a fragment.
 def FragmentDefinition.fragmentSpreadNames (fragment : FragmentDefinition) : List Name :=
   SelectionSet.fragmentSpreadNames fragment.selectionSet
 
@@ -182,10 +191,12 @@ def subselections : Selection -> List Selection
   | .inlineFragment _typeCondition _directives selectionSet => selectionSet
   | .fragmentSpread _fragmentName _directives => []
 
+-- Spec 6.3.2 `CollectFields` helper: recognizes field selections.
 def isField : Selection -> Prop
   | .field .. => True
   | _ => False
 
+-- Spec 6.3.2 `CollectFields` helper: recognizes inline-fragment selections.
 def isInlineFragment : Selection -> Prop
   | .inlineFragment .. => True
   | _ => False
@@ -203,6 +214,7 @@ def fieldsWithResponseName (responseName : Name) (selectionSet : List Selection)
     | some name => name == responseName
     | none => false)
 
+-- Spec 6.3.2 field collection helper: removes direct fields with one response name.
 def withoutFieldsWithResponseName (responseName : Name) (selectionSet : List Selection) :
     List Selection :=
   selectionSet.filter (fun selection =>
@@ -210,6 +222,7 @@ def withoutFieldsWithResponseName (responseName : Name) (selectionSet : List Sel
     | some name => !(name == responseName)
     | none => true)
 
+-- Spec 6.3.2 `CollectSubfields` analogue: concatenates nested selection sets.
 def mergeSelectionSets (selections : List Selection) : List Selection :=
   selections.foldl (fun merged selection => merged ++ selection.subselections) []
 

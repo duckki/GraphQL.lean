@@ -44,6 +44,7 @@ structure Resolvers where
 -- modeled input values without coercion or validation.
 abbrev VariableValues := List (Name × InputValue)
 
+-- Spec 6.1.2 variable value lookup helper for already-coerced modeled variables.
 def lookupVariableValue? (variableValues : VariableValues) (name : Name) : Option InputValue :=
   match variableValues with
   | [] => none
@@ -84,6 +85,8 @@ def shallowResponse : Value -> Response
   | .object _typeName _identity => .object []
   | .list values => .list (values.map shallowResponse)
 
+-- Spec 6.3.2 `DoesFragmentTypeApply` needs a runtime object type when the source value
+-- is object-like.
 def runtimeObjectType? : Value -> Option Name
   | .object typeName _identity => some typeName
   | _ => none
@@ -117,19 +120,25 @@ def addExecutableField (field : ExecutableField) :
       else
         (responseName, fields) :: addExecutableField field rest
 
+-- Spec 6.3.2 collected fields map helper: inserts all fields into a response-name group
+-- map.
 def addExecutableFields (fields : List ExecutableField)
     (groups : List (Name × List ExecutableField)) :
     List (Name × List ExecutableField) :=
   fields.foldl (fun grouped field => addExecutableField field grouped) groups
 
+-- Spec 6.3.2 collected fields map helper: inserts one existing group into another map.
 def addExecutableGroup (group : Name × List ExecutableField) :
     List (Name × List ExecutableField) -> List (Name × List ExecutableField) :=
   addExecutableFields group.snd
 
+-- Spec 6.3.2 `CollectFields` grouping merge for list-backed response-name maps.
 def mergeExecutableGroups (left right : List (Name × List ExecutableField)) :
     List (Name × List ExecutableField) :=
   right.foldl (fun grouped group => addExecutableGroup group grouped) left
 
+-- Spec 6.4.3 `CompleteValue` subfield merge: all collected fields for a response name
+-- contribute their child selections.
 def mergedFieldSelectionSet : List ExecutableField -> List Semantic.Selection
   | [] => []
   | field :: rest => field.selectionSet ++ mergedFieldSelectionSet rest

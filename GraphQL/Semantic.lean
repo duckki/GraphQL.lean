@@ -39,6 +39,7 @@ structure Operation where
 deriving Repr
 
 mutual
+  -- Non-spec structural metric used to fuel recursive semantic operations.
   def Selection.size : Selection -> Nat
     | .field _responseName _fieldName _arguments _directives selectionSet =>
         1 + SelectionSet.size selectionSet
@@ -50,6 +51,7 @@ mutual
     | selection :: rest => selection.size + SelectionSet.size rest
 end
 
+-- Non-spec structural metric over fragment-free semantic operations.
 def Operation.size (operation : Operation) : Nat :=
   SelectionSet.size operation.selectionSet
 
@@ -69,10 +71,12 @@ def subselections : Selection -> List Selection
   | .inlineFragment _typeCondition _directives selectionSet =>
       selectionSet
 
+-- Spec 6.3.2 `CollectFields` helper over semantic selections.
 def isField : Selection -> Prop
   | .field .. => True
   | _ => False
 
+-- Spec 6.3.2 `CollectFields` helper over semantic inline fragments.
 def isInlineFragment : Selection -> Prop
   | .inlineFragment .. => True
   | _ => False
@@ -81,6 +85,7 @@ end Selection
 
 namespace SelectionSet
 
+-- Spec 6.3.2 field collection groups by response name over semantic selections.
 def fieldsWithResponseName (responseName : Name) (selectionSet : List Selection) :
     List Selection :=
   selectionSet.filter (fun selection =>
@@ -88,6 +93,7 @@ def fieldsWithResponseName (responseName : Name) (selectionSet : List Selection)
     | some name => name == responseName
     | none => false)
 
+-- Spec 6.3.2 field collection helper: removes semantic fields with one response name.
 def withoutFieldsWithResponseName (responseName : Name)
     (selectionSet : List Selection) : List Selection :=
   selectionSet.filter (fun selection =>
@@ -95,6 +101,7 @@ def withoutFieldsWithResponseName (responseName : Name)
     | some name => !(name == responseName)
     | none => true)
 
+-- Spec 6.3.2 `CollectSubfields` analogue over semantic selections.
 def mergeSelectionSets (selections : List Selection) : List Selection :=
   selections.foldl (fun merged selection => merged ++ selection.subselections) []
 
@@ -129,6 +136,7 @@ mutual
           ++ inlineSelectionSet fragments (fuel + 1) rest
 end
 
+-- Non-spec structural fuel bound for named-fragment inlining.
 def inlineFuel (operation : GraphQL.Operation) : Nat :=
   operation.size + 1
 
@@ -144,6 +152,7 @@ def fromOperation (operation : GraphQL.Operation) : Operation :=
   }
 
 mutual
+  -- Spec-related erasure from semantic selections to fragment-free raw selections.
   def Selection.toOperationSelection : Selection -> GraphQL.Selection
     | .field responseName fieldName arguments directives selectionSet =>
         .field responseName fieldName arguments directives

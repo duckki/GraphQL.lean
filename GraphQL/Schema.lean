@@ -36,6 +36,7 @@ def namedType : TypeRef -> Name
   | .list inner => inner.namedType
   | .nonNull inner => inner.namedType
 
+-- Non-spec structural metric used to fuel recursive validation over type references.
 def size : TypeRef -> Nat
   | .named _ => 1
   | .list inner => 1 + inner.size
@@ -60,6 +61,7 @@ deriving Repr
 namespace InputValue
 
 mutual
+  -- Non-spec structural metric used to fuel recursive input-value validation.
   def size : InputValue -> Nat
     | .null => 1
     | .int _ => 1
@@ -121,6 +123,8 @@ end
 def equivalent (left right : InputValue) : Prop :=
   equivalentWithFuel (left.size + right.size + 1) left right
 
+-- Spec 2.10 input object field equality for semantic argument comparison; object field
+-- order is ignored, with duplicate rejection delegated to validation.
 def objectFieldsEquivalent (left right : List (Name × InputValue)) : Prop :=
   objectFieldsEquivalentWithFuel
     (objectFieldsSize left + objectFieldsSize right + 1) left right
@@ -134,7 +138,8 @@ def staticBoolean? : InputValue -> Option Bool
 end InputValue
 
 -- Spec 2.10 `Value Const`: default values must be constant and therefore exclude
--- variables. Coercion and literal type conformance are still validation concerns.
+-- variables. Coercion and literal scalar semantics remain out of scope; structural
+-- default conformance is checked by schema well-formedness.
 inductive ConstInputValue where
   | null
   | int (value : Int)
@@ -318,6 +323,7 @@ def name : TypeDefinition -> Name
   | .enum enumType => enumType.name
   | .inputObject inputObjectType => inputObjectType.name
 
+-- Spec 5.3 field selection lookup applies only to object and interface definitions.
 def fields? : TypeDefinition -> Option (List FieldDefinition)
   | .object objectType => some objectType.fields
   | .interface interfaceType => some interfaceType.fields
@@ -374,27 +380,34 @@ def builtinScalarDefinitions : List TypeDefinition :=
   [.builtinScalar .int, .builtinScalar .float, .builtinScalar .string,
     .builtinScalar .boolean, .builtinScalar .id]
 
+-- Spec 3.5 built-in scalar availability plus user-provided schema types.
 def allTypes (schema : Schema) : List TypeDefinition :=
   builtinScalarDefinitions ++ schema.types
 
+-- Spec type-system named type lookup over built-ins and explicit schema definitions.
 def lookupType (schema : Schema) (typeName : Name) : Option TypeDefinition :=
   schema.allTypes.find? (fun typeDefinition => typeDefinition.name == typeName)
 
+-- Spec object type lookup helper for schema validation and execution predicates.
 def lookupObject (schema : Schema) (typeName : Name) : Option ObjectType := do
   match schema.lookupType typeName with
   | some (.object object) => some object
   | _ => none
 
+-- Spec 3.10 input-object lookup helper for input/default validation.
 def lookupInputObject (schema : Schema) (typeName : Name) : Option InputObjectType := do
   match schema.lookupType typeName with
   | some (.inputObject inputObject) => some inputObject
   | _ => none
 
+-- Spec 3.7 interface lookup helper for implementation checks and possible types.
 def lookupInterface (schema : Schema) (typeName : Name) : Option InterfaceType := do
   match schema.lookupType typeName with
   | some (.interface interfaceType) => some interfaceType
   | _ => none
 
+-- Spec 3.6 / 3.7 interface implementation transitivity, fuel-bounded for cyclic raw
+-- schema declarations.
 def interfaceTypeImplementsInterfaceWithFuel (schema : Schema) :
     Nat -> Name -> Name -> Prop
   | 0, _interfaceName, _targetName => False
@@ -412,6 +425,7 @@ def interfaceTypeImplementsInterface (schema : Schema)
   interfaceTypeImplementsInterfaceWithFuel
     schema (schema.types.length + 1) interfaceName targetName
 
+-- Boolean counterpart to `interfaceTypeImplementsInterfaceWithFuel`.
 def interfaceTypeImplementsInterfaceWithFuelBool (schema : Schema) :
     Nat -> Name -> Name -> Bool
   | 0, _interfaceName, _targetName => false
@@ -430,6 +444,7 @@ def interfaceTypeImplementsInterfaceBool (schema : Schema)
   interfaceTypeImplementsInterfaceWithFuelBool
     schema (schema.types.length + 1) interfaceName targetName
 
+-- Spec 3.6 object/interface relationship, including transitive interface inheritance.
 def objectTypeImplementsInterface (schema : Schema)
     (objectType : ObjectType) (interfaceName : Name) : Prop :=
   ∃ declaredInterfaceName,
@@ -442,12 +457,14 @@ def objectTypeImplementsInterfaceBool (schema : Schema)
     (fun declaredInterfaceName =>
       schema.interfaceTypeImplementsInterfaceBool declaredInterfaceName interfaceName)
 
+-- Spec 5.5.2.3 `GetPossibleTypes` object universe: user-defined object types only.
 def objectTypes (schema : Schema) : List ObjectType :=
   schema.types.filterMap (fun typeDefinition =>
     match typeDefinition with
     | .object objectType => some objectType
     | _ => none)
 
+-- Spec 5.5.2.3 `GetPossibleTypes` interface case: objects implementing an interface.
 def objectTypesImplementingInterface (schema : Schema) (interfaceName : Name) :
     List Name :=
   (schema.objectTypes.filter
@@ -459,6 +476,7 @@ def lookupField (schema : Schema) (parentType fieldName : Name) : Option FieldDe
   let fields <- typeDefinition.fields?
   fields.find? (fun field => field.name == fieldName)
 
+-- Spec 5.4.1 argument definition lookup by name.
 def lookupArgumentDefinition (definitions : List InputValueDefinition)
     (argumentName : Name) : Option InputValueDefinition :=
   definitions.find? (fun definition => definition.name == argumentName)
@@ -485,6 +503,7 @@ def getPossibleTypes (schema : Schema) (typeName : Name) : List Name :=
 def typeIncludesObject (schema : Schema) (typeName objectName : Name) : Prop :=
   objectName ∈ schema.getPossibleTypes typeName
 
+-- Boolean counterpart to `typeIncludesObject`.
 def typeIncludesObjectBool (schema : Schema) (typeName objectName : Name) : Bool :=
   (schema.getPossibleTypes typeName).contains objectName
 
@@ -495,17 +514,21 @@ def typesOverlap (schema : Schema) (left right : Name) : Prop :=
     schema.typeIncludesObject left objectName
       ∧ schema.typeIncludesObject right objectName
 
+-- Boolean counterpart to `typesOverlap`.
 def typesOverlapBool (schema : Schema) (left right : Name) : Bool :=
   (schema.getPossibleTypes left).any
     (fun objectName => schema.typeIncludesObjectBool right objectName)
 
+-- Spec type-system named type existence helper.
 def typeExists (schema : Schema) (typeName : Name) : Prop :=
   schema.lookupType typeName ≠ none
 
+-- Spec object type category helper.
 def objectType (schema : Schema) (typeName : Name) : Prop :=
   ∃ objectType,
     schema.lookupType typeName = some (.object objectType)
 
+-- Spec interface type category helper.
 def interfaceType (schema : Schema) (typeName : Name) : Prop :=
   ∃ interfaceType,
     schema.lookupType typeName = some (.interface interfaceType)

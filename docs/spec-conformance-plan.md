@@ -140,16 +140,17 @@ The current proof ladder is:
    response-shape soundness, and with two same-response-name composite fields
    whose merged child leaf response names are distinct through ground normal-form
    semantic preservation, normal-form response-shape preservation, and typed
-   response-shape soundness for named composite-output fields and one-level
-   list-valued composite-output fields. The helpers
+   response-shape soundness for named composite-output fields, one-level
+   list-valued composite-output fields, and their non-null wrappers. The helpers
    `DataModel.LeafField.mergeFields_parentVariant_twoChildShapeFields` and
    `DataModel.typedResponseConformsToShapeBool_completeValue_namedComposite_listOneFuel`
    record the corresponding identical-parent-variant shape merge and list
-   complete-value conformance bridge.
-8. Unify typed response-shape soundness for the same composite merge case across
-   non-null wrappers, then lift the child selection set from the current two
-   distinct child leaf fields to the `LeafField` list abstraction. Bridge lemmas now
-   live in `GraphQL.DataModel.Store`:
+   complete-value conformance bridge. The theorem bodies are factored through
+   `_ofObjectOutput` and `_ofListOutput` variants so wrapper-specific cases stay
+   thin.
+8. Lift typed response-shape soundness for the same composite merge case from the
+   current two distinct child leaf fields to the `LeafField` list abstraction.
+   Bridge lemmas now live in `GraphQL.DataModel.Store`:
    `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
    `ObjectRecord.lookupField?_some_conformsToLookupField`,
    `Store.resolveValue_conformsToLookupField`,

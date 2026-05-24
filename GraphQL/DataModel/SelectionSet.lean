@@ -2050,7 +2050,7 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameLeafNoDirectives
     ResponseShape.Shape.lookupField]
 
 set_option linter.unusedSimpArgs false in
-theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeafNoDirectives
+theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeafNoDirectives_ofObjectOutput
     (schema : Schema) (name : Option Name) (rootType : Name)
     (variableDefinitions : List VariableDefinition)
     (parentResponseName parentFieldName childType : Name)
@@ -2060,7 +2060,8 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeaf
     (rootObject : ObjectType) (parentFieldDefinition : FieldDefinition) :
     schema.lookupType rootType = some (.object rootObject) ->
       schema.lookupField rootType parentFieldName = some parentFieldDefinition ->
-      parentFieldDefinition.outputType = .named childType ->
+      parentFieldDefinition.outputType.namedType = childType ->
+      (∀ values, ¬ Value.conformsToType schema (.list values) parentFieldDefinition.outputType) ->
       ¬ schema.getPossibleTypes childType = [] ->
       leftResponseName ≠ rightResponseName ->
         responseShapeCorrectForTypedExecutionAtRoot schema
@@ -2075,7 +2076,7 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeaf
                 .field rightResponseName rightFieldName rightArguments [] []
               ]
             ] } := by
-  intro hrootObject hparentField hparentOutput hchildNonempty hdistinct store
+  intro hrootObject hparentField hparentNamed hlistImpossible hchildNonempty hdistinct store
     variableValues root hstore _hroot hrootType
   have hdistinct' : rightResponseName ≠ leftResponseName := Ne.symm hdistinct
   have hrootEq : root.typeName = rootType :=
@@ -2092,7 +2093,7 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeaf
     intro value
     exact Store.resolveValue_ne_scalar_of_compositeLookupField schema store root.typeName
       root.id parentFieldName parentArguments parentFieldDefinition value hstore
-      hparentFieldRoot (by simpa [hparentOutput] using hchildNonempty)
+      hparentFieldRoot (by simpa [hparentNamed] using hchildNonempty)
   have hresolvedConforms :
       store.resolveValue parentFieldName parentArguments
           (Value.object root.typeName root.id) = .null
@@ -2126,7 +2127,7 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeaf
         ResponseShape.Condition.possibleTypesEmptyBool,
         ResponseShape.Condition.and, ResponseShape.Condition.forChildType,
         ResponseShape.Shape.semanticOperationInitialCondition, hrootPossibleNonempty,
-        hchildNonempty, hdistinct, hdistinct', hparentField, hparentOutput,
+        hchildNonempty, hdistinct, hdistinct', hparentField, hparentNamed,
         Schema.fieldReturnType?, TypeRef.namedType,
         LeafField.mergeFields_parentVariant_twoChildShapeFields,
         ResponseShape.Shape.mergeFields,
@@ -2153,8 +2154,7 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeaf
             simpa [hresolved] using hconforms
       have hchildType : schema.typeIncludesObject childType runtimeType :=
         object_conformsToType_typeIncludesObject schema runtimeType id childType
-          parentFieldDefinition.outputType
-          (by simp [hparentOutput, TypeRef.namedType]) hconforms
+          parentFieldDefinition.outputType hparentNamed hconforms
       have hchildCondition :
           conditionHoldsBool variableValues runtimeType
             (ResponseShape.Condition.forChildType schema
@@ -2186,7 +2186,7 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeaf
         ResponseShape.Condition.possibleTypesEmptyBool,
         ResponseShape.Condition.and, ResponseShape.Condition.forChildType,
         ResponseShape.Shape.semanticOperationInitialCondition, hrootPossibleNonempty,
-        hchildNonempty, hdistinct, hdistinct', hparentField, hparentOutput,
+        hchildNonempty, hdistinct, hdistinct', hparentField, hparentNamed,
         Schema.fieldReturnType?, TypeRef.namedType,
         LeafField.mergeFields_parentVariant_twoChildShapeFields,
         ResponseShape.Shape.mergeFields,
@@ -2205,11 +2205,10 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeaf
           rw [hresolved] at hnull
           cases hnull
       | inr hconforms =>
-          rw [hresolved, hparentOutput] at hconforms
-          cases hconforms
+          exact False.elim
+            ((hlistImpossible values) (by simpa [hresolved] using hconforms))
 
-set_option linter.unusedSimpArgs false in
-theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinctLeafNoDirectives
+theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeafNoDirectives
     (schema : Schema) (name : Option Name) (rootType : Name)
     (variableDefinitions : List VariableDefinition)
     (parentResponseName parentFieldName childType : Name)
@@ -2219,7 +2218,7 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinct
     (rootObject : ObjectType) (parentFieldDefinition : FieldDefinition) :
     schema.lookupType rootType = some (.object rootObject) ->
       schema.lookupField rootType parentFieldName = some parentFieldDefinition ->
-      parentFieldDefinition.outputType = .list (.named childType) ->
+      parentFieldDefinition.outputType = .named childType ->
       ¬ schema.getPossibleTypes childType = [] ->
       leftResponseName ≠ rightResponseName ->
         responseShapeCorrectForTypedExecutionAtRoot schema
@@ -2234,7 +2233,89 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinct
                 .field rightResponseName rightFieldName rightArguments [] []
               ]
             ] } := by
-  intro hrootObject hparentField hparentOutput hchildNonempty hdistinct store
+  intro hrootObject hparentField hparentOutput hchildNonempty hdistinct
+  exact
+    responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeafNoDirectives_ofObjectOutput
+      schema name rootType variableDefinitions parentResponseName parentFieldName childType
+      parentArguments leftResponseName leftFieldName leftArguments rightResponseName
+      rightFieldName rightArguments rootObject parentFieldDefinition hrootObject hparentField
+      (by simp [hparentOutput, TypeRef.namedType])
+      (by
+        intro values hconforms
+        simpa [hparentOutput] using hconforms)
+      hchildNonempty hdistinct
+
+theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullDistinctLeafNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (parentResponseName parentFieldName childType : Name)
+    (parentArguments : List Argument)
+    (leftResponseName leftFieldName : Name) (leftArguments : List Argument)
+    (rightResponseName rightFieldName : Name) (rightArguments : List Argument)
+    (rootObject : ObjectType) (parentFieldDefinition : FieldDefinition) :
+    schema.lookupType rootType = some (.object rootObject) ->
+      schema.lookupField rootType parentFieldName = some parentFieldDefinition ->
+      parentFieldDefinition.outputType = .nonNull (.named childType) ->
+      ¬ schema.getPossibleTypes childType = [] ->
+      leftResponseName ≠ rightResponseName ->
+        responseShapeCorrectForTypedExecutionAtRoot schema
+          { name := name,
+            rootType := rootType,
+            variableDefinitions := variableDefinitions,
+            selectionSet := [
+              .field parentResponseName parentFieldName parentArguments [] [
+                .field leftResponseName leftFieldName leftArguments [] []
+              ],
+              .field parentResponseName parentFieldName parentArguments [] [
+                .field rightResponseName rightFieldName rightArguments [] []
+              ]
+            ] } := by
+  intro hrootObject hparentField hparentOutput hchildNonempty hdistinct
+  exact
+    responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeafNoDirectives_ofObjectOutput
+      schema name rootType variableDefinitions parentResponseName parentFieldName childType
+      parentArguments leftResponseName leftFieldName leftArguments rightResponseName
+      rightFieldName rightArguments rootObject parentFieldDefinition hrootObject hparentField
+      (by simp [hparentOutput, TypeRef.namedType])
+      (by
+        intro values hconforms
+        simpa [hparentOutput] using hconforms)
+      hchildNonempty hdistinct
+
+set_option linter.unusedSimpArgs false in
+theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinctLeafNoDirectives_ofListOutput
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (parentResponseName parentFieldName childType : Name)
+    (parentArguments : List Argument)
+    (leftResponseName leftFieldName : Name) (leftArguments : List Argument)
+    (rightResponseName rightFieldName : Name) (rightArguments : List Argument)
+    (rootObject : ObjectType) (parentFieldDefinition : FieldDefinition) :
+    schema.lookupType rootType = some (.object rootObject) ->
+      schema.lookupField rootType parentFieldName = some parentFieldDefinition ->
+      parentFieldDefinition.outputType.namedType = childType ->
+      (∀ runtimeType id,
+        ¬ Value.conformsToType schema (.object runtimeType id)
+          parentFieldDefinition.outputType) ->
+      (∀ values,
+        Value.conformsToType schema (.list values) parentFieldDefinition.outputType ->
+          ∀ value, value ∈ values -> Value.conformsToType schema value (.named childType)) ->
+      ¬ schema.getPossibleTypes childType = [] ->
+      leftResponseName ≠ rightResponseName ->
+        responseShapeCorrectForTypedExecutionAtRoot schema
+          { name := name,
+            rootType := rootType,
+            variableDefinitions := variableDefinitions,
+            selectionSet := [
+              .field parentResponseName parentFieldName parentArguments [] [
+                .field leftResponseName leftFieldName leftArguments [] []
+              ],
+              .field parentResponseName parentFieldName parentArguments [] [
+                .field rightResponseName rightFieldName rightArguments [] []
+              ]
+            ] } := by
+  intro hrootObject hparentField hparentNamed hobjectImpossible hvaluesFromList
+    hchildNonempty hdistinct store
     variableValues root hstore _hroot hrootType
   have hdistinct' : rightResponseName ≠ leftResponseName := Ne.symm hdistinct
   have hrootEq : root.typeName = rootType :=
@@ -2251,7 +2332,7 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinct
     intro value
     exact Store.resolveValue_ne_scalar_of_compositeLookupField schema store root.typeName
       root.id parentFieldName parentArguments parentFieldDefinition value hstore
-      hparentFieldRoot (by simpa [hparentOutput, TypeRef.namedType] using hchildNonempty)
+      hparentFieldRoot (by simpa [hparentNamed] using hchildNonempty)
   have hresolvedConforms :
       store.resolveValue parentFieldName parentArguments
           (Value.object root.typeName root.id) = .null
@@ -2285,7 +2366,7 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinct
         ResponseShape.Condition.possibleTypesEmptyBool,
         ResponseShape.Condition.and, ResponseShape.Condition.forChildType,
         ResponseShape.Shape.semanticOperationInitialCondition, hrootPossibleNonempty,
-        hchildNonempty, hdistinct, hdistinct', hparentField, hparentOutput,
+        hchildNonempty, hdistinct, hdistinct', hparentField, hparentNamed,
         Schema.fieldReturnType?, TypeRef.namedType,
         LeafField.mergeFields_parentVariant_twoChildShapeFields,
         ResponseShape.Shape.mergeFields,
@@ -2306,8 +2387,8 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinct
           rw [hresolved] at hnull
           cases hnull
       | inr hconforms =>
-          rw [hresolved, hparentOutput] at hconforms
-          cases hconforms
+          exact False.elim
+            ((hobjectImpossible runtimeType id) (by simpa [hresolved] using hconforms))
   | list values =>
       have hvaluesConform :
           ∀ value, value ∈ values ->
@@ -2317,8 +2398,7 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinct
             rw [hresolved] at hnull
             cases hnull
         | inr hconforms =>
-            rw [hresolved, hparentOutput] at hconforms
-            exact hconforms
+            exact hvaluesFromList values (by simpa [hresolved] using hconforms)
       have hlistConforms :
           (values.map
             (TypedExecution.completeValue schema store variableValues 11 childType
@@ -2379,7 +2459,7 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinct
         ResponseShape.Condition.possibleTypesEmptyBool,
         ResponseShape.Condition.and, ResponseShape.Condition.forChildType,
         ResponseShape.Shape.semanticOperationInitialCondition, hrootPossibleNonempty,
-        hchildNonempty, hdistinct, hdistinct', hparentField, hparentOutput,
+        hchildNonempty, hdistinct, hdistinct', hparentField, hparentNamed,
         Schema.fieldReturnType?, TypeRef.namedType,
         LeafField.mergeFields_parentVariant_twoChildShapeFields,
         ResponseShape.Shape.mergeFields,
@@ -2392,6 +2472,86 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinct
         variantHeaderActiveBool, conditionHoldsBool,
         possibleTypesHoldBool_of_typeIncludesObject schema hrootType,
         hlistConforms, ResponseShape.Shape.lookupField]
+
+theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinctLeafNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (parentResponseName parentFieldName childType : Name)
+    (parentArguments : List Argument)
+    (leftResponseName leftFieldName : Name) (leftArguments : List Argument)
+    (rightResponseName rightFieldName : Name) (rightArguments : List Argument)
+    (rootObject : ObjectType) (parentFieldDefinition : FieldDefinition) :
+    schema.lookupType rootType = some (.object rootObject) ->
+      schema.lookupField rootType parentFieldName = some parentFieldDefinition ->
+      parentFieldDefinition.outputType = .list (.named childType) ->
+      ¬ schema.getPossibleTypes childType = [] ->
+      leftResponseName ≠ rightResponseName ->
+        responseShapeCorrectForTypedExecutionAtRoot schema
+          { name := name,
+            rootType := rootType,
+            variableDefinitions := variableDefinitions,
+            selectionSet := [
+              .field parentResponseName parentFieldName parentArguments [] [
+                .field leftResponseName leftFieldName leftArguments [] []
+              ],
+              .field parentResponseName parentFieldName parentArguments [] [
+                .field rightResponseName rightFieldName rightArguments [] []
+              ]
+            ] } := by
+  intro hrootObject hparentField hparentOutput hchildNonempty hdistinct
+  exact
+    responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinctLeafNoDirectives_ofListOutput
+      schema name rootType variableDefinitions parentResponseName parentFieldName childType
+      parentArguments leftResponseName leftFieldName leftArguments rightResponseName
+      rightFieldName rightArguments rootObject parentFieldDefinition hrootObject hparentField
+      (by simp [hparentOutput, TypeRef.namedType])
+      (by
+        intro runtimeType id hconforms
+        simpa [hparentOutput] using hconforms)
+      (by
+        intro values hconforms
+        simpa [hparentOutput] using hconforms)
+      hchildNonempty hdistinct
+
+theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullListDistinctLeafNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (parentResponseName parentFieldName childType : Name)
+    (parentArguments : List Argument)
+    (leftResponseName leftFieldName : Name) (leftArguments : List Argument)
+    (rightResponseName rightFieldName : Name) (rightArguments : List Argument)
+    (rootObject : ObjectType) (parentFieldDefinition : FieldDefinition) :
+    schema.lookupType rootType = some (.object rootObject) ->
+      schema.lookupField rootType parentFieldName = some parentFieldDefinition ->
+      parentFieldDefinition.outputType = .nonNull (.list (.named childType)) ->
+      ¬ schema.getPossibleTypes childType = [] ->
+      leftResponseName ≠ rightResponseName ->
+        responseShapeCorrectForTypedExecutionAtRoot schema
+          { name := name,
+            rootType := rootType,
+            variableDefinitions := variableDefinitions,
+            selectionSet := [
+              .field parentResponseName parentFieldName parentArguments [] [
+                .field leftResponseName leftFieldName leftArguments [] []
+              ],
+              .field parentResponseName parentFieldName parentArguments [] [
+                .field rightResponseName rightFieldName rightArguments [] []
+              ]
+            ] } := by
+  intro hrootObject hparentField hparentOutput hchildNonempty hdistinct
+  exact
+    responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinctLeafNoDirectives_ofListOutput
+      schema name rootType variableDefinitions parentResponseName parentFieldName childType
+      parentArguments leftResponseName leftFieldName leftArguments rightResponseName
+      rightFieldName rightArguments rootObject parentFieldDefinition hrootObject hparentField
+      (by simp [hparentOutput, TypeRef.namedType])
+      (by
+        intro runtimeType id hconforms
+        simpa [hparentOutput] using hconforms)
+      (by
+        intro values hconforms
+        simpa [hparentOutput] using hconforms)
+      hchildNonempty hdistinct
 
 set_option linter.unusedSimpArgs false in
 theorem responseShapeCorrectForTypedExecutionAtRoot_twoDistinctLeafNoDirectives

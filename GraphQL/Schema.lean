@@ -36,6 +36,11 @@ def namedType : TypeRef -> Name
   | .list inner => inner.namedType
   | .nonNull inner => inner.namedType
 
+def size : TypeRef -> Nat
+  | .named _ => 1
+  | .list inner => 1 + inner.size
+  | .nonNull inner => 1 + inner.size
+
 end TypeRef
 
 -- Spec 2.10 `Value`: partial; literals and variables are represented, but

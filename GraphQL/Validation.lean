@@ -6,10 +6,9 @@ Spec reference: GraphQL September 2025.
   and 5.8 Variables: this file states operation validity as a proposition over the modeled
   schema and operation syntax.
 - Fidelity note: the model is intentionally partial. It omits document-level
-  multi-operation rules, mutation/subscription rules, directive
-  definition/location/uniqueness checks, full input coercion and literal type checking,
-  all-variables-used, variable usage compatibility, fragment-must-be-used, and meta-field
-  rules.
+  multi-operation rules, mutation/subscription rules, custom directive definitions, full
+  input coercion and literal type checking, all-variables-used, general variable usage
+  compatibility, fragment-must-be-used, and meta-field rules.
 -/
 namespace GraphQL
 
@@ -21,34 +20,145 @@ def getFragmentDefinition? (fragments : List FragmentDefinition)
     (name : Name) : Option FragmentDefinition :=
   FragmentDefinition.find? fragments name
 
--- Spec 5.7 Directives: not faithful yet; all modeled directives are accepted without
--- checking definition, location, uniqueness, or argument validity.
-def directivesValid (_directives : List DirectiveApplication) : Prop :=
-  True
-
 -- Spec 5.8.3 All Variable Uses Defined: partial helper for operation-level variable
 -- lookup.
 def getVariableDefinition? (variableDefinitions : List VariableDefinition)
     (name : Name) : Option VariableDefinition :=
   variableDefinitions.find? (fun variableDefinition => variableDefinition.name == name)
 
--- Spec 5.6.1 Values of Correct Type and 5.8.3 All Variable Uses Defined: partial; checks
--- expected input type and variable existence, but not literal coercion or variable usage
--- type compatibility.
+def constInputValueNonNull : ConstInputValue -> Prop
+  | .null => False
+  | _ => True
+
+def inputValueNonNull : InputValue -> Prop
+  | .null => False
+  | _ => True
+
+def getInputObjectField? (fields : List (Name × InputValue))
+    (name : Name) : Option InputValue :=
+  match fields with
+  | [] => none
+  | (fieldName, value) :: rest =>
+      if fieldName = name then some value else getInputObjectField? rest name
+
+-- Spec 5.4.3 / 5.6.4 required input entries: non-null type with no default.
+def isRequiredInputValueDefinition (definition : InputValueDefinition) : Prop :=
+  match definition.inputType with
+  | .nonNull _ => definition.defaultValue = none
+  | _ => False
+
+mutual
+  -- Spec 5.6.1 Values of Correct Type, 5.6.2-5.6.4 input object rules, and 5.8.3
+  -- variable existence. Literal coercion remains deliberately shallow, but input-object
+  -- structure is checked recursively.
+  def valueIsCorrectTypeWithFuel (schema : Schema)
+      (variableDefinitions : List VariableDefinition) :
+      Nat -> InputValue -> TypeRef -> Prop
+    | 0, _value, _expectedType => False
+    | fuel + 1, value, expectedType =>
+        expectedType.isInputType schema
+          ∧ match value, expectedType with
+            | .variable variableName, _ =>
+                ∃ variableDefinition,
+                  getVariableDefinition? variableDefinitions variableName =
+                    some variableDefinition
+            | .null, .nonNull _ => False
+            | .null, _ => True
+            | _, .nonNull inner =>
+                valueIsCorrectTypeWithFuel schema variableDefinitions fuel value inner
+            | .list values, .list inner =>
+                ∀ item, item ∈ values ->
+                  valueIsCorrectTypeWithFuel schema variableDefinitions fuel item inner
+            | .list _values, _ => False
+            | .object fields, .named typeName =>
+                ∃ inputObject,
+                  schema.lookupInputObject typeName = some inputObject
+                    ∧ inputObjectFieldsValidWithFuel schema variableDefinitions fuel
+                      inputObject.inputFields fields
+            | .object fields, .list inner =>
+                inputObjectAsListItemValidWithFuel schema variableDefinitions fuel
+                  fields inner
+            | _value, .list inner =>
+                valueIsCorrectTypeWithFuel schema variableDefinitions fuel value inner
+            | _value, _expectedType => True
+
+  def inputObjectFieldsValidWithFuel (schema : Schema)
+      (variableDefinitions : List VariableDefinition) :
+      Nat -> List InputValueDefinition -> List (Name × InputValue) -> Prop
+    | 0, _definitions, _fields => False
+    | fuel + 1, definitions, fields =>
+        (fields.map Prod.fst).Nodup
+          ∧ (∀ name value, (name, value) ∈ fields ->
+            ∃ definition,
+              Schema.lookupArgumentDefinition definitions name = some definition
+                ∧ valueIsCorrectTypeWithFuel schema variableDefinitions fuel
+                  value definition.inputType)
+          ∧ (∀ definition, definition ∈ definitions ->
+            isRequiredInputValueDefinition definition ->
+              ∃ value,
+                getInputObjectField? fields definition.name = some value
+                  ∧ inputValueNonNull value)
+
+  def inputObjectAsListItemValidWithFuel (schema : Schema)
+      (variableDefinitions : List VariableDefinition) :
+      Nat -> List (Name × InputValue) -> TypeRef -> Prop
+    | 0, _fields, _inner => False
+    | fuel + 1, fields, inner =>
+        valueIsCorrectTypeWithFuel schema variableDefinitions fuel
+          (.object fields) inner
+end
+
 def valueIsCorrectType (schema : Schema) (variableDefinitions : List VariableDefinition)
     (value : InputValue) (expectedType : TypeRef) : Prop :=
-  expectedType.isInputType schema
-    ∧ match value with
-      | .variable variableName =>
-          ∃ variableDefinition,
-            getVariableDefinition? variableDefinitions variableName = some variableDefinition
-      | _ => True
+  valueIsCorrectTypeWithFuel schema variableDefinitions
+    (value.size + expectedType.size + 1) value expectedType
 
--- Spec 2.10 `Value Const` / 5.6.1 defaults: defaults are structurally constant. Literal
--- coercion remains outside the current fragment, matching `valueIsCorrectType`.
+-- Spec 2.10 `Value Const` / 5.6.1 defaults: defaults are structurally constant and use
+-- the same scoped validation as runtime input values.
 def constValueIsCorrectType (schema : Schema)
-    (_value : ConstInputValue) (expectedType : TypeRef) : Prop :=
-  expectedType.isInputType schema
+    (value : ConstInputValue) (expectedType : TypeRef) : Prop :=
+  valueIsCorrectType schema [] value.toInputValue expectedType
+
+def booleanNonNullType : TypeRef :=
+  .nonNull (.named "Boolean")
+
+def variableUsableAtNonNullBoolean (schema : Schema)
+    (variableDefinition : VariableDefinition) : Prop :=
+  variableDefinition.typeRef.isInputType schema
+    ∧ (variableDefinition.typeRef = booleanNonNullType
+      ∨ (variableDefinition.typeRef = .named "Boolean"
+        ∧ ∃ defaultValue,
+          variableDefinition.defaultValue = some defaultValue
+            ∧ constInputValueNonNull defaultValue))
+
+def directiveIfArgumentValid (schema : Schema)
+    (variableDefinitions : List VariableDefinition) : InputValue -> Prop
+  | .boolean _ => True
+  | .variable variableName =>
+      ∃ variableDefinition,
+        getVariableDefinition? variableDefinitions variableName = some variableDefinition
+          ∧ variableUsableAtNonNullBoolean schema variableDefinition
+  | _ => False
+
+def directiveName : DirectiveApplication -> Name
+  | .skip _ => "skip"
+  | .include _ => "include"
+
+def directiveValid (schema : Schema)
+    (variableDefinitions : List VariableDefinition) : DirectiveApplication -> Prop
+  | .skip ifArgument =>
+      directiveIfArgumentValid schema variableDefinitions ifArgument
+  | .include ifArgument =>
+      directiveIfArgumentValid schema variableDefinitions ifArgument
+
+-- Spec 5.7 Directives for the modeled executable subset: `@skip` and `@include` are
+-- defined at selection locations, are non-repeatable, and require `if: Boolean!`.
+def directivesValid (schema : Schema)
+    (variableDefinitions : List VariableDefinition)
+    (directives : List DirectiveApplication) : Prop :=
+  (directives.map directiveName).Nodup
+    ∧ ∀ directive, directive ∈ directives ->
+      directiveValid schema variableDefinitions directive
 
 -- Spec 5.8.2 Variables Are Input Types: partial; also validates default values using the
 -- simplified `valueIsCorrectType`.
@@ -82,13 +192,10 @@ def getArgument? (arguments : List Argument) (name : Name) : Option Argument :=
 -- Spec 5.4.3 Required Arguments: faithful for identifying non-null arguments without
 -- defaults.
 def isRequiredArgument (definition : InputValueDefinition) : Prop :=
-  match definition.inputType with
-  | .nonNull _ => definition.defaultValue = none
-  | _ => False
+  isRequiredInputValueDefinition definition
 
 -- Spec 5.4.1-5.4.3 Argument validation: partial; handles names, uniqueness, required
--- arguments, and simplified value validity, but does not reject explicit null for
--- required arguments.
+-- arguments, and simplified value validity.
 def argumentsValid (schema : Schema) (definitions : List InputValueDefinition)
     (variableDefinitions : List VariableDefinition) (arguments : List Argument) : Prop :=
   (arguments.map Argument.name).Nodup
@@ -97,7 +204,8 @@ def argumentsValid (schema : Schema) (definitions : List InputValueDefinition)
     ∧ (∀ definition, definition ∈ definitions ->
       isRequiredArgument definition ->
         ∃ argument,
-          getArgument? arguments definition.name = some argument)
+          getArgument? arguments definition.name = some argument
+            ∧ inputValueNonNull argument.value)
 
 def fragmentsSize (fragments : List FragmentDefinition) : Nat :=
   fragments.foldl (fun total fragment => total + fragment.size) 0
@@ -153,23 +261,23 @@ mutual
   def selectionValid (schema : Schema) (fragments : List FragmentDefinition)
       (variableDefinitions : List VariableDefinition) (parentType : Name) : Selection -> Prop
     | .field _responseName fieldName arguments directives selectionSet =>
-        directivesValid directives
+        directivesValid schema variableDefinitions directives
           ∧ ∃ fieldDefinition,
             schema.lookupField parentType fieldName = some fieldDefinition
               ∧ argumentsValid schema fieldDefinition.arguments variableDefinitions arguments
               ∧ fieldSelectionSetValid schema fragments variableDefinitions
                 fieldDefinition selectionSet
     | .fragmentSpread fragmentName directives =>
-        directivesValid directives
+        directivesValid schema variableDefinitions directives
           ∧ ∃ fragmentDefinition,
             getFragmentDefinition? fragments fragmentName = some fragmentDefinition
               ∧ schema.typesOverlap parentType fragmentDefinition.typeCondition
     | .inlineFragment none directives selectionSet =>
-        directivesValid directives
+        directivesValid schema variableDefinitions directives
           ∧ selectionSet ≠ []
           ∧ selectionSetValid schema fragments variableDefinitions parentType selectionSet
     | .inlineFragment (some typeCondition) directives selectionSet =>
-        directivesValid directives
+        directivesValid schema variableDefinitions directives
           ∧ schema.isCompositeType typeCondition
           ∧ schema.typesOverlap parentType typeCondition
           ∧ selectionSet ≠ []

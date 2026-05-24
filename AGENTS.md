@@ -121,8 +121,14 @@ and
 `DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullListLeafFieldsNoDirectives`.
 The older two-child public theorem names for named, non-null named, list, and
 non-null list composite parents now remain as compatibility wrappers delegating
-to the generalized `LeafField` wrappers. The next boundary is moving on to
-normal-form/response-shape properties for larger selection sets.
+to the generalized `LeafField` wrappers. Normalization and ground normal-form
+correctness are now generalized for two same-response-name composite parent
+fields whose child selection sets are arbitrary direct `LeafField` lists:
+`LeafField.normalizeSemanticOperation_twoSameCompositeLeafFieldsNoDirectives`
+and
+`DataModel.groundNormalFormCorrect_twoSameCompositeLeafFieldsNoDirectives`.
+The next boundary is lifting normal-form response-shape preservation for that
+same generalized `LeafField` composite merge case.
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
 `ObjectRecord.lookupField?_some_conformsToLookupField`,

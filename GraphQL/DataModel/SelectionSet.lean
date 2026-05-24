@@ -1221,6 +1221,102 @@ theorem normalizeSemanticOperation_toSelectionSet (schema : Schema)
     normalizeSelectionSet_toSelectionSet schema fields.length rootType fields
       (Nat.le_refl fields.length) hnodup]
 
+theorem normalizeSemanticOperation_twoSameCompositeLeafFieldsNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (parentResponseName parentFieldName : Name) (parentArguments : List Argument)
+    (leftFields rightFields : List LeafField) :
+    responseNamesNodup (leftFields ++ rightFields) ->
+      NormalForm.normalizeSemanticOperation schema
+        { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := [
+            .field parentResponseName parentFieldName parentArguments []
+              (toSelectionSet leftFields),
+            .field parentResponseName parentFieldName parentArguments []
+              (toSelectionSet rightFields)
+          ] }
+        = { name := name,
+            rootType := rootType,
+            variableDefinitions := variableDefinitions,
+            selectionSet := [
+              .field parentResponseName parentFieldName parentArguments []
+                (toSelectionSet (leftFields ++ rightFields))
+            ] } := by
+  intro hnodup
+  let childFuel := leftFields.length + rightFields.length + 1
+  have hchildFuel :
+      (leftFields ++ rightFields).length <= childFuel := by
+    simp [childFuel]
+  have hnormalizeChild :
+      ∀ childType,
+        NormalForm.normalizeSelectionSet schema
+          childFuel childType
+          (toSelectionSet leftFields ++ toSelectionSet rightFields)
+          = toSelectionSet (leftFields ++ rightFields) := by
+    intro childType
+    simpa [toSelectionSet_append] using
+      normalizeSelectionSet_toSelectionSet schema
+        childFuel childType
+        (leftFields ++ rightFields) hchildFuel hnodup
+  cases hparent : schema.fieldReturnType? rootType parentFieldName with
+  | none =>
+      rw [NormalForm.normalizeSemanticOperation]
+      simp [Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+        toSelectionSet_size]
+      rw [show 1 + leftFields.length + (1 + rightFields.length) = childFuel + 1 by
+        simp [childFuel]
+        omega]
+      rw [NormalForm.normalizeSelectionSet]
+      change
+        NormalForm.mergeFieldSelections.normalizeSelectionSet schema (childFuel + 1)
+          rootType
+          [
+            Semantic.Selection.field parentResponseName parentFieldName parentArguments []
+              (toSelectionSet leftFields),
+            Semantic.Selection.field parentResponseName parentFieldName parentArguments []
+              (toSelectionSet rightFields)
+          ]
+        =
+          [
+            Semantic.Selection.field parentResponseName parentFieldName parentArguments []
+              (toSelectionSet leftFields ++ toSelectionSet rightFields)
+          ]
+      simp [childFuel, hparent, NormalForm.mergeFieldSelections.normalizeSelectionSet,
+        NormalForm.mergeFieldSelections, Semantic.SelectionSet.fieldsWithResponseName,
+        Semantic.SelectionSet.withoutFieldsWithResponseName,
+        Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
+        Semantic.Selection.subselections]
+  | some childType =>
+      rw [NormalForm.normalizeSemanticOperation]
+      simp [Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+        toSelectionSet_size]
+      rw [show 1 + leftFields.length + (1 + rightFields.length) = childFuel + 1 by
+        simp [childFuel]
+        omega]
+      rw [NormalForm.normalizeSelectionSet]
+      change
+        NormalForm.mergeFieldSelections.normalizeSelectionSet schema (childFuel + 1)
+          rootType
+          [
+            Semantic.Selection.field parentResponseName parentFieldName parentArguments []
+              (toSelectionSet leftFields),
+            Semantic.Selection.field parentResponseName parentFieldName parentArguments []
+              (toSelectionSet rightFields)
+          ]
+        =
+          [
+            Semantic.Selection.field parentResponseName parentFieldName parentArguments []
+              (toSelectionSet leftFields ++ toSelectionSet rightFields)
+          ]
+      simp [childFuel, hparent, NormalForm.mergeFieldSelections.normalizeSelectionSet,
+        NormalForm.mergeFieldSelections, Semantic.SelectionSet.fieldsWithResponseName,
+        Semantic.SelectionSet.withoutFieldsWithResponseName,
+        Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
+        Semantic.Selection.subselections]
+      simpa [childFuel, toSelectionSet_append] using hnormalizeChild childType
+
 theorem selectionSetGroundTyped_toSelectionSet
     (schema : Schema) (fields : List LeafField) :
     NormalForm.selectionSetGroundTyped schema (toSelectionSet fields) := by
@@ -1915,6 +2011,37 @@ theorem groundNormalFormCorrect_twoSameCompositeDistinctLeafNoDirectives
   intro store variableValues root _hstore _hroot
   simp [executeSemanticQueryWithFuel, Execution.executeSemanticQueryFuel,
     Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+    Execution.executeSelectionSet, Execution.collectFields, Execution.collectSelection,
+    Execution.selectionDirectivesAllowBool, Execution.mergeExecutableGroups,
+    Execution.addExecutableGroup, Execution.addExecutableFields,
+    Execution.addExecutableField, Execution.executeCollectedFields,
+    Execution.executeField, Execution.mergedFieldSelectionSet]
+
+theorem groundNormalFormCorrect_twoSameCompositeLeafFieldsNoDirectives
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (parentResponseName parentFieldName : Name) (parentArguments : List Argument)
+    (leftFields rightFields : List LeafField) :
+    LeafField.responseNamesNodup (leftFields ++ rightFields) ->
+      groundNormalFormCorrect schema
+        { name := name,
+          rootType := rootType,
+          variableDefinitions := variableDefinitions,
+          selectionSet := [
+            .field parentResponseName parentFieldName parentArguments []
+              (LeafField.toSelectionSet leftFields),
+            .field parentResponseName parentFieldName parentArguments []
+              (LeafField.toSelectionSet rightFields)
+          ] } := by
+  intro hnodup
+  rw [groundNormalFormCorrect]
+  rw [LeafField.normalizeSemanticOperation_twoSameCompositeLeafFieldsNoDirectives
+    schema name rootType variableDefinitions parentResponseName parentFieldName
+    parentArguments leftFields rightFields hnodup]
+  intro store variableValues root _hstore _hroot
+  simp [executeSemanticQueryWithFuel, Execution.executeSemanticQueryFuel,
+    Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+    LeafField.toSelectionSet_size, LeafField.toSelectionSet_append,
     Execution.executeSelectionSet, Execution.collectFields, Execution.collectSelection,
     Execution.selectionDirectivesAllowBool, Execution.mergeExecutableGroups,
     Execution.addExecutableGroup, Execution.addExecutableFields,

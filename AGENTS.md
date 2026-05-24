@@ -119,8 +119,9 @@ cover list and non-null list fields:
 `DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListLeafFieldsNoDirectives`
 and
 `DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullListLeafFieldsNoDirectives`.
-The next boundary is deciding whether to add compatibility wrappers from the old
-two-leaf theorem names to the generalized `LeafField` wrappers, or move on to
+The older two-child public theorem names for named, non-null named, list, and
+non-null list composite parents now remain as compatibility wrappers delegating
+to the generalized `LeafField` wrappers. The next boundary is moving on to
 normal-form/response-shape properties for larger selection sets.
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,

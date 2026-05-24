@@ -3178,16 +3178,17 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeaf
               ]
             ] } := by
   intro hrootObject hparentField hparentOutput hchildNonempty hdistinct
-  exact
-    responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeafNoDirectives_ofObjectOutput
+  simpa [LeafField.toSelectionSet, LeafField.toSelection] using
+    responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeLeafFieldsNoDirectives
       schema name rootType variableDefinitions parentResponseName parentFieldName childType
-      parentArguments leftResponseName leftFieldName leftArguments rightResponseName
-      rightFieldName rightArguments rootObject parentFieldDefinition hrootObject hparentField
-      (by simp [hparentOutput, TypeRef.namedType])
+      parentArguments
+      [LeafField.mk leftResponseName leftFieldName leftArguments]
+      [LeafField.mk rightResponseName rightFieldName rightArguments]
+      rootObject parentFieldDefinition hrootObject hparentField hparentOutput
+      hchildNonempty
       (by
-        intro values hconforms
-        simpa [hparentOutput] using hconforms)
-      hchildNonempty hdistinct
+        simp [LeafField.responseNamesNodup, LeafField.responseNames,
+          hdistinct])
 
 theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullDistinctLeafNoDirectives
     (schema : Schema) (name : Option Name) (rootType : Name)
@@ -3215,16 +3216,17 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullDisti
               ]
             ] } := by
   intro hrootObject hparentField hparentOutput hchildNonempty hdistinct
-  exact
-    responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeafNoDirectives_ofObjectOutput
+  simpa [LeafField.toSelectionSet, LeafField.toSelection] using
+    responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullLeafFieldsNoDirectives
       schema name rootType variableDefinitions parentResponseName parentFieldName childType
-      parentArguments leftResponseName leftFieldName leftArguments rightResponseName
-      rightFieldName rightArguments rootObject parentFieldDefinition hrootObject hparentField
-      (by simp [hparentOutput, TypeRef.namedType])
+      parentArguments
+      [LeafField.mk leftResponseName leftFieldName leftArguments]
+      [LeafField.mk rightResponseName rightFieldName rightArguments]
+      rootObject parentFieldDefinition hrootObject hparentField hparentOutput
+      hchildNonempty
       (by
-        intro values hconforms
-        simpa [hparentOutput] using hconforms)
-      hchildNonempty hdistinct
+        simp [LeafField.responseNamesNodup, LeafField.responseNames,
+          hdistinct])
 
 set_option linter.unusedSimpArgs false in
 theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeLeafFieldsNoDirectives_ofListOutput
@@ -4010,19 +4012,17 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinct
               ]
             ] } := by
   intro hrootObject hparentField hparentOutput hchildNonempty hdistinct
-  exact
-    responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinctLeafNoDirectives_ofListOutput
+  simpa [LeafField.toSelectionSet, LeafField.toSelection] using
+    responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListLeafFieldsNoDirectives
       schema name rootType variableDefinitions parentResponseName parentFieldName childType
-      parentArguments leftResponseName leftFieldName leftArguments rightResponseName
-      rightFieldName rightArguments rootObject parentFieldDefinition hrootObject hparentField
-      (by simp [hparentOutput, TypeRef.namedType])
+      parentArguments
+      [LeafField.mk leftResponseName leftFieldName leftArguments]
+      [LeafField.mk rightResponseName rightFieldName rightArguments]
+      rootObject parentFieldDefinition hrootObject hparentField hparentOutput
+      hchildNonempty
       (by
-        intro runtimeType id hconforms
-        simpa [hparentOutput] using hconforms)
-      (by
-        intro values hconforms
-        simpa [hparentOutput] using hconforms)
-      hchildNonempty hdistinct
+        simp [LeafField.responseNamesNodup, LeafField.responseNames,
+          hdistinct])
 
 theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullListDistinctLeafNoDirectives
     (schema : Schema) (name : Option Name) (rootType : Name)
@@ -4050,19 +4050,17 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullListD
               ]
             ] } := by
   intro hrootObject hparentField hparentOutput hchildNonempty hdistinct
-  exact
-    responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinctLeafNoDirectives_ofListOutput
+  simpa [LeafField.toSelectionSet, LeafField.toSelection] using
+    responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullListLeafFieldsNoDirectives
       schema name rootType variableDefinitions parentResponseName parentFieldName childType
-      parentArguments leftResponseName leftFieldName leftArguments rightResponseName
-      rightFieldName rightArguments rootObject parentFieldDefinition hrootObject hparentField
-      (by simp [hparentOutput, TypeRef.namedType])
+      parentArguments
+      [LeafField.mk leftResponseName leftFieldName leftArguments]
+      [LeafField.mk rightResponseName rightFieldName rightArguments]
+      rootObject parentFieldDefinition hrootObject hparentField hparentOutput
+      hchildNonempty
       (by
-        intro runtimeType id hconforms
-        simpa [hparentOutput] using hconforms)
-      (by
-        intro values hconforms
-        simpa [hparentOutput] using hconforms)
-      hchildNonempty hdistinct
+        simp [LeafField.responseNamesNodup, LeafField.responseNames,
+          hdistinct])
 
 set_option linter.unusedSimpArgs false in
 theorem responseShapeCorrectForTypedExecutionAtRoot_twoDistinctLeafNoDirectives

@@ -181,9 +181,10 @@ The current proof ladder is:
    `DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListLeafFieldsNoDirectives`
    and
    `DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullListLeafFieldsNoDirectives`.
-   Next, either add compatibility wrappers from the old two-leaf theorem names
-   to the generalized `LeafField` wrappers, or continue into
-   normal-form/response-shape properties for larger selection sets.
+   The older two-child public theorem names for named, non-null named, list, and
+   non-null list composite parents now delegate to those generalized `LeafField`
+   wrappers. Next, continue into normal-form/response-shape properties for
+   larger selection sets.
    Bridge lemmas now live in `GraphQL.DataModel.Store`:
    `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
    `ObjectRecord.lookupField?_some_conformsToLookupField`,

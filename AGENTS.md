@@ -110,8 +110,12 @@ For list-output generalization, the reusable element/list bridges are
 `LeafField.typedResponseConformsToShape_completeValue_namedCompositeSelectionSetAnyFuel`
 and
 `LeafField.typedResponseConformsToShape_completeValue_namedCompositeListSelectionSetAnyFuel`.
-The next boundary is using those bridges to prove the generalized list-output
-parent theorem.
+The generalized list-output parent theorem is
+`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeLeafFieldsNoDirectives_ofListOutput`.
+It handles two same-response-name composite parent selections whose child
+selection sets are arbitrary direct `LeafField` lists and whose resolved parent
+value is a list of named child composite values. The next boundary is adding the
+thin named/non-null list-output wrappers.
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
 `ObjectRecord.lookupField?_some_conformsToLookupField`,

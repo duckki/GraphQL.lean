@@ -3227,6 +3227,499 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullDisti
       hchildNonempty hdistinct
 
 set_option linter.unusedSimpArgs false in
+theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeLeafFieldsNoDirectives_ofListOutput
+    (schema : Schema) (name : Option Name) (rootType : Name)
+    (variableDefinitions : List VariableDefinition)
+    (parentResponseName parentFieldName childType : Name)
+    (parentArguments : List Argument)
+    (leftFields rightFields : List LeafField)
+    (rootObject : ObjectType) (parentFieldDefinition : FieldDefinition) :
+    schema.lookupType rootType = some (.object rootObject) ->
+      schema.lookupField rootType parentFieldName = some parentFieldDefinition ->
+      parentFieldDefinition.outputType.namedType = childType ->
+      (∀ runtimeType id,
+        ¬ Value.conformsToType schema (.object runtimeType id)
+          parentFieldDefinition.outputType) ->
+      (∀ values,
+        Value.conformsToType schema (.list values) parentFieldDefinition.outputType ->
+          ∀ value, value ∈ values -> Value.conformsToType schema value (.named childType)) ->
+      ¬ schema.getPossibleTypes childType = [] ->
+      LeafField.responseNamesNodup (leftFields ++ rightFields) ->
+        responseShapeCorrectForTypedExecutionAtRoot schema
+          { name := name,
+            rootType := rootType,
+            variableDefinitions := variableDefinitions,
+            selectionSet := [
+              .field parentResponseName parentFieldName parentArguments []
+                (LeafField.toSelectionSet leftFields),
+              .field parentResponseName parentFieldName parentArguments []
+                (LeafField.toSelectionSet rightFields)
+            ] } := by
+  intro hrootObject hparentField hparentNamed hobjectImpossible hvaluesFromList
+    hchildNonempty hchildNodup store variableValues root hstore _hroot hrootType
+  have hrootEq : root.typeName = rootType :=
+    typeIncludesObject_eq_of_lookupObjectType schema hrootObject hrootType
+  have hrootPossibleNonempty : ¬ schema.getPossibleTypes rootType = [] :=
+    possibleTypes_nonempty_of_typeIncludesObject schema hrootType
+  have hparentFieldRoot :
+      schema.lookupField root.typeName parentFieldName = some parentFieldDefinition := by
+    simpa [hrootEq] using hparentField
+  have hnotScalar :
+      ∀ value,
+        store.resolveValue parentFieldName parentArguments
+            (Value.object root.typeName root.id) ≠ .scalar value := by
+    intro value
+    exact Store.resolveValue_ne_scalar_of_compositeLookupField schema store root.typeName
+      root.id parentFieldName parentArguments parentFieldDefinition value hstore
+      hparentFieldRoot (by simpa [hparentNamed] using hchildNonempty)
+  have hresolvedConforms :
+      store.resolveValue parentFieldName parentArguments
+          (Value.object root.typeName root.id) = .null
+        ∨ Value.conformsToType schema
+          (store.resolveValue parentFieldName parentArguments
+            (Value.object root.typeName root.id))
+          parentFieldDefinition.outputType :=
+    Store.resolveValue_conformsToLookupField schema store root.typeName root.id
+      parentFieldName parentArguments parentFieldDefinition hstore hparentFieldRoot
+  let childCondition : ResponseShape.Condition :=
+    { possibleTypes := some (schema.getPossibleTypes childType), booleanLiterals := [] }
+  have hchildConditionSat : childCondition.satisfiableBool = true := by
+    simp [childCondition, ResponseShape.Condition.satisfiableBool,
+      ResponseShape.Condition.hasContradictionBool,
+      ResponseShape.Condition.possibleTypesEmptyBool,
+      ResponseShape.BooleanLiteral.hasContradictionBool, hchildNonempty]
+  have hnameParts :
+      (LeafField.responseNames leftFields ++ LeafField.responseNames rightFields).Nodup := by
+    simpa [LeafField.responseNamesNodup, LeafField.responseNames, List.map_append]
+      using hchildNodup
+  have hleftNodup : LeafField.responseNamesNodup leftFields := by
+    have hparts := hnameParts
+    simp [List.nodup_append] at hparts
+    exact hparts.left
+  have hrightNodup : LeafField.responseNamesNodup rightFields := by
+    have hparts := hnameParts
+    simp [List.nodup_append] at hparts
+    exact hparts.right.left
+  have hleftShape :
+      (match LeafField.toSelectionSet leftFields with
+      | [] => ResponseShape.Shape.empty
+      | _ =>
+          ⟨ResponseShape.Shape.collectSelectionSetShapeFields schema
+            (1 + leftFields.length + (1 + rightFields.length)) childType
+            childCondition (LeafField.toSelectionSet leftFields)⟩)
+        = ⟨LeafField.toShapeFields childCondition leftFields⟩ :=
+    LeafField.childShape_toSelectionSet schema
+      (1 + leftFields.length + (1 + rightFields.length)) childType childCondition
+      leftFields (by omega) hchildConditionSat hleftNodup
+  have hrightShape :
+      (match LeafField.toSelectionSet rightFields with
+      | [] => ResponseShape.Shape.empty
+      | _ =>
+          ⟨ResponseShape.Shape.collectSelectionSetShapeFields schema
+            (1 + leftFields.length + (1 + rightFields.length)) childType
+            childCondition (LeafField.toSelectionSet rightFields)⟩)
+        = ⟨LeafField.toShapeFields childCondition rightFields⟩ :=
+    LeafField.childShape_toSelectionSet schema
+      (1 + leftFields.length + (1 + rightFields.length)) childType childCondition
+      rightFields (by omega) hchildConditionSat hrightNodup
+  have hleftShapeRaw :
+      (match LeafField.toSelectionSet leftFields with
+      | [] => ResponseShape.Shape.empty
+      | _ =>
+          ⟨ResponseShape.Shape.collectSelectionSetShapeFields schema
+            (1 + leftFields.length + (1 + rightFields.length)) childType
+            { possibleTypes := some (schema.getPossibleTypes childType),
+              booleanLiterals := [] }
+            (LeafField.toSelectionSet leftFields)⟩)
+        =
+          ⟨LeafField.toShapeFields
+            { possibleTypes := some (schema.getPossibleTypes childType),
+              booleanLiterals := [] }
+            leftFields⟩ := by
+    simpa [childCondition] using hleftShape
+  have hrightShapeRaw :
+      (match LeafField.toSelectionSet rightFields with
+      | [] => ResponseShape.Shape.empty
+      | _ =>
+          ⟨ResponseShape.Shape.collectSelectionSetShapeFields schema
+            (1 + leftFields.length + (1 + rightFields.length)) childType
+            { possibleTypes := some (schema.getPossibleTypes childType),
+              booleanLiterals := [] }
+            (LeafField.toSelectionSet rightFields)⟩)
+        =
+          ⟨LeafField.toShapeFields
+            { possibleTypes := some (schema.getPossibleTypes childType),
+              booleanLiterals := [] }
+            rightFields⟩ := by
+    simpa [childCondition] using hrightShape
+  let parentHeader : ResponseShape.VariantHeader :=
+    Prod.mk
+      (ResponseShape.Condition.mk (some (schema.getPossibleTypes rootType)) [])
+      (ResponseShape.selectedField parentFieldName parentArguments)
+  let rawChildCondition : ResponseShape.Condition :=
+    ResponseShape.Condition.mk (some (schema.getPossibleTypes childType)) []
+  have hleftFieldShape :
+      [(parentResponseName,
+        [(parentHeader,
+          match LeafField.toSelectionSet leftFields with
+          | [] => ResponseShape.Shape.empty
+          | _ =>
+              ⟨ResponseShape.Shape.collectSelectionSetShapeFields schema
+                (1 + leftFields.length + (1 + rightFields.length)) childType
+                rawChildCondition (LeafField.toSelectionSet leftFields)⟩)])]
+        =
+          [(parentResponseName,
+            [(parentHeader,
+              ⟨LeafField.toShapeFields rawChildCondition leftFields⟩)])] := by
+    simpa [parentHeader, rawChildCondition] using
+      congrArg
+        (fun childShape : ResponseShape.Shape =>
+          [(parentResponseName, [(parentHeader, childShape)])])
+        hleftShapeRaw
+  have hrightFieldShape :
+      [(parentResponseName,
+        [(parentHeader,
+          match LeafField.toSelectionSet rightFields with
+          | [] => ResponseShape.Shape.empty
+          | _ =>
+              ⟨ResponseShape.Shape.collectSelectionSetShapeFields schema
+                (1 + leftFields.length + (1 + rightFields.length)) childType
+                rawChildCondition (LeafField.toSelectionSet rightFields)⟩)])]
+        =
+          [(parentResponseName,
+            [(parentHeader,
+              ⟨LeafField.toShapeFields rawChildCondition rightFields⟩)])] := by
+    simpa [parentHeader, rawChildCondition] using
+      congrArg
+        (fun childShape : ResponseShape.Shape =>
+          [(parentResponseName, [(parentHeader, childShape)])])
+        hrightShapeRaw
+  let mergedRawShape : ResponseShape.Shape :=
+    { fields :=
+      ResponseShape.Shape.mergeFields
+        [(parentResponseName,
+          [(parentHeader,
+            match LeafField.toSelectionSet leftFields with
+            | [] => ResponseShape.Shape.empty
+            | _ =>
+                ⟨ResponseShape.Shape.collectSelectionSetShapeFields schema
+                  (1 + leftFields.length + (1 + rightFields.length)) childType
+                  rawChildCondition (LeafField.toSelectionSet leftFields)⟩)])]
+        (ResponseShape.Shape.mergeFields
+          [(parentResponseName,
+            [(parentHeader,
+              match LeafField.toSelectionSet rightFields with
+              | [] => ResponseShape.Shape.empty
+              | _ =>
+                  ⟨ResponseShape.Shape.collectSelectionSetShapeFields schema
+                    (1 + leftFields.length + (1 + rightFields.length)) childType
+                    rawChildCondition (LeafField.toSelectionSet rightFields)⟩)])]
+          []) }
+  have hmergedShapeRaw :
+      mergedRawShape
+        =
+          { fields :=
+            [(parentResponseName,
+              [(parentHeader,
+                ⟨LeafField.toShapeFields rawChildCondition
+                  (leftFields ++ rightFields)⟩)])] } := by
+    dsimp [mergedRawShape]
+    rw [hleftFieldShape, hrightFieldShape]
+    have hrightNil :
+        ResponseShape.Shape.mergeFields
+          [(parentResponseName,
+            [(parentHeader,
+              ⟨LeafField.toShapeFields rawChildCondition rightFields⟩)])]
+          []
+          =
+            [(parentResponseName,
+              [(parentHeader,
+                ⟨LeafField.toShapeFields rawChildCondition rightFields⟩)])] := by
+      simp [ResponseShape.Shape.mergeFields, ResponseShape.Shape.merge,
+        ResponseShape.Shape.size, ResponseShape.Shape.fieldsSize,
+        ResponseShape.Shape.variantsSize,
+        ResponseShape.Shape.mergeWithFuel,
+        ResponseShape.Shape.mergeFieldsWithFuel]
+      cases (1 + (1 + ResponseShape.Shape.fieldsSize
+        (LeafField.toShapeFields rawChildCondition rightFields))) <;>
+        simp [ResponseShape.Shape.mergeFieldsWithFuel]
+    have hmerge :=
+      LeafField.mergeFields_parentVariant_childShapeFields_append parentResponseName
+        parentHeader rawChildCondition leftFields rightFields hchildNodup
+    rw [hrightNil]
+    exact congrArg (fun fields => ({ fields := fields } : ResponseShape.Shape)) hmerge
+  have htopFuel :
+      1 + leftFields.length + (1 + rightFields.length)
+        = (leftFields.length + rightFields.length + 1) + 1 := by
+    omega
+  cases hresolved :
+      store.resolveValue parentFieldName parentArguments
+        (Value.object root.typeName root.id) with
+  | null =>
+      simp [TypedExecution.executeSemanticQuery, Execution.executeSemanticQueryFuel,
+        Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+        LeafField.toSelectionSet_size, TypedExecution.executeSelectionSet,
+        Execution.collectFields, Execution.collectSelection,
+        Execution.selectionDirectivesAllowBool, Execution.mergeExecutableGroups,
+        Execution.addExecutableGroup, Execution.addExecutableFields,
+        Execution.addExecutableField, Execution.mergedFieldSelectionSet,
+        TypedExecution.executeCollectedFields, TypedExecution.executeField,
+        TypedExecution.completeValue, hresolved,
+        ResponseShape.Shape.ofSemanticOperation,
+        ResponseShape.Shape.semanticOperationShapeFuel,
+        ResponseShape.Shape.semanticSelectionSetShape,
+        ResponseShape.Shape.collectSelectionSetShapeFields,
+        ResponseShape.Shape.collectSelectionShapeFields,
+        LeafField.collectSelectionSetShapeFields_toSelectionSet,
+        ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+        ResponseShape.Condition.satisfiableBool,
+        ResponseShape.Condition.hasContradictionBool,
+        ResponseShape.BooleanLiteral.hasContradictionBool,
+        ResponseShape.Condition.possibleTypesEmptyBool,
+        ResponseShape.Condition.and, ResponseShape.Condition.forChildType,
+        ResponseShape.Shape.semanticOperationInitialCondition, hrootPossibleNonempty,
+        hchildNonempty, hparentField, hparentNamed, Schema.fieldReturnType?,
+        TypeRef.namedType, childCondition]
+      change typedResponseConformsToShapeBool variableValues
+        (1 + leftFields.length + (1 + rightFields.length) + 1)
+        (TypedResponse.object root.typeName
+          [(parentResponseName,
+            TypedExecution.completeValue schema store variableValues
+              ((1 + leftFields.length + (1 + rightFields.length)) * 3) childType
+              (LeafField.toSelectionSet leftFields ++ LeafField.toSelectionSet rightFields)
+              Value.null)])
+        mergedRawShape = true
+      rw [hmergedShapeRaw]
+      rw [htopFuel]
+      change typedFieldsConformToShapeBool variableValues
+        (leftFields.length + rightFields.length + 1 + 1) root.typeName
+        [(parentResponseName,
+          TypedExecution.completeValue schema store variableValues
+            ((leftFields.length + rightFields.length + 1 + 1) * 3)
+            childType
+            (LeafField.toSelectionSet leftFields ++ LeafField.toSelectionSet rightFields)
+            Value.null)]
+        { fields :=
+          [(parentResponseName,
+            [(parentHeader,
+              ⟨LeafField.toShapeFields rawChildCondition
+                (leftFields ++ rightFields)⟩)])] } = true
+      have hparentActive :
+          variantHeaderActiveBool variableValues root.typeName parentHeader = true := by
+        simp [parentHeader, variantHeaderActiveBool, conditionHoldsBool,
+          possibleTypesHoldBool_of_typeIncludesObject schema hrootType]
+      have hchildNull :
+          typedResponseConformsToShapeBool variableValues
+            (leftFields.length + rightFields.length)
+            (TypedExecution.completeValue schema store variableValues
+              ((leftFields.length + rightFields.length + 1 + 1) * 3)
+              childType
+              (LeafField.toSelectionSet leftFields ++ LeafField.toSelectionSet rightFields)
+              Value.null)
+            ⟨LeafField.toShapeFields rawChildCondition
+              (leftFields ++ rightFields)⟩ = true := by
+        have hcompleteNull :
+            TypedExecution.completeValue schema store variableValues
+              ((leftFields.length + rightFields.length + 1 + 1) * 3)
+              childType
+              (LeafField.toSelectionSet leftFields ++
+                LeafField.toSelectionSet rightFields)
+              Value.null = TypedResponse.null := by
+          cases ((leftFields.length + rightFields.length + 1 + 1) * 3) <;>
+            simp [TypedExecution.completeValue, shallowTypedResponse]
+        have hnullConforms :
+            typedResponseConformsToShapeBool variableValues
+              (leftFields.length + rightFields.length) TypedResponse.null
+              ⟨LeafField.toShapeFields rawChildCondition
+                (leftFields ++ rightFields)⟩ = true := by
+          cases (leftFields.length + rightFields.length) <;>
+            simp [typedResponseConformsToShapeBool]
+        simpa [hcompleteNull] using hnullConforms
+      have hvariant :
+          typedVariantConformsToShapeBool variableValues
+            (leftFields.length + rightFields.length + 1) root.typeName
+            (TypedExecution.completeValue schema store variableValues
+              ((leftFields.length + rightFields.length + 1 + 1) * 3)
+              childType
+              (LeafField.toSelectionSet leftFields ++ LeafField.toSelectionSet rightFields)
+              Value.null)
+            [(parentHeader,
+              ⟨LeafField.toShapeFields rawChildCondition
+                (leftFields ++ rightFields)⟩)] = true :=
+        typedVariantConformsToShapeBool_singleton variableValues
+          (leftFields.length + rightFields.length) root.typeName
+          (TypedExecution.completeValue schema store variableValues
+            ((leftFields.length + rightFields.length + 1 + 1) * 3)
+            childType
+            (LeafField.toSelectionSet leftFields ++ LeafField.toSelectionSet rightFields)
+            Value.null)
+          parentHeader
+          ⟨LeafField.toShapeFields rawChildCondition
+            (leftFields ++ rightFields)⟩
+          hparentActive hchildNull
+      exact typedFieldsConformToShapeBool_singleton variableValues
+        (leftFields.length + rightFields.length + 1) root.typeName parentResponseName
+        (TypedExecution.completeValue schema store variableValues
+          ((leftFields.length + rightFields.length + 1 + 1) * 3)
+          childType
+          (LeafField.toSelectionSet leftFields ++ LeafField.toSelectionSet rightFields)
+          Value.null)
+        [(parentHeader,
+          ⟨LeafField.toShapeFields rawChildCondition
+            (leftFields ++ rightFields)⟩)]
+        hvariant
+  | scalar value =>
+      exact False.elim (hnotScalar value hresolved)
+  | object runtimeType id =>
+      cases hresolvedConforms with
+      | inl hnull =>
+          rw [hresolved] at hnull
+          cases hnull
+      | inr hconforms =>
+          exact False.elim
+            ((hobjectImpossible runtimeType id) (by simpa [hresolved] using hconforms))
+  | list values =>
+      have hvaluesConform :
+          ∀ value, value ∈ values ->
+            Value.conformsToType schema value (.named childType) := by
+        cases hresolvedConforms with
+        | inl hnull =>
+            rw [hresolved] at hnull
+            cases hnull
+        | inr hconforms =>
+            exact hvaluesFromList values (by simpa [hresolved] using hconforms)
+      simp [TypedExecution.executeSemanticQuery, Execution.executeSemanticQueryFuel,
+        Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
+        LeafField.toSelectionSet_size, TypedExecution.executeSelectionSet,
+        Execution.collectFields, Execution.collectSelection,
+        Execution.selectionDirectivesAllowBool, Execution.mergeExecutableGroups,
+        Execution.addExecutableGroup, Execution.addExecutableFields,
+        Execution.addExecutableField, Execution.mergedFieldSelectionSet,
+        TypedExecution.executeCollectedFields, TypedExecution.executeField,
+        TypedExecution.completeValue, hresolved,
+        ResponseShape.Shape.ofSemanticOperation,
+        ResponseShape.Shape.semanticOperationShapeFuel,
+        ResponseShape.Shape.semanticSelectionSetShape,
+        ResponseShape.Shape.collectSelectionSetShapeFields,
+        ResponseShape.Shape.collectSelectionShapeFields,
+        LeafField.collectSelectionSetShapeFields_toSelectionSet,
+        ResponseShape.Condition.fromDirectives?, ResponseShape.Condition.empty,
+        ResponseShape.Condition.satisfiableBool,
+        ResponseShape.Condition.hasContradictionBool,
+        ResponseShape.BooleanLiteral.hasContradictionBool,
+        ResponseShape.Condition.possibleTypesEmptyBool,
+        ResponseShape.Condition.and, ResponseShape.Condition.forChildType,
+        ResponseShape.Shape.semanticOperationInitialCondition, hrootPossibleNonempty,
+        hchildNonempty, hparentField, hparentNamed, Schema.fieldReturnType?,
+        TypeRef.namedType, childCondition]
+      change typedResponseConformsToShapeBool variableValues
+        (1 + leftFields.length + (1 + rightFields.length) + 1)
+        (TypedResponse.object root.typeName
+          [(parentResponseName,
+            TypedExecution.completeValue schema store variableValues
+              ((1 + leftFields.length + (1 + rightFields.length)) * 3) childType
+              (LeafField.toSelectionSet leftFields ++ LeafField.toSelectionSet rightFields)
+              (Value.list values))])
+        mergedRawShape = true
+      rw [hmergedShapeRaw]
+      rw [htopFuel]
+      change typedFieldsConformToShapeBool variableValues
+        (leftFields.length + rightFields.length + 1 + 1) root.typeName
+        [(parentResponseName,
+          TypedExecution.completeValue schema store variableValues
+            ((leftFields.length + rightFields.length + 1 + 1) * 3)
+            childType
+            (LeafField.toSelectionSet leftFields ++ LeafField.toSelectionSet rightFields)
+            (Value.list values))]
+        { fields :=
+          [(parentResponseName,
+            [(parentHeader,
+              ⟨LeafField.toShapeFields rawChildCondition
+                (leftFields ++ rightFields)⟩)])] } = true
+      have hparentActive :
+          variantHeaderActiveBool variableValues root.typeName parentHeader = true := by
+        simp [parentHeader, variantHeaderActiveBool, conditionHoldsBool,
+          possibleTypesHoldBool_of_typeIncludesObject schema hrootType]
+      have hlistFuel :
+          (leftFields.length + rightFields.length + 1 + 1) * 3
+            =
+              ((leftFields.length + rightFields.length + 1 + 1) * 3 - 1) + 1 := by
+        omega
+      have hlistElementFuel :
+          ((leftFields.length + rightFields.length + 1 + 1) * 3 - 3) + 2
+            =
+              (leftFields.length + rightFields.length + 1 + 1) * 3 - 1 := by
+        omega
+      have hchildList :
+          typedResponseConformsToShapeBool variableValues
+            (leftFields.length + rightFields.length)
+            (TypedExecution.completeValue schema store variableValues
+              ((leftFields.length + rightFields.length + 1 + 1) * 3)
+              childType
+              (LeafField.toSelectionSet leftFields ++ LeafField.toSelectionSet rightFields)
+              (Value.list values))
+            ⟨LeafField.toShapeFields rawChildCondition
+              (leftFields ++ rightFields)⟩ = true := by
+        rw [hlistFuel]
+        cases hfuel : (leftFields.length + rightFields.length) with
+        | zero =>
+            simp [hfuel, TypedExecution.completeValue, typedResponseConformsToShapeBool]
+        | succ childFuel =>
+            have hlistConforms :
+                (values.map
+                  (TypedExecution.completeValue schema store variableValues
+                    ((leftFields.length + rightFields.length + 1 + 1) * 3 - 1)
+                    childType
+                    (LeafField.toSelectionSet leftFields ++
+                      LeafField.toSelectionSet rightFields))).all
+                  (fun response =>
+                    typedResponseConformsToShapeBool variableValues childFuel response
+                      ⟨LeafField.toShapeFields rawChildCondition
+                        (leftFields ++ rightFields)⟩) = true := by
+              simpa [rawChildCondition, hfuel, hlistElementFuel,
+                LeafField.toSelectionSet_append] using
+                LeafField.typedResponseConformsToShape_completeValue_namedCompositeListSelectionSetAnyFuel
+                  schema store variableValues childFuel
+                  ((leftFields.length + rightFields.length + 1 + 1) * 3 - 3)
+                  childType childType (leftFields ++ rightFields) values hchildNodup
+                  hvaluesConform hchildNonempty
+            simpa [hfuel, TypedExecution.completeValue, typedResponseConformsToShapeBool]
+              using hlistConforms
+      have hvariant :
+          typedVariantConformsToShapeBool variableValues
+            (leftFields.length + rightFields.length + 1) root.typeName
+            (TypedExecution.completeValue schema store variableValues
+              ((leftFields.length + rightFields.length + 1 + 1) * 3)
+              childType
+              (LeafField.toSelectionSet leftFields ++ LeafField.toSelectionSet rightFields)
+              (Value.list values))
+            [(parentHeader,
+              ⟨LeafField.toShapeFields rawChildCondition
+                (leftFields ++ rightFields)⟩)] = true :=
+        typedVariantConformsToShapeBool_singleton variableValues
+          (leftFields.length + rightFields.length) root.typeName
+          (TypedExecution.completeValue schema store variableValues
+            ((leftFields.length + rightFields.length + 1 + 1) * 3)
+            childType
+            (LeafField.toSelectionSet leftFields ++ LeafField.toSelectionSet rightFields)
+            (Value.list values))
+          parentHeader
+          ⟨LeafField.toShapeFields rawChildCondition
+            (leftFields ++ rightFields)⟩
+          hparentActive hchildList
+      exact typedFieldsConformToShapeBool_singleton variableValues
+        (leftFields.length + rightFields.length + 1) root.typeName parentResponseName
+        (TypedExecution.completeValue schema store variableValues
+          ((leftFields.length + rightFields.length + 1 + 1) * 3)
+          childType
+          (LeafField.toSelectionSet leftFields ++ LeafField.toSelectionSet rightFields)
+          (Value.list values))
+        [(parentHeader,
+          ⟨LeafField.toShapeFields rawChildCondition
+            (leftFields ++ rightFields)⟩)]
+        hvariant
+
+set_option linter.unusedSimpArgs false in
 theorem responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinctLeafNoDirectives_ofListOutput
     (schema : Schema) (name : Option Name) (rootType : Name)
     (variableDefinitions : List VariableDefinition)

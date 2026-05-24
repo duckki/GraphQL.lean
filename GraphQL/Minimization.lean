@@ -19,21 +19,25 @@ structure Candidate (equivalentToInput : Operation -> Prop) where
   operation : Operation
   equivalent : equivalentToInput operation
 
+-- Spec-independent operation-size metric for finite candidate minimization.
 def Candidate.size {equivalentToInput : Operation -> Prop}
     (candidate : Candidate equivalentToInput) : Nat :=
   candidate.operation.size
 
+-- Spec-independent choice helper: keep the smaller candidate by modeled operation size.
 def chooseSmaller {equivalentToInput : Operation -> Prop}
     (left right : Candidate equivalentToInput) :
     Candidate equivalentToInput :=
   if left.size ≤ right.size then left else right
 
+-- Spec-independent fold over candidates preserving the smallest modeled operation size.
 def minimizeFrom {equivalentToInput : Operation -> Prop}
     (best : Candidate equivalentToInput) :
     List (Candidate equivalentToInput) -> Candidate equivalentToInput
   | [] => best
   | candidate :: rest => minimizeFrom (chooseSmaller best candidate) rest
 
+-- Spec-independent finite minimization entry point for pre-proved equivalent candidates.
 def minimize? {equivalentToInput : Operation -> Prop} :
     List (Candidate equivalentToInput) -> Option (Candidate equivalentToInput)
   | [] => none
@@ -108,6 +112,8 @@ theorem minimize?_minimal {equivalentToInput : Operation -> Prop}
         | head => exact Or.inl rfl
         | tail _ htail => exact Or.inr htail)
 
+-- Spec-related minimizer interface: non-spec; equivalence and candidate generation are
+-- supplied by future semantic proofs.
 structure FragmentMinimizerSpec where
   equivalent : Operation -> Operation -> Prop
   candidates : (input : Operation) -> List (Candidate (equivalent input))

@@ -33,39 +33,48 @@ def eqBool : BooleanLiteral -> BooleanLiteral -> Bool
   | .negative left, .negative right => left == right
   | _, _ => false
 
+-- Spec-inspired contradiction check for modeled directive-condition literals.
 def negatesBool : BooleanLiteral -> BooleanLiteral -> Bool
   | .positive left, .negative right => left == right
   | .negative left, .positive right => left == right
   | _, _ => false
 
+-- Non-spec helper exposing the variable referenced by a modeled directive literal.
 def variableName : BooleanLiteral -> Name
   | .positive name => name
   | .negative name => name
 
+-- Boolean list equality for the non-spec directive-condition literal representation.
 def listEqBool : List BooleanLiteral -> List BooleanLiteral -> Bool
   | [], [] => true
   | left :: leftRest, right :: rightRest =>
       eqBool left right && listEqBool leftRest rightRest
   | _, _ => false
 
+-- Non-spec membership test using `BooleanLiteral.eqBool`.
 def containsBool (literal : BooleanLiteral) : List BooleanLiteral -> Bool
   | [] => false
   | candidate :: rest =>
       eqBool literal candidate || containsBool literal rest
 
+-- Non-spec contradiction search for one directive-condition literal.
 def containsNegationBool (literal : BooleanLiteral) : List BooleanLiteral -> Bool
   | [] => false
   | candidate :: rest =>
       negatesBool literal candidate || containsNegationBool literal rest
 
+-- Spec-inspired satisfiability helper for conjunctions of modeled directive literals.
 def hasContradictionBool : List BooleanLiteral -> Bool
   | [] => false
   | literal :: rest =>
       containsNegationBool literal rest || hasContradictionBool rest
 
+-- Spec-inspired condition implication: the stronger condition must contain all weaker
+-- directive literals.
 def entailsAllBool (stronger weaker : List BooleanLiteral) : Bool :=
   weaker.all (fun literal => containsBool literal stronger)
 
+-- Spec-inspired condition compatibility: combined directive literals must be satisfiable.
 def compatibleBool (left right : List BooleanLiteral) : Bool :=
   !(hasContradictionBool (left ++ right))
 
@@ -117,34 +126,45 @@ deriving Repr
 
 namespace Condition
 
+-- Non-spec empty response-shape condition: no type restriction and no directive literal.
 def empty : Condition :=
   { possibleTypes := none, booleanLiterals := [] }
 
+-- Spec-inspired possible-type set inclusion helper.
 def namesSubsetBool (left right : List Name) : Bool :=
   left.all (fun name => right.contains name)
 
+-- Spec-inspired possible-type set overlap helper.
 def namesOverlapBool (left right : List Name) : Bool :=
   left.any (fun name => right.contains name)
 
+-- Spec-inspired possible-type condition inclusion. `none` represents an unrestricted
+-- type condition, not the empty set.
 def possibleTypesSubsetBool : Option (List Name) -> Option (List Name) -> Bool
   | none, none => true
   | none, some _right => false
   | some _left, none => true
   | some left, some right => namesSubsetBool left right
 
+-- Spec-inspired possible-type condition overlap. `none` represents an unrestricted
+-- type condition, not the empty set.
 def possibleTypesOverlapBool : Option (List Name) -> Option (List Name) -> Bool
   | none, none => true
   | none, some right => right != []
   | some left, none => left != []
   | some left, some right => namesOverlapBool left right
 
+-- Non-spec helper detecting an unsatisfiable possible-type restriction.
 def possibleTypesEmptyBool : Option (List Name) -> Bool
   | none => false
   | some names => names == []
 
+-- Spec-inspired condition update for a known possible runtime type set.
 def withPossibleTypes (condition : Condition) (possibleTypes : List Name) : Condition :=
   { condition with possibleTypes := some possibleTypes }
 
+-- Spec-inspired child-shape condition transfer: child fields are constrained by the
+-- field return type's possible runtime types, while directive literals remain in scope.
 def forChildType (schema : Schema) (condition : Condition) (childType : Name) : Condition :=
   { possibleTypes := some (schema.getPossibleTypes childType),
     booleanLiterals := condition.booleanLiterals }
@@ -174,32 +194,40 @@ def and (left right : Condition) : Condition :=
     booleanLiterals := left.booleanLiterals ++ right.booleanLiterals
   }
 
+-- Non-spec ordered-name equality for the response-shape condition encoding.
 def namesEqBool : List Name -> List Name -> Bool
   | [], [] => true
   | left :: leftRest, right :: rightRest =>
       (left == right) && namesEqBool leftRest rightRest
   | _, _ => false
 
+-- Non-spec equality for optional possible-type lists.
 def namesOptionEqBool : Option (List Name) -> Option (List Name) -> Bool
   | none, none => true
   | some left, some right => namesEqBool left right
   | _, _ => false
 
+-- Non-spec equality for the response-shape condition encoding.
 def eqBool (left right : Condition) : Bool :=
   namesOptionEqBool left.possibleTypes right.possibleTypes
     && BooleanLiteral.listEqBool left.booleanLiterals right.booleanLiterals
 
+-- Spec-inspired unsatisfiability check for combined possible-type and directive
+-- conditions.
 def hasContradictionBool (condition : Condition) : Bool :=
   possibleTypesEmptyBool condition.possibleTypes
     || BooleanLiteral.hasContradictionBool condition.booleanLiterals
 
+-- Spec-inspired condition satisfiability check.
 def satisfiableBool (condition : Condition) : Bool :=
   !(condition.hasContradictionBool)
 
+-- Spec-inspired condition overlap check.
 def overlapsBool (left right : Condition) : Bool :=
   possibleTypesOverlapBool left.possibleTypes right.possibleTypes
     && BooleanLiteral.compatibleBool left.booleanLiterals right.booleanLiterals
 
+-- Spec-inspired condition inclusion check.
 def subsetBool (left right : Condition) : Bool :=
   possibleTypesSubsetBool left.possibleTypes right.possibleTypes
     && BooleanLiteral.entailsAllBool left.booleanLiterals right.booleanLiterals
@@ -245,6 +273,8 @@ theorem eqBool_self (condition : Condition) :
   | mk possibleTypes booleanLiterals =>
       simp [eqBool, namesOptionEqBool_self, BooleanLiteral.listEqBool_self]
 
+-- Spec-inspired condition intersection; returns none when the conjunction is
+-- unsatisfiable.
 def intersect? (left right : Condition) : Option Condition :=
   let combined := left.and right
   if combined.satisfiableBool then some combined else none
@@ -314,17 +344,21 @@ end
 def argumentEqBool (left right : Argument) : Bool :=
   (left.name == right.name) && inputValueEqBool left.value right.value
 
+-- Spec 5.3.2 argument equality over the raw ordered argument representation used by
+-- response-shape headers.
 def argumentsEqBool : List Argument -> List Argument -> Bool
   | [], [] => true
   | left :: leftRest, right :: rightRest =>
       argumentEqBool left right && argumentsEqBool leftRest rightRest
   | _, _ => false
 
+-- Spec 5.3.2 selected-field equality for response-shape variant headers.
 def eqBool (left right : SelectedField) : Bool :=
   (left.fieldName == right.fieldName)
     && argumentsEqBool left.arguments right.arguments
 
 mutual
+  -- Non-spec structural metric used to prove self-equality for selected-field arguments.
   def inputValueSize : InputValue -> Nat
     | .list values => inputValuesSize values + 1
     | .object fields => inputFieldsSize fields + 1
@@ -421,6 +455,7 @@ theorem eqBool_self (field : SelectedField) :
 
 end SelectedField
 
+-- Spec 5.3.2 selected-field constructor for response-shape variants.
 def selectedField (fieldName : Name) (arguments : List Argument) :
     SelectedField :=
   { fieldName := fieldName, arguments := arguments }
@@ -431,6 +466,7 @@ abbrev VariantHeader := Condition × SelectedField
 
 namespace VariantHeader
 
+-- Non-spec equality for response-shape variant headers.
 def eqBool (left right : VariantHeader) : Bool :=
   Condition.eqBool left.fst right.fst
     && SelectedField.eqBool left.snd right.snd
@@ -441,15 +477,20 @@ theorem eqBool_self (header : VariantHeader) :
   | mk condition field =>
       simp [eqBool, Condition.eqBool_self, SelectedField.eqBool_self]
 
+-- Spec-inspired overlap check for the condition part of two response-shape variants.
 def conditionsOverlapBool (left right : VariantHeader) : Bool :=
   Condition.overlapsBool left.fst right.fst
 
+-- Spec-inspired inclusion check for the condition part of two response-shape variants.
 def conditionSubsetBool (left right : VariantHeader) : Bool :=
   Condition.subsetBool left.fst right.fst
 
+-- Spec 5.3.2 selected-field equality lifted to response-shape variant headers.
 def selectedFieldEqBool (left right : VariantHeader) : Bool :=
   SelectedField.eqBool left.snd right.snd
 
+-- Spec-inspired response-shape compatibility: overlapping conditions must select the
+-- same field.
 def compatibleBool (left right : VariantHeader) : Bool :=
   !(conditionsOverlapBool left right) || selectedFieldEqBool left right
 
@@ -466,6 +507,7 @@ theorem includedByBool_self (header : VariantHeader) :
       simp [includedByBool, conditionSubsetBool, selectedFieldEqBool,
         Condition.subsetBool_self, SelectedField.eqBool_self]
 
+-- Spec-inspired variant-header intersection used by shape merging.
 def intersect? (left right : VariantHeader) : Option VariantHeader := do
   let condition <- Condition.intersect? left.fst right.fst
   if selectedFieldEqBool left right then
@@ -489,6 +531,7 @@ deriving Repr
 
 namespace Shape
 
+-- Non-spec recursive response-shape variant type.
 abbrev Variant := VariantHeader × Shape
 
 -- Spec 7.1.5 empty `data` object analogue for a leaf/no-field shape: non-spec empty
@@ -513,6 +556,8 @@ def lookupVariant (header : VariantHeader) :
       else
         lookupVariant header rest
 
+-- Spec-inspired variant lookup for inclusion: an available variant may cover a required
+-- variant with a stronger condition.
 def lookupIncludingVariant (requiredHeader : VariantHeader) :
     List (VariantHeader × Shape) -> Option Shape
   | [] => none
@@ -522,24 +567,30 @@ def lookupIncludingVariant (requiredHeader : VariantHeader) :
       else
         lookupIncludingVariant requiredHeader rest
 
+-- Spec-inspired same-response-name compatibility for two response-shape variants.
 def variantHeadersCompatibleBool (left right : Variant) : Bool :=
   VariantHeader.compatibleBool left.fst right.fst
 
+-- Spec-inspired condition-overlap helper for response-shape variants.
 def variantConditionsOverlapBool (left right : Variant) : Bool :=
   VariantHeader.conditionsOverlapBool left.fst right.fst
 
+-- Spec 5.3.2 selected-field equality helper for response-shape variants.
 def variantsSelectSameFieldBool (left right : Variant) : Bool :=
   VariantHeader.selectedFieldEqBool left.fst right.fst
 
+-- Spec-inspired compatibility of one variant against a same-response-name variant list.
 def variantCompatibleWithAllBool (variant : Variant) : List Variant -> Bool :=
   fun variants => variants.all (fun other => variantHeadersCompatibleBool variant other)
 
+-- Spec-inspired pairwise compatibility for variants under one response name.
 def variantsPairwiseCompatibleBool : List Variant -> Bool
   | [] => true
   | variant :: rest =>
       variantCompatibleWithAllBool variant rest
         && variantsPairwiseCompatibleBool rest
 
+-- Spec-inspired compatibility check for all response-name variant groups.
 def responseNameVariantsCompatibleBool :
     List (Name × List Variant) -> Bool
   | [] => true
@@ -547,6 +598,7 @@ def responseNameVariantsCompatibleBool :
       variantsPairwiseCompatibleBool variants
         && responseNameVariantsCompatibleBool rest
 
+-- Non-spec uniqueness helper over response-shape field entries.
 def responseNameNotInFieldsBool (responseName : Name) :
     List (Name × List Variant) -> Bool
   | [] => true
@@ -554,6 +606,7 @@ def responseNameNotInFieldsBool (responseName : Name) :
       !(availableName == responseName)
         && responseNameNotInFieldsBool responseName rest
 
+-- Non-spec uniqueness check over response-shape field entries.
 def responseNamesNodupBool :
     List (Name × List Variant) -> Bool
   | [] => true
@@ -567,6 +620,7 @@ def responseNameNotInFields (responseName : Name)
     (fields : List (Name × List Variant)) : Prop :=
   responseNameNotInFieldsBool responseName fields = true
 
+-- Non-spec inductive form of response-shape response-name uniqueness.
 inductive ResponseNamesNodup :
     List (Name × List Variant) -> Prop where
   | nil : ResponseNamesNodup []
@@ -719,6 +773,8 @@ theorem responseNameVariantsCompatibleBool_complete
         variantsPairwiseCompatibleBool_complete hvariants,
         responseNameVariantsCompatibleBool_complete hrest]
 
+-- Spec-inspired response-shape well-formedness: unique response names, compatible
+-- variants under each response name, and recursively well-formed child shapes.
 mutual
   def wellFormedBool : Shape -> Bool
     | ⟨fields⟩ =>
@@ -856,6 +912,7 @@ theorem wellFormed_iff_bool {shape : Shape} :
   exact Iff.intro wellFormedBool_complete wellFormedBool_sound
 
 mutual
+  -- Non-spec structural metric used to fuel recursive response-shape merging.
   def size : Shape -> Nat
     | ⟨fields⟩ => 1 + fieldsSize fields
 
@@ -868,6 +925,8 @@ mutual
     | (_header, shape) :: rest => shape.size + variantsSize rest
 end
 
+-- Spec-inspired response-shape merge: non-spec recursive merge by response name and
+-- variant header.
 mutual
   def mergeWithFuel : Nat -> Shape -> Shape -> Shape
     | 0, left, _right => left
@@ -907,9 +966,11 @@ mutual
         mergeVariantsWithFuel fuel (rest ++ [merged]) rightRest
 end
 
+-- Spec-inspired response-shape merge wrapper with a structural fuel budget.
 def merge (left right : Shape) : Shape :=
   mergeWithFuel (left.size + right.size) left right
 
+-- Spec-inspired merge over raw response-shape field lists.
 def mergeFields (left right : List (Name × List (VariantHeader × Shape))) :
     List (Name × List (VariantHeader × Shape)) :=
   (merge ⟨left⟩ ⟨right⟩).fields
@@ -1144,6 +1205,8 @@ theorem equivalentBool_complete {left right : Shape} :
   intro h
   simp [equivalentBool, includesBool_complete h.left, includesBool_complete h.right]
 
+-- Spec 5.5.2.3 `GetPossibleTypes`: restricts a shape condition to an inline fragment's
+-- type condition.
 def restrictConditionToType (schema : Schema) (condition : Condition)
     (typeCondition : Name) : Condition :=
   let allowedTypes := schema.getPossibleTypes typeCondition
@@ -1210,15 +1273,19 @@ mutual
           []
 end
 
+-- Spec-inspired response-shape collection wrapper for a semantic selection set.
 def semanticSelectionSetShape (schema : Schema) (fuel : Nat)
     (parentType : Name) (condition : Condition)
     (selectionSet : List Semantic.Selection) :
     List (Name × List (VariantHeader × Shape)) :=
   collectSelectionSetShapeFields schema fuel parentType condition selectionSet
 
+-- Non-spec structural fuel bound for semantic response-shape collection.
 def semanticOperationShapeFuel (operation : Semantic.Operation) : Nat :=
   operation.size + 1
 
+-- Spec 5.5.2.3 `GetPossibleTypes`: root shape condition starts at the operation root's
+-- possible runtime object types.
 def semanticOperationInitialCondition (schema : Schema)
     (operation : Semantic.Operation) : Condition :=
   { possibleTypes := some (schema.getPossibleTypes operation.rootType),
@@ -1231,6 +1298,7 @@ def ofSemanticOperation (schema : Schema) (operation : Semantic.Operation) : Sha
     (semanticOperationShapeFuel operation) operation.rootType
     (semanticOperationInitialCondition schema operation) operation.selectionSet⟩
 
+-- Spec-inspired operation response summary after fragment inlining.
 def ofOperation (schema : Schema) (operation : GraphQL.Operation) : Shape :=
   ofSemanticOperation schema (Semantic.fromOperation operation)
 

@@ -18,6 +18,7 @@ namespace GraphQL
 
 namespace DataModel
 
+-- Non-spec object identity used by the proof-facing typed store model.
 abbrev ObjectId := Nat
 
 -- Spec 6.4.2 field resolution key, specialized to already-coerced argument values.
@@ -36,6 +37,7 @@ deriving Repr
 
 namespace Value
 
+-- Spec-related bridge from proof-facing store values to execution resolver values.
 def toExecutionValue : Value -> Execution.Value
   | .null => .null
   | .scalar value => .scalar value
@@ -80,6 +82,7 @@ def conformsToType (schema : Schema) : Value -> TypeRef -> Prop
 
 end Value
 
+-- Non-spec typed object record for the proof-facing store model.
 structure ObjectRecord where
   typeName : Name
   id : ObjectId
@@ -88,6 +91,7 @@ deriving Repr
 
 namespace ObjectRecord
 
+-- Spec 6.4.2 field resolution lookup specialized to already-coerced arguments.
 def lookupFieldIn? (fieldName : Name) (arguments : List Argument) :
     List (FieldKey × Value) -> Option Value
   | [] => none
@@ -102,12 +106,14 @@ def lookupField? (object : ObjectRecord) (fieldName : Name)
     (arguments : List Argument) : Option Value :=
   lookupFieldIn? fieldName arguments object.fields
 
+-- Spec-related store invariant: each stored field fact conforms to schema lookup.
 def fieldFactWellTyped (schema : Schema) (object : ObjectRecord)
     (fieldKey : FieldKey) (value : Value) : Prop :=
   ∃ fieldDefinition,
     schema.lookupField object.typeName fieldKey.name = some fieldDefinition
       ∧ Value.conformsToType schema value fieldDefinition.outputType
 
+-- Spec-related store invariant for object records.
 def wellTyped (schema : Schema) (object : ObjectRecord) : Prop :=
   schema.objectType object.typeName
     ∧ ∀ fieldFact, fieldFact ∈ object.fields ->
@@ -115,16 +121,19 @@ def wellTyped (schema : Schema) (object : ObjectRecord) : Prop :=
 
 end ObjectRecord
 
+-- Non-spec finite typed object store used to instantiate the execution resolver API.
 structure Store where
   objects : List ObjectRecord := []
 deriving Repr
 
 namespace Store
 
+-- Non-spec object lookup by runtime type and identity.
 def lookupObject? (store : Store) (typeName : Name)
     (id : ObjectId) : Option ObjectRecord :=
   store.objects.find? (fun object => object.typeName == typeName && object.id == id)
 
+-- Spec 6.4.2 `ResolveFieldValue` over proof-facing store values.
 def resolveValue (store : Store) (fieldName : Name) (arguments : List Argument) :
     Value -> Value
   | .object runtimeType id =>
@@ -136,6 +145,7 @@ def resolveValue (store : Store) (fieldName : Name) (arguments : List Argument) 
           | some value => value
   | _ => .null
 
+-- Spec 6.4.2 `ResolveFieldValue` bridge for the existing execution engine.
 def resolve (store : Store) (fieldName : Name) (arguments : List Argument)
     (source : Execution.Value) : Execution.Value :=
   match source with
@@ -148,10 +158,12 @@ def resolve (store : Store) (fieldName : Name) (arguments : List Argument)
           | some value => value.toExecutionValue
   | _ => .null
 
+-- Spec 6.4.2 resolver interface backed by the proof-facing store.
 def resolvers (store : Store) : Execution.Resolvers :=
   { resolve := fun _parentType fieldName arguments source =>
       store.resolve fieldName arguments source }
 
+-- Spec-related store well-typedness invariant over all object records.
 def wellTyped (schema : Schema) (store : Store) : Prop :=
   ∀ object, object ∈ store.objects -> object.wellTyped schema
 
@@ -180,6 +192,7 @@ theorem resolveValue_toExecutionValue (store : Store)
 
 end Store
 
+-- Non-spec query root object identity for store-backed execution.
 structure Root where
   typeName : Name
   id : ObjectId
@@ -187,26 +200,31 @@ deriving Repr, DecidableEq
 
 namespace Root
 
+-- Spec-related bridge from a proof-facing root to the execution source value.
 def toExecutionValue (root : Root) : Execution.Value :=
   .object root.typeName root.id
 
+-- Spec-related root well-typedness: the root object is included in the query root type.
 def wellTyped (schema : Schema) (root : Root) : Prop :=
   schema.typeIncludesObject schema.queryType root.typeName
 
 end Root
 
+-- Spec 6.2.1 `ExecuteQuery` over semantic operations with store-backed resolvers.
 def executeSemanticQuery (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues)
     (operation : Semantic.Operation) (root : Root) : Execution.Response :=
   Execution.executeSemanticQuery schema store.resolvers variableValues
     operation root.toExecutionValue
 
+-- Spec 6.2.1 `ExecuteQuery` over raw modeled operations and store-backed resolvers.
 def executeOperation (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues)
     (operation : Operation) (root : Root) : Execution.Response :=
   Execution.executeQuery schema store.resolvers variableValues
     operation root.toExecutionValue
 
+-- Spec-related fuel-explicit execution wrapper for semantic preservation statements.
 def executeSemanticQueryWithFuel (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (operation : Semantic.Operation) (root : Root) : Execution.Response :=
@@ -249,6 +267,7 @@ deriving Repr
 namespace TypedResponse
 
 mutual
+  -- Spec-related erasure from typed responses to ordinary execution responses.
   def erase : TypedResponse -> Execution.Response
     | .null => .null
     | .scalar value => .scalar value
@@ -321,6 +340,7 @@ theorem eraseFields_append (left right : List (Name × TypedResponse)) :
 end TypedResponse
 
 mutual
+  -- Spec 6.4.3 `CompleteValue` shallow fallback retaining runtime object type.
   def shallowTypedResponse : Value -> TypedResponse
     | .null => .null
     | .scalar value => .scalar value
@@ -414,6 +434,7 @@ mutual
           ++ executeCollectedFields schema store variableValues fuel source rest
 end
 
+-- Spec 6.2.1 `ExecuteQuery` over typed, store-backed semantic execution.
 def executeSemanticQuery (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues)
     (operation : Semantic.Operation) (root : Root) : TypedResponse :=
@@ -422,6 +443,7 @@ def executeSemanticQuery (schema : Schema) (store : Store)
       (Execution.executeSemanticQueryFuel operation) operation.rootType
       (.object root.typeName root.id) operation.selectionSet)
 
+-- Spec-related fuel-explicit typed semantic execution wrapper.
 def executeSemanticQueryWithFuel (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (operation : Semantic.Operation) (root : Root) : TypedResponse :=
@@ -429,6 +451,7 @@ def executeSemanticQueryWithFuel (schema : Schema) (store : Store)
     (executeSelectionSet schema store variableValues fuel operation.rootType
       (.object root.typeName root.id) operation.selectionSet)
 
+-- Spec 6.2.1 `ExecuteQuery` over typed, store-backed raw operation execution.
 def executeOperation (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues)
     (operation : Operation) (root : Root) : TypedResponse :=
@@ -607,6 +630,7 @@ theorem executeOperation_erase (schema : Schema) (store : Store)
 
 end TypedExecution
 
+-- Spec 5.5.2.3 `GetPossibleTypes` runtime condition check for typed responses.
 def possibleTypesHoldBool (possibleTypes : Option (List Name))
     (runtimeType : Name) : Bool :=
   match possibleTypes with
@@ -654,6 +678,7 @@ theorem possibleTypes_filter_nonempty_of_typeIncludesObject (schema : Schema)
   rw [hempty] at hmem
   cases hmem
 
+-- Spec 3.13.1 `@skip` / 3.13.2 `@include` Boolean directive condition check.
 def booleanLiteralHoldsBool (variableValues : Execution.VariableValues) :
     ResponseShape.BooleanLiteral -> Bool
   | .positive name =>
@@ -665,6 +690,8 @@ def booleanLiteralHoldsBool (variableValues : Execution.VariableValues) :
       | some value => !value
       | none => false
 
+-- Spec-inspired response-shape condition check against typed runtime object type and
+-- modeled variable values.
 def conditionHoldsBool (variableValues : Execution.VariableValues)
     (runtimeType : Name) (condition : ResponseShape.Condition) : Bool :=
   possibleTypesHoldBool condition.possibleTypes runtimeType
@@ -972,6 +999,7 @@ theorem typedFieldsConformToShapeBool_singleton
   exact typedFieldsConformToShapeBool_nil variableValues fuel runtimeType
     ⟨[(responseName, variants)]⟩
 
+-- Spec-related semantic operation equivalence over all well-typed store/root inputs.
 def semanticOperationsEquivalentOnData (schema : Schema)
     (left right : Semantic.Operation) : Prop :=
   ∀ store variableValues root,
@@ -980,6 +1008,7 @@ def semanticOperationsEquivalentOnData (schema : Schema)
         executeSemanticQuery schema store variableValues left root
           = executeSemanticQuery schema store variableValues right root
 
+-- Spec-related semantic operation equivalence with an explicit shared execution fuel.
 def semanticOperationsEquivalentOnDataWithFuel (schema : Schema)
     (fuel : Nat) (left right : Semantic.Operation) : Prop :=
   ∀ store variableValues root,
@@ -1034,6 +1063,8 @@ theorem semanticOperationsEquivalentOnDataWithFuel_trans (schema : Schema)
     (hleft store variableValues root hstore hroot)
     (hright store variableValues root hstore hroot)
 
+-- Spec-related raw operation equivalence after fragment inlining, over the store-backed
+-- execution model.
 def operationsEquivalentOnData (schema : Schema) (left right : Operation) : Prop :=
   semanticOperationsEquivalentOnData schema
     (Semantic.fromOperation left) (Semantic.fromOperation right)
@@ -1053,6 +1084,8 @@ theorem operationsEquivalentOnData_trans (schema : Schema) {left middle right : 
         operationsEquivalentOnData schema left right := by
   exact semanticOperationsEquivalentOnData_trans schema
 
+-- Project-specific correctness statement: normalizing a semantic operation preserves
+-- store-backed execution at the source operation's fuel budget.
 def groundNormalFormCorrect (schema : Schema)
     (operation : Semantic.Operation) : Prop :=
   semanticOperationsEquivalentOnDataWithFuel schema
@@ -1101,6 +1134,7 @@ theorem groundNormalFormCorrect_inlineFragmentSingleLeafNoDirectives (schema : S
     Execution.executeCollectedFields, Execution.executeField,
     Execution.mergedFieldSelectionSet]
 
+-- Project-specific response-shape soundness statement for typed store-backed execution.
 def responseShapeCorrectForTypedExecution (schema : Schema)
     (operation : Semantic.Operation) : Prop :=
   ∀ store variableValues root,
@@ -1110,6 +1144,7 @@ def responseShapeCorrectForTypedExecution (schema : Schema)
           (TypedExecution.executeSemanticQuery schema store variableValues operation root)
           (ResponseShape.Shape.ofSemanticOperation schema operation) = true
 
+-- Project-specific response-shape soundness with an explicit root runtime-type inclusion.
 def responseShapeCorrectForTypedExecutionAtRoot (schema : Schema)
     (operation : Semantic.Operation) : Prop :=
   ∀ store variableValues root,
@@ -1298,6 +1333,7 @@ theorem responseShapeCorrectForTypedExecutionAtRoot_typedInlineFragmentSingleLea
       conditionHoldsBool, possibleTypesHoldBool_of_typeIncludesObject schema hfragmentType,
       ResponseShape.Shape.lookupField]
 
+-- Project-specific statement: normal form preserves computed response shape equivalence.
 def normalFormPreservesResponseShape (schema : Schema)
     (operation : Semantic.Operation) : Prop :=
   ResponseShape.Shape.equivalent
@@ -1305,6 +1341,7 @@ def normalFormPreservesResponseShape (schema : Schema)
     (ResponseShape.Shape.ofSemanticOperation schema
       (NormalForm.normalizeSemanticOperation schema operation))
 
+-- Boolean counterpart to `normalFormPreservesResponseShape`.
 def normalFormPreservesResponseShapeBool (schema : Schema)
     (operation : Semantic.Operation) : Bool :=
   ResponseShape.Shape.equivalentBool
@@ -1448,6 +1485,7 @@ theorem normalFormPreservesResponseShape_inlineFragmentSingleLeafNoDirectives
     (normalFormPreservesResponseShapeBool_inlineFragmentSingleLeafNoDirectives
       schema name rootType variableDefinitions responseName fieldName arguments)
 
+-- Project-specific response-shape conformance predicate for a produced typed response.
 def responseShapeCorrectForTypedResponse (schema : Schema)
     (operation : Semantic.Operation)
     (variableValues : Execution.VariableValues)

@@ -47,6 +47,8 @@ mutual
       ∧ ∀ selection, selection ∈ selectionSet -> selectionGroundTyped schema selection
 end
 
+-- Spec-inspired non-redundancy helper: response names are unique at one semantic
+-- selection-set layer.
 def responseNamesNodup (selectionSet : List Semantic.Selection) : Prop :=
   (selectionSet.filterMap Semantic.Selection.responseName?).Nodup
 
@@ -75,14 +77,19 @@ mutual
       ∧ ∀ selection, selection ∈ selectionSet -> selectionNonRedundant selection
 end
 
+-- Spec-inspired normal-form invariant: combines object grounding with this project's
+-- response-name/type-condition non-redundancy predicate.
 def selectionSetNormal (schema : Schema)
     (selectionSet : List Semantic.Selection) : Prop :=
   selectionSetGroundTyped schema selectionSet ∧ selectionSetNonRedundant selectionSet
 
+-- Spec-inspired semantic operation normality: non-spec wrapper over the root selection
+-- set.
 def semanticOperationNormal (schema : Schema)
     (operation : Semantic.Operation) : Prop :=
   selectionSetNormal schema operation.selectionSet
 
+-- Spec-inspired operation normality after fragment inlining.
 def operationNormal (schema : Schema) (operation : GraphQL.Operation) : Prop :=
   semanticOperationNormal schema (Semantic.fromOperation operation)
 
@@ -151,6 +158,8 @@ def normalizeSelectionSet (schema : Schema) (fuel : Nat)
     List Semantic.Selection :=
   mergeFieldSelections.normalizeSelectionSet schema fuel parentType selectionSet
 
+-- Spec-inspired semantic normalizer: non-spec wrapper around selection-set
+-- normalization.
 def normalizeSemanticOperation (schema : Schema)
     (operation : Semantic.Operation) : Semantic.Operation :=
   { operation with

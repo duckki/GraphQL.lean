@@ -166,8 +166,12 @@ The current proof ladder is:
    `DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeLeafFieldsNoDirectives_ofObjectOutput`,
    using `LeafField.toSelectionSet_append` and
    `LeafField.childShape_toSelectionSet` to connect child semantic selections
-   to collected child response shapes. Next, add thin named/non-null wrappers
-   for this object-output theorem, then generalize the list-output case.
+   to collected child response shapes. Thin wrappers now expose named and
+   non-null named object-output cases through
+   `DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeLeafFieldsNoDirectives`
+   and
+   `DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullLeafFieldsNoDirectives`.
+   Next, generalize the list-output case.
    Bridge lemmas now live in `GraphQL.DataModel.Store`:
    `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
    `ObjectRecord.lookupField?_some_conformsToLookupField`,

@@ -102,8 +102,12 @@ names. It uses `LeafField.toSelectionSet_append`,
 `LeafField.childShape_toSelectionSet`,
 `LeafField.typedResponseConformsToShape_completeValue_objectSelectionSetAnyFuel`,
 and `LeafField.typedVariantConformsToShape_parentObjectSelectionSetAnyFuel`.
-The next boundary is adding the thin named/non-null object-output wrappers and
-then lifting the list-output case to the same `LeafField` abstraction.
+Thin object-output wrappers now cover named and non-null named composite fields:
+`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeLeafFieldsNoDirectives`
+and
+`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullLeafFieldsNoDirectives`.
+The next boundary is lifting the list-output case to the same `LeafField`
+abstraction.
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
 `ObjectRecord.lookupField?_some_conformsToLookupField`,

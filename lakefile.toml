@@ -1,13 +1,10 @@
 name = "graphql-lean"
 version = "0.1.0"
-defaultTargets = ["GraphQL", "Federation"]
+defaultTargets = ["GraphQL"]
 lintDriver = "lint"
 
 [[lean_lib]]
 name = "GraphQL"
-
-[[lean_lib]]
-name = "Federation"
 
 [[lean_exe]]
 name = "lint"

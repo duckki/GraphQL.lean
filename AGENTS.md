@@ -1,12 +1,11 @@
 # Repo Agent Memory
 
-This repo is a Lean formalization workspace for GraphQL, with federation planned
-later.
+This repo is a Lean formalization workspace for a scoped plain GraphQL fragment.
 
 ## Current Priority
 
-Spec conformance is the current priority, but only for the scoped plain GraphQL
-fragment described in `docs/spec-conformance-plan.md`.
+Spec conformance is the current priority, following
+`docs/spec-conformance-plan.md`.
 
 Current explicit skips:
 
@@ -16,132 +15,28 @@ Current explicit skips:
 - coercion, assuming values are already coerced and type-conformant,
 - introspection and meta-fields,
 - execution errors and response `errors` / `extensions`,
+- response-shape analysis,
 - minimization,
 - federation.
 
-The immediate proof goal is to formalize the data model enough to prove
-response-shape analysis and ground normal form correctness.
+The immediate proof goal is to formalize schema, operation validation,
+store-backed execution, and ground normal form enough to support later semantic
+operation transformation algorithms.
 
 ## Current Status
 
-`GraphQL.DataModel` has been added as the proof-facing data model. It defines
-typed object identities, field facts keyed by already-coerced arguments,
-store-backed resolvers, typed response trees, response-shape conformance checks,
-and correctness predicates for operation equivalence and ground normal form.
+`GraphQL.DataModel` is the proof-facing data model. It defines typed object
+identities, field facts keyed by already-coerced arguments, store-backed
+resolvers, and correctness predicates for operation equivalence and ground
+normal form.
 
-`GraphQL.DataModel.TypedExecution` now provides typed execution over the store
-model while preserving runtime object type names in response objects. Untyped
-data-model execution is tied directly to `GraphQL.Execution` through
-store-backed resolvers. Data-model operation equivalence has reflexivity,
-symmetry, and transitivity theorems. Typed execution has erasure theorems ending
-at `DataModel.TypedExecution.executeOperation_erase`.
-
-`DataModel.groundNormalFormCorrect` now uses
+`DataModel.groundNormalFormCorrect` uses
 `DataModel.semanticOperationsEquivalentOnDataWithFuel` with the source
 operation's `Execution.executeSemanticQueryFuel` for both the original and
 normalized operations. This is intentional: normalizing can shrink syntax, and
 the bounded executor should not count that fuel-budget change as a semantic
 change.
 
-`GraphQL.ResponseShape` now resets child-shape possible runtime types to the
-field return type through `ResponseShape.Condition.forChildType`. Keep this
-behavior when working on response-shape soundness.
-
-Ground normal form correctness is proved for direct single-leaf selections with
-or without modeled directives, inline-fragment single-leaf selections without
-directives, object-type typed inline fragments with modeled directives, two or
-three direct no-directive leaf fields with distinct response names, and any
-direct no-directive leaf-field list with distinct response names through
-`DataModel.LeafField`. `DataModel.LeafField` also proves those lists are already
-normal semantic selection sets and factors their typed execution through
-`collectFields_toSelectionSet`, `executeSelectionSet_toSelectionSet`, and
-`executeSemanticQuery_toSelectionSet`. It also has response-shape construction
-and conformance counterparts through `toShapeFields`,
-`collectSelectionSetShapeFields_toSelectionSet`,
-`ofSemanticOperation_toSelectionSet`,
-`typedFieldsConformToShapeFields`, and
-`responseShapeCorrectForTypedExecutionAtRoot_distinctLeafFieldsNoDirectives`.
-It also proves list-level normal-form response-shape preservation through
-`normalFormPreservesResponseShape_distinctLeafFieldsNoDirectives`. Same-response-name
-field merging has started: identical duplicate direct leaf fields are covered by
-`NormalForm.normalizeSemanticOperation_twoSameLeafNoDirectives`,
-`DataModel.groundNormalFormCorrect_twoSameLeafNoDirectives`,
-`DataModel.normalFormPreservesResponseShape_twoSameLeafNoDirectives`, and
-`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameLeafNoDirectives`.
-The first composite merge case,
-`NormalForm.normalizeSemanticOperation_twoSameCompositeDistinctLeafNoDirectives`,
-also has ground semantic preservation in
-`DataModel.groundNormalFormCorrect_twoSameCompositeDistinctLeafNoDirectives` and
-normal-form response-shape preservation in
-`DataModel.normalFormPreservesResponseShape_twoSameCompositeDistinctLeafNoDirectives`.
-Typed response-shape soundness for the named composite-output version is covered by
-`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeDistinctLeafNoDirectives`.
-The one-level list-valued composite-output version is covered by
-`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListDistinctLeafNoDirectives`,
-using `typedResponseConformsToShapeBool_completeValue_namedComposite_listOneFuel`.
-The same response-shape soundness cases now also cover non-null wrappers through
-`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullDistinctLeafNoDirectives`
-and
-`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullListDistinctLeafNoDirectives`,
-with the proof bodies factored through the `_ofObjectOutput` and `_ofListOutput`
-generic theorems. The next proof boundary is lifting the child selection set from
-the two-leaf case to the `LeafField` list abstraction. Initial reusable helpers
-for that lift are `LeafField.mergeFields_parentVariant_childShapeFields_append`,
-`LeafField.mergeWithFuel_parentVariant_childShapeFields_append`, and
-`LeafField.typedResponseConformsToShape_completeValue_objectSelectionSet`.
-The fuel-polymorphic versions
-`LeafField.typedFieldsConformToShapeFieldsWithFuel`,
-`LeafField.typedResponseConformsToShape_completeValue_objectSelectionSetWithFuel`,
-and `LeafField.typedVariantConformsToShape_parentObjectSelectionSetWithFuel`
-are available for the generalized composite merge proof. The current generalized
-object-output proof is
-`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeLeafFieldsNoDirectives_ofObjectOutput`;
-it handles two same-response-name composite parent selections whose child
-selection sets are arbitrary direct `LeafField` lists with disjoint response
-names. It uses `LeafField.toSelectionSet_append`,
-`LeafField.childShape_toSelectionSet`,
-`LeafField.typedResponseConformsToShape_completeValue_objectSelectionSetAnyFuel`,
-and `LeafField.typedVariantConformsToShape_parentObjectSelectionSetAnyFuel`.
-Thin object-output wrappers now cover named and non-null named composite fields:
-`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeLeafFieldsNoDirectives`
-and
-`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullLeafFieldsNoDirectives`.
-For list-output generalization, the reusable element/list bridges are
-`LeafField.typedResponseConformsToShape_completeValue_namedCompositeSelectionSetAnyFuel`
-and
-`LeafField.typedResponseConformsToShape_completeValue_namedCompositeListSelectionSetAnyFuel`.
-The generalized list-output parent theorem is
-`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeLeafFieldsNoDirectives_ofListOutput`.
-It handles two same-response-name composite parent selections whose child
-selection sets are arbitrary direct `LeafField` lists and whose resolved parent
-value is a list of named child composite values. Thin list-output wrappers now
-cover list and non-null list fields:
-`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeListLeafFieldsNoDirectives`
-and
-`DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullListLeafFieldsNoDirectives`.
-The older two-child public theorem names for named, non-null named, list, and
-non-null list composite parents now remain as compatibility wrappers delegating
-to the generalized `LeafField` wrappers. Normalization and ground normal-form
-correctness are now generalized for two same-response-name composite parent
-fields whose child selection sets are arbitrary direct `LeafField` lists:
-`LeafField.normalizeSemanticOperation_twoSameCompositeLeafFieldsNoDirectives`
-and
-`DataModel.groundNormalFormCorrect_twoSameCompositeLeafFieldsNoDirectives`.
-Response-shape helper lemmas for that lift are now available:
-`LeafField.mergeFields_parentVariant_childShape_nil`,
-`LeafField.childShape_toSelectionSet_unsat`,
-`LeafField.equivalentBool_parentVariant_childShapeFields_self`,
-`LeafField.condition_and_empty`,
-`LeafField.collectSelectionShapeFields_field_toSelectionSet`, and
-`LeafField.collectSelectionShapeFields_field_toSelectionSet_unsat`. Normal-form
-response-shape preservation now also covers that same generalized `LeafField`
-composite merge case through
-`DataModel.normalFormPreservesResponseShapeBool_twoSameCompositeLeafFieldsNoDirectives`
-and
-`DataModel.normalFormPreservesResponseShape_twoSameCompositeLeafFieldsNoDirectives`.
-The next boundary is wiring older hard-coded two-child normal-form
-response-shape theorem names through the generalized wrapper, then deciding the
-next merge generalization beyond arbitrary direct child `LeafField` lists.
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
 `ObjectRecord.lookupField?_some_conformsToLookupField`,
@@ -151,14 +46,7 @@ The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `fieldReturnType?_some_lookupField`, and
 `scalar_not_conformsToType_of_possibleTypes_nonempty`.
 
-Directive-specific data-model proofs live in `GraphQL/DataModel/Directives.lean`.
-That module currently proves single-leaf response-shape soundness for modeled
-`@skip` and `@include` directive lists whose shape condition parses, both on
-direct fields, untyped inline fragments, and typed inline fragments. It also
-proves normal-form response-shape preservation for direct directive-bearing
-single fields and object-type typed inline fragments.
-
-The latest successful checks were:
+The latest successful checks before cleanup were:
 
 ```sh
 lake build
@@ -172,9 +60,6 @@ lake lint
 - `docs/references.md`: GraphCoQL reference notes and proof-strategy context.
 - `GraphQL/DataModel.lean`: typed store model and correctness predicates.
 - `GraphQL/DataModel/Store.lean`: store-resolution well-typedness bridge lemmas.
-- `GraphQL/DataModel/Directives.lean`: `@skip`/`@include` response-shape proofs.
-- `GraphQL/DataModel/SelectionSet.lean`: multi-selection response-shape proofs.
-- `GraphQL/ResponseShape.lean`: response-shape construction and inclusion.
 - `GraphQL/NormalForm.lean`: ground normal form scaffold.
 - `GraphQL/Execution.lean`: resolver-based execution used by the data model.
 - `GraphQL/Validation.lean`: current operation validity assumptions.

@@ -5,13 +5,9 @@ import GraphQL.Semantic
 import GraphQL.FieldMerge
 import GraphQL.Validation
 import GraphQL.NormalForm
-import GraphQL.ResponseShape
 import GraphQL.Execution
 import GraphQL.DataModel
 import GraphQL.DataModel.Store
-import GraphQL.DataModel.Directives
-import GraphQL.DataModel.SelectionSet
-import GraphQL.Minimization
 
 /-!
 Spec reference: GraphQL September 2025.

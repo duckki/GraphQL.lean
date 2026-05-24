@@ -26,7 +26,9 @@ GraphCoQL separates executable definitions from proof-heavy theory files:
 - `src/GraphConformance.v`: graph conformance to a well-formed schema, parameterized by scalar validation.
 - `src/Query.v`: query AST: field selections, aliased fields, nested fields, nested aliased fields, inline fragments, optional query name, and selection set.
 - `src/QueryAux.v`: selection sizes, response names, filtering, merging, and selection helper functions.
-- `src/QueryConformance.v`: query validation against a schema, including argument conformance, selection consistency, response-shape compatibility, and field merging/renaming consistency.
+- `src/QueryConformance.v`: query validation against a schema, including
+  argument conformance, selection consistency, field compatibility, and field
+  merging/renaming consistency.
 - `src/QueryNormalForm.v`: ground-typed normal form, non-redundancy, and query normalization.
 - `src/Response.v`: response values and GraphQL responses.
 - `src/QuerySemantics.v`: executable query semantics and simplified semantics for normalized queries.
@@ -92,9 +94,10 @@ Execution follows GraphQL's selection execution shape but targets a graph model:
 
 GraphCoQL also defines a simplified semantics for normalized queries. The important theorem direction for future Lean work is not just "normalization produces normal form", but "normalization preserves query semantics".
 
-## Normal Form And Minimization Relevance
+## Normal Form Relevance
 
-GraphCoQL's normal form work is the most relevant bridge to this repo's minimization goals.
+GraphCoQL's normal form work is the most relevant bridge to this repo's
+operation-transformation goals.
 
 Ground-typed normal form specializes selections under abstract types into concrete object-type cases. Non-redundancy removes duplicate response names and duplicate inline fragments. Normalization performs two operations:
 
@@ -107,10 +110,9 @@ For this Lean project, GraphCoQL suggests a proof ladder:
 2. Define schema lookup and possible-type semantics for object/interface/union types.
 3. Define validation as executable booleans or propositions, with explicit links between both if both are needed.
 4. Define response shape and concrete execution semantics separately.
-5. Define normalization/minimization candidates using structural measures.
+5. Define normalization candidates using structural measures.
 6. Prove generated candidates are valid or preserve validation assumptions.
-7. Prove semantic or response-shape preservation.
-8. Prove minimality over a finite candidate set only after the semantic preservation story is solid.
+7. Prove semantic preservation.
 
 ## Lean Porting Notes
 
@@ -120,18 +122,24 @@ Lean does not need to copy GraphCoQL's Coq-specific encodings. In particular:
 - Coq `Record`-with-boolean-proof wrappers translate naturally to Lean structures with proof fields, or to predicates when bundling would add friction.
 - Equations-based recursive definitions can become structurally recursive functions when possible, or well-founded recursion using explicit size measures when selection-list recursion recurses through filtered, merged, or appended lists.
 - GraphCoQL's custom induction principle for selections is a warning sign: nested lists inside an inductive selection type will need carefully chosen recursors or helper lemmas in Lean too.
-- Keep executable booleans close to their specification predicates when practical. If the Lean development prefers `Prop` validation first, add boolean decision procedures only when needed for examples or finite minimization.
+- Keep executable booleans close to their specification predicates when
+  practical. If the Lean development prefers `Prop` validation first, add
+  boolean decision procedures only when needed for examples.
 
 ## Fidelity Targets For This Repo
 
-Use GraphCoQL as the baseline for plain GraphQL fidelity before federation:
+Use GraphCoQL as the baseline for plain GraphQL fidelity:
 
 - model the same core schema categories,
 - keep schema well-formedness separate from raw schema syntax,
 - support possible-object semantics for abstract types,
 - validate field selection, argument names/types, leaf/non-leaf selection shape, inline fragment applicability, and field merge compatibility,
-- define execution or response-shape semantics precisely enough to state preservation theorems,
+- define execution semantics precisely enough to state preservation theorems,
 - include examples analogous to Hartig/Perez, GraphQL spec validation examples, and GraphQL.js Star Wars queries,
 - state unsupported features explicitly whenever a module only covers the GraphCoQL fragment.
 
-GraphCoQL should not be treated as the final target. It is a strong lower bound for the plain GraphQL layer. This project can build beyond it by adding named fragments, directives, non-null types, variables, input objects, errors, and eventually federation, but those extensions should be staged after the GraphCoQL-level semantics and validation core is coherent.
+GraphCoQL should not be treated as the final target. It is a strong lower bound
+for the plain GraphQL layer. This project can build beyond it by adding named
+fragments, directives, non-null types, variables, input objects, and errors, but
+those extensions should be staged after the GraphCoQL-level semantics and
+validation core is coherent.

@@ -54,7 +54,7 @@ theorem lookupFieldIn?_some_conformsToLookupField (schema : Schema)
       | mk key fieldValue =>
           by_cases hmatch :
               key.name == fieldName
-                && ResponseShape.SelectedField.argumentsEqBool key.arguments arguments
+                && FieldKey.argumentsEqBool key.arguments arguments
           · have hlookupHead : fieldValue = value := by
               simpa [lookupFieldIn?, hmatch] using hlookup
             subst value

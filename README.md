@@ -1,6 +1,6 @@
 # graphql-lean
 
-Lean models for GraphQL and, later, GraphQL federation.
+Lean models for GraphQL.
 
 Canonical GraphQL specification reference:
 [GraphQL September 2025 Edition](https://spec.graphql.org/September2025/).
@@ -35,4 +35,3 @@ declaration names, and a 1500-line soft file limit.
 The main top-level libraries are:
 
 - `GraphQL`
-- `Federation`

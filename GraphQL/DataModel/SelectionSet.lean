@@ -1779,6 +1779,89 @@ theorem typedVariantConformsToShape_parentObjectSelectionSetAnyFuel
       declaredParentType (toSelectionSet fields) (.object runtimeType id))
     parentHeader ⟨toShapeFields childCondition fields⟩ hparentActive hchild
 
+theorem typedResponseConformsToShape_completeValue_namedCompositeSelectionSetAnyFuel
+    (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (responseFuel executionFuel : Nat)
+    (parentType childType : Name) (fields : List LeafField) (value : Value) :
+    responseNamesNodup fields ->
+      Value.conformsToType schema value (.named childType) ->
+      ¬ schema.getPossibleTypes childType = [] ->
+        typedResponseConformsToShapeBool variableValues responseFuel
+          (TypedExecution.completeValue schema store variableValues (executionFuel + 2)
+            parentType (toSelectionSet fields) value)
+          ⟨toShapeFields
+            { possibleTypes := some (schema.getPossibleTypes childType),
+              booleanLiterals := [] }
+            fields⟩ = true := by
+  intro hnodup hconforms hchildNonempty
+  cases value with
+  | null =>
+      cases responseFuel <;>
+        simp [TypedExecution.completeValue, typedResponseConformsToShapeBool]
+  | scalar scalarValue =>
+      exact False.elim
+        ((scalar_not_conformsToType_of_possibleTypes_nonempty schema scalarValue
+          (.named childType) (by simpa [TypeRef.namedType] using hchildNonempty))
+          hconforms)
+  | object runtimeType id =>
+      have hchildType : schema.typeIncludesObject childType runtimeType :=
+        object_conformsToType_typeIncludesObject schema runtimeType id childType
+          (.named childType) (by simp [TypeRef.namedType]) hconforms
+      have hcondition :
+          conditionHoldsBool variableValues runtimeType
+            { possibleTypes := some (schema.getPossibleTypes childType),
+              booleanLiterals := [] } = true := by
+        simp [conditionHoldsBool,
+          possibleTypesHoldBool_of_typeIncludesObject schema hchildType]
+      exact
+        typedResponseConformsToShape_completeValue_objectSelectionSetAnyFuel
+          schema store variableValues responseFuel executionFuel parentType runtimeType id
+          { possibleTypes := some (schema.getPossibleTypes childType),
+            booleanLiterals := [] }
+          fields hnodup hcondition
+  | list values =>
+      cases hconforms
+
+theorem typedResponseConformsToShape_completeValue_namedCompositeListSelectionSetAnyFuel
+    (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues) (responseFuel executionFuel : Nat)
+    (parentType childType : Name) (fields : List LeafField) (values : List Value) :
+    responseNamesNodup fields ->
+      (∀ value, value ∈ values -> Value.conformsToType schema value (.named childType)) ->
+      ¬ schema.getPossibleTypes childType = [] ->
+        (values.map
+          (TypedExecution.completeValue schema store variableValues (executionFuel + 2)
+            parentType (toSelectionSet fields))).all
+          (fun response =>
+            typedResponseConformsToShapeBool variableValues responseFuel response
+              ⟨toShapeFields
+                { possibleTypes := some (schema.getPossibleTypes childType),
+                  booleanLiterals := [] }
+                fields⟩) = true := by
+  intro hnodup hconforms hchildNonempty
+  induction values with
+  | nil =>
+      simp
+  | cons value rest ih =>
+      have hvalue :
+          typedResponseConformsToShapeBool variableValues responseFuel
+            (TypedExecution.completeValue schema store variableValues (executionFuel + 2)
+              parentType (toSelectionSet fields) value)
+            ⟨toShapeFields
+              { possibleTypes := some (schema.getPossibleTypes childType),
+                booleanLiterals := [] }
+              fields⟩ = true :=
+        typedResponseConformsToShape_completeValue_namedCompositeSelectionSetAnyFuel
+          schema store variableValues responseFuel executionFuel parentType childType
+          fields value hnodup (hconforms value (by simp)) hchildNonempty
+      have hrestConforms :
+          ∀ value, value ∈ rest ->
+            Value.conformsToType schema value (.named childType) := by
+        intro restValue hmem
+        exact hconforms restValue (by simp [hmem])
+      have hrest := ih hrestConforms
+      simp [hvalue, hrest]
+
 end LeafField
 
 theorem groundNormalFormCorrect_twoSameLeafNoDirectives (schema : Schema)

@@ -171,7 +171,11 @@ The current proof ladder is:
    `DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeLeafFieldsNoDirectives`
    and
    `DataModel.responseShapeCorrectForTypedExecutionAtRoot_twoSameCompositeNonNullLeafFieldsNoDirectives`.
-   Next, generalize the list-output case.
+   The list-output case now has reusable element/list bridges:
+   `LeafField.typedResponseConformsToShape_completeValue_namedCompositeSelectionSetAnyFuel`
+   and
+   `LeafField.typedResponseConformsToShape_completeValue_namedCompositeListSelectionSetAnyFuel`.
+   Next, use them to prove the generalized list-output parent theorem.
    Bridge lemmas now live in `GraphQL.DataModel.Store`:
    `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
    `ObjectRecord.lookupField?_some_conformsToLookupField`,

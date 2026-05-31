@@ -42,6 +42,9 @@ These are out of scope for the current conformance pass:
 - execution errors, request errors, `errors`, `extensions`, and null bubbling,
 - serialization details,
 - response-shape analysis,
+- directive-sensitive normal-form semantics; validation and execution still
+  model `@skip` and `@include`, but the current normal-form proof path assumes
+  source operations have no modeled directives,
 - minimization,
 - federation.
 
@@ -76,7 +79,15 @@ The main modules are:
 
 `GraphQL.DataModel` is the current bridge from resolver execution to proof
 semantics. It models typed object identities, field facts keyed by already
-coerced arguments, and deterministic store-backed resolution.
+coerced arguments, and deterministic store-backed resolution. Store field keys
+compare arguments and input-object fields by GraphQL's unordered semantics after
+validation has ruled out duplicate names.
+
+`GraphQL.NormalForm` follows the GraphCoQL-level normal-form target under a
+directive-free source-operation assumption. It merges fields and grounds
+abstract selections without a separate directive-erasure pass.
+Directive-sensitive normalization can be revisited after the directive-free
+semantic preservation proof is stable.
 
 `DataModel.groundNormalFormCorrect` is stated over a shared source-operation
 execution fuel budget. This avoids treating normalizer size changes as semantic

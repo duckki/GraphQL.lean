@@ -70,17 +70,18 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
   checks, recursive input/output type checks, required non-empty selection sets,
   modeled `@skip`/`@include`, field merge checks, fragment resolution,
   acyclicity, and fragment applicability.
-- `GraphQL.NormalForm`: ground-typed normal form and non-redundancy predicates
-  over semantic selection sets, plus a bounded normalization pass for field
-  merging and abstract-type grounding.
+- `GraphQL.NormalForm`: ground-typed normal form and non-redundancy predicates over
+  semantic selection sets, plus a bounded normalization pass for field merging and
+  abstract-type grounding under a directive-free source-operation assumption.
 - `GraphQL.Execution`: execution over semantic selections as a function
   parameterized by abstract resolver functions. It collects executable fields by
   response name, resolves each response name once, passes field arguments to
   resolvers, and applies `@skip` / `@include` filtering.
 - `GraphQL.DataModel`: an extensional object-store model for the scoped
   conformance target. It represents object identities, field facts keyed by
-  already-coerced arguments, store-backed resolvers, and predicates for
-  data-model equivalence of semantic operations.
+  already-coerced arguments, unordered GraphQL argument/input-object key
+  comparison, store-backed resolvers, and predicates for data-model equivalence
+  of semantic operations.
 - `GraphQL.DataModel.Store`: store-resolution bridge lemmas connecting
   `Store.resolveValue` results to well-typed schema field facts.
 
@@ -101,9 +102,10 @@ The current flow is:
 6. `GraphQL.NormalForm` provides the normalization proof scaffold.
 
 Normalization consumes the fragment-inlined semantic form and clears retained
-fragment definitions from the normalized raw operation. Inline fragments without
-type conditions are flattened only when they have no directives; directive-bearing
-inline fragments are retained so their runtime condition is preserved.
+fragment definitions from the normalized raw operation. The current normal-form
+proof path assumes source operations have no modeled directives, so the
+normalizer does not implement directive-sensitive semantics or a directive
+erasure pass.
 
 Raw syntax remains permissive. Validation supplies the invariants that later
 semantic proofs should rely on.

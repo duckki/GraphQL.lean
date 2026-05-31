@@ -28,46 +28,134 @@ deriving Repr
 
 namespace FieldKey
 
--- Spec 2.10 input value equality for store keys: raw structural equality over already
--- coerced argument values.
+-- Spec 2.10 input value equality for store keys: structural equality over already
+-- coerced argument values. Input object field order is ignored, matching GraphQL's
+-- argument/input-object semantics after validation has rejected duplicate names.
 mutual
-  def inputValueEqBool : InputValue -> InputValue -> Bool
-    | .null, .null => true
-    | .int left, .int right => left == right
-    | .float left, .float right => left == right
-    | .string left, .string right => left == right
-    | .boolean left, .boolean right => left == right
-    | .enum left, .enum right => left == right
-    | .list left, .list right => inputValuesEqBool left right
-    | .object left, .object right => inputFieldsEqBool left right
-    | .variable left, .variable right => left == right
-    | _, _ => false
+  def inputValueEqBoolWithFuel : Nat -> InputValue -> InputValue -> Bool
+    | 0, _left, _right => false
+    | _fuel + 1, .null, .null => true
+    | _fuel + 1, .int left, .int right => left == right
+    | _fuel + 1, .float left, .float right => left == right
+    | _fuel + 1, .string left, .string right => left == right
+    | _fuel + 1, .boolean left, .boolean right => left == right
+    | _fuel + 1, .enum left, .enum right => left == right
+    | fuel + 1, .list left, .list right =>
+        inputValuesEqBoolWithFuel fuel left right
+    | fuel + 1, .object left, .object right =>
+        inputFieldsEqBoolWithFuel fuel left right
+    | _fuel + 1, .variable left, .variable right => left == right
+    | _fuel + 1, _left, _right => false
 
-  def inputValuesEqBool : List InputValue -> List InputValue -> Bool
-    | [], [] => true
-    | left :: leftRest, right :: rightRest =>
-        inputValueEqBool left right && inputValuesEqBool leftRest rightRest
-    | _, _ => false
+  def inputValuesEqBoolWithFuel : Nat -> List InputValue -> List InputValue -> Bool
+    | 0, _left, _right => false
+    | _fuel + 1, [], [] => true
+    | fuel + 1, left :: leftRest, right :: rightRest =>
+        inputValueEqBoolWithFuel fuel left right
+          && inputValuesEqBoolWithFuel fuel leftRest rightRest
+    | _fuel + 1, _left, _right => false
 
-  def inputFieldsEqBool : List (Name × InputValue) -> List (Name × InputValue) -> Bool
-    | [], [] => true
-    | (leftName, leftValue) :: leftRest, (rightName, rightValue) :: rightRest =>
+  def inputFieldEqBoolWithFuel :
+      Nat -> Name × InputValue -> Name × InputValue -> Bool
+    | 0, _left, _right => false
+    | fuel + 1, (leftName, leftValue), (rightName, rightValue) =>
         (leftName == rightName)
-          && inputValueEqBool leftValue rightValue
-          && inputFieldsEqBool leftRest rightRest
-    | _, _ => false
+          && inputValueEqBoolWithFuel fuel leftValue rightValue
+
+  def inputFieldMemberEqBoolWithFuel :
+      Nat -> Name × InputValue -> List (Name × InputValue) -> Bool
+    | 0, _field, _fields => false
+    | _fuel + 1, _field, [] => false
+    | fuel + 1, field, candidate :: rest =>
+        inputFieldEqBoolWithFuel fuel field candidate
+          || inputFieldMemberEqBoolWithFuel fuel field rest
+
+  def inputFieldsSubsetEqBoolWithFuel :
+      Nat -> List (Name × InputValue) -> List (Name × InputValue) -> Bool
+    | 0, _left, _right => false
+    | _fuel + 1, [], _right => true
+    | fuel + 1, field :: rest, right =>
+        inputFieldMemberEqBoolWithFuel fuel field right
+          && inputFieldsSubsetEqBoolWithFuel fuel rest right
+
+  def inputFieldsEqBoolWithFuel :
+      Nat -> List (Name × InputValue) -> List (Name × InputValue) -> Bool
+    | 0, _left, _right => false
+    | fuel + 1, left, right =>
+        inputFieldsSubsetEqBoolWithFuel fuel left right
+          && inputFieldsSubsetEqBoolWithFuel fuel right left
 end
 
-def argumentEqBool (left right : Argument) : Bool :=
-  (left.name == right.name) && inputValueEqBool left.value right.value
+def inputValueEqBool (left right : InputValue) : Bool :=
+  inputValueEqBoolWithFuel (left.size + right.size + 1) left right
 
--- Spec 6.4.2 field resolution key comparison, specialized to this model's raw ordered
--- argument representation.
-def argumentsEqBool : List Argument -> List Argument -> Bool
-  | [], [] => true
-  | left :: leftRest, right :: rightRest =>
-      argumentEqBool left right && argumentsEqBool leftRest rightRest
-  | _, _ => false
+def inputValuesEqBool (left right : List InputValue) : Bool :=
+  inputValuesEqBoolWithFuel
+    (InputValue.valuesSize left + InputValue.valuesSize right + 1) left right
+
+def inputFieldsEqBool (left right : List (Name × InputValue)) : Bool :=
+  inputFieldsEqBoolWithFuel
+    (InputValue.objectFieldsSize left + InputValue.objectFieldsSize right + 1)
+    left right
+
+def argumentSize (argument : Argument) : Nat :=
+  1 + argument.value.size
+
+def argumentsSize : List Argument -> Nat
+  | [] => 0
+  | argument :: rest => argumentSize argument + argumentsSize rest
+
+def argumentEqBoolWithFuel : Nat -> Argument -> Argument -> Bool
+  | 0, _left, _right => false
+  | fuel + 1, left, right =>
+      (left.name == right.name)
+        && inputValueEqBoolWithFuel fuel left.value right.value
+
+def argumentEqBool (left right : Argument) : Bool :=
+  argumentEqBoolWithFuel (argumentSize left + argumentSize right + 1) left right
+
+def argumentMemberEqBoolWithFuel : Nat -> Argument -> List Argument -> Bool
+  | 0, _argument, _arguments => false
+  | _fuel + 1, _argument, [] => false
+  | fuel + 1, argument, candidate :: rest =>
+      argumentEqBoolWithFuel fuel argument candidate
+        || argumentMemberEqBoolWithFuel fuel argument rest
+
+def argumentsSubsetEqBoolWithFuel : Nat -> List Argument -> List Argument -> Bool
+  | 0, _left, _right => false
+  | _fuel + 1, [], _right => true
+  | fuel + 1, argument :: rest, right =>
+      argumentMemberEqBoolWithFuel fuel argument right
+        && argumentsSubsetEqBoolWithFuel fuel rest right
+
+def argumentsEqBoolWithFuel : Nat -> List Argument -> List Argument -> Bool
+  | 0, _left, _right => false
+  | fuel + 1, left, right =>
+      argumentsSubsetEqBoolWithFuel fuel left right
+        && argumentsSubsetEqBoolWithFuel fuel right left
+
+-- Spec 6.4.2 field resolution key comparison, specialized to this model's raw
+-- already-coerced argument representation. Argument order is ignored.
+def argumentsEqBool (left right : List Argument) : Bool :=
+  argumentsEqBoolWithFuel (argumentsSize left + argumentsSize right + 1) left right
+
+theorem inputValueEqBool_objectFieldsOrderInsensitive :
+    inputValueEqBool
+      (.object [("left", .int 1), ("right", .boolean true)])
+      (.object [("right", .boolean true), ("left", .int 1)]) = true := by
+  rfl
+
+theorem argumentsEqBool_orderInsensitive :
+    argumentsEqBool
+      [
+        { name := "left", value := .int 1 },
+        { name := "right", value := .object [("nested", .string "value")] }
+      ]
+      [
+        { name := "right", value := .object [("nested", .string "value")] },
+        { name := "left", value := .int 1 }
+      ] = true := by
+  rfl
 
 end FieldKey
 
@@ -149,6 +237,28 @@ def lookupFieldIn? (fieldName : Name) (arguments : List Argument) :
 def lookupField? (object : ObjectRecord) (fieldName : Name)
     (arguments : List Argument) : Option Value :=
   lookupFieldIn? fieldName arguments object.fields
+
+theorem lookupField?_argumentsOrderInsensitive :
+    lookupField?
+      { typeName := "Type",
+        id := 0,
+        fields := [
+          ({
+            name := "field",
+            arguments := [
+              { name := "filter",
+                value := .object [("left", .int 1), ("right", .boolean true)] },
+              { name := "limit", value := .int 10 }
+            ]
+          }, .scalar "ok")
+        ] }
+      "field"
+      [
+        { name := "limit", value := .int 10 },
+        { name := "filter",
+          value := .object [("right", .boolean true), ("left", .int 1)] }
+      ] = some (.scalar "ok") := by
+  rfl
 
 -- Spec-related store invariant: each stored field fact conforms to schema lookup.
 def fieldFactWellTyped (schema : Schema) (object : ObjectRecord)

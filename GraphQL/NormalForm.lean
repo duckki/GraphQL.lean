@@ -95,7 +95,8 @@ def operationNormal (schema : Schema) (operation : GraphQL.Operation) : Prop :=
 
 -- Spec 5.3.2 field merging / 6.3.2 subfield collection: partial normalizer; merges direct
 -- same-response-name fields and recursively normalizes child selections when the return
--- type is known.
+-- type is known. The normal-form proof path assumes directive-free source operations, so
+-- normalization does not implement a directive-specific pass.
 def mergeFieldSelections (schema : Schema) (fuel : Nat)
     (parentType : Name) (responseName : Name)
     (selectionSet : List Semantic.Selection) : Option Semantic.Selection :=
@@ -117,7 +118,7 @@ def mergeFieldSelections (schema : Schema) (fuel : Nat)
 where
   normalizeSelectionSet (schema : Schema) :
       Nat -> Name -> List Semantic.Selection -> List Semantic.Selection
-    | 0, _parentType, selectionSet => selectionSet
+    | 0, _parentType, _selectionSet => []
     | _fuel + 1, _parentType, [] => []
     | fuel + 1, parentType, selection :: rest =>
         match Semantic.Selection.responseName? selection with
@@ -131,26 +132,13 @@ where
         | none =>
             let normalizedRest := normalizeSelectionSet schema fuel parentType rest
             match selection with
-            | .inlineFragment none [] subselections =>
+            | .inlineFragment none _directives subselections =>
                 normalizeSelectionSet schema fuel parentType (subselections ++ rest)
-            | .inlineFragment none directives subselections =>
-                .inlineFragment none directives
-                  (normalizeSelectionSet schema fuel parentType subselections)
-                  :: normalizedRest
-            | .inlineFragment (some typeCondition) directives subselections =>
-                match schema.lookupType typeCondition with
-                | some (.object _) =>
-                    .inlineFragment (some typeCondition) directives
-                      (normalizeSelectionSet schema fuel typeCondition subselections)
-                      :: normalizedRest
-                | some (.interface _) | some (.union _) =>
-                    let grounded :=
-                      (schema.getPossibleTypes typeCondition).map
-                        (fun objectName =>
-                          Semantic.Selection.inlineFragment (some objectName) directives
-                            (normalizeSelectionSet schema fuel objectName subselections))
-                    grounded ++ normalizedRest
-                | _ => normalizedRest
+            | .inlineFragment (some typeCondition) _directives subselections =>
+                if schema.typesOverlapBool parentType typeCondition then
+                  normalizeSelectionSet schema fuel parentType (subselections ++ rest)
+                else
+                  normalizedRest
             | .field .. => normalizedRest
 
 def normalizeSelectionSet (schema : Schema) (fuel : Nat)
@@ -203,7 +191,7 @@ theorem normalizeSemanticOperation_singleLeaf (schema : Schema) (name : Option N
       Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
       Semantic.Selection.subselections]
 
-theorem normalizeSemanticOperation_singleLeafWithDirectives (schema : Schema)
+theorem normalizeSemanticOperation_singleLeafPreservesDirectives (schema : Schema)
     (name : Option Name) (rootType : Name)
     (variableDefinitions : List VariableDefinition)
     (responseName fieldName : Name) (arguments : List Argument)
@@ -392,33 +380,6 @@ theorem normalizeSemanticOperation_inlineFragmentSingleLeaf (schema : Schema)
           selectionSet := [.field responseName fieldName arguments [] []] } := by
   cases hfield : schema.fieldReturnType? rootType fieldName <;>
     simp [hfield, normalizeSemanticOperation, normalizeSelectionSet,
-      mergeFieldSelections.normalizeSelectionSet, mergeFieldSelections,
-      Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
-      Semantic.SelectionSet.fieldsWithResponseName,
-      Semantic.SelectionSet.withoutFieldsWithResponseName,
-      Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
-      Semantic.Selection.subselections]
-
-theorem normalizeSemanticOperation_typedInlineFragmentSingleLeafObjectWithDirectives
-    (schema : Schema) (name : Option Name) (rootType typeCondition : Name)
-    (variableDefinitions : List VariableDefinition)
-    (responseName fieldName : Name) (arguments : List Argument)
-    (directives : List DirectiveApplication) (objectType : ObjectType) :
-    schema.lookupType typeCondition = some (.object objectType) ->
-      normalizeSemanticOperation schema
-        { name := name,
-          rootType := rootType,
-          variableDefinitions := variableDefinitions,
-          selectionSet := [.inlineFragment (some typeCondition) directives
-            [.field responseName fieldName arguments [] []]] }
-        = { name := name,
-            rootType := rootType,
-            variableDefinitions := variableDefinitions,
-            selectionSet := [.inlineFragment (some typeCondition) directives
-              [.field responseName fieldName arguments [] []]] } := by
-  intro htype
-  cases hfield : schema.fieldReturnType? typeCondition fieldName <;>
-    simp [htype, hfield, normalizeSemanticOperation, normalizeSelectionSet,
       mergeFieldSelections.normalizeSelectionSet, mergeFieldSelections,
       Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
       Semantic.SelectionSet.fieldsWithResponseName,

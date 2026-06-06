@@ -58,6 +58,8 @@ lake lint
 ## Where To Look
 
 - `docs/spec-conformance-plan.md`: current goals, skips, status, and proof plan.
+- `docs/ground-type-normal-form-correctness-plan.md`: detailed directive-free
+  ground-type normal form correctness theorem plan.
 - `docs/overview.md`: module map and architecture overview.
 - `docs/references.md`: GraphCoQL reference notes and proof-strategy context.
 - `GraphQL/DataModel.lean`: typed store model and correctness predicates.

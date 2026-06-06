@@ -56,6 +56,23 @@ theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false
     rw [hoverlap] at hoverlapTrue
     contradiction
 
+theorem rootSourceAppliesBool_true_object
+    (schema : Schema) (operation : Operation) (source : Execution.Value) :
+    Execution.rootSourceAppliesBool schema operation source = true ->
+      ∃ runtimeType identity,
+        source = .object runtimeType identity
+          ∧ schema.typeIncludesObjectBool operation.rootType runtimeType = true := by
+  intro hroot
+  cases source with
+  | null =>
+      simp [Execution.rootSourceAppliesBool, Execution.runtimeObjectType?] at hroot
+  | scalar value =>
+      simp [Execution.rootSourceAppliesBool, Execution.runtimeObjectType?] at hroot
+  | object runtimeType identity =>
+      exact ⟨runtimeType, identity, rfl, hroot⟩
+  | list values =>
+      simp [Execution.rootSourceAppliesBool, Execution.runtimeObjectType?] at hroot
+
 theorem normalizeOperation_executeQuery
     (schema : Schema) (operation : Operation) :
     (∀ resolvers variableValues source,

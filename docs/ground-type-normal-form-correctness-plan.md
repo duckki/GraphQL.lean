@@ -118,7 +118,9 @@ over this repo's resolver-backed `Execution.collectFields` and
    Status: `FieldMerge` now exposes projection lemmas for pairwise merge
    validity, same-response-shape, same-parent field/argument identity, and
    recursive subfield merge validity. The remaining work is to connect those
-   validation facts to executable field groups and `executeField`.
+   validation facts to executable field groups and `executeField`. Execution
+   now also exposes `mergedFieldSelectionSet` append/singleton algebra for the
+   grouped-field sub-selection comparison.
 
 5. Abstract return grounding.
 

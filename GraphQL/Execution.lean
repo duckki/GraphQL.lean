@@ -170,6 +170,31 @@ def mergedFieldSelectionSet : List ExecutableField -> List Selection
   | [] => []
   | field :: rest => field.selectionSet ++ mergedFieldSelectionSet rest
 
+theorem mergedFieldSelectionSet_nil :
+    mergedFieldSelectionSet [] = [] := by
+  rfl
+
+theorem mergedFieldSelectionSet_cons
+    (field : ExecutableField) (rest : List ExecutableField) :
+    mergedFieldSelectionSet (field :: rest)
+      = field.selectionSet ++ mergedFieldSelectionSet rest := by
+  rfl
+
+theorem mergedFieldSelectionSet_append
+    (left right : List ExecutableField) :
+    mergedFieldSelectionSet (left ++ right)
+      = mergedFieldSelectionSet left ++ mergedFieldSelectionSet right := by
+  induction left with
+  | nil =>
+      simp [mergedFieldSelectionSet]
+  | cons field rest ih =>
+      simp [mergedFieldSelectionSet, ih, List.append_assoc]
+
+theorem mergedFieldSelectionSet_singleton
+    (field : ExecutableField) :
+    mergedFieldSelectionSet [field] = field.selectionSet := by
+  simp [mergedFieldSelectionSet]
+
 -- Spec 6.3 `ExecuteRootSelectionSet`, 6.3.2 `CollectFields`, 6.3.3
 -- `ExecuteCollectedFields`, 6.4 `ExecuteField`, and 6.4.3 `CompleteValue`: partial
 -- depth-bounded execution model without coercion or error propagation.

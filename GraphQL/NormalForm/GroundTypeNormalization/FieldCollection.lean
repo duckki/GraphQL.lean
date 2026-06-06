@@ -450,6 +450,28 @@ theorem addExecutableGroup_mem_responseName
           simp at hfalse
         simp [Execution.addExecutableGroup, hfalse, ih, or_left_comm]
 
+theorem mergeExecutableGroups_mem_responseName
+    (left right : List (Name × List Execution.ExecutableField))
+    (responseName : Name) :
+    responseName ∈
+        (Execution.mergeExecutableGroups left right).map Prod.fst
+      ↔ responseName ∈ left.map Prod.fst
+        ∨ responseName ∈ right.map Prod.fst := by
+  induction right generalizing left with
+  | nil =>
+      simp [Execution.mergeExecutableGroups]
+  | cons group rest ih =>
+      change
+        responseName ∈
+            (Execution.mergeExecutableGroups
+              (Execution.addExecutableGroup group left) rest).map Prod.fst
+          ↔ responseName ∈ left.map Prod.fst
+            ∨ responseName ∈ (group :: rest).map Prod.fst
+      rw [ih (Execution.addExecutableGroup group left)]
+      rw [addExecutableGroup_mem_responseName group left responseName]
+      rcases group with ⟨groupResponseName, fields⟩
+      simp [or_assoc, or_left_comm, or_comm]
+
 theorem addExecutableGroup_namesNodup
     (group : Name × List Execution.ExecutableField)
     (groups : List (Name × List Execution.ExecutableField)) :
@@ -1103,6 +1125,190 @@ theorem collectFields_inlineFragment_some_directiveFree_apply_flatten
   rw [collectFields_inlineFragment_some_directiveFree_apply]
   · rw [collectFields_append]
   · exact happly
+
+theorem collectFields_responseName_not_mem_of_responseNameFree
+    (schema : Schema) (variableValues : Execution.VariableValues)
+    (parentType : Name) (source : Execution.Value)
+    (responseName : Name) :
+    objectTypeNameBool schema parentType = true ->
+      (∃ runtimeType identity,
+        source = .object runtimeType identity
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
+        ∀ selectionSet,
+          selectionSetDirectiveFree selectionSet ->
+            selectionSetResponseNameFree schema parentType responseName
+              selectionSet ->
+              responseName ∉
+                (Execution.collectFields schema variableValues parentType
+                  source selectionSet).map Prod.fst
+  | hobject, hsource, [], _hfree, _hresponseFree => by
+      simp [Execution.collectFields]
+  | hobject, hsource,
+      Selection.field fieldResponseName fieldName arguments directives
+        selectionSet :: rest,
+      hfree, hresponseFree => by
+      have hheadFree := selectionSetDirectiveFree_head hfree
+      have htailFree := selectionSetDirectiveFree_tail hfree
+      have htailResponseFree := selectionSetResponseNameFree_tail hresponseFree
+      have hfieldNe : fieldResponseName ≠ responseName := by
+        have hheadResponseFree :=
+          selectionSetResponseNameFree_head hresponseFree
+        simpa [selectionResponseNameFree] using hheadResponseFree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      subst directives
+      rw [collectFields_field_noDirectives]
+      intro hmem
+      have hcases :=
+        (mergeExecutableGroups_mem_responseName
+          [(fieldResponseName, [{
+            parentType := parentType,
+            responseName := fieldResponseName,
+            fieldName := fieldName,
+            arguments := arguments,
+            selectionSet := selectionSet
+          }])]
+          (Execution.collectFields schema variableValues parentType source
+            rest)
+          responseName).mp hmem
+      cases hcases with
+      | inl hhead =>
+          simp at hhead
+          exact hfieldNe hhead.symm
+      | inr htail =>
+          exact
+            collectFields_responseName_not_mem_of_responseNameFree schema
+              variableValues parentType source responseName hobject hsource
+              rest htailFree htailResponseFree htail
+  | hobject, hsource,
+      Selection.inlineFragment none directives selectionSet :: rest,
+      hfree, hresponseFree => by
+      have hheadFree := selectionSetDirectiveFree_head hfree
+      have htailFree := selectionSetDirectiveFree_tail hfree
+      have htailResponseFree := selectionSetResponseNameFree_tail hresponseFree
+      have hheadResponseFree := selectionSetResponseNameFree_head hresponseFree
+      have hselectionResponseFree :
+          selectionSetResponseNameFree schema parentType responseName
+            selectionSet := by
+        simpa [selectionResponseNameFree] using hheadResponseFree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      have hselectionFree : selectionSetDirectiveFree selectionSet := by
+        simpa [selectionDirectiveFree, hdirectives] using hheadFree.2
+      subst directives
+      rw [collectFields_inlineFragment_none_directiveFree]
+      intro hmem
+      have hcases :=
+        (mergeExecutableGroups_mem_responseName
+          (Execution.collectFields schema variableValues parentType source
+            selectionSet)
+          (Execution.collectFields schema variableValues parentType source
+            rest)
+          responseName).mp hmem
+      cases hcases with
+      | inl hselection =>
+          exact
+            collectFields_responseName_not_mem_of_responseNameFree schema
+              variableValues parentType source responseName hobject hsource
+              selectionSet hselectionFree hselectionResponseFree hselection
+      | inr htail =>
+          exact
+            collectFields_responseName_not_mem_of_responseNameFree schema
+              variableValues parentType source responseName hobject hsource
+              rest htailFree htailResponseFree htail
+  | hobject, hsource,
+      Selection.inlineFragment (some typeCondition) directives selectionSet
+        :: rest,
+      hfree, hresponseFree => by
+      have hheadFree := selectionSetDirectiveFree_head hfree
+      have htailFree := selectionSetDirectiveFree_tail hfree
+      have htailResponseFree := selectionSetResponseNameFree_tail hresponseFree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      have hselectionFree : selectionSetDirectiveFree selectionSet := by
+        simpa [selectionDirectiveFree, hdirectives] using hheadFree.2
+      subst directives
+      cases happly :
+          Execution.doesFragmentTypeApplyBool schema parentType source
+            typeCondition
+      · rw [collectFields_inlineFragment_some_directiveFree_skip]
+        · intro hmem
+          have hcases :=
+            (mergeExecutableGroups_mem_responseName []
+              (Execution.collectFields schema variableValues parentType source
+                rest)
+              responseName).mp hmem
+          cases hcases with
+          | inl hnil =>
+              simp at hnil
+          | inr htail =>
+              exact collectFields_responseName_not_mem_of_responseNameFree
+                schema variableValues parentType source responseName hobject
+                hsource rest htailFree htailResponseFree htail
+        · exact happly
+      · have hoverlap :
+            schema.typesOverlapBool parentType typeCondition = true := by
+          rw [← doesFragmentTypeApplyBool_eq_typesOverlapBool_of_object_parent_source
+            schema hobject hsource]
+          exact happly
+        have hheadResponseFree := selectionSetResponseNameFree_head hresponseFree
+        have hselectionResponseFree :
+            selectionSetResponseNameFree schema parentType responseName
+              selectionSet := by
+          simpa [selectionResponseNameFree, hoverlap] using hheadResponseFree
+        rw [collectFields_inlineFragment_some_directiveFree_apply]
+        · intro hmem
+          have hcases :=
+            (mergeExecutableGroups_mem_responseName
+              (Execution.collectFields schema variableValues parentType source
+                selectionSet)
+              (Execution.collectFields schema variableValues parentType source
+                rest)
+              responseName).mp hmem
+          cases hcases with
+          | inl hselection =>
+              exact
+                collectFields_responseName_not_mem_of_responseNameFree schema
+                  variableValues parentType source responseName hobject
+                  hsource selectionSet hselectionFree hselectionResponseFree
+                  hselection
+          | inr htail =>
+              exact
+                collectFields_responseName_not_mem_of_responseNameFree schema
+                  variableValues parentType source responseName hobject
+                  hsource rest htailFree htailResponseFree htail
+        · exact happly
+
+theorem collectFields_field_noDirectives_cons_of_responseName_not_mem
+    (schema : Schema) (variableValues : Execution.VariableValues)
+    (parentType : Name) (source : Execution.Value)
+    (responseName fieldName : Name) (arguments : List Argument)
+    (selectionSet rest : List Selection) :
+    responseName ∉
+      (Execution.collectFields schema variableValues parentType source
+        rest).map Prod.fst ->
+      Execution.collectFields schema variableValues parentType source
+        (Selection.field responseName fieldName arguments [] selectionSet
+          :: rest)
+      =
+      (responseName, [{
+        parentType := parentType,
+        responseName := responseName,
+        fieldName := fieldName,
+        arguments := arguments,
+        selectionSet := selectionSet
+      }])
+        :: Execution.collectFields schema variableValues parentType source
+          rest := by
+  intro hnotin
+  rw [collectFields_field_noDirectives]
+  rw [mergeExecutableGroups_eq_append_of_namesDisjoint]
+  · simp
+  · intro name hleft hright
+    simp at hleft
+    subst name
+    exact hnotin hright
+  · exact collectFields_namesNodup schema variableValues parentType source rest
 
 theorem mergeSelectionSets_append
     (left right : List Selection) :

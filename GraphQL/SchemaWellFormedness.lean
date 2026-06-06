@@ -152,13 +152,34 @@ def possibleObjectFieldDefinitionsImplement (schema : Schema) : Prop :=
 def schemaWellFormed (schema : Schema) : Prop :=
   namesAreUnique (schema.allTypes.map TypeDefinition.name)
     ∧ schema.objectType schema.queryType
-    ∧ ∀ typeDefinition, typeDefinition ∈ schema.types ->
-      typeDefinitionWellFormed schema typeDefinition
+    ∧ (∀ typeDefinition, typeDefinition ∈ schema.types ->
+      typeDefinitionWellFormed schema typeDefinition)
     ∧ (∀ typeName objectTypeName,
       objectTypeName ∈ schema.getPossibleTypes typeName ->
         schema.objectType objectTypeName)
     ∧ (∀ typeName, (schema.getPossibleTypes typeName).Nodup)
     ∧ possibleObjectFieldDefinitionsImplement schema
+
+theorem schemaWellFormed_possibleTypesAreObjects {schema : Schema} :
+    schemaWellFormed schema ->
+      ∀ typeName objectTypeName,
+        objectTypeName ∈ schema.getPossibleTypes typeName ->
+          schema.objectType objectTypeName := by
+  intro hschema
+  exact hschema.2.2.2.1
+
+theorem schemaWellFormed_possibleTypesNodup {schema : Schema} :
+    schemaWellFormed schema ->
+      ∀ typeName, (schema.getPossibleTypes typeName).Nodup := by
+  intro hschema
+  exact hschema.2.2.2.2.1
+
+theorem schemaWellFormed_possibleObjectFieldDefinitionsImplement
+    {schema : Schema} :
+    schemaWellFormed schema ->
+      possibleObjectFieldDefinitionsImplement schema := by
+  intro hschema
+  exact hschema.2.2.2.2.2
 
 -- Spec-conformance pattern, not a GraphQL spec definition: bundles a schema with this
 -- file's partial well-formedness proof.

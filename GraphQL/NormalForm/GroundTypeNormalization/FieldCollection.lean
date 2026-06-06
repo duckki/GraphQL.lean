@@ -374,6 +374,21 @@ theorem mergeExecutableGroups_nil_left_collectFields_eq
     (collectFields_namesNodup schema variableValues parentType source
       selectionSet)
 
+theorem collectFields_inlineFragment_some_directiveFree_skip_eq
+    (schema : Schema) (variableValues : Execution.VariableValues)
+    (parentType typeCondition : Name) (source : Execution.Value)
+    (selectionSet rest : List Selection) :
+    Execution.doesFragmentTypeApplyBool schema parentType source typeCondition = false ->
+      Execution.collectFields schema variableValues parentType source
+        (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest)
+        =
+      Execution.collectFields schema variableValues parentType source rest := by
+  intro hskip
+  rw [collectFields_inlineFragment_some_directiveFree_skip schema
+    variableValues parentType typeCondition source selectionSet rest hskip]
+  exact mergeExecutableGroups_nil_left_collectFields_eq schema variableValues
+    parentType source rest
+
 end GroundTypeNormalization
 
 end NormalForm

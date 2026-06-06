@@ -1252,6 +1252,9 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
     Validation.selectionSetValid schema variableDefinitions parentType
       (Selection.field responseName fieldName arguments [] subselections
         :: rest) ->
+    selectionSetSemanticsReady schema parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
     FieldMerge.fieldsInSetCanMerge schema parentType
       (Selection.field responseName fieldName arguments [] subselections
         :: rest) ->
@@ -1264,6 +1267,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
       childDepth < depth ->
         selectionSetDirectiveFree mergedSubselections ->
         selectionSetLookupValid schema runtimeType mergedSubselections ->
+        selectionSetSemanticsReady schema runtimeType mergedSubselections ->
         FieldMerge.fieldsInSetCanMerge schema runtimeType mergedSubselections ->
           Execution.executeSelectionSet schema resolvers variableValues
             childDepth runtimeType (.object runtimeType identity)
@@ -1290,7 +1294,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
         parentType source
         (Selection.field responseName fieldName arguments []
           subselections :: rest) := by
-  intro hobject hsource hfree hvalid hmerge hlookup hrecursive htail
+  intro hobject hsource hfree hvalid hready hmerge hlookup hrecursive htail
   let matching := validFieldsWithResponseName schema parentType responseName rest
   let mergedSubselections := subselections ++ mergeSelectionSets matching
   let returnType := fieldDefinition.outputType.namedType
@@ -1307,6 +1311,14 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
         =
       returnType := by
     simp [Schema.fieldReturnType?, hlookup, returnType]
+  have hlookupValid :
+      selectionSetLookupValid schema parentType
+        (Selection.field responseName fieldName arguments [] subselections
+          :: rest) :=
+    selectionSetLookupValid_of_selectionSetValid
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest)
+      hvalid
   apply normalizeSelectionSet_executeSelectionSet_field_head_case
     schema resolvers variableValues depth parentType source responseName
     fieldName arguments subselections rest
@@ -1334,6 +1346,13 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
           variableDefinitions parentType responseName fieldName runtimeType
           arguments subselections rest fieldDefinition hschema hparentObject
           hvalid hmerge hlookup hincludeReturn
+    have hmergedReady :
+        selectionSetSemanticsReady schema runtimeType mergedSubselections := by
+      simpa [mergedSubselections, matching] using
+        selectionSetSemanticsReady_fieldHead_merged_of_child_object schema
+          parentType responseName fieldName runtimeType arguments
+          subselections rest fieldDefinition hparentObject hready
+          hlookupValid hmerge hlookup hincludeReturn
     have hmergedCanMerge :
         FieldMerge.fieldsInSetCanMerge schema runtimeType
           mergedSubselections := by
@@ -1349,7 +1368,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
       subst runtimeType
       simp [hreturnObject]
       exact hrecursive childDepth returnType identity hlt hmergedFree
-        hmergedLookup hmergedCanMerge
+        hmergedLookup hmergedReady hmergedCanMerge
     · have hreturnObjectFalse :
           objectTypeNameBool schema returnType = false := by
         cases hmatch : objectTypeNameBool schema returnType
@@ -1373,7 +1392,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
           returnType)
         hpossible
         (hrecursive childDepth runtimeType identity hlt hmergedFree
-          hmergedLookup hmergedCanMerge)
+          hmergedLookup hmergedReady hmergedCanMerge)
   · exact htail
 
 theorem normalizeOperation_executeQuery

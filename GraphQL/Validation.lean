@@ -665,6 +665,35 @@ theorem fieldsForNameCanMerge_subfields
   | intro _ _ _hshape _hidentity hsubfields =>
       exact hsubfields objectType hobject
 
+theorem collectFields_append (schema : Schema) (parentType : Name) :
+    ∀ left right,
+      collectFields schema parentType (left ++ right)
+        =
+      collectFields schema parentType left
+        ++ collectFields schema parentType right
+  | [], _right => by
+      simp [collectFields]
+  | selection :: rest, right => by
+      cases selection with
+      | field responseName fieldName arguments directives selectionSet =>
+          cases hlookup : schema.lookupField parentType fieldName with
+          | none =>
+              simp [collectFields, hlookup,
+                collectFields_append schema parentType rest right]
+          | some fieldDefinition =>
+              simp [collectFields, hlookup,
+                collectFields_append schema parentType rest right]
+      | inlineFragment typeCondition directives selectionSet =>
+          cases typeCondition with
+          | none =>
+              simp [collectFields,
+                collectFields_append schema parentType rest right,
+                List.append_assoc]
+          | some typeCondition =>
+              simp [collectFields,
+                collectFields_append schema parentType rest right,
+                List.append_assoc]
+
 end FieldMerge
 
 namespace Validation

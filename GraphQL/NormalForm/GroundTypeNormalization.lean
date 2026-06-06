@@ -538,6 +538,72 @@ theorem selectionSetValid_mergeSelectionSets_validFieldsWithResponseName
   · intro fieldName arguments directives subselections hselection
     exact hfields fieldName arguments directives subselections hselection
 
+theorem fieldMerge_collectFields_mergeSelectionSets_mem
+    (schema : Schema) (parentType : Name) (selections : List Selection)
+    (scopedField : FieldMerge.ScopedField) :
+    scopedField ∈ FieldMerge.collectFields schema parentType
+      (mergeSelectionSets selections) ->
+      ∃ selection,
+        selection ∈ selections
+          ∧ scopedField ∈ FieldMerge.collectFields schema parentType
+            selection.subselections := by
+  induction selections with
+  | nil =>
+      intro hfield
+      simp [mergeSelectionSets, FieldMerge.collectFields] at hfield
+  | cons selection rest ih =>
+      intro hfield
+      simp [mergeSelectionSets] at hfield
+      rw [FieldMerge.collectFields_append] at hfield
+      rcases List.mem_append.mp hfield with hhead | hrest
+      · exact ⟨selection, by simp, hhead⟩
+      · rcases ih hrest with
+          ⟨sourceSelection, hsourceSelection, hsourceField⟩
+        exact ⟨sourceSelection, by simp [hsourceSelection],
+          hsourceField⟩
+
+theorem fieldsInSetCanMerge_mergeSelectionSets_of_pairwise
+    (schema : Schema) (parentType : Name) (selections : List Selection) :
+    (∀ leftSelection, leftSelection ∈ selections ->
+      ∀ rightSelection, rightSelection ∈ selections ->
+        FieldMerge.fieldsInSetCanMerge schema parentType
+          (leftSelection.subselections ++ rightSelection.subselections)) ->
+      FieldMerge.fieldsInSetCanMerge schema parentType
+        (mergeSelectionSets selections) := by
+  intro hpairwise
+  unfold FieldMerge.fieldsInSetCanMerge
+  refine FieldMerge.FieldsInSetCanMerge.intro parentType
+    (mergeSelectionSets selections) ?_
+  dsimp
+  intro left hleft right hright hresponse
+  rcases fieldMerge_collectFields_mergeSelectionSets_mem schema parentType
+      selections left hleft with
+    ⟨leftSelection, hleftSelection, hleftField⟩
+  rcases fieldMerge_collectFields_mergeSelectionSets_mem schema parentType
+      selections right hright with
+    ⟨rightSelection, hrightSelection, hrightField⟩
+  have hpair :
+      FieldMerge.fieldsInSetCanMerge schema parentType
+        (leftSelection.subselections ++ rightSelection.subselections) :=
+    hpairwise leftSelection hleftSelection rightSelection hrightSelection
+  have hleftPair :
+      left ∈ FieldMerge.collectFields schema parentType
+        (leftSelection.subselections ++ rightSelection.subselections) := by
+    rw [FieldMerge.collectFields_append]
+    exact List.mem_append_left
+      (FieldMerge.collectFields schema parentType
+        rightSelection.subselections)
+      hleftField
+  have hrightPair :
+      right ∈ FieldMerge.collectFields schema parentType
+        (leftSelection.subselections ++ rightSelection.subselections) := by
+    rw [FieldMerge.collectFields_append]
+    exact List.mem_append_right
+      (FieldMerge.collectFields schema parentType leftSelection.subselections)
+      hrightField
+  exact FieldMerge.fieldsInSetCanMerge_pair hpair hleftPair hrightPair
+    hresponse
+
 theorem validFieldsWithResponseName_matching_same_field_of_canMerge_object
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType responseName fieldName : Name)

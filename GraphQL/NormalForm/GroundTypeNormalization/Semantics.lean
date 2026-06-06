@@ -1003,6 +1003,152 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_of_completeValue
     (by simpa [sourceField] using hcomplete)
     htail
 
+theorem normalizeSelectionSet_executeSelectionSet_field_head_case
+    (schema : Schema) (resolvers : Execution.Resolvers)
+    (variableValues : Execution.VariableValues)
+    (depth : Nat) (parentType : Name) (source : Execution.Value)
+    (responseName fieldName : Name) (arguments : List Argument)
+    (subselections rest normalizedSubselections : List Selection)
+    (fieldDefinition : FieldDefinition) :
+    objectTypeNameBool schema parentType = true ->
+      (∃ runtimeType identity,
+        source = .object runtimeType identity
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
+        selectionSetDirectiveFree
+          (Selection.field responseName fieldName arguments [] subselections
+            :: rest) ->
+        schema.lookupField parentType fieldName = some fieldDefinition ->
+        normalizedSubselections =
+          (let matching :=
+            validFieldsWithResponseName schema parentType responseName rest
+          let mergedSubselections :=
+            subselections ++ mergeSelectionSets matching
+          let returnType := fieldDefinition.outputType.namedType
+          if objectTypeNameBool schema returnType then
+            normalizeSelectionSet schema returnType mergedSubselections
+          else
+            (schema.getPossibleTypes returnType).map
+              (fun objectType =>
+                Selection.inlineFragment (some objectType) []
+                  (normalizeSelectionSet schema objectType
+                    mergedSubselections))) ->
+        (∀ childDepth runtimeType identity,
+          childDepth < depth ->
+            Execution.executeSelectionSet schema resolvers variableValues
+              childDepth runtimeType (.object runtimeType identity)
+              normalizedSubselections
+              =
+            Execution.executeSelectionSet schema resolvers variableValues
+              childDepth runtimeType (.object runtimeType identity)
+              (subselections
+                ++ mergeSelectionSets
+                  (validFieldsWithResponseName schema parentType responseName
+                    rest))) ->
+        Execution.executeSelectionSet schema resolvers variableValues depth
+          parentType source
+          (normalizeSelectionSet schema parentType
+            (withoutFieldsWithResponseName schema responseName rest))
+          =
+        Execution.executeSelectionSet schema resolvers variableValues depth
+          parentType source
+          (withoutFieldsWithResponseName schema responseName rest) ->
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType
+              (Selection.field responseName fieldName arguments []
+                subselections :: rest))
+          =
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (Selection.field responseName fieldName arguments []
+              subselections :: rest) := by
+  intro hobject hsource hfree hlookup hsubsections hchild htail
+  rcases collectFields_field_head_exists schema variableValues parentType
+      source responseName fieldName arguments subselections rest with
+    ⟨sourceFields, sourceRest, hsourceCollect⟩
+  let sourceField : Execution.ExecutableField :=
+    {
+      parentType := parentType,
+      responseName := responseName,
+      fieldName := fieldName,
+      arguments := arguments,
+      selectionSet := subselections
+    }
+  let normalizedRest :=
+    normalizeSelectionSet schema parentType
+      (withoutFieldsWithResponseName schema responseName rest)
+  have hnotin :
+      responseName ∉
+        (Execution.collectFields schema variableValues parentType source
+          normalizedRest).map Prod.fst := by
+    unfold normalizedRest
+    exact collectFields_responseName_not_mem_of_responseNameFree schema
+      variableValues parentType source responseName hobject hsource
+      (normalizeSelectionSet schema parentType
+        (withoutFieldsWithResponseName schema responseName rest))
+      (normalizeSelectionSet_directiveFree schema parentType
+        (withoutFieldsWithResponseName schema responseName rest)
+        (withoutFieldsWithResponseName_directiveFree schema responseName rest
+          (selectionSetDirectiveFree_tail hfree)))
+      (normalizeSelectionSet_responseNameFree schema parentType responseName
+        (withoutFieldsWithResponseName schema responseName rest)
+        (withoutFieldsWithResponseName_responseNameFree schema parentType
+          responseName rest))
+  have hsourceRest :
+      Execution.collectFields schema variableValues parentType source
+        (withoutFieldsWithResponseName schema responseName rest)
+      =
+      sourceRest := by
+    exact collectFields_withoutFieldsWithResponseName_fieldHead_rest_eq_sourceRest
+      schema variableValues parentType source responseName fieldName arguments
+      subselections rest sourceFields sourceRest hobject hsource hfree
+      (by simpa [sourceField] using hsourceCollect)
+  have htailCollected :
+      Execution.executeCollectedFields schema resolvers variableValues depth
+        source
+        (Execution.collectFields schema variableValues parentType source
+          normalizedRest)
+      =
+      Execution.executeCollectedFields schema resolvers variableValues depth
+        source sourceRest := by
+    simpa [Execution.executeSelectionSet, normalizedRest, hsourceRest]
+      using htail
+  apply normalizeSelectionSet_executeSelectionSet_field_head_of_completeValue
+    schema resolvers variableValues depth parentType source responseName
+    fieldName arguments subselections rest normalizedSubselections
+    fieldDefinition sourceFields sourceRest
+  · exact hlookup
+  · exact hsubsections
+  · exact hnotin
+  · simpa [sourceField] using hsourceCollect
+  · apply completeValue_eq_of_child_object_lt schema resolvers variableValues
+      (depth - 1)
+      ((schema.fieldReturnType? parentType fieldName).getD fieldName)
+      normalizedSubselections
+      (Execution.mergedFieldSelectionSet (sourceField :: sourceFields))
+      (resolvers.resolve parentType fieldName arguments source)
+    intro childDepth runtimeType identity hlt
+    have hmerged :
+        Execution.mergedFieldSelectionSet (sourceField :: sourceFields)
+          =
+        subselections
+          ++ mergeSelectionSets
+            (validFieldsWithResponseName schema parentType responseName rest) := by
+      have hprojection :=
+        collectFields_validFieldsWithResponseName_responseSelection schema
+          variableValues parentType source responseName
+          (Selection.field responseName fieldName arguments [] subselections
+            :: rest)
+          hobject hsource hfree
+      simp [collectedResponseSelectionSet, hsourceCollect,
+        validFieldsWithResponseName, mergeSelectionSets,
+        Selection.subselections] at hprojection
+      simpa [sourceField] using hprojection
+    rw [hmerged]
+    exact hchild childDepth runtimeType identity (Nat.lt_of_lt_of_le hlt
+      (Nat.sub_le depth 1))
+  · exact htailCollected
+
 theorem normalizeOperation_executeQuery
     (schema : Schema) (operation : Operation) :
     (∀ resolvers variableValues source,

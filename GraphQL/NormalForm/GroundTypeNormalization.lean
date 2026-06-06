@@ -594,6 +594,38 @@ theorem validFieldsWithResponseName_matching_same_field_of_canMerge_object
     rfl
   exact hmatchedField.symm.trans (hidentity.1.symm.trans hheadField)
 
+theorem validFieldsWithResponseName_matching_field_shape_of_canMerge_object
+    (schema : Schema) (variableDefinitions : List VariableDefinition)
+    (parentType responseName fieldName : Name)
+    (arguments : List Argument) (subselections rest : List Selection) :
+    schema.objectType parentType ->
+    Validation.selectionSetValid schema variableDefinitions parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+    FieldMerge.fieldsInSetCanMerge schema parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+      ∀ selection,
+        selection ∈ validFieldsWithResponseName schema parentType responseName
+          rest ->
+          ∃ matchedArguments matchedDirectives matchedSubselections,
+            selection =
+              Selection.field responseName fieldName matchedArguments
+                matchedDirectives matchedSubselections := by
+  intro hobject hvalid hmerge selection hselection
+  rcases validFieldsWithResponseName_mem_field schema parentType responseName
+      rest selection hselection with
+    ⟨matchedFieldName, matchedArguments, matchedDirectives,
+      matchedSubselections, hselectionEq⟩
+  subst selection
+  have hsame :=
+    validFieldsWithResponseName_matching_same_field_of_canMerge_object
+      schema variableDefinitions parentType responseName fieldName arguments
+      subselections rest hobject hvalid hmerge matchedFieldName
+      matchedArguments matchedDirectives matchedSubselections hselection
+  subst matchedFieldName
+  exact ⟨matchedArguments, matchedDirectives, matchedSubselections, rfl⟩
+
 mutual
   def selectionLookupValid (schema : Schema)
       (parentType : Name) : Selection -> Prop

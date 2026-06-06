@@ -140,8 +140,13 @@ theorem addExecutableFields_append
 
 -- Spec 6.3.2 collected fields map helper: inserts one existing group into another map.
 def addExecutableGroup (group : Name × List ExecutableField) :
-    List (Name × List ExecutableField) -> List (Name × List ExecutableField) :=
-  addExecutableFields group.snd
+    List (Name × List ExecutableField) -> List (Name × List ExecutableField)
+  | [] => [group]
+  | (responseName, fields) :: rest =>
+      if responseName == group.fst then
+        (responseName, fields ++ group.snd) :: rest
+      else
+        (responseName, fields) :: addExecutableGroup group rest
 
 -- Spec 6.3.2 `CollectFields` grouping merge for list-backed response-name maps.
 def mergeExecutableGroups (left right : List (Name × List ExecutableField)) :

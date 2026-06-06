@@ -89,13 +89,11 @@ abstract selections without a separate directive-erasure pass.
 Directive-sensitive normalization can be revisited after the directive-free
 semantic preservation proof is stable.
 
-`DataModel.groundNormalFormCorrect` is stated over a shared source-operation
-execution fuel budget. This avoids treating normalizer size changes as semantic
-changes in the bounded executor: the original and normalized operations are run
-with `Execution.executeSemanticQueryFuel operation`. The self-budgeted
-`semanticOperationsEquivalentOnData` relation remains available for direct
-operation equivalence, but ground normal form proofs should use
-`semanticOperationsEquivalentOnDataWithFuel`.
+`DataModel.groundNormalFormCorrect` is stated over
+`semanticOperationsEquivalentOnData`. The ground-type normalizer itself has no
+fuel parameter: it terminates by structural descent on semantic selection-set
+size while merging same-response-name fields and grounding abstract returns
+through possible object types.
 
 ## Proof Plan
 

@@ -31,11 +31,9 @@ resolvers, and correctness predicates for operation equivalence and ground
 normal form.
 
 `DataModel.groundNormalFormCorrect` uses
-`DataModel.semanticOperationsEquivalentOnDataWithFuel` with the source
-operation's `Execution.executeSemanticQueryFuel` for both the original and
-normalized operations. This is intentional: normalizing can shrink syntax, and
-the bounded executor should not count that fuel-budget change as a semantic
-change.
+`DataModel.semanticOperationsEquivalentOnData`. The ground-type normalizer has no
+fuel parameter; it terminates by structural descent on semantic selection-set
+size while merging fields and grounding abstract returns.
 
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,

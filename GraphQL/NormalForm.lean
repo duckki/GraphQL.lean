@@ -8,8 +8,7 @@ Spec reference: GraphQL September 2025.
 - 5.5.2.3 Fragment Spread Is Possible and `GetPossibleTypes`: abstract type conditions are
   grounded through possible object types.
 - Fidelity note: GraphQL does not define this normal form. This is a project-specific
-  canonicalization scaffold; it is partial, fuel-bounded, and does not yet prove semantic
-  preservation.
+  canonicalization scaffold; it is partial and does not yet prove semantic preservation.
 -/
 namespace GraphQL
 
@@ -100,110 +99,258 @@ def objectTypeNameBool (schema : Schema) (typeName : Name) : Bool :=
   | some (.object _) => true
   | _ => false
 
+-- Spec 6.3.2 `CollectSubfields` analogue over semantic selections, written
+-- structurally so termination and size reasoning can reduce it directly.
+def mergeSelectionSets : List Semantic.Selection -> List Semantic.Selection
+  | [] => []
+  | selection :: rest => selection.subselections ++ mergeSelectionSets rest
+
+private theorem selectionSet_size_append (left right : List Semantic.Selection) :
+    Semantic.SelectionSet.size (left ++ right)
+      = Semantic.SelectionSet.size left + Semantic.SelectionSet.size right := by
+  induction left with
+  | nil => simp [Semantic.SelectionSet.size]
+  | cons selection rest ih =>
+      simp [Semantic.SelectionSet.size, ih, Nat.add_assoc]
+
+private theorem mergeSelectionSets_append
+    (left right : List Semantic.Selection) :
+    mergeSelectionSets (left ++ right)
+      = mergeSelectionSets left ++ mergeSelectionSets right := by
+  induction left with
+  | nil => simp [mergeSelectionSets]
+  | cons selection rest ih =>
+      simp [mergeSelectionSets, ih, List.append_assoc]
+
 mutual
   -- Spec 6.3.2 field collection helper: finds fields with one response name, descending
   -- through fragments that can contribute selections in the current type scope.
-  def validFieldsWithResponseName (schema : Schema) :
-      Nat -> Name -> Name -> List Semantic.Selection -> List Semantic.Selection
-    | 0, _parentType, _responseName, _selectionSet => []
-    | _fuel + 1, _parentType, _responseName, [] => []
-    | fuel + 1, parentType, responseName, selection :: rest =>
+  def validFieldsWithResponseName (schema : Schema)
+      (parentType responseName : Name) :
+      List Semantic.Selection -> List Semantic.Selection
+    | [] => []
+    | selection :: rest =>
         match selection with
         | .field fieldResponseName _fieldName _arguments _directives _selectionSet =>
             let restFields :=
-              validFieldsWithResponseName schema fuel parentType responseName rest
+              validFieldsWithResponseName schema parentType responseName rest
             if fieldResponseName == responseName then
               selection :: restFields
             else
               restFields
         | .inlineFragment none _directives selectionSet =>
-            validFieldsWithResponseName schema fuel parentType responseName selectionSet
-              ++ validFieldsWithResponseName schema fuel parentType responseName rest
+            validFieldsWithResponseName schema parentType responseName selectionSet
+              ++ validFieldsWithResponseName schema parentType responseName rest
         | .inlineFragment (some typeCondition) _directives selectionSet =>
             let restFields :=
-              validFieldsWithResponseName schema fuel parentType responseName rest
+              validFieldsWithResponseName schema parentType responseName rest
             if schema.typesOverlapBool parentType typeCondition then
-              validFieldsWithResponseName schema fuel parentType responseName selectionSet
+              validFieldsWithResponseName schema parentType responseName selectionSet
                 ++ restFields
             else
               restFields
 
   -- Spec 6.3.2 field collection helper: removes fields with one response name recursively
   -- so later fragment lifting cannot reintroduce a duplicate field group.
-  def withoutFieldsWithResponseName (schema : Schema) :
-      Nat -> Name -> List Semantic.Selection -> List Semantic.Selection
-    | 0, _responseName, _selectionSet => []
-    | _fuel + 1, _responseName, [] => []
-    | fuel + 1, responseName, selection :: rest =>
+  def withoutFieldsWithResponseName (schema : Schema)
+      (responseName : Name) :
+      List Semantic.Selection -> List Semantic.Selection
+    | [] => []
+    | selection :: rest =>
         match selection with
         | .field fieldResponseName _fieldName _arguments _directives _selectionSet =>
             let filteredRest :=
-              withoutFieldsWithResponseName schema fuel responseName rest
+              withoutFieldsWithResponseName schema responseName rest
             if fieldResponseName == responseName then
               filteredRest
             else
               selection :: filteredRest
         | .inlineFragment typeCondition directives selectionSet =>
             .inlineFragment typeCondition directives
-              (withoutFieldsWithResponseName schema fuel responseName selectionSet)
-              :: withoutFieldsWithResponseName schema fuel responseName rest
-
-  -- GraphCoQL-style grounding: object return types normalize directly; abstract
-  -- interface/union return types are specialized into one object fragment per possible type.
-  def normalizeFieldSelectionSet (schema : Schema) :
-      Nat -> Name -> List Semantic.Selection -> List Semantic.Selection
-    | 0, _returnType, _selectionSet => []
-    | fuel + 1, returnType, selectionSet =>
-        if objectTypeNameBool schema returnType then
-          normalizeSelectionSet schema fuel returnType selectionSet
-        else
-          (schema.getPossibleTypes returnType).map
-            (fun objectType =>
-              .inlineFragment (some objectType) []
-                (normalizeSelectionSet schema fuel objectType selectionSet))
-
-  -- Spec 5.3.2 field merging / 6.3.2 subfield collection: partial normalizer; merges
-  -- same-response-name fields, recursively normalizes child selections, and grounds
-  -- abstract field return types through possible object types. The proof path assumes
-  -- directive-free source operations, so this is not directive-sensitive.
-  def normalizeSelectionSet (schema : Schema) :
-      Nat -> Name -> List Semantic.Selection -> List Semantic.Selection
-    | 0, _parentType, _selectionSet => []
-    | _fuel + 1, _parentType, [] => []
-    | fuel + 1, parentType, selection :: rest =>
-        match selection with
-        | .field responseName fieldName arguments directives subselections =>
-            let normalizedRest :=
-              normalizeSelectionSet schema fuel parentType
-                (withoutFieldsWithResponseName schema fuel responseName rest)
-            match schema.lookupField parentType fieldName with
-            | none => normalizedRest
-            | some fieldDefinition =>
-                let matching :=
-                  validFieldsWithResponseName schema fuel parentType responseName rest
-                let mergedSubselections :=
-                  subselections ++ Semantic.SelectionSet.mergeSelectionSets matching
-                .field responseName fieldName arguments directives
-                    (normalizeFieldSelectionSet schema fuel
-                      fieldDefinition.outputType.namedType mergedSubselections)
-                  :: normalizedRest
-        | .inlineFragment none _directives subselections =>
-            normalizeSelectionSet schema fuel parentType (subselections ++ rest)
-        | .inlineFragment (some typeCondition) _directives subselections =>
-            let normalizedRest := normalizeSelectionSet schema fuel parentType rest
-            if schema.typesOverlapBool parentType typeCondition then
-              normalizeSelectionSet schema fuel parentType (subselections ++ rest)
-            else
-              normalizedRest
+              (withoutFieldsWithResponseName schema responseName selectionSet)
+              :: withoutFieldsWithResponseName schema responseName rest
 end
+
+private theorem size_withoutFieldsWithResponseName_le (schema : Schema)
+    (responseName : Name) :
+    ∀ selectionSet,
+      Semantic.SelectionSet.size
+          (withoutFieldsWithResponseName schema responseName selectionSet)
+        ≤ Semantic.SelectionSet.size selectionSet
+  | [] => by
+      simp [withoutFieldsWithResponseName, Semantic.SelectionSet.size]
+  | selection :: rest => by
+      cases selection with
+      | field fieldResponseName fieldName arguments directives selectionSet =>
+          have hrest :=
+            size_withoutFieldsWithResponseName_le schema responseName rest
+          by_cases h : (fieldResponseName == responseName) = true
+          · simp [withoutFieldsWithResponseName, h, Semantic.SelectionSet.size,
+              Semantic.Selection.size]
+            omega
+          · have hfalse : (fieldResponseName == responseName) = false := by
+              cases hmatch : fieldResponseName == responseName
+              · rfl
+              · contradiction
+            simp [withoutFieldsWithResponseName, hfalse, Semantic.SelectionSet.size,
+              Semantic.Selection.size]
+            omega
+      | inlineFragment typeCondition directives selectionSet =>
+          have hselectionSet :=
+            size_withoutFieldsWithResponseName_le schema responseName selectionSet
+          have hrest :=
+            size_withoutFieldsWithResponseName_le schema responseName rest
+          cases typeCondition <;>
+            simp [withoutFieldsWithResponseName, Semantic.SelectionSet.size,
+              Semantic.Selection.size]
+          all_goals omega
+termination_by selectionSet => Semantic.SelectionSet.size selectionSet
+decreasing_by
+  all_goals
+    simp [Semantic.SelectionSet.size, Semantic.Selection.size]
+    omega
+
+private theorem size_mergeSelectionSets_validFieldsWithResponseName_le
+    (schema : Schema) (parentType responseName : Name) :
+    ∀ selectionSet,
+      Semantic.SelectionSet.size
+          (mergeSelectionSets
+            (validFieldsWithResponseName schema parentType responseName selectionSet))
+        ≤ Semantic.SelectionSet.size selectionSet
+  | [] => by
+      simp [validFieldsWithResponseName, mergeSelectionSets,
+        Semantic.SelectionSet.size]
+  | selection :: rest => by
+      cases selection with
+      | field fieldResponseName fieldName arguments directives selectionSet =>
+          have hrest :=
+            size_mergeSelectionSets_validFieldsWithResponseName_le
+              schema parentType responseName rest
+          by_cases h : (fieldResponseName == responseName) = true
+          · simp [validFieldsWithResponseName, mergeSelectionSets, h,
+              selectionSet_size_append, Semantic.SelectionSet.size,
+              Semantic.Selection.size, Semantic.Selection.subselections]
+            omega
+          · have hfalse : (fieldResponseName == responseName) = false := by
+              cases hmatch : fieldResponseName == responseName
+              · rfl
+              · contradiction
+            simp [validFieldsWithResponseName, hfalse,
+              Semantic.SelectionSet.size, Semantic.Selection.size]
+            omega
+      | inlineFragment typeCondition directives selectionSet =>
+          have hselectionSet :=
+            size_mergeSelectionSets_validFieldsWithResponseName_le
+              schema parentType responseName selectionSet
+          have hrest :=
+            size_mergeSelectionSets_validFieldsWithResponseName_le
+              schema parentType responseName rest
+          cases typeCondition with
+          | none =>
+              simp [validFieldsWithResponseName, mergeSelectionSets_append,
+                selectionSet_size_append, Semantic.SelectionSet.size,
+                Semantic.Selection.size]
+              omega
+          | some typeCondition =>
+              by_cases h : (schema.typesOverlapBool parentType typeCondition) = true
+              · simp [validFieldsWithResponseName, h, mergeSelectionSets_append,
+                  selectionSet_size_append, Semantic.SelectionSet.size,
+                  Semantic.Selection.size]
+                omega
+              · have hfalse :
+                    schema.typesOverlapBool parentType typeCondition = false := by
+                  cases hmatch : schema.typesOverlapBool parentType typeCondition
+                  · rfl
+                  · contradiction
+                simp [validFieldsWithResponseName, hfalse, Semantic.SelectionSet.size,
+                  Semantic.Selection.size]
+                omega
+termination_by selectionSet => Semantic.SelectionSet.size selectionSet
+decreasing_by
+  all_goals
+    simp [Semantic.SelectionSet.size, Semantic.Selection.size]
+    omega
+
+-- Spec 5.3.2 field merging / 6.3.2 subfield collection: partial normalizer; merges
+-- same-response-name fields, recursively normalizes child selections, and grounds
+-- abstract field return types through possible object types. This is terminating by
+-- selection-set size.
+def normalizeSelectionSet (schema : Schema) (parentType : Name) :
+    List Semantic.Selection -> List Semantic.Selection
+  | [] => []
+  | selection :: rest =>
+      match selection with
+      | .field responseName fieldName arguments directives subselections =>
+          let normalizedRest :=
+            normalizeSelectionSet schema parentType
+              (withoutFieldsWithResponseName schema responseName rest)
+          match schema.lookupField parentType fieldName with
+          | none => normalizedRest
+          | some fieldDefinition =>
+              let matching :=
+                validFieldsWithResponseName schema parentType responseName rest
+              let mergedSubselections :=
+                subselections ++ mergeSelectionSets matching
+              let returnType := fieldDefinition.outputType.namedType
+              let normalizedSubselections :=
+                if objectTypeNameBool schema returnType then
+                  normalizeSelectionSet schema returnType mergedSubselections
+                else
+                  (schema.getPossibleTypes returnType).map
+                    (fun objectType =>
+                      .inlineFragment (some objectType) []
+                        (normalizeSelectionSet schema objectType mergedSubselections))
+              .field responseName fieldName arguments directives normalizedSubselections
+                :: normalizedRest
+      | .inlineFragment none _directives subselections =>
+          normalizeSelectionSet schema parentType (subselections ++ rest)
+      | .inlineFragment (some typeCondition) _directives subselections =>
+          let normalizedRest := normalizeSelectionSet schema parentType rest
+          if schema.typesOverlapBool parentType typeCondition then
+            normalizeSelectionSet schema parentType (subselections ++ rest)
+          else
+            normalizedRest
+termination_by selectionSet => Semantic.SelectionSet.size selectionSet
+decreasing_by
+  all_goals
+    first
+    | exact Nat.lt_of_le_of_lt
+        (size_withoutFieldsWithResponseName_le schema responseName rest)
+        (by
+          simp [Semantic.SelectionSet.size, Semantic.Selection.size]
+          omega)
+    | (have hmerge :=
+        size_mergeSelectionSets_validFieldsWithResponseName_le
+          schema parentType responseName rest
+       simp [selectionSet_size_append, Semantic.SelectionSet.size,
+         Semantic.Selection.size]
+       omega)
+    | (simp [Semantic.SelectionSet.size, Semantic.Selection.size]
+       omega)
+    | (rw [selectionSet_size_append subselections rest]
+       simp [Semantic.SelectionSet.size, Semantic.Selection.size]
+       try omega)
+
+-- Public GraphCoQL-style grounding helper: object return types normalize directly; abstract
+-- interface/union return types specialize into one object fragment per possible type.
+def normalizeMergedSelectionSetForType
+    (schema : Schema) (returnType : Name)
+    (selectionSet : List Semantic.Selection) : List Semantic.Selection :=
+  if objectTypeNameBool schema returnType then
+    normalizeSelectionSet schema returnType selectionSet
+  else
+    (schema.getPossibleTypes returnType).map
+      (fun objectType =>
+        .inlineFragment (some objectType) []
+          (normalizeSelectionSet schema objectType selectionSet))
 
 -- Spec-inspired semantic normalizer: non-spec wrapper around selection-set
 -- normalization.
 def normalizeSemanticOperation (schema : Schema)
     (operation : Semantic.Operation) : Semantic.Operation :=
   { operation with
-    selectionSet := normalizeSelectionSet schema (operation.size * 2 + 1)
-      operation.rootType operation.selectionSet }
+    selectionSet := normalizeSelectionSet schema operation.rootType
+      operation.selectionSet }
 
 theorem normalizeSemanticOperation_name (schema : Schema)
     (operation : Semantic.Operation) :
@@ -221,20 +368,17 @@ theorem normalizeSemanticOperation_variableDefinitions (schema : Schema)
       = operation.variableDefinitions := by
   rfl
 
-def semanticOperationsEquivalentWithFuel (schema : Schema) (fuel : Nat)
+def semanticOperationsEquivalent (schema : Schema)
     (left right : Semantic.Operation) : Prop :=
   ∀ resolvers variableValues source,
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      left.rootType source left.selectionSet
+    Execution.executeSemanticQuery schema resolvers variableValues left source
       =
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      right.rootType source right.selectionSet
+    Execution.executeSemanticQuery schema resolvers variableValues right source
 
 def groundTypeNormalFormSemanticsPreserved (schema : Schema)
     (operation : Semantic.Operation) : Prop :=
-  semanticOperationsEquivalentWithFuel schema
-    (Execution.executeSemanticQueryFuel operation)
-    operation (normalizeSemanticOperation schema operation)
+  semanticOperationsEquivalent schema operation
+    (normalizeSemanticOperation schema operation)
 
 -- Final correctness statement for the ground-type normalizer. This is intentionally
 -- stated without proof in this definition-focused slice.

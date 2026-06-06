@@ -31,113 +31,129 @@ namespace FieldKey
 -- Spec 2.10 input value equality for store keys: structural equality over already
 -- coerced argument values. Input object field order is ignored, matching GraphQL's
 -- argument/input-object semantics after validation has rejected duplicate names.
+def insertInputFieldSorted
+    (field : Name × InputValue) :
+    List (Name × InputValue) -> List (Name × InputValue)
+  | [] => [field]
+  | candidate :: rest =>
+      if field.1 <= candidate.1 then
+        field :: candidate :: rest
+      else
+        candidate :: insertInputFieldSorted field rest
+
+def sortInputFieldsByName : List (Name × InputValue) -> List (Name × InputValue)
+  | [] => []
+  | field :: rest =>
+      insertInputFieldSorted field (sortInputFieldsByName rest)
+
 mutual
-  def inputValueEqBoolWithFuel : Nat -> InputValue -> InputValue -> Bool
-    | 0, _left, _right => false
-    | _fuel + 1, .null, .null => true
-    | _fuel + 1, .int left, .int right => left == right
-    | _fuel + 1, .float left, .float right => left == right
-    | _fuel + 1, .string left, .string right => left == right
-    | _fuel + 1, .boolean left, .boolean right => left == right
-    | _fuel + 1, .enum left, .enum right => left == right
-    | fuel + 1, .list left, .list right =>
-        inputValuesEqBoolWithFuel fuel left right
-    | fuel + 1, .object left, .object right =>
-        inputFieldsEqBoolWithFuel fuel left right
-    | _fuel + 1, .variable left, .variable right => left == right
-    | _fuel + 1, _left, _right => false
+  def canonicalInputValue : InputValue -> InputValue
+    | .null => .null
+    | .int value => .int value
+    | .float value => .float value
+    | .string value => .string value
+    | .boolean value => .boolean value
+    | .enum value => .enum value
+    | .variable name => .variable name
+    | .list values => .list (canonicalInputValues values)
+    | .object fields =>
+        .object (sortInputFieldsByName (canonicalInputFields fields))
 
-  def inputValuesEqBoolWithFuel : Nat -> List InputValue -> List InputValue -> Bool
-    | 0, _left, _right => false
-    | _fuel + 1, [], [] => true
-    | fuel + 1, left :: leftRest, right :: rightRest =>
-        inputValueEqBoolWithFuel fuel left right
-          && inputValuesEqBoolWithFuel fuel leftRest rightRest
-    | _fuel + 1, _left, _right => false
+  def canonicalInputValues : List InputValue -> List InputValue
+    | [] => []
+    | value :: rest =>
+        canonicalInputValue value :: canonicalInputValues rest
 
-  def inputFieldEqBoolWithFuel :
-      Nat -> Name × InputValue -> Name × InputValue -> Bool
-    | 0, _left, _right => false
-    | fuel + 1, (leftName, leftValue), (rightName, rightValue) =>
+  def canonicalInputFields :
+      List (Name × InputValue) -> List (Name × InputValue)
+    | [] => []
+    | (name, value) :: rest =>
+        (name, canonicalInputValue value) :: canonicalInputFields rest
+end
+
+mutual
+  def structuralInputValueEqBool : InputValue -> InputValue -> Bool
+    | .null, .null => true
+    | .int left, .int right => left == right
+    | .float left, .float right => left == right
+    | .string left, .string right => left == right
+    | .boolean left, .boolean right => left == right
+    | .enum left, .enum right => left == right
+    | .variable left, .variable right => left == right
+    | .list left, .list right => structuralInputValuesEqBool left right
+    | .object left, .object right => structuralInputFieldsEqBool left right
+    | _left, _right => false
+
+  def structuralInputValuesEqBool :
+      List InputValue -> List InputValue -> Bool
+    | [], [] => true
+    | left :: leftRest, right :: rightRest =>
+        structuralInputValueEqBool left right
+          && structuralInputValuesEqBool leftRest rightRest
+    | _left, _right => false
+
+  def structuralInputFieldsEqBool :
+      List (Name × InputValue) -> List (Name × InputValue) -> Bool
+    | [], [] => true
+    | (leftName, leftValue) :: leftRest,
+        (rightName, rightValue) :: rightRest =>
         (leftName == rightName)
-          && inputValueEqBoolWithFuel fuel leftValue rightValue
-
-  def inputFieldMemberEqBoolWithFuel :
-      Nat -> Name × InputValue -> List (Name × InputValue) -> Bool
-    | 0, _field, _fields => false
-    | _fuel + 1, _field, [] => false
-    | fuel + 1, field, candidate :: rest =>
-        inputFieldEqBoolWithFuel fuel field candidate
-          || inputFieldMemberEqBoolWithFuel fuel field rest
-
-  def inputFieldsSubsetEqBoolWithFuel :
-      Nat -> List (Name × InputValue) -> List (Name × InputValue) -> Bool
-    | 0, _left, _right => false
-    | _fuel + 1, [], _right => true
-    | fuel + 1, field :: rest, right =>
-        inputFieldMemberEqBoolWithFuel fuel field right
-          && inputFieldsSubsetEqBoolWithFuel fuel rest right
-
-  def inputFieldsEqBoolWithFuel :
-      Nat -> List (Name × InputValue) -> List (Name × InputValue) -> Bool
-    | 0, _left, _right => false
-    | fuel + 1, left, right =>
-        inputFieldsSubsetEqBoolWithFuel fuel left right
-          && inputFieldsSubsetEqBoolWithFuel fuel right left
+          && structuralInputValueEqBool leftValue rightValue
+          && structuralInputFieldsEqBool leftRest rightRest
+    | _left, _right => false
 end
 
 def inputValueEqBool (left right : InputValue) : Bool :=
-  inputValueEqBoolWithFuel (left.size + right.size + 1) left right
+  structuralInputValueEqBool
+    (canonicalInputValue left) (canonicalInputValue right)
 
 def inputValuesEqBool (left right : List InputValue) : Bool :=
-  inputValuesEqBoolWithFuel
-    (InputValue.valuesSize left + InputValue.valuesSize right + 1) left right
+  structuralInputValuesEqBool
+    (canonicalInputValues left) (canonicalInputValues right)
 
 def inputFieldsEqBool (left right : List (Name × InputValue)) : Bool :=
-  inputFieldsEqBoolWithFuel
-    (InputValue.objectFieldsSize left + InputValue.objectFieldsSize right + 1)
-    left right
+  structuralInputFieldsEqBool
+    (sortInputFieldsByName (canonicalInputFields left))
+    (sortInputFieldsByName (canonicalInputFields right))
 
-def argumentSize (argument : Argument) : Nat :=
-  1 + argument.value.size
-
-def argumentsSize : List Argument -> Nat
-  | [] => 0
-  | argument :: rest => argumentSize argument + argumentsSize rest
-
-def argumentEqBoolWithFuel : Nat -> Argument -> Argument -> Bool
-  | 0, _left, _right => false
-  | fuel + 1, left, right =>
-      (left.name == right.name)
-        && inputValueEqBoolWithFuel fuel left.value right.value
+def canonicalArgument (argument : Argument) : Argument :=
+  { argument with value := canonicalInputValue argument.value }
 
 def argumentEqBool (left right : Argument) : Bool :=
-  argumentEqBoolWithFuel (argumentSize left + argumentSize right + 1) left right
+  (left.name == right.name)
+    && structuralInputValueEqBool
+      (canonicalInputValue left.value) (canonicalInputValue right.value)
 
-def argumentMemberEqBoolWithFuel : Nat -> Argument -> List Argument -> Bool
-  | 0, _argument, _arguments => false
-  | _fuel + 1, _argument, [] => false
-  | fuel + 1, argument, candidate :: rest =>
-      argumentEqBoolWithFuel fuel argument candidate
-        || argumentMemberEqBoolWithFuel fuel argument rest
+def insertArgumentSorted (argument : Argument) : List Argument -> List Argument
+  | [] => [argument]
+  | candidate :: rest =>
+      if argument.name <= candidate.name then
+        argument :: candidate :: rest
+      else
+        candidate :: insertArgumentSorted argument rest
 
-def argumentsSubsetEqBoolWithFuel : Nat -> List Argument -> List Argument -> Bool
-  | 0, _left, _right => false
-  | _fuel + 1, [], _right => true
-  | fuel + 1, argument :: rest, right =>
-      argumentMemberEqBoolWithFuel fuel argument right
-        && argumentsSubsetEqBoolWithFuel fuel rest right
+def sortArgumentsByName : List Argument -> List Argument
+  | [] => []
+  | argument :: rest =>
+      insertArgumentSorted argument (sortArgumentsByName rest)
 
-def argumentsEqBoolWithFuel : Nat -> List Argument -> List Argument -> Bool
-  | 0, _left, _right => false
-  | fuel + 1, left, right =>
-      argumentsSubsetEqBoolWithFuel fuel left right
-        && argumentsSubsetEqBoolWithFuel fuel right left
+def canonicalArguments : List Argument -> List Argument
+  | [] => []
+  | argument :: rest =>
+      canonicalArgument argument :: canonicalArguments rest
+
+def argumentsEqBoolOrdered : List Argument -> List Argument -> Bool
+  | [], [] => true
+  | left :: leftRest, right :: rightRest =>
+      argumentEqBool left right && argumentsEqBoolOrdered leftRest rightRest
+  | _left, _right => false
 
 -- Spec 6.4.2 field resolution key comparison, specialized to this model's raw
 -- already-coerced argument representation. Argument order is ignored.
 def argumentsEqBool (left right : List Argument) : Bool :=
-  argumentsEqBoolWithFuel (argumentsSize left + argumentsSize right + 1) left right
+  argumentsEqBoolOrdered
+    (sortArgumentsByName (canonicalArguments left))
+    (sortArgumentsByName (canonicalArguments right))
 
 theorem inputValueEqBool_objectFieldsOrderInsensitive :
     inputValueEqBool
@@ -378,13 +394,6 @@ def executeOperation (schema : Schema) (store : Store)
   Execution.executeQuery schema store.resolvers variableValues
     operation root.toExecutionValue
 
--- Spec-related fuel-explicit execution wrapper for semantic preservation statements.
-def executeSemanticQueryWithFuel (schema : Schema) (store : Store)
-    (variableValues : Execution.VariableValues) (fuel : Nat)
-    (operation : Semantic.Operation) (root : Root) : Execution.Response :=
-  .object (Execution.executeSelectionSet schema store.resolvers variableValues
-    fuel operation.rootType root.toExecutionValue operation.selectionSet)
-
 theorem executeSemanticQuery_usesStoreResolvers (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues)
     (operation : Semantic.Operation) (root : Root) :
@@ -401,14 +410,6 @@ theorem executeOperation_usesStoreResolvers (schema : Schema) (store : Store)
         operation root.toExecutionValue := by
   rfl
 
-theorem executeSemanticQuery_eq_executeSemanticQueryWithFuel (schema : Schema)
-    (store : Store) (variableValues : Execution.VariableValues)
-    (operation : Semantic.Operation) (root : Root) :
-    executeSemanticQuery schema store variableValues operation root
-      = executeSemanticQueryWithFuel schema store variableValues
-        (Execution.executeSemanticQueryFuel operation) operation root := by
-  rfl
-
 -- Spec-related semantic operation equivalence over all well-typed store/root inputs.
 def semanticOperationsEquivalentOnData (schema : Schema)
     (left right : Semantic.Operation) : Prop :=
@@ -418,24 +419,9 @@ def semanticOperationsEquivalentOnData (schema : Schema)
         executeSemanticQuery schema store variableValues left root
           = executeSemanticQuery schema store variableValues right root
 
--- Spec-related semantic operation equivalence with an explicit shared execution fuel.
-def semanticOperationsEquivalentOnDataWithFuel (schema : Schema)
-    (fuel : Nat) (left right : Semantic.Operation) : Prop :=
-  ∀ store variableValues root,
-    store.wellTyped schema ->
-      root.wellTyped schema ->
-        executeSemanticQueryWithFuel schema store variableValues fuel left root
-          = executeSemanticQueryWithFuel schema store variableValues fuel right root
-
 theorem semanticOperationsEquivalentOnData_refl (schema : Schema)
     (operation : Semantic.Operation) :
     semanticOperationsEquivalentOnData schema operation operation := by
-  intro _store _variableValues _root _hstore _hroot
-  rfl
-
-theorem semanticOperationsEquivalentOnDataWithFuel_refl (schema : Schema)
-    (fuel : Nat) (operation : Semantic.Operation) :
-    semanticOperationsEquivalentOnDataWithFuel schema fuel operation operation := by
   intro _store _variableValues _root _hstore _hroot
   rfl
 
@@ -446,28 +432,11 @@ theorem semanticOperationsEquivalentOnData_symm (schema : Schema)
   intro hequivalent store variableValues root hstore hroot
   exact Eq.symm (hequivalent store variableValues root hstore hroot)
 
-theorem semanticOperationsEquivalentOnDataWithFuel_symm (schema : Schema)
-    {fuel : Nat} {left right : Semantic.Operation} :
-    semanticOperationsEquivalentOnDataWithFuel schema fuel left right ->
-      semanticOperationsEquivalentOnDataWithFuel schema fuel right left := by
-  intro hequivalent store variableValues root hstore hroot
-  exact Eq.symm (hequivalent store variableValues root hstore hroot)
-
 theorem semanticOperationsEquivalentOnData_trans (schema : Schema)
     {left middle right : Semantic.Operation} :
     semanticOperationsEquivalentOnData schema left middle ->
       semanticOperationsEquivalentOnData schema middle right ->
         semanticOperationsEquivalentOnData schema left right := by
-  intro hleft hright store variableValues root hstore hroot
-  exact Eq.trans
-    (hleft store variableValues root hstore hroot)
-    (hright store variableValues root hstore hroot)
-
-theorem semanticOperationsEquivalentOnDataWithFuel_trans (schema : Schema)
-    {fuel : Nat} {left middle right : Semantic.Operation} :
-    semanticOperationsEquivalentOnDataWithFuel schema fuel left middle ->
-      semanticOperationsEquivalentOnDataWithFuel schema fuel middle right ->
-        semanticOperationsEquivalentOnDataWithFuel schema fuel left right := by
   intro hleft hright store variableValues root hstore hroot
   exact Eq.trans
     (hleft store variableValues root hstore hroot)
@@ -495,20 +464,18 @@ theorem operationsEquivalentOnData_trans (schema : Schema) {left middle right : 
   exact semanticOperationsEquivalentOnData_trans schema
 
 -- Project-specific correctness statement: normalizing a semantic operation preserves
--- store-backed execution at the source operation's fuel budget.
+-- store-backed execution.
 def groundNormalFormCorrect (schema : Schema)
     (operation : Semantic.Operation) : Prop :=
-  semanticOperationsEquivalentOnDataWithFuel schema
-    (Execution.executeSemanticQueryFuel operation) operation
+  semanticOperationsEquivalentOnData schema operation
     (NormalForm.normalizeSemanticOperation schema operation)
 
 theorem normalizedEquivalentOnData_of_groundNormalFormCorrect (schema : Schema)
     (operation : Semantic.Operation) :
     groundNormalFormCorrect schema operation ->
-      semanticOperationsEquivalentOnDataWithFuel schema
-        (Execution.executeSemanticQueryFuel operation)
+      semanticOperationsEquivalentOnData schema
         (NormalForm.normalizeSemanticOperation schema operation) operation := by
-  exact semanticOperationsEquivalentOnDataWithFuel_symm schema
+  exact semanticOperationsEquivalentOnData_symm schema
 
 end DataModel
 

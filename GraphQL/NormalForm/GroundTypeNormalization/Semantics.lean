@@ -1236,7 +1236,6 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case
 theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
     (schema : Schema) (resolvers : Execution.Resolvers)
     (variableValues : Execution.VariableValues)
-    (variableDefinitions : List VariableDefinition)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (depth : Nat) (parentType : Name) (source : Execution.Value)
     (responseName fieldName : Name) (arguments : List Argument)
@@ -1247,9 +1246,6 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
         source = .object runtimeType identity
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
     selectionSetDirectiveFree
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-    Validation.selectionSetValid schema variableDefinitions parentType
       (Selection.field responseName fieldName arguments [] subselections
         :: rest) ->
     selectionSetSemanticsReady schema parentType
@@ -1263,8 +1259,9 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
       subselections
         ++ mergeSelectionSets
           (validFieldsWithResponseName schema parentType responseName rest)
-    ∀ childDepth runtimeType identity,
+    ∀ (childDepth : Nat) (runtimeType : Name) (identity : Nat),
       childDepth < depth ->
+        objectTypeNameBool schema runtimeType = true ->
         selectionSetDirectiveFree mergedSubselections ->
         selectionSetLookupValid schema runtimeType mergedSubselections ->
         selectionSetSemanticsReady schema runtimeType mergedSubselections ->
@@ -1294,7 +1291,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
         parentType source
         (Selection.field responseName fieldName arguments []
           subselections :: rest) := by
-  intro hobject hsource hfree hvalid hready hmerge hlookup hrecursive htail
+  intro hobject hsource hfree hready hmerge hlookup hrecursive htail
   let matching := validFieldsWithResponseName schema parentType responseName rest
   let mergedSubselections := subselections ++ mergeSelectionSets matching
   let returnType := fieldDefinition.outputType.namedType
@@ -1315,10 +1312,10 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
       selectionSetLookupValid schema parentType
         (Selection.field responseName fieldName arguments [] subselections
           :: rest) :=
-    selectionSetLookupValid_of_selectionSetValid
+    selectionSetLookupValid_of_selectionSetSemanticsReady
       (Selection.field responseName fieldName arguments [] subselections
         :: rest)
-      hvalid
+      hready
   apply normalizeSelectionSet_executeSelectionSet_field_head_case
     schema resolvers variableValues depth parentType source responseName
     fieldName arguments subselections rest
@@ -1339,13 +1336,6 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
     have hincludeReturn :
         schema.typeIncludesObjectBool returnType runtimeType = true := by
       simpa [hreturnEq] using hinclude
-    have hmergedLookup :
-        selectionSetLookupValid schema runtimeType mergedSubselections := by
-      simpa [mergedSubselections, matching] using
-        selectionSetLookupValid_fieldHead_merged_of_child_object schema
-          variableDefinitions parentType responseName fieldName runtimeType
-          arguments subselections rest fieldDefinition hschema hparentObject
-          hvalid hmerge hlookup hincludeReturn
     have hmergedReady :
         selectionSetSemanticsReady schema runtimeType mergedSubselections := by
       simpa [mergedSubselections, matching] using
@@ -1353,22 +1343,27 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
           parentType responseName fieldName runtimeType arguments
           subselections rest fieldDefinition hparentObject hready
           hlookupValid hmerge hlookup hincludeReturn
+    have hmergedLookup :
+        selectionSetLookupValid schema runtimeType mergedSubselections := by
+      exact
+        selectionSetLookupValid_of_selectionSetSemanticsReady
+          mergedSubselections hmergedReady
     have hmergedCanMerge :
         FieldMerge.fieldsInSetCanMerge schema runtimeType
           mergedSubselections := by
       simpa [mergedSubselections, matching] using
-        fieldsInSetCanMerge_fieldHead_merged_of_canMerge_object schema
-          variableDefinitions parentType responseName fieldName runtimeType
-          arguments subselections rest fieldDefinition hparentObject hvalid
-          hmerge hlookup
+        fieldsInSetCanMerge_fieldHead_merged_of_canMerge_object_lookupValid
+          schema parentType responseName fieldName runtimeType arguments
+          subselections rest fieldDefinition hparentObject hlookupValid hmerge
+          hlookup
     by_cases hreturnObject : objectTypeNameBool schema returnType = true
     · have hruntimeEq : runtimeType = returnType :=
         typeIncludesObjectBool_eq_of_objectTypeNameBool_true schema
           hreturnObject hincludeReturn
       subst runtimeType
       simp [hreturnObject]
-      exact hrecursive childDepth returnType identity hlt hmergedFree
-        hmergedLookup hmergedReady hmergedCanMerge
+      exact hrecursive childDepth returnType identity hlt hreturnObject
+        hmergedFree hmergedLookup hmergedReady hmergedCanMerge
     · have hreturnObjectFalse :
           objectTypeNameBool schema returnType = false := by
         cases hmatch : objectTypeNameBool schema returnType
@@ -1391,9 +1386,286 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
         (SchemaWellFormedness.schemaWellFormed_possibleTypesNodup hschema
           returnType)
         hpossible
-        (hrecursive childDepth runtimeType identity hlt hmergedFree
-          hmergedLookup hmergedReady hmergedCanMerge)
+        (hrecursive childDepth runtimeType identity hlt
+          (hobjects runtimeType hpossible) hmergedFree hmergedLookup
+          hmergedReady hmergedCanMerge)
   · exact htail
+
+theorem normalizeSelectionSet_executeSelectionSet
+    (schema : Schema) (resolvers : Execution.Resolvers)
+    (variableValues : Execution.VariableValues)
+    (hschema : SchemaWellFormedness.schemaWellFormed schema) :
+    ∀ depth parentType source selectionSet,
+      objectTypeNameBool schema parentType = true ->
+      (∃ runtimeType identity,
+        source = .object runtimeType identity
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
+      selectionSetDirectiveFree selectionSet ->
+      selectionSetSemanticsReady schema parentType selectionSet ->
+      FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
+        Execution.executeSelectionSet schema resolvers variableValues depth
+          parentType source
+          (normalizeSelectionSet schema parentType selectionSet)
+        =
+        Execution.executeSelectionSet schema resolvers variableValues depth
+          parentType source selectionSet := by
+  intro depth parentType source selectionSet
+  revert depth source
+  induction parentType, selectionSet using normalizeSelectionSet.induct schema
+    with
+  | case1 parentType =>
+      intro depth source _hobject _hsource _hfree _hready _hmerge
+      simp [normalizeSelectionSet]
+  | case2 parentType rest responseName fieldName arguments directives
+      subselections hlookup _hrest =>
+      intro depth source _hobject _hsource _hfree hready _hmerge
+      have hlookupValid :
+          selectionSetLookupValid schema parentType
+            (Selection.field responseName fieldName arguments directives
+              subselections :: rest) :=
+        selectionSetLookupValid_of_selectionSetSemanticsReady
+          (Selection.field responseName fieldName arguments directives
+            subselections :: rest)
+          hready
+      exact False.elim
+        (selectionSetLookupValid_field_head_lookup_none_false hlookupValid
+          hlookup)
+  | case3 parentType rest responseName fieldName arguments directives
+      subselections fieldDefinition hlookup matching mergedSubselections
+      returnType hrest hmerged hpossible =>
+      intro depth source hobject hsource hfree hready hmerge
+      have hheadFree :
+          selectionDirectiveFree
+            (Selection.field responseName fieldName arguments directives
+              subselections) :=
+        selectionSetDirectiveFree_head hfree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      subst directives
+      let mergedSubselections :=
+        subselections
+          ++ mergeSelectionSets
+            (validFieldsWithResponseName schema parentType responseName rest)
+      have htailFree :
+          selectionSetDirectiveFree rest :=
+        selectionSetDirectiveFree_tail hfree
+      have htailReady :
+          selectionSetSemanticsReady schema parentType rest :=
+        selectionSetSemanticsReady_tail hready
+      have htailMerge :
+          FieldMerge.fieldsInSetCanMerge schema parentType rest :=
+        fieldsInSetCanMerge_tail schema parentType
+          (Selection.field responseName fieldName arguments [] subselections)
+          rest hmerge
+      have hfilteredFree :
+          selectionSetDirectiveFree
+            (withoutFieldsWithResponseName schema responseName rest) :=
+        withoutFieldsWithResponseName_directiveFree schema responseName rest
+          htailFree
+      have hfilteredReady :
+          selectionSetSemanticsReady schema parentType
+            (withoutFieldsWithResponseName schema responseName rest) :=
+        selectionSetSemanticsReady_withoutFieldsWithResponseName schema
+          responseName parentType rest htailReady
+      have hfilteredMerge :
+          FieldMerge.fieldsInSetCanMerge schema parentType
+            (withoutFieldsWithResponseName schema responseName rest) :=
+        fieldsInSetCanMerge_withoutFieldsWithResponseName schema responseName
+          parentType rest htailMerge
+      have htailEq :
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType
+              (withoutFieldsWithResponseName schema responseName rest))
+          =
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (withoutFieldsWithResponseName schema responseName rest) :=
+        hrest depth source hobject hsource hfilteredFree hfilteredReady
+          hfilteredMerge
+      apply
+        normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
+          schema resolvers variableValues hschema depth parentType source
+          responseName fieldName arguments subselections rest fieldDefinition
+          hobject hsource hfree hready hmerge hlookup
+      · dsimp
+        intro (childDepth : Nat) (runtimeType : Name) (identity : Nat)
+          hlt hchildObject hmergedFree
+          _hmergedLookup hmergedReady hmergedMerge
+        have hchildSource :
+            ∃ childRuntime childIdentity,
+              (Execution.Value.object runtimeType identity)
+                =
+                Execution.Value.object childRuntime childIdentity
+                ∧ schema.typeIncludesObjectBool runtimeType childRuntime =
+                  true :=
+          ⟨runtimeType, identity, rfl,
+            typeIncludesObjectBool_self_of_objectTypeNameBool schema
+              hchildObject⟩
+        exact hpossible runtimeType childDepth
+          (Execution.Value.object runtimeType identity) hchildObject
+          hchildSource hmergedFree hmergedReady hmergedMerge
+      · exact htailEq
+  | case4 parentType rest directives selectionSet happend =>
+      intro depth source hobject hsource hfree hready hmerge
+      have hheadFree :
+          selectionDirectiveFree
+            (Selection.inlineFragment none directives selectionSet) :=
+        selectionSetDirectiveFree_head hfree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      subst directives
+      have htailFree :
+          selectionSetDirectiveFree rest :=
+        selectionSetDirectiveFree_tail hfree
+      have hselectionFree :
+          selectionSetDirectiveFree selectionSet := by
+        simpa [selectionDirectiveFree] using hheadFree.2
+      have happendFree :
+          selectionSetDirectiveFree (selectionSet ++ rest) :=
+        selectionSetDirectiveFree_append hselectionFree htailFree
+      have hheadReady :
+          selectionSemanticsReady schema parentType
+            (Selection.inlineFragment none [] selectionSet) := by
+        unfold selectionSetSemanticsReady at hready
+        exact hready _ (by simp)
+      have hselectionReady :
+          selectionSetSemanticsReady schema parentType selectionSet := by
+        simpa [selectionSemanticsReady] using hheadReady
+      have htailReady :
+          selectionSetSemanticsReady schema parentType rest :=
+        selectionSetSemanticsReady_tail hready
+      have happendReady :
+          selectionSetSemanticsReady schema parentType
+            (selectionSet ++ rest) :=
+        selectionSetSemanticsReady_append hselectionReady htailReady
+      have happendMerge :
+          FieldMerge.fieldsInSetCanMerge schema parentType
+            (selectionSet ++ rest) :=
+        fieldsInSetCanMerge_inlineFragment_none_flatten schema parentType
+          selectionSet rest hmerge
+      have happendEq :
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType (selectionSet ++ rest))
+          =
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source (selectionSet ++ rest) :=
+        happend depth source hobject hsource happendFree happendReady
+          happendMerge
+      exact normalizeSelectionSet_executeSelectionSet_inlineFragment_none_case
+        schema resolvers variableValues depth parentType source selectionSet
+        rest happendEq
+  | case5 parentType rest typeCondition directives selectionSet hoverlap
+      hrest happend =>
+      intro depth source hobject hsource hfree hready hmerge
+      have hheadFree :
+          selectionDirectiveFree
+            (Selection.inlineFragment (some typeCondition) directives
+              selectionSet) :=
+        selectionSetDirectiveFree_head hfree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      subst directives
+      have htailFree :
+          selectionSetDirectiveFree rest :=
+        selectionSetDirectiveFree_tail hfree
+      have hselectionFree :
+          selectionSetDirectiveFree selectionSet := by
+        simpa [selectionDirectiveFree] using hheadFree.2
+      have happendFree :
+          selectionSetDirectiveFree (selectionSet ++ rest) :=
+        selectionSetDirectiveFree_append hselectionFree htailFree
+      have hheadReady :
+          selectionSemanticsReady schema parentType
+            (Selection.inlineFragment (some typeCondition) [] selectionSet) := by
+        unfold selectionSetSemanticsReady at hready
+        exact hready _ (by simp)
+      have hheadReadyPair :
+          selectionSetLookupValid schema typeCondition selectionSet
+            ∧ (schema.typesOverlapBool parentType typeCondition = true ->
+              selectionSetSemanticsReady schema parentType selectionSet) := by
+        simpa [selectionSemanticsReady] using hheadReady
+      have hselectionTypeLookup :
+          selectionSetLookupValid schema typeCondition selectionSet := by
+        exact hheadReadyPair.1
+      have hselectionReady :
+          selectionSetSemanticsReady schema parentType selectionSet :=
+        hheadReadyPair.2 hoverlap
+      have htailReady :
+          selectionSetSemanticsReady schema parentType rest :=
+        selectionSetSemanticsReady_tail hready
+      have happendReady :
+          selectionSetSemanticsReady schema parentType
+            (selectionSet ++ rest) :=
+        selectionSetSemanticsReady_append hselectionReady htailReady
+      have hselectionParentLookup :
+          selectionSetLookupValid schema parentType selectionSet :=
+        selectionSetLookupValid_of_selectionSetSemanticsReady selectionSet
+          hselectionReady
+      have htailLookup :
+          selectionSetLookupValid schema parentType rest :=
+        selectionSetLookupValid_of_selectionSetSemanticsReady rest htailReady
+      have hparentObject :
+          schema.objectType parentType :=
+        objectType_of_objectTypeNameBool_eq_true schema hobject
+      have happendMerge :
+          FieldMerge.fieldsInSetCanMerge schema parentType
+            (selectionSet ++ rest) :=
+        fieldsInSetCanMerge_inlineFragment_some_overlap_flatten_object
+          schema parentType typeCondition selectionSet rest hschema
+          hparentObject hoverlap hselectionParentLookup hselectionTypeLookup
+          htailLookup hmerge
+      have happendEq :
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType (selectionSet ++ rest))
+          =
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source (selectionSet ++ rest) :=
+        happend depth source hobject hsource happendFree happendReady
+          happendMerge
+      exact normalizeSelectionSet_executeSelectionSet_inlineFragment_some_overlap_case
+        schema resolvers variableValues depth parentType typeCondition source
+        selectionSet rest hobject hsource hoverlap happendEq
+  | case6 parentType rest typeCondition directives selectionSet hoverlap
+      hrest =>
+      intro depth source hobject hsource hfree hready hmerge
+      have hheadFree :
+          selectionDirectiveFree
+            (Selection.inlineFragment (some typeCondition) directives
+              selectionSet) :=
+        selectionSetDirectiveFree_head hfree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      subst directives
+      have htailFree :
+          selectionSetDirectiveFree rest :=
+        selectionSetDirectiveFree_tail hfree
+      have htailReady :
+          selectionSetSemanticsReady schema parentType rest :=
+        selectionSetSemanticsReady_tail hready
+      have htailMerge :
+          FieldMerge.fieldsInSetCanMerge schema parentType rest :=
+        fieldsInSetCanMerge_tail schema parentType
+          (Selection.inlineFragment (some typeCondition) [] selectionSet)
+          rest hmerge
+      have hrestEq :
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType rest)
+          =
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source rest :=
+        hrest depth source hobject hsource htailFree htailReady htailMerge
+      have hoverlapFalse :
+          schema.typesOverlapBool parentType typeCondition = false := by
+        cases hmatch : schema.typesOverlapBool parentType typeCondition
+        · rfl
+        · exact False.elim (hoverlap hmatch)
+      exact normalizeSelectionSet_executeSelectionSet_inlineFragment_some_noOverlap_case
+        schema resolvers variableValues depth parentType typeCondition source
+        selectionSet rest hsource hoverlapFalse hrestEq
 
 theorem normalizeOperation_executeQuery
     (schema : Schema) (operation : Operation) :

@@ -538,6 +538,107 @@ def sameResponseShape (schema : Schema) : TypeRef -> TypeRef -> Prop
         ∧ schema.isOutputType right
         ∧ ((schema.isLeafType left ∨ schema.isLeafType right) -> left = right)
 
+theorem sameResponseShape_refl (schema : Schema) :
+    ∀ typeRef,
+      typeRef.isOutputType schema ->
+        sameResponseShape schema typeRef typeRef
+  | .named _typeName, houtput => by
+      exact ⟨houtput, houtput, by intro _hleaf; rfl⟩
+  | .list inner, houtput => by
+      exact sameResponseShape_refl schema inner
+        (by simpa [TypeRef.isOutputType] using houtput)
+  | .nonNull inner, houtput => by
+      have hinner : inner.isOutputType schema := by
+        cases inner with
+        | named _typeName =>
+            exact houtput
+        | list _inner =>
+            exact houtput
+        | nonNull _inner =>
+            simp [TypeRef.isOutputType] at houtput
+      exact sameResponseShape_refl schema inner hinner
+
+theorem sameResponseShape_symm (schema : Schema) :
+    ∀ left right,
+      sameResponseShape schema left right ->
+        sameResponseShape schema right left
+  | .named _left, .named _right, hshape => by
+      exact ⟨hshape.2.1, hshape.1,
+        by
+          intro hleaf
+          exact (hshape.2.2
+            (Or.elim hleaf (fun hright => Or.inr hright)
+              (fun hleft => Or.inl hleft))).symm⟩
+  | .list left, .list right, hshape => by
+      exact sameResponseShape_symm schema left right hshape
+  | .nonNull left, .nonNull right, hshape => by
+      exact sameResponseShape_symm schema left right hshape
+  | .named _, .list _, hshape => by
+      simp [sameResponseShape] at hshape
+  | .named _, .nonNull _, hshape => by
+      simp [sameResponseShape] at hshape
+  | .list _, .named _, hshape => by
+      simp [sameResponseShape] at hshape
+  | .list _, .nonNull _, hshape => by
+      simp [sameResponseShape] at hshape
+  | .nonNull _, .named _, hshape => by
+      simp [sameResponseShape] at hshape
+  | .nonNull _, .list _, hshape => by
+      simp [sameResponseShape] at hshape
+
+theorem sameResponseShape_trans (schema : Schema) :
+    ∀ left middle right,
+      sameResponseShape schema left middle ->
+        sameResponseShape schema middle right ->
+          sameResponseShape schema left right
+  | .named left, .named middle, .named right, hleft, hright => by
+      exact ⟨hleft.1, hright.2.1,
+        by
+          intro hleaf
+          rcases hleaf with hleftLeaf | hrightLeaf
+          · have hleftMiddle : left = middle :=
+              hleft.2.2 (Or.inl hleftLeaf)
+            have hmiddleLeaf : schema.isLeafType middle := by
+              simpa [hleftMiddle] using hleftLeaf
+            have hmiddleRight : middle = right :=
+              hright.2.2 (Or.inl hmiddleLeaf)
+            exact hleftMiddle.trans hmiddleRight
+          · have hmiddleRight : middle = right :=
+              hright.2.2 (Or.inr hrightLeaf)
+            have hmiddleLeaf : schema.isLeafType middle := by
+              simpa [hmiddleRight] using hrightLeaf
+            have hleftMiddle : left = middle :=
+              hleft.2.2 (Or.inr hmiddleLeaf)
+            exact hleftMiddle.trans hmiddleRight⟩
+  | .list left, .list middle, .list right, hleft, hright => by
+      exact sameResponseShape_trans schema left middle right hleft hright
+  | .nonNull left, .nonNull middle, .nonNull right, hleft, hright => by
+      exact sameResponseShape_trans schema left middle right hleft hright
+  | .named _, .named _, .list _, _hleft, hright => by
+      simp [sameResponseShape] at hright
+  | .named _, .named _, .nonNull _, _hleft, hright => by
+      simp [sameResponseShape] at hright
+  | .named _, .list _, _, hleft, _hright => by
+      simp [sameResponseShape] at hleft
+  | .named _, .nonNull _, _, hleft, _hright => by
+      simp [sameResponseShape] at hleft
+  | .list _, .named _, _, hleft, _hright => by
+      simp [sameResponseShape] at hleft
+  | .list _, .list _, .named _, _hleft, hright => by
+      simp [sameResponseShape] at hright
+  | .list _, .list _, .nonNull _, _hleft, hright => by
+      simp [sameResponseShape] at hright
+  | .list _, .nonNull _, _, hleft, _hright => by
+      simp [sameResponseShape] at hleft
+  | .nonNull _, .named _, _, hleft, _hright => by
+      simp [sameResponseShape] at hleft
+  | .nonNull _, .list _, _, hleft, _hright => by
+      simp [sameResponseShape] at hleft
+  | .nonNull _, .nonNull _, .named _, _hleft, hright => by
+      simp [sameResponseShape] at hright
+  | .nonNull _, .nonNull _, .list _, _hleft, hright => by
+      simp [sameResponseShape] at hright
+
 -- Spec 5.3.2 `CollectFieldsAndFragmentNames` / 6.3.2 `CollectFields`: partial validation
 -- helper; it does not apply directives or runtime type-condition filtering.
 def collectFields (schema : Schema) : Name -> List Selection -> List ScopedField

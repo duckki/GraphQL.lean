@@ -42,12 +42,6 @@ These are out of scope for the current conformance pass:
 - introspection and meta-fields,
 - execution errors, request errors, `errors`, `extensions`, and null bubbling,
 - serialization details,
-- response-shape analysis,
-- directive-sensitive normal-form semantics; validation and execution still
-  model `@skip` and `@include`, but the current normal-form proof path assumes
-  source operations have no modeled directives,
-- minimization,
-- federation.
 
 The working assumption is that values entering validation/execution are already
 coerced and type-conformant. The proof-facing model should state that assumption
@@ -71,58 +65,13 @@ The main modules are:
   compatibility with the nullable-variable default exception, plus
   same-response-name merge compatibility checks.
 - `GraphQL.Execution`: bounded resolver-based execution.
-- `GraphQL.NormalForm`: ground normal form predicates and normalizer scaffold.
 - `GraphQL.DataModel`: typed object-store model, store-backed resolvers, and
   semantic equivalence/correctness predicates over store-backed execution.
 - `GraphQL.DataModel.Store`: store-resolution bridge lemmas for connecting
   `Store.resolveValue` results to well-typed schema field facts.
 
-`GraphQL.DataModel` is the current bridge from resolver execution to proof
-semantics. It models typed object identities, field facts keyed by already
-coerced arguments, and deterministic store-backed resolution. Store field keys
-compare arguments and input-object fields by GraphQL's unordered semantics after
-validation has ruled out duplicate names.
-
-`GraphQL.NormalForm` follows the GraphCoQL-level normal-form target under a
-directive-free source-operation assumption. It merges fields and grounds
-abstract selections without a separate directive-erasure pass.
-Directive-sensitive normalization can be revisited after the directive-free
-semantic preservation proof is stable.
-
-`NormalForm.groundNormalFormCorrect` is stated over
-`DataModel.operationsEquivalentOnData`.
-The ground-type normalizer itself has no fuel parameter: it terminates by
-structural descent on selection-set size while merging same-response-name fields
-and grounding abstract returns through possible object types.
-Public normal-form predicates live in top-level `GraphQL/NormalForm.lean`.
-Proof-facing normal-form lemmas live under `GraphQL/NormalForm/`; the first
-directive-free ground-type proof module is
-`GraphQL/NormalForm/GroundTypeNormalization.lean`.
-
-## Proof Plan
-
-The detailed ground-type normal form theorem plan is in
-`docs/ground-type-normal-form-correctness-plan.md`.
-
-The high-level proof ladder is:
-
-1. Keep schema and operation validation faithful to the scoped GraphQL spec
-   definitions.
-2. Keep data-model execution definitionally tied to `GraphQL.Execution` through
-   store-backed resolvers.
-3. Prove normalizer output satisfies `NormalForm.operationNormal` under
-   schema well-formedness and operation-validity assumptions.
-4. Prove ground normal form semantic preservation:
-   `NormalForm.groundTypeNormalFormSemanticsPreservation`.
-5. Derive store-backed correctness:
-   `NormalForm.groundNormalFormCorrect`.
-6. Revisit broader operation transformation algorithms only after the scoped
-   validation, execution, and normal-form semantics are stable.
-
 ## Related Documentation
 
 - `docs/overview.md`: project structure and module dependency map.
-- `docs/ground-type-normal-form-correctness-plan.md`: detailed proof plan for
-  directive-free ground-type normal form correctness.
 - `docs/references.md`: GraphCoQL notes and proof strategy references.
 - `README.md`: build, lint, and entry-point information.

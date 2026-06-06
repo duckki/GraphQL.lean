@@ -14,6 +14,25 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
+theorem executeSelectionSet_inlineFragment_some_directiveFree_skip
+    (schema : Schema) (resolvers : Execution.Resolvers)
+    (variableValues : Execution.VariableValues)
+    (depth : Nat) (parentType typeCondition : Name)
+    (source : Execution.Value)
+    (selectionSet rest : List Selection) :
+    Execution.doesFragmentTypeApplyBool schema parentType source typeCondition =
+      false ->
+      Execution.executeSelectionSet schema resolvers variableValues depth
+        parentType source
+        (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest)
+        =
+      Execution.executeSelectionSet schema resolvers variableValues depth
+        parentType source rest := by
+  intro hskip
+  simp [Execution.executeSelectionSet,
+    collectFields_inlineFragment_some_directiveFree_skip_eq schema
+      variableValues parentType typeCondition source selectionSet rest hskip]
+
 theorem normalizeOperation_executeQuery
     (schema : Schema) (operation : Operation) :
     (∀ resolvers variableValues source,

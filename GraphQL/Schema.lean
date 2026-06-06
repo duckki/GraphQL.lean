@@ -36,12 +36,6 @@ def namedType : TypeRef -> Name
   | .list inner => inner.namedType
   | .nonNull inner => inner.namedType
 
--- Non-spec structural metric used to fuel recursive validation over type references.
-def size : TypeRef -> Nat
-  | .named _ => 1
-  | .list inner => 1 + inner.size
-  | .nonNull inner => 1 + inner.size
-
 end TypeRef
 
 -- Spec 2.10 `Value`: partial; literals and variables are represented, but
@@ -59,28 +53,6 @@ inductive InputValue where
 deriving Repr
 
 namespace InputValue
-
-mutual
-  -- Non-spec structural metric used by recursive input-value validation.
-  def size : InputValue -> Nat
-    | .null => 1
-    | .int _ => 1
-    | .float _ => 1
-    | .string _ => 1
-    | .boolean _ => 1
-    | .enum _ => 1
-    | .list values => 1 + valuesSize values
-    | .object fields => 1 + objectFieldsSize fields
-    | .variable _ => 1
-
-  def valuesSize : List InputValue -> Nat
-    | [] => 0
-    | value :: rest => value.size + valuesSize rest
-
-  def objectFieldsSize : List (Name × InputValue) -> Nat
-    | [] => 0
-    | (_name, value) :: rest => value.size + objectFieldsSize rest
-end
 
 def insertObjectFieldSorted
     (field : Name × InputValue) :
@@ -188,27 +160,6 @@ inductive ConstInputValue where
 deriving Repr
 
 namespace ConstInputValue
-
-mutual
-  -- Non-spec structural metric used to fuel recursive constant validation.
-  def size : ConstInputValue -> Nat
-    | .null => 1
-    | .int _ => 1
-    | .float _ => 1
-    | .string _ => 1
-    | .boolean _ => 1
-    | .enum _ => 1
-    | .list values => 1 + valuesSize values
-    | .object fields => 1 + objectFieldsSize fields
-
-  def valuesSize : List ConstInputValue -> Nat
-    | [] => 0
-    | value :: rest => value.size + valuesSize rest
-
-  def objectFieldsSize : List (Name × ConstInputValue) -> Nat
-    | [] => 0
-    | (_name, value) :: rest => value.size + objectFieldsSize rest
-end
 
 -- Spec 5.4.3 / 5.6.4 helper: null does not satisfy a required input entry.
 def nonNull : ConstInputValue -> Prop
@@ -442,42 +393,41 @@ def lookupInterface (schema : Schema) (typeName : Name) : Option InterfaceType :
   | some (.interface interfaceType) => some interfaceType
   | _ => none
 
--- Spec 3.6 / 3.7 interface implementation transitivity, fuel-bounded for cyclic raw
--- schema declarations.
-def interfaceTypeImplementsInterfaceWithFuel (schema : Schema) :
-    Nat -> Name -> Name -> Prop
-  | 0, _interfaceName, _targetName => False
-  | fuel + 1, interfaceName, targetName =>
-      interfaceName = targetName
-        ∨ ∃ interfaceType,
-          schema.lookupInterface interfaceName = some interfaceType
-            ∧ ∃ parentName,
-              parentName ∈ interfaceType.interfaces
-                ∧ interfaceTypeImplementsInterfaceWithFuel
-                  schema fuel parentName targetName
+-- Spec 3.6 / 3.7 interface implementation transitivity as proof-facing
+-- reachability over declared interface inheritance.
+inductive InterfaceTypeImplementsInterface (schema : Schema) :
+    Name -> Name -> Prop where
+  | refl (interfaceName : Name) :
+      InterfaceTypeImplementsInterface schema interfaceName interfaceName
+  | trans (interfaceName targetName : Name) (interfaceType : InterfaceType)
+      (parentName : Name)
+      (hlookup : schema.lookupInterface interfaceName = some interfaceType)
+      (hparent : parentName ∈ interfaceType.interfaces)
+      (himplements :
+        InterfaceTypeImplementsInterface schema parentName targetName) :
+      InterfaceTypeImplementsInterface schema interfaceName targetName
 
 def interfaceTypeImplementsInterface (schema : Schema)
     (interfaceName targetName : Name) : Prop :=
-  interfaceTypeImplementsInterfaceWithFuel
-    schema (schema.types.length + 1) interfaceName targetName
+  InterfaceTypeImplementsInterface schema interfaceName targetName
 
--- Boolean counterpart to `interfaceTypeImplementsInterfaceWithFuel`.
-def interfaceTypeImplementsInterfaceWithFuelBool (schema : Schema) :
+-- Boolean counterpart bounded for cyclic raw schema declarations.
+def interfaceTypeImplementsInterfaceBoundedBool (schema : Schema) :
     Nat -> Name -> Name -> Bool
   | 0, _interfaceName, _targetName => false
-  | fuel + 1, interfaceName, targetName =>
+  | bound + 1, interfaceName, targetName =>
       (interfaceName == targetName)
         || match schema.lookupInterface interfaceName with
           | some interfaceType =>
               interfaceType.interfaces.any
                 (fun parentName =>
-                  interfaceTypeImplementsInterfaceWithFuelBool
-                    schema fuel parentName targetName)
+                  interfaceTypeImplementsInterfaceBoundedBool
+                    schema bound parentName targetName)
           | none => false
 
 def interfaceTypeImplementsInterfaceBool (schema : Schema)
     (interfaceName targetName : Name) : Bool :=
-  interfaceTypeImplementsInterfaceWithFuelBool
+  interfaceTypeImplementsInterfaceBoundedBool
     schema (schema.types.length + 1) interfaceName targetName
 
 -- Spec 3.6 object/interface relationship, including transitive interface inheritance.
@@ -637,64 +587,95 @@ def getConstInputObjectField? (fields : List (Name × ConstInputValue))
 mutual
   -- Spec 3.6.1 / 3.10 default-value validity: constants are checked against input
   -- object definitions recursively, while scalar coercion details remain out of scope.
-  def constInputValueIsCorrectTypeWithFuel (schema : Schema) :
-      Nat -> ConstInputValue -> TypeRef -> Prop
-    | 0, _value, _expectedType => False
-    | fuel + 1, value, expectedType =>
-        expectedType.isInputType schema
-          ∧ match value, expectedType with
-            | .null, .nonNull _ => False
-            | .null, _ => True
-            | _, .nonNull inner =>
-                constInputValueIsCorrectTypeWithFuel schema fuel value inner
-            | .list values, .list inner =>
-                ∀ item, item ∈ values ->
-                  constInputValueIsCorrectTypeWithFuel schema fuel item inner
-            | .list _values, _ => False
-            | .object fields, .named typeName =>
-                ∃ inputObject,
-                  schema.lookupInputObject typeName = some inputObject
-                    ∧ constInputObjectFieldsValidWithFuel schema fuel
-                      inputObject.inputFields fields
-            | .object fields, .list inner =>
-                constInputObjectAsListItemValidWithFuel schema fuel fields inner
-            | _value, .list inner =>
-                constInputValueIsCorrectTypeWithFuel schema fuel value inner
-            | _value, .named typeName =>
-                schema.lookupInputObject typeName = none
+  inductive ConstInputValueIsCorrectType (schema : Schema) :
+      ConstInputValue -> TypeRef -> Prop where
+    | nullNamed (typeName : Name)
+        (hinput : (TypeRef.named typeName).isInputType schema) :
+        ConstInputValueIsCorrectType schema
+          ConstInputValue.null (TypeRef.named typeName)
+    | nullList (inner : TypeRef)
+        (hinput : (TypeRef.list inner).isInputType schema) :
+        ConstInputValueIsCorrectType schema
+          ConstInputValue.null (TypeRef.list inner)
+    | nonNull (value : ConstInputValue) (inner : TypeRef)
+        (hinput : (TypeRef.nonNull inner).isInputType schema)
+        (hnotNull : value ≠ ConstInputValue.null)
+        (hinner : ConstInputValueIsCorrectType schema value inner) :
+        ConstInputValueIsCorrectType schema value (TypeRef.nonNull inner)
+    | list (values : List ConstInputValue) (inner : TypeRef)
+        (hinput : (TypeRef.list inner).isInputType schema)
+        (hitems :
+          ∀ item, item ∈ values ->
+            ConstInputValueIsCorrectType schema item inner) :
+        ConstInputValueIsCorrectType schema
+          (ConstInputValue.list values) (TypeRef.list inner)
+    | objectNamed (fields : List (Name × ConstInputValue)) (typeName : Name)
+        (inputObject : InputObjectType)
+        (hinput : (TypeRef.named typeName).isInputType schema)
+        (hlookup : schema.lookupInputObject typeName = some inputObject)
+        (hfields :
+          ConstInputObjectFieldsValid schema inputObject.inputFields fields) :
+        ConstInputValueIsCorrectType schema
+          (ConstInputValue.object fields) (TypeRef.named typeName)
+    | objectAsListItem (fields : List (Name × ConstInputValue)) (inner : TypeRef)
+        (hinput : (TypeRef.list inner).isInputType schema)
+        (hitem : ConstInputObjectAsListItemValid schema fields inner) :
+        ConstInputValueIsCorrectType schema
+          (ConstInputValue.object fields) (TypeRef.list inner)
+    | singletonListItem (value : ConstInputValue) (inner : TypeRef)
+        (hinput : (TypeRef.list inner).isInputType schema)
+        (hnotList : ∀ values, value ≠ ConstInputValue.list values)
+        (hnotObject : ∀ fields, value ≠ ConstInputValue.object fields)
+        (hnotNull : value ≠ ConstInputValue.null)
+        (hitem : ConstInputValueIsCorrectType schema value inner) :
+        ConstInputValueIsCorrectType schema value (TypeRef.list inner)
+    | namedNonInputObject (value : ConstInputValue) (typeName : Name)
+        (hinput : (TypeRef.named typeName).isInputType schema)
+        (hnotObject : ∀ fields, value ≠ ConstInputValue.object fields)
+        (hnotNull : value ≠ ConstInputValue.null)
+        (hlookup : schema.lookupInputObject typeName = none) :
+        ConstInputValueIsCorrectType schema value (TypeRef.named typeName)
 
   -- Spec 3.6.1 / 3.10 default-value validity through 5.6.2-5.6.4 input object rules:
   -- object fields must be unique, known, correctly typed, and include required fields.
-  def constInputObjectFieldsValidWithFuel (schema : Schema) :
-      Nat -> List InputValueDefinition -> List (Name × ConstInputValue) -> Prop
-    | 0, _definitions, _fields => False
-    | fuel + 1, definitions, fields =>
-        (fields.map Prod.fst).Nodup
-          ∧ (∀ name value, (name, value) ∈ fields ->
-            ∃ definition,
-              Schema.lookupArgumentDefinition definitions name = some definition
-                ∧ constInputValueIsCorrectTypeWithFuel schema fuel
-                  value definition.inputType)
-          ∧ (∀ definition, definition ∈ definitions ->
+  inductive ConstInputObjectFieldsValid (schema : Schema) :
+      List InputValueDefinition -> List (Name × ConstInputValue) -> Prop where
+    | intro (definitions : List InputValueDefinition)
+        (fields : List (Name × ConstInputValue))
+        (hnodup : (fields.map Prod.fst).Nodup)
+        (hknown :
+          ∀ name value, (name, value) ∈ fields ->
+            (Schema.lookupArgumentDefinition definitions name).isSome = true)
+        (htyped :
+          ∀ name value definition, (name, value) ∈ fields ->
+            Schema.lookupArgumentDefinition definitions name = some definition ->
+              ConstInputValueIsCorrectType schema value definition.inputType)
+        (hrequiredPresent :
+          ∀ definition, definition ∈ definitions ->
             definition.isRequired ->
-              ∃ value,
-                getConstInputObjectField? fields definition.name = some value
-                  ∧ value.nonNull)
+              (getConstInputObjectField? fields definition.name).isSome = true)
+        (hrequiredNonNull :
+          ∀ definition value, definition ∈ definitions ->
+            definition.isRequired ->
+              getConstInputObjectField? fields definition.name = some value ->
+                value.nonNull) :
+        ConstInputObjectFieldsValid schema definitions fields
 
   -- Spec 5.6.1 list input rule analogue for constants: a non-list value can be checked
   -- as a single list item at a list location.
-  def constInputObjectAsListItemValidWithFuel (schema : Schema) :
-      Nat -> List (Name × ConstInputValue) -> TypeRef -> Prop
-    | 0, _fields, _inner => False
-    | fuel + 1, fields, inner =>
-        constInputValueIsCorrectTypeWithFuel schema fuel (.object fields) inner
+  inductive ConstInputObjectAsListItemValid (schema : Schema) :
+      List (Name × ConstInputValue) -> TypeRef -> Prop where
+    | intro (fields : List (Name × ConstInputValue)) (inner : TypeRef)
+        (hvalue :
+          ConstInputValueIsCorrectType schema
+            (ConstInputValue.object fields) inner) :
+        ConstInputObjectAsListItemValid schema fields inner
 end
 
--- Spec 3.6.1 / 3.10 default-value validity wrapper with a structural fuel budget.
+-- Spec 3.6.1 / 3.10 default-value validity wrapper.
 def constInputValueIsCorrectType (schema : Schema)
     (value : ConstInputValue) (expectedType : TypeRef) : Prop :=
-  constInputValueIsCorrectTypeWithFuel schema
-    (value.size + expectedType.size + 1) value expectedType
+  ConstInputValueIsCorrectType schema value expectedType
 
 -- Spec 3.6 / 3.7 field return covariance for object/interface implementation:
 -- wrappers are structural, leaf named types are invariant, and composite named types

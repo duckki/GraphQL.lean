@@ -77,8 +77,8 @@ def selectionDirectivesAllowBool (variableValues : VariableValues)
     (directives : List DirectiveApplication) : Bool :=
   directives.all (fun directive => directiveAllowsSelectionBool variableValues directive)
 
--- Spec 6.4.3 `CompleteValue`: partial fallback for exhausted fuel; converts internal
--- values structurally without type-directed coercion or errors.
+-- Spec 6.4.3 `CompleteValue`: partial fallback for exhausted execution depth; converts
+-- internal values structurally without type-directed coercion or errors.
 def shallowResponse : Value -> Response
   | .null => .null
   | .scalar value => .scalar value
@@ -145,7 +145,7 @@ def mergedFieldSelectionSet : List ExecutableField -> List Selection
 
 -- Spec 6.3 `ExecuteRootSelectionSet`, 6.3.2 `CollectFields`, 6.3.3
 -- `ExecuteCollectedFields`, 6.4 `ExecuteField`, and 6.4.3 `CompleteValue`: partial
--- fuel-bounded execution model without coercion or error propagation.
+-- depth-bounded execution model without coercion or error propagation.
 mutual
   -- Spec 6.4.3 `CompleteValue`: partial; ignores declared `fieldType` wrappers and result
   -- coercion/errors, using the runtime value shape instead.
@@ -153,35 +153,33 @@ mutual
       (variableValues : VariableValues) :
       Nat -> Name -> List Selection -> Value -> Response
     | 0, _parentType, _selectionSet, value => shallowResponse value
-    | _fuel + 1, _parentType, _selectionSet, .null => .null
-    | _fuel + 1, _parentType, _selectionSet, .scalar value => .scalar value
-    | fuel + 1, _parentType, selectionSet, source@(.object runtimeType _identity) =>
+    | _depth + 1, _parentType, _selectionSet, .null => .null
+    | _depth + 1, _parentType, _selectionSet, .scalar value => .scalar value
+    | depth + 1, _parentType, selectionSet, source@(.object runtimeType _identity) =>
         .object (executeSelectionSet schema resolvers variableValues
-          fuel runtimeType source selectionSet)
-    | fuel + 1, parentType, selectionSet, .list values =>
+          depth runtimeType source selectionSet)
+    | depth + 1, parentType, selectionSet, .list values =>
         .list (values.map
           (fun value =>
             completeValue schema resolvers variableValues
-              fuel parentType selectionSet value))
+              depth parentType selectionSet value))
 
   -- Spec 6.3.1 `ExecuteRootSelectionSet` / recursive selection-set execution: partial;
   -- directly returns data fields and omits error collection.
   def executeSelectionSet (schema : Schema) (resolvers : Resolvers)
       (variableValues : VariableValues)
-      (fuel : Nat) (parentType : Name) (source : Value) :
+      (depth : Nat) (parentType : Name) (source : Value) :
       List Selection -> List (Name × Response)
     | selectionSet =>
-        executeCollectedFields schema resolvers variableValues fuel source
-          (collectFields schema variableValues fuel parentType source selectionSet)
+        executeCollectedFields schema resolvers variableValues depth source
+          (collectFields schema variableValues parentType source selectionSet)
 
   -- Spec 6.3.2 `CollectFields` selection step: partial; handles built-in directives and
   -- inline fragments.
   def collectSelection (schema : Schema) (variableValues : VariableValues) :
-      Nat -> Name -> Value -> Selection ->
+      Name -> Value -> Selection ->
         List (Name × List ExecutableField)
-    | 0, _parentType, _source, _selection => []
-    | _fuel + 1, parentType, _source,
-        .field responseName fieldName arguments directives selectionSet =>
+    | parentType, _source, .field responseName fieldName arguments directives selectionSet =>
         if selectionDirectivesAllowBool variableValues directives then
           [(responseName, [{
             parentType := parentType,
@@ -192,16 +190,15 @@ mutual
           }])]
         else
           []
-    | fuel + 1, parentType, source, .inlineFragment none directives selectionSet =>
+    | parentType, source, .inlineFragment none directives selectionSet =>
         if selectionDirectivesAllowBool variableValues directives then
-          collectFields schema variableValues fuel parentType source selectionSet
+          collectFields schema variableValues parentType source selectionSet
         else
           []
-    | fuel + 1, parentType, source,
-        .inlineFragment (some typeCondition) directives selectionSet =>
+    | parentType, source, .inlineFragment (some typeCondition) directives selectionSet =>
         if selectionDirectivesAllowBool variableValues directives then
           if doesFragmentTypeApplyBool schema parentType source typeCondition then
-            collectFields schema variableValues fuel typeCondition source selectionSet
+            collectFields schema variableValues typeCondition source selectionSet
           else
             []
         else
@@ -210,25 +207,24 @@ mutual
   -- Spec 6.3.2 `CollectFields`: partial; list-backed ordered grouping of executable
   -- fields by response name.
   def collectFields (schema : Schema) (variableValues : VariableValues) :
-      Nat -> Name -> Value -> List Selection ->
+      Name -> Value -> List Selection ->
         List (Name × List ExecutableField)
-    | 0, _parentType, _source, _selectionSet => []
-    | _fuel + 1, _parentType, _source, [] => []
-    | fuel + 1, parentType, source, selection :: rest =>
+    | _parentType, _source, [] => []
+    | parentType, source, selection :: rest =>
         mergeExecutableGroups
-          (collectSelection schema variableValues (fuel + 1) parentType source selection)
-          (collectFields schema variableValues (fuel + 1) parentType source rest)
+          (collectSelection schema variableValues parentType source selection)
+          (collectFields schema variableValues parentType source rest)
 
   -- Spec 6.4 `ExecuteField`: partial; resolves one grouped response name once and
   -- completes with merged subselections.
   def executeField (schema : Schema) (resolvers : Resolvers)
-      (variableValues : VariableValues) (fuel : Nat) (source : Value)
+      (variableValues : VariableValues) (depth : Nat) (source : Value)
       (responseName : Name) : List ExecutableField -> List (Name × Response)
     | [] => []
     | field :: fields =>
-        match fuel with
+        match depth with
         | 0 => []
-        | fuel' + 1 =>
+        | depth' + 1 =>
             let resolved :=
               resolvers.resolve field.parentType field.fieldName field.arguments source
             let childType :=
@@ -236,21 +232,21 @@ mutual
             let selectionSet := mergedFieldSelectionSet (field :: fields)
             [(responseName,
               completeValue schema resolvers variableValues
-                fuel' childType selectionSet resolved)]
+                depth' childType selectionSet resolved)]
 
   -- Spec 6.3.3 `ExecuteCollectedFields`: partial; executes each response-name group in
   -- stored order, without serial/parallel distinction or errors.
   def executeCollectedFields (schema : Schema) (resolvers : Resolvers)
-      (variableValues : VariableValues) (fuel : Nat) (source : Value) :
+      (variableValues : VariableValues) (depth : Nat) (source : Value) :
       List (Name × List ExecutableField) -> List (Name × Response)
     | [] => []
     | (responseName, fields) :: rest =>
-        executeField schema resolvers variableValues fuel source responseName fields
-          ++ executeCollectedFields schema resolvers variableValues fuel source rest
+        executeField schema resolvers variableValues depth source responseName fields
+          ++ executeCollectedFields schema resolvers variableValues depth source rest
 end
 
--- Local fuel bound for the partial `ExecuteQuery` model.
-def executeQueryFuel (operation : Operation) : Nat :=
+-- Local recursion-depth bound for the partial `ExecuteQuery` model.
+def executeQueryDepthBound (operation : Operation) : Nat :=
   operation.size * 3 + 1
 
 -- Spec 6.2.1 `ExecuteQuery` / 6.3.1 `ExecuteRootSelectionSet`: partial; executes a
@@ -259,7 +255,7 @@ def executeQuery (schema : Schema) (resolvers : Resolvers)
     (variableValues : VariableValues) (operation : Operation)
     (source : Value) : Response :=
   .object (executeSelectionSet schema resolvers variableValues
-    (executeQueryFuel operation) operation.rootType source operation.selectionSet)
+    (executeQueryDepthBound operation) operation.rootType source operation.selectionSet)
 
 end Execution
 

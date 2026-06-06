@@ -1,4 +1,4 @@
-import GraphQL.FieldMerge
+import GraphQL.Operation
 
 /-!
 Spec reference: GraphQL September 2025.
@@ -11,6 +11,100 @@ Spec reference: GraphQL September 2025.
   and meta-field rules.
 -/
 namespace GraphQL
+
+namespace FieldMerge
+
+-- Spec 5.3.2 `FieldsInSetCanMerge` field-pair context: non-spec helper carrying the
+-- parent type and field data needed by merge checks.
+structure ScopedField where
+  parentType : Name
+  responseName : Name
+  fieldName : Name
+  arguments : List Argument
+  outputType : TypeRef
+  selectionSet : List Selection
+deriving Repr
+
+-- Spec 5.3.2 `SameResponseShape`: mostly faithful for wrapping structure and leaf
+-- named-type equality, using the modeled schema's leaf/output predicates.
+def sameResponseShape (schema : Schema) : TypeRef -> TypeRef -> Prop
+  | .nonNull left, .nonNull right => sameResponseShape schema left right
+  | .nonNull _, _ => False
+  | _, .nonNull _ => False
+  | .list left, .list right => sameResponseShape schema left right
+  | .list _, _ => False
+  | _, .list _ => False
+  | .named left, .named right =>
+      schema.isOutputType left
+        ∧ schema.isOutputType right
+        ∧ ((schema.isLeafType left ∨ schema.isLeafType right) -> left = right)
+
+-- Spec 5.3.2 `CollectFieldsAndFragmentNames` / 6.3.2 `CollectFields`: partial validation
+-- helper; it does not apply directives or runtime type-condition filtering.
+def collectFields (schema : Schema) : Name -> List Selection -> List ScopedField
+  | _parentType, [] => []
+  | parentType, selection :: rest =>
+      let current :=
+        match selection with
+        | .field responseName fieldName arguments _directives selectionSet =>
+            match schema.lookupField parentType fieldName with
+            | none => []
+            | some fieldDefinition =>
+                [{
+                  parentType := parentType,
+                  responseName := responseName,
+                  fieldName := fieldName,
+                  arguments := arguments,
+                  outputType := fieldDefinition.outputType,
+                  selectionSet := selectionSet
+                }]
+        | .inlineFragment none _directives selectionSet =>
+            collectFields schema parentType selectionSet
+        | .inlineFragment (some typeCondition) _directives selectionSet =>
+            collectFields schema typeCondition selectionSet
+      current ++ collectFields schema parentType rest
+
+-- Spec 5.3.2 `FieldsInSetCanMerge`: captures pairwise response-shape,
+-- same-field/argument checks on overlapping parent types, and recursive merged
+-- subselection checks. It is a proposition rather than a recursive executable
+-- function, so it does not need a synthetic depth counter.
+mutual
+  inductive FieldsInSetCanMerge (schema : Schema) :
+      Name -> List Selection -> Prop where
+    | intro (parentType : Name) (selectionSet : List Selection)
+        (hfields :
+          let fields := collectFields schema parentType selectionSet
+          ∀ left, left ∈ fields ->
+            ∀ right, right ∈ fields ->
+              left.responseName = right.responseName ->
+                FieldsForNameCanMerge schema left right) :
+        FieldsInSetCanMerge schema parentType selectionSet
+
+  inductive FieldsForNameCanMerge (schema : Schema) :
+      ScopedField -> ScopedField -> Prop where
+    | intro (left right : ScopedField)
+        (hshape : sameResponseShape schema left.outputType right.outputType)
+        (hidentity :
+          (left.parentType = right.parentType
+              ∨ ¬ schema.objectType left.parentType
+              ∨ ¬ schema.objectType right.parentType) ->
+            left.fieldName = right.fieldName
+              ∧ Argument.argumentsEquivalent left.arguments right.arguments)
+        (hsubfields :
+          FieldsInSetCanMerge schema left.outputType.namedType
+            (left.selectionSet ++ right.selectionSet)) :
+        FieldsForNameCanMerge schema left right
+end
+
+def fieldsInSetCanMerge (schema : Schema)
+    (parentType : Name) (selectionSet : List Selection) : Prop :=
+  FieldsInSetCanMerge schema parentType selectionSet
+
+def fieldsForNameCanMerge (schema : Schema)
+    (left right : ScopedField) : Prop :=
+  FieldsForNameCanMerge schema left right
+
+end FieldMerge
 
 namespace Validation
 
@@ -80,71 +174,123 @@ mutual
   -- Spec 5.6.1 Values of Correct Type, 5.6.2-5.6.4 input object rules, 5.8.3
   -- variable definition lookup, and 5.8.5 variable usage compatibility. Literal coercion
   -- remains deliberately shallow, but input-object structure is checked recursively.
-  def valueIsCorrectTypeWithFuel (schema : Schema)
+  inductive ValueIsCorrectTypeAtLocation (schema : Schema)
       (variableDefinitions : List VariableDefinition) :
-      Nat -> InputValue -> TypeRef -> Option ConstInputValue -> Prop
-    | 0, _value, _expectedType, _locationDefault => False
-    | fuel + 1, value, expectedType, locationDefault =>
-        expectedType.isInputType schema
-          ∧ match value, expectedType with
-            | .variable variableName, _ =>
-                ∃ variableDefinition,
-                  getVariableDefinition? variableDefinitions variableName =
-                    some variableDefinition
-                    ∧ variableUsageAllowed schema variableDefinition
-                      expectedType locationDefault
-            | .null, .nonNull _ => False
-            | .null, _ => True
-            | _, .nonNull inner =>
-                valueIsCorrectTypeWithFuel schema variableDefinitions fuel
-                  value inner none
-            | .list values, .list inner =>
-                ∀ item, item ∈ values ->
-                  valueIsCorrectTypeWithFuel schema variableDefinitions fuel
-                    item inner none
-            | .list _values, _ => False
-            | .object fields, .named typeName =>
-                ∃ inputObject,
-                  schema.lookupInputObject typeName = some inputObject
-                    ∧ inputObjectFieldsValidWithFuel schema variableDefinitions fuel
-                      inputObject.inputFields fields
-            | .object fields, .list inner =>
-                inputObjectAsListItemValidWithFuel schema variableDefinitions fuel
-                  fields inner
-            | _value, .list inner =>
-                valueIsCorrectTypeWithFuel schema variableDefinitions fuel
-                  value inner none
-            | _value, .named typeName =>
-                schema.lookupInputObject typeName = none
+      InputValue -> TypeRef -> Option ConstInputValue -> Prop where
+    | variable (variableName : Name) (expectedType : TypeRef)
+        (locationDefault : Option ConstInputValue)
+        (variableDefinition : VariableDefinition)
+        (hinput : expectedType.isInputType schema)
+        (hlookup :
+          getVariableDefinition? variableDefinitions variableName =
+            some variableDefinition)
+        (husage :
+          variableUsageAllowed schema variableDefinition
+            expectedType locationDefault) :
+        ValueIsCorrectTypeAtLocation schema variableDefinitions
+          (InputValue.variable variableName) expectedType locationDefault
+    | nullNamed (typeName : Name)
+        (locationDefault : Option ConstInputValue)
+        (hinput : (TypeRef.named typeName).isInputType schema) :
+        ValueIsCorrectTypeAtLocation schema variableDefinitions
+          InputValue.null (TypeRef.named typeName) locationDefault
+    | nullList (inner : TypeRef)
+        (locationDefault : Option ConstInputValue)
+        (hinput : (TypeRef.list inner).isInputType schema) :
+        ValueIsCorrectTypeAtLocation schema variableDefinitions
+          InputValue.null (TypeRef.list inner) locationDefault
+    | nonNull (value : InputValue) (inner : TypeRef)
+        (locationDefault : Option ConstInputValue)
+        (hinput : (TypeRef.nonNull inner).isInputType schema)
+        (hnotNull : value ≠ InputValue.null)
+        (hnotVariable : ∀ variableName, value ≠ InputValue.variable variableName)
+        (hinner :
+          ValueIsCorrectTypeAtLocation schema variableDefinitions value inner none) :
+        ValueIsCorrectTypeAtLocation schema variableDefinitions
+          value (TypeRef.nonNull inner) locationDefault
+    | list (values : List InputValue) (inner : TypeRef)
+        (locationDefault : Option ConstInputValue)
+        (hinput : (TypeRef.list inner).isInputType schema)
+        (hitems :
+          ∀ item, item ∈ values ->
+            ValueIsCorrectTypeAtLocation schema variableDefinitions item inner none) :
+        ValueIsCorrectTypeAtLocation schema variableDefinitions
+          (InputValue.list values) (TypeRef.list inner) locationDefault
+    | objectNamed (fields : List (Name × InputValue)) (typeName : Name)
+        (locationDefault : Option ConstInputValue)
+        (inputObject : InputObjectType)
+        (hinput : (TypeRef.named typeName).isInputType schema)
+        (hlookup : schema.lookupInputObject typeName = some inputObject)
+        (hfields :
+          InputObjectFieldsValid schema variableDefinitions
+            inputObject.inputFields fields) :
+        ValueIsCorrectTypeAtLocation schema variableDefinitions
+          (InputValue.object fields) (TypeRef.named typeName) locationDefault
+    | objectAsListItem (fields : List (Name × InputValue)) (inner : TypeRef)
+        (locationDefault : Option ConstInputValue)
+        (hinput : (TypeRef.list inner).isInputType schema)
+        (hitem :
+          InputObjectAsListItemValid schema variableDefinitions fields inner) :
+        ValueIsCorrectTypeAtLocation schema variableDefinitions
+          (InputValue.object fields) (TypeRef.list inner) locationDefault
+    | singletonListItem (value : InputValue) (inner : TypeRef)
+        (locationDefault : Option ConstInputValue)
+        (hinput : (TypeRef.list inner).isInputType schema)
+        (hnotList : ∀ values, value ≠ InputValue.list values)
+        (hnotObject : ∀ fields, value ≠ InputValue.object fields)
+        (hnotNull : value ≠ InputValue.null)
+        (hnotVariable : ∀ variableName, value ≠ InputValue.variable variableName)
+        (hitem :
+          ValueIsCorrectTypeAtLocation schema variableDefinitions value inner none) :
+        ValueIsCorrectTypeAtLocation schema variableDefinitions
+          value (TypeRef.list inner) locationDefault
+    | namedNonInputObject (value : InputValue) (typeName : Name)
+        (locationDefault : Option ConstInputValue)
+        (hinput : (TypeRef.named typeName).isInputType schema)
+        (hnotObject : ∀ fields, value ≠ InputValue.object fields)
+        (hnotNull : value ≠ InputValue.null)
+        (hnotVariable : ∀ variableName, value ≠ InputValue.variable variableName)
+        (hlookup : schema.lookupInputObject typeName = none) :
+        ValueIsCorrectTypeAtLocation schema variableDefinitions
+          value (TypeRef.named typeName) locationDefault
 
   -- Spec 5.6.2-5.6.4 input object validation: supplied fields are unique, known,
   -- recursively well-typed, and all required fields are supplied as non-null values.
-  def inputObjectFieldsValidWithFuel (schema : Schema)
+  inductive InputObjectFieldsValid (schema : Schema)
       (variableDefinitions : List VariableDefinition) :
-      Nat -> List InputValueDefinition -> List (Name × InputValue) -> Prop
-    | 0, _definitions, _fields => False
-    | fuel + 1, definitions, fields =>
-        (fields.map Prod.fst).Nodup
-          ∧ (∀ name value, (name, value) ∈ fields ->
-            ∃ definition,
-              Schema.lookupArgumentDefinition definitions name = some definition
-                ∧ valueIsCorrectTypeWithFuel schema variableDefinitions fuel
-                  value definition.inputType definition.defaultValue)
-          ∧ (∀ definition, definition ∈ definitions ->
+      List InputValueDefinition -> List (Name × InputValue) -> Prop where
+    | intro (definitions : List InputValueDefinition)
+        (fields : List (Name × InputValue))
+        (hnodup : (fields.map Prod.fst).Nodup)
+        (hknown :
+          ∀ name value, (name, value) ∈ fields ->
+            (Schema.lookupArgumentDefinition definitions name).isSome = true)
+        (htyped :
+          ∀ name value definition, (name, value) ∈ fields ->
+            Schema.lookupArgumentDefinition definitions name = some definition ->
+              ValueIsCorrectTypeAtLocation schema variableDefinitions
+                value definition.inputType definition.defaultValue)
+        (hrequiredPresent :
+          ∀ definition, definition ∈ definitions ->
             isRequiredInputValueDefinition definition ->
-              ∃ value,
-                getInputObjectField? fields definition.name = some value
-                  ∧ inputValueNonNull value)
+              (getInputObjectField? fields definition.name).isSome = true)
+        (hrequiredNonNull :
+          ∀ definition value, definition ∈ definitions ->
+            isRequiredInputValueDefinition definition ->
+              getInputObjectField? fields definition.name = some value ->
+                inputValueNonNull value) :
+        InputObjectFieldsValid schema variableDefinitions definitions fields
 
   -- Spec 5.6.1 list input rule: an object value can be checked as one list item at a
   -- list location.
-  def inputObjectAsListItemValidWithFuel (schema : Schema)
+  inductive InputObjectAsListItemValid (schema : Schema)
       (variableDefinitions : List VariableDefinition) :
-      Nat -> List (Name × InputValue) -> TypeRef -> Prop
-    | 0, _fields, _inner => False
-    | fuel + 1, fields, inner =>
-        valueIsCorrectTypeWithFuel schema variableDefinitions fuel
-          (.object fields) inner none
+      List (Name × InputValue) -> TypeRef -> Prop where
+    | intro (fields : List (Name × InputValue)) (inner : TypeRef)
+        (hvalue :
+          ValueIsCorrectTypeAtLocation schema variableDefinitions
+            (InputValue.object fields) inner none) :
+        InputObjectAsListItemValid schema variableDefinitions fields inner
 end
 
 -- Spec 5.6.1 / 5.8.5 value validity at a specific input location, including that
@@ -153,8 +299,8 @@ def valueIsCorrectTypeAtLocation (schema : Schema)
     (variableDefinitions : List VariableDefinition)
     (value : InputValue) (expectedType : TypeRef)
     (locationDefault : Option ConstInputValue) : Prop :=
-  valueIsCorrectTypeWithFuel schema variableDefinitions
-    (value.size + expectedType.size + 1) value expectedType locationDefault
+  ValueIsCorrectTypeAtLocation schema variableDefinitions
+    value expectedType locationDefault
 
 def valueIsCorrectType (schema : Schema) (variableDefinitions : List VariableDefinition)
     (value : InputValue) (expectedType : TypeRef) : Prop :=
@@ -303,7 +449,7 @@ def operationDefinitionValid (schema : Schema) (operation : Operation) : Prop :=
     ∧ operation.selectionSet ≠ []
     ∧ selectionSetValid schema operation.variableDefinitions
       operation.rootType operation.selectionSet
-    ∧ FieldMerge.fieldsInSetCanMerge schema operation.size
+    ∧ FieldMerge.fieldsInSetCanMerge schema
       operation.rootType operation.selectionSet
 
 end Validation

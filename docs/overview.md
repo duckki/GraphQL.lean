@@ -13,7 +13,6 @@ flowchart TD
   Schema["GraphQL.Schema"]
   SchemaWF["GraphQL.SchemaWellFormedness"]
   Operation["GraphQL.Operation"]
-  FieldMerge["GraphQL.FieldMerge"]
   Validation["GraphQL.Validation"]
   NormalForm["GraphQL.NormalForm"]
   Execution["GraphQL.Execution"]
@@ -23,10 +22,9 @@ flowchart TD
 
   Schema --> SchemaWF
   Schema --> Operation
-  Operation --> FieldMerge
+  Operation --> Validation
   Operation --> NormalForm
   Operation --> Execution
-  FieldMerge --> Validation
   Execution --> DataModel
   NormalForm --> DataModel
   DataModel --> DataModelStore
@@ -57,14 +55,11 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
   built-in directive applications, selections, inline fragments, operation size,
   and shared selection helpers. Named fragment definitions and fragment spreads
   are intentionally out of scope.
-- `GraphQL.FieldMerge`: same-response-name field collection and merge
-  compatibility, including spec `SameResponseShape`, same field-name/argument
-  checks, and recursive subfield merge checks.
 - `GraphQL.Validation`: validation as a proposition over a schema and operation,
   including variable definitions/defaults, variable-use compatibility, argument
   checks, recursive input/output type checks, required non-empty selection sets,
-  modeled `@skip`/`@include`, field merge checks, and inline-fragment
-  applicability.
+  modeled `@skip`/`@include`, same-response-name field merge checks, and
+  inline-fragment applicability.
 - `GraphQL.NormalForm`: ground-typed normal form and non-redundancy predicates over
   operation selection sets, plus a normalization pass for field merging and
   abstract-type grounding under a directive-free source-operation assumption.
@@ -85,8 +80,8 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
 The current flow is:
 
 1. `GraphQL.Schema` and `GraphQL.Operation` define raw syntax.
-2. `GraphQL.SchemaWellFormedness`, `GraphQL.FieldMerge`, and
-   `GraphQL.Validation` state well-formedness and operation validity.
+2. `GraphQL.SchemaWellFormedness` and `GraphQL.Validation` state
+   well-formedness and operation validity.
 3. `GraphQL.Execution` gives bounded execution over operation selections by
    collecting fields by response name, then resolving each response name once.
 4. `GraphQL.DataModel` constrains execution to a typed object store so

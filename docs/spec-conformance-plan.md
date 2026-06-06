@@ -68,8 +68,8 @@ The main modules are:
   modeled directive applications.
 - `GraphQL.Validation`: operation validity predicates for the current fragment,
   including recursive input-object validation and spec-style variable-use
-  compatibility with the nullable-variable default exception.
-- `GraphQL.FieldMerge`: same-response-name merge compatibility checks.
+  compatibility with the nullable-variable default exception, plus
+  same-response-name merge compatibility checks.
 - `GraphQL.Execution`: bounded resolver-based execution.
 - `GraphQL.NormalForm`: ground normal form predicates and normalizer scaffold.
 - `GraphQL.DataModel`: typed object-store model, store-backed resolvers, and

@@ -73,6 +73,21 @@ theorem rootSourceAppliesBool_true_object
   | list values =>
       simp [Execution.rootSourceAppliesBool, Execution.runtimeObjectType?] at hroot
 
+theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false_of_source
+    (schema : Schema) {parentType typeCondition : Name}
+    {source : Execution.Value} :
+    (∃ runtimeType identity,
+      source = .object runtimeType identity
+        ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
+      schema.typesOverlapBool parentType typeCondition = false ->
+        Execution.doesFragmentTypeApplyBool schema parentType source
+          typeCondition = false := by
+  intro hsource hoverlap
+  rcases hsource with ⟨runtimeType, identity, hsourceEq, hparent⟩
+  subst source
+  exact doesFragmentTypeApplyBool_false_of_typesOverlapBool_false schema
+    hparent hoverlap
+
 theorem normalizeOperation_executeQuery
     (schema : Schema) (operation : Operation) :
     (∀ resolvers variableValues source,

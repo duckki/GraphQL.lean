@@ -422,6 +422,46 @@ theorem fieldSelectionSetValid_composite_child
   | inr hchild =>
       exact hchild.2.2
 
+theorem selectionSetValid_append
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {parentType : Name} {left right : List Selection} :
+    selectionSetValid schema variableDefinitions parentType left ->
+      selectionSetValid schema variableDefinitions parentType right ->
+        selectionSetValid schema variableDefinitions parentType
+          (left ++ right) := by
+  intro hleft hright
+  simp [selectionSetValid] at hleft
+  simp [selectionSetValid] at hright
+  simp [selectionSetValid]
+  intro selection hselection
+  cases hselection with
+  | inl hmem =>
+      exact hleft selection hmem
+  | inr hmem =>
+      exact hright selection hmem
+
+theorem selectionSetValid_append_left
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {parentType : Name} {left right : List Selection} :
+    selectionSetValid schema variableDefinitions parentType (left ++ right) ->
+      selectionSetValid schema variableDefinitions parentType left := by
+  intro hvalid
+  simp [selectionSetValid] at hvalid
+  simp [selectionSetValid]
+  intro selection hselection
+  exact hvalid selection (Or.inl hselection)
+
+theorem selectionSetValid_append_right
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {parentType : Name} {left right : List Selection} :
+    selectionSetValid schema variableDefinitions parentType (left ++ right) ->
+      selectionSetValid schema variableDefinitions parentType right := by
+  intro hvalid
+  simp [selectionSetValid] at hvalid
+  simp [selectionSetValid]
+  intro selection hselection
+  exact hvalid selection (Or.inr hselection)
+
 end Validation
 
 namespace FieldMerge

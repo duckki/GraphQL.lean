@@ -41,6 +41,28 @@ theorem selectionSetDirectiveFree_append
   | cons selection rest ih =>
       exact ⟨hleft.1, ih hleft.2⟩
 
+theorem selectionSetDirectiveFree_append_left
+    {left right : List Selection} :
+    selectionSetDirectiveFree (left ++ right) ->
+      selectionSetDirectiveFree left := by
+  intro hfree
+  induction left with
+  | nil =>
+      exact selectionSetDirectiveFree_nil
+  | cons selection rest ih =>
+      exact ⟨hfree.1, ih hfree.2⟩
+
+theorem selectionSetDirectiveFree_append_right
+    {left right : List Selection} :
+    selectionSetDirectiveFree (left ++ right) ->
+      selectionSetDirectiveFree right := by
+  intro hfree
+  induction left with
+  | nil =>
+      simpa using hfree
+  | cons selection rest ih =>
+      exact ih hfree.2
+
 theorem selectionDirectiveFree_subselections
     {selection : Selection} :
     selectionDirectiveFree selection ->

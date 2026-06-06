@@ -1080,6 +1080,56 @@ theorem collectSelection_inlineFragment_some_noDirectives
         [] := by
   simp [Execution.collectSelection, Execution.selectionDirectivesAllowBool]
 
+theorem rootSourceAppliesBool_normalizeOperation
+    (schema : Schema) (operation : Operation) (source : Execution.Value) :
+    Execution.rootSourceAppliesBool schema (normalizeOperation schema operation)
+        source =
+      Execution.rootSourceAppliesBool schema operation source := by
+  rfl
+
+theorem executeQuery_normalizeOperation_of_rootSource_not_apply
+    (schema : Schema) (resolvers : Execution.Resolvers)
+    (variableValues : Execution.VariableValues)
+    (operation : Operation) (source : Execution.Value) :
+    Execution.rootSourceAppliesBool schema operation source = false ->
+      Execution.executeQuery schema resolvers variableValues operation source
+        =
+      Execution.executeQuery schema resolvers variableValues
+        (normalizeOperation schema operation) source := by
+  intro hroot
+  simp [Execution.executeQuery, hroot,
+    rootSourceAppliesBool_normalizeOperation]
+
+theorem groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet
+    (schema : Schema) (operation : Operation) :
+    (∀ resolvers variableValues source,
+      Execution.rootSourceAppliesBool schema operation source = true ->
+        Execution.executeSelectionSet schema resolvers variableValues
+          (Execution.executeQueryDepthBound operation)
+          operation.rootType source operation.selectionSet
+          =
+        Execution.executeSelectionSet schema resolvers variableValues
+          (Execution.executeQueryDepthBound
+            (normalizeOperation schema operation))
+          operation.rootType source
+          (normalizeOperation schema operation).selectionSet) ->
+      groundTypeNormalFormSemanticsPreserved schema operation := by
+  intro hselection
+  unfold groundTypeNormalFormSemanticsPreserved operationsEquivalent
+  intro resolvers variableValues source
+  by_cases hroot :
+      Execution.rootSourceAppliesBool schema operation source = true
+  · simp [Execution.executeQuery, hroot,
+      rootSourceAppliesBool_normalizeOperation]
+    exact hselection resolvers variableValues source hroot
+  · have hrootFalse :
+        Execution.rootSourceAppliesBool schema operation source = false := by
+      cases hmatch : Execution.rootSourceAppliesBool schema operation source
+      · rfl
+      · contradiction
+    exact executeQuery_normalizeOperation_of_rootSource_not_apply schema
+      resolvers variableValues operation source hrootFalse
+
 theorem normalizeOperation_name (schema : Schema)
     (operation : Operation) :
     (normalizeOperation schema operation).name = operation.name := by

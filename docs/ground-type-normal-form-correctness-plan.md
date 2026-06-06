@@ -107,7 +107,10 @@ over this repo's resolver-backed `Execution.collectFields` and
    `collectFields_append` plus directive-free inline-fragment flattening for
    both untyped fragments and applicable typed fragments. Collected groups now
    also carry `executableGroupsWellFormed`, ensuring every executable field in a
-   response-name group has the group key as its response name.
+   response-name group has the group key as its response name. The module also
+   exposes `collectedResponseSelectionSet` and its merge behavior for nodup
+   collected groups, which isolates the merged subselections for one response
+   name.
 
 4. Same-response-name merge semantics.
 

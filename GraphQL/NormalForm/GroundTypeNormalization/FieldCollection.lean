@@ -37,6 +37,147 @@ def executableGroupsWellFormed
     (groups : List (Name × List Execution.ExecutableField)) : Prop :=
   ∀ group, group ∈ groups -> executableGroupWellFormed group
 
+def collectedResponseSelectionSet
+    (responseName : Name) :
+    List (Name × List Execution.ExecutableField) -> List Selection
+  | [] => []
+  | (groupResponseName, fields) :: rest =>
+      if groupResponseName == responseName then
+        Execution.mergedFieldSelectionSet fields
+      else
+        collectedResponseSelectionSet responseName rest
+
+theorem collectedResponseSelectionSet_eq_nil_of_key_absent
+    (responseName : Name) :
+    ∀ groups,
+      responseName ∉ groups.map Prod.fst ->
+        collectedResponseSelectionSet responseName groups = []
+  | [], _habsent => by
+      simp [collectedResponseSelectionSet]
+  | group :: rest, habsent => by
+      rcases group with ⟨groupResponseName, fields⟩
+      have hheadNe : groupResponseName ≠ responseName := by
+        intro heq
+        exact habsent (by simp [heq])
+      have hheadFalse : (groupResponseName == responseName) = false := by
+        cases hmatch : groupResponseName == responseName
+        · rfl
+        · exact False.elim (hheadNe (beq_iff_eq.mp hmatch))
+      have hrestAbsent : responseName ∉ rest.map Prod.fst := by
+        intro hmem
+        exact habsent (by simp [hmem])
+      simp [collectedResponseSelectionSet, hheadFalse,
+        collectedResponseSelectionSet_eq_nil_of_key_absent responseName rest
+          hrestAbsent]
+
+theorem collectedResponseSelectionSet_addExecutableGroup
+    (responseName : Name) (group : Name × List Execution.ExecutableField) :
+    ∀ groups,
+      collectedResponseSelectionSet responseName
+        (Execution.addExecutableGroup group groups)
+        =
+      collectedResponseSelectionSet responseName groups
+        ++ if group.fst == responseName then
+          Execution.mergedFieldSelectionSet group.snd
+        else
+          []
+  | [] => by
+      rcases group with ⟨groupResponseName, fields⟩
+      by_cases hresponse : (groupResponseName == responseName) = true
+      · simp [Execution.addExecutableGroup, collectedResponseSelectionSet,
+          hresponse]
+      · have hfalse : (groupResponseName == responseName) = false := by
+          cases hmatch : groupResponseName == responseName
+          · rfl
+          · contradiction
+        simp [Execution.addExecutableGroup, collectedResponseSelectionSet,
+          hfalse]
+  | current :: rest => by
+      rcases group with ⟨groupResponseName, groupFields⟩
+      rcases current with ⟨currentName, currentFields⟩
+      by_cases hcurrentGroup : (currentName == groupResponseName) = true
+      · have hcurrentEq : currentName = groupResponseName :=
+          beq_iff_eq.mp hcurrentGroup
+        subst currentName
+        by_cases hresponse : (groupResponseName == responseName) = true
+        · simp [Execution.addExecutableGroup, collectedResponseSelectionSet,
+            hresponse, Execution.mergedFieldSelectionSet_append]
+        · have hresponseFalse : (groupResponseName == responseName) = false := by
+            cases hmatch : groupResponseName == responseName
+            · rfl
+            · contradiction
+          simp [Execution.addExecutableGroup, collectedResponseSelectionSet,
+            hresponseFalse]
+      · have hcurrentGroupFalse :
+            (currentName == groupResponseName) = false := by
+          cases hmatch : currentName == groupResponseName
+          · rfl
+          · contradiction
+        by_cases hcurrentResponse : (currentName == responseName) = true
+        · have hgroupResponseFalse :
+              (groupResponseName == responseName) = false := by
+            cases hmatch : groupResponseName == responseName
+            · rfl
+            · have hcr : currentName = responseName :=
+                beq_iff_eq.mp hcurrentResponse
+              have hgr : groupResponseName = responseName :=
+                beq_iff_eq.mp hmatch
+              subst currentName
+              subst groupResponseName
+              simp at hcurrentGroupFalse
+          simp [Execution.addExecutableGroup, collectedResponseSelectionSet,
+            hcurrentGroupFalse, hcurrentResponse, hgroupResponseFalse]
+        · have hcurrentResponseFalse :
+              (currentName == responseName) = false := by
+            cases hmatch : currentName == responseName
+            · rfl
+            · contradiction
+          simp [Execution.addExecutableGroup, collectedResponseSelectionSet,
+            hcurrentGroupFalse, hcurrentResponseFalse,
+            collectedResponseSelectionSet_addExecutableGroup responseName
+              (groupResponseName, groupFields) rest]
+
+theorem collectedResponseSelectionSet_mergeExecutableGroups
+    (responseName : Name) :
+    ∀ left right,
+      executableGroupNamesNodup right ->
+        collectedResponseSelectionSet responseName
+          (Execution.mergeExecutableGroups left right)
+          =
+        collectedResponseSelectionSet responseName left
+          ++ collectedResponseSelectionSet responseName right
+  | left, [], _hnodup => by
+      simp [Execution.mergeExecutableGroups, collectedResponseSelectionSet]
+  | left, group :: rest, hnodup => by
+      rcases group with ⟨groupResponseName, fields⟩
+      have hrestNodup : executableGroupNamesNodup rest := hnodup.2
+      have hrestMerge :=
+        collectedResponseSelectionSet_mergeExecutableGroups responseName
+          (Execution.addExecutableGroup (groupResponseName, fields) left)
+          rest hrestNodup
+      by_cases hresponse : (groupResponseName == responseName) = true
+      · have hresponseEq : groupResponseName = responseName :=
+          beq_iff_eq.mp hresponse
+        subst groupResponseName
+        have hrestSelection :
+            collectedResponseSelectionSet responseName rest = [] :=
+          collectedResponseSelectionSet_eq_nil_of_key_absent responseName rest
+            hnodup.1
+        simp [Execution.mergeExecutableGroups] at hrestMerge ⊢
+        rw [hrestMerge,
+          collectedResponseSelectionSet_addExecutableGroup responseName
+            (responseName, fields) left]
+        simp [collectedResponseSelectionSet, hrestSelection]
+      · have hresponseFalse : (groupResponseName == responseName) = false := by
+          cases hmatch : groupResponseName == responseName
+          · rfl
+          · contradiction
+        simp [Execution.mergeExecutableGroups] at hrestMerge ⊢
+        rw [hrestMerge,
+          collectedResponseSelectionSet_addExecutableGroup responseName
+            (groupResponseName, fields) left]
+        simp [collectedResponseSelectionSet, hresponseFalse]
+
 theorem executableGroupWellFormed_singleton_field
     (field : Execution.ExecutableField) :
     executableGroupWellFormed (field.responseName, [field]) := by

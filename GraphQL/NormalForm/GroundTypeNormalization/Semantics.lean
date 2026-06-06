@@ -633,6 +633,30 @@ theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_case
     (Validation.selectionSetValid_field_head_lookup_none_false
       hvalid hlookup)
 
+theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_lookupValid_case
+    (schema : Schema) (resolvers : Execution.Resolvers)
+    (variableValues : Execution.VariableValues)
+    (depth : Nat) (parentType responseName fieldName : Name)
+    (arguments : List Argument) (source : Execution.Value)
+    (selectionSet rest : List Selection) :
+    selectionSetLookupValid schema parentType
+      (Selection.field responseName fieldName arguments [] selectionSet
+        :: rest) ->
+      schema.lookupField parentType fieldName = none ->
+        Execution.executeSelectionSet schema resolvers variableValues depth
+          parentType source
+          (normalizeSelectionSet schema parentType
+            (Selection.field responseName fieldName arguments []
+              selectionSet :: rest))
+          =
+        Execution.executeSelectionSet schema resolvers variableValues depth
+          parentType source
+          (Selection.field responseName fieldName arguments []
+            selectionSet :: rest) := by
+  intro hvalid hlookup
+  exact False.elim
+    (selectionSetLookupValid_field_head_lookup_none_false hvalid hlookup)
+
 theorem executeField_singleton_eq_group_of_completeValue
     (schema : Schema) (resolvers : Execution.Resolvers)
     (variableValues : Execution.VariableValues)

@@ -88,6 +88,44 @@ theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false_of_source
   exact doesFragmentTypeApplyBool_false_of_typesOverlapBool_false schema
     hparent hoverlap
 
+theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_noOverlap_case
+    (schema : Schema) (resolvers : Execution.Resolvers)
+    (variableValues : Execution.VariableValues)
+    (depth : Nat) (parentType typeCondition : Name)
+    (source : Execution.Value)
+    (selectionSet rest : List Selection) :
+    (∃ runtimeType identity,
+      source = .object runtimeType identity
+        ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
+      schema.typesOverlapBool parentType typeCondition = false ->
+        Execution.executeSelectionSet schema resolvers variableValues depth
+          parentType source
+          (normalizeSelectionSet schema parentType rest)
+          =
+        Execution.executeSelectionSet schema resolvers variableValues depth
+          parentType source rest ->
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType
+              (Selection.inlineFragment (some typeCondition) [] selectionSet
+                :: rest))
+            =
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (Selection.inlineFragment (some typeCondition) [] selectionSet
+              :: rest) := by
+  intro hsource hoverlap hrest
+  have happly :
+      Execution.doesFragmentTypeApplyBool schema parentType source
+        typeCondition = false :=
+    doesFragmentTypeApplyBool_false_of_typesOverlapBool_false_of_source
+      schema hsource hoverlap
+  simp [normalizeSelectionSet, hoverlap]
+  rw [hrest]
+  exact (executeSelectionSet_inlineFragment_some_directiveFree_skip schema
+    resolvers variableValues depth parentType typeCondition source
+    selectionSet rest happly).symm
+
 theorem normalizeOperation_executeQuery
     (schema : Schema) (operation : Operation) :
     (∀ resolvers variableValues source,

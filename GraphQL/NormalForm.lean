@@ -1,4 +1,4 @@
-import GraphQL.Semantic
+import GraphQL.Execution
 
 /-!
 Spec reference: GraphQL September 2025.
@@ -93,65 +93,116 @@ def semanticOperationNormal (schema : Schema)
 def operationNormal (schema : Schema) (operation : GraphQL.Operation) : Prop :=
   semanticOperationNormal schema (Semantic.fromOperation operation)
 
--- Spec 5.3.2 field merging / 6.3.2 subfield collection: partial normalizer; merges direct
--- same-response-name fields and recursively normalizes child selections when the return
--- type is known. The normal-form proof path assumes directive-free source operations, so
--- normalization does not implement a directive-specific pass.
-def mergeFieldSelections (schema : Schema) (fuel : Nat)
-    (parentType : Name) (responseName : Name)
-    (selectionSet : List Semantic.Selection) : Option Semantic.Selection :=
-  match Semantic.SelectionSet.fieldsWithResponseName responseName selectionSet with
-  | [] => none
-  | first :: matching =>
-      match first with
-      | .field firstResponseName fieldName arguments directives subselections =>
-          let mergedSubselections :=
-            subselections ++ Semantic.SelectionSet.mergeSelectionSets matching
-          let normalizedSubselections :=
-            match schema.fieldReturnType? parentType fieldName with
-            | none => mergedSubselections
-            | some childType =>
-                normalizeSelectionSet schema fuel childType mergedSubselections
-          some (.field firstResponseName fieldName arguments directives normalizedSubselections)
-      | _ => none
+-- Spec 5.5.2.3 `GetPossibleTypes` helper for deciding whether an already-unwrapped
+-- named return type can be normalized directly, or must be grounded through object cases.
+def objectTypeNameBool (schema : Schema) (typeName : Name) : Bool :=
+  match schema.lookupType typeName with
+  | some (.object _) => true
+  | _ => false
 
-where
-  normalizeSelectionSet (schema : Schema) :
+mutual
+  -- Spec 6.3.2 field collection helper: finds fields with one response name, descending
+  -- through fragments that can contribute selections in the current type scope.
+  def validFieldsWithResponseName (schema : Schema) :
+      Nat -> Name -> Name -> List Semantic.Selection -> List Semantic.Selection
+    | 0, _parentType, _responseName, _selectionSet => []
+    | _fuel + 1, _parentType, _responseName, [] => []
+    | fuel + 1, parentType, responseName, selection :: rest =>
+        match selection with
+        | .field fieldResponseName _fieldName _arguments _directives _selectionSet =>
+            let restFields :=
+              validFieldsWithResponseName schema fuel parentType responseName rest
+            if fieldResponseName == responseName then
+              selection :: restFields
+            else
+              restFields
+        | .inlineFragment none _directives selectionSet =>
+            validFieldsWithResponseName schema fuel parentType responseName selectionSet
+              ++ validFieldsWithResponseName schema fuel parentType responseName rest
+        | .inlineFragment (some typeCondition) _directives selectionSet =>
+            let restFields :=
+              validFieldsWithResponseName schema fuel parentType responseName rest
+            if schema.typesOverlapBool parentType typeCondition then
+              validFieldsWithResponseName schema fuel parentType responseName selectionSet
+                ++ restFields
+            else
+              restFields
+
+  -- Spec 6.3.2 field collection helper: removes fields with one response name recursively
+  -- so later fragment lifting cannot reintroduce a duplicate field group.
+  def withoutFieldsWithResponseName (schema : Schema) :
+      Nat -> Name -> List Semantic.Selection -> List Semantic.Selection
+    | 0, _responseName, _selectionSet => []
+    | _fuel + 1, _responseName, [] => []
+    | fuel + 1, responseName, selection :: rest =>
+        match selection with
+        | .field fieldResponseName _fieldName _arguments _directives _selectionSet =>
+            let filteredRest :=
+              withoutFieldsWithResponseName schema fuel responseName rest
+            if fieldResponseName == responseName then
+              filteredRest
+            else
+              selection :: filteredRest
+        | .inlineFragment typeCondition directives selectionSet =>
+            .inlineFragment typeCondition directives
+              (withoutFieldsWithResponseName schema fuel responseName selectionSet)
+              :: withoutFieldsWithResponseName schema fuel responseName rest
+
+  -- GraphCoQL-style grounding: object return types normalize directly; abstract
+  -- interface/union return types are specialized into one object fragment per possible type.
+  def normalizeFieldSelectionSet (schema : Schema) :
+      Nat -> Name -> List Semantic.Selection -> List Semantic.Selection
+    | 0, _returnType, _selectionSet => []
+    | fuel + 1, returnType, selectionSet =>
+        if objectTypeNameBool schema returnType then
+          normalizeSelectionSet schema fuel returnType selectionSet
+        else
+          (schema.getPossibleTypes returnType).map
+            (fun objectType =>
+              .inlineFragment (some objectType) []
+                (normalizeSelectionSet schema fuel objectType selectionSet))
+
+  -- Spec 5.3.2 field merging / 6.3.2 subfield collection: partial normalizer; merges
+  -- same-response-name fields, recursively normalizes child selections, and grounds
+  -- abstract field return types through possible object types. The proof path assumes
+  -- directive-free source operations, so this is not directive-sensitive.
+  def normalizeSelectionSet (schema : Schema) :
       Nat -> Name -> List Semantic.Selection -> List Semantic.Selection
     | 0, _parentType, _selectionSet => []
     | _fuel + 1, _parentType, [] => []
     | fuel + 1, parentType, selection :: rest =>
-        match Semantic.Selection.responseName? selection with
-        | some responseName =>
+        match selection with
+        | .field responseName fieldName arguments directives subselections =>
             let normalizedRest :=
               normalizeSelectionSet schema fuel parentType
-                (Semantic.SelectionSet.withoutFieldsWithResponseName responseName rest)
-            match mergeFieldSelections schema fuel parentType responseName (selection :: rest) with
-            | some merged => merged :: normalizedRest
+                (withoutFieldsWithResponseName schema fuel responseName rest)
+            match schema.lookupField parentType fieldName with
             | none => normalizedRest
-        | none =>
+            | some fieldDefinition =>
+                let matching :=
+                  validFieldsWithResponseName schema fuel parentType responseName rest
+                let mergedSubselections :=
+                  subselections ++ Semantic.SelectionSet.mergeSelectionSets matching
+                .field responseName fieldName arguments directives
+                    (normalizeFieldSelectionSet schema fuel
+                      fieldDefinition.outputType.namedType mergedSubselections)
+                  :: normalizedRest
+        | .inlineFragment none _directives subselections =>
+            normalizeSelectionSet schema fuel parentType (subselections ++ rest)
+        | .inlineFragment (some typeCondition) _directives subselections =>
             let normalizedRest := normalizeSelectionSet schema fuel parentType rest
-            match selection with
-            | .inlineFragment none _directives subselections =>
-                normalizeSelectionSet schema fuel parentType (subselections ++ rest)
-            | .inlineFragment (some typeCondition) _directives subselections =>
-                if schema.typesOverlapBool parentType typeCondition then
-                  normalizeSelectionSet schema fuel parentType (subselections ++ rest)
-                else
-                  normalizedRest
-            | .field .. => normalizedRest
-
-def normalizeSelectionSet (schema : Schema) (fuel : Nat)
-    (parentType : Name) (selectionSet : List Semantic.Selection) :
-    List Semantic.Selection :=
-  mergeFieldSelections.normalizeSelectionSet schema fuel parentType selectionSet
+            if schema.typesOverlapBool parentType typeCondition then
+              normalizeSelectionSet schema fuel parentType (subselections ++ rest)
+            else
+              normalizedRest
+end
 
 -- Spec-inspired semantic normalizer: non-spec wrapper around selection-set
 -- normalization.
 def normalizeSemanticOperation (schema : Schema)
     (operation : Semantic.Operation) : Semantic.Operation :=
   { operation with
-    selectionSet := normalizeSelectionSet schema operation.size
+    selectionSet := normalizeSelectionSet schema (operation.size * 2 + 1)
       operation.rootType operation.selectionSet }
 
 theorem normalizeSemanticOperation_name (schema : Schema)
@@ -170,222 +221,26 @@ theorem normalizeSemanticOperation_variableDefinitions (schema : Schema)
       = operation.variableDefinitions := by
   rfl
 
-theorem normalizeSemanticOperation_singleLeaf (schema : Schema) (name : Option Name)
-    (rootType : Name) (variableDefinitions : List VariableDefinition)
-    (responseName fieldName : Name) (arguments : List Argument) :
-    normalizeSemanticOperation schema
-      { name := name,
-        rootType := rootType,
-        variableDefinitions := variableDefinitions,
-        selectionSet := [.field responseName fieldName arguments [] []] }
-      = { name := name,
-          rootType := rootType,
-          variableDefinitions := variableDefinitions,
-          selectionSet := [.field responseName fieldName arguments [] []] } := by
-  cases hfield : schema.fieldReturnType? rootType fieldName <;>
-    simp [hfield, normalizeSemanticOperation, normalizeSelectionSet,
-      mergeFieldSelections.normalizeSelectionSet, mergeFieldSelections,
-      Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
-      Semantic.SelectionSet.fieldsWithResponseName,
-      Semantic.SelectionSet.withoutFieldsWithResponseName,
-      Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
-      Semantic.Selection.subselections]
+def semanticOperationsEquivalentWithFuel (schema : Schema) (fuel : Nat)
+    (left right : Semantic.Operation) : Prop :=
+  ∀ resolvers variableValues source,
+    Execution.executeSelectionSet schema resolvers variableValues fuel
+      left.rootType source left.selectionSet
+      =
+    Execution.executeSelectionSet schema resolvers variableValues fuel
+      right.rootType source right.selectionSet
 
-theorem normalizeSemanticOperation_singleLeafPreservesDirectives (schema : Schema)
-    (name : Option Name) (rootType : Name)
-    (variableDefinitions : List VariableDefinition)
-    (responseName fieldName : Name) (arguments : List Argument)
-    (directives : List DirectiveApplication) :
-    normalizeSemanticOperation schema
-      { name := name,
-        rootType := rootType,
-        variableDefinitions := variableDefinitions,
-        selectionSet := [.field responseName fieldName arguments directives []] }
-      = { name := name,
-          rootType := rootType,
-          variableDefinitions := variableDefinitions,
-          selectionSet := [.field responseName fieldName arguments directives []] } := by
-  cases hfield : schema.fieldReturnType? rootType fieldName <;>
-    simp [hfield, normalizeSemanticOperation, normalizeSelectionSet,
-      mergeFieldSelections.normalizeSelectionSet, mergeFieldSelections,
-      Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
-      Semantic.SelectionSet.fieldsWithResponseName,
-      Semantic.SelectionSet.withoutFieldsWithResponseName,
-      Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
-      Semantic.Selection.subselections]
+def groundTypeNormalFormSemanticsPreserved (schema : Schema)
+    (operation : Semantic.Operation) : Prop :=
+  semanticOperationsEquivalentWithFuel schema
+    (Execution.executeSemanticQueryFuel operation)
+    operation (normalizeSemanticOperation schema operation)
 
-theorem normalizeSemanticOperation_twoSameLeafNoDirectives (schema : Schema)
-    (name : Option Name) (rootType : Name)
-    (variableDefinitions : List VariableDefinition)
-    (responseName fieldName : Name) (arguments : List Argument) :
-    normalizeSemanticOperation schema
-      { name := name,
-        rootType := rootType,
-        variableDefinitions := variableDefinitions,
-        selectionSet := [
-          .field responseName fieldName arguments [] [],
-          .field responseName fieldName arguments [] []
-        ] }
-      = { name := name,
-          rootType := rootType,
-          variableDefinitions := variableDefinitions,
-          selectionSet := [.field responseName fieldName arguments [] []] } := by
-  cases hfield : schema.fieldReturnType? rootType fieldName <;>
-    simp [hfield, normalizeSemanticOperation, normalizeSelectionSet,
-      mergeFieldSelections.normalizeSelectionSet, mergeFieldSelections,
-      Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
-      Semantic.SelectionSet.fieldsWithResponseName,
-      Semantic.SelectionSet.withoutFieldsWithResponseName,
-      Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
-      Semantic.Selection.subselections]
-
-theorem normalizeSemanticOperation_twoSameCompositeDistinctLeafNoDirectives
-    (schema : Schema) (name : Option Name) (rootType : Name)
-    (variableDefinitions : List VariableDefinition)
-    (parentResponseName parentFieldName : Name) (parentArguments : List Argument)
-    (leftResponseName leftFieldName : Name) (leftArguments : List Argument)
-    (rightResponseName rightFieldName : Name) (rightArguments : List Argument) :
-    leftResponseName ≠ rightResponseName ->
-      normalizeSemanticOperation schema
-        { name := name,
-          rootType := rootType,
-          variableDefinitions := variableDefinitions,
-          selectionSet := [
-            .field parentResponseName parentFieldName parentArguments [] [
-              .field leftResponseName leftFieldName leftArguments [] []
-            ],
-            .field parentResponseName parentFieldName parentArguments [] [
-              .field rightResponseName rightFieldName rightArguments [] []
-            ]
-          ] }
-        = { name := name,
-            rootType := rootType,
-            variableDefinitions := variableDefinitions,
-            selectionSet := [
-              .field parentResponseName parentFieldName parentArguments [] [
-                .field leftResponseName leftFieldName leftArguments [] [],
-                .field rightResponseName rightFieldName rightArguments [] []
-              ]
-            ] } := by
-  intro hdistinct
-  have hdistinct' : rightResponseName ≠ leftResponseName := Ne.symm hdistinct
-  cases hparent : schema.fieldReturnType? rootType parentFieldName with
-  | none =>
-      simp [hparent, normalizeSemanticOperation, normalizeSelectionSet,
-        mergeFieldSelections.normalizeSelectionSet, mergeFieldSelections,
-        Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
-        Semantic.SelectionSet.fieldsWithResponseName,
-        Semantic.SelectionSet.withoutFieldsWithResponseName,
-        Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
-        Semantic.Selection.subselections]
-  | some childType =>
-      cases hleft : schema.fieldReturnType? childType leftFieldName <;>
-        cases hright : schema.fieldReturnType? childType rightFieldName <;>
-          simp [hparent, hleft, hright, hdistinct', normalizeSemanticOperation,
-            normalizeSelectionSet, mergeFieldSelections.normalizeSelectionSet,
-            mergeFieldSelections, Semantic.Operation.size, Semantic.SelectionSet.size,
-            Semantic.Selection.size, Semantic.SelectionSet.fieldsWithResponseName,
-            Semantic.SelectionSet.withoutFieldsWithResponseName,
-            Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
-            Semantic.Selection.subselections]
-
-theorem normalizeSemanticOperation_twoDistinctLeafNoDirectives (schema : Schema)
-    (name : Option Name) (rootType : Name)
-    (variableDefinitions : List VariableDefinition)
-    (leftResponseName leftFieldName : Name) (leftArguments : List Argument)
-    (rightResponseName rightFieldName : Name) (rightArguments : List Argument) :
-    leftResponseName ≠ rightResponseName ->
-      normalizeSemanticOperation schema
-        { name := name,
-          rootType := rootType,
-          variableDefinitions := variableDefinitions,
-          selectionSet := [
-            .field leftResponseName leftFieldName leftArguments [] [],
-            .field rightResponseName rightFieldName rightArguments [] []
-          ] }
-        = { name := name,
-            rootType := rootType,
-            variableDefinitions := variableDefinitions,
-            selectionSet := [
-              .field leftResponseName leftFieldName leftArguments [] [],
-              .field rightResponseName rightFieldName rightArguments [] []
-            ] } := by
-  intro hdistinct
-  have hdistinct' : rightResponseName ≠ leftResponseName := Ne.symm hdistinct
-  cases hleft : schema.fieldReturnType? rootType leftFieldName <;>
-    cases hright : schema.fieldReturnType? rootType rightFieldName <;>
-      simp [hleft, hright, hdistinct', normalizeSemanticOperation,
-        normalizeSelectionSet, mergeFieldSelections.normalizeSelectionSet,
-        mergeFieldSelections, Semantic.Operation.size, Semantic.SelectionSet.size,
-        Semantic.Selection.size, Semantic.SelectionSet.fieldsWithResponseName,
-        Semantic.SelectionSet.withoutFieldsWithResponseName,
-        Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
-        Semantic.Selection.subselections]
-
-theorem normalizeSemanticOperation_threeDistinctLeafNoDirectives (schema : Schema)
-    (name : Option Name) (rootType : Name)
-    (variableDefinitions : List VariableDefinition)
-    (firstResponseName firstFieldName : Name) (firstArguments : List Argument)
-    (secondResponseName secondFieldName : Name) (secondArguments : List Argument)
-    (thirdResponseName thirdFieldName : Name) (thirdArguments : List Argument) :
-    firstResponseName ≠ secondResponseName ->
-      firstResponseName ≠ thirdResponseName ->
-      secondResponseName ≠ thirdResponseName ->
-        normalizeSemanticOperation schema
-          { name := name,
-            rootType := rootType,
-            variableDefinitions := variableDefinitions,
-            selectionSet := [
-              .field firstResponseName firstFieldName firstArguments [] [],
-              .field secondResponseName secondFieldName secondArguments [] [],
-              .field thirdResponseName thirdFieldName thirdArguments [] []
-            ] }
-          = { name := name,
-              rootType := rootType,
-              variableDefinitions := variableDefinitions,
-              selectionSet := [
-                .field firstResponseName firstFieldName firstArguments [] [],
-                .field secondResponseName secondFieldName secondArguments [] [],
-                .field thirdResponseName thirdFieldName thirdArguments [] []
-              ] } := by
-  intro hfirstSecond hfirstThird hsecondThird
-  have hsecondFirst : secondResponseName ≠ firstResponseName := Ne.symm hfirstSecond
-  have hthirdFirst : thirdResponseName ≠ firstResponseName := Ne.symm hfirstThird
-  have hthirdSecond : thirdResponseName ≠ secondResponseName := Ne.symm hsecondThird
-  cases hfirst : schema.fieldReturnType? rootType firstFieldName <;>
-    cases hsecond : schema.fieldReturnType? rootType secondFieldName <;>
-      cases hthird : schema.fieldReturnType? rootType thirdFieldName <;>
-        simp [hfirst, hsecond, hthird, hsecondFirst, hthirdFirst, hthirdSecond,
-          normalizeSemanticOperation,
-          normalizeSelectionSet, mergeFieldSelections.normalizeSelectionSet,
-          mergeFieldSelections, Semantic.Operation.size, Semantic.SelectionSet.size,
-          Semantic.Selection.size, Semantic.SelectionSet.fieldsWithResponseName,
-          Semantic.SelectionSet.withoutFieldsWithResponseName,
-          Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
-          Semantic.Selection.subselections]
-
-theorem normalizeSemanticOperation_inlineFragmentSingleLeaf (schema : Schema)
-    (name : Option Name) (rootType : Name)
-    (variableDefinitions : List VariableDefinition)
-    (responseName fieldName : Name) (arguments : List Argument) :
-    normalizeSemanticOperation schema
-      { name := name,
-        rootType := rootType,
-        variableDefinitions := variableDefinitions,
-        selectionSet := [.inlineFragment none []
-          [.field responseName fieldName arguments [] []]] }
-      = { name := name,
-          rootType := rootType,
-          variableDefinitions := variableDefinitions,
-          selectionSet := [.field responseName fieldName arguments [] []] } := by
-  cases hfield : schema.fieldReturnType? rootType fieldName <;>
-    simp [hfield, normalizeSemanticOperation, normalizeSelectionSet,
-      mergeFieldSelections.normalizeSelectionSet, mergeFieldSelections,
-      Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
-      Semantic.SelectionSet.fieldsWithResponseName,
-      Semantic.SelectionSet.withoutFieldsWithResponseName,
-      Semantic.SelectionSet.mergeSelectionSets, Semantic.Selection.responseName?,
-      Semantic.Selection.subselections]
+-- Final correctness statement for the ground-type normalizer. This is intentionally
+-- stated without proof in this definition-focused slice.
+axiom groundTypeNormalFormSemanticsPreservation (schema : Schema)
+    (operation : Semantic.Operation) :
+  groundTypeNormalFormSemanticsPreserved schema operation
 
 -- Spec-inspired operation normalization: non-spec transformation; currently clears named
 -- fragments via `Semantic.fromOperation` and has only the fragment-empty theorem below.

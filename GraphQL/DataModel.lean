@@ -510,40 +510,6 @@ theorem normalizedEquivalentOnData_of_groundNormalFormCorrect (schema : Schema)
         (NormalForm.normalizeSemanticOperation schema operation) operation := by
   exact semanticOperationsEquivalentOnDataWithFuel_symm schema
 
-theorem groundNormalFormCorrect_singleLeafNoDirectives (schema : Schema)
-    (name : Option Name) (rootType : Name)
-    (variableDefinitions : List VariableDefinition)
-    (responseName fieldName : Name) (arguments : List Argument) :
-    groundNormalFormCorrect schema
-      { name := name,
-        rootType := rootType,
-        variableDefinitions := variableDefinitions,
-        selectionSet := [.field responseName fieldName arguments [] []] } := by
-  rw [groundNormalFormCorrect]
-  rw [NormalForm.normalizeSemanticOperation_singleLeaf]
-  exact semanticOperationsEquivalentOnDataWithFuel_refl schema _ _
-
-theorem groundNormalFormCorrect_inlineFragmentSingleLeafNoDirectives (schema : Schema)
-    (name : Option Name) (rootType : Name)
-    (variableDefinitions : List VariableDefinition)
-    (responseName fieldName : Name) (arguments : List Argument) :
-    groundNormalFormCorrect schema
-      { name := name,
-        rootType := rootType,
-        variableDefinitions := variableDefinitions,
-        selectionSet := [.inlineFragment none []
-          [.field responseName fieldName arguments [] []]] } := by
-  rw [groundNormalFormCorrect]
-  rw [NormalForm.normalizeSemanticOperation_inlineFragmentSingleLeaf]
-  intro store variableValues root _hstore _hroot
-  simp [executeSemanticQueryWithFuel, Execution.executeSemanticQueryFuel,
-    Semantic.Operation.size, Semantic.SelectionSet.size, Semantic.Selection.size,
-    Execution.executeSelectionSet, Execution.collectFields, Execution.collectSelection,
-    Execution.selectionDirectivesAllowBool, Execution.mergeExecutableGroups,
-    Execution.addExecutableGroup, Execution.addExecutableFields,
-    Execution.executeCollectedFields, Execution.executeField,
-    Execution.mergedFieldSelectionSet]
-
 end DataModel
 
 end GraphQL

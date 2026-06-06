@@ -591,9 +591,8 @@ mutual
               ∧ Argument.argumentsEquivalent left.arguments right.arguments)
         (hsubfields :
           ∀ objectType,
-            objectType ∈ schema.getPossibleTypes left.outputType.namedType ->
-              FieldsInSetCanMerge schema objectType
-                (left.selectionSet ++ right.selectionSet)) :
+            FieldsInSetCanMerge schema objectType
+              (left.selectionSet ++ right.selectionSet)) :
         FieldsForNameCanMerge schema left right
 end
 
@@ -656,14 +655,13 @@ theorem fieldsForNameCanMerge_subfields
     {schema : Schema} {left right : ScopedField} :
     fieldsForNameCanMerge schema left right ->
       ∀ objectType,
-        objectType ∈ schema.getPossibleTypes left.outputType.namedType ->
-          fieldsInSetCanMerge schema objectType
-            (left.selectionSet ++ right.selectionSet) := by
-  intro hmerge objectType hobject
+        fieldsInSetCanMerge schema objectType
+          (left.selectionSet ++ right.selectionSet) := by
+  intro hmerge objectType
   unfold fieldsForNameCanMerge at hmerge
   cases hmerge with
   | intro _ _ _hshape _hidentity hsubfields =>
-      exact hsubfields objectType hobject
+      exact hsubfields objectType
 
 theorem collectFields_append (schema : Schema) (parentType : Name) :
     ∀ left right,

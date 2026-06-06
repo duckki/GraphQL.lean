@@ -61,7 +61,7 @@ deriving Repr
 namespace InputValue
 
 mutual
-  -- Non-spec structural metric used to fuel recursive input-value validation.
+  -- Non-spec structural metric used by recursive input-value validation.
   def size : InputValue -> Nat
     | .null => 1
     | .int _ => 1
@@ -82,52 +82,88 @@ mutual
     | (_name, value) :: rest => value.size + objectFieldsSize rest
 end
 
+def insertObjectFieldSorted
+    (field : Name × InputValue) :
+    List (Name × InputValue) -> List (Name × InputValue)
+  | [] => [field]
+  | candidate :: rest =>
+      if field.1 <= candidate.1 then
+        field :: candidate :: rest
+      else
+        candidate :: insertObjectFieldSorted field rest
+
+def sortObjectFieldsByName : List (Name × InputValue) -> List (Name × InputValue)
+  | [] => []
+  | field :: rest =>
+      insertObjectFieldSorted field (sortObjectFieldsByName rest)
+
+mutual
+  def canonical : InputValue -> InputValue
+    | .null => .null
+    | .int value => .int value
+    | .float value => .float value
+    | .string value => .string value
+    | .boolean value => .boolean value
+    | .enum value => .enum value
+    | .variable name => .variable name
+    | .list values => .list (canonicalValues values)
+    | .object fields =>
+        .object (sortObjectFieldsByName (canonicalObjectFields fields))
+
+  def canonicalValues : List InputValue -> List InputValue
+    | [] => []
+    | value :: rest =>
+        canonical value :: canonicalValues rest
+
+  def canonicalObjectFields :
+      List (Name × InputValue) -> List (Name × InputValue)
+    | [] => []
+    | (name, value) :: rest =>
+        (name, canonical value) :: canonicalObjectFields rest
+end
+
 mutual
   -- Spec 2.10 input value equality for semantic analysis: list order matters, object field
   -- order does not. Validation is responsible for rejecting duplicate input object fields.
-  def equivalentWithFuel : Nat -> InputValue -> InputValue -> Prop
-    | 0, _left, _right => False
-    | _fuel + 1, .null, .null => True
-    | _fuel + 1, .int left, .int right => left = right
-    | _fuel + 1, .float left, .float right => left = right
-    | _fuel + 1, .string left, .string right => left = right
-    | _fuel + 1, .boolean left, .boolean right => left = right
-    | _fuel + 1, .enum left, .enum right => left = right
-    | fuel + 1, .list left, .list right =>
-        valuesEquivalentWithFuel fuel left right
-    | fuel + 1, .object left, .object right =>
-        objectFieldsEquivalentWithFuel fuel left right
-    | _fuel + 1, .variable left, .variable right => left = right
-    | _fuel + 1, _left, _right => False
+  def structuralEquivalent : InputValue -> InputValue -> Prop
+    | .null, .null => True
+    | .int left, .int right => left = right
+    | .float left, .float right => left = right
+    | .string left, .string right => left = right
+    | .boolean left, .boolean right => left = right
+    | .enum left, .enum right => left = right
+    | .variable left, .variable right => left = right
+    | .list left, .list right => structuralValuesEquivalent left right
+    | .object left, .object right => structuralObjectFieldsEquivalent left right
+    | _left, _right => False
 
-  def valuesEquivalentWithFuel : Nat -> List InputValue -> List InputValue -> Prop
-    | 0, _left, _right => False
-    | _fuel + 1, [], [] => True
-    | fuel + 1, left :: lefts, right :: rights =>
-        equivalentWithFuel fuel left right
-          ∧ valuesEquivalentWithFuel fuel lefts rights
-    | _fuel + 1, _left, _right => False
+  def structuralValuesEquivalent : List InputValue -> List InputValue -> Prop
+    | [], [] => True
+    | left :: lefts, right :: rights =>
+        structuralEquivalent left right
+          ∧ structuralValuesEquivalent lefts rights
+    | _left, _right => False
 
-  def objectFieldsEquivalentWithFuel :
-      Nat -> List (Name × InputValue) -> List (Name × InputValue) -> Prop
-    | 0, _left, _right => False
-    | fuel + 1, left, right =>
-        (∀ name value, (name, value) ∈ left ->
-          ∃ value', (name, value') ∈ right
-            ∧ equivalentWithFuel fuel value value')
-          ∧ (∀ name value, (name, value) ∈ right ->
-            ∃ value', (name, value') ∈ left
-              ∧ equivalentWithFuel fuel value' value)
+  def structuralObjectFieldsEquivalent :
+      List (Name × InputValue) -> List (Name × InputValue) -> Prop
+    | [], [] => True
+    | (leftName, leftValue) :: lefts,
+        (rightName, rightValue) :: rights =>
+        leftName = rightName
+          ∧ structuralEquivalent leftValue rightValue
+          ∧ structuralObjectFieldsEquivalent lefts rights
+    | _left, _right => False
 end
 
 def equivalent (left right : InputValue) : Prop :=
-  equivalentWithFuel (left.size + right.size + 1) left right
+  structuralEquivalent left.canonical right.canonical
 
 -- Spec 2.10 input object field equality for semantic argument comparison; object field
 -- order is ignored, with duplicate rejection delegated to validation.
 def objectFieldsEquivalent (left right : List (Name × InputValue)) : Prop :=
-  objectFieldsEquivalentWithFuel
-    (objectFieldsSize left + objectFieldsSize right + 1) left right
+  structuralObjectFieldsEquivalent
+    (sortObjectFieldsByName (canonicalObjectFields left))
+    (sortObjectFieldsByName (canonicalObjectFields right))
 
 -- Spec 3.13.1 `@skip` / 3.13.2 `@include` `if` argument: partial; this only recognizes
 -- statically provided Boolean literals.

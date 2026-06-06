@@ -18,8 +18,8 @@ The current conformance target includes:
   object/interface implementation compatibility,
 - field selection validation, argument name validation, required argument
   presence, variable-use compatibility at input locations, leaf and composite
-  selection shape, fragment applicability, and field merge compatibility,
-- named fragments and inline fragments, lowered through `GraphQL.Semantic`,
+  selection shape, inline-fragment applicability, and field merge compatibility,
+- inline fragments,
 - variables and the built-in executable directives `@skip` and `@include`,
 - possible-object semantics for abstract types,
 - a formal data model with typed object identities and field facts,
@@ -32,6 +32,7 @@ These are out of scope for the current conformance pass:
 
 - mutation execution,
 - subscription execution,
+- named fragment definitions and fragment spreads,
 - custom directives and directive definitions beyond modeled `@skip` and
   `@include`,
 - full input coercion and result coercion,
@@ -63,9 +64,8 @@ The main modules are:
   scoped fragment, including uniqueness, non-empty definition/member lists,
   valid type references/defaults, query root existence, and object/interface
   implementation compatibility.
-- `GraphQL.Operation`: raw operation syntax, named fragments, variables, and
+- `GraphQL.Operation`: operation syntax, variables, inline fragments, and
   modeled directive applications.
-- `GraphQL.Semantic`: fragment-inlined semantic operation syntax.
 - `GraphQL.Validation`: operation validity predicates for the current fragment,
   including recursive input-object validation and spec-style variable-use
   compatibility with the nullable-variable default exception.
@@ -89,11 +89,10 @@ abstract selections without a separate directive-erasure pass.
 Directive-sensitive normalization can be revisited after the directive-free
 semantic preservation proof is stable.
 
-`DataModel.groundNormalFormCorrect` is stated over
-`semanticOperationsEquivalentOnData`. The ground-type normalizer itself has no
-fuel parameter: it terminates by structural descent on semantic selection-set
-size while merging same-response-name fields and grounding abstract returns
-through possible object types.
+`DataModel.groundNormalFormCorrect` is stated over `operationsEquivalentOnData`.
+The ground-type normalizer itself has no fuel parameter: it terminates by
+structural descent on selection-set size while merging same-response-name fields
+and grounding abstract returns through possible object types.
 
 ## Proof Plan
 
@@ -103,7 +102,7 @@ The current proof ladder is:
    definitions.
 2. Keep data-model execution definitionally tied to `GraphQL.Execution` through
    store-backed resolvers.
-3. Prove normalizer output satisfies `NormalForm.semanticOperationNormal` under
+3. Prove normalizer output satisfies `NormalForm.operationNormal` under
    schema well-formedness and operation-validity assumptions.
 4. Prove ground normal form semantic preservation:
    `DataModel.groundNormalFormCorrect`.

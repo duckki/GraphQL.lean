@@ -2,12 +2,15 @@ import GraphQL.Schema
 
 /-!
 Spec reference: GraphQL September 2025.
-- 2.3-2.4 Documents and Operations: this file models a single operation plus its
-  fragments, not a full executable document with multiple operations or operation kinds.
-- 2.5-2.9 Selection Sets, Fields, Arguments, Aliases, and Fragments: field/fragment syntax
-  is represented structurally, with aliases encoded as `responseName`.
+- 2.3-2.4 Documents and Operations: this file models a single query-like operation, not
+  a full executable document with multiple operations or operation kinds.
+- 2.5-2.9 Selection Sets, Fields, Arguments, Aliases, and inline fragments: selection
+  syntax is represented structurally, with aliases encoded as `responseName`.
 - 2.10-2.13 Values, Variables, Type References, and Directives: variables and only the
   built-in executable directives `@skip` and `@include` are modeled.
+- Fidelity note: named fragment definitions and fragment spreads are intentionally out of
+  scope. This keeps the core closer to GraphCoQL's query fragment and avoids a separate
+  fragment-expansion semantic layer.
 -/
 namespace GraphQL
 
@@ -80,9 +83,9 @@ def directivesAllow (directives : List DirectiveApplication) : Prop :=
 def directivesAllowBool (directives : List DirectiveApplication) : Bool :=
   directives.all (fun directive => directive.allowsBool)
 
--- Spec 2.5 `SelectionSet`, 2.6 `Field`, 2.8 `Alias`, 2.9 `FragmentSpread`, and 2.9.2
--- `InlineFragment`: partial; source grammar and custom directives are omitted, aliases
--- are precomputed into response names.
+-- Spec 2.5 `SelectionSet`, 2.6 `Field`, 2.8 `Alias`, and 2.9.2 `InlineFragment`:
+-- partial; source grammar, named fragment spreads, and custom directives are omitted,
+-- aliases are precomputed into response names.
 inductive Selection where
   | field
       (responseName : Name)
@@ -90,21 +93,10 @@ inductive Selection where
       (arguments : List Argument)
       (directives : List DirectiveApplication)
       (selectionSet : List Selection)
-  | fragmentSpread
-      (fragmentName : Name)
-      (directives : List DirectiveApplication)
   | inlineFragment
       (typeCondition : Option Name)
       (directives : List DirectiveApplication)
       (selectionSet : List Selection)
-deriving Repr
-
--- Spec 2.9 `FragmentDefinition`: partial; descriptions and directives on fragment
--- definitions are omitted.
-structure FragmentDefinition where
-  name : Name
-  typeCondition : Name
-  selectionSet : List Selection
 deriving Repr
 
 -- Spec 2.4 `OperationDefinition`: partial; operation kind and document-level operation
@@ -115,14 +107,12 @@ structure Operation where
   rootType : Name
   variableDefinitions : List VariableDefinition := []
   selectionSet : List Selection
-  fragments : List FragmentDefinition := []
 deriving Repr
 
 mutual
-  -- Non-spec structural metric used to fuel recursive operation transformations.
+  -- Non-spec structural metric used by recursive operation transformations.
   def Selection.size : Selection -> Nat
     | .field _ _ _ _ selectionSet => 1 + SelectionSet.size selectionSet
-    | .fragmentSpread _ _ => 1
     | .inlineFragment _ _ selectionSet => 1 + SelectionSet.size selectionSet
 
   def SelectionSet.size : List Selection -> Nat
@@ -130,51 +120,9 @@ mutual
     | selection :: rest => selection.size + SelectionSet.size rest
 end
 
--- Non-spec structural metric over fragment selection contents.
-def FragmentDefinition.size (fragment : FragmentDefinition) : Nat :=
-  SelectionSet.size fragment.selectionSet
-
--- Non-spec structural metric over operation selections and retained fragments.
+-- Non-spec structural metric over operation selections.
 def Operation.size (operation : Operation) : Nat :=
   SelectionSet.size operation.selectionSet
-    + operation.fragments.foldl (fun total fragment => total + fragment.size) 0
-
--- Spec 2.9 fragments: non-spec helper used to identify operations already inlined or
--- fragment-free.
-mutual
-  def Selection.fragmentFree : Selection -> Prop
-    | .field _ _ _ _ selectionSet => SelectionSet.fragmentFree selectionSet
-    | .fragmentSpread _ _ => False
-    | .inlineFragment _ _ selectionSet => SelectionSet.fragmentFree selectionSet
-
-  def SelectionSet.fragmentFree : List Selection -> Prop
-    | [] => True
-    | selection :: rest => selection.fragmentFree ∧ SelectionSet.fragmentFree rest
-end
-
--- Spec 2.9 fragments: operation-level wrapper around the fragment-free predicate.
-def Operation.fragmentFree (operation : Operation) : Prop :=
-  operation.fragments = [] ∧ SelectionSet.fragmentFree operation.selectionSet
-
--- Spec 5.5.2.2 `DetectFragmentCycles` step "all fragment spread descendants": faithful as
--- a structural descendant-name collector for the modeled syntax.
-mutual
-  def Selection.fragmentSpreadNames : Selection -> List Name
-    | .field _responseName _fieldName _arguments _directives selectionSet =>
-        SelectionSet.fragmentSpreadNames selectionSet
-    | .fragmentSpread fragmentName _directives => [fragmentName]
-    | .inlineFragment _typeCondition _directives selectionSet =>
-        SelectionSet.fragmentSpreadNames selectionSet
-
-  def SelectionSet.fragmentSpreadNames : List Selection -> List Name
-    | [] => []
-    | selection :: rest =>
-        selection.fragmentSpreadNames ++ SelectionSet.fragmentSpreadNames rest
-end
-
--- Spec 5.5.2.2 `DetectFragmentCycles` input: fragment-spread descendants of a fragment.
-def FragmentDefinition.fragmentSpreadNames (fragment : FragmentDefinition) : List Name :=
-  SelectionSet.fragmentSpreadNames fragment.selectionSet
 
 namespace Selection
 
@@ -189,7 +137,6 @@ def responseName? : Selection -> Option Name
 def subselections : Selection -> List Selection
   | .field _responseName _fieldName _arguments _directives selectionSet => selectionSet
   | .inlineFragment _typeCondition _directives selectionSet => selectionSet
-  | .fragmentSpread _fragmentName _directives => []
 
 -- Spec 6.3.2 `CollectFields` helper: recognizes field selections.
 def isField : Selection -> Prop
@@ -206,7 +153,7 @@ end Selection
 namespace SelectionSet
 
 -- Spec 6.3.2 field collection groups by response name: partial helper that only filters
--- direct fields and does not traverse fragments.
+-- direct fields and does not traverse inline fragments.
 def fieldsWithResponseName (responseName : Name) (selectionSet : List Selection) :
     List Selection :=
   selectionSet.filter (fun selection =>
@@ -227,15 +174,5 @@ def mergeSelectionSets (selections : List Selection) : List Selection :=
   selections.foldl (fun merged selection => merged ++ selection.subselections) []
 
 end SelectionSet
-
-namespace FragmentDefinition
-
--- Spec 5.5.2.1 Fragment Spread Target Defined: partial lookup helper for finding a target
--- fragment by name.
-def find? (fragments : List FragmentDefinition) (name : Name) :
-    Option FragmentDefinition :=
-  fragments.find? (fun fragment => fragment.name == name)
-
-end FragmentDefinition
 
 end GraphQL

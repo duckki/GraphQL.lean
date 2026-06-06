@@ -380,27 +380,12 @@ def wellTyped (schema : Schema) (root : Root) : Prop :=
 
 end Root
 
--- Spec 6.2.1 `ExecuteQuery` over semantic operations with store-backed resolvers.
-def executeSemanticQuery (schema : Schema) (store : Store)
-    (variableValues : Execution.VariableValues)
-    (operation : Semantic.Operation) (root : Root) : Execution.Response :=
-  Execution.executeSemanticQuery schema store.resolvers variableValues
-    operation root.toExecutionValue
-
 -- Spec 6.2.1 `ExecuteQuery` over raw modeled operations and store-backed resolvers.
 def executeOperation (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues)
     (operation : Operation) (root : Root) : Execution.Response :=
   Execution.executeQuery schema store.resolvers variableValues
     operation root.toExecutionValue
-
-theorem executeSemanticQuery_usesStoreResolvers (schema : Schema) (store : Store)
-    (variableValues : Execution.VariableValues)
-    (operation : Semantic.Operation) (root : Root) :
-    executeSemanticQuery schema store variableValues operation root
-      = Execution.executeSemanticQuery schema store.resolvers variableValues
-        operation root.toExecutionValue := by
-  rfl
 
 theorem executeOperation_usesStoreResolvers (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues)
@@ -410,72 +395,48 @@ theorem executeOperation_usesStoreResolvers (schema : Schema) (store : Store)
         operation root.toExecutionValue := by
   rfl
 
--- Spec-related semantic operation equivalence over all well-typed store/root inputs.
-def semanticOperationsEquivalentOnData (schema : Schema)
-    (left right : Semantic.Operation) : Prop :=
+-- Spec-related operation equivalence over all well-typed store/root inputs.
+def operationsEquivalentOnData (schema : Schema)
+    (left right : Operation) : Prop :=
   ∀ store variableValues root,
     store.wellTyped schema ->
       root.wellTyped schema ->
-        executeSemanticQuery schema store variableValues left root
-          = executeSemanticQuery schema store variableValues right root
-
-theorem semanticOperationsEquivalentOnData_refl (schema : Schema)
-    (operation : Semantic.Operation) :
-    semanticOperationsEquivalentOnData schema operation operation := by
-  intro _store _variableValues _root _hstore _hroot
-  rfl
-
-theorem semanticOperationsEquivalentOnData_symm (schema : Schema)
-    {left right : Semantic.Operation} :
-    semanticOperationsEquivalentOnData schema left right ->
-      semanticOperationsEquivalentOnData schema right left := by
-  intro hequivalent store variableValues root hstore hroot
-  exact Eq.symm (hequivalent store variableValues root hstore hroot)
-
-theorem semanticOperationsEquivalentOnData_trans (schema : Schema)
-    {left middle right : Semantic.Operation} :
-    semanticOperationsEquivalentOnData schema left middle ->
-      semanticOperationsEquivalentOnData schema middle right ->
-        semanticOperationsEquivalentOnData schema left right := by
-  intro hleft hright store variableValues root hstore hroot
-  exact Eq.trans
-    (hleft store variableValues root hstore hroot)
-    (hright store variableValues root hstore hroot)
-
--- Spec-related raw operation equivalence after fragment inlining, over the store-backed
--- execution model.
-def operationsEquivalentOnData (schema : Schema) (left right : Operation) : Prop :=
-  semanticOperationsEquivalentOnData schema
-    (Semantic.fromOperation left) (Semantic.fromOperation right)
+        executeOperation schema store variableValues left root
+          = executeOperation schema store variableValues right root
 
 theorem operationsEquivalentOnData_refl (schema : Schema) (operation : Operation) :
     operationsEquivalentOnData schema operation operation := by
-  exact semanticOperationsEquivalentOnData_refl schema (Semantic.fromOperation operation)
+  intro _store _variableValues _root _hstore _hroot
+  rfl
 
 theorem operationsEquivalentOnData_symm (schema : Schema) {left right : Operation} :
     operationsEquivalentOnData schema left right ->
       operationsEquivalentOnData schema right left := by
-  exact semanticOperationsEquivalentOnData_symm schema
+  intro hequivalent store variableValues root hstore hroot
+  exact Eq.symm (hequivalent store variableValues root hstore hroot)
 
 theorem operationsEquivalentOnData_trans (schema : Schema) {left middle right : Operation} :
     operationsEquivalentOnData schema left middle ->
       operationsEquivalentOnData schema middle right ->
         operationsEquivalentOnData schema left right := by
-  exact semanticOperationsEquivalentOnData_trans schema
+  intro hleft hright store variableValues root hstore hroot
+  exact Eq.trans
+    (hleft store variableValues root hstore hroot)
+    (hright store variableValues root hstore hroot)
 
--- Project-specific correctness statement: normalizing a semantic operation preserves
--- store-backed execution.
+-- Project-specific correctness statement: normalizing an operation preserves store-backed
+-- execution.
 def groundNormalFormCorrect (schema : Schema)
-    (operation : Semantic.Operation) : Prop :=
-  semanticOperationsEquivalentOnData schema operation
-    (NormalForm.normalizeSemanticOperation schema operation)
+    (operation : Operation) : Prop :=
+  operationsEquivalentOnData schema operation
+    (NormalForm.normalizeOperation schema operation)
 
 theorem normalizedEquivalentOnData_of_groundNormalFormCorrect (schema : Schema)
-    (operation : Semantic.Operation) :
+    (operation : Operation) :
     groundNormalFormCorrect schema operation ->
-      semanticOperationsEquivalentOnData schema
-        (NormalForm.normalizeSemanticOperation schema operation) operation := by
-  exact semanticOperationsEquivalentOnData_symm schema
+      operationsEquivalentOnData schema
+        (NormalForm.normalizeOperation schema operation) operation := by
+  exact operationsEquivalentOnData_symm schema
 
 end DataModel
 

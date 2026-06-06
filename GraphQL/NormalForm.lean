@@ -16,19 +16,19 @@ namespace NormalForm
 
 -- Spec-inspired normal-form invariant: non-spec predicate requiring a flat field-only
 -- selection layer.
-def selectionsAllFields (selectionSet : List Semantic.Selection) : Prop :=
-  ∀ selection, selection ∈ selectionSet -> Semantic.Selection.isField selection
+def selectionsAllFields (selectionSet : List Selection) : Prop :=
+  ∀ selection, selection ∈ selectionSet -> Selection.isField selection
 
 -- Spec-inspired normal-form invariant: non-spec predicate requiring a flat
 -- inline-fragment-only selection layer.
-def selectionsAllInlineFragments (selectionSet : List Semantic.Selection) : Prop :=
+def selectionsAllInlineFragments (selectionSet : List Selection) : Prop :=
   ∀ selection, selection ∈ selectionSet ->
-    Semantic.Selection.isInlineFragment selection
+    Selection.isInlineFragment selection
 
 -- Spec-inspired `GetPossibleTypes` grounding: non-spec predicate for object-grounded
--- semantic selections.
+-- selections.
 mutual
-  def selectionGroundTyped (schema : Schema) : Semantic.Selection -> Prop
+  def selectionGroundTyped (schema : Schema) : Selection -> Prop
     | .field _responseName _fieldName _arguments _directives selectionSet =>
         (selectionsAllFields selectionSet ∨ selectionsAllInlineFragments selectionSet)
           ∧ selectionSetGroundTyped schema selectionSet
@@ -41,20 +41,20 @@ mutual
           ∧ selectionSetGroundTyped schema selectionSet
 
   def selectionSetGroundTyped (schema : Schema)
-      (selectionSet : List Semantic.Selection) : Prop :=
+      (selectionSet : List Selection) : Prop :=
     (selectionsAllFields selectionSet ∨ selectionsAllInlineFragments selectionSet)
       ∧ ∀ selection, selection ∈ selectionSet -> selectionGroundTyped schema selection
 end
 
--- Spec-inspired non-redundancy helper: response names are unique at one semantic
+-- Spec-inspired non-redundancy helper: response names are unique at one
 -- selection-set layer.
-def responseNamesNodup (selectionSet : List Semantic.Selection) : Prop :=
-  (selectionSet.filterMap Semantic.Selection.responseName?).Nodup
+def responseNamesNodup (selectionSet : List Selection) : Prop :=
+  (selectionSet.filterMap Selection.responseName?).Nodup
 
 -- Spec-inspired fragment grounding invariant: non-spec uniqueness predicate for
 -- inline-fragment type conditions.
 def inlineFragmentTypeConditionsNodup
-    (selectionSet : List Semantic.Selection) : Prop :=
+    (selectionSet : List Selection) : Prop :=
   (selectionSet.filterMap (fun selection =>
     match selection with
     | .inlineFragment (some typeCondition) _directives _selectionSet =>
@@ -64,13 +64,13 @@ def inlineFragmentTypeConditionsNodup
 -- Spec-inspired non-redundancy: non-spec predicate used by this project's normal form
 -- rather than by GraphQL itself.
 mutual
-  def selectionNonRedundant : Semantic.Selection -> Prop
+  def selectionNonRedundant : Selection -> Prop
     | .field _responseName _fieldName _arguments _directives selectionSet =>
         selectionSetNonRedundant selectionSet
     | .inlineFragment _typeCondition _directives selectionSet =>
         selectionSetNonRedundant selectionSet
 
-  def selectionSetNonRedundant (selectionSet : List Semantic.Selection) : Prop :=
+  def selectionSetNonRedundant (selectionSet : List Selection) : Prop :=
     responseNamesNodup selectionSet
       ∧ inlineFragmentTypeConditionsNodup selectionSet
       ∧ ∀ selection, selection ∈ selectionSet -> selectionNonRedundant selection
@@ -79,18 +79,13 @@ end
 -- Spec-inspired normal-form invariant: combines object grounding with this project's
 -- response-name/type-condition non-redundancy predicate.
 def selectionSetNormal (schema : Schema)
-    (selectionSet : List Semantic.Selection) : Prop :=
+    (selectionSet : List Selection) : Prop :=
   selectionSetGroundTyped schema selectionSet ∧ selectionSetNonRedundant selectionSet
 
--- Spec-inspired semantic operation normality: non-spec wrapper over the root selection
--- set.
-def semanticOperationNormal (schema : Schema)
-    (operation : Semantic.Operation) : Prop :=
+-- Spec-inspired operation normality: non-spec wrapper over the root selection set.
+def operationNormal (schema : Schema)
+    (operation : Operation) : Prop :=
   selectionSetNormal schema operation.selectionSet
-
--- Spec-inspired operation normality after fragment inlining.
-def operationNormal (schema : Schema) (operation : GraphQL.Operation) : Prop :=
-  semanticOperationNormal schema (Semantic.fromOperation operation)
 
 -- Spec 5.5.2.3 `GetPossibleTypes` helper for deciding whether an already-unwrapped
 -- named return type can be normalized directly, or must be grounded through object cases.
@@ -99,22 +94,22 @@ def objectTypeNameBool (schema : Schema) (typeName : Name) : Bool :=
   | some (.object _) => true
   | _ => false
 
--- Spec 6.3.2 `CollectSubfields` analogue over semantic selections, written
+-- Spec 6.3.2 `CollectSubfields` analogue over selections, written
 -- structurally so termination and size reasoning can reduce it directly.
-def mergeSelectionSets : List Semantic.Selection -> List Semantic.Selection
+def mergeSelectionSets : List Selection -> List Selection
   | [] => []
   | selection :: rest => selection.subselections ++ mergeSelectionSets rest
 
-private theorem selectionSet_size_append (left right : List Semantic.Selection) :
-    Semantic.SelectionSet.size (left ++ right)
-      = Semantic.SelectionSet.size left + Semantic.SelectionSet.size right := by
+private theorem selectionSet_size_append (left right : List Selection) :
+    SelectionSet.size (left ++ right)
+      = SelectionSet.size left + SelectionSet.size right := by
   induction left with
-  | nil => simp [Semantic.SelectionSet.size]
+  | nil => simp [SelectionSet.size]
   | cons selection rest ih =>
-      simp [Semantic.SelectionSet.size, ih, Nat.add_assoc]
+      simp [SelectionSet.size, ih, Nat.add_assoc]
 
 private theorem mergeSelectionSets_append
-    (left right : List Semantic.Selection) :
+    (left right : List Selection) :
     mergeSelectionSets (left ++ right)
       = mergeSelectionSets left ++ mergeSelectionSets right := by
   induction left with
@@ -124,10 +119,10 @@ private theorem mergeSelectionSets_append
 
 mutual
   -- Spec 6.3.2 field collection helper: finds fields with one response name, descending
-  -- through fragments that can contribute selections in the current type scope.
+  -- through inline fragments that can contribute selections in the current type scope.
   def validFieldsWithResponseName (schema : Schema)
       (parentType responseName : Name) :
-      List Semantic.Selection -> List Semantic.Selection
+      List Selection -> List Selection
     | [] => []
     | selection :: rest =>
         match selection with
@@ -154,7 +149,7 @@ mutual
   -- so later fragment lifting cannot reintroduce a duplicate field group.
   def withoutFieldsWithResponseName (schema : Schema)
       (responseName : Name) :
-      List Semantic.Selection -> List Semantic.Selection
+      List Selection -> List Selection
     | [] => []
     | selection :: rest =>
         match selection with
@@ -174,26 +169,26 @@ end
 private theorem size_withoutFieldsWithResponseName_le (schema : Schema)
     (responseName : Name) :
     ∀ selectionSet,
-      Semantic.SelectionSet.size
+      SelectionSet.size
           (withoutFieldsWithResponseName schema responseName selectionSet)
-        ≤ Semantic.SelectionSet.size selectionSet
+        ≤ SelectionSet.size selectionSet
   | [] => by
-      simp [withoutFieldsWithResponseName, Semantic.SelectionSet.size]
+      simp [withoutFieldsWithResponseName, SelectionSet.size]
   | selection :: rest => by
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           have hrest :=
             size_withoutFieldsWithResponseName_le schema responseName rest
           by_cases h : (fieldResponseName == responseName) = true
-          · simp [withoutFieldsWithResponseName, h, Semantic.SelectionSet.size,
-              Semantic.Selection.size]
+          · simp [withoutFieldsWithResponseName, h, SelectionSet.size,
+              Selection.size]
             omega
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [withoutFieldsWithResponseName, hfalse, Semantic.SelectionSet.size,
-              Semantic.Selection.size]
+            simp [withoutFieldsWithResponseName, hfalse, SelectionSet.size,
+              Selection.size]
             omega
       | inlineFragment typeCondition directives selectionSet =>
           have hselectionSet :=
@@ -201,25 +196,25 @@ private theorem size_withoutFieldsWithResponseName_le (schema : Schema)
           have hrest :=
             size_withoutFieldsWithResponseName_le schema responseName rest
           cases typeCondition <;>
-            simp [withoutFieldsWithResponseName, Semantic.SelectionSet.size,
-              Semantic.Selection.size]
+            simp [withoutFieldsWithResponseName, SelectionSet.size,
+              Selection.size]
           all_goals omega
-termination_by selectionSet => Semantic.SelectionSet.size selectionSet
+termination_by selectionSet => SelectionSet.size selectionSet
 decreasing_by
   all_goals
-    simp [Semantic.SelectionSet.size, Semantic.Selection.size]
+    simp [SelectionSet.size, Selection.size]
     omega
 
 private theorem size_mergeSelectionSets_validFieldsWithResponseName_le
     (schema : Schema) (parentType responseName : Name) :
     ∀ selectionSet,
-      Semantic.SelectionSet.size
+      SelectionSet.size
           (mergeSelectionSets
             (validFieldsWithResponseName schema parentType responseName selectionSet))
-        ≤ Semantic.SelectionSet.size selectionSet
+        ≤ SelectionSet.size selectionSet
   | [] => by
       simp [validFieldsWithResponseName, mergeSelectionSets,
-        Semantic.SelectionSet.size]
+        SelectionSet.size]
   | selection :: rest => by
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
@@ -228,15 +223,15 @@ private theorem size_mergeSelectionSets_validFieldsWithResponseName_le
               schema parentType responseName rest
           by_cases h : (fieldResponseName == responseName) = true
           · simp [validFieldsWithResponseName, mergeSelectionSets, h,
-              selectionSet_size_append, Semantic.SelectionSet.size,
-              Semantic.Selection.size, Semantic.Selection.subselections]
+              selectionSet_size_append, SelectionSet.size,
+              Selection.size, Selection.subselections]
             omega
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
             simp [validFieldsWithResponseName, hfalse,
-              Semantic.SelectionSet.size, Semantic.Selection.size]
+              SelectionSet.size, Selection.size]
             omega
       | inlineFragment typeCondition directives selectionSet =>
           have hselectionSet :=
@@ -248,27 +243,27 @@ private theorem size_mergeSelectionSets_validFieldsWithResponseName_le
           cases typeCondition with
           | none =>
               simp [validFieldsWithResponseName, mergeSelectionSets_append,
-                selectionSet_size_append, Semantic.SelectionSet.size,
-                Semantic.Selection.size]
+                selectionSet_size_append, SelectionSet.size,
+                Selection.size]
               omega
           | some typeCondition =>
               by_cases h : (schema.typesOverlapBool parentType typeCondition) = true
               · simp [validFieldsWithResponseName, h, mergeSelectionSets_append,
-                  selectionSet_size_append, Semantic.SelectionSet.size,
-                  Semantic.Selection.size]
+                  selectionSet_size_append, SelectionSet.size,
+                  Selection.size]
                 omega
               · have hfalse :
                     schema.typesOverlapBool parentType typeCondition = false := by
                   cases hmatch : schema.typesOverlapBool parentType typeCondition
                   · rfl
                   · contradiction
-                simp [validFieldsWithResponseName, hfalse, Semantic.SelectionSet.size,
-                  Semantic.Selection.size]
+                simp [validFieldsWithResponseName, hfalse, SelectionSet.size,
+                  Selection.size]
                 omega
-termination_by selectionSet => Semantic.SelectionSet.size selectionSet
+termination_by selectionSet => SelectionSet.size selectionSet
 decreasing_by
   all_goals
-    simp [Semantic.SelectionSet.size, Semantic.Selection.size]
+    simp [SelectionSet.size, Selection.size]
     omega
 
 -- Spec 5.3.2 field merging / 6.3.2 subfield collection: partial normalizer; merges
@@ -276,7 +271,7 @@ decreasing_by
 -- abstract field return types through possible object types. This is terminating by
 -- selection-set size.
 def normalizeSelectionSet (schema : Schema) (parentType : Name) :
-    List Semantic.Selection -> List Semantic.Selection
+    List Selection -> List Selection
   | [] => []
   | selection :: rest =>
       match selection with
@@ -310,32 +305,32 @@ def normalizeSelectionSet (schema : Schema) (parentType : Name) :
             normalizeSelectionSet schema parentType (subselections ++ rest)
           else
             normalizedRest
-termination_by selectionSet => Semantic.SelectionSet.size selectionSet
+termination_by selectionSet => SelectionSet.size selectionSet
 decreasing_by
   all_goals
     first
     | exact Nat.lt_of_le_of_lt
         (size_withoutFieldsWithResponseName_le schema responseName rest)
         (by
-          simp [Semantic.SelectionSet.size, Semantic.Selection.size]
+          simp [SelectionSet.size, Selection.size]
           omega)
     | (have hmerge :=
         size_mergeSelectionSets_validFieldsWithResponseName_le
           schema parentType responseName rest
-       simp [selectionSet_size_append, Semantic.SelectionSet.size,
-         Semantic.Selection.size]
+       simp [selectionSet_size_append, SelectionSet.size,
+         Selection.size]
        omega)
-    | (simp [Semantic.SelectionSet.size, Semantic.Selection.size]
+    | (simp [SelectionSet.size, Selection.size]
        omega)
     | (rw [selectionSet_size_append subselections rest]
-       simp [Semantic.SelectionSet.size, Semantic.Selection.size]
+       simp [SelectionSet.size, Selection.size]
        try omega)
 
 -- Public GraphCoQL-style grounding helper: object return types normalize directly; abstract
 -- interface/union return types specialize into one object fragment per possible type.
 def normalizeMergedSelectionSetForType
     (schema : Schema) (returnType : Name)
-    (selectionSet : List Semantic.Selection) : List Semantic.Selection :=
+    (selectionSet : List Selection) : List Selection :=
   if objectTypeNameBool schema returnType then
     normalizeSelectionSet schema returnType selectionSet
   else
@@ -344,58 +339,46 @@ def normalizeMergedSelectionSetForType
         .inlineFragment (some objectType) []
           (normalizeSelectionSet schema objectType selectionSet))
 
--- Spec-inspired semantic normalizer: non-spec wrapper around selection-set
--- normalization.
-def normalizeSemanticOperation (schema : Schema)
-    (operation : Semantic.Operation) : Semantic.Operation :=
+-- Spec-inspired operation normalizer: non-spec wrapper around selection-set normalization.
+def normalizeOperation (schema : Schema)
+    (operation : Operation) : Operation :=
   { operation with
     selectionSet := normalizeSelectionSet schema operation.rootType
       operation.selectionSet }
 
-theorem normalizeSemanticOperation_name (schema : Schema)
-    (operation : Semantic.Operation) :
-    (normalizeSemanticOperation schema operation).name = operation.name := by
+theorem normalizeOperation_name (schema : Schema)
+    (operation : Operation) :
+    (normalizeOperation schema operation).name = operation.name := by
   rfl
 
-theorem normalizeSemanticOperation_rootType (schema : Schema)
-    (operation : Semantic.Operation) :
-    (normalizeSemanticOperation schema operation).rootType = operation.rootType := by
+theorem normalizeOperation_rootType (schema : Schema)
+    (operation : Operation) :
+    (normalizeOperation schema operation).rootType = operation.rootType := by
   rfl
 
-theorem normalizeSemanticOperation_variableDefinitions (schema : Schema)
-    (operation : Semantic.Operation) :
-    (normalizeSemanticOperation schema operation).variableDefinitions
+theorem normalizeOperation_variableDefinitions (schema : Schema)
+    (operation : Operation) :
+    (normalizeOperation schema operation).variableDefinitions
       = operation.variableDefinitions := by
   rfl
 
-def semanticOperationsEquivalent (schema : Schema)
-    (left right : Semantic.Operation) : Prop :=
+def operationsEquivalent (schema : Schema)
+    (left right : Operation) : Prop :=
   ∀ resolvers variableValues source,
-    Execution.executeSemanticQuery schema resolvers variableValues left source
+    Execution.executeQuery schema resolvers variableValues left source
       =
-    Execution.executeSemanticQuery schema resolvers variableValues right source
+    Execution.executeQuery schema resolvers variableValues right source
 
 def groundTypeNormalFormSemanticsPreserved (schema : Schema)
-    (operation : Semantic.Operation) : Prop :=
-  semanticOperationsEquivalent schema operation
-    (normalizeSemanticOperation schema operation)
+    (operation : Operation) : Prop :=
+  operationsEquivalent schema operation
+    (normalizeOperation schema operation)
 
 -- Final correctness statement for the ground-type normalizer. This is intentionally
 -- stated without proof in this definition-focused slice.
 axiom groundTypeNormalFormSemanticsPreservation (schema : Schema)
-    (operation : Semantic.Operation) :
+    (operation : Operation) :
   groundTypeNormalFormSemanticsPreserved schema operation
-
--- Spec-inspired operation normalization: non-spec transformation; currently clears named
--- fragments via `Semantic.fromOperation` and has only the fragment-empty theorem below.
-def normalizeOperation (schema : Schema) (operation : GraphQL.Operation) :
-    GraphQL.Operation :=
-  (normalizeSemanticOperation schema (Semantic.fromOperation operation)).toOperation
-
-theorem normalizeOperation_fragments_empty (schema : Schema)
-    (operation : GraphQL.Operation) :
-    (normalizeOperation schema operation).fragments = [] := by
-  rfl
 
 end NormalForm
 

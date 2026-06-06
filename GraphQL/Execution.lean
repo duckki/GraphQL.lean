@@ -1,12 +1,12 @@
-import GraphQL.Semantic
+import GraphQL.Operation
 
 /-!
 Spec reference: GraphQL September 2025.
 - 6.1-6.2 Executing Requests and Operations: this module executes the modeled single
-  semantic/query-like operation, not full request validation/coercion or
-  mutation/subscription modes.
+  query-like operation, not full request validation/coercion or mutation/subscription
+  modes.
 - 6.3 Executing Selection Sets: field collection, grouped field execution, and subfield
-  merging are represented over semantic selections.
+  merging are represented over selections.
 - 6.4 Executing Fields: resolver invocation and value completion are approximated;
   argument coercion, result coercion, asynchronous behavior, and error propagation are
   omitted.
@@ -106,7 +106,7 @@ structure ExecutableField where
   responseName : Name
   fieldName : Name
   arguments : List Argument
-  selectionSet : List Semantic.Selection
+  selectionSet : List Selection
 deriving Repr
 
 -- Spec 6.3.2 collected fields map: partial list-backed ordered map insertion by response
@@ -139,7 +139,7 @@ def mergeExecutableGroups (left right : List (Name × List ExecutableField)) :
 
 -- Spec 6.4.3 `CompleteValue` subfield merge: all collected fields for a response name
 -- contribute their child selections.
-def mergedFieldSelectionSet : List ExecutableField -> List Semantic.Selection
+def mergedFieldSelectionSet : List ExecutableField -> List Selection
   | [] => []
   | field :: rest => field.selectionSet ++ mergedFieldSelectionSet rest
 
@@ -151,7 +151,7 @@ mutual
   -- coercion/errors, using the runtime value shape instead.
   def completeValue (schema : Schema) (resolvers : Resolvers)
       (variableValues : VariableValues) :
-      Nat -> Name -> List Semantic.Selection -> Value -> Response
+      Nat -> Name -> List Selection -> Value -> Response
     | 0, _parentType, _selectionSet, value => shallowResponse value
     | _fuel + 1, _parentType, _selectionSet, .null => .null
     | _fuel + 1, _parentType, _selectionSet, .scalar value => .scalar value
@@ -169,15 +169,15 @@ mutual
   def executeSelectionSet (schema : Schema) (resolvers : Resolvers)
       (variableValues : VariableValues)
       (fuel : Nat) (parentType : Name) (source : Value) :
-      List Semantic.Selection -> List (Name × Response)
+      List Selection -> List (Name × Response)
     | selectionSet =>
         executeCollectedFields schema resolvers variableValues fuel source
           (collectFields schema variableValues fuel parentType source selectionSet)
 
   -- Spec 6.3.2 `CollectFields` selection step: partial; handles built-in directives and
-  -- inline fragments over semantic syntax, without named fragment tracking.
+  -- inline fragments.
   def collectSelection (schema : Schema) (variableValues : VariableValues) :
-      Nat -> Name -> Value -> Semantic.Selection ->
+      Nat -> Name -> Value -> Selection ->
         List (Name × List ExecutableField)
     | 0, _parentType, _source, _selection => []
     | _fuel + 1, parentType, _source,
@@ -210,7 +210,7 @@ mutual
   -- Spec 6.3.2 `CollectFields`: partial; list-backed ordered grouping of executable
   -- fields by response name.
   def collectFields (schema : Schema) (variableValues : VariableValues) :
-      Nat -> Name -> Value -> List Semantic.Selection ->
+      Nat -> Name -> Value -> List Selection ->
         List (Name × List ExecutableField)
     | 0, _parentType, _source, _selectionSet => []
     | _fuel + 1, _parentType, _source, [] => []
@@ -249,29 +249,17 @@ mutual
           ++ executeCollectedFields schema resolvers variableValues fuel source rest
 end
 
--- Local fuel bound for the partial `ExecuteQuery` model over semantic operations.
-def executeSemanticQueryFuel (operation : Semantic.Operation) : Nat :=
+-- Local fuel bound for the partial `ExecuteQuery` model.
+def executeQueryFuel (operation : Operation) : Nat :=
   operation.size * 3 + 1
 
 -- Spec 6.2.1 `ExecuteQuery` / 6.3.1 `ExecuteRootSelectionSet`: partial; executes a
--- semantic operation as normal data-only object response.
-def executeSemanticQuery (schema : Schema) (resolvers : Resolvers)
-    (variableValues : VariableValues) (operation : Semantic.Operation)
-    (source : Value) : Response :=
-  .object (executeSelectionSet schema resolvers variableValues
-    (executeSemanticQueryFuel operation) operation.rootType source operation.selectionSet)
-
--- Local fuel bound for executing source operations after semantic lowering.
-def executeQueryFuel (operation : Operation) : Nat :=
-  executeSemanticQueryFuel (Semantic.fromOperation operation)
-
--- Spec 6.2.1 `ExecuteQuery` / 6.3 operation execution: partial; first inlines fragments,
--- then executes using the semantic operation model.
+-- query operation as normal data-only object response.
 def executeQuery (schema : Schema) (resolvers : Resolvers)
     (variableValues : VariableValues) (operation : Operation)
     (source : Value) : Response :=
-  executeSemanticQuery schema resolvers variableValues
-    (Semantic.fromOperation operation) source
+  .object (executeSelectionSet schema resolvers variableValues
+    (executeQueryFuel operation) operation.rootType source operation.selectionSet)
 
 end Execution
 

@@ -11,6 +11,7 @@ Current explicit skips:
 
 - mutation,
 - subscription,
+- named fragment definitions and fragment spreads,
 - custom directives beyond modeled `@skip` and `@include`,
 - coercion, assuming values are already coerced and type-conformant,
 - introspection and meta-fields,
@@ -31,9 +32,9 @@ resolvers, and correctness predicates for operation equivalence and ground
 normal form.
 
 `DataModel.groundNormalFormCorrect` uses
-`DataModel.semanticOperationsEquivalentOnData`. The ground-type normalizer has no
-fuel parameter; it terminates by structural descent on semantic selection-set
-size while merging fields and grounding abstract returns.
+`DataModel.operationsEquivalentOnData`. The ground-type normalizer has no fuel
+parameter; it terminates by structural descent on selection-set size while
+merging fields and grounding abstract returns.
 
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,

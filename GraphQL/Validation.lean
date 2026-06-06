@@ -14,12 +14,6 @@ namespace GraphQL
 
 namespace Validation
 
--- Spec 5.5.2.1 Fragment Spread Target Defined: faithful fragment-name lookup helper for
--- modeled fragments.
-def getFragmentDefinition? (fragments : List FragmentDefinition)
-    (name : Name) : Option FragmentDefinition :=
-  FragmentDefinition.find? fragments name
-
 -- Spec 5.8.3 All Variable Uses Defined: partial helper for operation-level variable
 -- lookup.
 def getVariableDefinition? (variableDefinitions : List VariableDefinition)
@@ -259,90 +253,37 @@ def argumentsValid (schema : Schema) (definitions : List InputValueDefinition)
           getArgument? arguments definition.name = some argument
             ∧ inputValueNonNull argument.value)
 
--- Non-spec structural metric over fragments used to fuel validation traversals.
-def fragmentsSize (fragments : List FragmentDefinition) : Nat :=
-  fragments.foldl (fun total fragment => total + fragment.size) 0
-
--- Spec 5.5.1.1 Fragment Name Uniqueness: faithful for the modeled fragment list.
-def fragmentNamesAreUnique (fragments : List FragmentDefinition) : Prop :=
-  (fragments.map FragmentDefinition.name).Nodup
-
--- Spec 5.5.2.1 Fragment Spread Target Defined: faithful for modeled spread-name lists.
-def fragmentSpreadTargetsDefined (fragments : List FragmentDefinition)
-    (spreadNames : List Name) : Prop :=
-  ∀ fragmentName, fragmentName ∈ spreadNames ->
-    ∃ fragmentDefinition,
-      getFragmentDefinition? fragments fragmentName = some fragmentDefinition
-
--- Spec 5.5.2.1 Fragment Spread Target Defined: operation selection-set wrapper.
-def selectionSetFragmentSpreadTargetsDefined (fragments : List FragmentDefinition)
-    (selectionSet : List Selection) : Prop :=
-  fragmentSpreadTargetsDefined fragments (SelectionSet.fragmentSpreadNames selectionSet)
-
--- Spec 5.5.2.1 Fragment Spread Target Defined: fragment-definition aggregate wrapper.
-def fragmentDefinitionSpreadTargetsDefined (fragments : List FragmentDefinition) : Prop :=
-  ∀ fragment, fragment ∈ fragments ->
-    fragmentSpreadTargetsDefined fragments fragment.fragmentSpreadNames
-
--- Spec 5.5.2.2 `DetectFragmentCycles`: partial fuel-bounded acyclicity check over
--- fragment-name dependencies.
-def fragmentDependencyAcyclicFrom (fragments : List FragmentDefinition) :
-    Nat -> List Name -> Name -> Prop
-  | 0, _path, _fragmentName => False
-  | fuel + 1, path, fragmentName =>
-      fragmentName ∉ path
-        ∧ ∃ fragment,
-          getFragmentDefinition? fragments fragmentName = some fragment
-            ∧ ∀ dependency, dependency ∈ fragment.fragmentSpreadNames ->
-              fragmentDependencyAcyclicFrom fragments fuel (fragmentName :: path) dependency
-
--- Spec 5.5.2.2 Fragment Spreads Must Not Form Cycles: aggregate acyclicity predicate.
-def fragmentDependenciesAcyclic (fragments : List FragmentDefinition) : Prop :=
-  ∀ fragment, fragment ∈ fragments ->
-    fragmentDependencyAcyclicFrom fragments (fragments.length + 1) [] fragment.name
-
--- Spec 5.5 Fragment validation: aggregate over the modeled fragment-declaration rules.
-def fragmentsValid (fragments : List FragmentDefinition) : Prop :=
-  fragmentNamesAreUnique fragments
-    ∧ fragmentDefinitionSpreadTargetsDefined fragments
-    ∧ fragmentDependenciesAcyclic fragments
-
--- Spec 5.3 Field validation, 5.5 Fragment validation, and 5.7 Directive validation:
+-- Spec 5.3 Field validation and 5.7 Directive validation:
 -- partial; combines modeled field lookup, arguments, leaf/composite subselection checks,
--- and fragment applicability.
+-- and inline-fragment applicability.
 mutual
-  def selectionValid (schema : Schema) (fragments : List FragmentDefinition)
+  def selectionValid (schema : Schema)
       (variableDefinitions : List VariableDefinition) (parentType : Name) : Selection -> Prop
     | .field _responseName fieldName arguments directives selectionSet =>
         directivesValid schema variableDefinitions directives
           ∧ ∃ fieldDefinition,
             schema.lookupField parentType fieldName = some fieldDefinition
               ∧ argumentsValid schema fieldDefinition.arguments variableDefinitions arguments
-              ∧ fieldSelectionSetValid schema fragments variableDefinitions
+              ∧ fieldSelectionSetValid schema variableDefinitions
                 fieldDefinition selectionSet
-    | .fragmentSpread fragmentName directives =>
-        directivesValid schema variableDefinitions directives
-          ∧ ∃ fragmentDefinition,
-            getFragmentDefinition? fragments fragmentName = some fragmentDefinition
-              ∧ schema.typesOverlap parentType fragmentDefinition.typeCondition
     | .inlineFragment none directives selectionSet =>
         directivesValid schema variableDefinitions directives
           ∧ selectionSet ≠ []
-          ∧ selectionSetValid schema fragments variableDefinitions parentType selectionSet
+          ∧ selectionSetValid schema variableDefinitions parentType selectionSet
     | .inlineFragment (some typeCondition) directives selectionSet =>
         directivesValid schema variableDefinitions directives
           ∧ schema.isCompositeType typeCondition
           ∧ schema.typesOverlap parentType typeCondition
           ∧ selectionSet ≠ []
-          ∧ selectionSetValid schema fragments variableDefinitions typeCondition selectionSet
+          ∧ selectionSetValid schema variableDefinitions typeCondition selectionSet
 
-  def selectionSetValid (schema : Schema) (fragments : List FragmentDefinition)
+  def selectionSetValid (schema : Schema)
       (variableDefinitions : List VariableDefinition)
       (parentType : Name) (selectionSet : List Selection) : Prop :=
     ∀ selection, selection ∈ selectionSet ->
-      selectionValid schema fragments variableDefinitions parentType selection
+      selectionValid schema variableDefinitions parentType selection
 
-  def fieldSelectionSetValid (schema : Schema) (fragments : List FragmentDefinition)
+  def fieldSelectionSetValid (schema : Schema)
       (variableDefinitions : List VariableDefinition)
       (fieldDefinition : FieldDefinition) (selectionSet : List Selection) : Prop :=
     let returnType := fieldDefinition.outputType.namedType
@@ -350,22 +291,8 @@ mutual
       ∧ ((schema.isLeafType returnType ∧ selectionSet = [])
       ∨ (schema.isCompositeType returnType
         ∧ selectionSet ≠ []
-        ∧ selectionSetValid schema fragments variableDefinitions returnType selectionSet))
+        ∧ selectionSetValid schema variableDefinitions returnType selectionSet))
 end
-
--- Spec 5.5.1 Fragment Declarations and 5.3.2 Field Selection Merging: partial; validates
--- object/interface/union type condition, non-empty selection set, nested selections, and
--- field merging.
-def fragmentDefinitionValid (schema : Schema) (fragments : List FragmentDefinition)
-    (variableDefinitions : List VariableDefinition)
-    (fragment : FragmentDefinition) : Prop :=
-  schema.isCompositeType fragment.typeCondition
-    ∧ fragment.selectionSet ≠ []
-    ∧ selectionSetValid schema fragments variableDefinitions
-      fragment.typeCondition fragment.selectionSet
-    ∧ FieldMerge.fieldsInSetCanMerge schema fragments
-      (fragment.size + fragmentsSize fragments)
-      fragment.typeCondition fragment.selectionSet
 
 -- Spec 5.2 Operation validation plus referenced executable validation rules: partial
 -- aggregate predicate over the modeled single-operation representation.
@@ -373,15 +300,11 @@ def operationDefinitionValid (schema : Schema) (operation : Operation) : Prop :=
   operation.rootType = schema.queryType
     ∧ schema.isCompositeType operation.rootType
     ∧ variableDefinitionsValid schema operation.variableDefinitions
-    ∧ fragmentsValid operation.fragments
     ∧ operation.selectionSet ≠ []
-    ∧ selectionSetFragmentSpreadTargetsDefined operation.fragments operation.selectionSet
-    ∧ selectionSetValid schema operation.fragments operation.variableDefinitions
+    ∧ selectionSetValid schema operation.variableDefinitions
       operation.rootType operation.selectionSet
-    ∧ FieldMerge.fieldsInSetCanMerge schema operation.fragments operation.size
+    ∧ FieldMerge.fieldsInSetCanMerge schema operation.size
       operation.rootType operation.selectionSet
-    ∧ ∀ fragment, fragment ∈ operation.fragments ->
-      fragmentDefinitionValid schema operation.fragments operation.variableDefinitions fragment
 
 end Validation
 

@@ -139,7 +139,9 @@ Use GraphCoQL as the baseline for plain GraphQL fidelity:
 - state unsupported features explicitly whenever a module only covers the GraphCoQL fragment.
 
 GraphCoQL should not be treated as the final target. It is a strong lower bound
-for the plain GraphQL layer. This project can build beyond it by adding named
-fragments, directives, non-null types, variables, input objects, and errors, but
-those extensions should be staged after the GraphCoQL-level semantics and
+for the plain GraphQL layer. This project intentionally keeps named fragment
+definitions and fragment spreads out of scope, matching GraphCoQL's query
+language boundary and avoiding a separate fragment-expansion operation layer.
+Other extensions, such as directives, non-null types, variables, input objects,
+and errors, should be staged only after the GraphCoQL-level semantics and
 validation core is coherent.

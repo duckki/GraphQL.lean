@@ -33,7 +33,11 @@ resolvers, and operation equivalence over store-backed execution.
 `NormalForm.groundNormalFormCorrect` uses
 `DataModel.operationsEquivalentOnData`. The ground-type normalizer has no fuel
 parameter; it terminates by structural descent on selection-set size while
-merging fields and grounding abstract returns.
+merging fields and grounding abstract returns. Public normal-form predicates
+belong in top-level `GraphQL/NormalForm.lean`; proof work belongs under
+`GraphQL/NormalForm/`, with
+`GraphQL/NormalForm/GroundTypeNormalization.lean` as the first directive-free
+ground-type proof module.
 
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,

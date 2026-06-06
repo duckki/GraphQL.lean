@@ -15,6 +15,7 @@ flowchart TD
   Operation["GraphQL.Operation"]
   Validation["GraphQL.Validation"]
   NormalForm["GraphQL.NormalForm"]
+  NormalFormGround["GraphQL.NormalForm.GroundTypeNormalization"]
   Execution["GraphQL.Execution"]
   DataModel["GraphQL.DataModel"]
   DataModelStore["GraphQL.DataModel.Store"]
@@ -26,13 +27,17 @@ flowchart TD
   Operation --> NormalForm
   Operation --> Execution
   Execution --> DataModel
-  NormalForm --> DataModel
+  SchemaWF --> NormalForm
+  Validation --> NormalForm
+  DataModel --> NormalForm
+  NormalForm --> NormalFormGround
   DataModel --> DataModelStore
 
   SchemaWF --> GraphQLRoot
   Operation --> GraphQLRoot
   Validation --> GraphQLRoot
   NormalForm --> GraphQLRoot
+  NormalFormGround --> GraphQLRoot
   Execution --> GraphQLRoot
   DataModel --> GraphQLRoot
   DataModelStore --> GraphQLRoot
@@ -61,8 +66,11 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
   modeled `@skip`/`@include`, same-response-name field merge checks, and
   inline-fragment applicability.
 - `GraphQL.NormalForm`: ground-typed normal form and non-redundancy predicates over
-  operation selection sets, plus a normalization pass for field merging and
-  abstract-type grounding under a directive-free source-operation assumption.
+  operation selection sets, a normalization pass for field merging and
+  abstract-type grounding, and the public semantic preservation and store-backed
+  correctness predicates for directive-free ground-type normalization.
+- `GraphQL.NormalForm.GroundTypeNormalization`: proof-facing lemmas for the
+  directive-free ground-type normalizer.
 - `GraphQL.Execution`: execution over operation selections as a function
   parameterized by abstract resolver functions. It collects executable fields by
   response name, resolves each response name once, passes field arguments to
@@ -84,10 +92,11 @@ The current flow is:
    well-formedness and operation validity.
 3. `GraphQL.Execution` gives bounded execution over operation selections by
    collecting fields by response name, then resolving each response name once.
-4. `GraphQL.DataModel` constrains execution to a typed object store so
-   operation equivalence and ground-normal-form correctness can be stated
-   against deterministic data.
-5. `GraphQL.NormalForm` provides the normalization proof scaffold.
+4. `GraphQL.DataModel` constrains execution to a typed object store.
+5. `GraphQL.NormalForm` provides normalization definitions and public
+   ground-normal-form correctness predicates.
+6. `GraphQL.NormalForm.GroundTypeNormalization` provides proof-facing
+   ground-type lemmas.
 
 Normalization consumes `GraphQL.Operation` directly. The current normal-form
 proof path assumes source operations have no modeled directives, so the

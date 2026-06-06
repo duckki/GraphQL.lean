@@ -1,4 +1,5 @@
 import GraphQL.DataModel
+import GraphQL.SchemaWellFormedness
 
 /-!
 Spec reference: GraphQL September 2025.
@@ -386,22 +387,6 @@ def normalizeOperation (schema : Schema)
     selectionSet := normalizeSelectionSet schema operation.rootType
       operation.selectionSet }
 
-theorem normalizeOperation_name (schema : Schema)
-    (operation : Operation) :
-    (normalizeOperation schema operation).name = operation.name := by
-  rfl
-
-theorem normalizeOperation_rootType (schema : Schema)
-    (operation : Operation) :
-    (normalizeOperation schema operation).rootType = operation.rootType := by
-  rfl
-
-theorem normalizeOperation_variableDefinitions (schema : Schema)
-    (operation : Operation) :
-    (normalizeOperation schema operation).variableDefinitions
-      = operation.variableDefinitions := by
-  rfl
-
 def operationsEquivalent (schema : Schema)
     (left right : Operation) : Prop :=
   ∀ resolvers variableValues source,
@@ -420,11 +405,14 @@ def groundNormalFormCorrect (schema : Schema)
   DataModel.operationsEquivalentOnData schema operation
     (normalizeOperation schema operation)
 
--- Final correctness statement for the ground-type normalizer. This is intentionally
--- stated without proof in this definition-focused slice.
-axiom groundTypeNormalFormSemanticsPreservation (schema : Schema)
-    (operation : Operation) :
-  groundTypeNormalFormSemanticsPreserved schema operation
+-- Final correctness statement for the ground-type normalizer. This is intentionally a
+-- definition, not a proof attempt.
+def groundTypeNormalFormSemanticsPreservation (schema : Schema)
+    (operation : Operation) : Prop :=
+  SchemaWellFormedness.schemaWellFormed schema ->
+    Validation.operationDefinitionValid schema operation ->
+      operationDirectiveFree operation ->
+        groundTypeNormalFormSemanticsPreserved schema operation
 
 end NormalForm
 

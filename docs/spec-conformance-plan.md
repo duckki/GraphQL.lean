@@ -94,6 +94,10 @@ semantic preservation proof is stable.
 The ground-type normalizer itself has no fuel parameter: it terminates by
 structural descent on selection-set size while merging same-response-name fields
 and grounding abstract returns through possible object types.
+Public normal-form predicates live in top-level `GraphQL/NormalForm.lean`.
+Proof-facing normal-form lemmas live under `GraphQL/NormalForm/`; the first
+directive-free ground-type proof module is
+`GraphQL/NormalForm/GroundTypeNormalization.lean`.
 
 ## Proof Plan
 

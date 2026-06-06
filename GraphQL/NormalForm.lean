@@ -87,6 +87,46 @@ def operationNormal (schema : Schema)
     (operation : Operation) : Prop :=
   selectionSetNormal schema operation.selectionSet
 
+mutual
+  -- Proof-facing predicate for directive-free ground normalization: every modeled
+  -- directive list in a selection is empty.
+  def selectionDirectiveFree : Selection -> Prop
+    | .field _responseName _fieldName _arguments directives selectionSet =>
+        directives = [] ∧ selectionSetDirectiveFree selectionSet
+    | .inlineFragment _typeCondition directives selectionSet =>
+        directives = [] ∧ selectionSetDirectiveFree selectionSet
+
+  -- Structural list form, chosen so hypotheses reduce directly on selection sets.
+  def selectionSetDirectiveFree : List Selection -> Prop
+    | [] => True
+    | selection :: rest =>
+        selectionDirectiveFree selection ∧ selectionSetDirectiveFree rest
+end
+
+-- Operation-level wrapper for the directive-free source-operation assumption.
+def operationDirectiveFree (operation : Operation) : Prop :=
+  selectionSetDirectiveFree operation.selectionSet
+
+mutual
+  -- Helper predicate: one selection cannot contribute a field with the given response
+  -- name in the current type scope.
+  def selectionResponseNameFree (schema : Schema)
+      (parentType responseName : Name) : Selection -> Prop
+    | .field selectionResponseName _fieldName _arguments _directives _selectionSet =>
+        selectionResponseName ≠ responseName
+    | .inlineFragment none _directives selectionSet =>
+        selectionSetResponseNameFree schema parentType responseName selectionSet
+    | .inlineFragment (some typeCondition) _directives selectionSet =>
+        schema.typesOverlapBool parentType typeCondition = true ->
+          selectionSetResponseNameFree schema parentType responseName selectionSet
+
+  def selectionSetResponseNameFree (schema : Schema)
+      (parentType responseName : Name)
+      (selectionSet : List Selection) : Prop :=
+    ∀ selection, selection ∈ selectionSet ->
+      selectionResponseNameFree schema parentType responseName selection
+end
+
 -- Spec 5.5.2.3 `GetPossibleTypes` helper for deciding whether an already-unwrapped
 -- named return type can be normalized directly, or must be grounded through object cases.
 def objectTypeNameBool (schema : Schema) (typeName : Name) : Bool :=

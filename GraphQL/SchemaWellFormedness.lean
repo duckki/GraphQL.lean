@@ -1,4 +1,4 @@
-import GraphQL.Schema
+import GraphQL.Validation
 
 /-!
 Spec reference: GraphQL September 2025.
@@ -134,6 +134,18 @@ def typeDefinitionWellFormed (schema : Schema) : TypeDefinition -> Prop
   | .enum enumType => enumTypeWellFormed enumType
   | .inputObject inputObjectType => inputObjectTypeWellFormed schema inputObjectType
 
+-- Proof-facing schema invariant: possible runtime object fields are compatible with
+-- fields selected through their static parent type. This is the field-level bridge
+-- needed when execution grounds abstract parents to concrete object sources.
+def possibleObjectFieldDefinitionsImplement (schema : Schema) : Prop :=
+  ∀ parentType objectTypeName fieldName expected implementation,
+    objectTypeName ∈ schema.getPossibleTypes parentType ->
+      schema.lookupField parentType fieldName = some expected ->
+        schema.lookupField objectTypeName fieldName = some implementation ->
+          fieldDefinitionImplements schema implementation expected
+            ∧ FieldMerge.sameResponseShape schema
+              implementation.outputType expected.outputType
+
 -- Spec 3.3 schema rules: partial; checks unique type names and a query object root,
 -- omitting operation-type uniqueness/existence for mutation/subscription and directive
 -- validation.
@@ -142,6 +154,11 @@ def schemaWellFormed (schema : Schema) : Prop :=
     ∧ schema.objectType schema.queryType
     ∧ ∀ typeDefinition, typeDefinition ∈ schema.types ->
       typeDefinitionWellFormed schema typeDefinition
+    ∧ (∀ typeName objectTypeName,
+      objectTypeName ∈ schema.getPossibleTypes typeName ->
+        schema.objectType objectTypeName)
+    ∧ (∀ typeName, (schema.getPossibleTypes typeName).Nodup)
+    ∧ possibleObjectFieldDefinitionsImplement schema
 
 -- Spec-conformance pattern, not a GraphQL spec definition: bundles a schema with this
 -- file's partial well-formedness proof.

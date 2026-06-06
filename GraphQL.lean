@@ -8,6 +8,7 @@ import GraphQL.DataModel.Store
 import GraphQL.NormalForm
 import GraphQL.NormalForm.GroundTypeNormalization
 import GraphQL.NormalForm.GroundTypeNormalization.FieldCollection
+import GraphQL.NormalForm.GroundTypeNormalization.Semantics
 
 /-!
 Spec reference: GraphQL September 2025.

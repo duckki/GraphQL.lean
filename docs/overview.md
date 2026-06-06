@@ -105,3 +105,6 @@ erasure pass.
 
 Raw syntax remains permissive. Validation supplies the invariants that later
 semantic proofs should rely on.
+
+The detailed ground-type normal form correctness theorem plan is documented in
+`docs/ground-type-normal-form-correctness-plan.md`.

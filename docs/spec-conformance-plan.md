@@ -101,7 +101,10 @@ directive-free ground-type proof module is
 
 ## Proof Plan
 
-The current proof ladder is:
+The detailed ground-type normal form theorem plan is in
+`docs/ground-type-normal-form-correctness-plan.md`.
+
+The high-level proof ladder is:
 
 1. Keep schema and operation validation faithful to the scoped GraphQL spec
    definitions.
@@ -110,12 +113,16 @@ The current proof ladder is:
 3. Prove normalizer output satisfies `NormalForm.operationNormal` under
    schema well-formedness and operation-validity assumptions.
 4. Prove ground normal form semantic preservation:
+   `NormalForm.groundTypeNormalFormSemanticsPreservation`.
+5. Derive store-backed correctness:
    `NormalForm.groundNormalFormCorrect`.
-5. Revisit broader operation transformation algorithms only after the scoped
+6. Revisit broader operation transformation algorithms only after the scoped
    validation, execution, and normal-form semantics are stable.
 
 ## Related Documentation
 
 - `docs/overview.md`: project structure and module dependency map.
+- `docs/ground-type-normal-form-correctness-plan.md`: detailed proof plan for
+  directive-free ground-type normal form correctness.
 - `docs/references.md`: GraphCoQL notes and proof strategy references.
 - `README.md`: build, lint, and entry-point information.

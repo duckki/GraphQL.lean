@@ -235,6 +235,165 @@ theorem validFieldsWithResponseName_mem_field (schema : Schema)
                 exact validFieldsWithResponseName_mem_field schema parentType
                   responseName rest selection hselection
 
+theorem validFieldsWithResponseName_field_mem_collectFields_scoped
+    (schema : Schema) (variableDefinitions : List VariableDefinition)
+    (filterParent collectParent responseName : Name) :
+    ∀ selectionSet fieldName arguments directives subselections,
+      Validation.selectionSetValid schema variableDefinitions collectParent
+        selectionSet ->
+      Selection.field responseName fieldName arguments directives subselections
+        ∈ validFieldsWithResponseName schema filterParent responseName
+          selectionSet ->
+        ∃ scopedField,
+          scopedField ∈ FieldMerge.collectFields schema collectParent selectionSet
+            ∧ scopedField.responseName = responseName
+            ∧ scopedField.fieldName = fieldName
+            ∧ scopedField.arguments = arguments
+            ∧ scopedField.selectionSet = subselections
+  | [], fieldName, arguments, directives, subselections, _hvalid, hfield => by
+      simp [validFieldsWithResponseName] at hfield
+  | selection :: rest, fieldName, arguments, directives, subselections,
+      hvalid, hfield => by
+      have hhead :
+          Validation.selectionValid schema variableDefinitions collectParent
+            selection := by
+        simp [Validation.selectionSetValid] at hvalid
+        exact hvalid.1
+      have htail :
+          Validation.selectionSetValid schema variableDefinitions collectParent
+            rest :=
+        Validation.selectionSetValid_tail hvalid
+      cases selection with
+      | field fieldResponseName sourceFieldName sourceArguments
+          sourceDirectives sourceSubselections =>
+          by_cases hname : (fieldResponseName == responseName) = true
+          · simp [validFieldsWithResponseName, hname] at hfield
+            rcases hfield with hfield | hfield
+            · rcases hfield with
+                ⟨hresponseEq, hfieldEq, hargumentsEq, hdirectivesEq,
+                  hsubselectionsEq⟩
+              subst fieldResponseName
+              subst sourceFieldName
+              subst sourceArguments
+              subst sourceDirectives
+              subst sourceSubselections
+              rcases Validation.selectionValid_field_lookup hhead with
+                ⟨fieldDefinition, hlookup, _harguments, _hchild⟩
+              refine ⟨{
+                parentType := collectParent,
+                responseName := responseName,
+                fieldName := fieldName,
+                arguments := arguments,
+                outputType := fieldDefinition.outputType,
+                selectionSet := subselections
+              }, ?_, rfl, rfl, rfl, rfl⟩
+              simp [FieldMerge.collectFields, hlookup]
+            · rcases
+                validFieldsWithResponseName_field_mem_collectFields_scoped
+                  schema variableDefinitions filterParent collectParent
+                  responseName rest fieldName arguments directives
+                  subselections htail hfield with
+                ⟨scopedField, hscoped, hresponse, hfieldName, harguments,
+                  hselectionSet⟩
+              refine ⟨scopedField, ?_, hresponse, hfieldName, harguments,
+                hselectionSet⟩
+              rcases Validation.selectionValid_field_lookup hhead with
+                ⟨fieldDefinition, hlookup, _harguments, _hchild⟩
+              simpa [FieldMerge.collectFields, hlookup] using Or.inr hscoped
+          · have hfalse : (fieldResponseName == responseName) = false := by
+              cases hmatch : fieldResponseName == responseName
+              · rfl
+              · contradiction
+            simp [validFieldsWithResponseName, hfalse] at hfield
+            rcases
+              validFieldsWithResponseName_field_mem_collectFields_scoped
+                schema variableDefinitions filterParent collectParent
+                responseName rest fieldName arguments directives
+                subselections htail hfield with
+              ⟨scopedField, hscoped, hresponse, hfieldName, harguments,
+                hselectionSet⟩
+            refine ⟨scopedField, ?_, hresponse, hfieldName, harguments,
+              hselectionSet⟩
+            rcases Validation.selectionValid_field_lookup hhead with
+              ⟨fieldDefinition, hlookup, _harguments, _hchild⟩
+            simpa [FieldMerge.collectFields, hlookup] using Or.inr hscoped
+      | inlineFragment typeCondition _fragmentDirectives selectionSet =>
+          cases typeCondition with
+          | none =>
+              have hselectionSetValid :
+                  Validation.selectionSetValid schema variableDefinitions
+                    collectParent selectionSet :=
+                Validation.selectionValid_inlineFragment_none_selectionSetValid
+                  hhead
+              simp [validFieldsWithResponseName] at hfield
+              rcases hfield with hfield | hfield
+              · rcases
+                  validFieldsWithResponseName_field_mem_collectFields_scoped
+                    schema variableDefinitions filterParent collectParent
+                    responseName selectionSet fieldName arguments directives
+                    subselections hselectionSetValid hfield with
+                  ⟨scopedField, hscoped, hresponse, hfieldName, harguments,
+                    hselectionSet⟩
+                refine ⟨scopedField, ?_, hresponse, hfieldName, harguments,
+                  hselectionSet⟩
+                simp [FieldMerge.collectFields, hscoped]
+              · rcases
+                  validFieldsWithResponseName_field_mem_collectFields_scoped
+                    schema variableDefinitions filterParent collectParent
+                    responseName rest fieldName arguments directives
+                    subselections htail hfield with
+                  ⟨scopedField, hscoped, hresponse, hfieldName, harguments,
+                    hselectionSet⟩
+                refine ⟨scopedField, ?_, hresponse, hfieldName, harguments,
+                  hselectionSet⟩
+                simp [FieldMerge.collectFields, hscoped]
+          | some typeCondition =>
+              have hselectionSetValid :
+                  Validation.selectionSetValid schema variableDefinitions
+                    typeCondition selectionSet :=
+                Validation.selectionValid_inlineFragment_some_selectionSetValid
+                  hhead
+              by_cases hoverlap :
+                  schema.typesOverlapBool filterParent typeCondition = true
+              · simp [validFieldsWithResponseName, hoverlap] at hfield
+                rcases hfield with hfield | hfield
+                · rcases
+                    validFieldsWithResponseName_field_mem_collectFields_scoped
+                      schema variableDefinitions filterParent typeCondition
+                      responseName selectionSet fieldName arguments directives
+                      subselections hselectionSetValid hfield with
+                    ⟨scopedField, hscoped, hresponse, hfieldName, harguments,
+                      hselectionSet⟩
+                  refine ⟨scopedField, ?_, hresponse, hfieldName, harguments,
+                    hselectionSet⟩
+                  simp [FieldMerge.collectFields, hscoped]
+                · rcases
+                    validFieldsWithResponseName_field_mem_collectFields_scoped
+                      schema variableDefinitions filterParent collectParent
+                      responseName rest fieldName arguments directives
+                      subselections htail hfield with
+                    ⟨scopedField, hscoped, hresponse, hfieldName, harguments,
+                      hselectionSet⟩
+                  refine ⟨scopedField, ?_, hresponse, hfieldName, harguments,
+                    hselectionSet⟩
+                  simp [FieldMerge.collectFields, hscoped]
+              · have hfalse :
+                    schema.typesOverlapBool filterParent typeCondition = false := by
+                  cases hmatch : schema.typesOverlapBool filterParent typeCondition
+                  · rfl
+                  · contradiction
+                simp [validFieldsWithResponseName, hfalse] at hfield
+                rcases
+                  validFieldsWithResponseName_field_mem_collectFields_scoped
+                    schema variableDefinitions filterParent collectParent
+                    responseName rest fieldName arguments directives
+                    subselections htail hfield with
+                  ⟨scopedField, hscoped, hresponse, hfieldName, harguments,
+                    hselectionSet⟩
+                refine ⟨scopedField, ?_, hresponse, hfieldName, harguments,
+                  hselectionSet⟩
+                simp [FieldMerge.collectFields, hscoped]
+
 theorem selectionSetValid_mergeSelectionSets_of_subselections
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} :

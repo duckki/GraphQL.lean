@@ -130,6 +130,11 @@ over this repo's resolver-backed `Execution.collectFields` and
    directive-free valid selection set is equivalent to executing its normalized
    form for every resolver environment, variable assignment, and source value.
 
+   Status: inline-fragment semantic case lemmas are now implemented for
+   untyped fragment flattening, applicable typed fragment flattening, and
+   non-overlapping typed fragment skipping. The remaining selection-set cases
+   are same-response-name field merging and abstract child grounding.
+
 7. Operation semantic preservation.
 
    Lift selection-set preservation to `normalizeOperation`, using the metadata

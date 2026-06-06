@@ -33,6 +33,39 @@ theorem executeSelectionSet_inlineFragment_some_directiveFree_skip
     collectFields_inlineFragment_some_directiveFree_skip_eq schema
       variableValues parentType typeCondition source selectionSet rest hskip]
 
+theorem executeSelectionSet_inlineFragment_none_directiveFree_flatten
+    (schema : Schema) (resolvers : Execution.Resolvers)
+    (variableValues : Execution.VariableValues)
+    (depth : Nat) (parentType : Name)
+    (source : Execution.Value)
+    (selectionSet rest : List Selection) :
+    Execution.executeSelectionSet schema resolvers variableValues depth
+      parentType source
+      (Selection.inlineFragment none [] selectionSet :: rest)
+      =
+    Execution.executeSelectionSet schema resolvers variableValues depth
+      parentType source (selectionSet ++ rest) := by
+  simp [Execution.executeSelectionSet,
+    collectFields_inlineFragment_none_directiveFree_flatten]
+
+theorem executeSelectionSet_inlineFragment_some_directiveFree_apply_flatten
+    (schema : Schema) (resolvers : Execution.Resolvers)
+    (variableValues : Execution.VariableValues)
+    (depth : Nat) (parentType typeCondition : Name)
+    (source : Execution.Value)
+    (selectionSet rest : List Selection) :
+    Execution.doesFragmentTypeApplyBool schema parentType source typeCondition =
+      true ->
+      Execution.executeSelectionSet schema resolvers variableValues depth
+        parentType source
+        (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest)
+        =
+      Execution.executeSelectionSet schema resolvers variableValues depth
+        parentType source (selectionSet ++ rest) := by
+  intro happly
+  simp [Execution.executeSelectionSet,
+    collectFields_inlineFragment_some_directiveFree_apply_flatten, happly]
+
 theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false
     (schema : Schema) {parentType typeCondition runtimeType : Name}
     {identity : Nat} :
@@ -124,6 +157,64 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_noOverlap_
   rw [hrest]
   exact (executeSelectionSet_inlineFragment_some_directiveFree_skip schema
     resolvers variableValues depth parentType typeCondition source
+    selectionSet rest happly).symm
+
+theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_none_case
+    (schema : Schema) (resolvers : Execution.Resolvers)
+    (variableValues : Execution.VariableValues)
+    (depth : Nat) (parentType : Name)
+    (source : Execution.Value)
+    (selectionSet rest : List Selection) :
+    Execution.executeSelectionSet schema resolvers variableValues depth
+      parentType source
+      (normalizeSelectionSet schema parentType (selectionSet ++ rest))
+      =
+    Execution.executeSelectionSet schema resolvers variableValues depth
+      parentType source (selectionSet ++ rest) ->
+      Execution.executeSelectionSet schema resolvers variableValues depth
+        parentType source
+        (normalizeSelectionSet schema parentType
+          (Selection.inlineFragment none [] selectionSet :: rest))
+        =
+      Execution.executeSelectionSet schema resolvers variableValues depth
+        parentType source
+        (Selection.inlineFragment none [] selectionSet :: rest) := by
+  intro happend
+  simp [normalizeSelectionSet]
+  rw [happend]
+  exact (executeSelectionSet_inlineFragment_none_directiveFree_flatten schema
+    resolvers variableValues depth parentType source selectionSet rest).symm
+
+theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_apply_case
+    (schema : Schema) (resolvers : Execution.Resolvers)
+    (variableValues : Execution.VariableValues)
+    (depth : Nat) (parentType typeCondition : Name)
+    (source : Execution.Value)
+    (selectionSet rest : List Selection) :
+    schema.typesOverlapBool parentType typeCondition = true ->
+      Execution.doesFragmentTypeApplyBool schema parentType source
+        typeCondition = true ->
+        Execution.executeSelectionSet schema resolvers variableValues depth
+          parentType source
+          (normalizeSelectionSet schema parentType (selectionSet ++ rest))
+          =
+        Execution.executeSelectionSet schema resolvers variableValues depth
+          parentType source (selectionSet ++ rest) ->
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType
+              (Selection.inlineFragment (some typeCondition) [] selectionSet
+                :: rest))
+            =
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (Selection.inlineFragment (some typeCondition) [] selectionSet
+              :: rest) := by
+  intro hoverlap happly happend
+  simp [normalizeSelectionSet, hoverlap]
+  rw [happend]
+  exact (executeSelectionSet_inlineFragment_some_directiveFree_apply_flatten
+    schema resolvers variableValues depth parentType typeCondition source
     selectionSet rest happly).symm
 
 theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_case

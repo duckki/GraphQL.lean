@@ -590,6 +590,64 @@ def fieldsForNameCanMerge (schema : Schema)
     (left right : ScopedField) : Prop :=
   FieldsForNameCanMerge schema left right
 
+theorem fieldsInSetCanMerge_pair
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    {left right : ScopedField} :
+    fieldsInSetCanMerge schema parentType selectionSet ->
+      left ∈ collectFields schema parentType selectionSet ->
+        right ∈ collectFields schema parentType selectionSet ->
+          left.responseName = right.responseName ->
+            fieldsForNameCanMerge schema left right := by
+  intro hmerge hleft hright hresponse
+  unfold fieldsInSetCanMerge at hmerge
+  cases hmerge with
+  | intro _ _ hfields =>
+      exact hfields left hleft right hright hresponse
+
+theorem fieldsForNameCanMerge_sameResponseShape
+    {schema : Schema} {left right : ScopedField} :
+    fieldsForNameCanMerge schema left right ->
+      sameResponseShape schema left.outputType right.outputType := by
+  intro hmerge
+  unfold fieldsForNameCanMerge at hmerge
+  cases hmerge with
+  | intro _ _ hshape _hidentity _hsubfields =>
+      exact hshape
+
+theorem fieldsForNameCanMerge_identity
+    {schema : Schema} {left right : ScopedField} :
+    fieldsForNameCanMerge schema left right ->
+      (left.parentType = right.parentType
+          ∨ ¬ schema.objectType left.parentType
+          ∨ ¬ schema.objectType right.parentType) ->
+        left.fieldName = right.fieldName
+          ∧ Argument.argumentsEquivalent left.arguments right.arguments := by
+  intro hmerge hparents
+  unfold fieldsForNameCanMerge at hmerge
+  cases hmerge with
+  | intro _ _ _hshape hidentity _hsubfields =>
+      exact hidentity hparents
+
+theorem fieldsForNameCanMerge_same_parent_identity
+    {schema : Schema} {left right : ScopedField} :
+    fieldsForNameCanMerge schema left right ->
+      left.parentType = right.parentType ->
+        left.fieldName = right.fieldName
+          ∧ Argument.argumentsEquivalent left.arguments right.arguments := by
+  intro hmerge hparent
+  exact fieldsForNameCanMerge_identity hmerge (Or.inl hparent)
+
+theorem fieldsForNameCanMerge_subfields
+    {schema : Schema} {left right : ScopedField} :
+    fieldsForNameCanMerge schema left right ->
+      fieldsInSetCanMerge schema left.outputType.namedType
+        (left.selectionSet ++ right.selectionSet) := by
+  intro hmerge
+  unfold fieldsForNameCanMerge at hmerge
+  cases hmerge with
+  | intro _ _ _hshape _hidentity hsubfields =>
+      exact hsubfields
+
 end FieldMerge
 
 namespace Validation

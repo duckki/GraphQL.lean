@@ -115,6 +115,11 @@ over this repo's resolver-backed `Execution.collectFields` and
    This step should rely on `Validation.operationDefinitionValid`, especially
    field merge validity, argument equivalence, and response-shape compatibility.
 
+   Status: `FieldMerge` now exposes projection lemmas for pairwise merge
+   validity, same-response-shape, same-parent field/argument identity, and
+   recursive subfield merge validity. The remaining work is to connect those
+   validation facts to executable field groups and `executeField`.
+
 5. Abstract return grounding.
 
    Prove replacing abstract child selections by one inline fragment per

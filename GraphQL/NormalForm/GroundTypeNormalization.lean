@@ -177,6 +177,131 @@ theorem validFieldsWithResponseName_directiveFree (schema : Schema)
                 exact validFieldsWithResponseName_directiveFree schema parentType
                   responseName rest hrest
 
+theorem validFieldsWithResponseName_mem_field (schema : Schema)
+    (parentType responseName : Name) :
+    ∀ selectionSet selection,
+      selection ∈ validFieldsWithResponseName schema parentType responseName
+        selectionSet ->
+        ∃ fieldName arguments directives subselections,
+          selection =
+            Selection.field responseName fieldName arguments directives
+              subselections
+  | [], selection, hselection => by
+      simp [validFieldsWithResponseName] at hselection
+  | source :: rest, selection, hselection => by
+      cases source with
+      | field fieldResponseName fieldName arguments directives subselections =>
+          by_cases hname : (fieldResponseName == responseName) = true
+          · simp [validFieldsWithResponseName, hname] at hselection
+            rcases hselection with hselection | hselection
+            · subst selection
+              have hresponseName : fieldResponseName = responseName :=
+                beq_iff_eq.mp hname
+              subst fieldResponseName
+              exact ⟨fieldName, arguments, directives, subselections, rfl⟩
+            · exact validFieldsWithResponseName_mem_field schema parentType
+                responseName rest selection hselection
+          · have hfalse : (fieldResponseName == responseName) = false := by
+              cases hmatch : fieldResponseName == responseName
+              · rfl
+              · contradiction
+            simp [validFieldsWithResponseName, hfalse] at hselection
+            exact validFieldsWithResponseName_mem_field schema parentType
+              responseName rest selection hselection
+      | inlineFragment typeCondition directives subselections =>
+          cases typeCondition with
+          | none =>
+              simp [validFieldsWithResponseName] at hselection
+              rcases hselection with hselection | hselection
+              · exact validFieldsWithResponseName_mem_field schema parentType
+                  responseName subselections selection hselection
+              · exact validFieldsWithResponseName_mem_field schema parentType
+                  responseName rest selection hselection
+          | some typeCondition =>
+              by_cases hoverlap :
+                  schema.typesOverlapBool parentType typeCondition = true
+              · simp [validFieldsWithResponseName, hoverlap] at hselection
+                rcases hselection with hselection | hselection
+                · exact validFieldsWithResponseName_mem_field schema parentType
+                    responseName subselections selection hselection
+                · exact validFieldsWithResponseName_mem_field schema parentType
+                    responseName rest selection hselection
+              · have hfalse :
+                    schema.typesOverlapBool parentType typeCondition = false := by
+                  cases hmatch : schema.typesOverlapBool parentType typeCondition
+                  · rfl
+                  · contradiction
+                simp [validFieldsWithResponseName, hfalse] at hselection
+                exact validFieldsWithResponseName_mem_field schema parentType
+                  responseName rest selection hselection
+
+theorem selectionSetValid_mergeSelectionSets_of_subselections
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {parentType : Name} :
+    ∀ selections,
+      (∀ selection, selection ∈ selections ->
+        Validation.selectionSetValid schema variableDefinitions parentType
+          selection.subselections) ->
+        Validation.selectionSetValid schema variableDefinitions parentType
+          (mergeSelectionSets selections)
+  | [], _hvalid => by
+      simp [mergeSelectionSets, Validation.selectionSetValid]
+  | selection :: rest, hvalid => by
+      simp [mergeSelectionSets]
+      apply Validation.selectionSetValid_append
+      · exact hvalid selection (by simp)
+      · exact selectionSetValid_mergeSelectionSets_of_subselections rest
+          (by
+            intro candidate hcandidate
+            exact hvalid candidate (by simp [hcandidate]))
+
+theorem selectionSetValid_mergeSelectionSets_of_field_subselections
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {parentType responseName : Name}
+    (selections : List Selection) :
+    (∀ selection, selection ∈ selections ->
+      ∃ fieldName arguments directives subselections,
+        selection =
+          Selection.field responseName fieldName arguments directives
+            subselections) ->
+    (∀ fieldName arguments directives subselections,
+      Selection.field responseName fieldName arguments directives
+          subselections ∈ selections ->
+        Validation.selectionSetValid schema variableDefinitions parentType
+          subselections) ->
+      Validation.selectionSetValid schema variableDefinitions parentType
+        (mergeSelectionSets selections) := by
+  intro hshape hfields
+  apply selectionSetValid_mergeSelectionSets_of_subselections
+  intro selection hselection
+  rcases hshape selection hselection with
+    ⟨fieldName, arguments, directives, subselections, hselectionShape⟩
+  subst selection
+  simpa [Selection.subselections] using
+    hfields fieldName arguments directives subselections hselection
+
+theorem selectionSetValid_mergeSelectionSets_validFieldsWithResponseName
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {parentType responseName childType : Name}
+    (selectionSet : List Selection) :
+    (∀ fieldName arguments directives subselections,
+      Selection.field responseName fieldName arguments directives subselections
+        ∈ validFieldsWithResponseName schema parentType responseName
+          selectionSet ->
+        Validation.selectionSetValid schema variableDefinitions childType
+          subselections) ->
+      Validation.selectionSetValid schema variableDefinitions childType
+        (mergeSelectionSets
+          (validFieldsWithResponseName schema parentType responseName
+            selectionSet)) := by
+  intro hfields
+  apply selectionSetValid_mergeSelectionSets_of_field_subselections
+  · intro selection hselection
+    exact validFieldsWithResponseName_mem_field schema parentType responseName
+      selectionSet selection hselection
+  · intro fieldName arguments directives subselections hselection
+    exact hfields fieldName arguments directives subselections hselection
+
 theorem selectionSetDirectiveFree_possibleTypeNormalizations
     (schema : Schema)
     (possibleTypes : List Name) {selectionSet : List Selection} :

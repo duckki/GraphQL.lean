@@ -462,6 +462,19 @@ theorem selectionSetValid_append_right
   intro selection hselection
   exact hvalid selection (Or.inr hselection)
 
+theorem selectionSetValid_tail
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {parentType : Name} {selection : Selection}
+    {selectionSet : List Selection} :
+    selectionSetValid schema variableDefinitions parentType
+      (selection :: selectionSet) ->
+        selectionSetValid schema variableDefinitions parentType
+          selectionSet := by
+  intro hvalid
+  simp [selectionSetValid] at hvalid ⊢
+  intro candidate hcandidate
+  exact hvalid.2 candidate hcandidate
+
 theorem selectionSetValid_field_head_lookup
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType responseName fieldName : Name} {arguments : List Argument}

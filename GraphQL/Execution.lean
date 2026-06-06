@@ -198,7 +198,7 @@ mutual
     | parentType, source, .inlineFragment (some typeCondition) directives selectionSet =>
         if selectionDirectivesAllowBool variableValues directives then
           if doesFragmentTypeApplyBool schema parentType source typeCondition then
-            collectFields schema variableValues typeCondition source selectionSet
+            collectFields schema variableValues parentType source selectionSet
           else
             []
         else

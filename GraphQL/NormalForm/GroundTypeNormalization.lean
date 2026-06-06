@@ -1074,7 +1074,7 @@ theorem collectSelection_inlineFragment_some_noDirectives
       =
       if Execution.doesFragmentTypeApplyBool schema parentType source
           typeCondition then
-        Execution.collectFields schema variableValues typeCondition source
+        Execution.collectFields schema variableValues parentType source
           selectionSet
       else
         [] := by

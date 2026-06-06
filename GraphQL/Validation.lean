@@ -482,6 +482,20 @@ theorem selectionSetValid_field_head_lookup
     exact hvalid.1
   exact selectionValid_field_lookup hfieldValid
 
+theorem selectionSetValid_field_head_lookup_none_false
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {parentType responseName fieldName : Name} {arguments : List Argument}
+    {directives : List DirectiveApplication} {selectionSet rest : List Selection} :
+    selectionSetValid schema variableDefinitions parentType
+      (.field responseName fieldName arguments directives selectionSet :: rest) ->
+      schema.lookupField parentType fieldName = none ->
+        False := by
+  intro hvalid hnone
+  rcases selectionSetValid_field_head_lookup hvalid with
+    ⟨fieldDefinition, hlookup, _hargs, _hselectionSet⟩
+  rw [hnone] at hlookup
+  contradiction
+
 end Validation
 
 namespace FieldMerge

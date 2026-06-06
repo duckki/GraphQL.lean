@@ -105,7 +105,9 @@ over this repo's resolver-backed `Execution.collectFields` and
    collected-group invariant `executableGroupNamesNodup` and proves scoped
    merge associativity for collected groups. This is now strong enough to prove
    `collectFields_append` plus directive-free inline-fragment flattening for
-   both untyped fragments and applicable typed fragments.
+   both untyped fragments and applicable typed fragments. Collected groups now
+   also carry `executableGroupsWellFormed`, ensuring every executable field in a
+   response-name group has the group key as its response name.
 
 4. Same-response-name merge semantics.
 

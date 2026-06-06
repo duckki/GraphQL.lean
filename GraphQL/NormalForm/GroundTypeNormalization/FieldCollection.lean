@@ -25,6 +25,104 @@ def executableGroupNamesDisjoint
     responseName ∈ left.map Prod.fst ->
       responseName ∈ right.map Prod.fst -> False
 
+def executableFieldsMatchResponseName
+    (responseName : Name) (fields : List Execution.ExecutableField) : Prop :=
+  ∀ field, field ∈ fields -> field.responseName = responseName
+
+def executableGroupWellFormed
+    (group : Name × List Execution.ExecutableField) : Prop :=
+  group.snd ≠ [] ∧ executableFieldsMatchResponseName group.fst group.snd
+
+def executableGroupsWellFormed
+    (groups : List (Name × List Execution.ExecutableField)) : Prop :=
+  ∀ group, group ∈ groups -> executableGroupWellFormed group
+
+theorem executableGroupWellFormed_singleton_field
+    (field : Execution.ExecutableField) :
+    executableGroupWellFormed (field.responseName, [field]) := by
+  constructor
+  · simp
+  · intro candidate hcandidate
+    simp at hcandidate
+    subst candidate
+    rfl
+
+theorem executableGroupsWellFormed_nil :
+    executableGroupsWellFormed [] := by
+  intro group hgroup
+  simp at hgroup
+
+theorem executableGroupsWellFormed_tail
+    {group : Name × List Execution.ExecutableField}
+    {groups : List (Name × List Execution.ExecutableField)} :
+    executableGroupsWellFormed (group :: groups) ->
+      executableGroupsWellFormed groups := by
+  intro hgroups candidate hcandidate
+  exact hgroups candidate (by simp [hcandidate])
+
+theorem addExecutableGroup_wellFormed
+    (group : Name × List Execution.ExecutableField)
+    (groups : List (Name × List Execution.ExecutableField)) :
+    executableGroupWellFormed group ->
+      executableGroupsWellFormed groups ->
+        executableGroupsWellFormed
+          (Execution.addExecutableGroup group groups) := by
+  intro hgroup hgroups
+  induction groups with
+  | nil =>
+      intro candidate hcandidate
+      simp [Execution.addExecutableGroup] at hcandidate
+      subst candidate
+      exact hgroup
+  | cons current rest ih =>
+      rcases current with ⟨currentName, currentFields⟩
+      by_cases hname : (currentName == group.fst) = true
+      · have hcurrentName : currentName = group.fst := beq_iff_eq.mp hname
+        intro candidate hcandidate
+        simp [Execution.addExecutableGroup, hname] at hcandidate
+        rcases hcandidate with hhead | htail
+        · subst candidate
+          have hcurrent :
+              executableGroupWellFormed (currentName, currentFields) :=
+            hgroups (currentName, currentFields) (by simp)
+          constructor
+          · intro hnil
+            simp at hnil
+            exact hcurrent.1 hnil.1
+          · intro field hfield
+            rcases List.mem_append.mp hfield with hfieldCurrent | hfieldGroup
+            · exact hcurrent.2 field hfieldCurrent
+            · exact (hgroup.2 field hfieldGroup).trans hcurrentName.symm
+        · exact hgroups candidate (by simp [htail])
+      · have hfalse : (currentName == group.fst) = false := by
+          cases hmatch : currentName == group.fst
+          · rfl
+          · contradiction
+        intro candidate hcandidate
+        simp [Execution.addExecutableGroup, hfalse] at hcandidate
+        rcases hcandidate with hhead | htail
+        · subst candidate
+          exact hgroups (currentName, currentFields) (by simp)
+        · exact ih (executableGroupsWellFormed_tail hgroups) candidate
+            htail
+
+theorem mergeExecutableGroups_wellFormed
+    (left right : List (Name × List Execution.ExecutableField)) :
+    executableGroupsWellFormed left ->
+      executableGroupsWellFormed right ->
+        executableGroupsWellFormed
+          (Execution.mergeExecutableGroups left right) := by
+  intro hleft hright
+  induction right generalizing left with
+  | nil =>
+      simpa [Execution.mergeExecutableGroups] using hleft
+  | cons group rest ih =>
+      simp [Execution.mergeExecutableGroups]
+      exact ih (Execution.addExecutableGroup group left)
+        (addExecutableGroup_wellFormed group left
+          (hright group (by simp)) hleft)
+        (executableGroupsWellFormed_tail hright)
+
 theorem addExecutableGroup_mem_responseName
     (group : Name × List Execution.ExecutableField)
     (groups : List (Name × List Execution.ExecutableField))
@@ -545,6 +643,110 @@ mutual
           (Execution.collectFields schema variableValues parentType source rest)
           (collectSelection_namesNodup schema variableValues parentType source
             selection)
+end
+
+mutual
+  theorem collectSelection_wellFormed
+      (schema : Schema) (variableValues : Execution.VariableValues)
+      (parentType : Name) (source : Execution.Value)
+      (selection : Selection) :
+      executableGroupsWellFormed
+        (Execution.collectSelection schema variableValues parentType source
+          selection) := by
+    cases selection with
+    | field responseName fieldName arguments directives selectionSet =>
+        by_cases hallows :
+            Execution.selectionDirectivesAllowBool variableValues directives = true
+        · simp [Execution.collectSelection, hallows]
+          intro group hgroup
+          simp at hgroup
+          subst group
+          exact executableGroupWellFormed_singleton_field {
+            parentType := parentType,
+            responseName := responseName,
+            fieldName := fieldName,
+            arguments := arguments,
+            selectionSet := selectionSet
+          }
+        · have hfalse :
+              Execution.selectionDirectivesAllowBool variableValues directives =
+                false := by
+            cases hmatch :
+                Execution.selectionDirectivesAllowBool variableValues directives
+            · rfl
+            · contradiction
+          simp [Execution.collectSelection, hfalse,
+            executableGroupsWellFormed_nil]
+    | inlineFragment typeCondition directives selectionSet =>
+        cases typeCondition with
+        | none =>
+            by_cases hallows :
+                Execution.selectionDirectivesAllowBool variableValues directives =
+                  true
+            · simp [Execution.collectSelection, hallows]
+              exact collectFields_wellFormed schema variableValues parentType
+                source selectionSet
+            · have hfalse :
+                  Execution.selectionDirectivesAllowBool variableValues
+                    directives = false := by
+                cases hmatch :
+                    Execution.selectionDirectivesAllowBool variableValues
+                      directives
+                · rfl
+                · contradiction
+              simp [Execution.collectSelection, hfalse,
+                executableGroupsWellFormed_nil]
+        | some typeCondition =>
+            by_cases hallows :
+                Execution.selectionDirectivesAllowBool variableValues directives =
+                  true
+            · by_cases happly :
+                Execution.doesFragmentTypeApplyBool schema parentType source
+                  typeCondition = true
+              · simp [Execution.collectSelection, hallows, happly]
+                exact collectFields_wellFormed schema variableValues parentType
+                  source selectionSet
+              · have hfalse :
+                    Execution.doesFragmentTypeApplyBool schema parentType source
+                      typeCondition = false := by
+                  cases hmatch :
+                      Execution.doesFragmentTypeApplyBool schema parentType
+                        source typeCondition
+                  · rfl
+                  · contradiction
+                simp [Execution.collectSelection, hallows, hfalse,
+                  executableGroupsWellFormed_nil]
+            · have hfalse :
+                  Execution.selectionDirectivesAllowBool variableValues
+                    directives = false := by
+                cases hmatch :
+                    Execution.selectionDirectivesAllowBool variableValues
+                      directives
+                · rfl
+                · contradiction
+              simp [Execution.collectSelection, hfalse,
+                executableGroupsWellFormed_nil]
+
+  theorem collectFields_wellFormed
+      (schema : Schema) (variableValues : Execution.VariableValues)
+      (parentType : Name) (source : Execution.Value)
+      (selectionSet : List Selection) :
+      executableGroupsWellFormed
+        (Execution.collectFields schema variableValues parentType source
+          selectionSet) := by
+    cases selectionSet with
+    | nil =>
+        simp [Execution.collectFields, executableGroupsWellFormed_nil]
+    | cons selection rest =>
+        simp [Execution.collectFields]
+        exact mergeExecutableGroups_wellFormed
+          (Execution.collectSelection schema variableValues parentType source
+            selection)
+          (Execution.collectFields schema variableValues parentType source rest)
+          (collectSelection_wellFormed schema variableValues parentType source
+            selection)
+          (collectFields_wellFormed schema variableValues parentType source
+            rest)
 end
 
 theorem collectFields_append

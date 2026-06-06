@@ -228,6 +228,25 @@ theorem validFieldsWithResponseName_directiveFree (schema : Schema)
                 exact validFieldsWithResponseName_directiveFree schema parentType
                   responseName rest hrest
 
+theorem selectionSetDirectiveFree_fieldHead_merged
+    (schema : Schema) (parentType responseName : Name)
+    (fieldName : Name) (arguments : List Argument)
+    (subselections rest : List Selection) :
+    selectionSetDirectiveFree
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+      selectionSetDirectiveFree
+        (subselections
+          ++ mergeSelectionSets
+            (validFieldsWithResponseName schema parentType responseName
+              rest)) := by
+  intro hfree
+  apply selectionSetDirectiveFree_append
+  · exact (selectionSetDirectiveFree_head hfree).2
+  · apply selectionSetDirectiveFree_mergeSelectionSets
+    exact validFieldsWithResponseName_directiveFree schema parentType
+      responseName rest (selectionSetDirectiveFree_tail hfree)
+
 theorem validFieldsWithResponseName_mem_field (schema : Schema)
     (parentType responseName : Name) :
     ∀ selectionSet selection,

@@ -111,6 +111,206 @@ theorem addExecutableGroup_of_responseName_not_mem
         exact hnotin (by simp [hmem])
       simp [Execution.addExecutableGroup, hfalse, ih hrestNotin]
 
+theorem addExecutableGroup_same_response_append
+    (responseName : Name) (currentFields : List Execution.ExecutableField)
+    (group : Name × List Execution.ExecutableField)
+    (groups : List (Name × List Execution.ExecutableField)) :
+    group.fst = responseName ->
+      Execution.addExecutableGroup group
+          (Execution.addExecutableGroup (responseName, currentFields) groups)
+        =
+      Execution.addExecutableGroup
+        (responseName, currentFields ++ group.snd) groups := by
+  intro hname
+  induction groups with
+  | nil =>
+      subst responseName
+      simp [Execution.addExecutableGroup]
+  | cons current rest ih =>
+      rcases current with ⟨currentName, fields⟩
+      subst responseName
+      by_cases hcurrent : (currentName == group.fst) = true
+      · simp [Execution.addExecutableGroup, hcurrent, List.append_assoc]
+      · have hfalse : (currentName == group.fst) = false := by
+          cases hmatch : currentName == group.fst
+          · rfl
+          · contradiction
+        simpa [Execution.addExecutableGroup, hfalse] using ih
+
+theorem addExecutableGroup_comm_of_responseName_ne_of_mem
+    (leftGroup rightGroup : Name × List Execution.ExecutableField)
+    (groups : List (Name × List Execution.ExecutableField)) :
+    leftGroup.fst ≠ rightGroup.fst ->
+      leftGroup.fst ∈ groups.map Prod.fst ->
+        Execution.addExecutableGroup leftGroup
+            (Execution.addExecutableGroup rightGroup groups)
+          =
+        Execution.addExecutableGroup rightGroup
+          (Execution.addExecutableGroup leftGroup groups) := by
+  intro hne hmem
+  induction groups with
+  | nil =>
+      cases hmem
+  | cons current rest ih =>
+      rcases current with ⟨currentName, currentFields⟩
+      rcases leftGroup with ⟨leftName, leftFields⟩
+      rcases rightGroup with ⟨rightName, rightFields⟩
+      by_cases hcurrentLeft : (currentName == leftName) = true
+      · have hcurrentRight : (currentName == rightName) = false := by
+          cases hmatch : currentName == rightName
+          · rfl
+          · have hcl : currentName = leftName := beq_iff_eq.mp hcurrentLeft
+            have hcr : currentName = rightName := beq_iff_eq.mp hmatch
+            exact False.elim (hne (by rw [← hcl, hcr]))
+        simp [Execution.addExecutableGroup, hcurrentLeft, hcurrentRight]
+      · have hcurrentLeftFalse : (currentName == leftName) = false := by
+          cases hmatch : currentName == leftName
+          · rfl
+          · contradiction
+        by_cases hcurrentRight : (currentName == rightName) = true
+        · have hcurrentLeft' : (currentName == leftName) = false :=
+            hcurrentLeftFalse
+          simp [Execution.addExecutableGroup, hcurrentRight, hcurrentLeft']
+        · have hcurrentRightFalse : (currentName == rightName) = false := by
+            cases hmatch : currentName == rightName
+            · rfl
+            · contradiction
+          have hrestMem : leftName ∈ rest.map Prod.fst := by
+            have hcases :
+                leftName = currentName ∨ leftName ∈ rest.map Prod.fst := by
+              simpa using hmem
+            cases hcases with
+            | inl heq =>
+                have hneCurrentLeft : currentName ≠ leftName := by
+                  intro h
+                  subst currentName
+                  simp at hcurrentLeftFalse
+                exact False.elim (hneCurrentLeft heq.symm)
+            | inr hrest => exact hrest
+          simp [Execution.addExecutableGroup, hcurrentLeftFalse,
+            hcurrentRightFalse, ih hrestMem]
+
+theorem addExecutableGroup_mergeExecutableGroups_of_responseName_not_mem
+    (group : Name × List Execution.ExecutableField)
+    (left middle : List (Name × List Execution.ExecutableField)) :
+    group.fst ∉ middle.map Prod.fst ->
+      group.fst ∈ left.map Prod.fst ->
+        Execution.addExecutableGroup group
+            (Execution.mergeExecutableGroups left middle)
+          =
+        Execution.mergeExecutableGroups
+          (Execution.addExecutableGroup group left) middle := by
+  intro hnotin hleftMem
+  induction middle generalizing left with
+  | nil =>
+      simp [Execution.mergeExecutableGroups]
+  | cons current rest ih =>
+      rcases current with ⟨currentName, currentFields⟩
+      have hcurrentNe : currentName ≠ group.fst := by
+        intro heq
+        exact hnotin (by simp [heq])
+      have hrestNotin : group.fst ∉ rest.map Prod.fst := by
+        intro hmem
+        exact hnotin (by simp [hmem])
+      simp [Execution.mergeExecutableGroups]
+      change Execution.addExecutableGroup group
+          (Execution.mergeExecutableGroups
+            (Execution.addExecutableGroup (currentName, currentFields) left)
+            rest)
+        =
+        Execution.mergeExecutableGroups
+          (Execution.addExecutableGroup (currentName, currentFields)
+            (Execution.addExecutableGroup group left)) rest
+      have hleftMem' :
+          group.fst ∈
+            (Execution.addExecutableGroup (currentName, currentFields)
+              left).map Prod.fst := by
+        exact (addExecutableGroup_mem_responseName
+          (currentName, currentFields) left group.fst).mpr
+          (Or.inr hleftMem)
+      rw [ih (Execution.addExecutableGroup (currentName, currentFields) left)
+        hrestNotin hleftMem']
+      rw [addExecutableGroup_comm_of_responseName_ne_of_mem
+        group (currentName, currentFields) left (by
+          intro heq
+          exact hcurrentNe heq.symm) hleftMem]
+
+theorem addExecutableGroup_mergeExecutableGroups_of_namesNodup
+    (group : Name × List Execution.ExecutableField)
+    (left middle : List (Name × List Execution.ExecutableField)) :
+    executableGroupNamesNodup middle ->
+      Execution.addExecutableGroup group
+          (Execution.mergeExecutableGroups left middle)
+        =
+      Execution.mergeExecutableGroups left
+        (Execution.addExecutableGroup group middle) := by
+  intro hmiddle
+  induction middle generalizing left with
+  | nil =>
+      simp [Execution.mergeExecutableGroups, Execution.addExecutableGroup]
+  | cons current rest ih =>
+      rcases current with ⟨currentName, currentFields⟩
+      by_cases hname : (currentName == group.fst) = true
+      · simp [Execution.mergeExecutableGroups, Execution.addExecutableGroup,
+          hname]
+        have hkey : group.fst = currentName := (beq_iff_eq.mp hname).symm
+        have hnotin : group.fst ∉ rest.map Prod.fst := by
+          intro hmem
+          exact hmiddle.1 (by simpa [hkey] using hmem)
+        change Execution.addExecutableGroup group
+            (Execution.mergeExecutableGroups
+              (Execution.addExecutableGroup (currentName, currentFields)
+                left) rest)
+          =
+          Execution.mergeExecutableGroups
+            (Execution.addExecutableGroup
+              (currentName, currentFields ++ group.snd) left) rest
+        rw [addExecutableGroup_mergeExecutableGroups_of_responseName_not_mem
+          group
+          (Execution.addExecutableGroup (currentName, currentFields) left)
+          rest hnotin
+          ((addExecutableGroup_mem_responseName
+            (currentName, currentFields) left group.fst).mpr
+            (Or.inl hkey))]
+        rw [addExecutableGroup_same_response_append currentName currentFields
+          group left hkey]
+      · have hfalse : (currentName == group.fst) = false := by
+          cases hmatch : currentName == group.fst
+          · rfl
+          · contradiction
+        simp [Execution.mergeExecutableGroups, Execution.addExecutableGroup,
+          hfalse]
+        exact ih (Execution.addExecutableGroup (currentName, currentFields)
+          left) hmiddle.2
+
+theorem mergeExecutableGroups_assoc_of_namesNodup
+    (left middle right :
+      List (Name × List Execution.ExecutableField)) :
+    executableGroupNamesNodup middle ->
+      executableGroupNamesNodup right ->
+        Execution.mergeExecutableGroups
+            (Execution.mergeExecutableGroups left middle) right
+          =
+        Execution.mergeExecutableGroups left
+          (Execution.mergeExecutableGroups middle right) := by
+  intro hmiddle hright
+  induction right generalizing left middle with
+  | nil =>
+      simp [Execution.mergeExecutableGroups]
+  | cons group rest ih =>
+      change Execution.mergeExecutableGroups
+          (Execution.addExecutableGroup group
+            (Execution.mergeExecutableGroups left middle)) rest
+        =
+        Execution.mergeExecutableGroups left
+          (Execution.mergeExecutableGroups
+            (Execution.addExecutableGroup group middle) rest)
+      rw [addExecutableGroup_mergeExecutableGroups_of_namesNodup group left
+        middle hmiddle]
+      exact ih left (Execution.addExecutableGroup group middle)
+        (addExecutableGroup_namesNodup group middle hmiddle)
+        hright.2
+
 theorem mergeExecutableGroups_eq_append_of_namesDisjoint
     (left right : List (Name × List Execution.ExecutableField)) :
     executableGroupNamesDisjoint left right ->
@@ -346,6 +546,59 @@ mutual
           (collectSelection_namesNodup schema variableValues parentType source
             selection)
 end
+
+theorem collectFields_append
+    (schema : Schema) (variableValues : Execution.VariableValues)
+    (parentType : Name) (source : Execution.Value)
+    (left right : List Selection) :
+    Execution.collectFields schema variableValues parentType source
+      (left ++ right)
+      =
+    Execution.mergeExecutableGroups
+      (Execution.collectFields schema variableValues parentType source left)
+      (Execution.collectFields schema variableValues parentType source right) := by
+  induction left with
+  | nil =>
+      simp [Execution.collectFields]
+      rw [mergeExecutableGroups_nil_left_of_namesNodup
+        (Execution.collectFields schema variableValues parentType source right)
+        (collectFields_namesNodup schema variableValues parentType source
+          right)]
+  | cons selection rest ih =>
+      simp [Execution.collectFields, ih]
+      rw [mergeExecutableGroups_assoc_of_namesNodup]
+      · exact collectFields_namesNodup schema variableValues parentType source
+          rest
+      · exact collectFields_namesNodup schema variableValues parentType source
+          right
+
+theorem collectFields_inlineFragment_none_directiveFree_flatten
+    (schema : Schema) (variableValues : Execution.VariableValues)
+    (parentType : Name) (source : Execution.Value)
+    (selectionSet rest : List Selection) :
+    Execution.collectFields schema variableValues parentType source
+      (Selection.inlineFragment none [] selectionSet :: rest)
+      =
+    Execution.collectFields schema variableValues parentType source
+      (selectionSet ++ rest) := by
+  rw [collectFields_inlineFragment_none_directiveFree]
+  rw [collectFields_append]
+
+theorem collectFields_inlineFragment_some_directiveFree_apply_flatten
+    (schema : Schema) (variableValues : Execution.VariableValues)
+    (parentType typeCondition : Name) (source : Execution.Value)
+    (selectionSet rest : List Selection) :
+    Execution.doesFragmentTypeApplyBool schema parentType source typeCondition =
+      true ->
+      Execution.collectFields schema variableValues parentType source
+        (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest)
+        =
+      Execution.collectFields schema variableValues parentType source
+        (selectionSet ++ rest) := by
+  intro happly
+  rw [collectFields_inlineFragment_some_directiveFree_apply]
+  · rw [collectFields_append]
+  · exact happly
 
 theorem mergeExecutableGroups_nil_left_collectFields
     (schema : Schema) (variableValues : Execution.VariableValues)

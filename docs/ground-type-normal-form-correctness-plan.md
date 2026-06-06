@@ -97,13 +97,15 @@ over this repo's resolver-backed `Execution.collectFields` and
    The target is a reusable statement that the normalizer partitions exactly the
    same executable field groups as execution sees for the current parent type.
 
-   Status: first execution-facing simplification lemmas are implemented in
+   Status: execution-facing simplification lemmas are implemented in
    `GraphQL/NormalForm/GroundTypeNormalization/FieldCollection.lean`.
    During proof work, the generic ordered-map identity
    `mergeExecutableGroups [] groups = groups` was found to be false for
-   arbitrary duplicate-key group lists. Future collection lemmas should either
-   require collected-group invariants or reason at the
-   `executeCollectedFields` equivalence level.
+   arbitrary duplicate-key group lists. The current proof therefore tracks the
+   collected-group invariant `executableGroupNamesNodup` and proves scoped
+   merge associativity for collected groups. This is now strong enough to prove
+   `collectFields_append` plus directive-free inline-fragment flattening for
+   both untyped fragments and applicable typed fragments.
 
 4. Same-response-name merge semantics.
 

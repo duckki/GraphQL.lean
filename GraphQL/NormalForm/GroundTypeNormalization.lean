@@ -114,6 +114,48 @@ theorem object_typesOverlapBool_self
   simp [Schema.typesOverlapBool, Schema.typeIncludesObjectBool,
     Schema.getPossibleTypes, hlookup, hname]
 
+theorem possibleTypes_eq_nil_of_isLeafType
+    (schema : Schema) {typeName : Name} :
+    schema.isLeafType typeName ->
+      schema.getPossibleTypes typeName = [] := by
+  intro hleaf
+  rcases hleaf with ⟨typeDefinition, hlookup, hleafDefinition⟩
+  cases typeDefinition with
+  | builtinScalar scalar =>
+      simp [Schema.getPossibleTypes, hlookup]
+  | customScalar scalar =>
+      simp [Schema.getPossibleTypes, hlookup]
+  | object objectType =>
+      simp [TypeDefinition.isLeafType] at hleafDefinition
+  | interface interfaceType =>
+      simp [TypeDefinition.isLeafType] at hleafDefinition
+  | union unionType =>
+      simp [TypeDefinition.isLeafType] at hleafDefinition
+  | enum enumType =>
+      simp [Schema.getPossibleTypes, hlookup]
+  | inputObject inputObjectType =>
+      simp [TypeDefinition.isLeafType] at hleafDefinition
+
+theorem fieldSelectionSetValid_child_of_possibleType
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {fieldDefinition : FieldDefinition} {selectionSet : List Selection}
+    {objectType : Name} :
+    Validation.fieldSelectionSetValid schema variableDefinitions
+      fieldDefinition selectionSet ->
+    objectType ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType ->
+      Validation.selectionSetValid schema variableDefinitions
+        fieldDefinition.outputType.namedType selectionSet := by
+  intro hvalid hpossible
+  simp [Validation.fieldSelectionSetValid] at hvalid
+  rcases hvalid with ⟨_houtput, hchild⟩
+  rcases hchild with hleaf | hcomposite
+  · rcases hleaf with ⟨hleaf, _hempty⟩
+    have hnil :=
+      possibleTypes_eq_nil_of_isLeafType schema hleaf
+    rw [hnil] at hpossible
+    cases hpossible
+  · exact hcomposite.2.2
+
 theorem selectionDirectiveFree_subselections
     {selection : Selection} :
     selectionDirectiveFree selection ->

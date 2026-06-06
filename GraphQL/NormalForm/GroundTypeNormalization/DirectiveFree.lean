@@ -1,0 +1,204 @@
+import GraphQL.NormalForm
+
+/-!
+Directive-freeness facts for ground-type normalization proofs.
+-/
+namespace GraphQL
+
+namespace NormalForm
+
+namespace GroundTypeNormalization
+
+theorem selectionSetDirectiveFree_nil :
+    selectionSetDirectiveFree ([] : List Selection) := by
+  simp [selectionSetDirectiveFree]
+
+theorem selectionSetDirectiveFree_head
+    {selection : Selection}
+    {selectionSet : List Selection} :
+    selectionSetDirectiveFree (selection :: selectionSet) ->
+      selectionDirectiveFree selection := by
+  intro hfree
+  exact hfree.1
+
+theorem selectionSetDirectiveFree_tail
+    {selection : Selection}
+    {selectionSet : List Selection} :
+    selectionSetDirectiveFree (selection :: selectionSet) ->
+      selectionSetDirectiveFree selectionSet := by
+  intro hfree
+  exact hfree.2
+
+theorem selectionSetDirectiveFree_append
+    {left right : List Selection} :
+    selectionSetDirectiveFree left ->
+      selectionSetDirectiveFree right ->
+        selectionSetDirectiveFree (left ++ right) := by
+  intro hleft hright
+  induction left with
+  | nil =>
+      simpa using hright
+  | cons selection rest ih =>
+      exact ⟨hleft.1, ih hleft.2⟩
+
+theorem selectionSetDirectiveFree_append_left
+    {left right : List Selection} :
+    selectionSetDirectiveFree (left ++ right) ->
+      selectionSetDirectiveFree left := by
+  intro hfree
+  induction left with
+  | nil =>
+      exact selectionSetDirectiveFree_nil
+  | cons selection rest ih =>
+      exact ⟨hfree.1, ih hfree.2⟩
+
+theorem selectionSetDirectiveFree_append_right
+    {left right : List Selection} :
+    selectionSetDirectiveFree (left ++ right) ->
+      selectionSetDirectiveFree right := by
+  intro hfree
+  induction left with
+  | nil =>
+      simpa using hfree
+  | cons selection rest ih =>
+      exact ih hfree.2
+
+theorem selectionDirectiveFree_subselections
+    {selection : Selection} :
+    selectionDirectiveFree selection ->
+      selectionSetDirectiveFree selection.subselections := by
+  intro hfree
+  cases selection with
+  | field responseName fieldName arguments directives selectionSet =>
+      simpa [Selection.subselections, selectionDirectiveFree] using hfree.2
+  | inlineFragment typeCondition directives selectionSet =>
+      simpa [Selection.subselections, selectionDirectiveFree] using hfree.2
+
+theorem selectionSetDirectiveFree_mergeSelectionSets
+    {selections : List Selection} :
+    selectionSetDirectiveFree selections ->
+      selectionSetDirectiveFree (mergeSelectionSets selections) := by
+  intro hselections
+  induction selections with
+  | nil =>
+      exact selectionSetDirectiveFree_nil
+  | cons selection rest ih =>
+      simp [mergeSelectionSets]
+      exact selectionSetDirectiveFree_append
+        (selectionDirectiveFree_subselections
+          (selectionSetDirectiveFree_head hselections))
+        (ih (selectionSetDirectiveFree_tail hselections))
+
+theorem withoutFieldsWithResponseName_directiveFree (schema : Schema)
+    (responseName : Name) :
+    ∀ selectionSet,
+      selectionSetDirectiveFree selectionSet ->
+        selectionSetDirectiveFree
+          (withoutFieldsWithResponseName schema responseName selectionSet)
+  | [], _hfree => by
+      simpa [withoutFieldsWithResponseName] using selectionSetDirectiveFree_nil
+  | selection :: rest, hfree => by
+      have hselection := selectionSetDirectiveFree_head hfree
+      have hrest := selectionSetDirectiveFree_tail hfree
+      cases selection with
+      | field fieldResponseName fieldName arguments directives selectionSet =>
+          by_cases hname : (fieldResponseName == responseName) = true
+          · simp [withoutFieldsWithResponseName, hname]
+            exact withoutFieldsWithResponseName_directiveFree schema responseName
+              rest hrest
+          · have hfalse : (fieldResponseName == responseName) = false := by
+              cases hmatch : fieldResponseName == responseName
+              · rfl
+              · contradiction
+            simp [withoutFieldsWithResponseName, hfalse]
+            exact ⟨hselection,
+              withoutFieldsWithResponseName_directiveFree schema responseName
+                rest hrest⟩
+      | inlineFragment typeCondition directives selectionSet =>
+          have hdirectives : directives = [] := hselection.1
+          subst directives
+          simp [withoutFieldsWithResponseName]
+          exact ⟨
+            ⟨rfl,
+              withoutFieldsWithResponseName_directiveFree schema responseName
+                selectionSet hselection.2⟩,
+            withoutFieldsWithResponseName_directiveFree schema responseName
+              rest hrest⟩
+
+theorem validFieldsWithResponseName_directiveFree (schema : Schema)
+    (parentType responseName : Name) :
+    ∀ selectionSet,
+      selectionSetDirectiveFree selectionSet ->
+        selectionSetDirectiveFree
+          (validFieldsWithResponseName schema parentType responseName selectionSet)
+  | [], _hfree => by
+      simpa [validFieldsWithResponseName] using selectionSetDirectiveFree_nil
+  | selection :: rest, hfree => by
+      have hselection := selectionSetDirectiveFree_head hfree
+      have hrest := selectionSetDirectiveFree_tail hfree
+      cases selection with
+      | field fieldResponseName fieldName arguments directives selectionSet =>
+          by_cases hname : (fieldResponseName == responseName) = true
+          · simp [validFieldsWithResponseName, hname]
+            exact ⟨hselection,
+              validFieldsWithResponseName_directiveFree schema parentType
+                responseName rest hrest⟩
+          · have hfalse : (fieldResponseName == responseName) = false := by
+              cases hmatch : fieldResponseName == responseName
+              · rfl
+              · contradiction
+            simp [validFieldsWithResponseName, hfalse]
+            exact validFieldsWithResponseName_directiveFree schema parentType
+              responseName rest hrest
+      | inlineFragment typeCondition directives selectionSet =>
+          cases typeCondition with
+          | none =>
+              simp [validFieldsWithResponseName]
+              exact selectionSetDirectiveFree_append
+                (validFieldsWithResponseName_directiveFree schema parentType
+                  responseName selectionSet hselection.2)
+                (validFieldsWithResponseName_directiveFree schema parentType
+                  responseName rest hrest)
+          | some typeCondition =>
+              by_cases hoverlap :
+                  (schema.typesOverlapBool parentType typeCondition) = true
+              · simp [validFieldsWithResponseName, hoverlap]
+                exact selectionSetDirectiveFree_append
+                  (validFieldsWithResponseName_directiveFree schema parentType
+                    responseName selectionSet hselection.2)
+                  (validFieldsWithResponseName_directiveFree schema parentType
+                    responseName rest hrest)
+              · have hfalse :
+                    schema.typesOverlapBool parentType typeCondition = false := by
+                  cases hmatch : schema.typesOverlapBool parentType typeCondition
+                  · rfl
+                  · contradiction
+                simp [validFieldsWithResponseName, hfalse]
+                exact validFieldsWithResponseName_directiveFree schema parentType
+                  responseName rest hrest
+
+theorem selectionSetDirectiveFree_fieldHead_merged
+    (schema : Schema) (parentType responseName : Name)
+    (fieldName : Name) (arguments : List Argument)
+    (subselections rest : List Selection) :
+    selectionSetDirectiveFree
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+      selectionSetDirectiveFree
+        (subselections
+          ++ mergeSelectionSets
+            (validFieldsWithResponseName schema parentType responseName
+              rest)) := by
+  intro hfree
+  apply selectionSetDirectiveFree_append
+  · exact (selectionSetDirectiveFree_head hfree).2
+  · exact selectionSetDirectiveFree_mergeSelectionSets
+      (validFieldsWithResponseName_directiveFree schema parentType
+        responseName rest (selectionSetDirectiveFree_tail hfree))
+
+
+end GroundTypeNormalization
+
+end NormalForm
+
+end GraphQL

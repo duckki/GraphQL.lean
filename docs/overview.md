@@ -108,3 +108,6 @@ semantic proofs should rely on.
 
 The completed ground-type normal form correctness proof is summarized in
 `docs/ground-type-normal-form-proof.md`.
+
+Lean module organization rules are documented in
+`docs/lean-organization.md`.

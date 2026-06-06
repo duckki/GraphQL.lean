@@ -127,17 +127,6 @@ def addExecutableFields (fields : List ExecutableField)
     List (Name × List ExecutableField) :=
   fields.foldl (fun grouped field => addExecutableField field grouped) groups
 
-theorem addExecutableFields_append
-    (left right : List ExecutableField)
-    (groups : List (Name × List ExecutableField)) :
-    addExecutableFields (left ++ right) groups
-      = addExecutableFields right (addExecutableFields left groups) := by
-  induction left generalizing groups with
-  | nil =>
-      simp [addExecutableFields]
-  | cons field rest ih =>
-      simp [addExecutableFields]
-
 -- Spec 6.3.2 collected fields map helper: inserts one existing group into another map.
 def addExecutableGroup (group : Name × List ExecutableField) :
     List (Name × List ExecutableField) -> List (Name × List ExecutableField)
@@ -153,47 +142,11 @@ def mergeExecutableGroups (left right : List (Name × List ExecutableField)) :
     List (Name × List ExecutableField) :=
   right.foldl (fun grouped group => addExecutableGroup group grouped) left
 
-theorem mergeExecutableGroups_nil_right
-    (groups : List (Name × List ExecutableField)) :
-    mergeExecutableGroups groups [] = groups := by
-  simp [mergeExecutableGroups]
-
-theorem mergeExecutableGroups_append
-    (left middle right : List (Name × List ExecutableField)) :
-    mergeExecutableGroups left (middle ++ right)
-      = mergeExecutableGroups (mergeExecutableGroups left middle) right := by
-  simp [mergeExecutableGroups, List.foldl_append]
-
 -- Spec 6.4.3 `CompleteValue` subfield merge: all collected fields for a response name
 -- contribute their child selections.
 def mergedFieldSelectionSet : List ExecutableField -> List Selection
   | [] => []
   | field :: rest => field.selectionSet ++ mergedFieldSelectionSet rest
-
-theorem mergedFieldSelectionSet_nil :
-    mergedFieldSelectionSet [] = [] := by
-  rfl
-
-theorem mergedFieldSelectionSet_cons
-    (field : ExecutableField) (rest : List ExecutableField) :
-    mergedFieldSelectionSet (field :: rest)
-      = field.selectionSet ++ mergedFieldSelectionSet rest := by
-  rfl
-
-theorem mergedFieldSelectionSet_append
-    (left right : List ExecutableField) :
-    mergedFieldSelectionSet (left ++ right)
-      = mergedFieldSelectionSet left ++ mergedFieldSelectionSet right := by
-  induction left with
-  | nil =>
-      simp [mergedFieldSelectionSet]
-  | cons field rest ih =>
-      simp [mergedFieldSelectionSet, ih, List.append_assoc]
-
-theorem mergedFieldSelectionSet_singleton
-    (field : ExecutableField) :
-    mergedFieldSelectionSet [field] = field.selectionSet := by
-  simp [mergedFieldSelectionSet]
 
 -- Spec 6.3 `ExecuteRootSelectionSet`, 6.3.2 `CollectFields`, 6.3.3
 -- `ExecuteCollectedFields`, 6.4 `ExecuteField`, and 6.4.3 `CompleteValue`: partial

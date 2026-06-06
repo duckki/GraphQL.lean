@@ -34,7 +34,7 @@ The public predicates live in `GraphQL/NormalForm.lean`.
   for the store-backed data model, again under the same public assumptions.
 
 The theorem witnesses are in
-`GraphQL/NormalForm/GroundTypeNormalization/Semantics.lean`:
+`GraphQL/NormalForm/GroundTypeNormalization/OperationLifts.lean`:
 
 - `GraphQL.NormalForm.GroundTypeNormalization.groundTypeNormalFormSemanticsPreservation`
 - `GraphQL.NormalForm.GroundTypeNormalization.groundNormalFormCorrect`

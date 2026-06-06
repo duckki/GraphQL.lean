@@ -35,9 +35,8 @@ resolvers, and operation equivalence over store-backed execution.
 parameter; it terminates by structural descent on selection-set size while
 merging fields and grounding abstract returns. Public normal-form predicates
 belong in top-level `GraphQL/NormalForm.lean`; proof work belongs under
-`GraphQL/NormalForm/`, with
-`GraphQL/NormalForm/GroundTypeNormalization.lean` as the first directive-free
-ground-type proof module.
+`GraphQL/NormalForm/`, with directive-free ground-type proof modules under
+`GraphQL/NormalForm/GroundTypeNormalization/`.
 
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
@@ -58,6 +57,8 @@ lake lint
 ## Where To Look
 
 - `docs/spec-conformance-plan.md`: current goals, skips, status, and proof status.
+- `docs/lean-organization.md`: module organization rules for keeping
+  top-level Lean files definition-only and theorem files topic-specific.
 - `docs/ground-type-normal-form-proof.md`: summary of the completed
   directive-free ground-type normal form correctness proof.
 - `docs/overview.md`: module map and architecture overview.
@@ -73,6 +74,9 @@ lake lint
 Keep raw syntax permissive and put invariants in validation or well-formedness
 predicates. Prefer small, proof-friendly definitions over feature expansion.
 When adding scope, update `docs/spec-conformance-plan.md` first.
+
+Keep top-level `GraphQL/*.lean` files definition-only. Put ordinary theorems in
+topic-specific subdirectory modules, following `docs/lean-organization.md`.
 
 Review workflow: do not commit before review. Prepare one reviewable slice at a
 time, run the relevant checks, summarize the diff, and wait for the user to ask

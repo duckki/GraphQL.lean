@@ -1,8 +1,13 @@
 import GraphQL.Schema
 import GraphQL.SchemaWellFormedness
+import GraphQL.SchemaWellFormedness.FieldLookup
+import GraphQL.SchemaWellFormedness.PossibleObjectImplementation
 import GraphQL.Operation
 import GraphQL.Validation
+import GraphQL.Validation.SelectionValidity
+import GraphQL.Validation.FieldMerge
 import GraphQL.Execution
+import GraphQL.Execution.FieldCollection
 import GraphQL.DataModel
 import GraphQL.DataModel.Store
 import GraphQL.NormalForm

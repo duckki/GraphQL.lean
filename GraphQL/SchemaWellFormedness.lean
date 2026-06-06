@@ -236,11 +236,12 @@ theorem typeDefinitionWellFormed_lookupFieldDefinition_outputType
 -- fields selected through their static parent type. This is the field-level bridge
 -- needed when execution grounds abstract parents to concrete object sources.
 def possibleObjectFieldDefinitionsImplement (schema : Schema) : Prop :=
-  ∀ parentType objectTypeName fieldName expected implementation,
+  ∀ parentType objectTypeName fieldName expected,
     objectTypeName ∈ schema.getPossibleTypes parentType ->
       schema.lookupField parentType fieldName = some expected ->
-        schema.lookupField objectTypeName fieldName = some implementation ->
-          fieldDefinitionImplements schema implementation expected
+        ∃ implementation,
+          schema.lookupField objectTypeName fieldName = some implementation
+            ∧ fieldDefinitionImplements schema implementation expected
             ∧ FieldMerge.sameResponseShape schema
               implementation.outputType expected.outputType
 
@@ -338,9 +339,12 @@ theorem schemaWellFormed_possibleObject_lookupField_implements
           schema.lookupField objectTypeName fieldName = some implementation ->
             fieldDefinitionImplements schema implementation expected := by
   intro hschema hpossible hexpected himplementation
-  exact (schemaWellFormed_possibleObjectFieldDefinitionsImplement hschema
-    parentType objectTypeName fieldName expected implementation hpossible
-    hexpected himplementation).1
+  rcases schemaWellFormed_possibleObjectFieldDefinitionsImplement hschema
+      parentType objectTypeName fieldName expected hpossible hexpected with
+    ⟨actual, hactual, himplements, _hshape⟩
+  rw [hactual] at himplementation
+  cases himplementation
+  exact himplements
 
 theorem schemaWellFormed_possibleObject_lookupField_sameResponseShape
     {schema : Schema} {parentType objectTypeName fieldName : Name}
@@ -352,9 +356,26 @@ theorem schemaWellFormed_possibleObject_lookupField_sameResponseShape
             FieldMerge.sameResponseShape schema
               implementation.outputType expected.outputType := by
   intro hschema hpossible hexpected himplementation
-  exact (schemaWellFormed_possibleObjectFieldDefinitionsImplement hschema
-    parentType objectTypeName fieldName expected implementation hpossible
-    hexpected himplementation).2
+  rcases schemaWellFormed_possibleObjectFieldDefinitionsImplement hschema
+      parentType objectTypeName fieldName expected hpossible hexpected with
+    ⟨actual, hactual, _himplements, hshape⟩
+  rw [hactual] at himplementation
+  cases himplementation
+  exact hshape
+
+theorem schemaWellFormed_possibleObject_lookupField_exists
+    {schema : Schema} {parentType objectTypeName fieldName : Name}
+    {expected : FieldDefinition} :
+    schemaWellFormed schema ->
+      objectTypeName ∈ schema.getPossibleTypes parentType ->
+        schema.lookupField parentType fieldName = some expected ->
+          ∃ implementation,
+            schema.lookupField objectTypeName fieldName = some implementation := by
+  intro hschema hpossible hexpected
+  rcases schemaWellFormed_possibleObjectFieldDefinitionsImplement hschema
+      parentType objectTypeName fieldName expected hpossible hexpected with
+    ⟨implementation, himplementation, _himplements, _hshape⟩
+  exact ⟨implementation, himplementation⟩
 
 theorem schemaWellFormed_possibleObject_lookupField_outputTypeSubtype
     {schema : Schema} {parentType objectTypeName fieldName : Name}

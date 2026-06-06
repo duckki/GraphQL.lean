@@ -811,6 +811,73 @@ mutual
             selectionSetLookupValid_of_selectionSetValid rest htail
 end
 
+mutual
+  theorem selectionLookupValid_of_selectionValid_possibleObject
+      (schema : Schema) (variableDefinitions : List VariableDefinition)
+      (parentType objectType : Name) :
+      SchemaWellFormedness.schemaWellFormed schema ->
+        objectType ∈ schema.getPossibleTypes parentType ->
+          ∀ selection,
+            Validation.selectionValid schema variableDefinitions parentType
+              selection ->
+              selectionLookupValid schema objectType selection
+    | hschema, hpossible,
+      .field _responseName fieldName _arguments _directives _selectionSet,
+      hvalid => by
+        rcases Validation.selectionValid_field_lookup hvalid with
+          ⟨fieldDefinition, hlookup, _harguments, _hchild⟩
+        simp [selectionLookupValid]
+        exact
+          SchemaWellFormedness.schemaWellFormed_possibleObject_lookupField_exists
+            hschema hpossible hlookup
+    | hschema, hpossible,
+      .inlineFragment none _directives selectionSet, hvalid => by
+        simpa [selectionLookupValid] using
+          selectionSetLookupValid_of_selectionSetValid_possibleObject
+            schema variableDefinitions parentType objectType hschema
+            hpossible selectionSet
+            (Validation.selectionValid_inlineFragment_none_selectionSetValid
+              hvalid)
+    | _hschema, _hpossible,
+      .inlineFragment (some _typeCondition) _directives selectionSet,
+      hvalid => by
+        simpa [selectionLookupValid] using
+          selectionSetLookupValid_of_selectionSetValid selectionSet
+            (Validation.selectionValid_inlineFragment_some_selectionSetValid
+              hvalid)
+
+  theorem selectionSetLookupValid_of_selectionSetValid_possibleObject
+      (schema : Schema) (variableDefinitions : List VariableDefinition)
+      (parentType objectType : Name) :
+      SchemaWellFormedness.schemaWellFormed schema ->
+        objectType ∈ schema.getPossibleTypes parentType ->
+          ∀ selectionSet,
+            Validation.selectionSetValid schema variableDefinitions parentType
+              selectionSet ->
+              selectionSetLookupValid schema objectType selectionSet
+    | _hschema, _hpossible, [], _hvalid => by
+        exact selectionSetLookupValid_nil schema objectType
+    | hschema, hpossible, selection :: rest, hvalid => by
+        have hhead :
+            Validation.selectionValid schema variableDefinitions parentType
+              selection := by
+          simp [Validation.selectionSetValid] at hvalid
+          exact hvalid.1
+        have htail :
+            Validation.selectionSetValid schema variableDefinitions parentType
+              rest :=
+          Validation.selectionSetValid_tail hvalid
+        simp [selectionSetLookupValid]
+        constructor
+        · exact selectionLookupValid_of_selectionValid_possibleObject schema
+            variableDefinitions parentType objectType hschema hpossible
+            selection hhead
+        · simpa [selectionSetLookupValid] using
+            selectionSetLookupValid_of_selectionSetValid_possibleObject
+              schema variableDefinitions parentType objectType hschema
+              hpossible rest htail
+end
+
 theorem selectionSetLookupValid_withoutFieldsWithResponseName
     (schema : Schema) (responseName : Name) :
     ∀ parentType selectionSet,

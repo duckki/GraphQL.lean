@@ -1490,6 +1490,213 @@ theorem selectionSetSemanticsReady_tail
   intro candidate hcandidate
   exact hready candidate (List.mem_cons_of_mem selection hcandidate)
 
+theorem selectionSetSemanticsReady_mergeSelectionSets_of_subselections
+    {schema : Schema} {parentType : Name} :
+    ∀ selections,
+      (∀ selection, selection ∈ selections ->
+        selectionSetSemanticsReady schema parentType selection.subselections) ->
+        selectionSetSemanticsReady schema parentType
+          (mergeSelectionSets selections)
+  | [], _hready => by
+      simp [mergeSelectionSets, selectionSetSemanticsReady]
+  | selection :: rest, hready => by
+      simp [mergeSelectionSets]
+      apply selectionSetSemanticsReady_append
+      · exact hready selection (by simp)
+      · exact selectionSetSemanticsReady_mergeSelectionSets_of_subselections rest
+          (by
+            intro candidate hcandidate
+            exact hready candidate (by simp [hcandidate]))
+
+theorem selectionSetSemanticsReady_mergeSelectionSets_of_field_subselections
+    {schema : Schema} {parentType responseName : Name}
+    (selections : List Selection) :
+    (∀ selection, selection ∈ selections ->
+      ∃ fieldName arguments directives subselections,
+        selection =
+          Selection.field responseName fieldName arguments directives
+            subselections) ->
+    (∀ fieldName arguments directives subselections,
+      Selection.field responseName fieldName arguments directives
+          subselections ∈ selections ->
+        selectionSetSemanticsReady schema parentType subselections) ->
+      selectionSetSemanticsReady schema parentType
+        (mergeSelectionSets selections) := by
+  intro hshape hfields
+  apply selectionSetSemanticsReady_mergeSelectionSets_of_subselections
+  intro selection hselection
+  rcases hshape selection hselection with
+    ⟨fieldName, arguments, directives, subselections, hselectionShape⟩
+  subst selection
+  simpa [Selection.subselections] using
+    hfields fieldName arguments directives subselections hselection
+
+theorem selectionSetSemanticsReady_withoutFieldsWithResponseName
+    (schema : Schema) (responseName : Name) :
+    ∀ parentType selectionSet,
+      selectionSetSemanticsReady schema parentType selectionSet ->
+        selectionSetSemanticsReady schema parentType
+          (withoutFieldsWithResponseName schema responseName selectionSet)
+  | _parentType, [], _hready => by
+      simp [withoutFieldsWithResponseName, selectionSetSemanticsReady]
+  | parentType, selection :: rest, hready => by
+      have hhead :
+          selectionSemanticsReady schema parentType selection := by
+        unfold selectionSetSemanticsReady at hready
+        exact hready selection (by simp)
+      have htail :
+          selectionSetSemanticsReady schema parentType rest :=
+        selectionSetSemanticsReady_tail hready
+      cases selection with
+      | field fieldResponseName fieldName arguments directives selectionSet =>
+          by_cases hname : (fieldResponseName == responseName) = true
+          · simp [withoutFieldsWithResponseName, hname]
+            simpa [selectionSetSemanticsReady] using
+              selectionSetSemanticsReady_withoutFieldsWithResponseName
+                schema responseName parentType rest htail
+          · have hfalse : (fieldResponseName == responseName) = false := by
+              cases hmatch : fieldResponseName == responseName
+              · rfl
+              · contradiction
+            simp [withoutFieldsWithResponseName, hfalse,
+              selectionSetSemanticsReady]
+            constructor
+            · exact hhead
+            · simpa [selectionSetSemanticsReady] using
+                selectionSetSemanticsReady_withoutFieldsWithResponseName
+                  schema responseName parentType rest htail
+      | inlineFragment typeCondition directives selectionSet =>
+          cases typeCondition with
+          | none =>
+              simp [withoutFieldsWithResponseName,
+                selectionSetSemanticsReady, selectionSemanticsReady]
+              constructor
+              · simpa [selectionSetSemanticsReady] using
+                  selectionSetSemanticsReady_withoutFieldsWithResponseName
+                    schema responseName parentType selectionSet
+                    (by simpa [selectionSemanticsReady] using hhead)
+              · simpa [selectionSetSemanticsReady] using
+                  selectionSetSemanticsReady_withoutFieldsWithResponseName
+                    schema responseName parentType rest htail
+          | some typeCondition =>
+              simp [withoutFieldsWithResponseName,
+                selectionSetSemanticsReady, selectionSemanticsReady]
+              constructor
+              · intro hoverlap
+                have hheadBody :
+                    schema.typesOverlapBool parentType typeCondition = true ->
+                      selectionSetSemanticsReady schema parentType
+                        selectionSet := by
+                  simpa [selectionSemanticsReady] using hhead
+                simpa [selectionSetSemanticsReady] using
+                  selectionSetSemanticsReady_withoutFieldsWithResponseName
+                    schema responseName parentType selectionSet
+                    (hheadBody hoverlap)
+              · simpa [selectionSetSemanticsReady] using
+                  selectionSetSemanticsReady_withoutFieldsWithResponseName
+                    schema responseName parentType rest htail
+
+theorem validFieldsWithResponseName_field_semanticsReady
+    (schema : Schema) (parentType responseName : Name) :
+    ∀ selectionSet fieldName arguments directives subselections,
+      selectionSetSemanticsReady schema parentType selectionSet ->
+      Selection.field responseName fieldName arguments directives subselections
+        ∈ validFieldsWithResponseName schema parentType responseName
+          selectionSet ->
+        ∃ fieldDefinition,
+          schema.lookupField parentType fieldName = some fieldDefinition
+            ∧ ∀ runtimeType,
+              schema.typeIncludesObjectBool
+                fieldDefinition.outputType.namedType runtimeType = true ->
+                selectionSetSemanticsReady schema runtimeType subselections
+  | [], fieldName, arguments, directives, subselections, _hready, hfield => by
+      simp [validFieldsWithResponseName] at hfield
+  | selection :: rest, fieldName, arguments, directives, subselections,
+      hready, hfield => by
+      have hhead :
+          selectionSemanticsReady schema parentType selection := by
+        unfold selectionSetSemanticsReady at hready
+        exact hready selection (by simp)
+      have htail :
+          selectionSetSemanticsReady schema parentType rest :=
+        selectionSetSemanticsReady_tail hready
+      cases selection with
+      | field fieldResponseName sourceFieldName sourceArguments
+          sourceDirectives sourceSubselections =>
+          by_cases hname : (fieldResponseName == responseName) = true
+          · simp [validFieldsWithResponseName, hname] at hfield
+            rcases hfield with hfield | hfield
+            · rcases hfield with
+                ⟨hresponseEq, hfieldEq, hargumentsEq, hdirectivesEq,
+                  hsubselectionsEq⟩
+              subst fieldResponseName
+              subst sourceFieldName
+              subst sourceArguments
+              subst sourceDirectives
+              subst sourceSubselections
+              simpa [selectionSemanticsReady] using hhead
+            · exact
+                validFieldsWithResponseName_field_semanticsReady schema
+                  parentType responseName rest fieldName arguments directives
+                  subselections htail hfield
+          · have hfalse : (fieldResponseName == responseName) = false := by
+              cases hmatch : fieldResponseName == responseName
+              · rfl
+              · contradiction
+            simp [validFieldsWithResponseName, hfalse] at hfield
+            exact
+              validFieldsWithResponseName_field_semanticsReady schema
+                parentType responseName rest fieldName arguments directives
+                subselections htail hfield
+      | inlineFragment typeCondition fragmentDirectives selectionSet =>
+          cases typeCondition with
+          | none =>
+              have hbody :
+                  selectionSetSemanticsReady schema parentType selectionSet := by
+                simpa [selectionSemanticsReady] using hhead
+              simp [validFieldsWithResponseName] at hfield
+              rcases hfield with hfield | hfield
+              · exact
+                  validFieldsWithResponseName_field_semanticsReady schema
+                    parentType responseName selectionSet fieldName arguments
+                    directives subselections hbody hfield
+              · exact
+                  validFieldsWithResponseName_field_semanticsReady schema
+                    parentType responseName rest fieldName arguments directives
+                    subselections htail hfield
+          | some typeCondition =>
+              by_cases hoverlap :
+                  schema.typesOverlapBool parentType typeCondition = true
+              · have hbody :
+                    selectionSetSemanticsReady schema parentType
+                      selectionSet := by
+                  have hheadBody :
+                      schema.typesOverlapBool parentType typeCondition = true ->
+                        selectionSetSemanticsReady schema parentType
+                          selectionSet := by
+                    simpa [selectionSemanticsReady] using hhead
+                  exact hheadBody hoverlap
+                simp [validFieldsWithResponseName, hoverlap] at hfield
+                rcases hfield with hfield | hfield
+                · exact
+                    validFieldsWithResponseName_field_semanticsReady schema
+                      parentType responseName selectionSet fieldName
+                      arguments directives subselections hbody hfield
+                · exact
+                    validFieldsWithResponseName_field_semanticsReady schema
+                      parentType responseName rest fieldName arguments
+                      directives subselections htail hfield
+              · have hfalse :
+                    schema.typesOverlapBool parentType typeCondition = false := by
+                  cases hmatch : schema.typesOverlapBool parentType typeCondition
+                  · rfl
+                  · contradiction
+                simp [validFieldsWithResponseName, hfalse] at hfield
+                exact
+                  validFieldsWithResponseName_field_semanticsReady schema
+                    parentType responseName rest fieldName arguments directives
+                    subselections htail hfield
+
 mutual
   theorem selectionSemanticsReady_of_selectionValid_object
       (schema : Schema) (variableDefinitions : List VariableDefinition)
@@ -2134,6 +2341,56 @@ theorem validFieldsWithResponseName_matching_subselections_lookupValid_of_child_
     variableDefinitions matchedDefinition.outputType.namedType runtimeType
     hschema hmatchedPossible matchedSubselections hmatchedSelectionValid
 
+theorem validFieldsWithResponseName_matching_subselections_semanticsReady_of_child_object
+    (schema : Schema)
+    (parentType responseName fieldName runtimeType : Name)
+    (arguments : List Argument) (subselections rest : List Selection)
+    (fieldDefinition : FieldDefinition) :
+    schema.objectType parentType ->
+    selectionSetSemanticsReady schema parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+    selectionSetLookupValid schema parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+    FieldMerge.fieldsInSetCanMerge schema parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+    schema.lookupField parentType fieldName = some fieldDefinition ->
+    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
+      runtimeType = true ->
+      ∀ matchedFieldName matchedArguments matchedDirectives
+        matchedSubselections,
+        Selection.field responseName matchedFieldName matchedArguments
+            matchedDirectives matchedSubselections
+          ∈ validFieldsWithResponseName schema parentType responseName rest ->
+          selectionSetSemanticsReady schema runtimeType
+            matchedSubselections := by
+  intro hobject hready hlookupValid hmerge hlookup hinclude
+    matchedFieldName matchedArguments matchedDirectives matchedSubselections
+    hmatched
+  have htailReady :
+      selectionSetSemanticsReady schema parentType rest :=
+    selectionSetSemanticsReady_tail hready
+  rcases
+    validFieldsWithResponseName_field_semanticsReady schema parentType
+      responseName rest matchedFieldName matchedArguments matchedDirectives
+      matchedSubselections htailReady hmatched with
+    ⟨matchedDefinition, hmatchedLookup, hmatchedReady⟩
+  have hsame :
+      matchedFieldName = fieldName :=
+    validFieldsWithResponseName_matching_same_field_of_canMerge_object_lookupValid
+      schema parentType responseName fieldName arguments subselections rest
+      hobject hlookupValid hmerge matchedFieldName matchedArguments
+      matchedDirectives matchedSubselections hmatched
+  subst matchedFieldName
+  have hdefinitionEq : matchedDefinition = fieldDefinition := by
+    rw [hlookup] at hmatchedLookup
+    cases hmatchedLookup
+    rfl
+  subst matchedDefinition
+  exact hmatchedReady runtimeType hinclude
+
 theorem selectionSetLookupValid_field_head_lookup_none_false
     {schema : Schema} {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
@@ -2325,6 +2582,77 @@ theorem selectionSetLookupValid_fieldHead_merged_of_child_object
         schema variableDefinitions parentType responseName fieldName
         runtimeType arguments subselections rest fieldDefinition hschema
         hobject hvalid hmerge hlookup hinclude fieldName matchedArguments
+        matchedDirectives matchedSubselections hmatched
+
+theorem selectionSetSemanticsReady_fieldHead_merged_of_child_object
+    (schema : Schema)
+    (parentType responseName fieldName runtimeType : Name)
+    (arguments : List Argument) (subselections rest : List Selection)
+    (fieldDefinition : FieldDefinition) :
+    schema.objectType parentType ->
+    selectionSetSemanticsReady schema parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+    selectionSetLookupValid schema parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+    FieldMerge.fieldsInSetCanMerge schema parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+    schema.lookupField parentType fieldName = some fieldDefinition ->
+    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
+      runtimeType = true ->
+      selectionSetSemanticsReady schema runtimeType
+        (subselections ++
+          mergeSelectionSets
+            (validFieldsWithResponseName schema parentType responseName
+              rest)) := by
+  intro hobject hready hlookupValid hmerge hlookup hinclude
+  have hheadReady :
+      selectionSemanticsReady schema parentType
+        (Selection.field responseName fieldName arguments [] subselections) := by
+    unfold selectionSetSemanticsReady at hready
+    exact hready _ (by simp)
+  have hheadChildReady :
+      selectionSetSemanticsReady schema runtimeType subselections := by
+    simp [selectionSemanticsReady] at hheadReady
+    rcases hheadReady with ⟨headDefinition, hheadLookup, hchildReady⟩
+    rw [hlookup] at hheadLookup
+    cases hheadLookup
+    exact hchildReady runtimeType hinclude
+  apply selectionSetSemanticsReady_append hheadChildReady
+  apply selectionSetSemanticsReady_mergeSelectionSets_of_field_subselections
+  · intro selection hselection
+    rcases
+      validFieldsWithResponseName_matching_field_shape_of_canMerge_object_lookupValid
+        schema parentType responseName fieldName arguments subselections rest
+        hobject hlookupValid hmerge selection hselection with
+      ⟨matchedArguments, matchedDirectives, matchedSubselections, hselectionEq⟩
+    exact
+      ⟨fieldName, matchedArguments, matchedDirectives, matchedSubselections,
+        hselectionEq⟩
+  · intro matchedFieldName matchedArguments matchedDirectives
+      matchedSubselections hmatched
+    have hmatchedShape :=
+      validFieldsWithResponseName_matching_field_shape_of_canMerge_object_lookupValid
+        schema parentType responseName fieldName arguments subselections rest
+        hobject hlookupValid hmerge
+        (Selection.field responseName matchedFieldName matchedArguments
+          matchedDirectives matchedSubselections)
+        hmatched
+    rcases hmatchedShape with
+      ⟨shapeArguments, shapeDirectives, shapeSubselections, hshapeEq⟩
+    injection hshapeEq with _hresponse hfield harguments hdirectives
+      hsubselections
+    subst matchedFieldName
+    subst shapeArguments
+    subst shapeDirectives
+    subst shapeSubselections
+    exact
+      validFieldsWithResponseName_matching_subselections_semanticsReady_of_child_object
+        schema parentType responseName fieldName runtimeType arguments
+        subselections rest fieldDefinition hobject hready hlookupValid
+        hmerge hlookup hinclude fieldName matchedArguments
         matchedDirectives matchedSubselections hmatched
 
 theorem selectionSetDirectiveFree_possibleTypeNormalizations

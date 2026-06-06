@@ -302,6 +302,151 @@ theorem selectionSetValid_mergeSelectionSets_validFieldsWithResponseName
   · intro fieldName arguments directives subselections hselection
     exact hfields fieldName arguments directives subselections hselection
 
+mutual
+  def selectionLookupValid (schema : Schema)
+      (parentType : Name) : Selection -> Prop
+    | .field _responseName fieldName _arguments _directives _selectionSet =>
+        ∃ fieldDefinition,
+          schema.lookupField parentType fieldName = some fieldDefinition
+    | .inlineFragment none _directives selectionSet =>
+        selectionSetLookupValid schema parentType selectionSet
+    | .inlineFragment (some typeCondition) _directives selectionSet =>
+        selectionSetLookupValid schema typeCondition selectionSet
+
+  def selectionSetLookupValid (schema : Schema)
+      (parentType : Name) (selectionSet : List Selection) : Prop :=
+    ∀ selection, selection ∈ selectionSet ->
+      selectionLookupValid schema parentType selection
+end
+
+theorem selectionSetLookupValid_nil (schema : Schema)
+    (parentType : Name) :
+    selectionSetLookupValid schema parentType [] := by
+  simp [selectionSetLookupValid]
+
+theorem selectionSetLookupValid_append
+    {schema : Schema} {parentType : Name}
+    {left right : List Selection} :
+    selectionSetLookupValid schema parentType left ->
+      selectionSetLookupValid schema parentType right ->
+        selectionSetLookupValid schema parentType (left ++ right) := by
+  intro hleft hright
+  unfold selectionSetLookupValid at hleft hright ⊢
+  intro selection hselection
+  rcases List.mem_append.mp hselection with hselection | hselection
+  · exact hleft selection hselection
+  · exact hright selection hselection
+
+theorem selectionSetLookupValid_append_left
+    {schema : Schema} {parentType : Name}
+    {left right : List Selection} :
+    selectionSetLookupValid schema parentType (left ++ right) ->
+      selectionSetLookupValid schema parentType left := by
+  intro hvalid
+  unfold selectionSetLookupValid at hvalid ⊢
+  intro selection hselection
+  exact hvalid selection (List.mem_append.mpr (Or.inl hselection))
+
+theorem selectionSetLookupValid_append_right
+    {schema : Schema} {parentType : Name}
+    {left right : List Selection} :
+    selectionSetLookupValid schema parentType (left ++ right) ->
+      selectionSetLookupValid schema parentType right := by
+  intro hvalid
+  unfold selectionSetLookupValid at hvalid ⊢
+  intro selection hselection
+  exact hvalid selection (List.mem_append.mpr (Or.inr hselection))
+
+theorem selectionSetLookupValid_tail
+    {schema : Schema} {parentType : Name}
+    {selection : Selection} {selectionSet : List Selection} :
+    selectionSetLookupValid schema parentType (selection :: selectionSet) ->
+      selectionSetLookupValid schema parentType selectionSet := by
+  intro hvalid
+  unfold selectionSetLookupValid at hvalid ⊢
+  intro candidate hcandidate
+  exact hvalid candidate (List.mem_cons_of_mem selection hcandidate)
+
+theorem selectionSetLookupValid_withoutFieldsWithResponseName
+    (schema : Schema) (responseName : Name) :
+    ∀ parentType selectionSet,
+      selectionSetLookupValid schema parentType selectionSet ->
+        selectionSetLookupValid schema parentType
+          (withoutFieldsWithResponseName schema responseName selectionSet)
+  | _parentType, [], _hvalid => by
+      simp [withoutFieldsWithResponseName, selectionSetLookupValid]
+  | parentType, selection :: rest, hvalid => by
+      have hhead :
+          selectionLookupValid schema parentType selection := by
+        unfold selectionSetLookupValid at hvalid
+        exact hvalid selection (by simp)
+      have htail :
+          selectionSetLookupValid schema parentType rest :=
+        selectionSetLookupValid_tail hvalid
+      cases selection with
+      | field fieldResponseName fieldName arguments directives selectionSet =>
+          by_cases hname : (fieldResponseName == responseName) = true
+          · simp [withoutFieldsWithResponseName, hname]
+            simpa [selectionSetLookupValid] using
+              selectionSetLookupValid_withoutFieldsWithResponseName
+                schema responseName parentType rest htail
+          · have hfalse : (fieldResponseName == responseName) = false := by
+              cases hmatch : fieldResponseName == responseName
+              · rfl
+              · contradiction
+            simp [withoutFieldsWithResponseName, hfalse,
+              selectionSetLookupValid]
+            constructor
+            · exact hhead
+            · simpa [selectionSetLookupValid] using
+                selectionSetLookupValid_withoutFieldsWithResponseName
+                  schema responseName parentType rest htail
+      | inlineFragment typeCondition directives selectionSet =>
+          cases typeCondition with
+          | none =>
+              simp [withoutFieldsWithResponseName,
+                selectionSetLookupValid, selectionLookupValid]
+              constructor
+              · simpa [selectionSetLookupValid] using
+                  selectionSetLookupValid_withoutFieldsWithResponseName
+                    schema responseName parentType selectionSet
+                    (by simpa [selectionLookupValid] using hhead)
+              · simpa [selectionSetLookupValid] using
+                  selectionSetLookupValid_withoutFieldsWithResponseName
+                    schema responseName parentType rest htail
+          | some typeCondition =>
+              simp [withoutFieldsWithResponseName,
+                selectionSetLookupValid, selectionLookupValid]
+              constructor
+              · simpa [selectionSetLookupValid] using
+                  selectionSetLookupValid_withoutFieldsWithResponseName
+                    schema responseName typeCondition selectionSet
+                    (by simpa [selectionLookupValid] using hhead)
+              · simpa [selectionSetLookupValid] using
+                  selectionSetLookupValid_withoutFieldsWithResponseName
+                    schema responseName parentType rest htail
+
+theorem selectionSetLookupValid_field_head_lookup_none_false
+    {schema : Schema} {parentType responseName fieldName : Name}
+    {arguments : List Argument} {directives : List DirectiveApplication}
+    {selectionSet rest : List Selection} :
+    selectionSetLookupValid schema parentType
+      (Selection.field responseName fieldName arguments directives selectionSet
+        :: rest) ->
+      schema.lookupField parentType fieldName = none ->
+        False := by
+  intro hvalid hnone
+  have hhead :
+      selectionLookupValid schema parentType
+        (Selection.field responseName fieldName arguments directives
+          selectionSet) := by
+    unfold selectionSetLookupValid at hvalid
+    exact hvalid _ (by simp)
+  simp [selectionLookupValid] at hhead
+  rcases hhead with ⟨fieldDefinition, hlookup⟩
+  rw [hnone] at hlookup
+  contradiction
+
 theorem selectionSetDirectiveFree_possibleTypeNormalizations
     (schema : Schema)
     (possibleTypes : List Name) {selectionSet : List Selection} :

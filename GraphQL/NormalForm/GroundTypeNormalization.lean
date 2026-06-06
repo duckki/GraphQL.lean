@@ -645,6 +645,57 @@ theorem validFieldsWithResponseName_matching_field_shape_of_canMerge_object
   subst matchedFieldName
   exact ⟨matchedArguments, matchedDirectives, matchedSubselections, rfl⟩
 
+theorem selectionSetValid_fieldHead_merged_of_matching
+    (schema : Schema) (variableDefinitions : List VariableDefinition)
+    (parentType responseName fieldName childType : Name)
+    (_arguments : List Argument) (subselections rest : List Selection) :
+    Validation.selectionSetValid schema variableDefinitions childType
+      subselections ->
+    (∀ selection,
+      selection ∈ validFieldsWithResponseName schema parentType responseName
+        rest ->
+        ∃ matchedArguments matchedDirectives matchedSubselections,
+          selection =
+            Selection.field responseName fieldName matchedArguments
+              matchedDirectives matchedSubselections) ->
+    (∀ matchedArguments matchedDirectives matchedSubselections,
+      Selection.field responseName fieldName matchedArguments matchedDirectives
+          matchedSubselections
+        ∈ validFieldsWithResponseName schema parentType responseName rest ->
+        Validation.selectionSetValid schema variableDefinitions childType
+          matchedSubselections) ->
+      Validation.selectionSetValid schema variableDefinitions childType
+        (subselections
+          ++ mergeSelectionSets
+            (validFieldsWithResponseName schema parentType responseName
+              rest)) := by
+  intro hhead hshape hmatching
+  apply Validation.selectionSetValid_append hhead
+  apply selectionSetValid_mergeSelectionSets_of_field_subselections
+  · intro selection hselection
+    rcases hshape selection hselection with
+      ⟨matchedArguments, matchedDirectives, matchedSubselections,
+        hselectionShape⟩
+    exact ⟨fieldName, matchedArguments, matchedDirectives,
+      matchedSubselections, hselectionShape⟩
+  · intro matchedFieldName matchedArguments matchedDirectives
+      matchedSubselections hmatched
+    have hmatchedShape :=
+      hshape
+        (Selection.field responseName matchedFieldName matchedArguments
+          matchedDirectives matchedSubselections)
+        hmatched
+    rcases hmatchedShape with
+      ⟨shapeArguments, shapeDirectives, shapeSubselections, hshapeEq⟩
+    injection hshapeEq with _hresponse hfield harguments hdirectives
+      hsubselections
+    subst matchedFieldName
+    subst shapeArguments
+    subst shapeDirectives
+    subst shapeSubselections
+    exact hmatching matchedArguments matchedDirectives matchedSubselections
+      hmatched
+
 mutual
   def selectionLookupValid (schema : Schema)
       (parentType : Name) : Selection -> Prop
@@ -899,6 +950,55 @@ theorem selectionSetLookupValid_mergeSelectionSets_validFieldsWithResponseName
       selectionSet selection hselection
   · intro fieldName arguments directives subselections hselection
     exact hfields fieldName arguments directives subselections hselection
+
+theorem selectionSetLookupValid_fieldHead_merged_of_matching
+    (schema : Schema)
+    (parentType responseName fieldName childType : Name)
+    (_arguments : List Argument) (subselections rest : List Selection) :
+    selectionSetLookupValid schema childType subselections ->
+    (∀ selection,
+      selection ∈ validFieldsWithResponseName schema parentType responseName
+        rest ->
+        ∃ matchedArguments matchedDirectives matchedSubselections,
+          selection =
+            Selection.field responseName fieldName matchedArguments
+              matchedDirectives matchedSubselections) ->
+    (∀ matchedArguments matchedDirectives matchedSubselections,
+      Selection.field responseName fieldName matchedArguments matchedDirectives
+          matchedSubselections
+        ∈ validFieldsWithResponseName schema parentType responseName rest ->
+        selectionSetLookupValid schema childType matchedSubselections) ->
+      selectionSetLookupValid schema childType
+        (subselections
+          ++ mergeSelectionSets
+            (validFieldsWithResponseName schema parentType responseName
+              rest)) := by
+  intro hhead hshape hmatching
+  apply selectionSetLookupValid_append hhead
+  apply selectionSetLookupValid_mergeSelectionSets_of_field_subselections
+  · intro selection hselection
+    rcases hshape selection hselection with
+      ⟨matchedArguments, matchedDirectives, matchedSubselections,
+        hselectionShape⟩
+    exact ⟨fieldName, matchedArguments, matchedDirectives,
+      matchedSubselections, hselectionShape⟩
+  · intro matchedFieldName matchedArguments matchedDirectives
+      matchedSubselections hmatched
+    have hmatchedShape :=
+      hshape
+        (Selection.field responseName matchedFieldName matchedArguments
+          matchedDirectives matchedSubselections)
+        hmatched
+    rcases hmatchedShape with
+      ⟨shapeArguments, shapeDirectives, shapeSubselections, hshapeEq⟩
+    injection hshapeEq with _hresponse hfield harguments hdirectives
+      hsubselections
+    subst matchedFieldName
+    subst shapeArguments
+    subst shapeDirectives
+    subst shapeSubselections
+    exact hmatching matchedArguments matchedDirectives matchedSubselections
+      hmatched
 
 theorem selectionSetDirectiveFree_possibleTypeNormalizations
     (schema : Schema)

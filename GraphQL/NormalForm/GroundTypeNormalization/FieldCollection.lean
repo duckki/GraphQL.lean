@@ -47,6 +47,12 @@ def collectedResponseSelectionSet
       else
         collectedResponseSelectionSet responseName rest
 
+def withoutExecutableGroupsWithResponseName
+    (responseName : Name)
+    (groups : List (Name × List Execution.ExecutableField)) :
+    List (Name × List Execution.ExecutableField) :=
+  groups.filter (fun group => !(group.fst == responseName))
+
 def executableFieldScoped? (schema : Schema)
     (field : Execution.ExecutableField) : Option FieldMerge.ScopedField := do
   let fieldDefinition <- schema.lookupField field.parentType field.fieldName
@@ -533,6 +539,177 @@ theorem addExecutableGroup_of_responseName_not_mem
         exact hnotin (by simp [hmem])
       simp [Execution.addExecutableGroup, hfalse, ih hrestNotin]
 
+theorem withoutExecutableGroupsWithResponseName_addExecutableGroup
+    (responseName : Name)
+    (group : Name × List Execution.ExecutableField)
+    (groups : List (Name × List Execution.ExecutableField)) :
+    withoutExecutableGroupsWithResponseName responseName
+      (Execution.addExecutableGroup group groups)
+      =
+    if group.fst == responseName then
+      withoutExecutableGroupsWithResponseName responseName groups
+    else
+      Execution.addExecutableGroup group
+        (withoutExecutableGroupsWithResponseName responseName groups) := by
+  induction groups with
+  | nil =>
+      rcases group with ⟨groupResponseName, groupFields⟩
+      by_cases hresponse : (groupResponseName == responseName) = true
+      · simp [withoutExecutableGroupsWithResponseName,
+          Execution.addExecutableGroup, hresponse]
+      · have hfalse : (groupResponseName == responseName) = false := by
+          cases hmatch : groupResponseName == responseName
+          · rfl
+          · contradiction
+        simp [withoutExecutableGroupsWithResponseName,
+          Execution.addExecutableGroup, hfalse]
+  | cons current rest ih =>
+      rcases current with ⟨currentName, currentFields⟩
+      rcases group with ⟨groupResponseName, groupFields⟩
+      by_cases hcurrent : (currentName == groupResponseName) = true
+      · have hcurrentEq : currentName = groupResponseName :=
+          beq_iff_eq.mp hcurrent
+        subst currentName
+        by_cases hresponse : (groupResponseName == responseName) = true
+        · simp [withoutExecutableGroupsWithResponseName,
+            Execution.addExecutableGroup, hresponse]
+        · have hresponseFalse :
+              (groupResponseName == responseName) = false := by
+            cases hmatch : groupResponseName == responseName
+            · rfl
+            · contradiction
+          simp [withoutExecutableGroupsWithResponseName,
+            Execution.addExecutableGroup, hresponseFalse]
+      · have hcurrentFalse :
+            (currentName == groupResponseName) = false := by
+          cases hmatch : currentName == groupResponseName
+          · rfl
+          · contradiction
+        by_cases hcurrentResponse : (currentName == responseName) = true
+        · have hgroupResponseFalse :
+              (groupResponseName == responseName) = false := by
+            cases hmatch : groupResponseName == responseName
+            · rfl
+            · have hcurrentEq : currentName = responseName :=
+                beq_iff_eq.mp hcurrentResponse
+              have hgroupEq : groupResponseName = responseName :=
+                beq_iff_eq.mp hmatch
+              subst currentName
+              subst groupResponseName
+              simp at hcurrentFalse
+          simpa [withoutExecutableGroupsWithResponseName,
+            Execution.addExecutableGroup, hcurrentFalse, hcurrentResponse,
+            hgroupResponseFalse] using ih
+        · have hcurrentResponseFalse :
+              (currentName == responseName) = false := by
+            cases hmatch : currentName == responseName
+            · rfl
+            · contradiction
+          by_cases hgroupResponse : (groupResponseName == responseName) = true
+          · simpa [withoutExecutableGroupsWithResponseName,
+              Execution.addExecutableGroup, hcurrentFalse,
+              hcurrentResponseFalse, hgroupResponse] using ih
+          · have hgroupResponseFalse :
+                (groupResponseName == responseName) = false := by
+              cases hmatch : groupResponseName == responseName
+              · rfl
+              · contradiction
+            simp [withoutExecutableGroupsWithResponseName,
+              Execution.addExecutableGroup, hcurrentFalse,
+              hcurrentResponseFalse, hgroupResponseFalse]
+            exact by
+              simpa [withoutExecutableGroupsWithResponseName,
+                hgroupResponseFalse] using ih
+
+theorem withoutExecutableGroupsWithResponseName_mergeExecutableGroups
+    (responseName : Name)
+    (left right : List (Name × List Execution.ExecutableField)) :
+    withoutExecutableGroupsWithResponseName responseName
+      (Execution.mergeExecutableGroups left right)
+      =
+    Execution.mergeExecutableGroups
+      (withoutExecutableGroupsWithResponseName responseName left)
+      (withoutExecutableGroupsWithResponseName responseName right) := by
+  induction right generalizing left with
+  | nil =>
+      simp [Execution.mergeExecutableGroups,
+        withoutExecutableGroupsWithResponseName]
+  | cons group rest ih =>
+      rcases group with ⟨groupResponseName, groupFields⟩
+      by_cases hresponse : (groupResponseName == responseName) = true
+      · change
+          withoutExecutableGroupsWithResponseName responseName
+            (Execution.mergeExecutableGroups
+              (Execution.addExecutableGroup
+                (groupResponseName, groupFields) left) rest)
+          =
+          Execution.mergeExecutableGroups
+            (withoutExecutableGroupsWithResponseName responseName left)
+            (withoutExecutableGroupsWithResponseName responseName
+              ((groupResponseName, groupFields) :: rest))
+        rw [ih (Execution.addExecutableGroup
+          (groupResponseName, groupFields) left)]
+        rw [withoutExecutableGroupsWithResponseName_addExecutableGroup]
+        simp [withoutExecutableGroupsWithResponseName,
+          Execution.mergeExecutableGroups, hresponse]
+      · have hfalse : (groupResponseName == responseName) = false := by
+          cases hmatch : groupResponseName == responseName
+          · rfl
+          · contradiction
+        change
+          withoutExecutableGroupsWithResponseName responseName
+            (Execution.mergeExecutableGroups
+              (Execution.addExecutableGroup
+                (groupResponseName, groupFields) left) rest)
+          =
+          Execution.mergeExecutableGroups
+            (withoutExecutableGroupsWithResponseName responseName left)
+            (withoutExecutableGroupsWithResponseName responseName
+              ((groupResponseName, groupFields) :: rest))
+        rw [ih (Execution.addExecutableGroup
+          (groupResponseName, groupFields) left)]
+        rw [withoutExecutableGroupsWithResponseName_addExecutableGroup]
+        simp [withoutExecutableGroupsWithResponseName,
+          Execution.mergeExecutableGroups, hfalse]
+
+theorem withoutExecutableGroupsWithResponseName_eq_self_of_not_mem
+    (responseName : Name) :
+    ∀ groups : List (Name × List Execution.ExecutableField),
+      responseName ∉ groups.map Prod.fst ->
+        withoutExecutableGroupsWithResponseName responseName groups = groups
+  | groups, hnotin => by
+      unfold withoutExecutableGroupsWithResponseName
+      apply List.filter_eq_self.mpr
+      intro group hgroup
+      rcases group with ⟨groupResponseName, groupFields⟩
+      have hne : groupResponseName ≠ responseName := by
+        intro heq
+        exact hnotin
+          (List.mem_map.mpr
+            ⟨(groupResponseName, groupFields), hgroup, heq⟩)
+      have hfalse : (groupResponseName == responseName) = false := by
+        cases hmatch : groupResponseName == responseName
+        · rfl
+        · exact False.elim (hne (beq_iff_eq.mp hmatch))
+      simp [hfalse]
+
+theorem withoutExecutableGroupsWithResponseName_cons_self_of_namesNodup
+    (responseName : Name) (fields : List Execution.ExecutableField)
+    (rest : List (Name × List Execution.ExecutableField)) :
+    executableGroupNamesNodup ((responseName, fields) :: rest) ->
+      withoutExecutableGroupsWithResponseName responseName
+        ((responseName, fields) :: rest)
+      =
+      rest := by
+  intro hnodup
+  have htrue : (responseName == responseName) = true := by simp
+  unfold withoutExecutableGroupsWithResponseName
+  simp
+  intro groupResponseName groupFields hmem heq
+  subst groupResponseName
+  exact hnodup.1
+    (List.mem_map.mpr ⟨(responseName, groupFields), hmem, rfl⟩)
+
 theorem addExecutableGroup_same_response_append
     (responseName : Name) (currentFields : List Execution.ExecutableField)
     (group : Name × List Execution.ExecutableField)
@@ -797,6 +974,36 @@ theorem mergeExecutableGroups_namesNodup
       simp [Execution.mergeExecutableGroups]
       exact ih (Execution.addExecutableGroup group left)
         (addExecutableGroup_namesNodup group left hleft)
+
+theorem withoutExecutableGroupsWithResponseName_namesNodup
+    (responseName : Name)
+    (groups : List (Name × List Execution.ExecutableField)) :
+    executableGroupNamesNodup groups ->
+      executableGroupNamesNodup
+        (withoutExecutableGroupsWithResponseName responseName groups) := by
+  induction groups with
+  | nil =>
+      simp [withoutExecutableGroupsWithResponseName,
+        executableGroupNamesNodup]
+  | cons group rest ih =>
+      rcases group with ⟨groupResponseName, fields⟩
+      intro hnodup
+      by_cases hresponse : (groupResponseName == responseName) = true
+      · simp [withoutExecutableGroupsWithResponseName, hresponse]
+        exact ih hnodup.2
+      · have hfalse : (groupResponseName == responseName) = false := by
+          cases hmatch : groupResponseName == responseName
+          · rfl
+          · contradiction
+        simp [withoutExecutableGroupsWithResponseName, hfalse,
+          executableGroupNamesNodup]
+        constructor
+        · intro fields hmem
+          exact False.elim
+            (hnodup.1
+              (List.mem_map.mpr
+                ⟨(groupResponseName, fields), hmem, rfl⟩))
+        · exact ih hnodup.2
 
 theorem collectFields_nil
     (schema : Schema) (variableValues : Execution.VariableValues)
@@ -1309,6 +1516,255 @@ theorem collectFields_field_noDirectives_cons_of_responseName_not_mem
     subst name
     exact hnotin hright
   · exact collectFields_namesNodup schema variableValues parentType source rest
+
+theorem collectFields_withoutFieldsWithResponseName_directiveFree
+    (schema : Schema) (variableValues : Execution.VariableValues)
+    (parentType : Name) (source : Execution.Value)
+    (responseName : Name) :
+    objectTypeNameBool schema parentType = true ->
+      (∃ runtimeType identity,
+        source = .object runtimeType identity
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
+        ∀ selectionSet,
+          selectionSetDirectiveFree selectionSet ->
+            Execution.collectFields schema variableValues parentType source
+              (withoutFieldsWithResponseName schema responseName selectionSet)
+            =
+            withoutExecutableGroupsWithResponseName responseName
+              (Execution.collectFields schema variableValues parentType
+                source selectionSet)
+  | hobject, hsource, [], _hfree => by
+      simp [Execution.collectFields, withoutFieldsWithResponseName,
+        withoutExecutableGroupsWithResponseName]
+  | hobject, hsource,
+      Selection.field fieldResponseName fieldName arguments directives
+        selectionSet :: rest,
+      hfree => by
+      have hheadFree := selectionSetDirectiveFree_head hfree
+      have htailFree := selectionSetDirectiveFree_tail hfree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      subst directives
+      by_cases hresponse : (fieldResponseName == responseName) = true
+      · rw [withoutFieldsWithResponseName]
+        simp [hresponse]
+        rw [collectFields_field_noDirectives]
+        rw [withoutExecutableGroupsWithResponseName_mergeExecutableGroups]
+        have hsingleton :
+            withoutExecutableGroupsWithResponseName responseName
+              [(fieldResponseName, [{
+                parentType := parentType,
+                responseName := fieldResponseName,
+                fieldName := fieldName,
+                arguments := arguments,
+                selectionSet := selectionSet
+              }])]
+            = [] := by
+          simp [withoutExecutableGroupsWithResponseName, hresponse]
+        rw [hsingleton]
+        have hrest :=
+          collectFields_withoutFieldsWithResponseName_directiveFree schema
+            variableValues parentType source responseName hobject hsource
+            rest htailFree
+        rw [hrest]
+        exact (mergeExecutableGroups_nil_left_of_namesNodup
+          (withoutExecutableGroupsWithResponseName responseName
+            (Execution.collectFields schema variableValues parentType source
+              rest))
+          (withoutExecutableGroupsWithResponseName_namesNodup responseName
+            (Execution.collectFields schema variableValues parentType source
+              rest)
+            (collectFields_namesNodup schema variableValues parentType
+              source rest))).symm
+      · have hfalse : (fieldResponseName == responseName) = false := by
+          cases hmatch : fieldResponseName == responseName
+          · rfl
+          · contradiction
+        rw [withoutFieldsWithResponseName]
+        simp [hfalse]
+        rw [collectFields_field_noDirectives]
+        rw [collectFields_field_noDirectives]
+        rw [withoutExecutableGroupsWithResponseName_mergeExecutableGroups]
+        have hsingleton :
+            withoutExecutableGroupsWithResponseName responseName
+              [(fieldResponseName, [{
+                parentType := parentType,
+                responseName := fieldResponseName,
+                fieldName := fieldName,
+                arguments := arguments,
+                selectionSet := selectionSet
+              }])]
+            =
+            [(fieldResponseName, [{
+              parentType := parentType,
+              responseName := fieldResponseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := selectionSet
+            }])] := by
+          simp [withoutExecutableGroupsWithResponseName, hfalse]
+        rw [hsingleton]
+        rw [collectFields_withoutFieldsWithResponseName_directiveFree schema
+          variableValues parentType source responseName hobject hsource rest
+          htailFree]
+  | hobject, hsource,
+      Selection.inlineFragment none directives selectionSet :: rest,
+      hfree => by
+      have hheadFree := selectionSetDirectiveFree_head hfree
+      have htailFree := selectionSetDirectiveFree_tail hfree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      have hselectionFree : selectionSetDirectiveFree selectionSet := by
+        simpa [selectionDirectiveFree, hdirectives] using hheadFree.2
+      subst directives
+      rw [withoutFieldsWithResponseName]
+      rw [collectFields_inlineFragment_none_directiveFree]
+      rw [collectFields_inlineFragment_none_directiveFree]
+      rw [withoutExecutableGroupsWithResponseName_mergeExecutableGroups]
+      rw [collectFields_withoutFieldsWithResponseName_directiveFree schema
+        variableValues parentType source responseName hobject hsource
+        selectionSet hselectionFree]
+      rw [collectFields_withoutFieldsWithResponseName_directiveFree schema
+        variableValues parentType source responseName hobject hsource rest
+        htailFree]
+  | hobject, hsource,
+      Selection.inlineFragment (some typeCondition) directives selectionSet
+        :: rest,
+      hfree => by
+      have hheadFree := selectionSetDirectiveFree_head hfree
+      have htailFree := selectionSetDirectiveFree_tail hfree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      have hselectionFree : selectionSetDirectiveFree selectionSet := by
+        simpa [selectionDirectiveFree, hdirectives] using hheadFree.2
+      subst directives
+      cases happly :
+          Execution.doesFragmentTypeApplyBool schema parentType source
+            typeCondition
+      · have hoverlapFalse :
+            schema.typesOverlapBool parentType typeCondition = false := by
+          rw [← doesFragmentTypeApplyBool_eq_typesOverlapBool_of_object_parent_source
+            schema hobject hsource]
+          exact happly
+        simp [withoutFieldsWithResponseName]
+        rw [collectFields_inlineFragment_some_directiveFree_skip]
+        · rw [collectFields_inlineFragment_some_directiveFree_skip]
+          · rw [mergeExecutableGroups_nil_left_of_namesNodup
+              (Execution.collectFields schema variableValues parentType source
+                rest)
+              (collectFields_namesNodup schema variableValues parentType
+                source rest)]
+            rw [mergeExecutableGroups_nil_left_of_namesNodup
+              (Execution.collectFields schema variableValues parentType source
+                (withoutFieldsWithResponseName schema responseName rest))
+              (collectFields_namesNodup schema variableValues parentType
+                source (withoutFieldsWithResponseName schema responseName
+                  rest))]
+            exact collectFields_withoutFieldsWithResponseName_directiveFree
+              schema variableValues parentType source responseName hobject
+              hsource rest htailFree
+          · exact happly
+        · exact happly
+      · have hoverlap :
+            schema.typesOverlapBool parentType typeCondition = true := by
+          rw [← doesFragmentTypeApplyBool_eq_typesOverlapBool_of_object_parent_source
+            schema hobject hsource]
+          exact happly
+        simp [withoutFieldsWithResponseName]
+        rw [collectFields_inlineFragment_some_directiveFree_apply]
+        · rw [collectFields_inlineFragment_some_directiveFree_apply]
+          · rw [withoutExecutableGroupsWithResponseName_mergeExecutableGroups]
+            rw [collectFields_withoutFieldsWithResponseName_directiveFree
+              schema variableValues parentType source responseName hobject
+              hsource selectionSet hselectionFree]
+            rw [collectFields_withoutFieldsWithResponseName_directiveFree
+              schema variableValues parentType source responseName hobject
+              hsource rest htailFree]
+          · exact happly
+        · exact happly
+
+theorem collectFields_withoutFieldsWithResponseName_eq_sourceRest_of_cons
+    (schema : Schema) (variableValues : Execution.VariableValues)
+    (parentType : Name) (source : Execution.Value)
+    (responseName : Name) (fields : List Execution.ExecutableField)
+    (sourceRest : List (Name × List Execution.ExecutableField))
+    (selectionSet : List Selection) :
+    objectTypeNameBool schema parentType = true ->
+      (∃ runtimeType identity,
+        source = .object runtimeType identity
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
+        selectionSetDirectiveFree selectionSet ->
+          Execution.collectFields schema variableValues parentType source
+            selectionSet
+          =
+          (responseName, fields) :: sourceRest ->
+            Execution.collectFields schema variableValues parentType source
+              (withoutFieldsWithResponseName schema responseName selectionSet)
+            =
+            sourceRest := by
+  intro hobject hsource hfree hcollect
+  have hfilter :=
+    collectFields_withoutFieldsWithResponseName_directiveFree schema
+      variableValues parentType source responseName hobject hsource
+      selectionSet hfree
+  have hnodup :
+      executableGroupNamesNodup ((responseName, fields) :: sourceRest) := by
+    simpa [hcollect] using
+      collectFields_namesNodup schema variableValues parentType source
+        selectionSet
+  rw [hcollect] at hfilter
+  exact hfilter.trans
+    (withoutExecutableGroupsWithResponseName_cons_self_of_namesNodup
+      responseName fields sourceRest hnodup)
+
+theorem collectFields_withoutFieldsWithResponseName_fieldHead_rest_eq_sourceRest
+    (schema : Schema) (variableValues : Execution.VariableValues)
+    (parentType : Name) (source : Execution.Value)
+    (responseName fieldName : Name) (arguments : List Argument)
+    (subselections rest : List Selection)
+    (sourceFields : List Execution.ExecutableField)
+    (sourceRest : List (Name × List Execution.ExecutableField)) :
+    let sourceField : Execution.ExecutableField :=
+      {
+        parentType := parentType,
+        responseName := responseName,
+        fieldName := fieldName,
+        arguments := arguments,
+        selectionSet := subselections
+      }
+    objectTypeNameBool schema parentType = true ->
+      (∃ runtimeType identity,
+        source = .object runtimeType identity
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
+        selectionSetDirectiveFree
+          (Selection.field responseName fieldName arguments [] subselections
+            :: rest) ->
+          Execution.collectFields schema variableValues parentType source
+            (Selection.field responseName fieldName arguments []
+              subselections :: rest)
+          =
+          (responseName, sourceField :: sourceFields) :: sourceRest ->
+            Execution.collectFields schema variableValues parentType source
+              (withoutFieldsWithResponseName schema responseName rest)
+            =
+            sourceRest := by
+  intro sourceField hobject hsource hfree hcollect
+  have hrestFree := selectionSetDirectiveFree_tail hfree
+  have hsourceCollect :
+      Execution.collectFields schema variableValues parentType source
+        (Selection.field responseName fieldName arguments [] subselections
+          :: rest)
+      =
+      (responseName, sourceField :: sourceFields) :: sourceRest := by
+    simpa [sourceField] using hcollect
+  have hfilteredAll :=
+    collectFields_withoutFieldsWithResponseName_eq_sourceRest_of_cons schema
+      variableValues parentType source responseName
+      (sourceField :: sourceFields) sourceRest
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest)
+      hobject hsource hfree hsourceCollect
+  simpa [withoutFieldsWithResponseName] using hfilteredAll
 
 theorem mergeSelectionSets_append
     (left right : List Selection) :

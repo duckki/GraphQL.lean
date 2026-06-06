@@ -207,9 +207,12 @@ mutual
     | 0, _parentType, _selectionSet, value => shallowResponse value
     | _depth + 1, _parentType, _selectionSet, .null => .null
     | _depth + 1, _parentType, _selectionSet, .scalar value => .scalar value
-    | depth + 1, _parentType, selectionSet, source@(.object runtimeType _identity) =>
-        .object (executeSelectionSet schema resolvers variableValues
-          depth runtimeType source selectionSet)
+    | depth + 1, parentType, selectionSet, source@(.object runtimeType _identity) =>
+        if schema.typeIncludesObjectBool parentType runtimeType then
+          .object (executeSelectionSet schema resolvers variableValues
+            depth runtimeType source selectionSet)
+        else
+          .null
     | depth + 1, parentType, selectionSet, .list values =>
         .list (values.map
           (fun value =>

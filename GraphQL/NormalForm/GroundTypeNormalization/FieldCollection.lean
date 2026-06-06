@@ -47,6 +47,95 @@ def collectedResponseSelectionSet
       else
         collectedResponseSelectionSet responseName rest
 
+def executableFieldScoped? (schema : Schema)
+    (field : Execution.ExecutableField) : Option FieldMerge.ScopedField := do
+  let fieldDefinition <- schema.lookupField field.parentType field.fieldName
+  some {
+    parentType := field.parentType,
+    responseName := field.responseName,
+    fieldName := field.fieldName,
+    arguments := field.arguments,
+    outputType := fieldDefinition.outputType,
+    selectionSet := field.selectionSet
+  }
+
+theorem executableFieldScoped?_some
+    {schema : Schema} {field : Execution.ExecutableField}
+    {scopedField : FieldMerge.ScopedField} :
+    executableFieldScoped? schema field = some scopedField ->
+      ∃ fieldDefinition,
+        schema.lookupField field.parentType field.fieldName =
+          some fieldDefinition
+          ∧ scopedField = {
+            parentType := field.parentType,
+            responseName := field.responseName,
+            fieldName := field.fieldName,
+            arguments := field.arguments,
+            outputType := fieldDefinition.outputType,
+            selectionSet := field.selectionSet
+          } := by
+  intro hscoped
+  unfold executableFieldScoped? at hscoped
+  cases hlookup : schema.lookupField field.parentType field.fieldName with
+  | none =>
+      simp [hlookup] at hscoped
+  | some fieldDefinition =>
+      simp [hlookup] at hscoped
+      subst scopedField
+      exact ⟨fieldDefinition, rfl, rfl⟩
+
+theorem executableFieldScoped?_sameSelection
+    {schema : Schema} {field : Execution.ExecutableField}
+    {scopedField : FieldMerge.ScopedField} :
+    executableFieldScoped? schema field = some scopedField ->
+      scopedField.parentType = field.parentType
+        ∧ scopedField.responseName = field.responseName
+        ∧ scopedField.fieldName = field.fieldName
+        ∧ scopedField.arguments = field.arguments
+        ∧ scopedField.selectionSet = field.selectionSet := by
+  intro hscoped
+  rcases executableFieldScoped?_some hscoped with
+    ⟨_fieldDefinition, _hlookup, hshape⟩
+  subst scopedField
+  simp
+
+theorem executableGroupWellFormed_field_responseName
+    {group : Name × List Execution.ExecutableField}
+    {field : Execution.ExecutableField} :
+    executableGroupWellFormed group ->
+      field ∈ group.snd ->
+        field.responseName = group.fst := by
+  intro hgroup hfield
+  exact hgroup.2 field hfield
+
+theorem executableFields_same_parent_identity_of_scoped_merge
+    {schema : Schema}
+    {left right : Execution.ExecutableField}
+    {leftScoped rightScoped : FieldMerge.ScopedField} :
+    executableFieldScoped? schema left = some leftScoped ->
+      executableFieldScoped? schema right = some rightScoped ->
+        FieldMerge.fieldsForNameCanMerge schema leftScoped rightScoped ->
+          left.parentType = right.parentType ->
+            left.fieldName = right.fieldName
+              ∧ Argument.argumentsEquivalent left.arguments right.arguments := by
+  intro hleftScoped hrightScoped hmerge hparent
+  have hleftShape :=
+    executableFieldScoped?_sameSelection hleftScoped
+  have hrightShape :=
+    executableFieldScoped?_sameSelection hrightScoped
+  have hscopedParent :
+      leftScoped.parentType = rightScoped.parentType := by
+    exact hleftShape.1.trans (hparent.trans hrightShape.1.symm)
+  have hidentity :=
+    FieldMerge.fieldsForNameCanMerge_same_parent_identity hmerge
+      hscopedParent
+  exact ⟨
+    hleftShape.2.2.1.symm.trans
+      (hidentity.1.trans hrightShape.2.2.1),
+    by
+      simpa [hleftShape.2.2.2.1, hrightShape.2.2.2.1]
+        using hidentity.2⟩
+
 theorem collectedResponseSelectionSet_eq_nil_of_key_absent
     (responseName : Name) :
     ∀ groups,

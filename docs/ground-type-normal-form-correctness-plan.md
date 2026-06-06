@@ -125,7 +125,9 @@ over this repo's resolver-backed `Execution.collectFields` and
    recursive subfield merge validity. The remaining work is to connect those
    validation facts to executable field groups and `executeField`. Execution
    now also exposes `mergedFieldSelectionSet` append/singleton algebra for the
-   grouped-field sub-selection comparison.
+   grouped-field sub-selection comparison. `FieldCollection` now has an
+   `executableFieldScoped?` bridge plus same-parent identity transport from
+   `FieldMerge.fieldsForNameCanMerge` to executable fields.
 
 5. Abstract return grounding.
 

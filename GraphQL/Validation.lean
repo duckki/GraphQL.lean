@@ -12,100 +12,6 @@ Spec reference: GraphQL September 2025.
 -/
 namespace GraphQL
 
-namespace FieldMerge
-
--- Spec 5.3.2 `FieldsInSetCanMerge` field-pair context: non-spec helper carrying the
--- parent type and field data needed by merge checks.
-structure ScopedField where
-  parentType : Name
-  responseName : Name
-  fieldName : Name
-  arguments : List Argument
-  outputType : TypeRef
-  selectionSet : List Selection
-deriving Repr
-
--- Spec 5.3.2 `SameResponseShape`: mostly faithful for wrapping structure and leaf
--- named-type equality, using the modeled schema's leaf/output predicates.
-def sameResponseShape (schema : Schema) : TypeRef -> TypeRef -> Prop
-  | .nonNull left, .nonNull right => sameResponseShape schema left right
-  | .nonNull _, _ => False
-  | _, .nonNull _ => False
-  | .list left, .list right => sameResponseShape schema left right
-  | .list _, _ => False
-  | _, .list _ => False
-  | .named left, .named right =>
-      schema.isOutputType left
-        ∧ schema.isOutputType right
-        ∧ ((schema.isLeafType left ∨ schema.isLeafType right) -> left = right)
-
--- Spec 5.3.2 `CollectFieldsAndFragmentNames` / 6.3.2 `CollectFields`: partial validation
--- helper; it does not apply directives or runtime type-condition filtering.
-def collectFields (schema : Schema) : Name -> List Selection -> List ScopedField
-  | _parentType, [] => []
-  | parentType, selection :: rest =>
-      let current :=
-        match selection with
-        | .field responseName fieldName arguments _directives selectionSet =>
-            match schema.lookupField parentType fieldName with
-            | none => []
-            | some fieldDefinition =>
-                [{
-                  parentType := parentType,
-                  responseName := responseName,
-                  fieldName := fieldName,
-                  arguments := arguments,
-                  outputType := fieldDefinition.outputType,
-                  selectionSet := selectionSet
-                }]
-        | .inlineFragment none _directives selectionSet =>
-            collectFields schema parentType selectionSet
-        | .inlineFragment (some typeCondition) _directives selectionSet =>
-            collectFields schema typeCondition selectionSet
-      current ++ collectFields schema parentType rest
-
--- Spec 5.3.2 `FieldsInSetCanMerge`: captures pairwise response-shape,
--- same-field/argument checks on overlapping parent types, and recursive merged
--- subselection checks. It is a proposition rather than a recursive executable
--- function, so it does not need a synthetic depth counter.
-mutual
-  inductive FieldsInSetCanMerge (schema : Schema) :
-      Name -> List Selection -> Prop where
-    | intro (parentType : Name) (selectionSet : List Selection)
-        (hfields :
-          let fields := collectFields schema parentType selectionSet
-          ∀ left, left ∈ fields ->
-            ∀ right, right ∈ fields ->
-              left.responseName = right.responseName ->
-                FieldsForNameCanMerge schema left right) :
-        FieldsInSetCanMerge schema parentType selectionSet
-
-  inductive FieldsForNameCanMerge (schema : Schema) :
-      ScopedField -> ScopedField -> Prop where
-    | intro (left right : ScopedField)
-        (hshape : sameResponseShape schema left.outputType right.outputType)
-        (hidentity :
-          (left.parentType = right.parentType
-              ∨ ¬ schema.objectType left.parentType
-              ∨ ¬ schema.objectType right.parentType) ->
-            left.fieldName = right.fieldName
-              ∧ Argument.argumentsEquivalent left.arguments right.arguments)
-        (hsubfields :
-          FieldsInSetCanMerge schema left.outputType.namedType
-            (left.selectionSet ++ right.selectionSet)) :
-        FieldsForNameCanMerge schema left right
-end
-
-def fieldsInSetCanMerge (schema : Schema)
-    (parentType : Name) (selectionSet : List Selection) : Prop :=
-  FieldsInSetCanMerge schema parentType selectionSet
-
-def fieldsForNameCanMerge (schema : Schema)
-    (left right : ScopedField) : Prop :=
-  FieldsForNameCanMerge schema left right
-
-end FieldMerge
-
 namespace Validation
 
 -- Spec 5.8.3 All Variable Uses Defined: partial helper for operation-level variable
@@ -439,6 +345,104 @@ mutual
         ∧ selectionSet ≠ []
         ∧ selectionSetValid schema variableDefinitions returnType selectionSet))
 end
+
+end Validation
+
+namespace FieldMerge
+
+-- Spec 5.3.2 `FieldsInSetCanMerge` field-pair context: non-spec helper carrying the
+-- parent type and field data needed by merge checks.
+structure ScopedField where
+  parentType : Name
+  responseName : Name
+  fieldName : Name
+  arguments : List Argument
+  outputType : TypeRef
+  selectionSet : List Selection
+deriving Repr
+
+-- Spec 5.3.2 `SameResponseShape`: mostly faithful for wrapping structure and leaf
+-- named-type equality, using the modeled schema's leaf/output predicates.
+def sameResponseShape (schema : Schema) : TypeRef -> TypeRef -> Prop
+  | .nonNull left, .nonNull right => sameResponseShape schema left right
+  | .nonNull _, _ => False
+  | _, .nonNull _ => False
+  | .list left, .list right => sameResponseShape schema left right
+  | .list _, _ => False
+  | _, .list _ => False
+  | .named left, .named right =>
+      schema.isOutputType left
+        ∧ schema.isOutputType right
+        ∧ ((schema.isLeafType left ∨ schema.isLeafType right) -> left = right)
+
+-- Spec 5.3.2 `CollectFieldsAndFragmentNames` / 6.3.2 `CollectFields`: partial validation
+-- helper; it does not apply directives or runtime type-condition filtering.
+def collectFields (schema : Schema) : Name -> List Selection -> List ScopedField
+  | _parentType, [] => []
+  | parentType, selection :: rest =>
+      let current :=
+        match selection with
+        | .field responseName fieldName arguments _directives selectionSet =>
+            match schema.lookupField parentType fieldName with
+            | none => []
+            | some fieldDefinition =>
+                [{
+                  parentType := parentType,
+                  responseName := responseName,
+                  fieldName := fieldName,
+                  arguments := arguments,
+                  outputType := fieldDefinition.outputType,
+                  selectionSet := selectionSet
+                }]
+        | .inlineFragment none _directives selectionSet =>
+            collectFields schema parentType selectionSet
+        | .inlineFragment (some typeCondition) _directives selectionSet =>
+            collectFields schema typeCondition selectionSet
+      current ++ collectFields schema parentType rest
+
+-- Spec 5.3.2 `FieldsInSetCanMerge`: captures pairwise response-shape,
+-- same-field/argument checks on overlapping parent types, and recursive merged
+-- subselection checks. It is a proposition rather than a recursive executable
+-- function, so it does not need a synthetic depth counter.
+mutual
+  inductive FieldsInSetCanMerge (schema : Schema) :
+      Name -> List Selection -> Prop where
+    | intro (parentType : Name) (selectionSet : List Selection)
+        (hfields :
+          let fields := collectFields schema parentType selectionSet
+          ∀ left, left ∈ fields ->
+            ∀ right, right ∈ fields ->
+              left.responseName = right.responseName ->
+                FieldsForNameCanMerge schema left right) :
+        FieldsInSetCanMerge schema parentType selectionSet
+
+  inductive FieldsForNameCanMerge (schema : Schema) :
+      ScopedField -> ScopedField -> Prop where
+    | intro (left right : ScopedField)
+        (hshape : sameResponseShape schema left.outputType right.outputType)
+        (hidentity :
+          (left.parentType = right.parentType
+              ∨ ¬ schema.objectType left.parentType
+              ∨ ¬ schema.objectType right.parentType) ->
+            left.fieldName = right.fieldName
+              ∧ Argument.argumentsEquivalent left.arguments right.arguments)
+        (hsubfields :
+          FieldsInSetCanMerge schema left.outputType.namedType
+            (left.selectionSet ++ right.selectionSet)) :
+        FieldsForNameCanMerge schema left right
+end
+
+def fieldsInSetCanMerge (schema : Schema)
+    (parentType : Name) (selectionSet : List Selection) : Prop :=
+  FieldsInSetCanMerge schema parentType selectionSet
+
+def fieldsForNameCanMerge (schema : Schema)
+    (left right : ScopedField) : Prop :=
+  FieldsForNameCanMerge schema left right
+
+end FieldMerge
+
+namespace Validation
 
 -- Spec 5.2 Operation validation plus referenced executable validation rules: partial
 -- aggregate predicate over the modeled single-operation representation.

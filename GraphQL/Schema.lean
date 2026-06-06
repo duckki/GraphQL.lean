@@ -5,6 +5,8 @@ Spec reference: GraphQL September 2025.
 - 2.10 Input Values and 2.12 Type References: value and type-reference syntax are
   represented directly, constant values are separated for defaults, and coercion/source
   parsing are out of scope.
+- 2.14 Schema Coordinates are not modeled; this formalization has no source-level
+  coordinate syntax or introspection surface.
 - 3.3-3.13 Type System: schema and type definitions cover core GraphQL types, wrapping
   types, built-in scalars, and the `@skip`/`@include` scalar dependencies, but omit
   descriptions, arbitrary directives, extensions, introspection, mutation/subscription
@@ -17,26 +19,6 @@ namespace GraphQL
 -- Spec 2.1.8 `Name`: partial; raw `String` does not enforce the GraphQL name grammar or
 -- reserved `__` rules.
 abbrev Name := String
-
--- Spec 2.12 `Type`, `NamedType`, `ListType`, `NonNullType`: partial; syntax is
--- represented, and invalid nested non-null is rejected by `TypeRef.wellFormed` and
--- input/output type predicates rather than by construction.
-inductive TypeRef where
-  | named : Name -> TypeRef
-  | list : TypeRef -> TypeRef
-  | nonNull : TypeRef -> TypeRef
-deriving Repr, DecidableEq
-
-namespace TypeRef
-
--- Spec 2.12 Type reference semantics: faithful for retrieving the underlying named type
--- of modeled wrapping references.
-def namedType : TypeRef -> Name
-  | .named name => name
-  | .list inner => inner.namedType
-  | .nonNull inner => inner.namedType
-
-end TypeRef
 
 -- Spec 2.10 `Value`: partial; literals and variables are represented, but
 -- constant-vs-variable contexts and input coercion are handled elsewhere or omitted.
@@ -191,6 +173,26 @@ end
 
 end ConstInputValue
 
+-- Spec 2.12 `Type`, `NamedType`, `ListType`, `NonNullType`: partial; syntax is
+-- represented, and invalid nested non-null is rejected by `TypeRef.wellFormed` and
+-- input/output type predicates rather than by construction.
+inductive TypeRef where
+  | named : Name -> TypeRef
+  | list : TypeRef -> TypeRef
+  | nonNull : TypeRef -> TypeRef
+deriving Repr, DecidableEq
+
+namespace TypeRef
+
+-- Spec 2.12 Type reference semantics: faithful for retrieving the underlying named type
+-- of modeled wrapping references.
+def namedType : TypeRef -> Name
+  | .named name => name
+  | .list inner => inner.namedType
+  | .nonNull inner => inner.namedType
+
+end TypeRef
+
 -- Spec 3.5.1-3.5.5 built-in scalars: faithful for the five required scalar names, without
 -- modeling coercion behavior.
 inductive BuiltinScalar where
@@ -217,13 +219,6 @@ end BuiltinScalar
 -- directives, specifiedBy URL, or coercion hooks.
 structure CustomScalarType where
   name : Name
-deriving Repr, DecidableEq
-
--- Spec 3.9 `EnumTypeDefinition`: partial; enum values are named but descriptions,
--- directives, deprecation, and reserved-name validation are omitted.
-structure EnumType where
-  name : Name
-  values : List Name
 deriving Repr, DecidableEq
 
 -- Spec 3.6.1 `InputValueDefinition` and 3.10 input fields: partial; name/type/default are
@@ -276,6 +271,13 @@ deriving Repr
 structure UnionType where
   name : Name
   members : List Name
+deriving Repr, DecidableEq
+
+-- Spec 3.9 `EnumTypeDefinition`: partial; enum values are named but descriptions,
+-- directives, deprecation, and reserved-name validation are omitted.
+structure EnumType where
+  name : Name
+  values : List Name
 deriving Repr, DecidableEq
 
 -- Spec 3.10 `InputObjectTypeDefinition`: partial; input fields are represented, but

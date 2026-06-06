@@ -26,8 +26,8 @@ inductive Value where
   | list (values : List Value)
 deriving Repr
 
--- Spec 7.1 Execution Result `data`: partial; models response data recursively, omitting
--- errors, extensions, and serialization details.
+-- Spec 7.1.5 `data`: partial; models response data recursively, omitting request error
+-- results, execution errors, extensions, response positions, and serialization details.
 inductive Response where
   | null
   | scalar (value : String)

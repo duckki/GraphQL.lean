@@ -346,6 +346,82 @@ mutual
         ∧ selectionSetValid schema variableDefinitions returnType selectionSet))
 end
 
+theorem selectionValid_field_directivesValid
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {parentType responseName fieldName : Name} {arguments : List Argument}
+    {directives : List DirectiveApplication} {selectionSet : List Selection} :
+    selectionValid schema variableDefinitions parentType
+      (.field responseName fieldName arguments directives selectionSet) ->
+      directivesValid schema variableDefinitions directives := by
+  intro hvalid
+  simp [selectionValid] at hvalid
+  exact hvalid.1
+
+theorem selectionValid_field_lookup
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {parentType responseName fieldName : Name} {arguments : List Argument}
+    {directives : List DirectiveApplication} {selectionSet : List Selection} :
+    selectionValid schema variableDefinitions parentType
+      (.field responseName fieldName arguments directives selectionSet) ->
+      ∃ fieldDefinition,
+        schema.lookupField parentType fieldName = some fieldDefinition
+          ∧ argumentsValid schema fieldDefinition.arguments
+            variableDefinitions arguments
+          ∧ fieldSelectionSetValid schema variableDefinitions
+            fieldDefinition selectionSet := by
+  intro hvalid
+  simp [selectionValid] at hvalid
+  exact hvalid.2
+
+theorem selectionValid_inlineFragment_none_selectionSetValid
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {parentType : Name} {directives : List DirectiveApplication}
+    {selectionSet : List Selection} :
+    selectionValid schema variableDefinitions parentType
+      (.inlineFragment none directives selectionSet) ->
+      selectionSetValid schema variableDefinitions parentType selectionSet := by
+  intro hvalid
+  simp [selectionValid] at hvalid
+  exact hvalid.2.2
+
+theorem selectionValid_inlineFragment_some_selectionSetValid
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {parentType typeCondition : Name} {directives : List DirectiveApplication}
+    {selectionSet : List Selection} :
+    selectionValid schema variableDefinitions parentType
+      (.inlineFragment (some typeCondition) directives selectionSet) ->
+      selectionSetValid schema variableDefinitions typeCondition selectionSet := by
+  intro hvalid
+  simp [selectionValid] at hvalid
+  exact hvalid.2.2.2.2
+
+theorem fieldSelectionSetValid_outputType
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {fieldDefinition : FieldDefinition} {selectionSet : List Selection} :
+    fieldSelectionSetValid schema variableDefinitions fieldDefinition
+      selectionSet ->
+      fieldDefinition.outputType.isOutputType schema := by
+  intro hvalid
+  simp [fieldSelectionSetValid] at hvalid
+  exact hvalid.1
+
+theorem fieldSelectionSetValid_composite_child
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {fieldDefinition : FieldDefinition} {selectionSet : List Selection} :
+    fieldSelectionSetValid schema variableDefinitions fieldDefinition
+      selectionSet ->
+      schema.isCompositeType fieldDefinition.outputType.namedType ->
+      selectionSet ≠ [] ->
+      selectionSetValid schema variableDefinitions
+        fieldDefinition.outputType.namedType selectionSet := by
+  intro hvalid _hcomposite hnonempty
+  simp [fieldSelectionSetValid] at hvalid
+  cases hvalid.2 with
+  | inl hleaf =>
+      exact False.elim (hnonempty hleaf.2)
+  | inr hchild =>
+      exact hchild.2.2
+
 end Validation
 
 namespace FieldMerge

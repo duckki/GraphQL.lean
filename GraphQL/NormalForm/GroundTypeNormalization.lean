@@ -72,6 +72,26 @@ theorem objectTypeNameBool_eq_true_of_objectType_base
   rcases hobject with ⟨objectType, hlookup⟩
   simp [objectTypeNameBool, hlookup]
 
+theorem objectType_of_objectTypeNameBool_eq_true
+    (schema : Schema) {typeName : Name} :
+    objectTypeNameBool schema typeName = true ->
+      schema.objectType typeName := by
+  intro hobject
+  unfold objectTypeNameBool at hobject
+  cases hlookup : schema.lookupType typeName with
+  | none =>
+      simp [hlookup] at hobject
+  | some typeDefinition =>
+      cases typeDefinition with
+      | object objectType =>
+          exact ⟨objectType, hlookup⟩
+      | builtinScalar scalar => simp [hlookup] at hobject
+      | customScalar scalar => simp [hlookup] at hobject
+      | interface interfaceType => simp [hlookup] at hobject
+      | union unionType => simp [hlookup] at hobject
+      | enum enumType => simp [hlookup] at hobject
+      | inputObject inputObjectType => simp [hlookup] at hobject
+
 theorem object_typeIncludesObjectBool_eq_self
     (schema : Schema) {typeName objectName : Name} :
     schema.objectType typeName ->
@@ -155,6 +175,56 @@ theorem fieldSelectionSetValid_child_of_possibleType
     rw [hnil] at hpossible
     cases hpossible
   · exact hcomposite.2.2
+
+theorem typeIncludesObjectBool_of_outputTypeSubtype_namedType
+    (schema : Schema) :
+    ∀ {implementation expected : TypeRef} {objectType : Name},
+      schema.outputTypeSubtype implementation expected ->
+      schema.typeIncludesObjectBool implementation.namedType objectType = true ->
+        schema.typeIncludesObjectBool expected.namedType objectType = true
+    := by
+  intro implementation
+  induction implementation with
+  | named implementationName =>
+      intro expected objectType hsubtype hinclude
+      cases expected with
+      | named expectedName =>
+          simp [Schema.outputTypeSubtype, Schema.namedOutputTypeSubtype]
+            at hsubtype
+          rcases hsubtype with hleaf | hcomposite
+          · rcases hleaf with
+              ⟨_hleafImplementation, _hleafExpected, heq⟩
+            subst expectedName
+            exact hinclude
+          · rcases hcomposite with
+              ⟨_himplementationComposite, _hexpectedComposite, hcontains⟩
+            exact List.contains_iff_mem.mpr
+              (hcontains objectType (List.contains_iff_mem.mp hinclude))
+      | list expectedInner =>
+          simp [Schema.outputTypeSubtype] at hsubtype
+      | nonNull expectedInner =>
+          simp [Schema.outputTypeSubtype] at hsubtype
+  | list implementationInner ih =>
+      intro expected objectType hsubtype hinclude
+      cases expected with
+      | named expectedName =>
+          simp [Schema.outputTypeSubtype] at hsubtype
+      | list expectedInner =>
+          simp [Schema.outputTypeSubtype] at hsubtype
+          exact ih (expected := expectedInner) hsubtype hinclude
+      | nonNull expectedInner =>
+          simp [Schema.outputTypeSubtype] at hsubtype
+  | nonNull implementationInner ih =>
+      intro expected objectType hsubtype hinclude
+      cases expected with
+      | named expectedName =>
+          exact ih hsubtype hinclude
+      | list expectedInner =>
+          simp [Schema.outputTypeSubtype] at hsubtype
+          exact ih hsubtype hinclude
+      | nonNull expectedInner =>
+          simp [Schema.outputTypeSubtype] at hsubtype
+          exact ih (expected := expectedInner) hsubtype hinclude
 
 theorem selectionDirectiveFree_subselections
     {selection : Selection} :

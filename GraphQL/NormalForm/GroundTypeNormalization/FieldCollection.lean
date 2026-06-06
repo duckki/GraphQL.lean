@@ -136,6 +136,78 @@ theorem executableFields_same_parent_identity_of_scoped_merge
       simpa [hleftShape.2.2.2.1, hrightShape.2.2.2.1]
         using hidentity.2⟩
 
+theorem lookupType_name_eq_for_collection
+    (schema : Schema) {typeName : Name}
+    {typeDefinition : TypeDefinition} :
+    schema.lookupType typeName = some typeDefinition ->
+      typeDefinition.name = typeName := by
+  intro hlookup
+  have hmatch := List.find?_some hlookup
+  simpa [Schema.lookupType] using hmatch
+
+theorem typeIncludesObjectBool_eq_of_objectTypeNameBool_true_for_collection
+    (schema : Schema) {typeName runtimeType : Name} :
+    objectTypeNameBool schema typeName = true ->
+      schema.typeIncludesObjectBool typeName runtimeType = true ->
+        runtimeType = typeName := by
+  intro hobject hinclude
+  unfold objectTypeNameBool at hobject
+  cases hlookup : schema.lookupType typeName with
+  | none =>
+      simp [hlookup] at hobject
+  | some typeDefinition =>
+      cases typeDefinition with
+      | object objectType =>
+          have hname : objectType.name = typeName :=
+            lookupType_name_eq_for_collection schema hlookup
+          simp [Schema.typeIncludesObjectBool, Schema.getPossibleTypes,
+            hlookup, hname] at hinclude
+          exact hinclude
+      | builtinScalar scalar => simp [hlookup] at hobject
+      | customScalar scalar => simp [hlookup] at hobject
+      | interface interfaceType => simp [hlookup] at hobject
+      | union unionType => simp [hlookup] at hobject
+      | enum enumType => simp [hlookup] at hobject
+      | inputObject inputObjectType => simp [hlookup] at hobject
+
+theorem doesFragmentTypeApplyBool_eq_typesOverlapBool_of_object_parent_source
+    (schema : Schema) {parentType typeCondition : Name}
+    {source : Execution.Value} :
+    objectTypeNameBool schema parentType = true ->
+      (∃ runtimeType identity,
+        source = .object runtimeType identity
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
+        Execution.doesFragmentTypeApplyBool schema parentType source
+          typeCondition =
+        schema.typesOverlapBool parentType typeCondition := by
+  intro hobject hsource
+  rcases hsource with ⟨runtimeType, identity, hsourceEq, hparent⟩
+  subst source
+  have hruntime :
+      runtimeType = parentType :=
+    typeIncludesObjectBool_eq_of_objectTypeNameBool_true_for_collection
+      schema hobject hparent
+  subst runtimeType
+  unfold objectTypeNameBool at hobject
+  cases hlookup : schema.lookupType parentType with
+  | none =>
+      simp [hlookup] at hobject
+  | some typeDefinition =>
+      cases typeDefinition with
+      | object objectType =>
+          have hname : objectType.name = parentType :=
+            lookupType_name_eq_for_collection schema hlookup
+          unfold Schema.typesOverlapBool
+          simp [Execution.doesFragmentTypeApplyBool,
+            Execution.runtimeObjectType?, Schema.getPossibleTypes, hlookup,
+            hname]
+      | builtinScalar scalar => simp [hlookup] at hobject
+      | customScalar scalar => simp [hlookup] at hobject
+      | interface interfaceType => simp [hlookup] at hobject
+      | union unionType => simp [hlookup] at hobject
+      | enum enumType => simp [hlookup] at hobject
+      | inputObject inputObjectType => simp [hlookup] at hobject
+
 theorem collectedResponseSelectionSet_eq_nil_of_key_absent
     (responseName : Name) :
     ∀ groups,
@@ -1031,6 +1103,164 @@ theorem collectFields_inlineFragment_some_directiveFree_apply_flatten
   rw [collectFields_inlineFragment_some_directiveFree_apply]
   · rw [collectFields_append]
   · exact happly
+
+theorem mergeSelectionSets_append
+    (left right : List Selection) :
+    mergeSelectionSets (left ++ right)
+      =
+    mergeSelectionSets left ++ mergeSelectionSets right := by
+  induction left with
+  | nil =>
+      simp [mergeSelectionSets]
+  | cons selection rest ih =>
+      simp [mergeSelectionSets, ih, List.append_assoc]
+
+theorem collectFields_validFieldsWithResponseName_responseSelection
+    (schema : Schema) (variableValues : Execution.VariableValues)
+    (parentType : Name) (source : Execution.Value)
+    (responseName : Name) (selectionSet : List Selection) :
+    objectTypeNameBool schema parentType = true ->
+      (∃ runtimeType identity,
+        source = .object runtimeType identity
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
+        selectionSetDirectiveFree selectionSet ->
+          collectedResponseSelectionSet responseName
+            (Execution.collectFields schema variableValues parentType source
+              selectionSet)
+          =
+          mergeSelectionSets
+            (validFieldsWithResponseName schema parentType responseName
+              selectionSet) := by
+  intro hobject hsource hfree
+  induction selectionSet using
+    validFieldsWithResponseName.induct schema parentType responseName with
+  | case1 =>
+      simp [Execution.collectFields, validFieldsWithResponseName,
+        collectedResponseSelectionSet, mergeSelectionSets]
+  | case2 rest selectionResponseName fieldName arguments directives
+      fieldSelectionSet hname hrest =>
+      have hrestFree := selectionSetDirectiveFree_tail hfree
+      have hheadFree := selectionSetDirectiveFree_head hfree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      subst directives
+      have hrestProjection := hrest hrestFree
+      have hsingleton :
+          collectedResponseSelectionSet responseName
+            [(selectionResponseName, [{
+              parentType := parentType,
+              responseName := selectionResponseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := fieldSelectionSet
+            }])]
+          =
+          fieldSelectionSet := by
+        have hresponse : selectionResponseName = responseName :=
+          beq_iff_eq.mp hname
+        subst selectionResponseName
+        simp [collectedResponseSelectionSet,
+          Execution.mergedFieldSelectionSet]
+      rw [collectFields_field_noDirectives]
+      rw [collectedResponseSelectionSet_mergeExecutableGroups]
+      · simp [validFieldsWithResponseName, hname, mergeSelectionSets,
+          Selection.subselections, hsingleton, hrestProjection]
+      · exact collectFields_namesNodup schema variableValues parentType source
+          rest
+  | case3 rest selectionResponseName fieldName arguments directives
+      fieldSelectionSet hname hrest =>
+      have hrestFree := selectionSetDirectiveFree_tail hfree
+      have hheadFree := selectionSetDirectiveFree_head hfree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      subst directives
+      have hrestProjection := hrest hrestFree
+      have hsingleton :
+          collectedResponseSelectionSet responseName
+            [(selectionResponseName, [{
+              parentType := parentType,
+              responseName := selectionResponseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := fieldSelectionSet
+            }])]
+          =
+          [] := by
+        have hresponseFalse : (selectionResponseName == responseName) = false := by
+          cases hmatch : selectionResponseName == responseName
+          · rfl
+          · exact False.elim (hname hmatch)
+        simp [collectedResponseSelectionSet, hresponseFalse]
+      rw [collectFields_field_noDirectives]
+      rw [collectedResponseSelectionSet_mergeExecutableGroups]
+      · simp [validFieldsWithResponseName, hname, hsingleton,
+          hrestProjection]
+      · exact collectFields_namesNodup schema variableValues parentType source
+          rest
+  | case4 rest directives fragmentSelectionSet hfragment hrest =>
+      have hrestFree := selectionSetDirectiveFree_tail hfree
+      have hheadFree := selectionSetDirectiveFree_head hfree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      have hfragmentFree : selectionSetDirectiveFree fragmentSelectionSet := by
+        simpa [selectionDirectiveFree, hdirectives] using hheadFree.2
+      subst directives
+      have hfragmentProjection := hfragment hfragmentFree
+      have hrestProjection := hrest hrestFree
+      rw [collectFields_inlineFragment_none_directiveFree]
+      rw [collectedResponseSelectionSet_mergeExecutableGroups]
+      · simp [validFieldsWithResponseName, mergeSelectionSets_append,
+          hfragmentProjection, hrestProjection]
+      · exact collectFields_namesNodup schema variableValues parentType source
+          rest
+  | case5 rest typeCondition directives fragmentSelectionSet hoverlap hrest
+      hfragment =>
+      have hrestFree := selectionSetDirectiveFree_tail hfree
+      have hheadFree := selectionSetDirectiveFree_head hfree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      have hfragmentFree : selectionSetDirectiveFree fragmentSelectionSet := by
+        simpa [selectionDirectiveFree, hdirectives] using hheadFree.2
+      subst directives
+      have happly :
+          Execution.doesFragmentTypeApplyBool schema parentType source
+            typeCondition = true := by
+        rw [doesFragmentTypeApplyBool_eq_typesOverlapBool_of_object_parent_source
+          schema hobject hsource]
+        exact hoverlap
+      have hfragmentProjection := hfragment hfragmentFree
+      have hrestProjection := hrest hrestFree
+      rw [collectFields_inlineFragment_some_directiveFree_apply]
+      · rw [collectedResponseSelectionSet_mergeExecutableGroups]
+        · simp [validFieldsWithResponseName, hoverlap,
+            mergeSelectionSets_append, hfragmentProjection, hrestProjection]
+        · exact collectFields_namesNodup schema variableValues parentType source
+            rest
+      · exact happly
+  | case6 rest typeCondition directives fragmentSelectionSet hoverlap hrest =>
+      have hrestFree := selectionSetDirectiveFree_tail hfree
+      have hheadFree := selectionSetDirectiveFree_head hfree
+      have hdirectives : directives = [] := by
+        simpa [selectionDirectiveFree] using hheadFree.1
+      subst directives
+      have hfalse : schema.typesOverlapBool parentType typeCondition = false := by
+        cases hmatch : schema.typesOverlapBool parentType typeCondition
+        · rfl
+        · exact False.elim (hoverlap hmatch)
+      have hskip :
+          Execution.doesFragmentTypeApplyBool schema parentType source
+            typeCondition = false := by
+        rw [doesFragmentTypeApplyBool_eq_typesOverlapBool_of_object_parent_source
+          schema hobject hsource]
+        exact hfalse
+      have hrestProjection := hrest hrestFree
+      rw [collectFields_inlineFragment_some_directiveFree_skip]
+      · rw [mergeExecutableGroups_nil_left_of_namesNodup
+          (Execution.collectFields schema variableValues parentType source rest)
+          (collectFields_namesNodup schema variableValues parentType source
+            rest)]
+        simp [validFieldsWithResponseName, hfalse, hrestProjection]
+      · exact hskip
 
 theorem mergeExecutableGroups_nil_left_collectFields
     (schema : Schema) (variableValues : Execution.VariableValues)

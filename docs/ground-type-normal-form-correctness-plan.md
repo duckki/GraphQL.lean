@@ -110,7 +110,8 @@ over this repo's resolver-backed `Execution.collectFields` and
    response-name group has the group key as its response name. The module also
    exposes `collectedResponseSelectionSet` and its merge behavior for nodup
    collected groups, which isolates the merged subselections for one response
-   name.
+   name. For concrete object parent execution, this projection is now proven to
+   match `mergeSelectionSets (validFieldsWithResponseName ...)`.
 
 4. Same-response-name merge semantics.
 

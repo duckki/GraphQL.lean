@@ -1303,6 +1303,65 @@ theorem selectionSetLookupValid_tail
   intro candidate hcandidate
   exact hvalid candidate (List.mem_cons_of_mem selection hcandidate)
 
+theorem selectionSetLookupValid_withoutFieldsWithResponseName_core
+    (schema : Schema) (responseName : Name) :
+    ∀ parentType selectionSet,
+      selectionSetLookupValid schema parentType selectionSet ->
+        selectionSetLookupValid schema parentType
+          (withoutFieldsWithResponseName schema responseName selectionSet)
+  | _parentType, [], _hvalid => by
+      simp [withoutFieldsWithResponseName, selectionSetLookupValid]
+  | parentType, selection :: rest, hvalid => by
+      have hhead :
+          selectionLookupValid schema parentType selection := by
+        unfold selectionSetLookupValid at hvalid
+        exact hvalid selection (by simp)
+      have htail :
+          selectionSetLookupValid schema parentType rest :=
+        selectionSetLookupValid_tail hvalid
+      cases selection with
+      | field fieldResponseName fieldName arguments directives selectionSet =>
+          by_cases hname : (fieldResponseName == responseName) = true
+          · simp [withoutFieldsWithResponseName, hname]
+            simpa [selectionSetLookupValid] using
+              selectionSetLookupValid_withoutFieldsWithResponseName_core
+                schema responseName parentType rest htail
+          · have hfalse : (fieldResponseName == responseName) = false := by
+              cases hmatch : fieldResponseName == responseName
+              · rfl
+              · contradiction
+            simp [withoutFieldsWithResponseName, hfalse,
+              selectionSetLookupValid]
+            constructor
+            · exact hhead
+            · simpa [selectionSetLookupValid] using
+                selectionSetLookupValid_withoutFieldsWithResponseName_core
+                  schema responseName parentType rest htail
+      | inlineFragment typeCondition directives selectionSet =>
+          cases typeCondition with
+          | none =>
+              simp [withoutFieldsWithResponseName,
+                selectionSetLookupValid, selectionLookupValid]
+              constructor
+              · simpa [selectionSetLookupValid] using
+                  selectionSetLookupValid_withoutFieldsWithResponseName_core
+                    schema responseName parentType selectionSet
+                    (by simpa [selectionLookupValid] using hhead)
+              · simpa [selectionSetLookupValid] using
+                  selectionSetLookupValid_withoutFieldsWithResponseName_core
+                    schema responseName parentType rest htail
+          | some typeCondition =>
+              simp [withoutFieldsWithResponseName,
+                selectionSetLookupValid, selectionLookupValid]
+              constructor
+              · simpa [selectionSetLookupValid] using
+                  selectionSetLookupValid_withoutFieldsWithResponseName_core
+                    schema responseName typeCondition selectionSet
+                    (by simpa [selectionLookupValid] using hhead)
+              · simpa [selectionSetLookupValid] using
+                  selectionSetLookupValid_withoutFieldsWithResponseName_core
+                    schema responseName parentType rest htail
+
 mutual
   theorem selectionLookupValid_of_selectionValid
       {schema : Schema} {variableDefinitions : List VariableDefinition}
@@ -1433,8 +1492,9 @@ mutual
     | .inlineFragment none _directives selectionSet =>
         selectionSetSemanticsReady schema parentType selectionSet
     | .inlineFragment (some typeCondition) _directives selectionSet =>
-        schema.typesOverlapBool parentType typeCondition = true ->
-          selectionSetSemanticsReady schema parentType selectionSet
+        selectionSetLookupValid schema typeCondition selectionSet
+          ∧ (schema.typesOverlapBool parentType typeCondition = true ->
+            selectionSetSemanticsReady schema parentType selectionSet)
 
   def selectionSetSemanticsReady (schema : Schema)
       (parentType : Name) (selectionSet : List Selection) : Prop :=
@@ -1489,6 +1549,55 @@ theorem selectionSetSemanticsReady_tail
   unfold selectionSetSemanticsReady at hready ⊢
   intro candidate hcandidate
   exact hready candidate (List.mem_cons_of_mem selection hcandidate)
+
+mutual
+  theorem selectionLookupValid_of_selectionSemanticsReady
+      {schema : Schema} {parentType : Name} :
+      ∀ selection,
+        selectionSemanticsReady schema parentType selection ->
+          selectionLookupValid schema parentType selection
+    | .field _responseName fieldName _arguments _directives _selectionSet,
+      hready => by
+        simp [selectionSemanticsReady, selectionLookupValid] at hready ⊢
+        rcases hready with ⟨fieldDefinition, hlookup, _hchild⟩
+        exact ⟨fieldDefinition, hlookup⟩
+    | .inlineFragment none _directives selectionSet, hready => by
+        have hbody :
+            selectionSetSemanticsReady schema parentType selectionSet := by
+          simpa [selectionSemanticsReady] using hready
+        simpa [selectionLookupValid] using
+          selectionSetLookupValid_of_selectionSetSemanticsReady selectionSet
+            hbody
+    | .inlineFragment (some _typeCondition) _directives selectionSet,
+      hready => by
+        have hpair :
+            selectionSetLookupValid schema _typeCondition selectionSet
+              ∧ (schema.typesOverlapBool parentType _typeCondition = true ->
+                selectionSetSemanticsReady schema parentType selectionSet) := by
+          simpa [selectionSemanticsReady] using hready
+        simpa [selectionLookupValid] using hpair.1
+
+  theorem selectionSetLookupValid_of_selectionSetSemanticsReady
+      {schema : Schema} {parentType : Name} :
+      ∀ selectionSet,
+        selectionSetSemanticsReady schema parentType selectionSet ->
+          selectionSetLookupValid schema parentType selectionSet
+    | [], _hready => by
+        exact selectionSetLookupValid_nil schema parentType
+    | selection :: rest, hready => by
+        have hhead :
+            selectionSemanticsReady schema parentType selection := by
+          unfold selectionSetSemanticsReady at hready
+          exact hready selection (by simp)
+        have htail :
+            selectionSetSemanticsReady schema parentType rest :=
+          selectionSetSemanticsReady_tail hready
+        simp [selectionSetLookupValid]
+        constructor
+        · exact selectionLookupValid_of_selectionSemanticsReady selection hhead
+        · simpa [selectionSetLookupValid] using
+            selectionSetLookupValid_of_selectionSetSemanticsReady rest htail
+end
 
 theorem selectionSetSemanticsReady_mergeSelectionSets_of_subselections
     {schema : Schema} {parentType : Name} :
@@ -1578,23 +1687,39 @@ theorem selectionSetSemanticsReady_withoutFieldsWithResponseName
               · simpa [selectionSetSemanticsReady] using
                   selectionSetSemanticsReady_withoutFieldsWithResponseName
                     schema responseName parentType rest htail
-          | some typeCondition =>
-              simp [withoutFieldsWithResponseName,
-                selectionSetSemanticsReady, selectionSemanticsReady]
-              constructor
-              · intro hoverlap
-                have hheadBody :
-                    schema.typesOverlapBool parentType typeCondition = true ->
-                      selectionSetSemanticsReady schema parentType
-                        selectionSet := by
-                  simpa [selectionSemanticsReady] using hhead
-                simpa [selectionSetSemanticsReady] using
-                  selectionSetSemanticsReady_withoutFieldsWithResponseName
-                    schema responseName parentType selectionSet
-                    (hheadBody hoverlap)
-              · simpa [selectionSetSemanticsReady] using
-                  selectionSetSemanticsReady_withoutFieldsWithResponseName
-                    schema responseName parentType rest htail
+            | some typeCondition =>
+                simp [withoutFieldsWithResponseName,
+                  selectionSetSemanticsReady, selectionSemanticsReady]
+                constructor
+                · constructor
+                  · have hheadPair :
+                      selectionSetLookupValid schema typeCondition
+                            selectionSet
+                          ∧ (schema.typesOverlapBool parentType typeCondition =
+                            true ->
+                            selectionSetSemanticsReady schema parentType
+                              selectionSet) := by
+                      simpa [selectionSemanticsReady] using hhead
+                    exact
+                      selectionSetLookupValid_withoutFieldsWithResponseName_core
+                        schema responseName typeCondition selectionSet
+                        hheadPair.1
+                  · intro hoverlap
+                    have hheadPair :
+                      selectionSetLookupValid schema typeCondition
+                            selectionSet
+                          ∧ (schema.typesOverlapBool parentType typeCondition =
+                            true ->
+                            selectionSetSemanticsReady schema parentType
+                              selectionSet) := by
+                      simpa [selectionSemanticsReady] using hhead
+                    simpa [selectionSetSemanticsReady] using
+                      selectionSetSemanticsReady_withoutFieldsWithResponseName
+                        schema responseName parentType selectionSet
+                        (hheadPair.2 hoverlap)
+                · simpa [selectionSetSemanticsReady] using
+                    selectionSetSemanticsReady_withoutFieldsWithResponseName
+                      schema responseName parentType rest htail
 
 theorem validFieldsWithResponseName_field_semanticsReady
     (schema : Schema) (parentType responseName : Name) :
@@ -1670,12 +1795,14 @@ theorem validFieldsWithResponseName_field_semanticsReady
               · have hbody :
                     selectionSetSemanticsReady schema parentType
                       selectionSet := by
-                  have hheadBody :
-                      schema.typesOverlapBool parentType typeCondition = true ->
+                  have hheadPair :
+                    selectionSetLookupValid schema typeCondition selectionSet
+                      ∧ (schema.typesOverlapBool parentType typeCondition =
+                        true ->
                         selectionSetSemanticsReady schema parentType
-                          selectionSet := by
+                          selectionSet) := by
                     simpa [selectionSemanticsReady] using hhead
-                  exact hheadBody hoverlap
+                  exact hheadPair.2 hoverlap
                 simp [validFieldsWithResponseName, hoverlap] at hfield
                 rcases hfield with hfield | hfield
                 · exact
@@ -1726,28 +1853,32 @@ mutual
         exact selectionSetSemanticsReady_of_selectionSetValid_possibleObject
           schema variableDefinitions fieldDefinition.outputType.namedType
           runtimeType hschema hpossible selectionSet hchildValid
-    | hschema, hobject,
-      .inlineFragment none _directives selectionSet, hvalid => by
-        simpa [selectionSemanticsReady] using
-          selectionSetSemanticsReady_of_selectionSetValid_object schema
-            variableDefinitions parentType hschema hobject selectionSet
-            (Validation.selectionValid_inlineFragment_none_selectionSetValid
-              hvalid)
-    | hschema, hobject,
-      .inlineFragment (some typeCondition) _directives selectionSet,
-      hvalid => by
-        simp [selectionSemanticsReady]
-        intro hoverlap
-        have hpossible :
-            parentType ∈ schema.getPossibleTypes typeCondition :=
-          List.contains_iff_mem.mp
-            (typeIncludesObjectBool_of_object_typesOverlapBool schema hobject
-              hoverlap)
-        exact selectionSetSemanticsReady_of_selectionSetValid_possibleObject
-          schema variableDefinitions typeCondition parentType hschema
-          hpossible selectionSet
-          (Validation.selectionValid_inlineFragment_some_selectionSetValid
-            hvalid)
+      | hschema, hobject,
+        .inlineFragment none _directives selectionSet, hvalid => by
+          simpa [selectionSemanticsReady] using
+            selectionSetSemanticsReady_of_selectionSetValid_object schema
+              variableDefinitions parentType hschema hobject selectionSet
+              (Validation.selectionValid_inlineFragment_none_selectionSetValid
+                hvalid)
+      | hschema, hobject,
+        .inlineFragment (some typeCondition) _directives selectionSet,
+        hvalid => by
+          simp [selectionSemanticsReady]
+          constructor
+          · exact selectionSetLookupValid_of_selectionSetValid selectionSet
+              (Validation.selectionValid_inlineFragment_some_selectionSetValid
+                hvalid)
+          · intro hoverlap
+            have hpossible :
+                parentType ∈ schema.getPossibleTypes typeCondition :=
+              List.contains_iff_mem.mp
+                (typeIncludesObjectBool_of_object_typesOverlapBool schema hobject
+                  hoverlap)
+            exact selectionSetSemanticsReady_of_selectionSetValid_possibleObject
+              schema variableDefinitions typeCondition parentType hschema
+              hpossible selectionSet
+              (Validation.selectionValid_inlineFragment_some_selectionSetValid
+                hvalid)
 
   theorem selectionSetSemanticsReady_of_selectionSetValid_object
       (schema : Schema) (variableDefinitions : List VariableDefinition)
@@ -1821,33 +1952,37 @@ mutual
         exact selectionSetSemanticsReady_of_selectionSetValid_possibleObject
           schema variableDefinitions expectedDefinition.outputType.namedType
           runtimeType hschema hpossibleExpected selectionSet hchildValid
-    | hschema, hpossible,
-      .inlineFragment none _directives selectionSet, hvalid => by
-        simpa [selectionSemanticsReady] using
-          selectionSetSemanticsReady_of_selectionSetValid_possibleObject
-            schema variableDefinitions parentType objectType hschema
-            hpossible selectionSet
-            (Validation.selectionValid_inlineFragment_none_selectionSetValid
-              hvalid)
-    | hschema, hpossible,
-      .inlineFragment (some typeCondition) _directives selectionSet,
-      hvalid => by
-        simp [selectionSemanticsReady]
-        intro hoverlap
-        have hobject :
-            schema.objectType objectType :=
-          SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects
-            hschema parentType objectType hpossible
-        have hfragmentPossible :
-            objectType ∈ schema.getPossibleTypes typeCondition :=
-          List.contains_iff_mem.mp
-            (typeIncludesObjectBool_of_object_typesOverlapBool schema hobject
-              hoverlap)
-        exact selectionSetSemanticsReady_of_selectionSetValid_possibleObject
-          schema variableDefinitions typeCondition objectType hschema
-          hfragmentPossible selectionSet
-          (Validation.selectionValid_inlineFragment_some_selectionSetValid
-            hvalid)
+      | hschema, hpossible,
+        .inlineFragment none _directives selectionSet, hvalid => by
+          simpa [selectionSemanticsReady] using
+            selectionSetSemanticsReady_of_selectionSetValid_possibleObject
+              schema variableDefinitions parentType objectType hschema
+              hpossible selectionSet
+              (Validation.selectionValid_inlineFragment_none_selectionSetValid
+                hvalid)
+      | hschema, hpossible,
+        .inlineFragment (some typeCondition) _directives selectionSet,
+        hvalid => by
+          simp [selectionSemanticsReady]
+          constructor
+          · exact selectionSetLookupValid_of_selectionSetValid selectionSet
+              (Validation.selectionValid_inlineFragment_some_selectionSetValid
+                hvalid)
+          · intro hoverlap
+            have hobject :
+                schema.objectType objectType :=
+              SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects
+                hschema parentType objectType hpossible
+            have hfragmentPossible :
+                objectType ∈ schema.getPossibleTypes typeCondition :=
+              List.contains_iff_mem.mp
+                (typeIncludesObjectBool_of_object_typesOverlapBool schema hobject
+                  hoverlap)
+            exact selectionSetSemanticsReady_of_selectionSetValid_possibleObject
+              schema variableDefinitions typeCondition objectType hschema
+              hfragmentPossible selectionSet
+              (Validation.selectionValid_inlineFragment_some_selectionSetValid
+                hvalid)
 
   theorem selectionSetSemanticsReady_of_selectionSetValid_possibleObject
       (schema : Schema) (variableDefinitions : List VariableDefinition)

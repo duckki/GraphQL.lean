@@ -1104,6 +1104,274 @@ theorem selectionSetLookupValid_withoutFieldsWithResponseName
                   selectionSetLookupValid_withoutFieldsWithResponseName
                     schema responseName parentType rest htail
 
+theorem validFieldsWithResponseName_field_mem_collectFields_scoped_lookupValid
+    (schema : Schema)
+    (filterParent collectParent responseName : Name) :
+    ∀ selectionSet fieldName arguments directives subselections,
+      (schema.objectType collectParent ->
+        schema.typesOverlapBool filterParent collectParent = true) ->
+      selectionSetLookupValid schema collectParent selectionSet ->
+      Selection.field responseName fieldName arguments directives subselections
+        ∈ validFieldsWithResponseName schema filterParent responseName
+          selectionSet ->
+        ∃ scopedField,
+          scopedField ∈ FieldMerge.collectFields schema collectParent selectionSet
+            ∧ scopedField.responseName = responseName
+            ∧ scopedField.fieldName = fieldName
+            ∧ scopedField.arguments = arguments
+            ∧ scopedField.selectionSet = subselections
+            ∧ (schema.objectType scopedField.parentType ->
+              schema.typesOverlapBool filterParent scopedField.parentType = true)
+  | [], fieldName, arguments, directives, subselections, _hoverlapScope,
+      _hlookupValid, hfield => by
+      simp [validFieldsWithResponseName] at hfield
+  | selection :: rest, fieldName, arguments, directives, subselections,
+      hoverlapScope, hlookupValid, hfield => by
+      have hheadLookup :
+          selectionLookupValid schema collectParent selection := by
+        unfold selectionSetLookupValid at hlookupValid
+        exact hlookupValid selection (by simp)
+      have htailLookup :
+          selectionSetLookupValid schema collectParent rest :=
+        selectionSetLookupValid_tail hlookupValid
+      cases selection with
+      | field selectionResponseName selectionFieldName selectionArguments
+          selectionDirectives selectionSubselections =>
+          simp [selectionLookupValid] at hheadLookup
+          rcases hheadLookup with ⟨fieldDefinition, hlookup⟩
+          by_cases hname : selectionResponseName == responseName
+          · simp [validFieldsWithResponseName, hname] at hfield
+            rcases hfield with hfield | hfield
+            · rcases hfield with
+                ⟨hresponse, hfieldName, harguments, hdirectives,
+                  hsubselections⟩
+              subst selectionResponseName
+              subst selectionFieldName
+              subst selectionArguments
+              subst selectionDirectives
+              subst selectionSubselections
+              refine ⟨{
+                  parentType := collectParent,
+                  responseName := responseName,
+                  fieldName := fieldName,
+                  arguments := arguments,
+                  outputType := fieldDefinition.outputType,
+                  selectionSet := subselections
+                }, ?_, rfl, rfl, rfl, rfl, ?_⟩
+              simp [FieldMerge.collectFields, hlookup]
+              simpa using hoverlapScope
+            · rcases
+                validFieldsWithResponseName_field_mem_collectFields_scoped_lookupValid
+                  schema filterParent collectParent responseName rest
+                  fieldName arguments directives subselections hoverlapScope
+                  htailLookup
+                  hfield with
+                ⟨scopedField, hscoped, hresponse, hfieldName,
+                  harguments, hselectionSet, hscopedOverlap⟩
+              refine ⟨scopedField, ?_, hresponse, hfieldName, harguments,
+                hselectionSet, hscopedOverlap⟩
+              simpa [FieldMerge.collectFields, hlookup] using Or.inr hscoped
+          · have hfalse : (selectionResponseName == responseName) = false := by
+              cases hmatch : selectionResponseName == responseName
+              · rfl
+              · exact False.elim (hname hmatch)
+            simp [validFieldsWithResponseName, hfalse] at hfield
+            rcases
+              validFieldsWithResponseName_field_mem_collectFields_scoped_lookupValid
+                schema filterParent collectParent responseName rest
+                fieldName arguments directives subselections hoverlapScope
+                htailLookup hfield
+              with
+                ⟨scopedField, hscoped, hresponse, hfieldName, harguments,
+                  hselectionSet, hscopedOverlap⟩
+            refine ⟨scopedField, ?_, hresponse, hfieldName, harguments,
+              hselectionSet, hscopedOverlap⟩
+            simpa [FieldMerge.collectFields, hlookup] using Or.inr hscoped
+      | inlineFragment typeCondition selectionDirectives selectionSet =>
+          cases typeCondition with
+          | none =>
+              simp [validFieldsWithResponseName] at hfield
+              simp [selectionLookupValid] at hheadLookup
+              rcases hfield with hfield | hfield
+              · rcases
+                  validFieldsWithResponseName_field_mem_collectFields_scoped_lookupValid
+                    schema filterParent collectParent responseName selectionSet
+                    fieldName arguments directives subselections hoverlapScope
+                    hheadLookup
+                    hfield with
+                  ⟨scopedField, hscoped, hresponse, hfieldName, harguments,
+                    hselectionSet, hscopedOverlap⟩
+                refine ⟨scopedField, ?_, hresponse, hfieldName, harguments,
+                  hselectionSet, hscopedOverlap⟩
+                simp [FieldMerge.collectFields, hscoped]
+              · rcases
+                  validFieldsWithResponseName_field_mem_collectFields_scoped_lookupValid
+                    schema filterParent collectParent responseName rest
+                    fieldName arguments directives subselections hoverlapScope
+                    htailLookup
+                    hfield with
+                  ⟨scopedField, hscoped, hresponse, hfieldName, harguments,
+                    hselectionSet, hscopedOverlap⟩
+                refine ⟨scopedField, ?_, hresponse, hfieldName, harguments,
+                  hselectionSet, hscopedOverlap⟩
+                simp [FieldMerge.collectFields, hscoped]
+          | some typeCondition =>
+              by_cases hoverlap :
+                  schema.typesOverlapBool filterParent typeCondition = true
+              · simp [validFieldsWithResponseName, hoverlap] at hfield
+                simp [selectionLookupValid] at hheadLookup
+                rcases hfield with hfield | hfield
+                · rcases
+                    validFieldsWithResponseName_field_mem_collectFields_scoped_lookupValid
+                      schema filterParent typeCondition responseName
+                      selectionSet fieldName arguments directives
+                      subselections (fun _hobject => hoverlap) hheadLookup
+                      hfield with
+                    ⟨scopedField, hscoped, hresponse, hfieldName,
+                      harguments, hselectionSet, hscopedOverlap⟩
+                  refine ⟨scopedField, ?_, hresponse, hfieldName, harguments,
+                    hselectionSet, hscopedOverlap⟩
+                  simp [FieldMerge.collectFields, hscoped]
+                · rcases
+                    validFieldsWithResponseName_field_mem_collectFields_scoped_lookupValid
+                      schema filterParent collectParent responseName rest
+                      fieldName arguments directives subselections
+                      hoverlapScope htailLookup hfield with
+                    ⟨scopedField, hscoped, hresponse, hfieldName,
+                      harguments, hselectionSet, hscopedOverlap⟩
+                  refine ⟨scopedField, ?_, hresponse, hfieldName, harguments,
+                    hselectionSet, hscopedOverlap⟩
+                  simp [FieldMerge.collectFields, hscoped]
+              · have hfalse :
+                    schema.typesOverlapBool filterParent typeCondition =
+                      false := by
+                  cases hmatch :
+                      schema.typesOverlapBool filterParent typeCondition
+                  · rfl
+                  · exact False.elim (hoverlap hmatch)
+                simp [validFieldsWithResponseName, hfalse] at hfield
+                rcases
+                  validFieldsWithResponseName_field_mem_collectFields_scoped_lookupValid
+                    schema filterParent collectParent responseName rest
+                    fieldName arguments directives subselections hoverlapScope
+                    htailLookup hfield with
+                  ⟨scopedField, hscoped, hresponse, hfieldName, harguments,
+                    hselectionSet, hscopedOverlap⟩
+                refine ⟨scopedField, ?_, hresponse, hfieldName, harguments,
+                  hselectionSet, hscopedOverlap⟩
+                simp [FieldMerge.collectFields, hscoped]
+
+theorem validFieldsWithResponseName_matching_same_field_of_canMerge_object_lookupValid
+    (schema : Schema)
+    (parentType responseName fieldName : Name)
+    (arguments : List Argument) (subselections rest : List Selection) :
+    schema.objectType parentType ->
+    selectionSetLookupValid schema parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+    FieldMerge.fieldsInSetCanMerge schema parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+      ∀ matchedFieldName matchedArguments matchedDirectives
+        matchedSubselections,
+        Selection.field responseName matchedFieldName matchedArguments
+            matchedDirectives matchedSubselections
+          ∈ validFieldsWithResponseName schema parentType responseName
+            rest ->
+          matchedFieldName = fieldName := by
+  intro hobject hlookupValid hmerge matchedFieldName matchedArguments
+    matchedDirectives matchedSubselections hmatched
+  have hheadLookup :
+      selectionLookupValid schema parentType
+        (Selection.field responseName fieldName arguments [] subselections) := by
+    unfold selectionSetLookupValid at hlookupValid
+    exact hlookupValid _ (by simp)
+  simp [selectionLookupValid] at hheadLookup
+  rcases hheadLookup with ⟨fieldDefinition, hlookup⟩
+  let headScoped : FieldMerge.ScopedField :=
+    {
+      parentType := parentType,
+      responseName := responseName,
+      fieldName := fieldName,
+      arguments := arguments,
+      outputType := fieldDefinition.outputType,
+      selectionSet := subselections
+    }
+  have hheadMem :
+      headScoped ∈ FieldMerge.collectFields schema parentType
+        (Selection.field responseName fieldName arguments [] subselections
+          :: rest) := by
+    simp [headScoped, FieldMerge.collectFields, hlookup]
+  have htailLookup :
+      selectionSetLookupValid schema parentType rest :=
+    selectionSetLookupValid_tail hlookupValid
+  rcases
+    validFieldsWithResponseName_field_mem_collectFields_scoped_lookupValid
+      schema parentType parentType responseName rest matchedFieldName
+      matchedArguments matchedDirectives matchedSubselections
+      (fun hobject => object_typesOverlapBool_self schema hobject)
+      htailLookup hmatched with
+    ⟨matchedScoped, hmatchedMemRest, hmatchedResponse,
+      hmatchedField, _hmatchedArguments, _hmatchedSelectionSet,
+      hmatchedOverlap⟩
+  have hmatchedMem :
+      matchedScoped ∈ FieldMerge.collectFields schema parentType
+        (Selection.field responseName fieldName arguments [] subselections
+          :: rest) := by
+    simpa [FieldMerge.collectFields, hlookup] using Or.inr hmatchedMemRest
+  have hfieldMerge :
+      FieldMerge.fieldsForNameCanMerge schema headScoped matchedScoped :=
+    FieldMerge.fieldsInSetCanMerge_pair hmerge hheadMem hmatchedMem
+      (by simpa [headScoped] using hmatchedResponse.symm)
+  have hparents :
+      headScoped.parentType = matchedScoped.parentType
+        ∨ ¬ schema.objectType headScoped.parentType
+        ∨ ¬ schema.objectType matchedScoped.parentType := by
+    by_cases hmatchedObject : schema.objectType matchedScoped.parentType
+    · have hoverlap := hmatchedOverlap hmatchedObject
+      have hmatchedParent :
+          matchedScoped.parentType = parentType :=
+        object_typesOverlapBool_eq schema hobject hmatchedObject hoverlap
+      exact Or.inl (by simp [headScoped, hmatchedParent])
+    · exact Or.inr (Or.inr hmatchedObject)
+  have hidentity :=
+    FieldMerge.fieldsForNameCanMerge_identity hfieldMerge hparents
+  have hheadField : headScoped.fieldName = fieldName := by
+    rfl
+  exact hmatchedField.symm.trans (hidentity.1.symm.trans hheadField)
+
+theorem validFieldsWithResponseName_matching_field_shape_of_canMerge_object_lookupValid
+    (schema : Schema)
+    (parentType responseName fieldName : Name)
+    (arguments : List Argument) (subselections rest : List Selection) :
+    schema.objectType parentType ->
+    selectionSetLookupValid schema parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+    FieldMerge.fieldsInSetCanMerge schema parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+      ∀ selection,
+        selection ∈ validFieldsWithResponseName schema parentType responseName
+          rest ->
+          ∃ matchedArguments matchedDirectives matchedSubselections,
+            selection =
+              Selection.field responseName fieldName matchedArguments
+                matchedDirectives matchedSubselections := by
+  intro hobject hlookupValid hmerge selection hselection
+  rcases validFieldsWithResponseName_mem_field schema parentType responseName
+      rest selection hselection with
+    ⟨matchedFieldName, matchedArguments, matchedDirectives,
+      matchedSubselections, hselectionEq⟩
+  subst selection
+  have hsame :=
+    validFieldsWithResponseName_matching_same_field_of_canMerge_object_lookupValid
+      schema parentType responseName fieldName arguments subselections rest
+      hobject hlookupValid hmerge matchedFieldName matchedArguments
+      matchedDirectives matchedSubselections hselection
+  subst matchedFieldName
+  exact ⟨matchedArguments, matchedDirectives, matchedSubselections, rfl⟩
+
 theorem selectionSetLookupValid_field_head_lookup_none_false
     {schema : Schema} {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}

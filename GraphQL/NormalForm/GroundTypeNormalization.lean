@@ -447,6 +447,66 @@ theorem selectionSetLookupValid_field_head_lookup_none_false
   rw [hnone] at hlookup
   contradiction
 
+theorem selectionSetLookupValid_mergeSelectionSets_of_subselections
+    {schema : Schema} {parentType : Name} :
+    ∀ selections,
+      (∀ selection, selection ∈ selections ->
+        selectionSetLookupValid schema parentType selection.subselections) ->
+        selectionSetLookupValid schema parentType
+          (mergeSelectionSets selections)
+  | [], _hvalid => by
+      simp [mergeSelectionSets, selectionSetLookupValid]
+  | selection :: rest, hvalid => by
+      simp [mergeSelectionSets]
+      apply selectionSetLookupValid_append
+      · exact hvalid selection (by simp)
+      · exact selectionSetLookupValid_mergeSelectionSets_of_subselections rest
+          (by
+            intro candidate hcandidate
+            exact hvalid candidate (by simp [hcandidate]))
+
+theorem selectionSetLookupValid_mergeSelectionSets_of_field_subselections
+    {schema : Schema} {parentType responseName : Name}
+    (selections : List Selection) :
+    (∀ selection, selection ∈ selections ->
+      ∃ fieldName arguments directives subselections,
+        selection =
+          Selection.field responseName fieldName arguments directives
+            subselections) ->
+    (∀ fieldName arguments directives subselections,
+      Selection.field responseName fieldName arguments directives
+          subselections ∈ selections ->
+        selectionSetLookupValid schema parentType subselections) ->
+      selectionSetLookupValid schema parentType (mergeSelectionSets selections) := by
+  intro hshape hfields
+  apply selectionSetLookupValid_mergeSelectionSets_of_subselections
+  intro selection hselection
+  rcases hshape selection hselection with
+    ⟨fieldName, arguments, directives, subselections, hselectionShape⟩
+  subst selection
+  simpa [Selection.subselections] using
+    hfields fieldName arguments directives subselections hselection
+
+theorem selectionSetLookupValid_mergeSelectionSets_validFieldsWithResponseName
+    {schema : Schema} {parentType responseName childType : Name}
+    (selectionSet : List Selection) :
+    (∀ fieldName arguments directives subselections,
+      Selection.field responseName fieldName arguments directives subselections
+        ∈ validFieldsWithResponseName schema parentType responseName
+          selectionSet ->
+        selectionSetLookupValid schema childType subselections) ->
+      selectionSetLookupValid schema childType
+        (mergeSelectionSets
+          (validFieldsWithResponseName schema parentType responseName
+            selectionSet)) := by
+  intro hfields
+  apply selectionSetLookupValid_mergeSelectionSets_of_field_subselections
+  · intro selection hselection
+    exact validFieldsWithResponseName_mem_field schema parentType responseName
+      selectionSet selection hselection
+  · intro fieldName arguments directives subselections hselection
+    exact hfields fieldName arguments directives subselections hselection
+
 theorem selectionSetDirectiveFree_possibleTypeNormalizations
     (schema : Schema)
     (possibleTypes : List Name) {selectionSet : List Selection} :

@@ -960,6 +960,51 @@ theorem mergeExecutableGroups_nil_left_of_namesNodup
         cases hleft)
       hnodup
 
+theorem mergeExecutableGroups_preserves_head
+    (responseName : Name) (currentFields : List Execution.ExecutableField)
+    (headRest right : List (Name × List Execution.ExecutableField)) :
+    ∃ appendedFields mergedRest,
+      Execution.mergeExecutableGroups
+        ((responseName, currentFields) :: headRest) right
+      =
+      (responseName, currentFields ++ appendedFields) :: mergedRest := by
+  induction right generalizing currentFields headRest with
+  | nil =>
+      exact ⟨[], headRest, by simp [Execution.mergeExecutableGroups]⟩
+  | cons group rest ih =>
+      rcases group with ⟨groupResponseName, groupFields⟩
+      by_cases hresponse : (responseName == groupResponseName) = true
+      · have hresponseEq : responseName = groupResponseName :=
+          beq_iff_eq.mp hresponse
+        subst groupResponseName
+        rcases ih (currentFields ++ groupFields) headRest with
+          ⟨appendedFields, mergedRest, hmerge⟩
+        refine ⟨groupFields ++ appendedFields, mergedRest, ?_⟩
+        simpa [Execution.mergeExecutableGroups, Execution.addExecutableGroup,
+          List.append_assoc] using hmerge
+      · have hfalse : (responseName == groupResponseName) = false := by
+          cases hmatch : responseName == groupResponseName
+          · rfl
+          · contradiction
+        have hreverseFalse : (groupResponseName == responseName) = false := by
+          cases hmatch : groupResponseName == responseName
+          · rfl
+          · have hgr : groupResponseName = responseName :=
+              beq_iff_eq.mp hmatch
+            subst groupResponseName
+            simp at hfalse
+        rcases ih currentFields
+            (Execution.addExecutableGroup (groupResponseName, groupFields)
+              headRest) with
+          ⟨appendedFields, mergedRest, hmerge⟩
+        refine ⟨appendedFields, mergedRest, ?_⟩
+        have hne : responseName ≠ groupResponseName := by
+          intro heq
+          subst responseName
+          simp at hfalse
+        simpa [Execution.mergeExecutableGroups, Execution.addExecutableGroup,
+          hne] using hmerge
+
 theorem mergeExecutableGroups_namesNodup
     (left right : List (Name × List Execution.ExecutableField)) :
     executableGroupNamesNodup left ->
@@ -1516,6 +1561,40 @@ theorem collectFields_field_noDirectives_cons_of_responseName_not_mem
     subst name
     exact hnotin hright
   · exact collectFields_namesNodup schema variableValues parentType source rest
+
+theorem collectFields_field_head_exists
+    (schema : Schema) (variableValues : Execution.VariableValues)
+    (parentType : Name) (source : Execution.Value)
+    (responseName fieldName : Name) (arguments : List Argument)
+    (selectionSet rest : List Selection) :
+    ∃ sourceFields sourceRest,
+      Execution.collectFields schema variableValues parentType source
+        (Selection.field responseName fieldName arguments [] selectionSet
+          :: rest)
+      =
+      (responseName, {
+        parentType := parentType,
+        responseName := responseName,
+        fieldName := fieldName,
+        arguments := arguments,
+        selectionSet := selectionSet
+      } :: sourceFields) :: sourceRest := by
+  let sourceField : Execution.ExecutableField :=
+    {
+      parentType := parentType,
+      responseName := responseName,
+      fieldName := fieldName,
+      arguments := arguments,
+      selectionSet := selectionSet
+    }
+  let restGroups :=
+    Execution.collectFields schema variableValues parentType source rest
+  rcases mergeExecutableGroups_preserves_head responseName [sourceField]
+      [] restGroups with
+    ⟨appendedFields, sourceRest, hmerge⟩
+  refine ⟨appendedFields, sourceRest, ?_⟩
+  rw [collectFields_field_noDirectives]
+  simpa [sourceField, restGroups] using hmerge
 
 theorem collectFields_withoutFieldsWithResponseName_directiveFree
     (schema : Schema) (variableValues : Execution.VariableValues)

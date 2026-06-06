@@ -456,6 +456,50 @@ def operationDefinitionValid (schema : Schema) (operation : Operation) : Prop :=
     ∧ FieldMerge.fieldsInSetCanMerge schema
       operation.rootType operation.selectionSet
 
+theorem operationDefinitionValid_rootType_eq
+    {schema : Schema} {operation : Operation} :
+    operationDefinitionValid schema operation ->
+      operation.rootType = schema.queryType := by
+  intro hvalid
+  exact hvalid.1
+
+theorem operationDefinitionValid_rootTypeComposite
+    {schema : Schema} {operation : Operation} :
+    operationDefinitionValid schema operation ->
+      schema.isCompositeType operation.rootType := by
+  intro hvalid
+  exact hvalid.2.1
+
+theorem operationDefinitionValid_variableDefinitionsValid
+    {schema : Schema} {operation : Operation} :
+    operationDefinitionValid schema operation ->
+      variableDefinitionsValid schema operation.variableDefinitions := by
+  intro hvalid
+  exact hvalid.2.2.1
+
+theorem operationDefinitionValid_selectionSet_nonempty
+    {schema : Schema} {operation : Operation} :
+    operationDefinitionValid schema operation ->
+      operation.selectionSet ≠ [] := by
+  intro hvalid
+  exact hvalid.2.2.2.1
+
+theorem operationDefinitionValid_selectionSetValid
+    {schema : Schema} {operation : Operation} :
+    operationDefinitionValid schema operation ->
+      selectionSetValid schema operation.variableDefinitions operation.rootType
+        operation.selectionSet := by
+  intro hvalid
+  exact hvalid.2.2.2.2.1
+
+theorem operationDefinitionValid_fieldsInSetCanMerge
+    {schema : Schema} {operation : Operation} :
+    operationDefinitionValid schema operation ->
+      FieldMerge.fieldsInSetCanMerge schema operation.rootType
+        operation.selectionSet := by
+  intro hvalid
+  exact hvalid.2.2.2.2.2
+
 end Validation
 
 end GraphQL

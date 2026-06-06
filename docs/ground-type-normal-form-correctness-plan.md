@@ -56,6 +56,19 @@ for the structural normalization helpers and for `normalizeOperation`.
 This supports the later semantic proof by ensuring the directive-free source
 assumption is stable across recursive normalized children.
 
+The operation-level semantic bridge is also proven in
+`GraphQL/NormalForm/GroundTypeNormalization/Semantics.lean`: once the local
+selection-set preservation induction is available, it lifts directly to
+`groundTypeNormalFormSemanticsPreservation` and then to
+`groundNormalFormCorrect`.
+
+The GraphCoQL Coq reference theorem
+`normalize_selections_preserves_semantics` proves the same high-level step by
+induction over `normalize_selections`, using filter/partition swap lemmas and
+possible-type object facts. The Lean proof now follows the same boundary, but
+over this repo's resolver-backed `Execution.collectFields` and
+`Execution.executeSelectionSet`.
+
 ## Proof Ladder
 
 1. Directive-free structural preservation.
@@ -83,6 +96,14 @@ assumption is stable across recursive normalized children.
 
    The target is a reusable statement that the normalizer partitions exactly the
    same executable field groups as execution sees for the current parent type.
+
+   Status: first execution-facing simplification lemmas are implemented in
+   `GraphQL/NormalForm/GroundTypeNormalization/FieldCollection.lean`.
+   During proof work, the generic ordered-map identity
+   `mergeExecutableGroups [] groups = groups` was found to be false for
+   arbitrary duplicate-key group lists. Future collection lemmas should either
+   require collected-group invariants or reason at the
+   `executeCollectedFields` equivalence level.
 
 4. Same-response-name merge semantics.
 
@@ -115,11 +136,20 @@ assumption is stable across recursive normalized children.
 
    This proves `NormalForm.groundTypeNormalFormSemanticsPreservation`.
 
+   Status: the lift from a root-applicable selection-set preservation theorem
+   to resolver-parametric operation equivalence is implemented as
+   `normalizeOperation_executeQuery` and
+   `groundTypeNormalFormSemanticsPreservation_of_selectionSet`.
+
 8. Store-backed correctness.
 
    Derive the store-backed correctness predicate
    `NormalForm.groundNormalFormCorrect` from resolver-parametric semantic
    preservation by instantiating resolvers with `Store.resolvers`.
+
+   Status: the lift from the same selection-set preservation theorem to
+   store-backed correctness is implemented as
+   `groundNormalFormCorrect_of_selectionSet`.
 
 ## Non-Goals
 

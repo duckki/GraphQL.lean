@@ -1233,6 +1233,149 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case
       (Nat.sub_le depth 1)) hinclude
   · exact htailCollected
 
+theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
+    (schema : Schema) (resolvers : Execution.Resolvers)
+    (variableValues : Execution.VariableValues)
+    (variableDefinitions : List VariableDefinition)
+    (hschema : SchemaWellFormedness.schemaWellFormed schema)
+    (depth : Nat) (parentType : Name) (source : Execution.Value)
+    (responseName fieldName : Name) (arguments : List Argument)
+    (subselections rest : List Selection)
+    (fieldDefinition : FieldDefinition) :
+    objectTypeNameBool schema parentType = true ->
+      (∃ runtimeType identity,
+        source = .object runtimeType identity
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
+    selectionSetDirectiveFree
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+    Validation.selectionSetValid schema variableDefinitions parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+    FieldMerge.fieldsInSetCanMerge schema parentType
+      (Selection.field responseName fieldName arguments [] subselections
+        :: rest) ->
+    schema.lookupField parentType fieldName = some fieldDefinition ->
+    (let mergedSubselections :=
+      subselections
+        ++ mergeSelectionSets
+          (validFieldsWithResponseName schema parentType responseName rest)
+    ∀ childDepth runtimeType identity,
+      childDepth < depth ->
+        selectionSetDirectiveFree mergedSubselections ->
+        selectionSetLookupValid schema runtimeType mergedSubselections ->
+        FieldMerge.fieldsInSetCanMerge schema runtimeType mergedSubselections ->
+          Execution.executeSelectionSet schema resolvers variableValues
+            childDepth runtimeType (.object runtimeType identity)
+            (normalizeSelectionSet schema runtimeType mergedSubselections)
+          =
+          Execution.executeSelectionSet schema resolvers variableValues
+            childDepth runtimeType (.object runtimeType identity)
+            mergedSubselections) ->
+    Execution.executeSelectionSet schema resolvers variableValues depth
+      parentType source
+      (normalizeSelectionSet schema parentType
+        (withoutFieldsWithResponseName schema responseName rest))
+      =
+    Execution.executeSelectionSet schema resolvers variableValues depth
+      parentType source
+      (withoutFieldsWithResponseName schema responseName rest) ->
+      Execution.executeSelectionSet schema resolvers variableValues depth
+        parentType source
+        (normalizeSelectionSet schema parentType
+          (Selection.field responseName fieldName arguments []
+            subselections :: rest))
+      =
+      Execution.executeSelectionSet schema resolvers variableValues depth
+        parentType source
+        (Selection.field responseName fieldName arguments []
+          subselections :: rest) := by
+  intro hobject hsource hfree hvalid hmerge hlookup hrecursive htail
+  let matching := validFieldsWithResponseName schema parentType responseName rest
+  let mergedSubselections := subselections ++ mergeSelectionSets matching
+  let returnType := fieldDefinition.outputType.namedType
+  have hparentObject :
+      schema.objectType parentType :=
+    objectType_of_objectTypeNameBool_eq_true schema hobject
+  have hmergedFree :
+      selectionSetDirectiveFree mergedSubselections := by
+    simpa [mergedSubselections, matching] using
+      selectionSetDirectiveFree_fieldHead_merged schema parentType responseName
+        fieldName arguments subselections rest hfree
+  have hreturnEq :
+      ((schema.fieldReturnType? parentType fieldName).getD fieldName)
+        =
+      returnType := by
+    simp [Schema.fieldReturnType?, hlookup, returnType]
+  apply normalizeSelectionSet_executeSelectionSet_field_head_case
+    schema resolvers variableValues depth parentType source responseName
+    fieldName arguments subselections rest
+    (if objectTypeNameBool schema returnType then
+      normalizeSelectionSet schema returnType mergedSubselections
+    else
+      (schema.getPossibleTypes returnType).map
+        (fun objectType =>
+          Selection.inlineFragment (some objectType) []
+            (normalizeSelectionSet schema objectType mergedSubselections)))
+    fieldDefinition
+  · exact hobject
+  · exact hsource
+  · exact hfree
+  · exact hlookup
+  · simp [matching, mergedSubselections, returnType]
+  · intro childDepth runtimeType identity hlt hinclude
+    have hincludeReturn :
+        schema.typeIncludesObjectBool returnType runtimeType = true := by
+      simpa [hreturnEq] using hinclude
+    have hmergedLookup :
+        selectionSetLookupValid schema runtimeType mergedSubselections := by
+      simpa [mergedSubselections, matching] using
+        selectionSetLookupValid_fieldHead_merged_of_child_object schema
+          variableDefinitions parentType responseName fieldName runtimeType
+          arguments subselections rest fieldDefinition hschema hparentObject
+          hvalid hmerge hlookup hincludeReturn
+    have hmergedCanMerge :
+        FieldMerge.fieldsInSetCanMerge schema runtimeType
+          mergedSubselections := by
+      simpa [mergedSubselections, matching] using
+        fieldsInSetCanMerge_fieldHead_merged_of_canMerge_object schema
+          variableDefinitions parentType responseName fieldName runtimeType
+          arguments subselections rest fieldDefinition hparentObject hvalid
+          hmerge hlookup
+    by_cases hreturnObject : objectTypeNameBool schema returnType = true
+    · have hruntimeEq : runtimeType = returnType :=
+        typeIncludesObjectBool_eq_of_objectTypeNameBool_true schema
+          hreturnObject hincludeReturn
+      subst runtimeType
+      simp [hreturnObject]
+      exact hrecursive childDepth returnType identity hlt hmergedFree
+        hmergedLookup hmergedCanMerge
+    · have hreturnObjectFalse :
+          objectTypeNameBool schema returnType = false := by
+        cases hmatch : objectTypeNameBool schema returnType
+        · rfl
+        · contradiction
+      have hpossible :
+          runtimeType ∈ schema.getPossibleTypes returnType :=
+        List.contains_iff_mem.mp hincludeReturn
+      have hobjects :
+          ∀ objectType, objectType ∈ schema.getPossibleTypes returnType ->
+            objectTypeNameBool schema objectType = true := by
+        intro objectType hobjectType
+        exact objectTypeNameBool_eq_true_of_objectType schema
+          (SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects
+            hschema returnType objectType hobjectType)
+      simp [hreturnObjectFalse]
+      exact executeSelectionSet_possibleTypeFragments_runtime_branch schema
+        resolvers variableValues childDepth runtimeType identity
+        (schema.getPossibleTypes returnType) mergedSubselections hobjects
+        (SchemaWellFormedness.schemaWellFormed_possibleTypesNodup hschema
+          returnType)
+        hpossible
+        (hrecursive childDepth runtimeType identity hlt hmergedFree
+          hmergedLookup hmergedCanMerge)
+  · exact htail
+
 theorem normalizeOperation_executeQuery
     (schema : Schema) (operation : Operation) :
     (∀ resolvers variableValues source,

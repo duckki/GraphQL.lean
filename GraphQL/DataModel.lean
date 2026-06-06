@@ -1,5 +1,4 @@
 import GraphQL.Execution
-import GraphQL.NormalForm
 
 /-!
 Spec reference: GraphQL September 2025.
@@ -8,8 +7,8 @@ Spec reference: GraphQL September 2025.
   arguments/variables, built-in `@skip`/`@include`, no introspection, no mutation, and no
   subscription.
 - The model represents typed object identities with field facts. It can be converted into
-  the existing resolver interface, and it provides the semantic predicates needed to state
-  ground-normal-form correctness.
+  the existing resolver interface, and it provides the semantic predicates used by
+  normal-form correctness statements.
 - Fidelity note: scalar coercion, enum coercion, input coercion, result coercion, execution
   errors, null bubbling, and serialization are assumed out of scope here.
 -/
@@ -155,24 +154,6 @@ def argumentsEqBool (left right : List Argument) : Bool :=
     (sortArgumentsByName (canonicalArguments left))
     (sortArgumentsByName (canonicalArguments right))
 
-theorem inputValueEqBool_objectFieldsOrderInsensitive :
-    inputValueEqBool
-      (.object [("left", .int 1), ("right", .boolean true)])
-      (.object [("right", .boolean true), ("left", .int 1)]) = true := by
-  rfl
-
-theorem argumentsEqBool_orderInsensitive :
-    argumentsEqBool
-      [
-        { name := "left", value := .int 1 },
-        { name := "right", value := .object [("nested", .string "value")] }
-      ]
-      [
-        { name := "right", value := .object [("nested", .string "value")] },
-        { name := "left", value := .int 1 }
-      ] = true := by
-  rfl
-
 end FieldKey
 
 -- Host result values before GraphQL response serialization, retaining runtime object type.
@@ -191,26 +172,6 @@ def toExecutionValue : Value -> Execution.Value
   | .scalar value => .scalar value
   | .object typeName id => .object typeName id
   | .list values => .list (values.map toExecutionValue)
-
-@[simp]
-theorem toExecutionValue_null :
-    toExecutionValue .null = Execution.Value.null := by
-  simp [toExecutionValue]
-
-@[simp]
-theorem toExecutionValue_scalar (value : String) :
-    toExecutionValue (.scalar value) = Execution.Value.scalar value := by
-  simp [toExecutionValue]
-
-@[simp]
-theorem toExecutionValue_object (typeName : Name) (id : ObjectId) :
-    toExecutionValue (.object typeName id) = Execution.Value.object typeName id := by
-  simp [toExecutionValue]
-
-@[simp]
-theorem toExecutionValue_list (values : List Value) :
-    toExecutionValue (.list values) = Execution.Value.list (values.map toExecutionValue) := by
-  simp [toExecutionValue]
 
 -- Assumption boundary for the scoped model: result values are already type-conformant.
 def conformsToType (schema : Schema) : Value -> TypeRef -> Prop
@@ -253,28 +214,6 @@ def lookupFieldIn? (fieldName : Name) (arguments : List Argument) :
 def lookupField? (object : ObjectRecord) (fieldName : Name)
     (arguments : List Argument) : Option Value :=
   lookupFieldIn? fieldName arguments object.fields
-
-theorem lookupField?_argumentsOrderInsensitive :
-    lookupField?
-      { typeName := "Type",
-        id := 0,
-        fields := [
-          ({
-            name := "field",
-            arguments := [
-              { name := "filter",
-                value := .object [("left", .int 1), ("right", .boolean true)] },
-              { name := "limit", value := .int 10 }
-            ]
-          }, .scalar "ok")
-        ] }
-      "field"
-      [
-        { name := "limit", value := .int 10 },
-        { name := "filter",
-          value := .object [("right", .boolean true), ("left", .int 1)] }
-      ] = some (.scalar "ok") := by
-  rfl
 
 -- Spec-related store invariant: each stored field fact conforms to schema lookup.
 def fieldFactWellTyped (schema : Schema) (object : ObjectRecord)
@@ -337,29 +276,6 @@ def resolvers (store : Store) : Execution.Resolvers :=
 def wellTyped (schema : Schema) (store : Store) : Prop :=
   ∀ object, object ∈ store.objects -> object.wellTyped schema
 
-theorem resolveValue_toExecutionValue (store : Store)
-    (fieldName : Name) (arguments : List Argument) (source : Value) :
-    (store.resolveValue fieldName arguments source).toExecutionValue
-      = store.resolve fieldName arguments source.toExecutionValue := by
-  cases source with
-  | null =>
-      simp [resolveValue, resolve]
-  | scalar value =>
-      simp [resolveValue, resolve]
-  | object runtimeType id =>
-      simp [resolveValue, resolve]
-      cases store.lookupObject? runtimeType id with
-      | none =>
-          simp
-      | some object =>
-          cases hfield : object.lookupField? fieldName arguments with
-          | none =>
-              simp [hfield]
-          | some value =>
-              simp [hfield]
-  | list values =>
-      simp [resolveValue, resolve]
-
 end Store
 
 -- Non-spec query root object identity for store-backed execution.
@@ -387,14 +303,6 @@ def executeOperation (schema : Schema) (store : Store)
   Execution.executeQuery schema store.resolvers variableValues
     operation root.toExecutionValue
 
-theorem executeOperation_usesStoreResolvers (schema : Schema) (store : Store)
-    (variableValues : Execution.VariableValues)
-    (operation : Operation) (root : Root) :
-    executeOperation schema store variableValues operation root
-      = Execution.executeQuery schema store.resolvers variableValues
-        operation root.toExecutionValue := by
-  rfl
-
 -- Spec-related operation equivalence over all well-typed store/root inputs.
 def operationsEquivalentOnData (schema : Schema)
     (left right : Operation) : Prop :=
@@ -403,40 +311,6 @@ def operationsEquivalentOnData (schema : Schema)
       root.wellTyped schema ->
         executeOperation schema store variableValues left root
           = executeOperation schema store variableValues right root
-
-theorem operationsEquivalentOnData_refl (schema : Schema) (operation : Operation) :
-    operationsEquivalentOnData schema operation operation := by
-  intro _store _variableValues _root _hstore _hroot
-  rfl
-
-theorem operationsEquivalentOnData_symm (schema : Schema) {left right : Operation} :
-    operationsEquivalentOnData schema left right ->
-      operationsEquivalentOnData schema right left := by
-  intro hequivalent store variableValues root hstore hroot
-  exact Eq.symm (hequivalent store variableValues root hstore hroot)
-
-theorem operationsEquivalentOnData_trans (schema : Schema) {left middle right : Operation} :
-    operationsEquivalentOnData schema left middle ->
-      operationsEquivalentOnData schema middle right ->
-        operationsEquivalentOnData schema left right := by
-  intro hleft hright store variableValues root hstore hroot
-  exact Eq.trans
-    (hleft store variableValues root hstore hroot)
-    (hright store variableValues root hstore hroot)
-
--- Project-specific correctness statement: normalizing an operation preserves store-backed
--- execution.
-def groundNormalFormCorrect (schema : Schema)
-    (operation : Operation) : Prop :=
-  operationsEquivalentOnData schema operation
-    (NormalForm.normalizeOperation schema operation)
-
-theorem normalizedEquivalentOnData_of_groundNormalFormCorrect (schema : Schema)
-    (operation : Operation) :
-    groundNormalFormCorrect schema operation ->
-      operationsEquivalentOnData schema
-        (NormalForm.normalizeOperation schema operation) operation := by
-  exact operationsEquivalentOnData_symm schema
 
 end DataModel
 

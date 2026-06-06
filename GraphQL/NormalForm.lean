@@ -1,4 +1,4 @@
-import GraphQL.Execution
+import GraphQL.DataModel
 
 /-!
 Spec reference: GraphQL September 2025.
@@ -412,6 +412,12 @@ def operationsEquivalent (schema : Schema)
 def groundTypeNormalFormSemanticsPreserved (schema : Schema)
     (operation : Operation) : Prop :=
   operationsEquivalent schema operation
+    (normalizeOperation schema operation)
+
+-- Store-backed correctness statement for the ground-type normalizer.
+def groundNormalFormCorrect (schema : Schema)
+    (operation : Operation) : Prop :=
+  DataModel.operationsEquivalentOnData schema operation
     (normalizeOperation schema operation)
 
 -- Final correctness statement for the ground-type normalizer. This is intentionally

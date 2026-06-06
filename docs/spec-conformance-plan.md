@@ -89,7 +89,8 @@ abstract selections without a separate directive-erasure pass.
 Directive-sensitive normalization can be revisited after the directive-free
 semantic preservation proof is stable.
 
-`DataModel.groundNormalFormCorrect` is stated over `operationsEquivalentOnData`.
+`NormalForm.groundNormalFormCorrect` is stated over
+`DataModel.operationsEquivalentOnData`.
 The ground-type normalizer itself has no fuel parameter: it terminates by
 structural descent on selection-set size while merging same-response-name fields
 and grounding abstract returns through possible object types.
@@ -105,7 +106,7 @@ The current proof ladder is:
 3. Prove normalizer output satisfies `NormalForm.operationNormal` under
    schema well-formedness and operation-validity assumptions.
 4. Prove ground normal form semantic preservation:
-   `DataModel.groundNormalFormCorrect`.
+   `NormalForm.groundNormalFormCorrect`.
 5. Revisit broader operation transformation algorithms only after the scoped
    validation, execution, and normal-form semantics are stable.
 

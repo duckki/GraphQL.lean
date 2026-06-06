@@ -28,10 +28,9 @@ operation transformation algorithms.
 
 `GraphQL.DataModel` is the proof-facing data model. It defines typed object
 identities, field facts keyed by already-coerced arguments, store-backed
-resolvers, and correctness predicates for operation equivalence and ground
-normal form.
+resolvers, and operation equivalence over store-backed execution.
 
-`DataModel.groundNormalFormCorrect` uses
+`NormalForm.groundNormalFormCorrect` uses
 `DataModel.operationsEquivalentOnData`. The ground-type normalizer has no fuel
 parameter; it terminates by structural descent on selection-set size while
 merging fields and grounding abstract returns.

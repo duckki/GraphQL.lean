@@ -33,6 +33,29 @@ theorem executeSelectionSet_inlineFragment_some_directiveFree_skip
     collectFields_inlineFragment_some_directiveFree_skip_eq schema
       variableValues parentType typeCondition source selectionSet rest hskip]
 
+theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false
+    (schema : Schema) {parentType typeCondition runtimeType : Name}
+    {identity : Nat} :
+    schema.typeIncludesObjectBool parentType runtimeType = true ->
+      schema.typesOverlapBool parentType typeCondition = false ->
+        Execution.doesFragmentTypeApplyBool schema parentType
+          (.object runtimeType identity) typeCondition = false := by
+  intro hparent hoverlap
+  unfold Execution.doesFragmentTypeApplyBool
+  cases hcondition :
+      schema.typeIncludesObjectBool typeCondition runtimeType
+  · simp [Execution.runtimeObjectType?, hcondition]
+  · have hparentMem :
+        runtimeType ∈ schema.getPossibleTypes parentType := by
+      exact List.contains_iff_mem.mp hparent
+    have hoverlapTrue :
+        schema.typesOverlapBool parentType typeCondition = true := by
+      unfold Schema.typesOverlapBool
+      exact List.any_eq_true.mpr
+        ⟨runtimeType, hparentMem, hcondition⟩
+    rw [hoverlap] at hoverlapTrue
+    contradiction
+
 theorem normalizeOperation_executeQuery
     (schema : Schema) (operation : Operation) :
     (∀ resolvers variableValues source,

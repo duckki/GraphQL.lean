@@ -126,6 +126,32 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_noOverlap_
     resolvers variableValues depth parentType typeCondition source
     selectionSet rest happly).symm
 
+theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_case
+    (schema : Schema) (resolvers : Execution.Resolvers)
+    (variableValues : Execution.VariableValues)
+    (variableDefinitions : List VariableDefinition)
+    (depth : Nat) (parentType responseName fieldName : Name)
+    (arguments : List Argument) (source : Execution.Value)
+    (selectionSet rest : List Selection) :
+    Validation.selectionSetValid schema variableDefinitions parentType
+      (Selection.field responseName fieldName arguments [] selectionSet
+        :: rest) ->
+      schema.lookupField parentType fieldName = none ->
+        Execution.executeSelectionSet schema resolvers variableValues depth
+          parentType source
+          (normalizeSelectionSet schema parentType
+            (Selection.field responseName fieldName arguments []
+              selectionSet :: rest))
+          =
+        Execution.executeSelectionSet schema resolvers variableValues depth
+          parentType source
+          (Selection.field responseName fieldName arguments []
+            selectionSet :: rest) := by
+  intro hvalid hlookup
+  exact False.elim
+    (Validation.selectionSetValid_field_head_lookup_none_false
+      hvalid hlookup)
+
 theorem normalizeOperation_executeQuery
     (schema : Schema) (operation : Operation) :
     (∀ resolvers variableValues source,

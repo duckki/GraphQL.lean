@@ -66,6 +66,77 @@ theorem executeSelectionSet_inlineFragment_some_directiveFree_apply_flatten
   simp [Execution.executeSelectionSet,
     collectFields_inlineFragment_some_directiveFree_apply_flatten, happly]
 
+theorem lookupType_name_eq (schema : Schema) {typeName : Name}
+    {typeDefinition : TypeDefinition} :
+    schema.lookupType typeName = some typeDefinition ->
+      typeDefinition.name = typeName := by
+  intro hlookup
+  have hmatch := List.find?_some hlookup
+  simpa [Schema.lookupType] using hmatch
+
+theorem typeIncludesObjectBool_eq_of_objectTypeNameBool_true
+    (schema : Schema) {typeName runtimeType : Name} :
+    objectTypeNameBool schema typeName = true ->
+      schema.typeIncludesObjectBool typeName runtimeType = true ->
+        runtimeType = typeName := by
+  intro hobject hinclude
+  unfold objectTypeNameBool at hobject
+  cases hlookup : schema.lookupType typeName with
+  | none =>
+      simp [hlookup] at hobject
+  | some typeDefinition =>
+      cases typeDefinition with
+      | object objectType =>
+          have hname : objectType.name = typeName :=
+            lookupType_name_eq schema hlookup
+          simp [Schema.typeIncludesObjectBool, Schema.getPossibleTypes,
+            hlookup, hname] at hinclude
+          exact hinclude
+      | builtinScalar scalar => simp [hlookup] at hobject
+      | customScalar scalar => simp [hlookup] at hobject
+      | interface interfaceType => simp [hlookup] at hobject
+      | union unionType => simp [hlookup] at hobject
+      | enum enumType => simp [hlookup] at hobject
+      | inputObject inputObjectType => simp [hlookup] at hobject
+
+theorem doesFragmentTypeApplyBool_true_of_typesOverlapBool_true_of_object_source
+    (schema : Schema) {parentType typeCondition : Name}
+    {source : Execution.Value} :
+    objectTypeNameBool schema parentType = true ->
+      (∃ runtimeType identity,
+        source = .object runtimeType identity
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
+        schema.typesOverlapBool parentType typeCondition = true ->
+          Execution.doesFragmentTypeApplyBool schema parentType source
+            typeCondition = true := by
+  intro hobject hsource hoverlap
+  rcases hsource with ⟨runtimeType, identity, hsourceEq, hparent⟩
+  subst source
+  have hruntime :
+      runtimeType = parentType :=
+    typeIncludesObjectBool_eq_of_objectTypeNameBool_true schema hobject
+      hparent
+  subst runtimeType
+  unfold objectTypeNameBool at hobject
+  cases hlookup : schema.lookupType parentType with
+  | none =>
+      simp [hlookup] at hobject
+  | some typeDefinition =>
+      cases typeDefinition with
+      | object objectType =>
+          have hname : objectType.name = parentType :=
+            lookupType_name_eq schema hlookup
+          unfold Schema.typesOverlapBool at hoverlap
+          simp [Schema.getPossibleTypes, hlookup, hname] at hoverlap
+          simpa [Execution.doesFragmentTypeApplyBool,
+            Execution.runtimeObjectType?] using hoverlap
+      | builtinScalar scalar => simp [hlookup] at hobject
+      | customScalar scalar => simp [hlookup] at hobject
+      | interface interfaceType => simp [hlookup] at hobject
+      | union unionType => simp [hlookup] at hobject
+      | enum enumType => simp [hlookup] at hobject
+      | inputObject inputObjectType => simp [hlookup] at hobject
+
 theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false
     (schema : Schema) {parentType typeCondition runtimeType : Name}
     {identity : Nat} :
@@ -216,6 +287,41 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_apply_case
   exact (executeSelectionSet_inlineFragment_some_directiveFree_apply_flatten
     schema resolvers variableValues depth parentType typeCondition source
     selectionSet rest happly).symm
+
+theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_overlap_case
+    (schema : Schema) (resolvers : Execution.Resolvers)
+    (variableValues : Execution.VariableValues)
+    (depth : Nat) (parentType typeCondition : Name)
+    (source : Execution.Value)
+    (selectionSet rest : List Selection) :
+    objectTypeNameBool schema parentType = true ->
+      (∃ runtimeType identity,
+        source = .object runtimeType identity
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
+        schema.typesOverlapBool parentType typeCondition = true ->
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType (selectionSet ++ rest))
+            =
+          Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source (selectionSet ++ rest) ->
+            Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
+              (normalizeSelectionSet schema parentType
+                (Selection.inlineFragment (some typeCondition) [] selectionSet
+                  :: rest))
+              =
+            Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
+              (Selection.inlineFragment (some typeCondition) [] selectionSet
+                :: rest) := by
+  intro hobject hsource hoverlap happend
+  exact normalizeSelectionSet_executeSelectionSet_inlineFragment_some_apply_case
+    schema resolvers variableValues depth parentType typeCondition source
+    selectionSet rest hoverlap
+    (doesFragmentTypeApplyBool_true_of_typesOverlapBool_true_of_object_source
+      schema hobject hsource hoverlap)
+    happend
 
 theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_case
     (schema : Schema) (resolvers : Execution.Resolvers)

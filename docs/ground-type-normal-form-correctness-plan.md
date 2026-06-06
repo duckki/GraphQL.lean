@@ -132,8 +132,10 @@ over this repo's resolver-backed `Execution.collectFields` and
 
    Status: inline-fragment semantic case lemmas are now implemented for
    untyped fragment flattening, applicable typed fragment flattening, and
-   non-overlapping typed fragment skipping. The remaining selection-set cases
-   are same-response-name field merging and abstract child grounding.
+   non-overlapping typed fragment skipping. The typed-overlap branch now also
+   has a runtime bridge from concrete parent/source applicability to
+   `doesFragmentTypeApplyBool = true`. The remaining selection-set cases are
+   same-response-name field merging and abstract child grounding.
 
 7. Operation semantic preservation.
 

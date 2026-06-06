@@ -303,14 +303,21 @@ def executeOperation (schema : Schema) (store : Store)
   Execution.executeQuery schema store.resolvers variableValues
     operation root.toExecutionValue
 
+-- Explicit-depth store-backed execution used by semantic equivalence theorems.
+def executeOperationAtDepth (schema : Schema) (store : Store)
+    (variableValues : Execution.VariableValues)
+    (operation : Operation) (depth : Nat) (root : Root) : Execution.Response :=
+  Execution.executeQueryAtDepth schema store.resolvers variableValues
+    operation depth root.toExecutionValue
+
 -- Spec-related operation equivalence over all well-typed store/root inputs.
 def operationsEquivalentOnData (schema : Schema)
     (left right : Operation) : Prop :=
-  ∀ store variableValues root,
+  ∀ store variableValues depth root,
     store.wellTyped schema ->
       root.wellTyped schema ->
-        executeOperation schema store variableValues left root
-          = executeOperation schema store variableValues right root
+        executeOperationAtDepth schema store variableValues left depth root
+          = executeOperationAtDepth schema store variableValues right depth root
 
 end DataModel
 

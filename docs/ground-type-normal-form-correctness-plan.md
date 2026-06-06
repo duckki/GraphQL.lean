@@ -57,10 +57,13 @@ This supports the later semantic proof by ensuring the directive-free source
 assumption is stable across recursive normalized children.
 
 The operation-level semantic bridge is also proven in
-`GraphQL/NormalForm/GroundTypeNormalization/Semantics.lean`: once the local
-selection-set preservation induction is available, it lifts directly to
+`GraphQL/NormalForm/GroundTypeNormalization/Semantics.lean`. The local
+selection-set preservation induction now lifts to
 `groundTypeNormalFormSemanticsPreservation` and then to
-`groundNormalFormCorrect`.
+`groundNormalFormCorrect`. Because normalization intentionally changes syntax
+size, the formal equivalence predicates quantify an explicit query execution
+depth via `Execution.executeQueryAtDepth`; the bounded `Execution.executeQuery`
+entry point remains available for executable use.
 
 The GraphCoQL Coq reference theorem
 `normalize_selections_preserves_semantics` proves the same high-level step by
@@ -121,14 +124,12 @@ over this repo's resolver-backed `Execution.collectFields` and
    This step should rely on `Validation.operationDefinitionValid`, especially
    field merge validity, argument equivalence, and response-shape compatibility.
 
-   Status: `FieldMerge` now exposes projection lemmas for pairwise merge
-   validity, same-response-shape, same-parent field/argument identity, and
-   recursive subfield merge validity. The remaining work is to connect those
-   validation facts to executable field groups and `executeField`. Execution
-   now also exposes `mergedFieldSelectionSet` append/singleton algebra for the
-   grouped-field sub-selection comparison. `FieldCollection` now has an
-   `executableFieldScoped?` bridge plus same-parent identity transport from
-   `FieldMerge.fieldsForNameCanMerge` to executable fields.
+   Status: complete. `FieldMerge` exposes projection lemmas for pairwise merge
+   validity, same-response-shape algebra, same-parent field/argument identity,
+   and recursive subfield merge validity. The semantic proof connects those
+   validation facts to collected executable response-name groups and proves the
+   same-response-name field case through
+   `normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive`.
 
 5. Abstract return grounding.
 
@@ -139,18 +140,23 @@ over this repo's resolver-backed `Execution.collectFields` and
    possible-type object validity and object/interface field implementation
    compatibility.
 
+   Status: complete. The field semantic case now handles object returns by
+   direct recursive preservation and abstract returns by wrapping normalized
+   children in possible-type inline fragments, using
+   `executeSelectionSet_possibleTypeFragments_runtime_branch` and schema
+   possible-type object/nodup facts.
+
 6. Selection-set semantic preservation.
 
    Prove by the actual `normalizeSelectionSet` recursion that executing a
    directive-free valid selection set is equivalent to executing its normalized
    form for every resolver environment, variable assignment, and source value.
 
-   Status: inline-fragment semantic case lemmas are now implemented for
-   untyped fragment flattening, applicable typed fragment flattening, and
-   non-overlapping typed fragment skipping. The typed-overlap branch now also
-   has a runtime bridge from concrete parent/source applicability to
-   `doesFragmentTypeApplyBool = true`. The remaining selection-set cases are
-   same-response-name field merging and abstract child grounding.
+   Status: complete. `normalizeSelectionSet_executeSelectionSet` is proved by
+   the actual `normalizeSelectionSet.induct`, using the field merge/abstract
+   grounding case, inline-fragment semantic case lemmas, semantic readiness
+   projections, and merge-preservation lemmas for filtering and fragment
+   flattening.
 
 7. Operation semantic preservation.
 
@@ -160,10 +166,11 @@ over this repo's resolver-backed `Execution.collectFields` and
 
    This proves `NormalForm.groundTypeNormalFormSemanticsPreservation`.
 
-   Status: the lift from a root-applicable selection-set preservation theorem
+   Status: complete. The lift from root-applicable selection-set preservation
    to resolver-parametric operation equivalence is implemented as
-   `normalizeOperation_executeQuery` and
-   `groundTypeNormalFormSemanticsPreservation_of_selectionSet`.
+   `normalizeOperation_executeQuery`,
+   `groundTypeNormalFormSemanticsPreservation_of_selectionSet`, and the final
+   theorem witness `groundTypeNormalFormSemanticsPreservation`.
 
 8. Store-backed correctness.
 
@@ -171,9 +178,10 @@ over this repo's resolver-backed `Execution.collectFields` and
    `NormalForm.groundNormalFormCorrect` from resolver-parametric semantic
    preservation by instantiating resolvers with `Store.resolvers`.
 
-   Status: the lift from the same selection-set preservation theorem to
-   store-backed correctness is implemented as
-   `groundNormalFormCorrect_of_selectionSet`.
+   Status: complete. The lift from the same selection-set preservation theorem
+   to store-backed correctness is implemented as
+   `groundNormalFormCorrect_of_selectionSet` and the final theorem witness
+   `groundNormalFormCorrect`.
 
 ## Non-Goals
 

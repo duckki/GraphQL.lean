@@ -314,15 +314,22 @@ def rootSourceAppliesBool (schema : Schema) (operation : Operation)
   | none => false
 
 -- Spec 6.2.1 `ExecuteQuery` / 6.3.1 `ExecuteRootSelectionSet`: partial; executes a
--- query operation as normal data-only object response.
+-- query operation as normal data-only object response at an explicit recursion depth.
+def executeQueryAtDepth (schema : Schema) (resolvers : Resolvers)
+    (variableValues : VariableValues) (operation : Operation)
+    (depth : Nat) (source : Value) : Response :=
+  if rootSourceAppliesBool schema operation source then
+    .object (executeSelectionSet schema resolvers variableValues
+      depth operation.rootType source operation.selectionSet)
+  else
+    .object []
+
+-- Default executable query entry point using the local operation-derived depth bound.
 def executeQuery (schema : Schema) (resolvers : Resolvers)
     (variableValues : VariableValues) (operation : Operation)
     (source : Value) : Response :=
-  if rootSourceAppliesBool schema operation source then
-    .object (executeSelectionSet schema resolvers variableValues
-      (executeQueryDepthBound operation) operation.rootType source operation.selectionSet)
-  else
-    .object []
+  executeQueryAtDepth schema resolvers variableValues operation
+    (executeQueryDepthBound operation) source
 
 end Execution
 

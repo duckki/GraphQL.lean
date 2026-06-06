@@ -389,10 +389,12 @@ def normalizeOperation (schema : Schema)
 
 def operationsEquivalent (schema : Schema)
     (left right : Operation) : Prop :=
-  ∀ resolvers variableValues source,
-    Execution.executeQuery schema resolvers variableValues left source
+  ∀ resolvers variableValues depth source,
+    Execution.executeQueryAtDepth schema resolvers variableValues left depth
+      source
       =
-    Execution.executeQuery schema resolvers variableValues right source
+    Execution.executeQueryAtDepth schema resolvers variableValues right depth
+      source
 
 def groundTypeNormalFormSemanticsPreserved (schema : Schema)
     (operation : Operation) : Prop :=

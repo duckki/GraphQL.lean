@@ -462,6 +462,26 @@ theorem selectionSetValid_append_right
   intro selection hselection
   exact hvalid selection (Or.inr hselection)
 
+theorem selectionSetValid_field_head_lookup
+    {schema : Schema} {variableDefinitions : List VariableDefinition}
+    {parentType responseName fieldName : Name} {arguments : List Argument}
+    {directives : List DirectiveApplication} {selectionSet rest : List Selection} :
+    selectionSetValid schema variableDefinitions parentType
+      (.field responseName fieldName arguments directives selectionSet :: rest) ->
+      ∃ fieldDefinition,
+        schema.lookupField parentType fieldName = some fieldDefinition
+          ∧ argumentsValid schema fieldDefinition.arguments
+            variableDefinitions arguments
+          ∧ fieldSelectionSetValid schema variableDefinitions
+            fieldDefinition selectionSet := by
+  intro hvalid
+  have hfieldValid :
+      selectionValid schema variableDefinitions parentType
+        (.field responseName fieldName arguments directives selectionSet) := by
+    simp [selectionSetValid] at hvalid
+    exact hvalid.1
+  exact selectionValid_field_lookup hfieldValid
+
 end Validation
 
 namespace FieldMerge

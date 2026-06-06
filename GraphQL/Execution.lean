@@ -249,13 +249,25 @@ end
 def executeQueryDepthBound (operation : Operation) : Nat :=
   operation.size * 3 + 1
 
+-- Spec 6.2.1 root execution expects a runtime object matching the operation root type.
+-- The model still accepts arbitrary host values, but non-root sources execute to empty
+-- data so equivalence statements are not forced to account for invalid roots.
+def rootSourceAppliesBool (schema : Schema) (operation : Operation)
+    (source : Value) : Bool :=
+  match runtimeObjectType? source with
+  | some objectName => schema.typeIncludesObjectBool operation.rootType objectName
+  | none => false
+
 -- Spec 6.2.1 `ExecuteQuery` / 6.3.1 `ExecuteRootSelectionSet`: partial; executes a
 -- query operation as normal data-only object response.
 def executeQuery (schema : Schema) (resolvers : Resolvers)
     (variableValues : VariableValues) (operation : Operation)
     (source : Value) : Response :=
-  .object (executeSelectionSet schema resolvers variableValues
-    (executeQueryDepthBound operation) operation.rootType source operation.selectionSet)
+  if rootSourceAppliesBool schema operation source then
+    .object (executeSelectionSet schema resolvers variableValues
+      (executeQueryDepthBound operation) operation.rootType source operation.selectionSet)
+  else
+    .object []
 
 end Execution
 

@@ -1,4 +1,5 @@
 import GraphQL.Execution
+import GraphQL.Validation
 
 /-!
 Spec reference: GraphQL September 2025.
@@ -16,6 +17,13 @@ namespace GraphQL
 
 namespace DataModel
 
+def pairwiseUniqueByEqBool {α : Type} (eqBool : α -> α -> Bool) :
+    List α -> Prop
+  | [] => True
+  | key :: rest =>
+      (∀ candidate, candidate ∈ rest -> eqBool key candidate = false)
+        ∧ pairwiseUniqueByEqBool eqBool rest
+
 structure FieldAccess where
   name : Name
   arguments : List Argument := []
@@ -32,43 +40,20 @@ namespace FieldAccess
 
 def insertInputFieldSorted
     (field : Name × InputValue) :
-    List (Name × InputValue) -> List (Name × InputValue)
-  | [] => [field]
-  | candidate :: rest =>
-      if field.1 <= candidate.1 then
-        field :: candidate :: rest
-      else
-        candidate :: insertInputFieldSorted field rest
+    List (Name × InputValue) -> List (Name × InputValue) :=
+  InputValue.insertObjectFieldSorted field
 
-def sortInputFieldsByName : List (Name × InputValue) -> List (Name × InputValue)
-  | [] => []
-  | field :: rest =>
-      insertInputFieldSorted field (sortInputFieldsByName rest)
+def sortInputFieldsByName : List (Name × InputValue) -> List (Name × InputValue) :=
+  InputValue.sortObjectFieldsByName
 
-mutual
-  def canonicalInputValue : InputValue -> InputValue
-    | .null => .null
-    | .int value => .int value
-    | .float value => .float value
-    | .string value => .string value
-    | .boolean value => .boolean value
-    | .enum value => .enum value
-    | .variable name => .variable name
-    | .list values => .list (canonicalInputValues values)
-    | .object fields =>
-        .object (sortInputFieldsByName (canonicalInputFields fields))
+def canonicalInputValue : InputValue -> InputValue :=
+  InputValue.canonical
 
-  def canonicalInputValues : List InputValue -> List InputValue
-    | [] => []
-    | value :: rest =>
-        canonicalInputValue value :: canonicalInputValues rest
+def canonicalInputValues : List InputValue -> List InputValue :=
+  InputValue.canonicalValues
 
-  def canonicalInputFields :
-      List (Name × InputValue) -> List (Name × InputValue)
-    | [] => []
-    | (name, value) :: rest =>
-        (name, canonicalInputValue value) :: canonicalInputFields rest
-end
+def canonicalInputFields : List (Name × InputValue) -> List (Name × InputValue) :=
+  InputValue.canonicalObjectFields
 
 mutual
   def structuralInputValueEqBool : InputValue -> InputValue -> Bool
@@ -148,6 +133,10 @@ def canonical (field : FieldAccess) : FieldAccess :=
 
 def eqBool (left right : FieldAccess) : Bool :=
   (left.name == right.name) && argumentsEqBool left.arguments right.arguments
+
+def argumentsWellTyped (schema : Schema) (fieldDefinition : FieldDefinition)
+    (field : FieldAccess) : Prop :=
+  Validation.argumentsValid schema fieldDefinition.arguments [] field.arguments
 
 def childPath (sourcePath : ObjectPath) (field : FieldAccess) : ObjectPath :=
   sourcePath ++ [.field field.canonical]
@@ -259,10 +248,18 @@ def propertyFactWellTyped (schema : Schema) (node : ObjectNode)
   ∃ fieldDefinition,
     schema.lookupField node.typeName field.name = some fieldDefinition
       ∧ schema.getPossibleTypes fieldDefinition.outputType.namedType = []
+      ∧ field.argumentsWellTyped schema fieldDefinition
       ∧ value.conformsToType schema fieldDefinition.outputType
+
+def propertyKeys (node : ObjectNode) : List FieldAccess :=
+  node.properties.map Prod.fst
+
+def propertyKeysUnique (node : ObjectNode) : Prop :=
+  pairwiseUniqueByEqBool FieldAccess.eqBool node.propertyKeys
 
 def wellTyped (schema : Schema) (node : ObjectNode) : Prop :=
   schema.objectType node.typeName
+    ∧ node.propertyKeysUnique
     ∧ ∀ property, property ∈ node.properties ->
       propertyFactWellTyped schema node property.fst property.snd
 
@@ -288,10 +285,48 @@ def matchesField (sourcePath : ObjectPath) (field : FieldAccess)
   ObjectPath.eqBool edge.sourcePath sourcePath
     && FieldAccess.eqBool edge.field field
 
-def nonListKey? (edge : ObjectEdge) : Option (ObjectPath × FieldAccess) :=
+end ObjectEdge
+
+structure FieldPathKey where
+  sourcePath : ObjectPath
+  field : FieldAccess
+deriving Repr
+
+namespace FieldPathKey
+
+def eqBool (left right : FieldPathKey) : Bool :=
+  ObjectPath.eqBool left.sourcePath right.sourcePath
+    && FieldAccess.eqBool left.field right.field
+
+end FieldPathKey
+
+structure ListIndexKey where
+  sourcePath : ObjectPath
+  field : FieldAccess
+  index : Nat
+deriving Repr
+
+namespace ListIndexKey
+
+def eqBool (left right : ListIndexKey) : Bool :=
+  ObjectPath.eqBool left.sourcePath right.sourcePath
+    && FieldAccess.eqBool left.field right.field
+    && (left.index == right.index)
+
+end ListIndexKey
+
+namespace ObjectEdge
+
+def nonListKey? (edge : ObjectEdge) : Option FieldPathKey :=
   match edge.index? with
-  | none => some (edge.sourcePath, edge.field)
+  | none => some { sourcePath := edge.sourcePath, field := edge.field }
   | some _ => none
+
+def listIndexKey? (edge : ObjectEdge) : Option ListIndexKey :=
+  match edge.index? with
+  | none => none
+  | some index =>
+      some { sourcePath := edge.sourcePath, field := edge.field, index := index }
 
 end ObjectEdge
 
@@ -328,12 +363,28 @@ def firstMatchingEdge? (store : Store) (sourcePath : ObjectPath)
   store.edges.find? (fun edge =>
     edge.matchesField sourcePath field && edge.index? == index?)
 
-def indexedMatchingEdges (store : Store) (sourcePath : ObjectPath)
+def insertEdgeByIndex (edge : ObjectEdge) : List ObjectEdge -> List ObjectEdge
+  | [] => [edge]
+  | candidate :: rest =>
+      if edge.index?.getD 0 <= candidate.index?.getD 0 then
+        edge :: candidate :: rest
+      else
+        candidate :: insertEdgeByIndex edge rest
+
+def sortEdgesByIndex : List ObjectEdge -> List ObjectEdge
+  | [] => []
+  | edge :: rest => insertEdgeByIndex edge (sortEdgesByIndex rest)
+
+def indexedMatchingEdgesUnsorted (store : Store) (sourcePath : ObjectPath)
     (field : FieldAccess) : List ObjectEdge :=
   (store.matchingEdges sourcePath field).filter (fun edge =>
     match edge.index? with
     | some _ => true
     | none => false)
+
+def indexedMatchingEdges (store : Store) (sourcePath : ObjectPath)
+    (field : FieldAccess) : List ObjectEdge :=
+  sortEdgesByIndex (store.indexedMatchingEdgesUnsorted sourcePath field)
 
 def fieldAccess (fieldName : Name) (arguments : List Argument) : FieldAccess :=
   { name := fieldName, arguments := arguments }
@@ -364,12 +415,41 @@ def resolveValue (store : Store) (schema : Schema)
             .null
   | _ => .null
 
-def nonListCompositeEdgeKeys (store : Store) :
-    List (ObjectPath × FieldAccess) :=
+def nonListCompositeEdgeKeys (store : Store) : List FieldPathKey :=
   store.edges.filterMap ObjectEdge.nonListKey?
 
 def nonListCompositeEdgesUnique (store : Store) : Prop :=
-  store.nonListCompositeEdgeKeys.Nodup
+  pairwiseUniqueByEqBool FieldPathKey.eqBool store.nonListCompositeEdgeKeys
+
+def listCompositeEdgeKeys (store : Store) : List ListIndexKey :=
+  store.edges.filterMap ObjectEdge.listIndexKey?
+
+def listCompositeEdgesUnique (store : Store) : Prop :=
+  pairwiseUniqueByEqBool ListIndexKey.eqBool store.listCompositeEdgeKeys
+
+def listCompositeEdgesDense (store : Store) : Prop :=
+  ∀ edge, edge ∈ store.edges ->
+    match edge.index? with
+    | none => True
+    | some index =>
+        let edges := store.indexedMatchingEdges edge.sourcePath edge.field
+        index < edges.length
+          ∧ ∀ expected, expected < edges.length ->
+            ∃ candidate, candidate ∈ edges ∧ candidate.index? = some expected
+
+def nodePathsUnique (store : Store) : Prop :=
+  pairwiseUniqueByEqBool ObjectPath.eqBool (store.allNodes.map ObjectNode.path)
+
+def nodeCoveredByRootOrEdge (store : Store) (node : ObjectNode) : Prop :=
+  ObjectPath.eqBool node.path store.root.path = true
+    ∨ ∃ edge, edge ∈ store.edges ∧ ObjectPath.eqBool edge.targetPath node.path = true
+
+def nodesCoveredByRootOrEdge (store : Store) : Prop :=
+  ∀ node, node ∈ store.allNodes -> store.nodeCoveredByRootOrEdge node
+
+def rootWellTyped (schema : Schema) (store : Store) : Prop :=
+  store.root.path = []
+    ∧ schema.typeIncludesObject schema.queryType store.root.typeName
 
 def edgeWellTyped (schema : Schema) (store : Store)
     (edge : ObjectEdge) : Prop :=
@@ -377,36 +457,23 @@ def edgeWellTyped (schema : Schema) (store : Store)
     store.lookupNode? edge.sourcePath = some sourceNode
       ∧ schema.lookupField sourceNode.typeName edge.field.name = some fieldDefinition
       ∧ schema.getPossibleTypes fieldDefinition.outputType.namedType ≠ []
+      ∧ edge.field.argumentsWellTyped schema fieldDefinition
       ∧ (typeRefIsListLike fieldDefinition.outputType = true ↔ edge.index?.isSome)
       ∧ schema.typeIncludesObject fieldDefinition.outputType.namedType edge.targetType
       ∧ store.lookupNode? edge.targetPath = some targetNode
       ∧ targetNode.typeName = edge.targetType
 
 def wellTyped (schema : Schema) (store : Store) : Prop :=
-  store.root.path = []
-    ∧ (store.allNodes.map ObjectNode.path).Nodup
+  store.rootWellTyped schema
+    ∧ store.nodePathsUnique
+    ∧ store.nodesCoveredByRootOrEdge
     ∧ (∀ node, node ∈ store.allNodes -> node.wellTyped schema)
     ∧ (∀ edge, edge ∈ store.edges -> store.edgeWellTyped schema edge)
     ∧ store.nonListCompositeEdgesUnique
+    ∧ store.listCompositeEdgesUnique
+    ∧ store.listCompositeEdgesDense
 
 end Store
-
--- Query root object identity for store-backed execution.
-structure Root where
-  typeName : Name
-  identity : ObjectPath := []
-deriving Repr
-
-namespace Root
-
-def wellTyped (schema : Schema) (root : Root) : Prop :=
-  root.identity = []
-    ∧ schema.typeIncludesObject schema.queryType root.typeName
-
-def toExecutionValue (root : Root) : Execution.Value ObjectPath :=
-  .object root.typeName root.identity
-
-end Root
 
 namespace Value
 
@@ -420,6 +487,9 @@ def toExecutionValue : Value -> Execution.Value ObjectPath
 end Value
 
 namespace Store
+
+def rootExecutionValue (store : Store) : Execution.Value ObjectPath :=
+  .object store.root.typeName store.root.path
 
 def resolve (store : Store) (schema : Schema) (fieldName : Name)
     (arguments : List Argument) (source : Execution.Value ObjectPath) :
@@ -439,25 +509,24 @@ end Store
 -- Spec 6.2.1 `ExecuteQuery` over raw modeled operations and store-backed resolvers.
 def executeOperation (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues)
-    (operation : Operation) (root : Root) : Execution.Response :=
+    (operation : Operation) : Execution.Response :=
   Execution.executeQuery schema (store.resolvers schema) variableValues
-    operation root.toExecutionValue
+    operation store.rootExecutionValue
 
 -- Explicit-depth store-backed execution used by semantic equivalence theorems.
 def executeOperationAtDepth (schema : Schema) (store : Store)
-    (variableValues : Execution.VariableValues)
-    (operation : Operation) (depth : Nat) (root : Root) : Execution.Response :=
+    (variableValues : Execution.VariableValues) (operation : Operation)
+    (depth : Nat) : Execution.Response :=
   Execution.executeQueryAtDepth schema (store.resolvers schema) variableValues
-    operation depth root.toExecutionValue
+    operation depth store.rootExecutionValue
 
--- Spec-related operation equivalence over all well-typed store/root inputs.
+-- Spec-related operation equivalence over all well-typed graph stores.
 def operationsEquivalentOnData (schema : Schema)
     (left right : Operation) : Prop :=
-  ∀ store variableValues depth root,
+  ∀ store variableValues depth,
     store.wellTyped schema ->
-      root.wellTyped schema ->
-        executeOperationAtDepth schema store variableValues left depth root
-          = executeOperationAtDepth schema store variableValues right depth root
+      executeOperationAtDepth schema store variableValues left depth
+        = executeOperationAtDepth schema store variableValues right depth
 
 end DataModel
 

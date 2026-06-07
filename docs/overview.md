@@ -25,10 +25,11 @@ flowchart TD
   Schema --> Operation
   Operation --> Validation
   Operation --> NormalForm
-  Operation --> DataModel
-  DataModel --> Execution
+  Operation --> Execution
+  Execution --> DataModel
   SchemaWF --> NormalForm
   Validation --> NormalForm
+  Validation --> DataModel
   DataModel --> NormalForm
   NormalForm --> NormalFormGround
   DataModel --> DataModelStore
@@ -80,8 +81,10 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
 - `GraphQL.DataModel`: an extensional graph-backed model for the scoped
   conformance target. It represents path-based object identities, node-local
   scalar properties, labeled object edges, unordered GraphQL
-  argument/input-object key comparison, graph well-typedness predicates,
-  store-backed resolvers, and data-model equivalence of operations.
+  argument/input-object key comparison, graph-root execution, schema-conformant
+  field labels, semantic path/key uniqueness, list-index discipline, graph
+  well-typedness predicates, store-backed resolvers, and data-model equivalence
+  of operations.
 - `GraphQL.DataModel.Store`: store-resolution bridge lemmas connecting
   path-based graph lookup and composite-field resolution to schema facts.
 

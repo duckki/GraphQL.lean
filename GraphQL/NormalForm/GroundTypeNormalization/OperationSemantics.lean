@@ -18,9 +18,9 @@ theorem groundNormalFormCorrect_of_semanticsPreserved
   intro hpreserved
   unfold groundNormalFormCorrect DataModel.operationsEquivalentOnData
     DataModel.executeOperationAtDepth
-  intro store variableValues depth root _hstore _hroot
+  intro store variableValues depth _hstore
   exact hpreserved DataModel.ObjectPath (store.resolvers schema)
-    variableValues depth root.toExecutionValue
+    variableValues depth store.rootExecutionValue
 
 theorem groundNormalFormCorrect_of_semanticsPreservation
     (schema : Schema) (operation : Operation) :

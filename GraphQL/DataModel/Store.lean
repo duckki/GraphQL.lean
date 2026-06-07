@@ -60,7 +60,7 @@ theorem lookupPropertyIn?_some_conformsToLookupField (schema : Schema)
             have hfact :
                 propertyFactWellTyped schema node key propertyValue :=
               hwell (key, propertyValue) (by simp)
-            rcases hfact with ⟨fieldDefinition, hfield, hleaf, hconforms⟩
+            rcases hfact with ⟨fieldDefinition, hfield, hleaf, _hargs, hconforms⟩
             have hkeyName : key.name = field.name := by
               have hmatchParts := hmatch
               simp [FieldAccess.eqBool] at hmatchParts
@@ -91,7 +91,7 @@ theorem lookupProperty?_some_conformsToLookupField (schema : Schema)
             ∧ value.conformsToType schema fieldDefinition.outputType := by
   intro hnode hlookup
   exact lookupPropertyIn?_some_conformsToLookupField schema node
-    node.properties field value hnode.right hlookup
+    node.properties field value hnode.right.right hlookup
 
 end ObjectNode
 

@@ -66,8 +66,9 @@ The main modules are:
   same-response-name merge compatibility checks.
 - `GraphQL.Execution`: bounded resolver-based execution.
 - `GraphQL.DataModel`: typed graph store with path-based object identities,
-  store-backed resolvers, and semantic equivalence/correctness predicates over
-  graph-backed execution.
+  graph-root execution, schema-conformant field labels, semantic uniqueness for
+  paths and edge/property keys, list-index discipline, store-backed resolvers,
+  and semantic equivalence/correctness predicates over graph-backed execution.
 - `GraphQL.DataModel.Store`: store-resolution bridge lemmas for connecting
   path-based graph lookup and composite-field resolution to schema facts.
 

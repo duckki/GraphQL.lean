@@ -10,11 +10,13 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
+variable {ObjectIdentity : Type}
+
 theorem executeSelectionSet_inlineFragment_some_directiveFree_skip
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
-    (source : Execution.Value)
+    (source : Execution.Value ObjectIdentity)
     (selectionSet rest : List Selection) :
     Execution.doesFragmentTypeApplyBool schema parentType source typeCondition =
       false ->
@@ -30,10 +32,10 @@ theorem executeSelectionSet_inlineFragment_some_directiveFree_skip
       variableValues parentType typeCondition source selectionSet rest hskip]
 
 theorem executeSelectionSet_inlineFragment_none_directiveFree_flatten
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
-    (source : Execution.Value)
+    (source : Execution.Value ObjectIdentity)
     (selectionSet rest : List Selection) :
     Execution.executeSelectionSet schema resolvers variableValues depth
       parentType source
@@ -45,10 +47,10 @@ theorem executeSelectionSet_inlineFragment_none_directiveFree_flatten
     collectFields_inlineFragment_none_directiveFree_flatten]
 
 theorem executeSelectionSet_inlineFragment_some_directiveFree_apply_flatten
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
-    (source : Execution.Value)
+    (source : Execution.Value ObjectIdentity)
     (selectionSet rest : List Selection) :
     Execution.doesFragmentTypeApplyBool schema parentType source typeCondition =
       true ->
@@ -97,7 +99,7 @@ theorem typeIncludesObjectBool_eq_of_objectTypeNameBool_true
 
 theorem doesFragmentTypeApplyBool_true_of_typesOverlapBool_true_of_object_source
     (schema : Schema) {parentType typeCondition : Name}
-    {source : Execution.Value} :
+    {source : Execution.Value ObjectIdentity} :
     objectTypeNameBool schema parentType = true ->
       (∃ runtimeType identity,
         source = .object runtimeType identity
@@ -135,7 +137,7 @@ theorem doesFragmentTypeApplyBool_true_of_typesOverlapBool_true_of_object_source
 
 theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false
     (schema : Schema) {parentType typeCondition runtimeType : Name}
-    {identity : Nat} :
+    {identity : ObjectIdentity} :
     schema.typeIncludesObjectBool parentType runtimeType = true ->
       schema.typesOverlapBool parentType typeCondition = false ->
         Execution.doesFragmentTypeApplyBool schema parentType
@@ -157,7 +159,7 @@ theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false
     contradiction
 
 theorem rootSourceAppliesBool_true_object
-    (schema : Schema) (operation : Operation) (source : Execution.Value) :
+    (schema : Schema) (operation : Operation) (source : Execution.Value ObjectIdentity) :
     Execution.rootSourceAppliesBool schema operation source = true ->
       ∃ runtimeType identity,
         source = .object runtimeType identity
@@ -175,7 +177,7 @@ theorem rootSourceAppliesBool_true_object
 
 theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false_of_source
     (schema : Schema) {parentType typeCondition : Name}
-    {source : Execution.Value} :
+    {source : Execution.Value ObjectIdentity} :
     (∃ runtimeType identity,
       source = .object runtimeType identity
         ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
@@ -220,7 +222,7 @@ theorem typeIncludesObjectBool_self_of_objectTypeNameBool
       | inputObject inputObjectType => simp [hlookup] at hobject
 
 theorem doesFragmentTypeApplyBool_object_self
-    (schema : Schema) {runtimeType : Name} {identity : Nat} :
+    (schema : Schema) {runtimeType : Name} {identity : ObjectIdentity} :
     objectTypeNameBool schema runtimeType = true ->
       Execution.doesFragmentTypeApplyBool schema runtimeType
         (.object runtimeType identity) runtimeType = true := by
@@ -229,7 +231,7 @@ theorem doesFragmentTypeApplyBool_object_self
     typeIncludesObjectBool_self_of_objectTypeNameBool schema hobject]
 
 theorem doesFragmentTypeApplyBool_object_other_false
-    (schema : Schema) {runtimeType objectType : Name} {identity : Nat} :
+    (schema : Schema) {runtimeType objectType : Name} {identity : ObjectIdentity} :
     objectTypeNameBool schema objectType = true ->
       objectType ≠ runtimeType ->
         Execution.doesFragmentTypeApplyBool schema runtimeType

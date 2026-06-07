@@ -25,8 +25,8 @@ flowchart TD
   Schema --> Operation
   Operation --> Validation
   Operation --> NormalForm
-  Operation --> Execution
-  Execution --> DataModel
+  Operation --> DataModel
+  DataModel --> Execution
   SchemaWF --> NormalForm
   Validation --> NormalForm
   DataModel --> NormalForm
@@ -74,14 +74,16 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
 - `GraphQL.Execution`: execution over operation selections as a function
   parameterized by abstract resolver functions. It collects executable fields by
   response name, resolves each response name once, passes field arguments to
-  resolvers, and applies `@skip` / `@include` filtering.
-- `GraphQL.DataModel`: an extensional object-store model for the scoped
-  conformance target. It represents object identities, field facts keyed by
-  already-coerced arguments, unordered GraphQL argument/input-object key
-  comparison, store-backed resolvers, and predicates for data-model equivalence
-  of operations.
+  resolvers, and applies `@skip` / `@include` filtering. Internal resolver
+  values are generic over an `ObjectIdentity` type; final responses do not carry
+  object identity.
+- `GraphQL.DataModel`: an extensional graph-backed model for the scoped
+  conformance target. It represents path-based object identities, node-local
+  scalar properties, labeled object edges, unordered GraphQL
+  argument/input-object key comparison, graph well-typedness predicates,
+  store-backed resolvers, and data-model equivalence of operations.
 - `GraphQL.DataModel.Store`: store-resolution bridge lemmas connecting
-  `Store.resolveValue` results to well-typed schema field facts.
+  path-based graph lookup and composite-field resolution to schema facts.
 
 ## Flow
 
@@ -92,10 +94,12 @@ The current flow is:
    well-formedness and operation validity.
 3. `GraphQL.Execution` gives bounded execution over operation selections by
    collecting fields by response name, then resolving each response name once.
-4. `GraphQL.DataModel` constrains execution to a typed object store.
-5. `GraphQL.NormalForm` provides normalization definitions and public
+4. `GraphQL.DataModel` describes the typed graph store.
+5. `GraphQL.DataModel` constrains execution to store-backed resolvers over that
+   graph.
+6. `GraphQL.NormalForm` provides normalization definitions and public
    ground-normal-form correctness predicates.
-6. `GraphQL.NormalForm.GroundTypeNormalization` provides proof-facing
+7. `GraphQL.NormalForm.GroundTypeNormalization` provides proof-facing
    ground-type lemmas.
 
 Normalization consumes `GraphQL.Operation` directly. The current normal-form

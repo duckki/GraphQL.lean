@@ -10,9 +10,12 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
+variable {ObjectIdentity : Type}
+
 theorem normalizeOperation_executeQuery
     (schema : Schema) (operation : Operation) :
-    (∀ resolvers variableValues depth source,
+    (∀ (ObjectIdentity : Type) (resolvers : Execution.Resolvers ObjectIdentity)
+      variableValues depth (source : Execution.Value ObjectIdentity),
       Execution.rootSourceAppliesBool schema operation source = true ->
         Execution.executeSelectionSet schema resolvers variableValues
           depth operation.rootType source operation.selectionSet
@@ -29,7 +32,8 @@ theorem groundTypeNormalFormSemanticsPreservation_of_selectionSet
     (SchemaWellFormedness.schemaWellFormed schema ->
       Validation.operationDefinitionValid schema operation ->
         operationDirectiveFree operation ->
-          ∀ resolvers variableValues depth source,
+          ∀ (ObjectIdentity : Type) (resolvers : Execution.Resolvers ObjectIdentity)
+            variableValues depth (source : Execution.Value ObjectIdentity),
             Execution.rootSourceAppliesBool schema operation source = true ->
               Execution.executeSelectionSet schema resolvers variableValues
                 depth operation.rootType source operation.selectionSet
@@ -47,7 +51,8 @@ theorem groundNormalFormCorrect_of_selectionSet
     (SchemaWellFormedness.schemaWellFormed schema ->
       Validation.operationDefinitionValid schema operation ->
         operationDirectiveFree operation ->
-          ∀ resolvers variableValues depth source,
+          ∀ (ObjectIdentity : Type) (resolvers : Execution.Resolvers ObjectIdentity)
+            variableValues depth (source : Execution.Value ObjectIdentity),
             Execution.rootSourceAppliesBool schema operation source = true ->
               Execution.executeSelectionSet schema resolvers variableValues
                 depth operation.rootType source operation.selectionSet
@@ -70,7 +75,7 @@ theorem groundTypeNormalFormSemanticsPreservation
     NormalForm.groundTypeNormalFormSemanticsPreservation schema operation := by
   intro hschema hvalid hfree
   apply normalizeOperation_executeQuery schema operation
-  intro resolvers variableValues depth source hroot
+  intro ObjectIdentity resolvers variableValues depth source hroot
   have hrootObject : schema.objectType operation.rootType := by
     have hrootEq := Validation.operationDefinitionValid_rootType_eq hvalid
     rw [hrootEq]

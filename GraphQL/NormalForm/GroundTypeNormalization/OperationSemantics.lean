@@ -9,6 +9,8 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
+variable {ObjectIdentity : Type}
+
 theorem groundNormalFormCorrect_of_semanticsPreserved
     (schema : Schema) (operation : Operation) :
     groundTypeNormalFormSemanticsPreserved schema operation ->
@@ -17,7 +19,8 @@ theorem groundNormalFormCorrect_of_semanticsPreserved
   unfold groundNormalFormCorrect DataModel.operationsEquivalentOnData
     DataModel.executeOperationAtDepth
   intro store variableValues depth root _hstore _hroot
-  exact hpreserved store.resolvers variableValues depth root.toExecutionValue
+  exact hpreserved DataModel.ObjectPath (store.resolvers schema)
+    variableValues depth root.toExecutionValue
 
 theorem groundNormalFormCorrect_of_semanticsPreservation
     (schema : Schema) (operation : Operation) :
@@ -56,7 +59,7 @@ theorem selectionDirectiveFree_directivesAllowBool
 
 theorem collectSelection_field_noDirectives
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value)
+    (parentType : Name) (source : Execution.Value ObjectIdentity)
     (responseName fieldName : Name) (arguments : List Argument)
     (selectionSet : List Selection) :
     Execution.collectSelection schema variableValues parentType source
@@ -73,7 +76,7 @@ theorem collectSelection_field_noDirectives
 
 theorem collectSelection_inlineFragment_none_noDirectives
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value)
+    (parentType : Name) (source : Execution.Value ObjectIdentity)
     (selectionSet : List Selection) :
     Execution.collectSelection schema variableValues parentType source
       (Selection.inlineFragment none [] selectionSet)
@@ -84,7 +87,7 @@ theorem collectSelection_inlineFragment_none_noDirectives
 
 theorem collectSelection_inlineFragment_some_noDirectives
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType typeCondition : Name) (source : Execution.Value)
+    (parentType typeCondition : Name) (source : Execution.Value ObjectIdentity)
     (selectionSet : List Selection) :
     Execution.collectSelection schema variableValues parentType source
       (Selection.inlineFragment (some typeCondition) [] selectionSet)
@@ -98,16 +101,16 @@ theorem collectSelection_inlineFragment_some_noDirectives
   simp [Execution.collectSelection, Execution.selectionDirectivesAllowBool]
 
 theorem rootSourceAppliesBool_normalizeOperation
-    (schema : Schema) (operation : Operation) (source : Execution.Value) :
+    (schema : Schema) (operation : Operation) (source : Execution.Value ObjectIdentity) :
     Execution.rootSourceAppliesBool schema (normalizeOperation schema operation)
         source =
       Execution.rootSourceAppliesBool schema operation source := by
   rfl
 
 theorem executeQuery_normalizeOperation_of_rootSource_not_apply
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
-    (operation : Operation) (depth : Nat) (source : Execution.Value) :
+    (operation : Operation) (depth : Nat) (source : Execution.Value ObjectIdentity) :
     Execution.rootSourceAppliesBool schema operation source = false ->
       Execution.executeQueryAtDepth schema resolvers variableValues operation
         depth source
@@ -120,7 +123,8 @@ theorem executeQuery_normalizeOperation_of_rootSource_not_apply
 
 theorem groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet
     (schema : Schema) (operation : Operation) :
-    (∀ resolvers variableValues depth source,
+    (∀ (ObjectIdentity : Type) (resolvers : Execution.Resolvers ObjectIdentity)
+      variableValues depth (source : Execution.Value ObjectIdentity),
       Execution.rootSourceAppliesBool schema operation source = true ->
         Execution.executeSelectionSet schema resolvers variableValues
           depth operation.rootType source operation.selectionSet
@@ -131,12 +135,12 @@ theorem groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet
       groundTypeNormalFormSemanticsPreserved schema operation := by
   intro hselection
   unfold groundTypeNormalFormSemanticsPreserved operationsEquivalent
-  intro resolvers variableValues depth source
+  intro ObjectIdentity resolvers variableValues depth source
   by_cases hroot :
       Execution.rootSourceAppliesBool schema operation source = true
   · simp [Execution.executeQueryAtDepth, hroot,
       rootSourceAppliesBool_normalizeOperation]
-    exact hselection resolvers variableValues depth source hroot
+    exact hselection ObjectIdentity resolvers variableValues depth source hroot
   · have hrootFalse :
         Execution.rootSourceAppliesBool schema operation source = false := by
       cases hmatch : Execution.rootSourceAppliesBool schema operation source

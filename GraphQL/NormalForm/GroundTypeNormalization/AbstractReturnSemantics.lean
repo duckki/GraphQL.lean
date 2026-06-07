@@ -9,9 +9,11 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
+variable {ObjectIdentity : Type}
+
 theorem collectFields_possibleTypeFragments_not_mem_eq_nil
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (runtimeType : Name) (identity : Nat)
+    (runtimeType : Name) (identity : ObjectIdentity)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       objectTypeNameBool schema objectType = true) ->
@@ -48,9 +50,9 @@ theorem collectFields_possibleTypeFragments_not_mem_eq_nil
       · exact doesFragmentTypeApplyBool_object_other_false schema hobject hne
 
 theorem executeSelectionSet_append_possibleTypeFragments_not_mem
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (runtimeType : Name) (identity : Nat)
+    (depth : Nat) (runtimeType : Name) (identity : ObjectIdentity)
     (possibleTypes : List Name)
     (selectionSet suffix : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
@@ -75,9 +77,9 @@ theorem executeSelectionSet_append_possibleTypeFragments_not_mem
   simp [Execution.mergeExecutableGroups_nil_right]
 
 theorem executeSelectionSet_possibleTypeFragments_runtime_branch
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (runtimeType : Name) (identity : Nat)
+    (depth : Nat) (runtimeType : Name) (identity : ObjectIdentity)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       objectTypeNameBool schema objectType = true) ->
@@ -162,7 +164,7 @@ theorem executeSelectionSet_possibleTypeFragments_runtime_branch
         exact hrecursive
 
 theorem completeValue_possibleTypeFragments_eq_of_child_object_lt
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema) :
     ∀ depth childType selectionSet value,

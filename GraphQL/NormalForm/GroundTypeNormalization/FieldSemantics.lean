@@ -9,12 +9,14 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
+variable {ObjectIdentity : Type}
+
 theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_case
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
     (variableDefinitions : List VariableDefinition)
     (depth : Nat) (parentType responseName fieldName : Name)
-    (arguments : List Argument) (source : Execution.Value)
+    (arguments : List Argument) (source : Execution.Value ObjectIdentity)
     (selectionSet rest : List Selection) :
     Validation.selectionSetValid schema variableDefinitions parentType
       (Selection.field responseName fieldName arguments [] selectionSet
@@ -36,10 +38,10 @@ theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_case
       hvalid hlookup)
 
 theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_lookupValid_case
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType responseName fieldName : Name)
-    (arguments : List Argument) (source : Execution.Value)
+    (arguments : List Argument) (source : Execution.Value ObjectIdentity)
     (selectionSet rest : List Selection) :
     selectionSetLookupValid schema parentType
       (Selection.field responseName fieldName arguments [] selectionSet
@@ -60,9 +62,9 @@ theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_lookupValid_
     (selectionSetLookupValid_field_head_lookup_none_false hvalid hlookup)
 
 theorem executeField_singleton_eq_group_of_completeValue
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (source : Execution.Value) (responseName : Name)
+    (depth : Nat) (source : Execution.Value ObjectIdentity) (responseName : Name)
     (field : Execution.ExecutableField)
     (fields : List Execution.ExecutableField)
     (normalizedSelectionSet : List Selection) :
@@ -88,11 +90,11 @@ theorem executeField_singleton_eq_group_of_completeValue
     Execution.mergedFieldSelectionSet, hcomplete]
 
 theorem completeValue_list_eq_of_forall
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
     (leftSelectionSet rightSelectionSet : List Selection)
-    (values : List Execution.Value) :
+    (values : List (Execution.Value ObjectIdentity)) :
     (∀ value, value ∈ values ->
       Execution.completeValue schema resolvers variableValues depth parentType
         leftSelectionSet value
@@ -110,7 +112,7 @@ theorem completeValue_list_eq_of_forall
   exact hvalues value hvalue
 
 theorem completeValue_eq_of_child_object_lt
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues) :
     ∀ depth parentType leftSelectionSet rightSelectionSet value,
       (∀ childDepth runtimeType identity,
@@ -164,7 +166,7 @@ theorem completeValue_eq_of_child_object_lt
                     (Nat.lt_trans hlt (Nat.lt_succ_self depth))))
 
 theorem completeValue_eq_of_child_object_lt_includes
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues) :
     ∀ depth parentType leftSelectionSet rightSelectionSet value,
       (∀ childDepth runtimeType identity,
@@ -220,9 +222,9 @@ theorem completeValue_eq_of_child_object_lt_includes
                     (Nat.lt_trans hlt (Nat.lt_succ_self depth)) hinclude))
 
 theorem executeField_singleton_eq_group_of_child_object_lt
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (source : Execution.Value) (responseName : Name)
+    (depth : Nat) (source : Execution.Value ObjectIdentity) (responseName : Name)
     (field : Execution.ExecutableField)
     (fields : List Execution.ExecutableField)
     (normalizedSelectionSet : List Selection) :
@@ -256,9 +258,9 @@ theorem executeField_singleton_eq_group_of_child_object_lt
     hcomplete
 
 theorem executeCollectedFields_cons_eq_of_parts
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (source : Execution.Value)
+    (depth : Nat) (source : Execution.Value ObjectIdentity)
     (normalizedGroup sourceGroup :
       Name × List Execution.ExecutableField)
     (normalizedRest sourceRest :
@@ -287,8 +289,8 @@ theorem executeCollectedFields_cons_eq_of_parts
           rw [hhead, htail]
 
 theorem executeCollectedFields_zero
-    (schema : Schema) (resolvers : Execution.Resolvers)
-    (variableValues : Execution.VariableValues) (source : Execution.Value) :
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (variableValues : Execution.VariableValues) (source : Execution.Value ObjectIdentity) :
     ∀ groups,
       Execution.executeCollectedFields schema resolvers variableValues 0 source
         groups
@@ -302,9 +304,9 @@ theorem executeCollectedFields_zero
             rest]
 
 theorem executeSelectionSet_field_head_eq_of_completeValue
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (parentType : Name) (source : Execution.Value)
+    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectIdentity)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections normalizedSubselections normalizedRest rest :
       List Selection)
@@ -397,9 +399,9 @@ theorem executeSelectionSet_field_head_eq_of_completeValue
         sourceRest hhead htail
 
 theorem normalizeSelectionSet_executeSelectionSet_field_head_of_completeValue
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (parentType : Name) (source : Execution.Value)
+    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectIdentity)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections rest normalizedSubselections : List Selection)
     (fieldDefinition : FieldDefinition)
@@ -486,9 +488,9 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_of_completeValue
     htail
 
 theorem normalizeSelectionSet_executeSelectionSet_field_head_case
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (parentType : Name) (source : Execution.Value)
+    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectIdentity)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections rest normalizedSubselections : List Selection)
     (fieldDefinition : FieldDefinition) :
@@ -636,10 +638,10 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case
   · exact htailCollected
 
 theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (depth : Nat) (parentType : Name) (source : Execution.Value)
+    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectIdentity)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections rest : List Selection)
     (fieldDefinition : FieldDefinition) :
@@ -661,7 +663,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
       subselections
         ++ mergeSelectionSets
           (validFieldsWithResponseName schema parentType responseName rest)
-    ∀ (childDepth : Nat) (runtimeType : Name) (identity : Nat),
+    ∀ (childDepth : Nat) (runtimeType : Name) (identity : ObjectIdentity),
       childDepth < depth ->
         objectTypeNameBool schema runtimeType = true ->
         selectionSetDirectiveFree mergedSubselections ->

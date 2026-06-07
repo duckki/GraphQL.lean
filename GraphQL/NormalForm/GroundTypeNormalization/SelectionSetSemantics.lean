@@ -9,8 +9,10 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
+variable {ObjectIdentity : Type}
+
 theorem normalizeSelectionSet_executeSelectionSet
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema) :
     ∀ depth parentType source selectionSet,
@@ -107,7 +109,7 @@ theorem normalizeSelectionSet_executeSelectionSet
           responseName fieldName arguments subselections rest fieldDefinition
           hobject hsource hfree hready hmerge hlookup
       · dsimp
-        intro (childDepth : Nat) (runtimeType : Name) (identity : Nat)
+        intro (childDepth : Nat) (runtimeType : Name) (identity : ObjectIdentity)
           hlt hchildObject hmergedFree
           _hmergedLookup hmergedReady hmergedMerge
         have hchildSource :

@@ -9,11 +9,13 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
+variable {ObjectIdentity : Type}
+
 theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_noOverlap_case
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
-    (source : Execution.Value)
+    (source : Execution.Value ObjectIdentity)
     (selectionSet rest : List Selection) :
     (∃ runtimeType identity,
       source = .object runtimeType identity
@@ -48,10 +50,10 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_noOverlap_
     selectionSet rest happly).symm
 
 theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_none_case
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
-    (source : Execution.Value)
+    (source : Execution.Value ObjectIdentity)
     (selectionSet rest : List Selection) :
     Execution.executeSelectionSet schema resolvers variableValues depth
       parentType source
@@ -74,10 +76,10 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_none_case
     resolvers variableValues depth parentType source selectionSet rest).symm
 
 theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_apply_case
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
-    (source : Execution.Value)
+    (source : Execution.Value ObjectIdentity)
     (selectionSet rest : List Selection) :
     schema.typesOverlapBool parentType typeCondition = true ->
       Execution.doesFragmentTypeApplyBool schema parentType source
@@ -106,10 +108,10 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_apply_case
     selectionSet rest happly).symm
 
 theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_overlap_case
-    (schema : Schema) (resolvers : Execution.Resolvers)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
-    (source : Execution.Value)
+    (source : Execution.Value ObjectIdentity)
     (selectionSet rest : List Selection) :
     objectTypeNameBool schema parentType = true ->
       (∃ runtimeType identity,

@@ -6,14 +6,39 @@ namespace DataModel
 
 open GraphQL.DataModel
 
+abbrev field (name : Name) (arguments : List Argument := []) : FieldAccess :=
+  { name, arguments }
+
+abbrev rootPath : ObjectPath :=
+  []
+
+abbrev listElementPath (sourcePath : ObjectPath) (field : FieldAccess)
+    (index : Nat) : ObjectPath :=
+  FieldAccess.childListElementPath sourcePath field index
+
+abbrev node (typeName : Name) (path : ObjectPath)
+    (properties : List (FieldAccess × PropertyValue) := []) : ObjectNode :=
+  { typeName, path, properties }
+
+abbrev edge (sourcePath : ObjectPath) (field : FieldAccess)
+    (targetType : Name) : ObjectEdge :=
+  { sourcePath, field, index? := none, targetType }
+
+abbrev listEdge (sourcePath : ObjectPath) (field : FieldAccess)
+    (index : Nat) (targetType : Name) : ObjectEdge :=
+  { sourcePath, field, index? := some index, targetType }
+
+notation "field!" name => field name []
+infixl:65 " /> " => FieldAccess.childPath
+
 def heroAccess : FieldAccess :=
-  { name := "hero", arguments := [] }
+  field! "hero"
 
 def friendsAccess : FieldAccess :=
-  { name := "friends", arguments := [] }
+  field! "friends"
 
 def nameAccess : FieldAccess :=
-  { name := "name", arguments := [] }
+  field! "name"
 
 def heroEpisodeArg : Argument :=
   { name := "episode", value := .enum "JEDI" }
@@ -25,22 +50,22 @@ def heroEpisodeStringArg : Argument :=
   { name := "episode", value := .string "JEDI" }
 
 def heroAccessWithArgsA : FieldAccess :=
-  { name := "hero", arguments := [heroEpisodeArg, heroFormatArg] }
+  field "hero" [heroEpisodeArg, heroFormatArg]
 
 def heroAccessWithArgsB : FieldAccess :=
-  { name := "hero", arguments := [heroFormatArg, heroEpisodeArg] }
+  field "hero" [heroFormatArg, heroEpisodeArg]
 
 def heroAccessWithStringArgsA : FieldAccess :=
-  { name := "hero", arguments := [heroEpisodeStringArg, heroFormatArg] }
+  field "hero" [heroEpisodeStringArg, heroFormatArg]
 
 def heroAccessWithStringArgsB : FieldAccess :=
-  { name := "hero", arguments := [heroFormatArg, heroEpisodeStringArg] }
+  field "hero" [heroFormatArg, heroEpisodeStringArg]
 
 def nameAccessWithUnexpectedArg : FieldAccess :=
-  { name := "name", arguments := [heroFormatArg] }
+  field "name" [heroFormatArg]
 
 def heroAccessWithUnexpectedArg : FieldAccess :=
-  { name := "hero", arguments := [heroFormatArg] }
+  field "hero" [heroFormatArg]
 
 def searchFilterArgA : Argument :=
   { name := "filter", value := .object [("b", .int 2), ("a", .int 1)] }
@@ -49,28 +74,28 @@ def searchFilterArgB : Argument :=
   { name := "filter", value := .object [("a", .int 1), ("b", .int 2)] }
 
 def searchAccessWithArgsA : FieldAccess :=
-  { name := "search", arguments := [searchFilterArgA] }
+  field "search" [searchFilterArgA]
 
 def searchAccessWithArgsB : FieldAccess :=
-  { name := "search", arguments := [searchFilterArgB] }
+  field "search" [searchFilterArgB]
 
 def heroPath : ObjectPath :=
-  FieldAccess.childPath [] heroAccess
+  rootPath /> heroAccess
 
 def firstFriendPath : ObjectPath :=
-  FieldAccess.childListElementPath [] friendsAccess 0
+  listElementPath rootPath friendsAccess 0
 
 def firstHeroFriendPath : ObjectPath :=
-  FieldAccess.childListElementPath heroPath friendsAccess 0
+  listElementPath heroPath friendsAccess 0
 
 def secondHeroFriendPath : ObjectPath :=
-  FieldAccess.childListElementPath heroPath friendsAccess 1
+  listElementPath heroPath friendsAccess 1
 
 def heroPathWithStringArgs : ObjectPath :=
-  FieldAccess.childPath [] heroAccessWithStringArgsA
+  rootPath /> heroAccessWithStringArgsA
 
 def heroPathWithUnexpectedArg : ObjectPath :=
-  FieldAccess.childPath [] heroAccessWithUnexpectedArg
+  rootPath /> heroAccessWithUnexpectedArg
 
 def rawHeroPathWithStringArgsA : ObjectPath :=
   [.field heroAccessWithStringArgsA]
@@ -111,17 +136,13 @@ def graphSchemaWithHeroArgs : Schema :=
     types := [.object queryTypeWithHeroArgs, .object characterType] }
 
 def rootNode : ObjectNode :=
-  { typeName := "Query",
-    path := [] }
+  node "Query" rootPath
 
 def mismatchedRootNode : ObjectNode :=
-  { typeName := "Character",
-    path := [] }
+  node "Character" rootPath
 
 def heroNode : ObjectNode :=
-  { typeName := "Character",
-    path := heroPath,
-    properties := [(nameAccess, .scalar "R2-D2")] }
+  node "Character" heroPath [(nameAccess, .scalar "R2-D2")]
 
 def heroNodeWithUnexpectedPropertyArg : ObjectNode :=
   { heroNode with properties := [(nameAccessWithUnexpectedArg, .scalar "R2-D2")] }
@@ -143,44 +164,25 @@ def heroNodeWithUnexpectedArgPath : ObjectNode :=
   { heroNode with path := heroPathWithUnexpectedArg }
 
 def firstHeroFriendNode : ObjectNode :=
-  { typeName := "Character",
-    path := firstHeroFriendPath,
-    properties := [(nameAccess, .scalar "C-3PO")] }
+  node "Character" firstHeroFriendPath [(nameAccess, .scalar "C-3PO")]
 
 def secondHeroFriendNode : ObjectNode :=
-  { typeName := "Character",
-    path := secondHeroFriendPath,
-    properties := [(nameAccess, .scalar "Luke")] }
+  node "Character" secondHeroFriendPath [(nameAccess, .scalar "Luke")]
 
 def heroEdge : ObjectEdge :=
-  { sourcePath := [],
-    field := heroAccess,
-    index? := none,
-    targetType := "Character" }
+  edge rootPath heroAccess "Character"
 
 def heroEdgeWithStringArgs : ObjectEdge :=
-  { sourcePath := [],
-    field := heroAccessWithStringArgsA,
-    index? := none,
-    targetType := "Character" }
+  edge rootPath heroAccessWithStringArgsA "Character"
 
 def heroEdgeWithUnexpectedArg : ObjectEdge :=
-  { sourcePath := [],
-    field := heroAccessWithUnexpectedArg,
-    index? := none,
-    targetType := "Character" }
+  edge rootPath heroAccessWithUnexpectedArg "Character"
 
 def firstHeroFriendEdge : ObjectEdge :=
-  { sourcePath := heroPath,
-    field := friendsAccess,
-    index? := some 0,
-    targetType := "Character" }
+  listEdge heroPath friendsAccess 0 "Character"
 
 def secondHeroFriendEdge : ObjectEdge :=
-  { sourcePath := heroPath,
-    field := friendsAccess,
-    index? := some 1,
-    targetType := "Character" }
+  listEdge heroPath friendsAccess 1 "Character"
 
 def graphStore : Store :=
   { root := rootNode,

@@ -1,10 +1,12 @@
 import Tests.NormalForm.Common
+import GraphQL.NormalForm.GroundTypeNormalization.Normality
 
 namespace GraphQL
 namespace Tests
 namespace NormalForm
 
 open GraphQL.NormalForm
+open GraphQL.NormalForm.GroundTypeNormalization
 
 def stringFieldDefinition (name : Name) : FieldDefinition :=
   { name := name, outputType := .named "String", arguments := [] }
@@ -125,6 +127,32 @@ theorem duplicateFieldGroundTypingSmoke :
         duplicateFieldOutputSnapshot = true := by
   native_decide
 
+def aliasedDuplicateFieldInputQuery : Operation :=
+  operationWith [
+    .field "lead" "hero" [] [] [
+      Selection.field "id" "id" [] [] []
+    ],
+    .field "lead" "hero" [] [] [
+      Selection.field "name" "name" [] [] []
+    ]
+  ]
+
+def aliasedDuplicateFieldOutputSnapshot : Operation :=
+  operationWith [
+    .field "lead" "hero" [] [] [
+      Selection.field "id" "id" [] [] [],
+      Selection.field "name" "name" [] [] []
+    ]
+  ]
+
+theorem aliasedDuplicateFieldGroundTypingSmoke :
+    operationWellFormedBool aliasedDuplicateFieldInputQuery = true
+      ∧ operationWellFormedBool aliasedDuplicateFieldOutputSnapshot = true
+      ∧ operationEqBool
+        (normalizeOperation groundTypingSchema aliasedDuplicateFieldInputQuery)
+        aliasedDuplicateFieldOutputSnapshot = true := by
+  native_decide
+
 def untypedInlineFragmentInputQuery : Operation :=
   query {
     spread {
@@ -149,7 +177,54 @@ theorem untypedInlineFragmentGroundTypingSmoke :
         untypedInlineFragmentOutputSnapshot = true := by
   native_decide
 
+def nonOverlappingInlineFragmentInputQuery : Operation :=
+  query {
+    field "hero" {
+      field "id",
+      on "Droid" {
+        field "primaryFunction"
+      }
+    }
+  }
+
+def nonOverlappingInlineFragmentOutputSnapshot : Operation :=
+  query {
+    field "hero" {
+      field "id"
+    }
+  }
+
+theorem nonOverlappingInlineFragmentGroundTypingSmoke :
+    operationWellFormedBool nonOverlappingInlineFragmentInputQuery = true
+      ∧ operationWellFormedBool nonOverlappingInlineFragmentOutputSnapshot = true
+      ∧ operationEqBool
+        (normalizeOperation groundTypingSchema nonOverlappingInlineFragmentInputQuery)
+        nonOverlappingInlineFragmentOutputSnapshot = true := by
+  native_decide
+
+theorem normalizedSmokeInputsAreNormal
+    (hschema : SchemaWellFormedness.schemaWellFormed groundTypingSchema) :
+    operationNormal groundTypingSchema
+        (normalizeOperation groundTypingSchema objectFieldInputQuery)
+      ∧ operationNormal groundTypingSchema
+        (normalizeOperation groundTypingSchema abstractFieldInputQuery)
+      ∧ operationNormal groundTypingSchema
+        (normalizeOperation groundTypingSchema duplicateFieldInputQuery)
+      ∧ operationNormal groundTypingSchema
+        (normalizeOperation groundTypingSchema aliasedDuplicateFieldInputQuery)
+      ∧ operationNormal groundTypingSchema
+        (normalizeOperation groundTypingSchema untypedInlineFragmentInputQuery)
+      ∧ operationNormal groundTypingSchema
+        (normalizeOperation groundTypingSchema nonOverlappingInlineFragmentInputQuery) := by
+  exact ⟨
+    normalizeOperation_normal groundTypingSchema hschema objectFieldInputQuery,
+    normalizeOperation_normal groundTypingSchema hschema abstractFieldInputQuery,
+    normalizeOperation_normal groundTypingSchema hschema duplicateFieldInputQuery,
+    normalizeOperation_normal groundTypingSchema hschema aliasedDuplicateFieldInputQuery,
+    normalizeOperation_normal groundTypingSchema hschema untypedInlineFragmentInputQuery,
+    normalizeOperation_normal groundTypingSchema hschema
+      nonOverlappingInlineFragmentInputQuery⟩
+
 end NormalForm
 end Tests
 end GraphQL
-

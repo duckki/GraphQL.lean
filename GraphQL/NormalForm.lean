@@ -9,7 +9,9 @@ Spec reference: GraphQL September 2025.
 - 5.5.2.3 Fragment Spread Is Possible and `GetPossibleTypes`: abstract type conditions are
   grounded through possible object types.
 - Fidelity note: GraphQL does not define this normal form. This is a project-specific
-  canonicalization scaffold; it is partial and does not yet prove semantic preservation.
+  canonicalization scaffold. The public semantic-preservation predicates in this module are
+  proved by `GraphQL.NormalForm.GroundTypeNormalization.groundTypeNormalFormSemanticsPreservation`
+  and `GraphQL.NormalForm.GroundTypeNormalization.groundNormalFormCorrect`.
 -/
 namespace GraphQL
 
@@ -400,14 +402,16 @@ def groundTypeNormalFormSemanticsPreserved (schema : Schema)
   operationsEquivalent schema operation
     (normalizeOperation schema operation)
 
--- Store-backed correctness statement for the ground-type normalizer.
+-- Store-backed correctness statement for the ground-type normalizer. The theorem witness is
+-- `GraphQL.NormalForm.GroundTypeNormalization.groundNormalFormCorrect`.
 def groundNormalFormCorrect (schema : Schema)
     (operation : Operation) : Prop :=
   DataModel.operationsEquivalentOnData schema operation
     (normalizeOperation schema operation)
 
--- Final correctness statement for the ground-type normalizer. This is intentionally a
--- definition, not a proof attempt.
+-- Final resolver-parametric correctness statement for the ground-type normalizer. The theorem
+-- witness is
+-- `GraphQL.NormalForm.GroundTypeNormalization.groundTypeNormalFormSemanticsPreservation`.
 def groundTypeNormalFormSemanticsPreservation (schema : Schema)
     (operation : Operation) : Prop :=
   SchemaWellFormedness.schemaWellFormed schema ->

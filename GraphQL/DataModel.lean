@@ -1,17 +1,12 @@
 import GraphQL.Execution
 import GraphQL.Validation
 
-/-!
-Spec reference: GraphQL September 2025.
-- 6 Execution and 7 Response: this module gives an extensional graph-backed data model
-  for the intentionally scoped execution fragment: query-like operations,
-  already-coerced arguments/variables, built-in `@skip`/`@include`, no introspection,
-  no mutation, and no subscription.
-- The model represents typed object nodes keyed by field-access paths. Scalar facts live
-  as node properties, object relationships live as labeled edges, and the model can be
-  converted into the existing resolver interface.
-- Fidelity note: scalar coercion, enum coercion, input coercion, result coercion,
-  execution errors, null bubbling, and serialization are assumed out of scope here.
+/-! GraphQL data model for store-backed resolvers
+
+This module models the server-side graph accessed through resolvers. Runtime objects are
+typed nodes keyed by field-access paths; scalar facts are node properties, and object
+relationships are labeled edges. The model assumes scalar/input/result coercion,
+execution errors, null bubbling, and serialization are outside the current scoped fragment.
 -/
 namespace GraphQL
 

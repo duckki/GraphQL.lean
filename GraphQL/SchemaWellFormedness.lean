@@ -1,6 +1,6 @@
 import GraphQL.Validation
 
-/-!
+/-! Well-formedness of GraphQL schemas
 Spec reference: GraphQL September 2025.
 - 3.3 Schema and 3.4-3.12 Type System validation: this file separates raw schema syntax
   from schema well-formedness predicates. The spec describes these as validation rules;

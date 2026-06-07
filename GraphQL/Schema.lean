@@ -1,4 +1,4 @@
-/-!
+/-! GraphQL schema representation
 Spec reference: GraphQL September 2025.
 - 2.1.8 Names: names identify schema and executable elements; this model stores raw
   strings and leaves grammar/reserved-name checks to well-formedness/validation work.

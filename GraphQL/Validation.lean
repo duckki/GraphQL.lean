@@ -1,6 +1,6 @@
 import GraphQL.Operation
 
-/-!
+/-! GraphQL operation validation
 Spec reference: GraphQL September 2025.
 - 5.2 Operations, 5.3 Fields, 5.4 Arguments, 5.5 Fragments, 5.6 Values, 5.7 Directives,
   and 5.8 Variables: this file states operation validity as a proposition over the modeled

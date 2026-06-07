@@ -1,6 +1,6 @@
 import GraphQL.Schema
 
-/-!
+/-! GraphQL operation representation
 Spec reference: GraphQL September 2025.
 - 2.3-2.4 Documents and Operations: this file models a single query-like operation, not
   a full executable document with multiple operations or operation kinds.

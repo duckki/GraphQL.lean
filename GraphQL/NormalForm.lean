@@ -1,17 +1,13 @@
 import GraphQL.DataModel
 import GraphQL.SchemaWellFormedness
 
-/-!
-Spec reference: GraphQL September 2025.
-- 5.3.2 Field Selection Merging and 6.3.2 Field Collection: normalization merges
-  same-response-name field subselections in the spirit of GraphQL's merge/collect
-  behavior.
-- 5.5.2.3 Fragment Spread Is Possible and `GetPossibleTypes`: abstract type conditions are
-  grounded through possible object types.
-- Fidelity note: GraphQL does not define this normal form. This is a project-specific
-  canonicalization scaffold. The public semantic-preservation predicates in this module are
-  proved by `GraphQL.NormalForm.GroundTypeNormalization.groundTypeNormalFormSemanticsPreservation`
-  and `GraphQL.NormalForm.GroundTypeNormalization.groundNormalFormCorrect`.
+/-! GraphQL operation normal form
+
+This project-specific normal form merges same-response-name field selections and grounds
+abstract returns through possible object types. The public semantic-preservation predicates
+in this module are proved by
+`GraphQL.NormalForm.GroundTypeNormalization.groundTypeNormalFormSemanticsPreservation` and
+`GraphQL.NormalForm.GroundTypeNormalization.groundNormalFormCorrect`.
 -/
 namespace GraphQL
 

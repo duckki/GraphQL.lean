@@ -11,7 +11,6 @@ import GraphQL.Execution.FieldCollection
 import GraphQL.DataModel
 import GraphQL.DataModel.Store
 import GraphQL.NormalForm
-import GraphQL.NormalForm.GroundTypeNormalization
 import GraphQL.NormalForm.GroundTypeNormalization.FieldCollection
 import GraphQL.NormalForm.GroundTypeNormalization.Semantics
 import GraphQL.NormalForm.GroundTypeLifting.OperationSemantics

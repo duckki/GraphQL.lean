@@ -12,7 +12,10 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
+namespace GroundTypeLifting
+
+open GroundTypeNormalization
+open DataModel.Store
 
 variable {ObjectIdentity : Type}
 
@@ -1134,7 +1137,7 @@ theorem groundLiftSelectionSet_executeSelectionSet_on_store_of_scoped
   simpa [groundLiftScopedSelectionSet_scopedSelectionSet,
     eraseScopedSelectionSet_scopedSelectionSet] using hscopedEq
 
-end GroundTypeNormalization
+end GroundTypeLifting
 
 end NormalForm
 

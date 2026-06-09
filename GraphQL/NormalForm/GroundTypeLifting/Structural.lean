@@ -1,4 +1,3 @@
-import GraphQL.NormalForm.GroundTypeLifting.StoreInclusion
 import GraphQL.NormalForm.Shared.ResponseNameFree
 
 /-!
@@ -8,7 +7,7 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
+namespace GroundTypeLifting
 
 variable {ObjectIdentity : Type}
 
@@ -226,7 +225,7 @@ theorem groundLiftSelectionSet_append
         parentType rest right]
 
 
-end GroundTypeNormalization
+end GroundTypeLifting
 
 end NormalForm
 

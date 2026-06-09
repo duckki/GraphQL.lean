@@ -12,7 +12,9 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
+namespace GroundTypeLifting
+
+open GroundTypeNormalization
 
 variable {ObjectIdentity : Type}
 
@@ -168,7 +170,7 @@ theorem groundLiftOperation_operationsEquivalentOnData
   exact (executeOperationAtDepth_groundLiftOperation_eq_on_store schema store
     variableValues operation depth hschema hstore hvalid hfree).symm
 
-end GroundTypeNormalization
+end GroundTypeLifting
 
 end NormalForm
 

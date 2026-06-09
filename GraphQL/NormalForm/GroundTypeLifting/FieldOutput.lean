@@ -1,4 +1,5 @@
 import GraphQL.NormalForm.GroundTypeLifting.ExecutionGroups
+import GraphQL.DataModel.StoreValueInclusion
 
 /-!
 Field-output and value-inclusion lemmas for ground-type lifting proofs.
@@ -7,7 +8,10 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
+namespace GroundTypeLifting
+
+open GroundTypeNormalization
+open DataModel.Store
 
 variable {ObjectIdentity : Type}
 
@@ -783,7 +787,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_valueInclu
     simpa [liftedSelectionSet] using hcomplete
   · exact htail
 
-end GroundTypeNormalization
+end GroundTypeLifting
 
 end NormalForm
 

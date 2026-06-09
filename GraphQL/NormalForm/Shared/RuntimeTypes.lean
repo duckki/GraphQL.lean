@@ -149,58 +149,6 @@ theorem fieldSelectionSetValid_child_of_possibleType
     cases hpossible
   · exact hcomposite.2.2
 
-theorem typeIncludesObjectBool_of_outputTypeSubtype_namedType
-    (schema : Schema) :
-    ∀ {implementation expected : TypeRef} {objectType : Name},
-      schema.outputTypeSubtype implementation expected ->
-      schema.typeIncludesObjectBool implementation.namedType objectType = true ->
-        schema.typeIncludesObjectBool expected.namedType objectType = true
-    := by
-  intro implementation
-  induction implementation with
-  | named implementationName =>
-      intro expected objectType hsubtype hinclude
-      cases expected with
-      | named expectedName =>
-          simp [Schema.outputTypeSubtype, Schema.namedOutputTypeSubtype]
-            at hsubtype
-          rcases hsubtype with hleaf | hcomposite
-          · rcases hleaf with
-              ⟨_hleafImplementation, _hleafExpected, heq⟩
-            subst expectedName
-            exact hinclude
-          · rcases hcomposite with
-              ⟨_himplementationComposite, _hexpectedComposite, hcontains⟩
-            exact List.contains_iff_mem.mpr
-              (hcontains objectType (List.contains_iff_mem.mp hinclude))
-      | list expectedInner =>
-          simp [Schema.outputTypeSubtype] at hsubtype
-      | nonNull expectedInner =>
-          simp [Schema.outputTypeSubtype] at hsubtype
-  | list implementationInner ih =>
-      intro expected objectType hsubtype hinclude
-      cases expected with
-      | named expectedName =>
-          simp [Schema.outputTypeSubtype] at hsubtype
-      | list expectedInner =>
-          simp [Schema.outputTypeSubtype] at hsubtype
-          exact ih (expected := expectedInner) hsubtype hinclude
-      | nonNull expectedInner =>
-          simp [Schema.outputTypeSubtype] at hsubtype
-  | nonNull implementationInner ih =>
-      intro expected objectType hsubtype hinclude
-      cases expected with
-      | named expectedName =>
-          exact ih hsubtype hinclude
-      | list expectedInner =>
-          simp [Schema.outputTypeSubtype] at hsubtype
-          exact ih hsubtype hinclude
-      | nonNull expectedInner =>
-          simp [Schema.outputTypeSubtype] at hsubtype
-          exact ih (expected := expectedInner) hsubtype hinclude
-
-
-
 end NormalForm
 
 end GraphQL

@@ -1,4 +1,5 @@
 import GraphQL.NormalForm.GroundTypeLifting.Structural
+import GraphQL.NormalForm.Shared.SemanticReadiness
 
 /-!
 Scoped selection-set machinery for ground-type lifting proofs.
@@ -7,7 +8,7 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
+namespace GroundTypeLifting
 
 variable {ObjectIdentity : Type}
 
@@ -1488,7 +1489,7 @@ theorem scopedFieldHead_lookupPair_of_semanticsReady_lookupValid
   rcases hheadLookup with ⟨liftFieldDefinition, hliftLookup⟩
   exact ⟨execFieldDefinition, liftFieldDefinition, hexecLookup, hliftLookup⟩
 
-end GroundTypeNormalization
+end GroundTypeLifting
 
 end NormalForm
 

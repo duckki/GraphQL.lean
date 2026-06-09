@@ -22,7 +22,7 @@ def completeScopedFieldOutputValuesInclude {ObjectIdentity : Type}
         ∧ directivesAllowIn boolCase directives = true
         ∧ schema.lookupField scopedSelection.lookupParent fieldName =
           some fieldDefinition
-        ∧ GroundTypeNormalization.executionValueObjectsInclude schema
+        ∧ DataModel.Store.executionValueObjectsInclude schema
           fieldDefinition.outputType.namedType value
 
 theorem completeScopedFieldOutputValuesInclude_runtimeReady_of_object
@@ -51,7 +51,7 @@ theorem completeScopedFieldOutputValuesInclude_runtimeReady_of_object
           schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
               runtimeType =
             true := by
-        simpa [GroundTypeNormalization.executionValueObjectsInclude] using
+        simpa [DataModel.Store.executionValueObjectsInclude] using
           hincludes
       rw [hincludeBool] at hfalse
       cases hfalse
@@ -69,12 +69,12 @@ theorem completeScopedFieldOutputValuesInclude_runtimeReady_of_object
                 schema.typeIncludesObjectBool
                     fieldDefinition.outputType.namedType runtimeType =
                   true := by
-              simpa [GroundTypeNormalization.executionValueObjectsInclude]
+              simpa [DataModel.Store.executionValueObjectsInclude]
                 using hincludes
             rw [hincludeBool] at hfalse
             cases hfalse)
         (by
-          simpa [GroundTypeNormalization.executionValueObjectsInclude] using
+          simpa [DataModel.Store.executionValueObjectsInclude] using
             hincludes)
 
 theorem completeValue_normalizeForTypeIn_staticScoped_eq_of_valueObjectsInclude_lt
@@ -85,7 +85,7 @@ theorem completeValue_normalizeForTypeIn_staticScoped_eq_of_valueObjectsInclude_
     (hschema : SchemaWellFormedness.schemaWellFormed schema) :
     ∀ depth actualType expectedType groundType variables boolCase
       selectionSet scopedMatches value,
-      GroundTypeNormalization.executionValueObjectsInclude schema
+      DataModel.Store.executionValueObjectsInclude schema
         expectedType value ->
       completeScopedFieldOutputValuesInclude schema boolCase value
         scopedMatches ->
@@ -136,7 +136,7 @@ theorem completeValue_normalizeForTypeIn_staticScoped_eq_of_valueObjectsInclude_
               schema.typeIncludesObjectBool actualType runtimeType = true
           · have hexpected :
                 schema.typeIncludesObjectBool expectedType runtimeType = true := by
-              simpa [GroundTypeNormalization.executionValueObjectsInclude]
+              simpa [DataModel.Store.executionValueObjectsInclude]
                 using hheadInclude
             cases hleaf : leafTypeNameBool schema expectedType
             · have hmem :
@@ -215,9 +215,9 @@ theorem completeValue_normalizeForTypeIn_staticScoped_eq_of_valueObjectsInclude_
       | list values =>
           have hheadElements :
               ∀ value, value ∈ values ->
-                GroundTypeNormalization.executionValueObjectsInclude schema
+                DataModel.Store.executionValueObjectsInclude schema
                   expectedType value := by
-            simpa [GroundTypeNormalization.executionValueObjectsInclude] using
+            simpa [DataModel.Store.executionValueObjectsInclude] using
               hheadInclude
           have hmatchesElements :
               ∀ value, value ∈ values ->
@@ -232,9 +232,9 @@ theorem completeValue_normalizeForTypeIn_staticScoped_eq_of_valueObjectsInclude_
               ?_⟩
             have hincludesElements :
                 ∀ value, value ∈ values ->
-                  GroundTypeNormalization.executionValueObjectsInclude schema
+                  DataModel.Store.executionValueObjectsInclude schema
                     fieldDefinition.outputType.namedType value := by
-              simpa [GroundTypeNormalization.executionValueObjectsInclude]
+              simpa [DataModel.Store.executionValueObjectsInclude]
                 using hincludes
             exact hincludesElements value hvalue
           simp [Execution.completeValue]
@@ -397,11 +397,11 @@ theorem completeScopedSelectionSetStaticFieldsWithResponseName_valuesInclude_on_
       schema boolCase groundType responseName rest hmatchesGround
       scopedSelection hscoped
   have hincludeValue :
-      GroundTypeNormalization.executionValueObjectsInclude schema
+      DataModel.Store.executionValueObjectsInclude schema
         matchedFieldDefinition.outputType.namedType
         (store.resolve schema fieldName arguments
           (.object groundType identity)) :=
-    GroundTypeNormalization.resolve_objectsInclude_of_static_lookupField
+    DataModel.Store.resolve_objectsInclude_of_static_lookupField
       schema store scopedSelection.lookupParent groundType identity fieldName
       arguments matchedFieldDefinition hschema hstore hmatchedApplies
       hmatchedLookup
@@ -472,7 +472,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_field_allowe
     (∀ execFieldDefinition lookupFieldDefinition,
       schema.lookupField execParent fieldName = some execFieldDefinition ->
       schema.lookupField lookupParent fieldName = some lookupFieldDefinition ->
-        GroundTypeNormalization.executionValueObjectsInclude schema
+        DataModel.Store.executionValueObjectsInclude schema
             lookupFieldDefinition.outputType.namedType
             (resolvers.resolve execParent fieldName arguments
               (.object groundType identity))
@@ -651,7 +651,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_field_allowe
         hvalueIncludes execFieldDefinition lookupFieldDefinition hexecLookup
           hlookupField
       have hheadInclude :
-          GroundTypeNormalization.executionValueObjectsInclude schema
+          DataModel.Store.executionValueObjectsInclude schema
             lookupFieldDefinition.outputType.namedType
             (resolvers.resolve execParent fieldName arguments
               (.object groundType identity)) :=
@@ -760,7 +760,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_field_allowe
         simpa [Execution.executeSelectionSet, hnormalizedTailCollect,
           hsourceTailCollect] using hfiltered
       simpa [normalizedField, sourceField] using
-        GroundTypeNormalization.executeSelectionSet_field_head_same_group_eq_of_completeValue
+        Execution.executeSelectionSet_field_head_same_group_eq_of_completeValue
           schema resolvers variableValues fieldDepth execParent
           (.object groundType identity) responseName fieldName arguments
           normalizedSelectionSet selectionSet
@@ -908,15 +908,15 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_field_allowe
               selectionSet }
         (by simp)
     have hheadInclude :
-        GroundTypeNormalization.executionValueObjectsInclude schema
+        DataModel.Store.executionValueObjectsInclude schema
           lookupFieldDefinition.outputType.namedType
           ((store.resolvers schema).resolve execParent fieldName arguments
             (.object groundType identity)) := by
-      rw [GroundTypeNormalization.store_resolvers_parentType_insensitive
+      rw [DataModel.Store.resolvers_parentType_insensitive
         schema store execParent lookupParent fieldName arguments
         (.object groundType identity)]
       simpa [DataModel.Store.resolvers] using
-        GroundTypeNormalization.resolve_objectsInclude_of_static_lookupField
+        DataModel.Store.resolve_objectsInclude_of_static_lookupField
           schema store lookupParent groundType identity fieldName arguments
           lookupFieldDefinition hschema hstore hheadApplies hlookupField
     have hmatchesInclude :
@@ -972,7 +972,7 @@ def completeScopedResolverFieldValuesInclude {ObjectIdentity : Type}
     ∀ execFieldDefinition lookupFieldDefinition,
       schema.lookupField execParent fieldName = some execFieldDefinition ->
       schema.lookupField lookupParent fieldName = some lookupFieldDefinition ->
-        GroundTypeNormalization.executionValueObjectsInclude schema
+        DataModel.Store.executionValueObjectsInclude schema
             lookupFieldDefinition.outputType.namedType
             (resolvers.resolve execParent fieldName arguments
               (.object groundType identity))
@@ -1809,15 +1809,15 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_on_store
             selectionSet }
       (by simp)
   have hheadInclude :
-      GroundTypeNormalization.executionValueObjectsInclude schema
+      DataModel.Store.executionValueObjectsInclude schema
         lookupFieldDefinition.outputType.namedType
         ((store.resolvers schema).resolve execParent fieldName arguments
           (.object groundType identity)) := by
-    rw [GroundTypeNormalization.store_resolvers_parentType_insensitive
+    rw [DataModel.Store.resolvers_parentType_insensitive
       schema store execParent lookupParent fieldName arguments
       (.object groundType identity)]
     simpa [DataModel.Store.resolvers] using
-      GroundTypeNormalization.resolve_objectsInclude_of_static_lookupField
+      DataModel.Store.resolve_objectsInclude_of_static_lookupField
         schema store lookupParent groundType identity fieldName arguments
         lookupFieldDefinition hschema hstore hheadApplies hlookupField
   have hmatchesInclude :

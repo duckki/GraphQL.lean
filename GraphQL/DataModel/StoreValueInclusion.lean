@@ -1,16 +1,17 @@
 import GraphQL.DataModel.Store
-import GraphQL.NormalForm.GroundTypeNormalization.FieldSemantics
+import GraphQL.SchemaWellFormedness.PossibleObjectImplementation
 
 /-!
-Store-backed inclusion lemmas used by the ground-type lifting proof.
+Store-backed resolved-value inclusion lemmas.
 -/
 namespace GraphQL
 
-namespace NormalForm
+namespace DataModel
 
-namespace GroundTypeNormalization
+namespace Store
+
 private def storeValueObjectsInclude (schema : Schema) (parentType : Name) :
-    DataModel.Value -> Prop
+    Value -> Prop
   | .object runtimeType _identity =>
       schema.typeIncludesObjectBool parentType runtimeType = true
   | .list values =>
@@ -88,18 +89,18 @@ private theorem storeValueObjectsInclude_toExecutionValue
         executionValueObjectsInclude schema parentType
           value.toExecutionValue
   | .null, _hinclude => by
-      simp [DataModel.Value.toExecutionValue, executionValueObjectsInclude]
+      simp [Value.toExecutionValue, executionValueObjectsInclude]
   | .scalar _value, _hinclude => by
-      simp [DataModel.Value.toExecutionValue, executionValueObjectsInclude]
+      simp [Value.toExecutionValue, executionValueObjectsInclude]
   | .object _runtimeType _identity, hinclude => by
-      simpa [DataModel.Value.toExecutionValue, executionValueObjectsInclude,
+      simpa [Value.toExecutionValue, executionValueObjectsInclude,
         storeValueObjectsInclude] using hinclude
   | .list values, hinclude => by
       have hinclude' :
           ∀ value, value ∈ values ->
             storeValueObjectsInclude schema parentType value := by
         simpa [storeValueObjectsInclude] using hinclude
-      simp [DataModel.Value.toExecutionValue, executionValueObjectsInclude]
+      simp [Value.toExecutionValue, executionValueObjectsInclude]
       intro value hvalue
       exact storeValueObjectsInclude_toExecutionValue schema parentType value
         (hinclude' value hvalue)
@@ -107,7 +108,7 @@ private theorem storeValueObjectsInclude_toExecutionValue
 private theorem storeValueObjectsInclude_of_conformsToType
     (schema : Schema) :
     ∀ value typeRef,
-      DataModel.Value.conformsToType schema value typeRef ->
+      Value.conformsToType schema value typeRef ->
         storeValueObjectsInclude schema typeRef.namedType value
   | .null, .named _typeName, _hconforms => by
       simp [storeValueObjectsInclude]
@@ -146,32 +147,32 @@ private theorem storeValueObjectsInclude_of_conformsToType
 
 private theorem storeValueObjectsInclude_list_map_edges
     (schema : Schema) (parentType : Name)
-    (edges : List DataModel.ObjectEdge) :
+    (edges : List ObjectEdge) :
     (∀ edge, edge ∈ edges ->
       schema.typeIncludesObjectBool parentType edge.targetType = true) ->
       storeValueObjectsInclude schema parentType
         (.list (edges.map
-          (fun edge => DataModel.Value.object edge.targetType edge.targetPath))) := by
+          (fun edge => Value.object edge.targetType edge.targetPath))) := by
   intro hedges
   simp [storeValueObjectsInclude]
   intro edge hedge
   exact hedges edge hedge
 
 private theorem mem_insertEdgeByIndex_self_or_mem
-    (edge candidate : DataModel.ObjectEdge) :
+    (edge candidate : ObjectEdge) :
     ∀ edges,
-      edge ∈ DataModel.Store.insertEdgeByIndex candidate edges ->
+      edge ∈ insertEdgeByIndex candidate edges ->
         edge = candidate ∨ edge ∈ edges
   | [], hmem => by
-      simp [DataModel.Store.insertEdgeByIndex] at hmem
+      simp [insertEdgeByIndex] at hmem
       exact Or.inl hmem
   | head :: rest, hmem => by
       by_cases hle : candidate.index?.getD 0 <= head.index?.getD 0
-      · simp [DataModel.Store.insertEdgeByIndex, hle] at hmem
+      · simp [insertEdgeByIndex, hle] at hmem
         exact hmem.elim Or.inl (fun htail => Or.inr (by simpa using htail))
       · have hgt : ¬ candidate.index?.getD 0 <= head.index?.getD 0 :=
           hle
-        simp [DataModel.Store.insertEdgeByIndex, hgt] at hmem
+        simp [insertEdgeByIndex, hgt] at hmem
         rcases hmem with hhead | hinserted
         · exact Or.inr (by simp [hhead])
         · rcases mem_insertEdgeByIndex_self_or_mem edge candidate rest
@@ -180,23 +181,23 @@ private theorem mem_insertEdgeByIndex_self_or_mem
           · exact Or.inr (by simp [hrest])
 
 private theorem mem_sortEdgesByIndex_mem
-    (edge : DataModel.ObjectEdge) :
+    (edge : ObjectEdge) :
     ∀ edges,
-      edge ∈ DataModel.Store.sortEdgesByIndex edges ->
+      edge ∈ sortEdgesByIndex edges ->
         edge ∈ edges
   | [], hmem => by
-      simp [DataModel.Store.sortEdgesByIndex] at hmem
+      simp [sortEdgesByIndex] at hmem
   | head :: rest, hmem => by
-      simp [DataModel.Store.sortEdgesByIndex] at hmem
+      simp [sortEdgesByIndex] at hmem
       rcases mem_insertEdgeByIndex_self_or_mem edge head
-          (DataModel.Store.sortEdgesByIndex rest) hmem with hhead | hrest
+          (sortEdgesByIndex rest) hmem with hhead | hrest
       · simp [hhead]
       · exact List.mem_cons_of_mem head
           (mem_sortEdgesByIndex_mem edge rest hrest)
 
 private theorem mem_indexedMatchingEdges_mem_edges
-    (store : DataModel.Store) (sourcePath : DataModel.ObjectPath)
-    (field : DataModel.FieldAccess) (edge : DataModel.ObjectEdge) :
+    (store : DataModel.Store) (sourcePath : ObjectPath)
+    (field : FieldAccess) (edge : ObjectEdge) :
     edge ∈ store.indexedMatchingEdges sourcePath field ->
       edge ∈ store.edges := by
   intro hmem
@@ -204,13 +205,13 @@ private theorem mem_indexedMatchingEdges_mem_edges
       edge ∈ store.indexedMatchingEdgesUnsorted sourcePath field :=
     mem_sortEdgesByIndex_mem edge
       (store.indexedMatchingEdgesUnsorted sourcePath field) hmem
-  simp [DataModel.Store.indexedMatchingEdgesUnsorted,
-    DataModel.Store.matchingEdges] at hunordered
+  simp [indexedMatchingEdgesUnsorted,
+    matchingEdges] at hunordered
   exact hunordered.1
 
 private theorem mem_indexedMatchingEdges_matches
-    (store : DataModel.Store) (sourcePath : DataModel.ObjectPath)
-    (field : DataModel.FieldAccess) (edge : DataModel.ObjectEdge) :
+    (store : DataModel.Store) (sourcePath : ObjectPath)
+    (field : FieldAccess) (edge : ObjectEdge) :
     edge ∈ store.indexedMatchingEdges sourcePath field ->
       edge.matchesField sourcePath field = true := by
   intro hmem
@@ -218,56 +219,56 @@ private theorem mem_indexedMatchingEdges_matches
       edge ∈ store.indexedMatchingEdgesUnsorted sourcePath field :=
     mem_sortEdgesByIndex_mem edge
       (store.indexedMatchingEdgesUnsorted sourcePath field) hmem
-  simp [DataModel.Store.indexedMatchingEdgesUnsorted,
-    DataModel.Store.matchingEdges] at hunordered
+  simp [indexedMatchingEdgesUnsorted,
+    matchingEdges] at hunordered
   exact hunordered.2.2
 
 private theorem firstMatchingEdge?_some_mem
-    (store : DataModel.Store) (sourcePath : DataModel.ObjectPath)
-    (field : DataModel.FieldAccess) (index? : Option Nat)
-    (edge : DataModel.ObjectEdge) :
+    (store : DataModel.Store) (sourcePath : ObjectPath)
+    (field : FieldAccess) (index? : Option Nat)
+    (edge : ObjectEdge) :
     store.firstMatchingEdge? sourcePath field index? = some edge ->
       edge ∈ store.edges := by
   intro hlookup
   exact List.mem_of_find?_eq_some hlookup
 
 private theorem firstMatchingEdge?_some_matches
-    (store : DataModel.Store) (sourcePath : DataModel.ObjectPath)
-    (field : DataModel.FieldAccess) (index? : Option Nat)
-    (edge : DataModel.ObjectEdge) :
+    (store : DataModel.Store) (sourcePath : ObjectPath)
+    (field : FieldAccess) (index? : Option Nat)
+    (edge : ObjectEdge) :
     store.firstMatchingEdge? sourcePath field index? = some edge ->
       edge.matchesField sourcePath field = true
         ∧ (edge.index? == index?) = true := by
   intro hlookup
   have hpredicate := List.find?_some hlookup
-  simpa [DataModel.Store.firstMatchingEdge?] using hpredicate
+  simpa [firstMatchingEdge?] using hpredicate
 
 private theorem objectEdge_matchesField_sourcePath
-    (edge : DataModel.ObjectEdge) (sourcePath : DataModel.ObjectPath)
-    (field : DataModel.FieldAccess) :
+    (edge : ObjectEdge) (sourcePath : ObjectPath)
+    (field : FieldAccess) :
     edge.matchesField sourcePath field = true ->
-      DataModel.ObjectPath.eqBool edge.sourcePath sourcePath = true := by
+      ObjectPath.eqBool edge.sourcePath sourcePath = true := by
   intro hmatch
-  simp [DataModel.ObjectEdge.matchesField] at hmatch
+  simp [ObjectEdge.matchesField] at hmatch
   exact hmatch.1
 
 private theorem objectEdge_matchesField_fieldName
-    (edge : DataModel.ObjectEdge) (sourcePath : DataModel.ObjectPath)
-    (field : DataModel.FieldAccess) :
+    (edge : ObjectEdge) (sourcePath : ObjectPath)
+    (field : FieldAccess) :
     edge.matchesField sourcePath field = true ->
       edge.field.name = field.name := by
   intro hmatch
-  simp [DataModel.ObjectEdge.matchesField, DataModel.FieldAccess.eqBool] at hmatch
+  simp [ObjectEdge.matchesField, FieldAccess.eqBool] at hmatch
   exact hmatch.2.1
 
 private theorem resolveValue_objectsInclude_of_lookupField_and_edges
     (schema : Schema) (store : DataModel.Store)
-    (runtimeType : Name) (identity : DataModel.ObjectPath)
+    (runtimeType : Name) (identity : ObjectPath)
     (fieldName : Name) (arguments : List Argument)
     (fieldDefinition : FieldDefinition) :
     store.wellTyped schema ->
     schema.lookupField runtimeType fieldName = some fieldDefinition ->
-    (let field := DataModel.Store.fieldAccess fieldName arguments
+    (let field := fieldAccess fieldName arguments
      ∀ edge, edge ∈ store.edges ->
       edge.matchesField identity field = true ->
         schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
@@ -278,7 +279,7 @@ private theorem resolveValue_objectsInclude_of_lookupField_and_edges
   intro hstore hlookup hedges
   cases hnode : store.lookupNode? identity with
   | none =>
-      simp [DataModel.Store.resolveValue, hnode, storeValueObjectsInclude]
+      simp [resolveValue, hnode, storeValueObjectsInclude]
   | some node =>
       by_cases htype : (node.typeName == runtimeType) = true
       · have hnodeType : node.typeName = runtimeType :=
@@ -288,18 +289,18 @@ private theorem resolveValue_objectsInclude_of_lookupField_and_edges
           simpa [hnodeType] using hlookup
         have hnodeWell : node.wellTyped schema :=
           hstore.2.2.2.1 node
-            (DataModel.Store.lookupNode?_some_mem store hnode)
-        let field := DataModel.Store.fieldAccess fieldName arguments
+            (lookupNode?_some_mem store hnode)
+        let field := fieldAccess fieldName arguments
         by_cases hleaf :
             schema.getPossibleTypes
               fieldDefinition.outputType.namedType = []
         · cases hproperty : node.lookupProperty? field with
           | none =>
-              simp [DataModel.Store.resolveValue, hnode, htype, hlookup,
+              simp [resolveValue, hnode, htype, hlookup,
                 hleaf, field, hproperty, storeValueObjectsInclude]
           | some property =>
               rcases
-                DataModel.ObjectNode.lookupProperty?_some_conformsToLookupField
+                ObjectNode.lookupProperty?_some_conformsToLookupField
                   schema node field property hnodeWell hproperty with
                 ⟨storedFieldDefinition, hstoredLookup, _hstoredLeaf,
                   hconforms⟩
@@ -308,13 +309,13 @@ private theorem resolveValue_objectsInclude_of_lookupField_and_edges
                 have hstoredLookup' :
                     schema.lookupField node.typeName fieldName =
                       some storedFieldDefinition := by
-                  simpa [field, DataModel.Store.fieldAccess] using
+                  simpa [field, fieldAccess] using
                     hstoredLookup
                 rw [hlookupNode] at hstoredLookup'
                 cases hstoredLookup'
                 rfl
               subst storedFieldDefinition
-              simp [DataModel.Store.resolveValue, hnode, htype, hlookup,
+              simp [resolveValue, hnode, htype, hlookup,
                 hleaf, field, hproperty]
               exact storeValueObjectsInclude_of_conformsToType schema
                 property.toValue fieldDefinition.outputType hconforms
@@ -322,8 +323,8 @@ private theorem resolveValue_objectsInclude_of_lookupField_and_edges
               ¬ schema.getPossibleTypes
                 fieldDefinition.outputType.namedType = [] := hleaf
           by_cases hlist :
-              DataModel.typeRefIsListLike fieldDefinition.outputType = true
-          · simp [DataModel.Store.resolveValue, hnode, htype, hlookup,
+              typeRefIsListLike fieldDefinition.outputType = true
+          · simp [resolveValue, hnode, htype, hlookup,
               hnonempty, hlist]
             apply storeValueObjectsInclude_list_map_edges
             intro edge hedge
@@ -333,7 +334,7 @@ private theorem resolveValue_objectsInclude_of_lookupField_and_edges
           · cases hedge :
               store.firstMatchingEdge? identity field none with
             | none =>
-                simp [DataModel.Store.resolveValue, hnode, htype, hlookup,
+                simp [resolveValue, hnode, htype, hlookup,
                   hnonempty, hlist, field, hedge, storeValueObjectsInclude]
             | some edge =>
                 have hmatches :=
@@ -343,24 +344,24 @@ private theorem resolveValue_objectsInclude_of_lookupField_and_edges
                   (firstMatchingEdge?_some_mem store identity field none edge
                     hedge)
                   hmatches
-                simp [DataModel.Store.resolveValue, hnode, htype, hlookup,
+                simp [resolveValue, hnode, htype, hlookup,
                   hnonempty, hlist, field, hedge, storeValueObjectsInclude]
                 exact htarget
       · have htypeFalse : (node.typeName == runtimeType) = false := by
           cases hmatch : node.typeName == runtimeType
           · rfl
           · exact False.elim (htype hmatch)
-        simp [DataModel.Store.resolveValue, hnode, htypeFalse,
+        simp [resolveValue, hnode, htypeFalse,
           storeValueObjectsInclude]
 
 mutual
   private theorem structuralInputValueEqBool_symm :
       ∀ left right,
-        DataModel.FieldAccess.structuralInputValueEqBool left right = true ->
-          DataModel.FieldAccess.structuralInputValueEqBool right left = true
+        FieldAccess.structuralInputValueEqBool left right = true ->
+          FieldAccess.structuralInputValueEqBool right left = true
     | left, right, h => by
         cases left <;> cases right <;>
-          simp [DataModel.FieldAccess.structuralInputValueEqBool] at h ⊢
+          simp [FieldAccess.structuralInputValueEqBool] at h ⊢
         all_goals
           first
           | exact h.symm
@@ -369,77 +370,77 @@ mutual
 
   private theorem structuralInputValuesEqBool_symm :
       ∀ left right,
-        DataModel.FieldAccess.structuralInputValuesEqBool left right = true ->
-          DataModel.FieldAccess.structuralInputValuesEqBool right left = true
+        FieldAccess.structuralInputValuesEqBool left right = true ->
+          FieldAccess.structuralInputValuesEqBool right left = true
     | [], [], _h => by
-        simp [DataModel.FieldAccess.structuralInputValuesEqBool]
+        simp [FieldAccess.structuralInputValuesEqBool]
     | left :: leftRest, right :: rightRest, h => by
-        simp [DataModel.FieldAccess.structuralInputValuesEqBool] at h ⊢
+        simp [FieldAccess.structuralInputValuesEqBool] at h ⊢
         exact ⟨structuralInputValueEqBool_symm left right h.1,
           structuralInputValuesEqBool_symm leftRest rightRest h.2⟩
     | [], _ :: _, h
     | _ :: _, [], h => by
-        simp [DataModel.FieldAccess.structuralInputValuesEqBool] at h
+        simp [FieldAccess.structuralInputValuesEqBool] at h
 
   private theorem structuralInputFieldsEqBool_symm :
       ∀ left right,
-        DataModel.FieldAccess.structuralInputFieldsEqBool left right = true ->
-          DataModel.FieldAccess.structuralInputFieldsEqBool right left = true
+        FieldAccess.structuralInputFieldsEqBool left right = true ->
+          FieldAccess.structuralInputFieldsEqBool right left = true
     | [], [], _h => by
-        simp [DataModel.FieldAccess.structuralInputFieldsEqBool]
+        simp [FieldAccess.structuralInputFieldsEqBool]
     | (leftName, leftValue) :: leftRest,
       (rightName, rightValue) :: rightRest, h => by
-        simp [DataModel.FieldAccess.structuralInputFieldsEqBool] at h ⊢
+        simp [FieldAccess.structuralInputFieldsEqBool] at h ⊢
         exact ⟨⟨h.1.1.symm,
           structuralInputValueEqBool_symm leftValue rightValue h.1.2⟩,
           structuralInputFieldsEqBool_symm leftRest rightRest h.2⟩
     | [], _ :: _, h
     | _ :: _, [], h => by
-        simp [DataModel.FieldAccess.structuralInputFieldsEqBool] at h
+        simp [FieldAccess.structuralInputFieldsEqBool] at h
 end
 
 mutual
   private theorem structuralInputValueEqBool_refl :
       ∀ value,
-        DataModel.FieldAccess.structuralInputValueEqBool value value = true
+        FieldAccess.structuralInputValueEqBool value value = true
     | .null => by
-        simp [DataModel.FieldAccess.structuralInputValueEqBool]
+        simp [FieldAccess.structuralInputValueEqBool]
     | .int _value => by
-        simp [DataModel.FieldAccess.structuralInputValueEqBool]
+        simp [FieldAccess.structuralInputValueEqBool]
     | .float _value => by
-        simp [DataModel.FieldAccess.structuralInputValueEqBool]
+        simp [FieldAccess.structuralInputValueEqBool]
     | .string _value => by
-        simp [DataModel.FieldAccess.structuralInputValueEqBool]
+        simp [FieldAccess.structuralInputValueEqBool]
     | .boolean _value => by
-        simp [DataModel.FieldAccess.structuralInputValueEqBool]
+        simp [FieldAccess.structuralInputValueEqBool]
     | .enum _value => by
-        simp [DataModel.FieldAccess.structuralInputValueEqBool]
+        simp [FieldAccess.structuralInputValueEqBool]
     | .variable _value => by
-        simp [DataModel.FieldAccess.structuralInputValueEqBool]
+        simp [FieldAccess.structuralInputValueEqBool]
     | .list values => by
-        simp [DataModel.FieldAccess.structuralInputValueEqBool,
+        simp [FieldAccess.structuralInputValueEqBool,
           structuralInputValuesEqBool_refl values]
     | .object fields => by
-        simp [DataModel.FieldAccess.structuralInputValueEqBool,
+        simp [FieldAccess.structuralInputValueEqBool,
           structuralInputFieldsEqBool_refl fields]
 
   private theorem structuralInputValuesEqBool_refl :
       ∀ values,
-        DataModel.FieldAccess.structuralInputValuesEqBool values values = true
+        FieldAccess.structuralInputValuesEqBool values values = true
     | [] => by
-        simp [DataModel.FieldAccess.structuralInputValuesEqBool]
+        simp [FieldAccess.structuralInputValuesEqBool]
     | value :: rest => by
-        simp [DataModel.FieldAccess.structuralInputValuesEqBool,
+        simp [FieldAccess.structuralInputValuesEqBool,
           structuralInputValueEqBool_refl value,
           structuralInputValuesEqBool_refl rest]
 
   private theorem structuralInputFieldsEqBool_refl :
       ∀ fields,
-        DataModel.FieldAccess.structuralInputFieldsEqBool fields fields = true
+        FieldAccess.structuralInputFieldsEqBool fields fields = true
     | [] => by
-        simp [DataModel.FieldAccess.structuralInputFieldsEqBool]
+        simp [FieldAccess.structuralInputFieldsEqBool]
     | (name, value) :: rest => by
-        simp [DataModel.FieldAccess.structuralInputFieldsEqBool,
+        simp [FieldAccess.structuralInputFieldsEqBool,
           structuralInputValueEqBool_refl value,
           structuralInputFieldsEqBool_refl rest]
 end
@@ -447,11 +448,11 @@ end
 mutual
   private theorem structuralInputValueEqBool_eq :
       ∀ left right,
-        DataModel.FieldAccess.structuralInputValueEqBool left right = true ->
+        FieldAccess.structuralInputValueEqBool left right = true ->
           left = right
     | left, right, h => by
         cases left <;> cases right <;>
-          simp [DataModel.FieldAccess.structuralInputValueEqBool] at h
+          simp [FieldAccess.structuralInputValueEqBool] at h
         all_goals
           first
           | rfl
@@ -463,12 +464,12 @@ mutual
 
   private theorem structuralInputValuesEqBool_eq :
       ∀ left right,
-        DataModel.FieldAccess.structuralInputValuesEqBool left right = true ->
+        FieldAccess.structuralInputValuesEqBool left right = true ->
           left = right
     | [], [], _h => by
         rfl
     | left :: leftRest, right :: rightRest, h => by
-        simp [DataModel.FieldAccess.structuralInputValuesEqBool] at h
+        simp [FieldAccess.structuralInputValuesEqBool] at h
         have hhead := structuralInputValueEqBool_eq left right h.1
         have htail := structuralInputValuesEqBool_eq leftRest rightRest h.2
         subst right
@@ -476,17 +477,17 @@ mutual
         rfl
     | [], _ :: _, h
     | _ :: _, [], h => by
-        simp [DataModel.FieldAccess.structuralInputValuesEqBool] at h
+        simp [FieldAccess.structuralInputValuesEqBool] at h
 
   private theorem structuralInputFieldsEqBool_eq :
       ∀ left right,
-        DataModel.FieldAccess.structuralInputFieldsEqBool left right = true ->
+        FieldAccess.structuralInputFieldsEqBool left right = true ->
           left = right
     | [], [], _h => by
         rfl
     | (leftName, leftValue) :: leftRest,
       (rightName, rightValue) :: rightRest, h => by
-        simp [DataModel.FieldAccess.structuralInputFieldsEqBool] at h
+        simp [FieldAccess.structuralInputFieldsEqBool] at h
         have hname : leftName = rightName := h.1.1
         have hvalue := structuralInputValueEqBool_eq leftValue rightValue
           h.1.2
@@ -497,14 +498,14 @@ mutual
         rfl
     | [], _ :: _, h
     | _ :: _, [], h => by
-        simp [DataModel.FieldAccess.structuralInputFieldsEqBool] at h
+        simp [FieldAccess.structuralInputFieldsEqBool] at h
 end
 
 private theorem structuralInputValueEqBool_trans
     {left middle right : InputValue} :
-    DataModel.FieldAccess.structuralInputValueEqBool left middle = true ->
-    DataModel.FieldAccess.structuralInputValueEqBool middle right = true ->
-      DataModel.FieldAccess.structuralInputValueEqBool left right = true := by
+    FieldAccess.structuralInputValueEqBool left middle = true ->
+    FieldAccess.structuralInputValueEqBool middle right = true ->
+      FieldAccess.structuralInputValueEqBool left right = true := by
   intro hleft hright
   have hleftEq := structuralInputValueEqBool_eq left middle hleft
   have hrightEq := structuralInputValueEqBool_eq middle right hright
@@ -514,194 +515,194 @@ private theorem structuralInputValueEqBool_trans
 
 private theorem argumentEqBool_trans
     {left middle right : Argument} :
-    DataModel.FieldAccess.argumentEqBool left middle = true ->
-    DataModel.FieldAccess.argumentEqBool middle right = true ->
-      DataModel.FieldAccess.argumentEqBool left right = true := by
+    FieldAccess.argumentEqBool left middle = true ->
+    FieldAccess.argumentEqBool middle right = true ->
+      FieldAccess.argumentEqBool left right = true := by
   intro hleft hright
-  simp [DataModel.FieldAccess.argumentEqBool,
-    DataModel.FieldAccess.canonicalInputValue] at hleft hright ⊢
+  simp [FieldAccess.argumentEqBool,
+    FieldAccess.canonicalInputValue] at hleft hright ⊢
   exact ⟨hleft.1.trans hright.1,
     structuralInputValueEqBool_trans hleft.2 hright.2⟩
 
 private theorem argumentEqBool_symm
     {left right : Argument} :
-    DataModel.FieldAccess.argumentEqBool left right = true ->
-      DataModel.FieldAccess.argumentEqBool right left = true := by
+    FieldAccess.argumentEqBool left right = true ->
+      FieldAccess.argumentEqBool right left = true := by
   intro h
-  simp [DataModel.FieldAccess.argumentEqBool,
-    DataModel.FieldAccess.canonicalInputValue] at h ⊢
+  simp [FieldAccess.argumentEqBool,
+    FieldAccess.canonicalInputValue] at h ⊢
   exact ⟨h.1.symm, structuralInputValueEqBool_symm _ _ h.2⟩
 
 private theorem argumentsEqBoolOrdered_trans :
     ∀ left middle right,
-      DataModel.FieldAccess.argumentsEqBoolOrdered left middle = true ->
-      DataModel.FieldAccess.argumentsEqBoolOrdered middle right = true ->
-        DataModel.FieldAccess.argumentsEqBoolOrdered left right = true
+      FieldAccess.argumentsEqBoolOrdered left middle = true ->
+      FieldAccess.argumentsEqBoolOrdered middle right = true ->
+        FieldAccess.argumentsEqBoolOrdered left right = true
   | [], [], [], _hleft, _hright => by
-      simp [DataModel.FieldAccess.argumentsEqBoolOrdered]
+      simp [FieldAccess.argumentsEqBoolOrdered]
   | leftHead :: leftRest, middleHead :: middleRest,
     rightHead :: rightRest, hleft, hright => by
-      simp [DataModel.FieldAccess.argumentsEqBoolOrdered] at hleft hright ⊢
+      simp [FieldAccess.argumentsEqBoolOrdered] at hleft hright ⊢
       exact ⟨argumentEqBool_trans hleft.1 hright.1,
         argumentsEqBoolOrdered_trans leftRest middleRest rightRest
           hleft.2 hright.2⟩
   | [], [], _ :: _, _hleft, hright => by
-      simp [DataModel.FieldAccess.argumentsEqBoolOrdered] at hright
+      simp [FieldAccess.argumentsEqBoolOrdered] at hright
   | [], _ :: _, _, hleft, _hright => by
-      simp [DataModel.FieldAccess.argumentsEqBoolOrdered] at hleft
+      simp [FieldAccess.argumentsEqBoolOrdered] at hleft
   | _ :: _, [], _, hleft, _hright => by
-      simp [DataModel.FieldAccess.argumentsEqBoolOrdered] at hleft
+      simp [FieldAccess.argumentsEqBoolOrdered] at hleft
   | _ :: _, _ :: _, [], _hleft, hright => by
-      simp [DataModel.FieldAccess.argumentsEqBoolOrdered] at hright
+      simp [FieldAccess.argumentsEqBoolOrdered] at hright
 
 private theorem argumentsEqBoolOrdered_symm :
     ∀ {left right},
-      DataModel.FieldAccess.argumentsEqBoolOrdered left right = true ->
-        DataModel.FieldAccess.argumentsEqBoolOrdered right left = true
+      FieldAccess.argumentsEqBoolOrdered left right = true ->
+        FieldAccess.argumentsEqBoolOrdered right left = true
   | [], [], _h => by
-      simp [DataModel.FieldAccess.argumentsEqBoolOrdered]
+      simp [FieldAccess.argumentsEqBoolOrdered]
   | leftHead :: leftRest, rightHead :: rightRest, h => by
-      simp [DataModel.FieldAccess.argumentsEqBoolOrdered] at h ⊢
+      simp [FieldAccess.argumentsEqBoolOrdered] at h ⊢
       exact ⟨argumentEqBool_symm h.1,
         argumentsEqBoolOrdered_symm h.2⟩
   | [], _ :: _, h
   | _ :: _, [], h => by
-      simp [DataModel.FieldAccess.argumentsEqBoolOrdered] at h
+      simp [FieldAccess.argumentsEqBoolOrdered] at h
 
 private theorem argumentsEqBool_trans
     {left middle right : List Argument} :
-    DataModel.FieldAccess.argumentsEqBool left middle = true ->
-    DataModel.FieldAccess.argumentsEqBool middle right = true ->
-      DataModel.FieldAccess.argumentsEqBool left right = true := by
+    FieldAccess.argumentsEqBool left middle = true ->
+    FieldAccess.argumentsEqBool middle right = true ->
+      FieldAccess.argumentsEqBool left right = true := by
   intro hleft hright
-  unfold DataModel.FieldAccess.argumentsEqBool at hleft hright ⊢
+  unfold FieldAccess.argumentsEqBool at hleft hright ⊢
   exact argumentsEqBoolOrdered_trans _ _ _ hleft hright
 
 private theorem argumentsEqBool_symm
     {left right : List Argument} :
-    DataModel.FieldAccess.argumentsEqBool left right = true ->
-      DataModel.FieldAccess.argumentsEqBool right left = true := by
+    FieldAccess.argumentsEqBool left right = true ->
+      FieldAccess.argumentsEqBool right left = true := by
   intro h
-  unfold DataModel.FieldAccess.argumentsEqBool at h ⊢
+  unfold FieldAccess.argumentsEqBool at h ⊢
   exact argumentsEqBoolOrdered_symm h
 
 private theorem fieldAccess_eqBool_trans
-    {left middle right : DataModel.FieldAccess} :
-    DataModel.FieldAccess.eqBool left middle = true ->
-    DataModel.FieldAccess.eqBool middle right = true ->
-      DataModel.FieldAccess.eqBool left right = true := by
+    {left middle right : FieldAccess} :
+    FieldAccess.eqBool left middle = true ->
+    FieldAccess.eqBool middle right = true ->
+      FieldAccess.eqBool left right = true := by
   intro hleft hright
-  simp [DataModel.FieldAccess.eqBool] at hleft hright ⊢
+  simp [FieldAccess.eqBool] at hleft hright ⊢
   exact ⟨hleft.1.trans hright.1,
     argumentsEqBool_trans hleft.2 hright.2⟩
 
 private theorem fieldAccess_eqBool_symm
-    {left right : DataModel.FieldAccess} :
-    DataModel.FieldAccess.eqBool left right = true ->
-      DataModel.FieldAccess.eqBool right left = true := by
+    {left right : FieldAccess} :
+    FieldAccess.eqBool left right = true ->
+      FieldAccess.eqBool right left = true := by
   intro h
-  simp [DataModel.FieldAccess.eqBool] at h ⊢
+  simp [FieldAccess.eqBool] at h ⊢
   exact ⟨h.1.symm, argumentsEqBool_symm h.2⟩
 
 private theorem pathStep_eqBool_trans
-    {left middle right : DataModel.PathStep} :
-    DataModel.PathStep.eqBool left middle = true ->
-    DataModel.PathStep.eqBool middle right = true ->
-      DataModel.PathStep.eqBool left right = true := by
+    {left middle right : PathStep} :
+    PathStep.eqBool left middle = true ->
+    PathStep.eqBool middle right = true ->
+      PathStep.eqBool left right = true := by
   intro hleft hright
   cases left <;> cases middle <;> cases right <;>
-    simp [DataModel.PathStep.eqBool] at hleft hright ⊢
+    simp [PathStep.eqBool] at hleft hright ⊢
   · exact fieldAccess_eqBool_trans hleft hright
   · exact hleft.trans hright
 
 private theorem pathStep_eqBool_symm
-    {left right : DataModel.PathStep} :
-    DataModel.PathStep.eqBool left right = true ->
-      DataModel.PathStep.eqBool right left = true := by
+    {left right : PathStep} :
+    PathStep.eqBool left right = true ->
+      PathStep.eqBool right left = true := by
   intro h
   cases left <;> cases right <;>
-    simp [DataModel.PathStep.eqBool] at h ⊢
+    simp [PathStep.eqBool] at h ⊢
   · exact fieldAccess_eqBool_symm h
   · exact h.symm
 
 private theorem objectPath_eqBool_symm :
-    ∀ {left right : DataModel.ObjectPath},
-      DataModel.ObjectPath.eqBool left right = true ->
-        DataModel.ObjectPath.eqBool right left = true
+    ∀ {left right : ObjectPath},
+      ObjectPath.eqBool left right = true ->
+        ObjectPath.eqBool right left = true
   | [], [], _h => by
-      simp [DataModel.ObjectPath.eqBool]
+      simp [ObjectPath.eqBool]
   | leftHead :: leftRest, rightHead :: rightRest, h => by
-      simp [DataModel.ObjectPath.eqBool] at h ⊢
+      simp [ObjectPath.eqBool] at h ⊢
       exact ⟨pathStep_eqBool_symm h.1,
         objectPath_eqBool_symm h.2⟩
   | [], _ :: _, h
   | _ :: _, [], h => by
-      simp [DataModel.ObjectPath.eqBool] at h
+      simp [ObjectPath.eqBool] at h
 
 private theorem objectPath_eqBool_trans :
-    ∀ left middle right : DataModel.ObjectPath,
-      DataModel.ObjectPath.eqBool left middle = true ->
-      DataModel.ObjectPath.eqBool middle right = true ->
-        DataModel.ObjectPath.eqBool left right = true
+    ∀ left middle right : ObjectPath,
+      ObjectPath.eqBool left middle = true ->
+      ObjectPath.eqBool middle right = true ->
+        ObjectPath.eqBool left right = true
   | [], [], [], _hleft, _hright => by
-      simp [DataModel.ObjectPath.eqBool]
+      simp [ObjectPath.eqBool]
   | leftHead :: leftRest, middleHead :: middleRest,
     rightHead :: rightRest, hleft, hright => by
-      simp [DataModel.ObjectPath.eqBool] at hleft hright ⊢
+      simp [ObjectPath.eqBool] at hleft hright ⊢
       exact ⟨pathStep_eqBool_trans hleft.1 hright.1,
         objectPath_eqBool_trans leftRest middleRest rightRest hleft.2 hright.2⟩
   | [], [], _ :: _, _hleft, hright => by
-      simp [DataModel.ObjectPath.eqBool] at hright
+      simp [ObjectPath.eqBool] at hright
   | [], _ :: _, _, hleft, _hright => by
-      simp [DataModel.ObjectPath.eqBool] at hleft
+      simp [ObjectPath.eqBool] at hleft
   | _ :: _, [], _, hleft, _hright => by
-      simp [DataModel.ObjectPath.eqBool] at hleft
+      simp [ObjectPath.eqBool] at hleft
   | _ :: _, _ :: _, [], _hleft, hright => by
-      simp [DataModel.ObjectPath.eqBool] at hright
+      simp [ObjectPath.eqBool] at hright
 
 private theorem lookupNodeIn?_eq_of_objectPath_eqBool
-    (path otherPath : DataModel.ObjectPath) :
-    DataModel.ObjectPath.eqBool path otherPath = true ->
+    (path otherPath : ObjectPath) :
+    ObjectPath.eqBool path otherPath = true ->
       ∀ nodes,
-        DataModel.Store.lookupNodeIn? path nodes =
-          DataModel.Store.lookupNodeIn? otherPath nodes
+        lookupNodeIn? path nodes =
+          lookupNodeIn? otherPath nodes
   | hpath, [] => by
-      simp [DataModel.Store.lookupNodeIn?]
+      simp [lookupNodeIn?]
   | hpath, node :: rest => by
       by_cases hnodePath :
-          DataModel.ObjectPath.eqBool node.path path = true
+          ObjectPath.eqBool node.path path = true
       · have hnodeOther :
-            DataModel.ObjectPath.eqBool node.path otherPath = true :=
+            ObjectPath.eqBool node.path otherPath = true :=
           objectPath_eqBool_trans node.path path otherPath hnodePath hpath
-        simp [DataModel.Store.lookupNodeIn?, hnodePath, hnodeOther]
+        simp [lookupNodeIn?, hnodePath, hnodeOther]
       · have hnodePathFalse :
-            DataModel.ObjectPath.eqBool node.path path = false := by
+            ObjectPath.eqBool node.path path = false := by
           cases hmatch :
-              DataModel.ObjectPath.eqBool node.path path
+              ObjectPath.eqBool node.path path
           · rfl
           · exact False.elim (hnodePath hmatch)
         have hotherPath :
-            DataModel.ObjectPath.eqBool otherPath path = true :=
+            ObjectPath.eqBool otherPath path = true :=
           objectPath_eqBool_symm hpath
         have hnodeOtherFalse :
-            DataModel.ObjectPath.eqBool node.path otherPath = false := by
+            ObjectPath.eqBool node.path otherPath = false := by
           cases hmatch :
-              DataModel.ObjectPath.eqBool node.path otherPath
+              ObjectPath.eqBool node.path otherPath
           · rfl
           · have hnodePathTrue :
-                DataModel.ObjectPath.eqBool node.path path = true :=
+                ObjectPath.eqBool node.path path = true :=
               objectPath_eqBool_trans node.path otherPath path hmatch
                 hotherPath
             exact False.elim (by
               rw [hnodePathFalse] at hnodePathTrue
               cases hnodePathTrue)
-        simp [DataModel.Store.lookupNodeIn?, hnodePathFalse,
+        simp [lookupNodeIn?, hnodePathFalse,
           hnodeOtherFalse,
           lookupNodeIn?_eq_of_objectPath_eqBool path otherPath hpath rest]
 
 private theorem lookupNode?_eq_of_objectPath_eqBool
-    (store : DataModel.Store) {path otherPath : DataModel.ObjectPath} :
-    DataModel.ObjectPath.eqBool path otherPath = true ->
+    (store : DataModel.Store) {path otherPath : ObjectPath} :
+    ObjectPath.eqBool path otherPath = true ->
       store.lookupNode? path = store.lookupNode? otherPath := by
   intro hpath
   exact lookupNodeIn?_eq_of_objectPath_eqBool path otherPath hpath
@@ -709,14 +710,14 @@ private theorem lookupNode?_eq_of_objectPath_eqBool
 
 private theorem edge_targets_include_of_lookupField
     (schema : Schema) (store : DataModel.Store)
-    (runtimeType : Name) (identity : DataModel.ObjectPath)
+    (runtimeType : Name) (identity : ObjectPath)
     (fieldName : Name) (arguments : List Argument)
-    (fieldDefinition : FieldDefinition) (node : DataModel.ObjectNode) :
+    (fieldDefinition : FieldDefinition) (node : ObjectNode) :
     store.wellTyped schema ->
     store.lookupNode? identity = some node ->
     node.typeName = runtimeType ->
     schema.lookupField runtimeType fieldName = some fieldDefinition ->
-    (let field := DataModel.Store.fieldAccess fieldName arguments
+    (let field := fieldAccess fieldName arguments
      ∀ edge, edge ∈ store.edges ->
       edge.matchesField identity field = true ->
         schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
@@ -738,7 +739,7 @@ private theorem edge_targets_include_of_lookupField
       edge.field.name = fieldName := by
     have hfield := objectEdge_matchesField_fieldName edge identity field
       hmatches
-    simpa [field, DataModel.Store.fieldAccess] using hfield
+    simpa [field, fieldAccess] using hfield
   have himplementationLookup' :
       schema.lookupField runtimeType fieldName =
         some implementationDefinition := by
@@ -749,7 +750,7 @@ private theorem edge_targets_include_of_lookupField
 
 private theorem resolveValue_objectsInclude_of_runtime_lookupField
     (schema : Schema) (store : DataModel.Store)
-    (runtimeType : Name) (identity : DataModel.ObjectPath)
+    (runtimeType : Name) (identity : ObjectPath)
     (fieldName : Name) (arguments : List Argument)
     (fieldDefinition : FieldDefinition) :
     store.wellTyped schema ->
@@ -760,7 +761,7 @@ private theorem resolveValue_objectsInclude_of_runtime_lookupField
   intro hstore hlookup
   cases hnode : store.lookupNode? identity with
   | none =>
-      simp [DataModel.Store.resolveValue, hnode, storeValueObjectsInclude]
+      simp [resolveValue, hnode, storeValueObjectsInclude]
   | some node =>
       by_cases htype : (node.typeName == runtimeType) = true
       · have hnodeType : node.typeName = runtimeType :=
@@ -776,12 +777,12 @@ private theorem resolveValue_objectsInclude_of_runtime_lookupField
           cases hmatch : node.typeName == runtimeType
           · rfl
           · exact False.elim (htype hmatch)
-        simp [DataModel.Store.resolveValue, hnode, htypeFalse,
+        simp [resolveValue, hnode, htypeFalse,
           storeValueObjectsInclude]
 
 private theorem resolveValue_objectsInclude_of_static_lookupField
     (schema : Schema) (store : DataModel.Store)
-    (parentType runtimeType : Name) (identity : DataModel.ObjectPath)
+    (parentType runtimeType : Name) (identity : ObjectPath)
     (fieldName : Name) (arguments : List Argument)
     (fieldDefinition : FieldDefinition) :
     SchemaWellFormedness.schemaWellFormed schema ->
@@ -809,7 +810,7 @@ private theorem resolveValue_objectsInclude_of_static_lookupField
       hschema hpossible hlookup himplementationLookup
   exact storeValueObjectsInclude_mono schema
     (fun objectType hobject =>
-      typeIncludesObjectBool_of_outputTypeSubtype_namedType schema
+      GraphQL.typeIncludesObjectBool_of_outputTypeSubtype_namedType schema
         hsubtype hobject)
     (store.resolveValue schema fieldName arguments
       (.object runtimeType identity))
@@ -817,7 +818,7 @@ private theorem resolveValue_objectsInclude_of_static_lookupField
 
 theorem resolve_objectsInclude_of_static_lookupField
     (schema : Schema) (store : DataModel.Store)
-    (parentType runtimeType : Name) (identity : DataModel.ObjectPath)
+    (parentType runtimeType : Name) (identity : ObjectPath)
     (fieldName : Name) (arguments : List Argument)
     (fieldDefinition : FieldDefinition) :
     SchemaWellFormedness.schemaWellFormed schema ->
@@ -828,7 +829,7 @@ theorem resolve_objectsInclude_of_static_lookupField
         (store.resolve schema fieldName arguments
           (.object runtimeType identity)) := by
   intro hschema hstore hinclude hlookup
-  simp [DataModel.Store.resolve]
+  simp [resolve]
   exact storeValueObjectsInclude_toExecutionValue schema
     fieldDefinition.outputType.namedType
     (store.resolveValue schema fieldName arguments
@@ -837,18 +838,18 @@ theorem resolve_objectsInclude_of_static_lookupField
       parentType runtimeType identity fieldName arguments fieldDefinition
       hschema hstore hinclude hlookup)
 
-theorem store_resolvers_parentType_insensitive
+theorem resolvers_parentType_insensitive
     (schema : Schema) (store : DataModel.Store)
     (leftParentType rightParentType fieldName : Name)
     (arguments : List Argument)
-    (source : Execution.Value DataModel.ObjectPath) :
+    (source : Execution.Value ObjectPath) :
     (store.resolvers schema).resolve leftParentType fieldName arguments source =
       (store.resolvers schema).resolve rightParentType fieldName arguments
         source := by
   rfl
 
-end GroundTypeNormalization
+end Store
 
-end NormalForm
+end DataModel
 
 end GraphQL

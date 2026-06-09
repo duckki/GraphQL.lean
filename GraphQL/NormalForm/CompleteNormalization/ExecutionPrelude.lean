@@ -4,8 +4,8 @@ import GraphQL.NormalForm.CompleteNormalization.FieldOutput
 import GraphQL.NormalForm.GroundTypeNormalization.FieldCollection
 import GraphQL.NormalForm.GroundTypeNormalization.FieldSemantics
 import GraphQL.NormalForm.GroundTypeNormalization.RuntimeFragmentSemantics
-import GraphQL.NormalForm.GroundTypeLifting.ExecutionGroups
-import GraphQL.NormalForm.GroundTypeLifting.StoreInclusion
+import GraphQL.Execution.FieldCollection
+import GraphQL.DataModel.StoreValueInclusion
 
 /-!
 Shared collect/execute field-group helpers for complete normalization.

@@ -10,6 +10,7 @@ import GraphQL.Execution
 import GraphQL.Execution.FieldCollection
 import GraphQL.DataModel
 import GraphQL.DataModel.Store
+import GraphQL.DataModel.StoreValueInclusion
 import GraphQL.NormalForm
 import GraphQL.NormalForm.GroundTypeNormalization.FieldCollection
 import GraphQL.NormalForm.GroundTypeNormalization.Semantics

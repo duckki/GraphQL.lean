@@ -1,4 +1,7 @@
 import GraphQL.NormalForm.GroundTypeLifting.ScopedSelections
+import GraphQL.Execution.FieldCollection
+import GraphQL.NormalForm.GroundTypeNormalization.FieldSemantics
+import GraphQL.NormalForm.GroundTypeNormalization.RuntimeFragmentSemantics
 
 /-!
 Execution-group bridge lemmas for ground-type lifting proofs.
@@ -7,7 +10,9 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
+namespace GroundTypeLifting
+
+open GroundTypeNormalization
 
 variable {ObjectIdentity : Type}
 
@@ -97,145 +102,6 @@ theorem executeSelectionSet_append_eq_of_parts_namesDisjoint
   · exact hnormalizedDisjoint
   · exact collectFields_namesNodup schema variableValues parentType source
       normalizedRight
-
-theorem executeSelectionSet_eq_of_collectFields_head_parts
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
-    (variableValues : Execution.VariableValues)
-    (depth : Nat) (parentType : Name)
-    (source : Execution.Value ObjectIdentity)
-    (left right : List Selection)
-    (leftGroup rightGroup : Name × List Execution.ExecutableField)
-    (leftRest rightRest : List (Name × List Execution.ExecutableField)) :
-    Execution.collectFields schema variableValues parentType source left
-      = leftGroup :: leftRest ->
-    Execution.collectFields schema variableValues parentType source right
-      = rightGroup :: rightRest ->
-    Execution.executeField schema resolvers variableValues depth source
-      leftGroup.fst leftGroup.snd
-      =
-    Execution.executeField schema resolvers variableValues depth source
-      rightGroup.fst rightGroup.snd ->
-    Execution.executeCollectedFields schema resolvers variableValues depth
-      source leftRest
-      =
-    Execution.executeCollectedFields schema resolvers variableValues depth
-      source rightRest ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        parentType source left
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        parentType source right := by
-  intro hleftCollect hrightCollect hhead htail
-  simp [Execution.executeSelectionSet, hleftCollect, hrightCollect]
-  exact executeCollectedFields_cons_eq_of_parts schema resolvers
-    variableValues depth source leftGroup rightGroup leftRest rightRest
-    hhead htail
-
-theorem executeField_same_head_eq_of_completeValue
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
-    (variableValues : Execution.VariableValues)
-    (depth : Nat) (source : Execution.Value ObjectIdentity)
-    (responseName parentType fieldName : Name) (arguments : List Argument)
-    (leftSelectionSet rightSelectionSet : List Selection)
-    (leftFields rightFields : List Execution.ExecutableField) :
-    let leftField : Execution.ExecutableField :=
-      {
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := leftSelectionSet
-      }
-    let rightField : Execution.ExecutableField :=
-      {
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := rightSelectionSet
-      }
-    let resolved :=
-      resolvers.resolve parentType fieldName arguments source
-    let childType :=
-      (schema.fieldReturnType? parentType fieldName).getD fieldName
-    Execution.completeValue schema resolvers variableValues depth childType
-      (Execution.mergedFieldSelectionSet (leftField :: leftFields))
-      resolved
-      =
-    Execution.completeValue schema resolvers variableValues depth childType
-      (Execution.mergedFieldSelectionSet (rightField :: rightFields))
-      resolved ->
-      Execution.executeField schema resolvers variableValues (depth + 1)
-        source responseName (leftField :: leftFields)
-      =
-      Execution.executeField schema resolvers variableValues (depth + 1)
-        source responseName (rightField :: rightFields) := by
-  intro leftField rightField resolved childType hcomplete
-  simp [Execution.executeField, leftField, rightField, resolved, childType,
-    hcomplete]
-
-theorem executeSelectionSet_field_head_same_group_eq_of_completeValue
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
-    (variableValues : Execution.VariableValues)
-    (fieldDepth : Nat) (parentType : Name)
-    (source : Execution.Value ObjectIdentity)
-    (responseName fieldName : Name) (arguments : List Argument)
-    (leftSelectionSet rightSelectionSet left right : List Selection)
-    (leftFields rightFields : List Execution.ExecutableField)
-    (leftRest rightRest : List (Name × List Execution.ExecutableField)) :
-    let leftField : Execution.ExecutableField :=
-      {
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := leftSelectionSet
-      }
-    let rightField : Execution.ExecutableField :=
-      {
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := rightSelectionSet
-      }
-    Execution.collectFields schema variableValues parentType source left
-      =
-    (responseName, leftField :: leftFields) :: leftRest ->
-    Execution.collectFields schema variableValues parentType source right
-      =
-    (responseName, rightField :: rightFields) :: rightRest ->
-    Execution.completeValue schema resolvers variableValues fieldDepth
-      ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-      (Execution.mergedFieldSelectionSet (leftField :: leftFields))
-      (resolvers.resolve parentType fieldName arguments source)
-      =
-    Execution.completeValue schema resolvers variableValues fieldDepth
-      ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-      (Execution.mergedFieldSelectionSet (rightField :: rightFields))
-      (resolvers.resolve parentType fieldName arguments source) ->
-    Execution.executeCollectedFields schema resolvers variableValues
-      (fieldDepth + 1) source leftRest
-      =
-    Execution.executeCollectedFields schema resolvers variableValues
-      (fieldDepth + 1) source rightRest ->
-      Execution.executeSelectionSet schema resolvers variableValues
-        (fieldDepth + 1) parentType source left
-      =
-      Execution.executeSelectionSet schema resolvers variableValues
-        (fieldDepth + 1) parentType source right := by
-  intro leftField rightField hleftCollect hrightCollect hcomplete htail
-  apply executeSelectionSet_eq_of_collectFields_head_parts schema resolvers
-    variableValues (fieldDepth + 1) parentType source left right
-    (responseName, leftField :: leftFields)
-    (responseName, rightField :: rightFields) leftRest rightRest
-    hleftCollect hrightCollect
-  · exact executeField_same_head_eq_of_completeValue schema resolvers
-      variableValues fieldDepth source responseName parentType fieldName
-      arguments leftSelectionSet rightSelectionSet leftFields rightFields
-      hcomplete
-  · exact htail
-
 theorem collectFields_namesDisjoint_of_responseNameFree
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.Value ObjectIdentity)
@@ -936,7 +802,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_completeVa
       variableValues execParent (.object runtimeType identity) responseName
       fieldName arguments subselections (eraseScopedSelectionSet rest)
       sourceFields sourceRest hobject hsource hsourceFree hsourceCollect
-  apply executeSelectionSet_field_head_same_group_eq_of_completeValue schema
+  apply Execution.executeSelectionSet_field_head_same_group_eq_of_completeValue schema
     (store.resolvers schema) variableValues fieldDepth execParent
     (.object runtimeType identity) responseName fieldName arguments
     liftedSelectionSet subselections
@@ -1250,7 +1116,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_child_lt
         hrecursive
   · exact htail
 
-end GroundTypeNormalization
+end GroundTypeLifting
 
 end NormalForm
 

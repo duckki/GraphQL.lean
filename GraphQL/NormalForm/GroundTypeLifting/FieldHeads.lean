@@ -7,7 +7,10 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
+namespace GroundTypeLifting
+
+open GroundTypeNormalization
+open DataModel.Store
 
 variable {ObjectIdentity : Type}
 
@@ -819,7 +822,7 @@ theorem executeField_singleton_groundLift_scoped_eq_on_store
         liftFieldDefinition.outputType.namedType
         ((store.resolvers schema).resolve execParent fieldName arguments
           (.object runtimeType identity)) := by
-    rw [store_resolvers_parentType_insensitive schema store execParent
+    rw [resolvers_parentType_insensitive schema store execParent
       liftParent fieldName arguments (.object runtimeType identity)]
     simpa [DataModel.Store.resolvers] using
       resolve_objectsInclude_of_static_lookupField schema store liftParent
@@ -1305,7 +1308,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_responseNameFree_on_sto
       execFieldDefinition liftFieldDefinition hliftInclude hexecLookup
       hliftLookup hnotinLift hnotinOriginal htail hrecursive
 
-end GroundTypeNormalization
+end GroundTypeLifting
 
 end NormalForm
 

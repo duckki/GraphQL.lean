@@ -314,7 +314,7 @@ theorem completeScopedSelectionSetStaticFieldsWithResponseName_valuesInclude_on_
       (eraseCompleteScopedSelectionSet rest) scopedSelection.selection
       hground hstaticErased
   rcases
-      GroundTypeNormalization.validFieldsWithResponseName_mem_field
+      validFieldsWithResponseName_mem_field
         schema execParent responseName
         (eraseCompleteScopedSelectionSet rest) scopedSelection.selection
         hvalidMatched with
@@ -334,7 +334,7 @@ theorem completeScopedSelectionSetStaticFieldsWithResponseName_valuesInclude_on_
       boolCase groundType responseName rest
       (completeScopedSelectionSetLookupValid_tail hlookup)
   have hmatchedLookupSelection :
-      GroundTypeNormalization.selectionLookupValid schema
+      selectionLookupValid schema
         scopedSelection.lookupParent scopedSelection.selection :=
     hmatchesLookup scopedSelection hscoped
   have hmatchedLookupField :
@@ -342,12 +342,12 @@ theorem completeScopedSelectionSetStaticFieldsWithResponseName_valuesInclude_on_
         schema.lookupField scopedSelection.lookupParent matchedFieldName =
           some fieldDefinition := by
     simpa [hselectionShape,
-      GroundTypeNormalization.selectionLookupValid] using
+      selectionLookupValid] using
       hmatchedLookupSelection
   rcases hmatchedLookupField with
     ⟨matchedFieldDefinition, hmatchedLookup⟩
   have hrawReady :
-      GroundTypeNormalization.selectionSetSemanticsReady schema execParent
+      selectionSetSemanticsReady schema execParent
         (Selection.field responseName fieldName arguments directives
             selectionSet
           :: eraseCompleteScopedSelectionSet rest) := by
@@ -355,17 +355,17 @@ theorem completeScopedSelectionSetStaticFieldsWithResponseName_valuesInclude_on_
       eraseCompleteScopedSelectionSet, eraseCompleteScopedSelection] using
       hready
   have hrawLookup :
-      GroundTypeNormalization.selectionSetLookupValid schema execParent
+      selectionSetLookupValid schema execParent
         (Selection.field responseName fieldName arguments directives
             selectionSet
           :: eraseCompleteScopedSelectionSet rest) :=
-    GroundTypeNormalization.selectionSetLookupValid_of_selectionSetSemanticsReady
+    selectionSetLookupValid_of_selectionSetSemanticsReady
       (Selection.field responseName fieldName arguments directives
           selectionSet
         :: eraseCompleteScopedSelectionSet rest)
       hrawReady
   have hlookupNoDirectives :
-      GroundTypeNormalization.selectionSetLookupValid schema execParent
+      selectionSetLookupValid schema execParent
         (Selection.field responseName fieldName arguments [] selectionSet
           :: eraseCompleteScopedSelectionSet rest) :=
     selectionSetLookupValid_field_head_clear_directives schema execParent
@@ -384,7 +384,7 @@ theorem completeScopedSelectionSetStaticFieldsWithResponseName_valuesInclude_on_
           using hmerge)
   have hsameField :
       matchedFieldName = fieldName :=
-    GroundTypeNormalization.validFieldsWithResponseName_matching_same_field_of_canMerge_object_lookupValid
+    validFieldsWithResponseName_matching_same_field_of_canMerge_object_lookupValid
       schema execParent responseName fieldName arguments selectionSet
       (eraseCompleteScopedSelectionSet rest) hobject hlookupNoDirectives
       hmergeNoDirectives matchedFieldName matchedArguments
@@ -1137,7 +1137,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_value_inc
                         runtimeType (List.contains_iff_mem.mp hinclude))
                   have hchildObject : schema.objectType runtimeType := by
                     exact
-                      GroundTypeNormalization.objectType_of_objectTypeNameBool_eq_true
+                      objectType_of_objectTypeNameBool_eq_true
                         schema hchildObjectBool
                   have hchildGround :
                       schema.typeIncludesObjectBool runtimeType runtimeType =
@@ -1157,7 +1157,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_value_inc
                       execFieldDefinition.outputType.namedType := by
                     simp [Schema.fieldReturnType?, hexecLookup]
                   have hrawReady :
-                      GroundTypeNormalization.selectionSetSemanticsReady schema
+                      selectionSetSemanticsReady schema
                         execParent
                         (Selection.field responseName fieldName arguments
                             directives selectionSet
@@ -1166,12 +1166,12 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_value_inc
                       eraseCompleteScopedSelectionSet,
                       eraseCompleteScopedSelection] using hready
                   have hrawLookup :
-                      GroundTypeNormalization.selectionSetLookupValid schema
+                      selectionSetLookupValid schema
                         execParent
                         (Selection.field responseName fieldName arguments
                             directives selectionSet
                           :: eraseCompleteScopedSelectionSet rest) :=
-                    GroundTypeNormalization.selectionSetLookupValid_of_selectionSetSemanticsReady
+                    selectionSetLookupValid_of_selectionSetSemanticsReady
                       (Selection.field responseName fieldName arguments
                           directives selectionSet
                         :: eraseCompleteScopedSelectionSet rest)
@@ -1191,7 +1191,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_value_inc
                         true := by
                     simpa [hreturn] using hinclude
                   have hchildReadyRaw :
-                      GroundTypeNormalization.selectionSetSemanticsReady schema
+                      selectionSetSemanticsReady schema
                         runtimeType childSelectionSet := by
                     have hstaticReady :=
                       selectionSetSemanticsReady_field_staticScoped_merged_object
@@ -1210,7 +1210,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_value_inc
                           childSelectionSet) :=
                     (completeScopedSelectionSetLookupValid_completeScopedSelectionSet
                       schema runtimeType childSelectionSet).mpr
-                      (GroundTypeNormalization.selectionSetLookupValid_of_selectionSetSemanticsReady
+                      (selectionSetLookupValid_of_selectionSetSemanticsReady
                         childSelectionSet hchildReadyRaw)
                   have hchildMergeRaw :
                       FieldMerge.fieldsInSetCanMerge schema runtimeType
@@ -1348,16 +1348,16 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_value_inc
                             schema execParent lookupParent selectionSet).mpr
                             (by
                               have hheadReady :
-                                  GroundTypeNormalization.selectionSemanticsReady
+                                  selectionSemanticsReady
                                     schema execParent
                                     (Selection.inlineFragment none directives
                                       selectionSet) := by
                                 unfold completeScopedSelectionSetSemanticsReady at hready
-                                unfold GroundTypeNormalization.selectionSetSemanticsReady at hready
+                                unfold selectionSetSemanticsReady at hready
                                 exact hready _ (by
                                   simp [eraseCompleteScopedSelectionSet,
                                     eraseCompleteScopedSelection])
-                              simpa [GroundTypeNormalization.selectionSemanticsReady] using
+                              simpa [selectionSemanticsReady] using
                                 hheadReady))
                           (completeScopedSelectionSetSemanticsReady_tail
                             hready))
@@ -1366,7 +1366,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_value_inc
                             schema lookupParent selectionSet).mpr
                             (by
                               have hheadLookup :
-                                  GroundTypeNormalization.selectionLookupValid
+                                  selectionLookupValid
                                     schema lookupParent
                                     (Selection.inlineFragment none directives
                                       selectionSet) :=
@@ -1376,7 +1376,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_value_inc
                                       Selection.inlineFragment none directives
                                         selectionSet }
                                   (by simp)
-                              simpa [GroundTypeNormalization.selectionLookupValid] using
+                              simpa [selectionLookupValid] using
                                 hheadLookup))
                           (completeScopedSelectionSetLookupValid_tail hlookup))
                         (by
@@ -1394,7 +1394,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_value_inc
                           simpa [completeScopedSelectionSetCanMerge,
                             eraseCompleteScopedSelectionSet_append,
                             eraseCompleteScopedSelectionSet_completeScopedSelectionSet] using
-                            GroundTypeNormalization.fieldsInSetCanMerge_inlineFragment_none_flatten
+                            fieldsInSetCanMerge_inlineFragment_none_flatten
                               schema execParent selectionSet
                               (eraseCompleteScopedSelectionSet rest)
                               hmergeNoDirectives)
@@ -1547,25 +1547,25 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_value_inc
                             schema execParent typeCondition selectionSet).mpr
                             (by
                               have hheadReady :
-                                  GroundTypeNormalization.selectionSemanticsReady
+                                  selectionSemanticsReady
                                     schema execParent
                                     (Selection.inlineFragment
                                       (some typeCondition) directives
                                       selectionSet) := by
                                 unfold completeScopedSelectionSetSemanticsReady at hready
-                                unfold GroundTypeNormalization.selectionSetSemanticsReady at hready
+                                unfold selectionSetSemanticsReady at hready
                                 exact hready _ (by
                                   simp [eraseCompleteScopedSelectionSet,
                                     eraseCompleteScopedSelection])
                               have hpair :
-                                  GroundTypeNormalization.selectionSetLookupValid
+                                  selectionSetLookupValid
                                     schema typeCondition selectionSet
                                     ∧
                                   (schema.typesOverlapBool execParent
                                       typeCondition = true ->
-                                    GroundTypeNormalization.selectionSetSemanticsReady
+                                    selectionSetSemanticsReady
                                       schema execParent selectionSet) := by
-                                simpa [GroundTypeNormalization.selectionSemanticsReady] using
+                                simpa [selectionSemanticsReady] using
                                   hheadReady
                               exact hpair.2 hoverlap))
                           (completeScopedSelectionSetSemanticsReady_tail
@@ -1575,7 +1575,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_value_inc
                             schema typeCondition selectionSet).mpr
                             (by
                               have hheadLookup :
-                                  GroundTypeNormalization.selectionLookupValid
+                                  selectionLookupValid
                                     schema lookupParent
                                     (Selection.inlineFragment
                                       (some typeCondition) directives
@@ -1587,43 +1587,43 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_value_inc
                                         (some typeCondition) directives
                                         selectionSet }
                                   (by simp)
-                              simpa [GroundTypeNormalization.selectionLookupValid] using
+                              simpa [selectionLookupValid] using
                                 hheadLookup))
                           (completeScopedSelectionSetLookupValid_tail hlookup))
                         (by
                           have hselectionParentLookup :
-                              GroundTypeNormalization.selectionSetLookupValid
+                              selectionSetLookupValid
                                 schema execParent selectionSet :=
-                            GroundTypeNormalization.selectionSetLookupValid_of_selectionSetSemanticsReady
+                            selectionSetLookupValid_of_selectionSetSemanticsReady
                               selectionSet
                               (by
                                 have hheadReady :
-                                    GroundTypeNormalization.selectionSemanticsReady
+                                    selectionSemanticsReady
                                       schema execParent
                                       (Selection.inlineFragment
                                         (some typeCondition) directives
                                         selectionSet) := by
                                   unfold completeScopedSelectionSetSemanticsReady at hready
-                                  unfold GroundTypeNormalization.selectionSetSemanticsReady at hready
+                                  unfold selectionSetSemanticsReady at hready
                                   exact hready _ (by
                                     simp [eraseCompleteScopedSelectionSet,
                                       eraseCompleteScopedSelection])
                                 have hpair :
-                                    GroundTypeNormalization.selectionSetLookupValid
+                                    selectionSetLookupValid
                                       schema typeCondition selectionSet
                                       ∧
                                     (schema.typesOverlapBool execParent
                                         typeCondition = true ->
-                                      GroundTypeNormalization.selectionSetSemanticsReady
+                                      selectionSetSemanticsReady
                                         schema execParent selectionSet) := by
-                                  simpa [GroundTypeNormalization.selectionSemanticsReady] using
+                                  simpa [selectionSemanticsReady] using
                                     hheadReady
                                 exact hpair.2 hoverlap)
                           have hselectionTypeLookup :
-                              GroundTypeNormalization.selectionSetLookupValid
+                              selectionSetLookupValid
                                 schema typeCondition selectionSet := by
                             have hheadLookup :
-                                GroundTypeNormalization.selectionLookupValid
+                                selectionLookupValid
                                   schema lookupParent
                                   (Selection.inlineFragment
                                     (some typeCondition) directives
@@ -1635,13 +1635,13 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_value_inc
                                       (some typeCondition) directives
                                       selectionSet }
                                 (by simp)
-                            simpa [GroundTypeNormalization.selectionLookupValid] using
+                            simpa [selectionLookupValid] using
                               hheadLookup
                           have htailLookup :
-                              GroundTypeNormalization.selectionSetLookupValid
+                              selectionSetLookupValid
                                 schema execParent
                                 (eraseCompleteScopedSelectionSet rest) :=
-                            GroundTypeNormalization.selectionSetLookupValid_of_selectionSetSemanticsReady
+                            selectionSetLookupValid_of_selectionSetSemanticsReady
                               (eraseCompleteScopedSelectionSet rest)
                               (completeScopedSelectionSetSemanticsReady_tail
                                 hready)
@@ -1661,7 +1661,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_value_inc
                           simpa [completeScopedSelectionSetCanMerge,
                             eraseCompleteScopedSelectionSet_append,
                             eraseCompleteScopedSelectionSet_completeScopedSelectionSet] using
-                            GroundTypeNormalization.fieldsInSetCanMerge_inlineFragment_some_overlap_flatten_object
+                            fieldsInSetCanMerge_inlineFragment_some_overlap_flatten_object
                               schema execParent typeCondition selectionSet
                               (eraseCompleteScopedSelectionSet rest) hschema
                               hobject hoverlap hselectionParentLookup

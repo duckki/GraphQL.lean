@@ -8,7 +8,6 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
 
 variable {ObjectIdentity : Type}
 
@@ -79,7 +78,6 @@ theorem collectSelection_inlineFragment_some_noDirectives
         [] := by
   simp [Execution.collectSelection, Execution.selectionDirectivesAllowBool]
 
-end GroundTypeNormalization
 
 end NormalForm
 

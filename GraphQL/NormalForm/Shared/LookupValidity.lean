@@ -9,7 +9,6 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
 
 mutual
   def selectionLookupValid (schema : Schema)
@@ -263,7 +262,6 @@ end
 
 
 
-end GroundTypeNormalization
 
 end NormalForm
 

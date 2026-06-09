@@ -886,7 +886,7 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_dup
       List (Name × List Execution.ExecutableField)) :
     SchemaWellFormedness.schemaWellFormed schema ->
     schema.objectType lookupParent ->
-    GroundTypeNormalization.selectionSetLookupValid schema lookupParent
+    selectionSetLookupValid schema lookupParent
       (Selection.field responseName fieldName arguments directives
         selectionSet :: rest) ->
     FieldMerge.fieldsInSetCanMerge schema lookupParent
@@ -1016,7 +1016,7 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_gro
       List (Name × List Execution.ExecutableField)) :
     SchemaWellFormedness.schemaWellFormed schema ->
     schema.objectType lookupParent ->
-    GroundTypeNormalization.selectionSetLookupValid schema lookupParent
+    selectionSetLookupValid schema lookupParent
       (Selection.field responseName fieldName arguments directives
         selectionSet :: rest) ->
     FieldMerge.fieldsInSetCanMerge schema lookupParent

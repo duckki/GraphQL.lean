@@ -8,7 +8,6 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
 
 theorem validFieldsWithResponseName_mem_field (schema : Schema)
     (parentType responseName : Name) :
@@ -1068,7 +1067,6 @@ theorem selectionSetValid_fieldHead_merged_of_matching
 
 
 
-end GroundTypeNormalization
 
 end NormalForm
 

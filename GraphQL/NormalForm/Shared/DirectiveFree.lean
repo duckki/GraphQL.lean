@@ -7,7 +7,6 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
 
 theorem selectionSetDirectiveFree_nil :
     selectionSetDirectiveFree ([] : List Selection) := by
@@ -197,7 +196,6 @@ theorem selectionSetDirectiveFree_fieldHead_merged
         responseName rest (selectionSetDirectiveFree_tail hfree))
 
 
-end GroundTypeNormalization
 
 end NormalForm
 

@@ -143,7 +143,7 @@ theorem fieldMerge_collectFields_staticScoped_merged_mem_fieldHead_merged
             rest)))
       hchild
   · rcases
-      GroundTypeNormalization.fieldMerge_collectFields_mergeSelectionSets_mem
+      fieldMerge_collectFields_mergeSelectionSets_mem
         schema runtimeType
         (eraseCompleteScopedSelectionSet
           (staticScopedFieldsWithResponseName schema boolCase lookupParent
@@ -167,14 +167,14 @@ theorem selectionSetLookupValid_field_head_clear_directives
     (schema : Schema) (parentType responseName fieldName : Name)
     (arguments : List Argument) (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
-    GroundTypeNormalization.selectionSetLookupValid schema parentType
+    selectionSetLookupValid schema parentType
       (Selection.field responseName fieldName arguments directives
         selectionSet :: rest) ->
-      GroundTypeNormalization.selectionSetLookupValid schema parentType
+      selectionSetLookupValid schema parentType
         (Selection.field responseName fieldName arguments []
           selectionSet :: rest) := by
   intro hlookupValid
-  unfold GroundTypeNormalization.selectionSetLookupValid at hlookupValid ⊢
+  unfold selectionSetLookupValid at hlookupValid ⊢
   intro selection hmem
   rcases List.mem_cons.mp hmem with hhead | htail
   · subst selection
@@ -182,7 +182,7 @@ theorem selectionSetLookupValid_field_head_clear_directives
       hlookupValid
         (Selection.field responseName fieldName arguments directives
           selectionSet) (by simp)
-    simpa [GroundTypeNormalization.selectionLookupValid] using hheadValid
+    simpa [selectionLookupValid] using hheadValid
   · exact hlookupValid selection
       (List.mem_cons_of_mem
         (Selection.field responseName fieldName arguments directives
@@ -227,14 +227,14 @@ theorem selectionSetSemanticsReady_field_head_clear_directives
     (schema : Schema) (parentType responseName fieldName : Name)
     (arguments : List Argument) (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
-    GroundTypeNormalization.selectionSetSemanticsReady schema parentType
+    selectionSetSemanticsReady schema parentType
       (Selection.field responseName fieldName arguments directives
         selectionSet :: rest) ->
-      GroundTypeNormalization.selectionSetSemanticsReady schema parentType
+      selectionSetSemanticsReady schema parentType
         (Selection.field responseName fieldName arguments []
           selectionSet :: rest) := by
   intro hready
-  unfold GroundTypeNormalization.selectionSetSemanticsReady at hready ⊢
+  unfold selectionSetSemanticsReady at hready ⊢
   intro selection hmem
   rcases List.mem_cons.mp hmem with hhead | htail
   · subst selection
@@ -242,7 +242,7 @@ theorem selectionSetSemanticsReady_field_head_clear_directives
       hready
         (Selection.field responseName fieldName arguments directives
           selectionSet) (by simp)
-    simpa [GroundTypeNormalization.selectionSemanticsReady] using hheadReady
+    simpa [selectionSemanticsReady] using hheadReady
   · exact hready selection
       (List.mem_cons_of_mem
         (Selection.field responseName fieldName arguments directives
@@ -300,7 +300,7 @@ theorem selectionSetLookupValid_field_staticScoped_merged_object
     schema.typeIncludesObjectBool lookupParent groundType = true ->
     schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
       runtimeType = true ->
-      GroundTypeNormalization.selectionSetLookupValid schema runtimeType
+      selectionSetLookupValid schema runtimeType
         (selectionSet ++
           mergeSelectionSets
             (eraseCompleteScopedSelectionSet
@@ -315,10 +315,10 @@ theorem selectionSetLookupValid_field_staticScoped_merged_object
       lookupParent responseName fieldName arguments directives selectionSet rest
       hvalid
   have hlookupValidNoDirectives :
-      GroundTypeNormalization.selectionSetLookupValid schema lookupParent
+      selectionSetLookupValid schema lookupParent
         (Selection.field responseName fieldName arguments []
           selectionSet :: rest) :=
-    GroundTypeNormalization.selectionSetLookupValid_of_selectionSetValid
+    selectionSetLookupValid_of_selectionSetValid
       (Selection.field responseName fieldName arguments [] selectionSet :: rest)
       hvalidNoDirectives
   have hmergeNoDirectives :
@@ -327,7 +327,7 @@ theorem selectionSetLookupValid_field_staticScoped_merged_object
           selectionSet :: rest) :=
     fieldsInSetCanMerge_field_head_clear_directives schema lookupParent
       responseName fieldName arguments directives selectionSet rest hmerge
-  apply GroundTypeNormalization.selectionSetLookupValid_append
+  apply selectionSetLookupValid_append
   · have hheadValid :
         Validation.selectionValid schema variableDefinitions lookupParent
           (Selection.field responseName fieldName arguments [] selectionSet) :=
@@ -347,14 +347,14 @@ theorem selectionSetLookupValid_field_staticScoped_merged_object
     have hchildValid :
         Validation.selectionSetValid schema variableDefinitions
           fieldDefinition.outputType.namedType selectionSet :=
-      GroundTypeNormalization.fieldSelectionSetValid_child_of_possibleType
+      fieldSelectionSetValid_child_of_possibleType
         hchild hpossible
     exact
-      GroundTypeNormalization.selectionSetLookupValid_of_selectionSetValid_possibleObject
+      selectionSetLookupValid_of_selectionSetValid_possibleObject
         schema variableDefinitions fieldDefinition.outputType.namedType
         runtimeType hschema hpossible selectionSet hchildValid
   · apply
-      GroundTypeNormalization.selectionSetLookupValid_mergeSelectionSets_of_field_subselections
+      selectionSetLookupValid_mergeSelectionSets_of_field_subselections
     · intro selection hselection
       have hvalidSelection :
           selection ∈
@@ -364,7 +364,7 @@ theorem selectionSetLookupValid_field_staticScoped_merged_object
           schema boolCase lookupParent groundType responseName rest
           selection hground hselection
       rcases
-        GroundTypeNormalization.validFieldsWithResponseName_matching_field_shape_of_canMerge_object_lookupValid
+        validFieldsWithResponseName_matching_field_shape_of_canMerge_object_lookupValid
           schema lookupParent responseName fieldName arguments selectionSet
           rest hobject hlookupValidNoDirectives hmergeNoDirectives
           selection hvalidSelection with
@@ -385,7 +385,7 @@ theorem selectionSetLookupValid_field_staticScoped_merged_object
             matchedDirectives matchedSubselections)
           hground hmatched
       exact
-        GroundTypeNormalization.validFieldsWithResponseName_matching_subselections_lookupValid_of_child_object
+        validFieldsWithResponseName_matching_subselections_lookupValid_of_child_object
           schema variableDefinitions lookupParent responseName fieldName
           runtimeType arguments selectionSet rest fieldDefinition hschema
           hobject hvalidNoDirectives hmergeNoDirectives hlookup hinclude
@@ -400,7 +400,7 @@ theorem fieldsInSetCanMerge_field_staticScoped_merged_object
     (selectionSet rest : List Selection)
     (fieldDefinition : FieldDefinition) :
     schema.objectType lookupParent ->
-    GroundTypeNormalization.selectionSetLookupValid schema lookupParent
+    selectionSetLookupValid schema lookupParent
       (Selection.field responseName fieldName arguments directives
         selectionSet :: rest) ->
     FieldMerge.fieldsInSetCanMerge schema lookupParent
@@ -416,7 +416,7 @@ theorem fieldsInSetCanMerge_field_staticScoped_merged_object
                 lookupParent groundType responseName rest))) := by
   intro hobject hlookupValid hmerge hlookup hground
   have hlookupValidNoDirectives :
-      GroundTypeNormalization.selectionSetLookupValid schema lookupParent
+      selectionSetLookupValid schema lookupParent
         (Selection.field responseName fieldName arguments []
           selectionSet :: rest) :=
     selectionSetLookupValid_field_head_clear_directives schema lookupParent
@@ -434,7 +434,7 @@ theorem fieldsInSetCanMerge_field_staticScoped_merged_object
           mergeSelectionSets
             (validFieldsWithResponseName schema lookupParent responseName
               rest)) :=
-    GroundTypeNormalization.fieldsInSetCanMerge_fieldHead_merged_of_canMerge_object_lookupValid
+    fieldsInSetCanMerge_fieldHead_merged_of_canMerge_object_lookupValid
       schema lookupParent responseName fieldName runtimeType arguments
       selectionSet rest fieldDefinition hobject hlookupValidNoDirectives
       hmergeNoDirectives hlookup
@@ -465,10 +465,10 @@ theorem selectionSetSemanticsReady_field_staticScoped_merged_object
     (selectionSet rest : List Selection)
     (fieldDefinition : FieldDefinition) :
     schema.objectType lookupParent ->
-    GroundTypeNormalization.selectionSetSemanticsReady schema lookupParent
+    selectionSetSemanticsReady schema lookupParent
       (Selection.field responseName fieldName arguments directives
         selectionSet :: rest) ->
-    GroundTypeNormalization.selectionSetLookupValid schema lookupParent
+    selectionSetLookupValid schema lookupParent
       (Selection.field responseName fieldName arguments directives
         selectionSet :: rest) ->
     FieldMerge.fieldsInSetCanMerge schema lookupParent
@@ -478,7 +478,7 @@ theorem selectionSetSemanticsReady_field_staticScoped_merged_object
     schema.typeIncludesObjectBool lookupParent groundType = true ->
     schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
       runtimeType = true ->
-      GroundTypeNormalization.selectionSetSemanticsReady schema runtimeType
+      selectionSetSemanticsReady schema runtimeType
         (selectionSet ++
           mergeSelectionSets
             (eraseCompleteScopedSelectionSet
@@ -486,13 +486,13 @@ theorem selectionSetSemanticsReady_field_staticScoped_merged_object
                 lookupParent groundType responseName rest))) := by
   intro hobject hready hlookupValid hmerge hlookup hground hinclude
   have hreadyNoDirectives :
-      GroundTypeNormalization.selectionSetSemanticsReady schema lookupParent
+      selectionSetSemanticsReady schema lookupParent
         (Selection.field responseName fieldName arguments []
           selectionSet :: rest) :=
     selectionSetSemanticsReady_field_head_clear_directives schema lookupParent
       responseName fieldName arguments directives selectionSet rest hready
   have hlookupValidNoDirectives :
-      GroundTypeNormalization.selectionSetLookupValid schema lookupParent
+      selectionSetLookupValid schema lookupParent
         (Selection.field responseName fieldName arguments []
           selectionSet :: rest) :=
     selectionSetLookupValid_field_head_clear_directives schema lookupParent
@@ -504,22 +504,22 @@ theorem selectionSetSemanticsReady_field_staticScoped_merged_object
           selectionSet :: rest) :=
     fieldsInSetCanMerge_field_head_clear_directives schema lookupParent
       responseName fieldName arguments directives selectionSet rest hmerge
-  apply GroundTypeNormalization.selectionSetSemanticsReady_append
+  apply selectionSetSemanticsReady_append
   · have hheadReady :
-        GroundTypeNormalization.selectionSemanticsReady schema lookupParent
+        selectionSemanticsReady schema lookupParent
           (Selection.field responseName fieldName arguments []
             selectionSet) := by
-      unfold GroundTypeNormalization.selectionSetSemanticsReady at hreadyNoDirectives
+      unfold selectionSetSemanticsReady at hreadyNoDirectives
       exact hreadyNoDirectives
         (Selection.field responseName fieldName arguments [] selectionSet)
         (by simp)
-    simp [GroundTypeNormalization.selectionSemanticsReady] at hheadReady
+    simp [selectionSemanticsReady] at hheadReady
     rcases hheadReady with ⟨headDefinition, hheadLookup, hchildReady⟩
     rw [hlookup] at hheadLookup
     cases hheadLookup
     exact hchildReady runtimeType hinclude
   · apply
-      GroundTypeNormalization.selectionSetSemanticsReady_mergeSelectionSets_of_field_subselections
+      selectionSetSemanticsReady_mergeSelectionSets_of_field_subselections
     · intro selection hselection
       have hvalid :
           selection ∈
@@ -529,7 +529,7 @@ theorem selectionSetSemanticsReady_field_staticScoped_merged_object
           schema boolCase lookupParent groundType responseName rest
           selection hground hselection
       rcases
-        GroundTypeNormalization.validFieldsWithResponseName_matching_field_shape_of_canMerge_object_lookupValid
+        validFieldsWithResponseName_matching_field_shape_of_canMerge_object_lookupValid
           schema lookupParent responseName fieldName arguments selectionSet
           rest hobject hlookupValidNoDirectives hmergeNoDirectives
           selection hvalid with
@@ -550,7 +550,7 @@ theorem selectionSetSemanticsReady_field_staticScoped_merged_object
             matchedDirectives matchedSubselections)
           hground hmatched
       exact
-        GroundTypeNormalization.validFieldsWithResponseName_matching_subselections_semanticsReady_of_child_object
+        validFieldsWithResponseName_matching_subselections_semanticsReady_of_child_object
           schema lookupParent responseName fieldName runtimeType arguments
           selectionSet rest fieldDefinition hobject hreadyNoDirectives
           hlookupValidNoDirectives hmergeNoDirectives hlookup hinclude

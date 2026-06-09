@@ -9,8 +9,6 @@ namespace NormalForm
 
 namespace CompleteNormalization
 
-open GroundTypeNormalization
-
 def completeScopedFieldOutputsInclude
     (schema : Schema) (runtimeType : Name)
     (scopedSelections : List CompleteScopedSelection) : Prop :=

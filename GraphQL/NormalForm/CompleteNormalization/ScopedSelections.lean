@@ -14,8 +14,6 @@ namespace NormalForm
 
 namespace CompleteNormalization
 
-open GroundTypeNormalization
-
 structure CompleteScopedSelection where
   lookupParent : Name
   selection : Selection

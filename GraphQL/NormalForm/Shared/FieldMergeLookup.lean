@@ -8,7 +8,6 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
 
 theorem fieldMerge_collectFields_mem_outputType
     (schema : Schema) :
@@ -417,7 +416,6 @@ theorem fieldsInSetCanMerge_inlineFragment_some_overlap_flatten_object
     abstractLeft abstractRight hleftSame hrightSame hleftShape hrightShape
     hleftParent hrightParent hresponse habstractMerge
 
-end GroundTypeNormalization
 
 end NormalForm
 

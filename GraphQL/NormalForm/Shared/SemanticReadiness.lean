@@ -9,7 +9,6 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
 
 mutual
   def selectionSemanticsReady (schema : Schema)
@@ -1424,7 +1423,6 @@ theorem selectionSetSemanticsReady_fieldHead_merged_of_child_object
 
 
 
-end GroundTypeNormalization
 
 end NormalForm
 

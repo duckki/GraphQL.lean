@@ -623,15 +623,15 @@ theorem completeNormalizationSemanticsPreserved_of_resolverFieldValuesInclude
         operation.rootType operation.selectionSet :=
     Validation.operationDefinitionValid_selectionSetValid hvalid
   have hready :
-      GroundTypeNormalization.selectionSetSemanticsReady schema
+      selectionSetSemanticsReady schema
         operation.rootType operation.selectionSet :=
-    GroundTypeNormalization.selectionSetSemanticsReady_of_selectionSetValid_object
+    selectionSetSemanticsReady_of_selectionSetValid_object
       schema operation.variableDefinitions operation.rootType hschema
       hrootObject operation.selectionSet hselectionValid
   have hlookup :
-      GroundTypeNormalization.selectionSetLookupValid schema
+      selectionSetLookupValid schema
         operation.rootType operation.selectionSet :=
-    GroundTypeNormalization.selectionSetLookupValid_of_selectionSetSemanticsReady
+    selectionSetLookupValid_of_selectionSetSemanticsReady
       operation.selectionSet hready
   have hmerge :
       FieldMerge.fieldsInSetCanMerge schema operation.rootType
@@ -824,15 +824,15 @@ theorem completeNormalizationCorrect_of_scopedStaticCollectionOnData
         operation.rootType operation.selectionSet :=
     Validation.operationDefinitionValid_selectionSetValid hvalid
   have hready :
-      GroundTypeNormalization.selectionSetSemanticsReady schema operation.rootType
+      selectionSetSemanticsReady schema operation.rootType
         operation.selectionSet :=
-    GroundTypeNormalization.selectionSetSemanticsReady_of_selectionSetValid_object schema
+    selectionSetSemanticsReady_of_selectionSetValid_object schema
       operation.variableDefinitions operation.rootType hschema hrootObject
       operation.selectionSet hselectionValid
   have hlookup :
-      GroundTypeNormalization.selectionSetLookupValid schema
+      selectionSetLookupValid schema
         operation.rootType operation.selectionSet :=
-    GroundTypeNormalization.selectionSetLookupValid_of_selectionSetSemanticsReady
+    selectionSetLookupValid_of_selectionSetSemanticsReady
       operation.selectionSet hready
   have hmerge :
       FieldMerge.fieldsInSetCanMerge schema operation.rootType

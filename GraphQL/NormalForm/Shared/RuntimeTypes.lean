@@ -9,7 +9,6 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
 
 theorem objectTypeNameBool_eq_true_of_objectType_base
     (schema : Schema) {typeName : Name} :
@@ -201,7 +200,6 @@ theorem typeIncludesObjectBool_of_outputTypeSubtype_namedType
           exact ih (expected := expectedInner) hsubtype hinclude
 
 
-end GroundTypeNormalization
 
 end NormalForm
 

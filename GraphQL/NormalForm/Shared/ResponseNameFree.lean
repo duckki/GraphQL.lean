@@ -7,7 +7,6 @@ namespace GraphQL
 
 namespace NormalForm
 
-namespace GroundTypeNormalization
 
 theorem selectionSetResponseNameFree_nil (schema : Schema)
     (parentType responseName : Name) :
@@ -159,7 +158,6 @@ theorem withoutFieldsWithResponseName_preserves_responseNameFree
           · exact withoutFieldsWithResponseName_preserves_responseNameFree
               schema removedResponseName parentType responseName rest hrest
 
-end GroundTypeNormalization
 
 end NormalForm
 

@@ -1,5 +1,8 @@
 import GraphQL.NormalForm.GroundTypeNormalization.ExecutableFieldGroups
+import GraphQL.NormalForm.Shared.Execution
+import GraphQL.NormalForm.Shared.DirectiveFree
 import GraphQL.Execution.FieldCollection
+import GraphQL.NormalForm.Shared.ResponseNameFree
 
 /-!
 Field-collection helper lemmas for directive-free ground-type normalization.

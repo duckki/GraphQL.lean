@@ -1,4 +1,4 @@
-import GraphQL.NormalForm.GroundTypeNormalization.DirectiveFree
+import GraphQL.NormalForm.Shared.DirectiveFree
 import GraphQL.SchemaWellFormedness.PossibleObjectImplementation
 import GraphQL.Validation.SelectionValidity
 

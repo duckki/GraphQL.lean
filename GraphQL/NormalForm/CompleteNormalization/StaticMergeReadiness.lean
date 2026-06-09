@@ -1,4 +1,5 @@
 import GraphQL.NormalForm.CompleteNormalization.ScopedStaticExecution
+import GraphQL.NormalForm.Shared.FieldMergeLookup
 
 /-!
 Merge-readiness and scoped field-head lookup facts for complete normalization.

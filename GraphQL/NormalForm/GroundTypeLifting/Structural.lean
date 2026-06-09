@@ -1,4 +1,5 @@
 import GraphQL.NormalForm.GroundTypeLifting.StoreInclusion
+import GraphQL.NormalForm.Shared.ResponseNameFree
 
 /-!
 Structural ground-type lifting facts shared by the semantic proof modules.

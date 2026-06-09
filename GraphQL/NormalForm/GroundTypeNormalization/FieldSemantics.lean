@@ -1,4 +1,6 @@
 import GraphQL.NormalForm.GroundTypeNormalization.AbstractReturnSemantics
+import GraphQL.NormalForm.GroundTypeNormalization.Normality
+import GraphQL.NormalForm.Shared.SemanticReadiness
 
 /-!
 Field execution semantic cases for ground-type normalization.

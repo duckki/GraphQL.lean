@@ -1,4 +1,6 @@
-import GraphQL.NormalForm.GroundTypeNormalization.LookupValidity
+import GraphQL.NormalForm.Shared.LookupValidity
+import GraphQL.NormalForm.Shared.RuntimeTypes
+import GraphQL.NormalForm.Shared.FieldMerge
 
 /-!
 Semantic readiness facts for ground-type normalization proofs.

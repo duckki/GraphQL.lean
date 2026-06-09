@@ -1,5 +1,5 @@
 import GraphQL.NormalForm.CompleteNormalization.StaticCollection
-import GraphQL.NormalForm.GroundTypeNormalization.SemanticReadiness
+import GraphQL.NormalForm.Shared.SemanticReadiness
 
 /-!
 Scoped selection-set machinery for complete-normalization proofs.

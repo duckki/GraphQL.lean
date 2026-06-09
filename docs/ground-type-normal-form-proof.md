@@ -80,7 +80,7 @@ The public predicates live in `GraphQL/NormalForm.lean`.
   It adds the resolver-output inclusion assumption described above.
 
 The directive-free ground-type theorem witnesses are in
-`GraphQL/NormalForm/GroundTypeNormalization/OperationLifts.lean`:
+`GraphQL/NormalForm/GroundTypeNormalization/OperationSemantics.lean`:
 
 - `GraphQL.NormalForm.GroundTypeNormalization.groundTypeNormalFormSemanticsPreservation`
 - `GraphQL.NormalForm.GroundTypeNormalization.groundNormalFormCorrect`

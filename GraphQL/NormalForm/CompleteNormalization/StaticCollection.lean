@@ -1,5 +1,5 @@
 import GraphQL.NormalForm.CompleteNormalization.BoolCaseWrappers
-import GraphQL.NormalForm.GroundTypeNormalization.DirectiveFree
+import GraphQL.NormalForm.Shared.DirectiveFree
 
 /-!
 Static collection facts for complete normalization.

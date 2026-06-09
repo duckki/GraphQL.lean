@@ -1,4 +1,4 @@
-import GraphQL.NormalForm.GroundTypeNormalization.SchemaRuntimeTypes
+import GraphQL.NormalForm.Shared.RuntimeTypes
 import GraphQL.Validation.FieldMerge
 
 /-!

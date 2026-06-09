@@ -1,4 +1,6 @@
-import GraphQL.NormalForm.GroundTypeNormalization
+import GraphQL.NormalForm
+import GraphQL.Execution
+import GraphQL.Validation.FieldMerge
 
 /-!
 Executable field-group invariants used by ground-type normalization proofs.

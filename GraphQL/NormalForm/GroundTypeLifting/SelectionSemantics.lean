@@ -1,4 +1,5 @@
 import GraphQL.NormalForm.GroundTypeLifting.FieldHeads
+import GraphQL.NormalForm.Shared.FieldMergeLookup
 
 /-!
 Selection-set semantic preservation scaffolding for ground-type lifting.

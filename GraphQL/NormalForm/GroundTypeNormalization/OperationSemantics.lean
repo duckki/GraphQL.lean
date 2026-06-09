@@ -1,4 +1,5 @@
-import GraphQL.NormalForm.GroundTypeNormalization.Normality
+import GraphQL.NormalForm.GroundTypeNormalization.SelectionSetSemantics
+import GraphQL.NormalForm.Shared.Execution
 
 /-!
 Operation-level semantic bridge facts for ground-type normalization.
@@ -32,73 +33,6 @@ theorem groundNormalFormCorrect_of_semanticsPreservation
   intro hpreservation hschema hvalid hfree
   exact groundNormalFormCorrect_of_semanticsPreserved schema operation
     (hpreservation hschema hvalid hfree)
-
-theorem selectionDirectivesAllowBool_nil
-    (variableValues : Execution.VariableValues) :
-    Execution.selectionDirectivesAllowBool variableValues [] = true := by
-  rfl
-
-theorem selectionDirectiveFree_directivesAllowBool
-    (variableValues : Execution.VariableValues) {selection : Selection} :
-    selectionDirectiveFree selection ->
-      match selection with
-      | .field _responseName _fieldName _arguments directives _selectionSet =>
-          Execution.selectionDirectivesAllowBool variableValues directives = true
-      | .inlineFragment _typeCondition directives _selectionSet =>
-          Execution.selectionDirectivesAllowBool variableValues directives = true := by
-  intro hfree
-  cases selection with
-  | field responseName fieldName arguments directives selectionSet =>
-      have hdirectives : directives = [] := hfree.1
-      subst directives
-      rfl
-  | inlineFragment typeCondition directives selectionSet =>
-      have hdirectives : directives = [] := hfree.1
-      subst directives
-      rfl
-
-theorem collectSelection_field_noDirectives
-    (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectIdentity)
-    (responseName fieldName : Name) (arguments : List Argument)
-    (selectionSet : List Selection) :
-    Execution.collectSelection schema variableValues parentType source
-      (Selection.field responseName fieldName arguments [] selectionSet)
-      =
-      [(responseName, [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := selectionSet
-      }])] := by
-  simp [Execution.collectSelection, Execution.selectionDirectivesAllowBool]
-
-theorem collectSelection_inlineFragment_none_noDirectives
-    (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectIdentity)
-    (selectionSet : List Selection) :
-    Execution.collectSelection schema variableValues parentType source
-      (Selection.inlineFragment none [] selectionSet)
-      =
-      Execution.collectFields schema variableValues parentType source
-        selectionSet := by
-  simp [Execution.collectSelection, Execution.selectionDirectivesAllowBool]
-
-theorem collectSelection_inlineFragment_some_noDirectives
-    (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType typeCondition : Name) (source : Execution.Value ObjectIdentity)
-    (selectionSet : List Selection) :
-    Execution.collectSelection schema variableValues parentType source
-      (Selection.inlineFragment (some typeCondition) [] selectionSet)
-      =
-      if Execution.doesFragmentTypeApplyBool schema parentType source
-          typeCondition then
-        Execution.collectFields schema variableValues parentType source
-          selectionSet
-      else
-        [] := by
-  simp [Execution.collectSelection, Execution.selectionDirectivesAllowBool]
 
 theorem rootSourceAppliesBool_normalizeOperation
     (schema : Schema) (operation : Operation) (source : Execution.Value ObjectIdentity) :
@@ -165,7 +99,113 @@ theorem normalizeOperation_variableDefinitions (schema : Schema)
       = operation.variableDefinitions := by
   rfl
 
+theorem normalizeOperation_executeQuery
+    (schema : Schema) (operation : Operation) :
+    (∀ (ObjectIdentity : Type) (resolvers : Execution.Resolvers ObjectIdentity)
+      variableValues depth (source : Execution.Value ObjectIdentity),
+      Execution.rootSourceAppliesBool schema operation source = true ->
+        Execution.executeSelectionSet schema resolvers variableValues
+          depth operation.rootType source operation.selectionSet
+          =
+        Execution.executeSelectionSet schema resolvers variableValues
+          depth operation.rootType source
+          (normalizeOperation schema operation).selectionSet) ->
+      groundTypeNormalFormSemanticsPreserved schema operation := by
+  exact groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet schema
+    operation
 
+theorem groundTypeNormalFormSemanticsPreservation_of_selectionSet
+    (schema : Schema) (operation : Operation) :
+    (SchemaWellFormedness.schemaWellFormed schema ->
+      Validation.operationDefinitionValid schema operation ->
+        operationDirectiveFree operation ->
+          ∀ (ObjectIdentity : Type) (resolvers : Execution.Resolvers ObjectIdentity)
+            variableValues depth (source : Execution.Value ObjectIdentity),
+            Execution.rootSourceAppliesBool schema operation source = true ->
+              Execution.executeSelectionSet schema resolvers variableValues
+                depth operation.rootType source operation.selectionSet
+                =
+              Execution.executeSelectionSet schema resolvers variableValues
+                depth operation.rootType source
+                (normalizeOperation schema operation).selectionSet) ->
+      NormalForm.groundTypeNormalFormSemanticsPreservation schema operation := by
+  intro hselection hschema hvalid hfree
+  exact normalizeOperation_executeQuery schema operation
+    (hselection hschema hvalid hfree)
+
+theorem groundNormalFormCorrect_of_selectionSet
+    (schema : Schema) (operation : Operation) :
+    (SchemaWellFormedness.schemaWellFormed schema ->
+      Validation.operationDefinitionValid schema operation ->
+        operationDirectiveFree operation ->
+          ∀ (ObjectIdentity : Type) (resolvers : Execution.Resolvers ObjectIdentity)
+            variableValues depth (source : Execution.Value ObjectIdentity),
+            Execution.rootSourceAppliesBool schema operation source = true ->
+              Execution.executeSelectionSet schema resolvers variableValues
+                depth operation.rootType source operation.selectionSet
+                =
+              Execution.executeSelectionSet schema resolvers variableValues
+                depth operation.rootType source
+                (normalizeOperation schema operation).selectionSet) ->
+      SchemaWellFormedness.schemaWellFormed schema ->
+        Validation.operationDefinitionValid schema operation ->
+          operationDirectiveFree operation ->
+            NormalForm.groundNormalFormCorrect schema operation := by
+  intro hselection hschema hvalid hfree
+  exact groundNormalFormCorrect_of_semanticsPreservation schema operation
+    (groundTypeNormalFormSemanticsPreservation_of_selectionSet schema operation
+      hselection)
+    hschema hvalid hfree
+
+theorem groundTypeNormalFormSemanticsPreservation
+    (schema : Schema) (operation : Operation) :
+    NormalForm.groundTypeNormalFormSemanticsPreservation schema operation := by
+  intro hschema hvalid hfree
+  apply normalizeOperation_executeQuery schema operation
+  intro ObjectIdentity resolvers variableValues depth source hroot
+  have hrootObject : schema.objectType operation.rootType := by
+    have hrootEq := Validation.operationDefinitionValid_rootType_eq hvalid
+    rw [hrootEq]
+    exact hschema.2.1
+  have hobject :
+      objectTypeNameBool schema operation.rootType = true :=
+    objectTypeNameBool_eq_true_of_objectType schema hrootObject
+  have hsource :
+      ∃ runtimeType identity,
+        source = Execution.Value.object runtimeType identity
+          ∧ schema.typeIncludesObjectBool operation.rootType runtimeType =
+            true :=
+    rootSourceAppliesBool_true_object schema operation source hroot
+  have hselectionValid :
+      Validation.selectionSetValid schema operation.variableDefinitions
+        operation.rootType operation.selectionSet :=
+    Validation.operationDefinitionValid_selectionSetValid hvalid
+  have hready :
+      selectionSetSemanticsReady schema operation.rootType
+        operation.selectionSet :=
+    selectionSetSemanticsReady_of_selectionSetValid_object schema
+      operation.variableDefinitions operation.rootType hschema hrootObject
+      operation.selectionSet hselectionValid
+  have hmerge :
+      FieldMerge.fieldsInSetCanMerge schema operation.rootType
+        operation.selectionSet :=
+    Validation.operationDefinitionValid_fieldsInSetCanMerge hvalid
+  have hpreserved :=
+    normalizeSelectionSet_executeSelectionSet schema resolvers variableValues
+      hschema depth operation.rootType source operation.selectionSet hobject
+      hsource hfree hready hmerge
+  simpa [normalizeOperation] using hpreserved.symm
+
+theorem groundNormalFormCorrect
+    (schema : Schema) (operation : Operation) :
+    SchemaWellFormedness.schemaWellFormed schema ->
+      Validation.operationDefinitionValid schema operation ->
+        operationDirectiveFree operation ->
+          NormalForm.groundNormalFormCorrect schema operation := by
+  intro hschema hvalid hfree
+  exact groundNormalFormCorrect_of_semanticsPreservation schema operation
+    (groundTypeNormalFormSemanticsPreservation schema operation)
+    hschema hvalid hfree
 
 end GroundTypeNormalization
 

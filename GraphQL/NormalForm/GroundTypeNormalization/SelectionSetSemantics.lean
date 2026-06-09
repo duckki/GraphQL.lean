@@ -1,4 +1,5 @@
 import GraphQL.NormalForm.GroundTypeNormalization.FieldSemantics
+import GraphQL.NormalForm.Shared.FieldMergeLookup
 
 /-!
 Selection-set semantic preservation for ground-type normalization.

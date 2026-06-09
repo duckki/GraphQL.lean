@@ -13,6 +13,10 @@ namespace GraphQL
 
 namespace NormalForm
 
+-----------------------------------------------------------------------------------------
+-- Ground Type Normalization
+-----------------------------------------------------------------------------------------
+
 -- Spec-inspired normal-form invariant: non-spec predicate requiring a flat field-only
 -- selection layer.
 def selectionsAllFields (selectionSet : List Selection) : Prop :=
@@ -381,6 +385,61 @@ decreasing_by
        simp [SelectionSet.size, Selection.size]
        try omega)
 
+-- Public GraphCoQL-style grounding helper: object return types normalize directly; abstract
+-- interface/union return types specialize into one object fragment per possible type.
+def normalizeMergedSelectionSetForType
+    (schema : Schema) (returnType : Name)
+    (selectionSet : List Selection) : List Selection :=
+  if objectTypeNameBool schema returnType then
+    normalizeSelectionSet schema returnType selectionSet
+  else
+    (schema.getPossibleTypes returnType).map
+      (fun objectType =>
+        .inlineFragment (some objectType) []
+          (normalizeSelectionSet schema objectType selectionSet))
+
+-- Spec-inspired operation normalizer: non-spec wrapper around selection-set normalization.
+def normalizeOperation (schema : Schema)
+    (operation : Operation) : Operation :=
+  { operation with
+    selectionSet := normalizeSelectionSet schema operation.rootType
+      operation.selectionSet }
+
+def operationsEquivalent (schema : Schema)
+    (left right : Operation) : Prop :=
+  ∀ (ObjectIdentity : Type) (resolvers : Execution.Resolvers ObjectIdentity)
+    variableValues depth (source : Execution.Value ObjectIdentity),
+    Execution.executeQueryAtDepth schema resolvers variableValues left depth source
+      =
+    Execution.executeQueryAtDepth schema resolvers variableValues right depth source
+
+def groundTypeNormalFormSemanticsPreserved (schema : Schema)
+    (operation : Operation) : Prop :=
+  operationsEquivalent schema operation
+    (normalizeOperation schema operation)
+
+-- Store-backed correctness statement for the ground-type normalizer. The theorem witness is
+-- `GraphQL.NormalForm.GroundTypeNormalization.groundNormalFormCorrect`.
+def groundNormalFormCorrect (schema : Schema)
+    (operation : Operation) : Prop :=
+  DataModel.operationsEquivalentOnData schema operation
+    (normalizeOperation schema operation)
+
+
+-- Final resolver-parametric correctness statement for the ground-type normalizer. The theorem
+-- witness is
+-- `GraphQL.NormalForm.GroundTypeNormalization.groundTypeNormalFormSemanticsPreservation`.
+def groundTypeNormalFormSemanticsPreservation (schema : Schema)
+    (operation : Operation) : Prop :=
+  SchemaWellFormedness.schemaWellFormed schema ->
+    Validation.operationDefinitionValid schema operation ->
+      operationDirectiveFree operation ->
+        groundTypeNormalFormSemanticsPreserved schema operation
+
+-----------------------------------------------------------------------------------------
+-- Ground Type Lifting
+-----------------------------------------------------------------------------------------
+
 mutual
   -- Candidate two-phase normalizer phase 1: duplicate each composite field's
   -- original child selection set under every ground runtime object branch.
@@ -424,6 +483,10 @@ def groundLiftOperation (schema : Schema) (operation : Operation) :
   { operation with
     selectionSet := groundLiftSelectionSet schema operation.rootType
       operation.selectionSet }
+
+-----------------------------------------------------------------------------------------
+-- Complete Normalization
+-----------------------------------------------------------------------------------------
 
 namespace CompleteNormalization
 
@@ -763,34 +826,6 @@ export CompleteNormalization
     boolCaseBranchesForGround normalizeForType
     completeNormalizeOperation operationBoolVars)
 
--- Public GraphCoQL-style grounding helper: object return types normalize directly; abstract
--- interface/union return types specialize into one object fragment per possible type.
-def normalizeMergedSelectionSetForType
-    (schema : Schema) (returnType : Name)
-    (selectionSet : List Selection) : List Selection :=
-  if objectTypeNameBool schema returnType then
-    normalizeSelectionSet schema returnType selectionSet
-  else
-    (schema.getPossibleTypes returnType).map
-      (fun objectType =>
-        .inlineFragment (some objectType) []
-          (normalizeSelectionSet schema objectType selectionSet))
-
--- Spec-inspired operation normalizer: non-spec wrapper around selection-set normalization.
-def normalizeOperation (schema : Schema)
-    (operation : Operation) : Operation :=
-  { operation with
-    selectionSet := normalizeSelectionSet schema operation.rootType
-      operation.selectionSet }
-
-def operationsEquivalent (schema : Schema)
-    (left right : Operation) : Prop :=
-  ∀ (ObjectIdentity : Type) (resolvers : Execution.Resolvers ObjectIdentity)
-    variableValues depth (source : Execution.Value ObjectIdentity),
-    Execution.executeQueryAtDepth schema resolvers variableValues left depth source
-      =
-    Execution.executeQueryAtDepth schema resolvers variableValues right depth source
-
 def variableValuesCompleteForBoolVars
     (variableValues : Execution.VariableValues)
     (variables : List BoolVar) : Prop :=
@@ -815,18 +850,6 @@ def completeNormalizationSemanticsPreserved
       Execution.executeQueryAtDepth schema resolvers variableValues
         (completeNormalizeOperation schema operation) depth source
 
-def groundTypeNormalFormSemanticsPreserved (schema : Schema)
-    (operation : Operation) : Prop :=
-  operationsEquivalent schema operation
-    (normalizeOperation schema operation)
-
--- Store-backed correctness statement for the ground-type normalizer. The theorem witness is
--- `GraphQL.NormalForm.GroundTypeNormalization.groundNormalFormCorrect`.
-def groundNormalFormCorrect (schema : Schema)
-    (operation : Operation) : Prop :=
-  DataModel.operationsEquivalentOnData schema operation
-    (normalizeOperation schema operation)
-
 def completeNormalizationCorrect
     (schema : Schema) (operation : Operation) : Prop :=
   ∀ store variableValues depth,
@@ -837,16 +860,6 @@ def completeNormalizationCorrect
           =
         DataModel.executeOperationAtDepth schema store variableValues
           (completeNormalizeOperation schema operation) depth
-
--- Final resolver-parametric correctness statement for the ground-type normalizer. The theorem
--- witness is
--- `GraphQL.NormalForm.GroundTypeNormalization.groundTypeNormalFormSemanticsPreservation`.
-def groundTypeNormalFormSemanticsPreservation (schema : Schema)
-    (operation : Operation) : Prop :=
-  SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.operationDefinitionValid schema operation ->
-      operationDirectiveFree operation ->
-        groundTypeNormalFormSemanticsPreserved schema operation
 
 end NormalForm
 

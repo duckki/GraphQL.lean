@@ -8,6 +8,43 @@ open GraphQL.NormalForm
 
 def rootType : Name := "Query"
 
+def stringFieldDefinition (name : Name) : FieldDefinition :=
+  { name := name, outputType := .named "String", arguments := [] }
+
+def objectFieldDefinition (name typeName : Name) : FieldDefinition :=
+  { name := name, outputType := .named typeName, arguments := [] }
+
+def groundTypingSchema : Schema :=
+  { queryType := rootType
+    types :=
+      [ .object
+          { name := rootType
+            fields :=
+              [ objectFieldDefinition "hero" "Human"
+              , objectFieldDefinition "search" "Character" ]
+            interfaces := [] }
+      , .interface
+          { name := "Character"
+            fields :=
+              [ stringFieldDefinition "id"
+              , stringFieldDefinition "name" ]
+            interfaces := [] }
+      , .object
+          { name := "Human"
+            fields :=
+              [ stringFieldDefinition "id"
+              , stringFieldDefinition "name"
+              , stringFieldDefinition "homePlanet"
+              , objectFieldDefinition "companion" "Character" ]
+            interfaces := ["Character"] }
+      , .object
+          { name := "Droid"
+            fields :=
+              [ stringFieldDefinition "id"
+              , stringFieldDefinition "name"
+              , stringFieldDefinition "primaryFunction" ]
+            interfaces := ["Character"] } ] }
+
 def booleanVariableDefinition (name : Name) : VariableDefinition :=
   { name := name, typeRef := .nonNull (.named "Boolean") }
 
@@ -209,6 +246,15 @@ macro_rules
       `(Selection.inlineFragment (some $typeCondition) [] [$selection,*])
   | `(query { $selection,* }) =>
       `(operationWith [$selection,*])
+
+def completeNormalizationRootBoolCaseBranchesFor
+    (variables : List BoolVar)
+    (selectionSetForCase : BoolCase -> List Selection) :
+    List Selection :=
+  List.flatten ((allBoolCases variables).map
+    (fun boolCase =>
+      wrapWithBoolCase boolCase
+        (selectionSetForCase boolCase)))
 
 end NormalForm
 end Tests

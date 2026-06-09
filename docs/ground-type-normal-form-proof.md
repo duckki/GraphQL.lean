@@ -21,6 +21,43 @@ spec feature. The current proof is deliberately scoped to directive-free source
 operations, so it does not need to reason about directive-sensitive
 normalization.
 
+## Complete Normalization Follow-Up
+
+`NormalForm.completeNormalizeOperation` is the directive-aware follow-up path.
+It computes one operation-global list of Boolean variables used by modeled
+`@skip` and `@include` directives. The operation root is lifted into one branch
+per complete Boolean case. Each root branch is represented by nested
+unconditional inline fragments carrying the BoolCase's directive tests.
+
+Inside a selected root branch, composite field child selections are normalized
+under that same case. They are not split into another directive-only DNF.
+Object child returns can normalize directly to directive-free fields; abstract
+returns still add one ground object-type inline fragment per possible runtime
+object, with fields statically collected for that object and the selected
+case.
+
+This construction is tracked under
+`GraphQL/NormalForm/CompleteNormalization/`. Its current proof modules establish
+the BoolCase enumeration, directive-BoolCase agreement, wrapper-selection
+facts, static-collection cases, operation metadata preservation,
+same-response-field projection via scoped selections, duplicate-group child
+execution bridges, operation-root branch selection, and BoolCase-threaded
+child runtime branch selection.
+
+The store-backed recursive static-collection theorem is now proved as
+`GraphQL.NormalForm.CompleteNormalization.executeSelectionSet_staticCollectCompleteScopedSelectionSet_on_store`.
+It uses scoped selections to make the execution context explicit, then relies on
+store well-typedness to connect statically selected field lookup contexts with
+runtime object values. The public store-backed correctness witness is
+`GraphQL.NormalForm.CompleteNormalization.completeNormalizationCorrect_onData`.
+There is also a resolver-parametric theorem,
+`GraphQL.NormalForm.CompleteNormalization.completeNormalizationSemanticsPreserved_of_resolverFieldValuesInclude`,
+under the explicit
+`GraphQL.NormalForm.CompleteNormalization.completeScopedResolverFieldValuesInclude`
+assumption. That assumption states the resolver outputs contain only runtime
+objects compatible with the lookup contexts selected by each scoped static
+branch.
+
 ## Final Statements
 
 The public predicates live in `GraphQL/NormalForm.lean`.
@@ -32,14 +69,28 @@ The public predicates live in `GraphQL/NormalForm.lean`.
   values.
 - `NormalForm.groundNormalFormCorrect` says the same transformation is correct
   for the store-backed data model, again under the same public assumptions.
+- `NormalForm.completeNormalizationCorrect` is the store-backed correctness
+  predicate for directive-aware CompleteNormalization. Its theorem witness is
+  `GraphQL.NormalForm.CompleteNormalization.completeNormalizationCorrect_onData`,
+  assuming a well-formed schema, a valid operation, and variable values complete
+  for the operation-global Boolean directive variables.
+- `NormalForm.completeNormalizationSemanticsPreserved` has a conditional
+  CompleteNormalization theorem witness for arbitrary resolvers:
+  `GraphQL.NormalForm.CompleteNormalization.completeNormalizationSemanticsPreserved_of_resolverFieldValuesInclude`.
+  It adds the resolver-output inclusion assumption described above.
 
-The theorem witnesses are in
+The directive-free ground-type theorem witnesses are in
 `GraphQL/NormalForm/GroundTypeNormalization/OperationLifts.lean`:
 
 - `GraphQL.NormalForm.GroundTypeNormalization.groundTypeNormalFormSemanticsPreservation`
 - `GraphQL.NormalForm.GroundTypeNormalization.groundNormalFormCorrect`
 
-The assumptions are intentionally narrow:
+The CompleteNormalization store-backed theorem witness is in
+`GraphQL/NormalForm/CompleteNormalization/RootSemantics.lean`:
+
+- `GraphQL.NormalForm.CompleteNormalization.completeNormalizationCorrect_onData`
+
+The directive-free ground-type assumptions are intentionally narrow:
 
 - `SchemaWellFormedness.schemaWellFormed schema`
 - `Validation.operationDefinitionValid schema operation`

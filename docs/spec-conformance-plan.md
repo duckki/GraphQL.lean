@@ -72,6 +72,17 @@ The main modules are:
 - `GraphQL.DataModel.Store`: store-resolution bridge lemmas for connecting
   path-based graph lookup and composite-field resolution to schema facts.
 
+`GraphQL.DataModel` uses the field-access path from the graph root as object
+identity. The root path is `[]`; singleton composite field children use
+`source ++ [.field access]`; list composite field elements use
+`source ++ [.field access, .index i]`. Nodes store scalar/null/list leaf facts
+as properties, edges store composite relationships, and store well-typedness
+enforces object type validity, path uniqueness, edge/property key uniqueness,
+target coverage, and list-index discipline. `GraphQL.Execution` remains generic
+over an opaque object identity type, while the store-backed data model
+instantiates that identity with `ObjectPath`; final response data remains
+identity-free.
+
 ## Related Documentation
 
 - `docs/overview.md`: project structure and module dependency map.

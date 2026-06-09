@@ -16,6 +16,7 @@ flowchart TD
   Validation["GraphQL.Validation"]
   NormalForm["GraphQL.NormalForm"]
   NormalFormGround["GraphQL.NormalForm.GroundTypeNormalization"]
+  CompleteNormalization["GraphQL.NormalForm.CompleteNormalization"]
   Execution["GraphQL.Execution"]
   DataModel["GraphQL.DataModel"]
   DataModelStore["GraphQL.DataModel.Store"]
@@ -32,6 +33,7 @@ flowchart TD
   Validation --> DataModel
   DataModel --> NormalForm
   NormalForm --> NormalFormGround
+  NormalForm --> CompleteNormalization
   DataModel --> DataModelStore
 
   SchemaWF --> GraphQLRoot
@@ -39,6 +41,7 @@ flowchart TD
   Validation --> GraphQLRoot
   NormalForm --> GraphQLRoot
   NormalFormGround --> GraphQLRoot
+  CompleteNormalization --> GraphQLRoot
   Execution --> GraphQLRoot
   DataModel --> GraphQLRoot
   DataModelStore --> GraphQLRoot
@@ -72,6 +75,13 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
   correctness predicates for directive-free ground-type normalization.
 - `GraphQL.NormalForm.GroundTypeNormalization`: proof-facing lemmas for the
   directive-free ground-type normalizer.
+- `GraphQL.NormalForm.CompleteNormalization`: proof-facing lemmas for complete
+  normalization, which lifts modeled `@skip`/`@include` behavior into Boolean
+  case branches and keeps bottom-branch fields directive-free. Its proof
+  modules separate variable/directive facts, BoolCase wrappers, static
+  collection, normal-shape facts, operation variables/wrappers, field and
+  inline static-collection execution cases, BoolCase runtime selection,
+  child completion, scoped resolver/store bridges, and final root semantics.
 - `GraphQL.Execution`: execution over operation selections as a function
   parameterized by abstract resolver functions. It collects executable fields by
   response name, resolves each response name once, passes field arguments to
@@ -104,11 +114,19 @@ The current flow is:
    ground-normal-form correctness predicates.
 7. `GraphQL.NormalForm.GroundTypeNormalization` provides proof-facing
    ground-type lemmas.
+8. `GraphQL.NormalForm.CompleteNormalization` provides proof-facing lemmas for
+   directive-aware Boolean case branch normalization.
 
-Normalization consumes `GraphQL.Operation` directly. The current normal-form
-proof path assumes source operations have no modeled directives, so the
-normalizer does not implement directive-sensitive semantics or a directive
-erasure pass.
+Normalization consumes `GraphQL.Operation` directly. The directive-free
+`normalizeOperation` proof path assumes source operations have no modeled
+directives.
+
+Complete normalization is the directive-aware path: it enumerates modeled
+Boolean directive variables once at the operation root, creates one
+unconditional inline-fragment case branch per complete case, and
+statically collects directive-free fields for each ground type under the
+selected case. Nested field child normalization receives that case
+as proof context and does not introduce another directive-only BoolCase DNF.
 
 Raw syntax remains permissive. Validation supplies the invariants that later
 semantic proofs should rely on.

@@ -166,6 +166,32 @@ def operationEqBool (left right : Operation) : Bool :=
       left.variableDefinitions right.variableDefinitions
     && selectionSetEqBool left.selectionSet right.selectionSet
 
+mutual
+  def responseEqBool : Execution.Response -> Execution.Response -> Bool
+    | .null, .null => true
+    | .scalar left, .scalar right => left == right
+    | .object left, .object right => responseFieldsEqBool left right
+    | .list left, .list right => responseListEqBool left right
+    | _, _ => false
+
+  def responseListEqBool :
+      List Execution.Response -> List Execution.Response -> Bool
+    | [], [] => true
+    | left :: lefts, right :: rights =>
+        responseEqBool left right && responseListEqBool lefts rights
+    | _, _ => false
+
+  def responseFieldsEqBool :
+      List (Name × Execution.Response) ->
+        List (Name × Execution.Response) -> Bool
+    | [], [] => true
+    | (leftName, leftValue) :: lefts, (rightName, rightValue) :: rights =>
+        (leftName == rightName)
+          && responseEqBool leftValue rightValue
+          && responseFieldsEqBool lefts rights
+    | _, _ => false
+end
+
 syntax "field " str : term
 syntax "field " str "{" term,* "}" : term
 syntax "spread" "{" term,* "}" : term

@@ -40,9 +40,10 @@ theorem completeValue_normalizeForTypeIn_eq_of_child
   apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
     schema resolvers variableValues
   intro childDepth runtimeType identity hlt hinclude
-  exact hchild childDepth runtimeType identity hlt
-    (typeIncludesObjectBool_mem_groundObjectTypesForType schema returnType
-      runtimeType hleafFalse hinclude)
+  simpa [Execution.mergedFieldSelectionSet] using
+    hchild childDepth runtimeType identity hlt
+      (typeIncludesObjectBool_mem_groundObjectTypesForType schema returnType
+        runtimeType hleafFalse hinclude)
 
 theorem completeValue_normalizeForType_eq_of_child
     (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
@@ -76,9 +77,10 @@ theorem completeValue_normalizeForType_eq_of_child
   apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
     schema resolvers variableValues
   intro childDepth runtimeType identity hlt hinclude
-  exact hchild childDepth runtimeType identity hlt
-    (typeIncludesObjectBool_mem_groundObjectTypesForType schema returnType
-      runtimeType hleafFalse hinclude)
+  simpa [Execution.mergedFieldSelectionSet] using
+    hchild childDepth runtimeType identity hlt
+      (typeIncludesObjectBool_mem_groundObjectTypesForType schema returnType
+        runtimeType hleafFalse hinclude)
 
 theorem fieldReturnType?_getD_eq_of_lookupField
     (schema : Schema) (lookupParent fieldName : Name)
@@ -265,12 +267,113 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_no_
       lookupParent fieldName fieldDefinition selectionSet
       (resolvers.resolve lookupParent fieldName arguments source) hschema
       hlookup hchild
+  have hcompleteSingleton :
+      Execution.completeValue schema resolvers variableValues (depth - 1)
+          ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+          [{
+            parentType := lookupParent,
+            responseName := responseName,
+            fieldName := fieldName,
+            arguments := arguments,
+            selectionSet :=
+              normalizeForTypeIn schema
+                (operationBoolVars operation)
+                boolCase
+                fieldDefinition.outputType.namedType selectionSet
+          }]
+          (resolvers.resolve lookupParent fieldName arguments source)
+        =
+      Execution.completeValue schema resolvers variableValues (depth - 1)
+          ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+          [{
+            parentType := lookupParent,
+            responseName := responseName,
+            fieldName := fieldName,
+            arguments := arguments,
+            selectionSet := selectionSet
+          }]
+          (resolvers.resolve lookupParent fieldName arguments source) := by
+    have hleft :
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+            [{
+              parentType := lookupParent,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet :=
+                normalizeForTypeIn schema
+                  (operationBoolVars operation)
+                  boolCase
+                  fieldDefinition.outputType.namedType selectionSet
+            }]
+            (resolvers.resolve lookupParent fieldName arguments source)
+          =
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+            (normalizeForTypeIn schema
+              (operationBoolVars operation)
+              boolCase
+              fieldDefinition.outputType.namedType selectionSet)
+            (resolvers.resolve lookupParent fieldName arguments source) := by
+      apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
+        schema resolvers variableValues (depth - 1)
+        ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+        [{
+          parentType := lookupParent,
+          responseName := responseName,
+          fieldName := fieldName,
+          arguments := arguments,
+          selectionSet :=
+            normalizeForTypeIn schema
+              (operationBoolVars operation)
+              boolCase
+              fieldDefinition.outputType.namedType selectionSet
+        }]
+        (normalizeForTypeIn schema
+          (operationBoolVars operation)
+          boolCase
+          fieldDefinition.outputType.namedType selectionSet)
+        (resolvers.resolve lookupParent fieldName arguments source)
+      intro childDepth childRuntimeType childIdentity hlt hincludeChild
+      simp [Execution.mergedFieldSelectionSet]
+    have hright :
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+            [{
+              parentType := lookupParent,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := selectionSet
+            }]
+            (resolvers.resolve lookupParent fieldName arguments source)
+          =
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+            selectionSet
+            (resolvers.resolve lookupParent fieldName arguments source) := by
+      apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
+        schema resolvers variableValues (depth - 1)
+        ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+        [{
+          parentType := lookupParent,
+          responseName := responseName,
+          fieldName := fieldName,
+          arguments := arguments,
+          selectionSet := selectionSet
+        }]
+        selectionSet
+        (resolvers.resolve lookupParent fieldName arguments source)
+      intro childDepth childRuntimeType childIdentity hlt hincludeChild
+      simp [Execution.mergedFieldSelectionSet]
+    exact hleft.trans (hcomplete.trans hright.symm)
   exact
     executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_no_duplicate_case
       schema resolvers variableValues operation depth lookupParent groundType
       source boolCase responseName fieldName arguments directives
       selectionSet rest fieldDefinition hagrees hsourceVars hallow hlookup
-      hnormalizedNotin hsourceNotin hcomplete htail
+      hnormalizedNotin hsourceNotin hcompleteSingleton htail
 
 theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_duplicate_group_leaf_case
     (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
@@ -376,25 +479,28 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_dup
                 lookupParent groundType responseName rest)))
         (resolvers.resolve lookupParent fieldName arguments
           (.object groundType identity)) :=
-    completeValue_eq_of_lookupField_leaf schema resolvers variableValues
-      (depth - 1) lookupParent fieldName fieldDefinition
-      (normalizeForTypeIn schema
-          (operationBoolVars operation)
-          boolCase fieldDefinition.outputType.namedType selectionSet
-        ++ mergeSelectionSets
-          (staticCollectCompleteScopedSelectionSet schema
-            (operationBoolVars operation) groundType
-            boolCase
-            (staticScopedFieldsWithResponseName schema boolCase lookupParent
-              groundType responseName rest)))
-      (selectionSet
-        ++ mergeSelectionSets
-          (eraseCompleteScopedSelectionSet
-            (staticScopedFieldsWithResponseName schema boolCase lookupParent
-              groundType responseName rest)))
-      (resolvers.resolve lookupParent fieldName arguments
-        (.object groundType identity))
-      hlookup hleaf
+    by
+      have hleafComplete :=
+        completeValue_eq_of_lookupField_leaf schema resolvers variableValues
+          (depth - 1) lookupParent fieldName fieldDefinition
+          (normalizeForTypeIn schema
+              (operationBoolVars operation)
+              boolCase fieldDefinition.outputType.namedType selectionSet
+            ++ mergeSelectionSets
+              (staticCollectCompleteScopedSelectionSet schema
+                (operationBoolVars operation) groundType
+                boolCase
+                (staticScopedFieldsWithResponseName schema boolCase
+                  lookupParent groundType responseName rest)))
+          (selectionSet
+            ++ mergeSelectionSets
+              (eraseCompleteScopedSelectionSet
+                (staticScopedFieldsWithResponseName schema boolCase
+                  lookupParent groundType responseName rest)))
+          (resolvers.resolve lookupParent fieldName arguments
+            (.object groundType identity))
+          hlookup hleaf
+      simpa [List.map_append] using hleafComplete
   exact
     executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_duplicate_group_projected_case
       schema resolvers variableValues operation depth lookupParent groundType
@@ -460,9 +566,10 @@ theorem completeValue_normalizeForType_staticScoped_eq_of_child
   apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
     schema resolvers variableValues
   intro childDepth runtimeType identity hlt hinclude
-  exact hchild childDepth runtimeType identity hlt
-    (typeIncludesObjectBool_mem_groundObjectTypesForType schema
-      fieldDefinition.outputType.namedType runtimeType hleafFalse hinclude)
+  simpa [Execution.mergedFieldSelectionSet_append] using
+    hchild childDepth runtimeType identity hlt
+      (typeIncludesObjectBool_mem_groundObjectTypesForType schema
+        fieldDefinition.outputType.namedType runtimeType hleafFalse hinclude)
 
 theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_duplicate_group_child_case
     (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)

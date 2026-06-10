@@ -530,7 +530,8 @@ theorem executeSelectionSet_eq_of_collectFields_eq
       Execution.executeSelectionSet schema resolvers variableValues depth
         parentType source right := by
   intro hcollect
-  simp [Execution.executeSelectionSet, hcollect]
+  simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+    hcollect]
 
 theorem executeField_cons_eq_cons_of_completeValue
     (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
@@ -545,15 +546,14 @@ theorem executeField_cons_eq_cons_of_completeValue
     Execution.completeValue schema resolvers variableValues (depth - 1)
         ((schema.fieldReturnType? normalizedField.parentType
           normalizedField.fieldName).getD normalizedField.fieldName)
-        (Execution.mergedFieldSelectionSet
-          (normalizedField :: normalizedFields))
+        (normalizedField :: normalizedFields)
         (resolvers.resolve normalizedField.parentType
           normalizedField.fieldName normalizedField.arguments source)
       =
-      Execution.completeValue schema resolvers variableValues (depth - 1)
+    Execution.completeValue schema resolvers variableValues (depth - 1)
         ((schema.fieldReturnType? sourceField.parentType
           sourceField.fieldName).getD sourceField.fieldName)
-        (Execution.mergedFieldSelectionSet (sourceField :: sourceFields))
+        (sourceField :: sourceFields)
         (resolvers.resolve sourceField.parentType sourceField.fieldName
           sourceField.arguments source) ->
       Execution.executeField schema resolvers variableValues depth source
@@ -570,21 +570,19 @@ theorem executeField_cons_eq_cons_of_completeValue
           Execution.completeValue schema resolvers variableValues fieldDepth
               ((schema.fieldReturnType? sourceField.parentType
                 sourceField.fieldName).getD sourceField.fieldName)
-              (Execution.mergedFieldSelectionSet
-                (normalizedField :: normalizedFields))
+              (normalizedField :: normalizedFields)
               (resolvers.resolve sourceField.parentType sourceField.fieldName
                 sourceField.arguments source)
             =
             Execution.completeValue schema resolvers variableValues fieldDepth
               ((schema.fieldReturnType? sourceField.parentType
                 sourceField.fieldName).getD sourceField.fieldName)
-              (Execution.mergedFieldSelectionSet
-                (sourceField :: sourceFields))
+              (sourceField :: sourceFields)
               (resolvers.resolve sourceField.parentType sourceField.fieldName
                 sourceField.arguments source) := by
         simpa [hparent, hfield, harguments] using hcomplete
-      simp [Execution.executeField, hparent, hfield, harguments,
-        hcomplete']
+      simp [Execution.executeField, hparent, hfield, harguments]
+      exact hcomplete'
 
 theorem executeSelectionSet_field_head_group_eq_of_completeValue
     (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
@@ -625,13 +623,12 @@ theorem executeSelectionSet_field_head_group_eq_of_completeValue
       (responseName, sourceField :: sourceFields) :: sourceTail ->
     Execution.completeValue schema resolvers variableValues (depth - 1)
         ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        (Execution.mergedFieldSelectionSet
-          (normalizedField :: normalizedFields))
+        (normalizedField :: normalizedFields)
         (resolvers.resolve parentType fieldName arguments source)
       =
-      Execution.completeValue schema resolvers variableValues (depth - 1)
+    Execution.completeValue schema resolvers variableValues (depth - 1)
         ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        (Execution.mergedFieldSelectionSet (sourceField :: sourceFields))
+        (sourceField :: sourceFields)
         (resolvers.resolve parentType fieldName arguments source) ->
     Execution.executeCollectedFields schema resolvers variableValues depth source
         normalizedTail
@@ -662,7 +659,8 @@ theorem executeSelectionSet_field_head_group_eq_of_completeValue
     · rfl
     · rfl
     · simpa [normalizedField, sourceField] using hcomplete
-  simpa [Execution.executeSelectionSet, hnormalizedCollect, hsourceCollect]
+  simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+    hnormalizedCollect, hsourceCollect]
     using
       GroundTypeNormalization.executeCollectedFields_cons_eq_of_parts
         schema resolvers variableValues depth source

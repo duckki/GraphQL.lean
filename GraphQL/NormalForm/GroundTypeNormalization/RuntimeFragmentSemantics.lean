@@ -27,7 +27,7 @@ theorem executeSelectionSet_inlineFragment_some_directiveFree_skip
       Execution.executeSelectionSet schema resolvers variableValues depth
         parentType source rest := by
   intro hskip
-  simp [Execution.executeSelectionSet,
+  simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
     collectFields_inlineFragment_some_directiveFree_skip_eq schema
       variableValues parentType typeCondition source selectionSet rest hskip]
 
@@ -43,7 +43,7 @@ theorem executeSelectionSet_inlineFragment_none_directiveFree_flatten
       =
     Execution.executeSelectionSet schema resolvers variableValues depth
       parentType source (selectionSet ++ rest) := by
-  simp [Execution.executeSelectionSet,
+  simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
     collectFields_inlineFragment_none_directiveFree_flatten]
 
 theorem executeSelectionSet_inlineFragment_some_directiveFree_apply_flatten
@@ -61,7 +61,7 @@ theorem executeSelectionSet_inlineFragment_some_directiveFree_apply_flatten
       Execution.executeSelectionSet schema resolvers variableValues depth
         parentType source (selectionSet ++ rest) := by
   intro happly
-  simp [Execution.executeSelectionSet,
+  simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
     collectFields_inlineFragment_some_directiveFree_apply_flatten, happly]
 
 theorem lookupType_name_eq (schema : Schema) {typeName : Name}

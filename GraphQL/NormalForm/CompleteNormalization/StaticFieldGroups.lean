@@ -719,7 +719,8 @@ theorem executeCollectedFields_staticCollect_fieldHead_filtered_tails_eq
         schema variableValues lookupParent source responseName fieldName
         arguments directives selectionSet rest sourceFields sourceTail
         (by simpa [hsourceField] using hsourceCollect)
-  simpa [Execution.executeSelectionSet, hnormalizedTail, hsourceTail]
+  simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+    hnormalizedTail, hsourceTail]
     using hfiltered
 
 theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_duplicate_group_case
@@ -850,13 +851,77 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_dup
       (by simpa [normalizedField] using hnormalizedCollect)
       (by simpa [sourceField] using hsourceCollect)
       hfiltered
+  have hcompleteGrouped :
+      Execution.completeValue schema resolvers variableValues (depth - 1)
+          ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+          (normalizedField :: normalizedFields)
+          (resolvers.resolve lookupParent fieldName arguments source)
+        =
+      Execution.completeValue schema resolvers variableValues (depth - 1)
+          ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+          (sourceField :: sourceFields)
+          (resolvers.resolve lookupParent fieldName arguments source) := by
+    have hleft :
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+            (normalizedField :: normalizedFields)
+            (resolvers.resolve lookupParent fieldName arguments source)
+          =
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+            (Execution.mergedFieldSelectionSet
+              (normalizedField :: normalizedFields))
+            (resolvers.resolve lookupParent fieldName arguments source) := by
+      apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
+        schema resolvers variableValues (depth - 1)
+        ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+        (normalizedField :: normalizedFields)
+        (Execution.mergedFieldSelectionSet (normalizedField :: normalizedFields))
+        (resolvers.resolve lookupParent fieldName arguments source)
+      intro childDepth childRuntimeType childIdentity hlt hincludeChild
+      simp [Execution.mergedFieldSelectionSet,
+        Execution.mergedFieldSelectionSet_append]
+    have hright :
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+            (sourceField :: sourceFields)
+            (resolvers.resolve lookupParent fieldName arguments source)
+          =
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+            (Execution.mergedFieldSelectionSet
+              (sourceField :: sourceFields))
+            (resolvers.resolve lookupParent fieldName arguments source) := by
+      apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
+        schema resolvers variableValues (depth - 1)
+        ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+        (sourceField :: sourceFields)
+        (Execution.mergedFieldSelectionSet (sourceField :: sourceFields))
+        (resolvers.resolve lookupParent fieldName arguments source)
+      intro childDepth childRuntimeType childIdentity hlt hincludeChild
+      simp [Execution.mergedFieldSelectionSet,
+        Execution.mergedFieldSelectionSet_append]
+    have hmiddle :
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+            (Execution.mergedFieldSelectionSet
+              (normalizedField :: normalizedFields))
+            (resolvers.resolve lookupParent fieldName arguments source)
+          =
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+            (Execution.mergedFieldSelectionSet
+              (sourceField :: sourceFields))
+            (resolvers.resolve lookupParent fieldName arguments source) := by
+      simpa [normalizedField, sourceField] using hcomplete
+    exact hleft.trans (hmiddle.trans hright.symm)
   exact executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_group_case
     schema resolvers variableValues
     (operationBoolVars operation) depth lookupParent
     groundType source boolCase responseName fieldName arguments directives
     selectionSet rest fieldDefinition normalizedFields sourceFields
     normalizedTail sourceTail hallow hlookup hnormalizedCollect hsourceCollect
-    hcomplete htail
+    hcompleteGrouped htail
 
 theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_duplicate_group_projected_case
     (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
@@ -1003,7 +1068,7 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_dup
           (resolvers.resolve lookupParent fieldName arguments
             (.object groundType identity)) := by
     rw [hnormalizedProjection, hsourceProjection]
-    exact hprojectedComplete
+    simpa [List.map_append] using hprojectedComplete
   exact
     executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_duplicate_group_case
       schema resolvers variableValues operation depth lookupParent groundType

@@ -567,7 +567,8 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_field_on_store
     hchildren
   cases depth with
   | zero =>
-      simp [Execution.executeSelectionSet, executeCollectedFields_zero]
+      simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+        executeCollectedFields_zero]
   | succ fieldDepth =>
       rcases scopedFieldHead_lookupPair_of_semanticsReady_lookupValid schema
           execParent liftParent responseName fieldName arguments
@@ -709,7 +710,7 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
   | depth, execParent, runtimeType, identity, [] => by
       intro _hobject _hinclude _hfree _hready _hlookup _hmerge _happlies
       simp [groundLiftScopedSelectionSet, eraseScopedSelectionSet,
-        Execution.executeSelectionSet, Execution.collectFields]
+        Execution.executeSelectionSet]
   | depth, execParent, runtimeType, identity, scopedSelection :: rest => by
       intro hobject hinclude hfree hready hlookup hmerge happlies
       cases scopedSelection with

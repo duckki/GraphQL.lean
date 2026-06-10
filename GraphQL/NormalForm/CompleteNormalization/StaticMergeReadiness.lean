@@ -158,8 +158,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
     _hground, _hready, _hlookup, _hmerge, _happlies, _hagrees,
     _hsourceVars => by
       simp [staticCollectCompleteScopedSelectionSet,
-        eraseCompleteScopedSelectionSet, Execution.executeSelectionSet,
-        Execution.collectFields]
+        eraseCompleteScopedSelectionSet, Execution.executeSelectionSet]
   | depth, execParent, groundType, identity, boolCase,
       scopedSelection :: rest, hobject, hground, hready, hlookup, hmerge,
       happlies, hagrees, hsourceVars => by

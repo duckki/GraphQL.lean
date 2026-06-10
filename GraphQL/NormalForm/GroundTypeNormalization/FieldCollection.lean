@@ -1304,6 +1304,23 @@ theorem collectFields_append
       · exact collectFields_namesNodup schema variableValues parentType source
           right
 
+@[simp] theorem collectSubfields_eq_collectFields_mergedFieldSelectionSet
+    (schema : Schema) (variableValues : Execution.VariableValues)
+    (objectType : Name) (objectValue : Execution.Value ObjectIdentity)
+    (fields : List Execution.ExecutableField) :
+    Execution.collectSubfields schema variableValues objectType objectValue
+      fields
+      =
+    Execution.collectFields schema variableValues objectType objectValue
+      (Execution.mergedFieldSelectionSet fields) := by
+  induction fields with
+  | nil =>
+      simp [Execution.collectSubfields, Execution.mergedFieldSelectionSet,
+        Execution.collectFields]
+  | cons field rest ih =>
+      simp [Execution.collectSubfields, Execution.mergedFieldSelectionSet, ih]
+      rw [collectFields_append]
+
 theorem collectFields_inlineFragment_none_directiveFree_flatten
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.Value ObjectIdentity)

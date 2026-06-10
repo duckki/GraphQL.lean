@@ -857,12 +857,25 @@ theorem completeValue_normalizeForTypeIn_staticScoped_eq_of_staticCollect_child
   calc
     Execution.executeSelectionSet schema resolvers variableValues childDepth
         runtimeType (.object runtimeType identity)
+        (Execution.mergedFieldSelectionSet
+          (List.map Execution.selectionExecutableField
+              (normalizeForTypeIn schema variables
+                boolCase returnType selectionSet)
+            ++
+            List.map Execution.selectionExecutableField
+              (mergeSelectionSets
+                (staticCollectCompleteScopedSelectionSet schema variables
+                  groundType boolCase scopedMatches))))
+      =
+    Execution.executeSelectionSet schema resolvers variableValues childDepth
+        runtimeType (.object runtimeType identity)
         (normalizeForTypeIn schema variables
             boolCase returnType selectionSet
           ++ mergeSelectionSets
             (staticCollectCompleteScopedSelectionSet schema variables
-              groundType boolCase scopedMatches))
-      =
+              groundType boolCase scopedMatches)) := by
+        simp [Execution.mergedFieldSelectionSet_append]
+    _ =
     Execution.executeSelectionSet schema resolvers variableValues childDepth
         runtimeType (.object runtimeType identity)
         (staticCollectForGround schema variables runtimeType
@@ -883,6 +896,16 @@ theorem completeValue_normalizeForTypeIn_staticScoped_eq_of_staticCollect_child
           ++ mergeSelectionSets
             (eraseCompleteScopedSelectionSet scopedMatches)) :=
         hchild childDepth runtimeType identity hlt hmem
+    _ =
+    Execution.executeSelectionSet schema resolvers variableValues childDepth
+        runtimeType (.object runtimeType identity)
+        (Execution.mergedFieldSelectionSet
+          (List.map Execution.selectionExecutableField selectionSet
+            ++
+            List.map Execution.selectionExecutableField
+              (mergeSelectionSets
+                (eraseCompleteScopedSelectionSet scopedMatches)))) := by
+        simp [Execution.mergedFieldSelectionSet_append]
 
 
 end CompleteNormalization

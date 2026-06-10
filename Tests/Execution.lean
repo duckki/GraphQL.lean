@@ -1,4 +1,4 @@
-import Tests.Common
+import GraphQL.Execution
 
 namespace GraphQL
 namespace Tests
@@ -38,6 +38,45 @@ mutual
     | _, _ => false
 end
 
+def testStringFieldDefinition (name : Name) : FieldDefinition :=
+  { name := name, outputType := .named "String", arguments := [] }
+
+def testObjectFieldDefinition
+    (name typeName : Name) (arguments : List InputValueDefinition := []) :
+    FieldDefinition :=
+  { name := name, outputType := .named typeName, arguments := arguments }
+
+def testEpisodeArgumentDefinition : InputValueDefinition :=
+  { name := "episode", inputType := .named "Episode" }
+
+def sampleSchema : Schema :=
+  { queryType := "Query"
+    types :=
+      [ .enum { name := "Episode", values := ["NEWHOPE"] }
+      , .object
+          { name := "Query"
+            fields :=
+              [ testObjectFieldDefinition "hero" "Character"
+                  [testEpisodeArgumentDefinition]
+              , testStringFieldDefinition "name"
+              , { name := "age", outputType := .named "Int" } ]
+            interfaces := [] }
+      , .object
+          { name := "Character"
+            fields :=
+              [ testStringFieldDefinition "name"
+              , testObjectFieldDefinition "friends" "Character" ]
+            interfaces := [] } ] }
+
+def sampleHeroQuery : Operation :=
+  { name := some "HeroName"
+    rootType := "Query"
+    selectionSet :=
+      [ .field "mainHero" "hero" [] [] [
+          .field "name" "name" [] [] []
+        ]
+      ] }
+
 def sampleResolvers : GraphQL.Execution.Resolvers String :=
   { resolve := fun parentType fieldName _arguments _source =>
       match parentType, fieldName with
@@ -49,6 +88,28 @@ theorem executeHeroQuerySmoke :
     responseEqBool
       (GraphQL.Execution.executeQuery sampleSchema sampleResolvers []
         sampleHeroQuery (.object "Query" "root"))
+      (.object [("mainHero", .object [("name", .scalar "Leia")])]) = true := by
+  native_decide
+
+theorem collectSubfieldsMatchesGroupedSelections
+    (field : GraphQL.Execution.ExecutableField)
+    (fields : List GraphQL.Execution.ExecutableField) :
+    GraphQL.Execution.collectSubfields sampleSchema [] "Query"
+        (.object "Query" "root") (field :: fields)
+      =
+        GraphQL.Execution.mergeExecutableGroups
+          (GraphQL.Execution.collectFields sampleSchema [] "Query"
+            (.object "Query" "root") field.selectionSet)
+          (GraphQL.Execution.collectSubfields sampleSchema [] "Query"
+            (.object "Query" "root") fields) := by
+  rfl
+
+theorem executeRootSelectionSetSmoke :
+    responseEqBool
+      (.object
+        (GraphQL.Execution.executeRootSelectionSet sampleSchema sampleResolvers []
+          (GraphQL.Execution.executeQueryDepthBound sampleHeroQuery)
+          "Query" (.object "Query" "root") sampleHeroQuery.selectionSet))
       (.object [("mainHero", .object [("name", .scalar "Leia")])]) = true := by
   native_decide
 

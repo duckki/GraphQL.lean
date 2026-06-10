@@ -69,12 +69,23 @@ theorem executeSelectionSet_append_possibleTypeFragments_not_mem
       Execution.executeSelectionSet schema resolvers variableValues depth
         runtimeType (.object runtimeType identity) suffix := by
   intro hobjects hnotin
-  simp [Execution.executeSelectionSet]
+  simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet]
   rw [collectFields_append]
   rw [collectFields_possibleTypeFragments_not_mem_eq_nil schema
     variableValues runtimeType identity possibleTypes selectionSet hobjects
     hnotin]
   simp [Execution.mergeExecutableGroups_nil_right]
+
+def completeValueSelectionSetField
+    (parentType : Name) (selectionSet : List Selection) :
+    Execution.ExecutableField :=
+  {
+    parentType := parentType,
+    responseName := "",
+    fieldName := "",
+    arguments := [],
+    selectionSet := selectionSet
+  }
 
 theorem executeSelectionSet_possibleTypeFragments_runtime_branch
     (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
@@ -179,15 +190,15 @@ theorem completeValue_possibleTypeFragments_eq_of_child_object_lt
               childDepth runtimeType (.object runtimeType identity)
               selectionSet) ->
         Execution.completeValue schema resolvers variableValues depth
-          childType
-          ((schema.getPossibleTypes childType).map
-            (fun objectType =>
-              Selection.inlineFragment (some objectType) []
-                (normalizeSelectionSet schema objectType selectionSet)))
+          childType [completeValueSelectionSetField childType
+            ((schema.getPossibleTypes childType).map
+              (fun objectType =>
+                Selection.inlineFragment (some objectType) []
+                  (normalizeSelectionSet schema objectType selectionSet)))]
           value
           =
         Execution.completeValue schema resolvers variableValues depth
-          childType selectionSet value
+          childType [completeValueSelectionSetField childType selectionSet] value
   | 0, _childType, _selectionSet, _value, _hrecursive => by
       simp [Execution.completeValue]
   | depth + 1, childType, selectionSet, value, hrecursive => by
@@ -219,7 +230,9 @@ theorem completeValue_possibleTypeFragments_eq_of_child_object_lt
                 (hrecursive depth runtimeType identity
                   (Nat.lt_succ_self depth) hmem)
             simp [Execution.completeValue, hinclude]
-            exact hbranch
+            simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+              Execution.collectSubfields, completeValueSelectionSetField]
+              using hbranch
           · have hfalse :
                 schema.typeIncludesObjectBool childType runtimeType = false := by
               cases hmatch :

@@ -79,14 +79,6 @@ def selectionDirectivesAllowBool (variableValues : VariableValues)
     (directives : List DirectiveApplication) : Bool :=
   directives.all (fun directive => directiveAllowsSelectionBool variableValues directive)
 
--- Spec 6.4.3 `CompleteValue`: partial fallback for exhausted execution depth; converts
--- internal values structurally without type-directed coercion or errors.
-def shallowResponse {ObjectIdentity : Type} : Value ObjectIdentity -> Response
-  | .null => .null
-  | .scalar value => .scalar value
-  | .object _typeName _identity => .object []
-  | .list values => .list (values.map shallowResponse)
-
 -- Spec 6.3.2 `DoesFragmentTypeApply` needs a runtime object type when the source value
 -- is object-like.
 def runtimeObjectType? {ObjectIdentity : Type} :
@@ -113,24 +105,6 @@ structure ExecutableField where
   selectionSet : List Selection
 deriving Repr
 
--- Spec 6.3.2 collected fields map: partial list-backed ordered map insertion by response
--- name.
-def addExecutableField (field : ExecutableField) :
-    List (Name × List ExecutableField) -> List (Name × List ExecutableField)
-  | [] => [(field.responseName, [field])]
-  | (responseName, fields) :: rest =>
-      if responseName == field.responseName then
-        (responseName, fields ++ [field]) :: rest
-      else
-        (responseName, fields) :: addExecutableField field rest
-
--- Spec 6.3.2 collected fields map helper: inserts all fields into a response-name group
--- map.
-def addExecutableFields (fields : List ExecutableField)
-    (groups : List (Name × List ExecutableField)) :
-    List (Name × List ExecutableField) :=
-  fields.foldl (fun grouped field => addExecutableField field grouped) groups
-
 -- Spec 6.3.2 collected fields map helper: inserts one existing group into another map.
 def addExecutableGroup (group : Name × List ExecutableField) :
     List (Name × List ExecutableField) -> List (Name × List ExecutableField)
@@ -146,40 +120,21 @@ def mergeExecutableGroups (left right : List (Name × List ExecutableField)) :
     List (Name × List ExecutableField) :=
   right.foldl (fun grouped group => addExecutableGroup group grouped) left
 
--- Spec 6.4.3 `CompleteValue` subfield merge: all collected fields for a response name
--- contribute their child selections.
-def mergedFieldSelectionSet : List ExecutableField -> List Selection
-  | [] => []
-  | field :: rest => field.selectionSet ++ mergedFieldSelectionSet rest
+-- Spec 6.4.3 `CompleteValue`: partial fallback for exhausted execution depth; converts
+-- internal values structurally without type-directed coercion or errors.
+def shallowResponse {ObjectIdentity : Type} : Value ObjectIdentity -> Response
+  | .null => .null
+  | .scalar value => .scalar value
+  | .object _typeName _identity => .object []
+  | .list values => .list (values.map shallowResponse)
 
 -- Spec 6.3 `ExecuteRootSelectionSet`, 6.3.2 `CollectFields`, 6.3.3
 -- `ExecuteCollectedFields`, 6.4 `ExecuteField`, and 6.4.3 `CompleteValue`: partial
 -- depth-bounded execution model without coercion or error propagation.
 mutual
-  -- Spec 6.4.3 `CompleteValue`: partial; ignores declared `fieldType` wrappers and result
-  -- coercion/errors, using the runtime value shape instead.
-  def completeValue {ObjectIdentity : Type}
-      (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-      (variableValues : VariableValues) :
-      Nat -> Name -> List Selection -> Value ObjectIdentity -> Response
-    | 0, _parentType, _selectionSet, value => shallowResponse value
-    | _depth + 1, _parentType, _selectionSet, .null => .null
-    | _depth + 1, _parentType, _selectionSet, .scalar value => .scalar value
-    | depth + 1, parentType, selectionSet, source@(.object runtimeType _identity) =>
-        if schema.typeIncludesObjectBool parentType runtimeType then
-          .object (executeSelectionSet schema resolvers variableValues
-            depth runtimeType source selectionSet)
-        else
-          .null
-    | depth + 1, parentType, selectionSet, .list values =>
-        .list (values.map
-          (fun value =>
-            completeValue schema resolvers variableValues
-              depth parentType selectionSet value))
-
-  -- Spec 6.3.1 `ExecuteRootSelectionSet` / recursive selection-set execution: partial;
-  -- directly returns data fields and omits error collection.
-  def executeSelectionSet {ObjectIdentity : Type}
+  -- Spec 6.3.1 `ExecuteRootSelectionSet`: partial; directly returns data
+  -- fields and omits error collection.
+  def executeRootSelectionSet {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues)
       (depth : Nat) (parentType : Name) (source : Value ObjectIdentity) :
@@ -231,6 +186,31 @@ mutual
           (collectSelection schema variableValues parentType source selection)
           (collectFields schema variableValues parentType source rest)
 
+  -- Spec 6.3.2 `CollectSubfields`: all grouped fields for one response name
+  -- contribute child selections, which are collected under the runtime object
+  -- type.
+  def collectSubfields {ObjectIdentity : Type}
+      (schema : Schema) (variableValues : VariableValues)
+      (objectType : Name) (objectValue : Value ObjectIdentity) :
+      List ExecutableField -> List (Name × List ExecutableField)
+    | [] => []
+    | field :: fields =>
+        mergeExecutableGroups
+          (collectFields schema variableValues objectType objectValue field.selectionSet)
+          (collectSubfields schema variableValues objectType objectValue fields)
+
+  -- Spec 6.3.3 `ExecuteCollectedFields`: executes each response-name group in
+  -- stored order, without serial/parallel distinction or errors.
+  def executeCollectedFields {ObjectIdentity : Type}
+      (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+      (variableValues : VariableValues) (depth : Nat)
+      (source : Value ObjectIdentity) :
+      List (Name × List ExecutableField) -> List (Name × Response)
+    | [] => []
+    | (responseName, fields) :: rest =>
+        executeField schema resolvers variableValues depth source responseName fields
+          ++ executeCollectedFields schema resolvers variableValues depth source rest
+
   -- Spec 6.4 `ExecuteField`: partial; resolves one grouped response name once and
   -- completes with merged subselections.
   def executeField {ObjectIdentity : Type}
@@ -243,27 +223,45 @@ mutual
         match depth with
         | 0 => []
         | depth' + 1 =>
+            -- Spec 6.4.2 `ResolveFieldValue`
             let resolved :=
               resolvers.resolve field.parentType field.fieldName field.arguments source
             let childType :=
               (schema.fieldReturnType? field.parentType field.fieldName).getD field.fieldName
-            let selectionSet := mergedFieldSelectionSet (field :: fields)
             [(responseName,
               completeValue schema resolvers variableValues
-                depth' childType selectionSet resolved)]
+                depth' childType (field :: fields) resolved)]
 
-  -- Spec 6.3.3 `ExecuteCollectedFields`: partial; executes each response-name group in
-  -- stored order, without serial/parallel distinction or errors.
-  def executeCollectedFields {ObjectIdentity : Type}
+  -- Spec 6.4.3 `CompleteValue`: partial; ignores declared `fieldType` wrappers and result
+  -- coercion/errors, using the runtime value shape instead.
+  def completeValue {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-      (variableValues : VariableValues) (depth : Nat)
-      (source : Value ObjectIdentity) :
-      List (Name × List ExecutableField) -> List (Name × Response)
-    | [] => []
-    | (responseName, fields) :: rest =>
-        executeField schema resolvers variableValues depth source responseName fields
-          ++ executeCollectedFields schema resolvers variableValues depth source rest
+      (variableValues : VariableValues) :
+      Nat -> Name -> List ExecutableField -> Value ObjectIdentity -> Response
+    | 0, _parentType, _fields, value => shallowResponse value
+    | _depth + 1, _parentType, _fields, .null => .null
+    | _depth + 1, _parentType, _fields, .scalar value => .scalar value
+    | depth + 1, parentType, fields, source@(.object runtimeType _identity) =>
+        if schema.typeIncludesObjectBool parentType runtimeType then
+          .object (executeCollectedFields schema resolvers variableValues depth source
+            (collectSubfields schema variableValues runtimeType source fields))
+        else
+          .null
+    | depth + 1, parentType, fields, .list values =>
+        .list (values.map
+          (fun value =>
+            completeValue schema resolvers variableValues
+              depth parentType fields value))
 end
+
+-- Compatibility wrapper of `executeRootSelectionSet` for proof modules using the older
+-- name.
+def executeSelectionSet {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (depth : Nat) (parentType : Name) (source : Value ObjectIdentity) :
+    List Selection -> List (Name × Response) :=
+  executeRootSelectionSet schema resolvers variableValues depth parentType source
 
 -- Local recursion-depth bound for the partial `ExecuteQuery` model.
 def executeQueryDepthBound (operation : Operation) : Nat :=
@@ -286,7 +284,7 @@ def executeQueryAtDepth {ObjectIdentity : Type}
     (variableValues : VariableValues) (operation : Operation)
     (depth : Nat) (source : Value ObjectIdentity) : Response :=
   if rootSourceAppliesBool schema operation source then
-    .object (executeSelectionSet schema resolvers variableValues
+    .object (executeRootSelectionSet schema resolvers variableValues
       depth operation.rootType source operation.selectionSet)
   else
     .object []

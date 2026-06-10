@@ -1,22 +1,11 @@
 import GraphQL.Execution
 
 /-!
-Algebra facts for execution field-collection helpers and merged child selections.
+Algebra facts for execution field-collection helpers and collected subfields.
 -/
 namespace GraphQL
 
 namespace Execution
-
-theorem addExecutableFields_append
-    (left right : List ExecutableField)
-    (groups : List (Name × List ExecutableField)) :
-    addExecutableFields (left ++ right) groups
-      = addExecutableFields right (addExecutableFields left groups) := by
-  induction left generalizing groups with
-  | nil =>
-      simp [addExecutableFields]
-  | cons field rest ih =>
-      simp [addExecutableFields]
 
 theorem mergeExecutableGroups_nil_right
     (groups : List (Name × List ExecutableField)) :
@@ -29,30 +18,25 @@ theorem mergeExecutableGroups_append
       = mergeExecutableGroups (mergeExecutableGroups left middle) right := by
   simp [mergeExecutableGroups, List.foldl_append]
 
-theorem mergedFieldSelectionSet_nil :
-    mergedFieldSelectionSet [] = [] := by
+theorem collectSubfields_nil {ObjectIdentity : Type}
+    (schema : Schema) (variableValues : VariableValues)
+    (objectType : Name) (objectValue : Value ObjectIdentity) :
+    collectSubfields schema variableValues objectType objectValue [] = [] := by
   rfl
 
-theorem mergedFieldSelectionSet_cons
+theorem collectSubfields_cons {ObjectIdentity : Type}
+    (schema : Schema) (variableValues : VariableValues)
+    (objectType : Name) (objectValue : Value ObjectIdentity)
     (field : ExecutableField) (rest : List ExecutableField) :
-    mergedFieldSelectionSet (field :: rest)
-      = field.selectionSet ++ mergedFieldSelectionSet rest := by
+    collectSubfields schema variableValues objectType objectValue
+        (field :: rest)
+      =
+        mergeExecutableGroups
+          (collectFields schema variableValues objectType objectValue
+            field.selectionSet)
+          (collectSubfields schema variableValues objectType objectValue
+            rest) := by
   rfl
-
-theorem mergedFieldSelectionSet_append
-    (left right : List ExecutableField) :
-    mergedFieldSelectionSet (left ++ right)
-      = mergedFieldSelectionSet left ++ mergedFieldSelectionSet right := by
-  induction left with
-  | nil =>
-      simp [mergedFieldSelectionSet]
-  | cons field rest ih =>
-      simp [mergedFieldSelectionSet, ih, List.append_assoc]
-
-theorem mergedFieldSelectionSet_singleton
-    (field : ExecutableField) :
-    mergedFieldSelectionSet [field] = field.selectionSet := by
-  simp [mergedFieldSelectionSet]
 
 theorem executeCollectedFields_cons_eq_of_parts
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
@@ -110,7 +94,8 @@ theorem executeSelectionSet_eq_of_collectFields_head_parts
       executeSelectionSet schema resolvers variableValues depth
         parentType source right := by
   intro hleftCollect hrightCollect hhead htail
-  simp [executeSelectionSet, hleftCollect, hrightCollect]
+  simp [executeSelectionSet, executeRootSelectionSet, hleftCollect,
+    hrightCollect]
   exact executeCollectedFields_cons_eq_of_parts schema resolvers
     variableValues depth source leftGroup rightGroup leftRest rightRest
     hhead htail
@@ -143,12 +128,10 @@ theorem executeField_same_head_eq_of_completeValue
     let childType :=
       (schema.fieldReturnType? parentType fieldName).getD fieldName
     completeValue schema resolvers variableValues depth childType
-      (mergedFieldSelectionSet (leftField :: leftFields))
-      resolved
+      (leftField :: leftFields) resolved
       =
     completeValue schema resolvers variableValues depth childType
-      (mergedFieldSelectionSet (rightField :: rightFields))
-      resolved ->
+      (rightField :: rightFields) resolved ->
       executeField schema resolvers variableValues (depth + 1)
         source responseName (leftField :: leftFields)
       =
@@ -191,12 +174,12 @@ theorem executeSelectionSet_field_head_same_group_eq_of_completeValue
     (responseName, rightField :: rightFields) :: rightRest ->
     completeValue schema resolvers variableValues fieldDepth
       ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-      (mergedFieldSelectionSet (leftField :: leftFields))
+      (leftField :: leftFields)
       (resolvers.resolve parentType fieldName arguments source)
       =
     completeValue schema resolvers variableValues fieldDepth
       ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-      (mergedFieldSelectionSet (rightField :: rightFields))
+      (rightField :: rightFields)
       (resolvers.resolve parentType fieldName arguments source) ->
     executeCollectedFields schema resolvers variableValues
       (fieldDepth + 1) source leftRest
@@ -219,7 +202,6 @@ theorem executeSelectionSet_field_head_same_group_eq_of_completeValue
       arguments leftSelectionSet rightSelectionSet leftFields rightFields
       hcomplete
   · exact htail
-
 end Execution
 
 end GraphQL

@@ -386,7 +386,8 @@ theorem executeSelectionSet_fieldOutput_scopedMerged_eq_of_runtime_recursive
           (selectionSet
             ++ mergeSelectionSets
               (eraseScopedSelectionSet scopedMatches))) := by
-    simp [Execution.executeSelectionSet, hleftCollect]
+    simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+      hleftCollect]
   exact hleftToGround.trans hrecursive
 
 def scopedFieldOutputValuesInclude (schema : Schema)
@@ -535,24 +536,26 @@ theorem completeValue_fieldOutput_scopedMerged_eq_of_valueObjectsInclude_lt
                 (eraseScopedSelectionSet scopedMatches))) ->
         Execution.completeValue schema (store.resolvers schema)
           variableValues depth actualType
-          ((if leafTypeNameBool schema expectedType then
-            []
-          else if objectTypeNameBool schema expectedType then
-            groundLiftSelectionSet schema expectedType selectionSet
-          else
-            (groundObjectTypesForType schema expectedType).map
-              (fun objectType =>
-                Selection.inlineFragment (some objectType) []
-                  (groundLiftSelectionSet schema objectType selectionSet)))
-            ++ mergeSelectionSets
-              (groundLiftScopedSelectionSet schema scopedMatches))
+          [completeValueSelectionSetField actualType
+            ((if leafTypeNameBool schema expectedType then
+              []
+            else if objectTypeNameBool schema expectedType then
+              groundLiftSelectionSet schema expectedType selectionSet
+            else
+              (groundObjectTypesForType schema expectedType).map
+                (fun objectType =>
+                  Selection.inlineFragment (some objectType) []
+                    (groundLiftSelectionSet schema objectType selectionSet)))
+              ++ mergeSelectionSets
+                (groundLiftScopedSelectionSet schema scopedMatches))]
           value
         =
         Execution.completeValue schema (store.resolvers schema)
           variableValues depth actualType
-          (selectionSet
-            ++ mergeSelectionSets
-              (eraseScopedSelectionSet scopedMatches))
+          [completeValueSelectionSetField actualType
+            (selectionSet
+              ++ mergeSelectionSets
+                (eraseScopedSelectionSet scopedMatches))]
           value
   | 0, _actualType, _expectedType, _selectionSet, _scopedMatches, _value,
     _hheadInclude, _hmatchesInclude, _hrecursive => by
@@ -604,7 +607,9 @@ theorem completeValue_fieldOutput_scopedMerged_eq_of_valueObjectsInclude_lt
                 (hrecursive depth runtimeType identity
                   (Nat.lt_succ_self depth) hactual)
             simp [Execution.completeValue, hactual]
-            exact hselection
+            simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+              Execution.collectSubfields, completeValueSelectionSetField]
+              using hselection
           · have hactualFalse :
                 schema.typeIncludesObjectBool actualType runtimeType = false := by
               cases hmatch :
@@ -774,7 +779,39 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_valueInclu
     sourceFields liftedRestGroups sourceRest execFieldDefinition
     liftFieldDefinition hobject hinclude hfree hexecLookup hliftLookup
     hliftCollect hsourceCollect
-  · have hcomplete :=
+  · have hsource :
+        ∃ runtimeType' identity',
+          (Execution.Value.object runtimeType identity :
+              Execution.Value DataModel.ObjectPath)
+            = .object runtimeType' identity'
+            ∧ schema.typeIncludesObjectBool execParent runtimeType' = true :=
+      ⟨runtimeType, identity, rfl, hinclude⟩
+    have hsource :
+        ∃ runtimeType' identity',
+          (Execution.Value.object runtimeType identity :
+              Execution.Value DataModel.ObjectPath)
+            = .object runtimeType' identity'
+            ∧ schema.typeIncludesObjectBool execParent runtimeType' = true :=
+      hsource
+    have hsourceFree :
+        selectionSetDirectiveFree
+          (Selection.field responseName fieldName arguments []
+            subselections :: eraseScopedSelectionSet rest) := by
+      simpa [scopedSelectionSetDirectiveFree, eraseScopedSelectionSet,
+        eraseScopedSelection] using hfree
+    have hliftProjection :=
+      mergedFieldSelectionSet_groundLift_scoped_field_head_eq_validFields
+        schema variableValues execParent liftParent
+        (.object runtimeType identity) responseName fieldName arguments
+        subselections rest liftedFields liftedRestGroups liftFieldDefinition
+        hobject hsource hfree hliftLookup hliftCollect
+    have hsourceProjection :=
+      mergedFieldSelectionSet_field_head_eq_validFieldsWithResponseName
+        schema variableValues execParent (.object runtimeType identity)
+        responseName fieldName arguments subselections
+        (eraseScopedSelectionSet rest) sourceFields sourceRest hobject hsource
+        hsourceFree hsourceCollect
+    have hcomplete :=
       completeValue_fieldOutput_scopedMerged_eq_of_valueObjectsInclude_lt
         schema store variableValues hschema fieldDepth
         ((schema.fieldReturnType? execParent fieldName).getD fieldName)
@@ -784,7 +821,92 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_valueInclu
         ((store.resolvers schema).resolve execParent fieldName arguments
           (.object runtimeType identity))
         hheadInclude hmatchesInclude hrecursive
-    simpa [liftedSelectionSet] using hcomplete
+    have hleft :
+        Execution.completeValue schema (store.resolvers schema) variableValues
+          fieldDepth
+          ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+          (liftedField :: liftedFields)
+          ((store.resolvers schema).resolve execParent fieldName arguments
+            (.object runtimeType identity))
+        =
+        Execution.completeValue schema (store.resolvers schema) variableValues
+          fieldDepth
+          ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+          [completeValueSelectionSetField
+            ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+            (liftedSelectionSet
+              ++ mergeSelectionSets
+                (groundLiftScopedSelectionSet schema
+                  (scopedSelectionSetValidFieldsWithResponseName schema
+                    execParent responseName rest)))]
+          ((store.resolvers schema).resolve execParent fieldName arguments
+            (.object runtimeType identity)) := by
+      apply completeValue_eq_of_child_object_lt_includes schema
+        (store.resolvers schema) variableValues fieldDepth
+        ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+        (liftedField :: liftedFields)
+        [completeValueSelectionSetField
+          ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+          (liftedSelectionSet
+            ++ mergeSelectionSets
+              (groundLiftScopedSelectionSet schema
+                (scopedSelectionSetValidFieldsWithResponseName schema
+                  execParent responseName rest)))]
+        ((store.resolvers schema).resolve execParent fieldName arguments
+          (.object runtimeType identity))
+      intro childDepth childRuntimeType childIdentity hlt hincludeChild
+      simpa [Execution.mergedFieldSelectionSet, completeValueSelectionSetField,
+        liftedField, liftedSelectionSet] using
+        congrArg
+          (fun selectionSet =>
+            Execution.executeSelectionSet schema (store.resolvers schema)
+              variableValues childDepth childRuntimeType
+              (.object childRuntimeType childIdentity) selectionSet)
+          hliftProjection
+    have hright :
+        Execution.completeValue schema (store.resolvers schema) variableValues
+          fieldDepth
+          ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+          (sourceField :: sourceFields)
+          ((store.resolvers schema).resolve execParent fieldName arguments
+            (.object runtimeType identity))
+        =
+        Execution.completeValue schema (store.resolvers schema) variableValues
+          fieldDepth
+          ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+          [completeValueSelectionSetField
+            ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+            (subselections
+              ++ mergeSelectionSets
+                (eraseScopedSelectionSet
+                  (scopedSelectionSetValidFieldsWithResponseName schema
+                    execParent responseName rest)))]
+          ((store.resolvers schema).resolve execParent fieldName arguments
+            (.object runtimeType identity)) := by
+      apply completeValue_eq_of_child_object_lt_includes schema
+        (store.resolvers schema) variableValues fieldDepth
+        ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+        (sourceField :: sourceFields)
+        [completeValueSelectionSetField
+          ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+          (subselections
+            ++ mergeSelectionSets
+              (eraseScopedSelectionSet
+                (scopedSelectionSetValidFieldsWithResponseName schema
+                  execParent responseName rest)))]
+        ((store.resolvers schema).resolve execParent fieldName arguments
+          (.object runtimeType identity))
+      intro childDepth childRuntimeType childIdentity hlt hincludeChild
+      simpa [Execution.mergedFieldSelectionSet, completeValueSelectionSetField,
+        sourceField, eraseScopedSelectionSet_validFieldsWithResponseName schema
+          execParent responseName rest] using
+        congrArg
+          (fun selectionSet =>
+            Execution.executeSelectionSet schema (store.resolvers schema)
+              variableValues childDepth childRuntimeType
+              (.object childRuntimeType childIdentity) selectionSet)
+          hsourceProjection
+    exact hleft.trans (hcomplete.trans hright.symm)
   · exact htail
 
 end GroundTypeLifting

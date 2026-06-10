@@ -76,7 +76,8 @@ theorem executeSelectionSet_append_eq_of_parts_namesDisjoint
         source
         (Execution.collectFields schema variableValues parentType source
           left) := by
-    simpa [Execution.executeSelectionSet] using hleft
+    simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet]
+      using hleft
   have hrightCollected :
       Execution.executeCollectedFields schema resolvers variableValues depth
         source
@@ -87,8 +88,9 @@ theorem executeSelectionSet_append_eq_of_parts_namesDisjoint
         source
         (Execution.collectFields schema variableValues parentType source
           right) := by
-    simpa [Execution.executeSelectionSet] using hright
-  simp [Execution.executeSelectionSet]
+    simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet]
+      using hright
+  simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet]
   rw [collectFields_append]
   rw [collectFields_append]
   rw [mergeExecutableGroups_eq_append_of_namesDisjoint]
@@ -493,8 +495,10 @@ theorem mergedFieldSelectionSet_groundLift_field_head_eq_scopedValidFields
         simpa [groundLiftSelectionSet, groundLiftSelection, hlookup,
           liftedSelectionSet] using hliftFree)
       hliftCollectHead
-  simpa [validFieldsWithResponseName_groundLiftSelectionSet_scoped schema
-    execParent responseName liftParent rest] using hprojection
+  have hprojection' := hprojection
+  rw [validFieldsWithResponseName_groundLiftSelectionSet_scoped schema
+    execParent responseName liftParent rest] at hprojection'
+  simpa [liftedField] using hprojection'
 
 theorem mergedFieldSelectionSet_groundLift_scoped_field_head_eq_validFields
     (schema : Schema) (variableValues : Execution.VariableValues)
@@ -584,8 +588,10 @@ theorem mergedFieldSelectionSet_groundLift_scoped_field_head_eq_validFields
         simpa [groundLiftScopedSelectionSet, groundLiftScopedSelection,
           groundLiftSelection, hlookup, liftedSelectionSet] using hliftFree)
       hliftCollectHead
-  simpa [validFieldsWithResponseName_groundLiftScopedSelectionSet schema
-    execParent responseName rest] using hprojection
+  have hprojection' := hprojection
+  rw [validFieldsWithResponseName_groundLiftScopedSelectionSet schema
+    execParent responseName rest] at hprojection'
+  simpa [liftedField] using hprojection'
 
 theorem completeValue_groundLift_scopedMerged_eq_of_child_lt
     (schema : Schema) (store : DataModel.Store)
@@ -633,42 +639,52 @@ theorem completeValue_groundLift_scopedMerged_eq_of_child_lt
       Execution.completeValue schema (store.resolvers schema) variableValues
         fieldDepth
         ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-        (liftedSelectionSet
-          ++ mergeSelectionSets
-            (groundLiftScopedSelectionSet schema
-              (scopedSelectionSetValidFieldsWithResponseName schema execParent
-                responseName rest)))
+        [completeValueSelectionSetField
+          ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+          (liftedSelectionSet
+            ++ mergeSelectionSets
+              (groundLiftScopedSelectionSet schema
+                (scopedSelectionSetValidFieldsWithResponseName schema execParent
+                  responseName rest)))]
         ((store.resolvers schema).resolve execParent fieldName arguments
           (.object runtimeType identity))
       =
       Execution.completeValue schema (store.resolvers schema) variableValues
         fieldDepth
         ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-        (subselections
-          ++ mergeSelectionSets
-            (eraseScopedSelectionSet
-              (scopedSelectionSetValidFieldsWithResponseName schema execParent
-                responseName rest)))
+        [completeValueSelectionSetField
+          ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+          (subselections
+            ++ mergeSelectionSets
+              (eraseScopedSelectionSet
+                (scopedSelectionSetValidFieldsWithResponseName schema execParent
+                  responseName rest)))]
         ((store.resolvers schema).resolve execParent fieldName arguments
           (.object runtimeType identity)) := by
   intro liftedSelectionSet hrecursive
   apply completeValue_eq_of_child_object_lt_includes schema
     (store.resolvers schema) variableValues fieldDepth
     ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-    (liftedSelectionSet
-      ++ mergeSelectionSets
-        (groundLiftScopedSelectionSet schema
-          (scopedSelectionSetValidFieldsWithResponseName schema execParent
-            responseName rest)))
-    (subselections
-      ++ mergeSelectionSets
-        (eraseScopedSelectionSet
-          (scopedSelectionSetValidFieldsWithResponseName schema execParent
-            responseName rest)))
+    [completeValueSelectionSetField
+      ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+      (liftedSelectionSet
+        ++ mergeSelectionSets
+          (groundLiftScopedSelectionSet schema
+            (scopedSelectionSetValidFieldsWithResponseName schema execParent
+              responseName rest)))]
+    [completeValueSelectionSetField
+      ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+      (subselections
+        ++ mergeSelectionSets
+          (eraseScopedSelectionSet
+            (scopedSelectionSetValidFieldsWithResponseName schema execParent
+              responseName rest)))]
     ((store.resolvers schema).resolve execParent fieldName arguments
       (.object runtimeType identity))
   intro childDepth childRuntimeType childIdentity hlt hinclude
-  exact hrecursive childDepth childRuntimeType childIdentity hlt hinclude
+  simpa [Execution.mergedFieldSelectionSet,
+    completeValueSelectionSetField] using
+    hrecursive childDepth childRuntimeType childIdentity hlt hinclude
 
 theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_completeValue
     (schema : Schema) (store : DataModel.Store)
@@ -736,22 +752,14 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_completeVa
     Execution.completeValue schema (store.resolvers schema) variableValues
       fieldDepth
       ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-      (liftedSelectionSet
-        ++ mergeSelectionSets
-          (groundLiftScopedSelectionSet schema
-            (scopedSelectionSetValidFieldsWithResponseName schema execParent
-              responseName rest)))
+      (liftedField :: liftedFields)
       ((store.resolvers schema).resolve execParent fieldName arguments
         (.object runtimeType identity))
       =
     Execution.completeValue schema (store.resolvers schema) variableValues
       fieldDepth
       ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-      (subselections
-        ++ mergeSelectionSets
-          (eraseScopedSelectionSet
-            (scopedSelectionSetValidFieldsWithResponseName schema execParent
-              responseName rest)))
+      (sourceField :: sourceFields)
       ((store.resolvers schema).resolve execParent fieldName arguments
         (.object runtimeType identity)) ->
     Execution.executeCollectedFields schema (store.resolvers schema)
@@ -816,9 +824,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_completeVa
     liftedFields sourceFields liftedRestGroups sourceRest
   · exact hliftCollect
   · exact hsourceCollect
-  · rw [hliftProjection, hsourceProjection]
-    simpa [eraseScopedSelectionSet_validFieldsWithResponseName schema
-      execParent responseName rest] using hcomplete
+  · exact hcomplete
   · exact htail
 
 theorem executeCollectedFields_groundLift_scoped_fieldHead_tail_eq_of_withoutFields
@@ -991,7 +997,8 @@ theorem executeCollectedFields_groundLift_scoped_fieldHead_tail_eq_of_withoutFie
       sourceRest := by
     simpa [eraseScopedSelectionSet_withoutFieldsWithResponseName schema
       responseName rest] using hsourceRestCollect
-  simpa [Execution.executeSelectionSet, hliftRestCollect,
+  simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+    hliftRestCollect,
     hsourceRestCollectScoped] using htailSelection
 
 theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_child_lt
@@ -1110,10 +1117,45 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_child_lt
     liftFieldDefinition hobject hinclude hfree hexecLookup hliftLookup
     hliftCollect hsourceCollect
   · exact
-      completeValue_groundLift_scopedMerged_eq_of_child_lt schema store
-        variableValues fieldDepth execParent liftParent runtimeType identity
-        responseName fieldName arguments subselections rest liftFieldDefinition
-        hrecursive
+      completeValue_eq_of_child_object_lt_includes schema
+        (store.resolvers schema) variableValues fieldDepth
+        ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+        (liftedField :: liftedFields) (sourceField :: sourceFields)
+        ((store.resolvers schema).resolve execParent fieldName arguments
+          (.object runtimeType identity))
+        (by
+          intro childDepth childRuntimeType childIdentity hlt hincludeChild
+          have hsource :
+              ∃ runtimeType' identity',
+                (Execution.Value.object runtimeType identity :
+                    Execution.Value DataModel.ObjectPath)
+                  = .object runtimeType' identity'
+                  ∧ schema.typeIncludesObjectBool execParent runtimeType' = true :=
+            ⟨runtimeType, identity, rfl, hinclude⟩
+          have hsourceFree :
+              selectionSetDirectiveFree
+                (Selection.field responseName fieldName arguments []
+                  subselections :: eraseScopedSelectionSet rest) := by
+            simpa [scopedSelectionSetDirectiveFree, eraseScopedSelectionSet,
+              eraseScopedSelection] using hfree
+          have hliftProjection :=
+            mergedFieldSelectionSet_groundLift_scoped_field_head_eq_validFields
+              schema variableValues execParent liftParent
+              (.object runtimeType identity) responseName fieldName arguments
+              subselections rest liftedFields liftedRestGroups
+              liftFieldDefinition hobject hsource hfree hliftLookup
+              hliftCollect
+          have hsourceProjection :=
+            mergedFieldSelectionSet_field_head_eq_validFieldsWithResponseName
+              schema variableValues execParent (.object runtimeType identity)
+              responseName fieldName arguments subselections
+              (eraseScopedSelectionSet rest) sourceFields sourceRest hobject
+              hsource hsourceFree hsourceCollect
+          rw [hliftProjection, hsourceProjection]
+          simpa [eraseScopedSelectionSet_validFieldsWithResponseName schema
+            execParent responseName rest] using
+            hrecursive childDepth childRuntimeType childIdentity hlt
+              hincludeChild)
   · exact htail
 
 end GroundTypeLifting

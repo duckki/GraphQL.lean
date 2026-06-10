@@ -1,5 +1,5 @@
 import GraphQL.NormalForm
-import GraphQL.SchemaWellFormedness.PossibleObjectImplementation
+import GraphQL.SchemaWellFormedness.PossibleTypes
 import GraphQL.Validation.SelectionValidity
 
 /-!

@@ -1,7 +1,7 @@
 import GraphQL.Schema
 import GraphQL.SchemaWellFormedness
 import GraphQL.SchemaWellFormedness.FieldLookup
-import GraphQL.SchemaWellFormedness.PossibleObjectImplementation
+import GraphQL.SchemaWellFormedness.PossibleTypes
 import GraphQL.Operation
 import GraphQL.Validation
 import GraphQL.Validation.SelectionValidity

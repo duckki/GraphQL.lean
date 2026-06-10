@@ -55,7 +55,7 @@ Prefer names that say what the proofs are about:
 - `GraphQL/Execution/FieldCollection.lean`
 - `GraphQL/Validation/SelectionValidity.lean`
 - `GraphQL/Validation/FieldMerge.lean`
-- `GraphQL/SchemaWellFormedness/PossibleObjectImplementation.lean`
+- `GraphQL/SchemaWellFormedness/PossibleTypes.lean`
 - `GraphQL/NormalForm/GroundTypeNormalization/FieldSemantics.lean`
 
 If a file name starts to need "misc", "helper", or "common", split by the

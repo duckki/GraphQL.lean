@@ -103,6 +103,20 @@ theorem schemaWellFormed_possibleObject_lookupField_argumentsImplement
 
 end SchemaWellFormedness
 
+theorem object_typeIncludesObjectBool_eq_self
+    (schema : Schema) {typeName objectName : Name} :
+    schema.objectType typeName ->
+      schema.typeIncludesObjectBool typeName objectName = true ->
+        objectName = typeName := by
+  intro hobject hinclude
+  rcases hobject with ⟨objectType, hlookup⟩
+  have hname : objectType.name = typeName := by
+    have hmatch := List.find?_some hlookup
+    simpa [Schema.lookupType] using hmatch
+  simp [Schema.typeIncludesObjectBool, Schema.getPossibleTypes, hlookup,
+    hname] at hinclude
+  exact hinclude
+
 theorem typeIncludesObjectBool_of_outputTypeSubtype_namedType
     (schema : Schema) :
     ∀ {implementation expected : TypeRef} {objectType : Name},

@@ -1,5 +1,5 @@
 import GraphQL.DataModel.Store
-import GraphQL.SchemaWellFormedness.PossibleObjectImplementation
+import GraphQL.SchemaWellFormedness.PossibleTypes
 
 /-!
 Store-backed resolved-value inclusion lemmas.

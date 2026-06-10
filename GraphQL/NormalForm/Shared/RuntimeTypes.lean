@@ -1,5 +1,5 @@
 import GraphQL.NormalForm.Shared.DirectiveFree
-import GraphQL.SchemaWellFormedness.PossibleObjectImplementation
+import GraphQL.SchemaWellFormedness.PossibleTypes
 import GraphQL.Validation.SelectionValidity
 
 /-!
@@ -38,20 +38,6 @@ theorem objectType_of_objectTypeNameBool_eq_true
       | union unionType => simp [hlookup] at hobject
       | enum enumType => simp [hlookup] at hobject
       | inputObject inputObjectType => simp [hlookup] at hobject
-
-theorem object_typeIncludesObjectBool_eq_self
-    (schema : Schema) {typeName objectName : Name} :
-    schema.objectType typeName ->
-      schema.typeIncludesObjectBool typeName objectName = true ->
-        objectName = typeName := by
-  intro hobject hinclude
-  rcases hobject with ⟨objectType, hlookup⟩
-  have hname : objectType.name = typeName := by
-    have hmatch := List.find?_some hlookup
-    simpa [Schema.lookupType] using hmatch
-  simp [Schema.typeIncludesObjectBool, Schema.getPossibleTypes, hlookup,
-    hname] at hinclude
-  exact hinclude
 
 theorem object_typeIncludesObjectBool_self
     (schema : Schema) {typeName : Name} :

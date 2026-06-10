@@ -114,13 +114,13 @@ theorem collectFields_field_directives_allowed_cons_of_responseName_not_mem
   intro hallow hnotin
   rw [GroundTypeNormalization.collectFields_cons]
   simp [Execution.collectSelection, hallow]
-  rw [GroundTypeNormalization.mergeExecutableGroups_eq_append_of_namesDisjoint]
+  rw [mergeExecutableGroups_eq_append_of_namesDisjoint]
   · simp
   · intro name hleft hright
     simp at hleft
     subst name
     exact hnotin hright
-  · exact GroundTypeNormalization.collectFields_namesNodup schema
+  · exact collectFields_namesNodup schema
       variableValues parentType source rest
 
 theorem collectFields_field_directives_allowed_exists_of_case

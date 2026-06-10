@@ -37,7 +37,7 @@ theorem completeValue_normalizeForTypeIn_eq_of_child
       Execution.completeValue schema resolvers variableValues depth returnType
         selectionSet value := by
   intro hleafFalse hchild
-  apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
+  apply completeValue_eq_of_child_object_lt_includes
     schema resolvers variableValues
   intro childDepth runtimeType identity hlt hinclude
   simpa [Execution.mergedFieldSelectionSet] using
@@ -74,7 +74,7 @@ theorem completeValue_normalizeForType_eq_of_child
       Execution.completeValue schema resolvers variableValues depth returnType
         selectionSet value := by
   intro hleafFalse hchild
-  apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
+  apply completeValue_eq_of_child_object_lt_includes
     schema resolvers variableValues
   intro childDepth runtimeType identity hlt hinclude
   simpa [Execution.mergedFieldSelectionSet] using
@@ -294,7 +294,7 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_no_
           }]
           (resolvers.resolve lookupParent fieldName arguments source) := by
     have hleft :=
-      GroundTypeNormalization.completeValue_singleton_selectionSet_eq
+      completeValue_singleton_selectionSet_eq
         schema resolvers variableValues (depth - 1)
         ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
         {
@@ -310,7 +310,7 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_no_
           fieldDefinition.outputType.namedType selectionSet)
         (resolvers.resolve lookupParent fieldName arguments source)
     have hright :=
-      GroundTypeNormalization.completeValue_singleton_selectionSet_eq
+      completeValue_singleton_selectionSet_eq
         schema resolvers variableValues (depth - 1)
         ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
         {
@@ -518,7 +518,7 @@ theorem completeValue_normalizeForType_staticScoped_eq_of_child
   intro hlookup hleafFalse hchild
   rw [fieldReturnType?_getD_eq_of_lookupField schema lookupParent fieldName
     fieldDefinition hlookup]
-  apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
+  apply completeValue_eq_of_child_object_lt_includes
     schema resolvers variableValues
   intro childDepth runtimeType identity hlt hinclude
   simpa [Execution.mergedFieldSelectionSet_append] using

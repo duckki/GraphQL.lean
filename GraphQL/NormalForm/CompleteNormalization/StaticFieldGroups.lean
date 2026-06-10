@@ -21,7 +21,7 @@ theorem collectedResponseSelectionSet_collectFields_staticScopedFieldsWithRespon
       (∀ varName,
         varName ∈ selectionSetBooleanVariables selectionSet ->
         varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-        GroundTypeNormalization.collectedResponseSelectionSet responseName
+        collectedResponseSelectionSet responseName
             (Execution.collectFields schema variableValues lookupParent
               (.object groundType identity) selectionSet)
           =
@@ -31,7 +31,7 @@ theorem collectedResponseSelectionSet_collectFields_staticScopedFieldsWithRespon
               groundType responseName selectionSet))
   | [], _hagrees, _hsourceVars => by
       simp [Execution.collectFields,
-        GroundTypeNormalization.collectedResponseSelectionSet,
+        collectedResponseSelectionSet,
         staticScopedFieldsWithResponseName, eraseCompleteScopedSelectionSet,
         mergeSelectionSets]
   | Selection.field fieldResponseName fieldName arguments directives
@@ -71,12 +71,12 @@ theorem collectedResponseSelectionSet_collectFields_staticScopedFieldsWithRespon
         simp [Execution.collectSelection, hexecAllow]
         rw [GroundTypeNormalization.collectedResponseSelectionSet_mergeExecutableGroups]
         · cases hresponse : fieldResponseName == responseName <;>
-            simp [GroundTypeNormalization.collectedResponseSelectionSet,
+            simp [collectedResponseSelectionSet,
               staticScopedFieldsWithResponseName, hallow, hresponse,
               eraseCompleteScopedSelectionSet, eraseCompleteScopedSelection,
               mergeSelectionSets, Selection.subselections,
               Execution.mergedFieldSelectionSet, hrest]
-        · exact GroundTypeNormalization.collectFields_namesNodup schema
+        · exact collectFields_namesNodup schema
             variableValues lookupParent (.object groundType identity) rest
   | Selection.inlineFragment none directives selectionSet :: rest,
       hagrees, hsourceVars => by
@@ -122,13 +122,13 @@ theorem collectedResponseSelectionSet_collectFields_staticScopedFieldsWithRespon
         rw [collectFields_inlineFragment_none_directives_allowed_flatten schema
           variableValues lookupParent (.object groundType identity) directives
           selectionSet rest hexecAllow]
-        rw [GroundTypeNormalization.collectFields_append]
+        rw [collectFields_append]
         rw [GroundTypeNormalization.collectedResponseSelectionSet_mergeExecutableGroups]
         · simp [staticScopedFieldsWithResponseName, hallow,
             eraseCompleteScopedSelectionSet_append,
             GroundTypeNormalization.mergeSelectionSets_append, hselection,
             hrest]
-        · exact GroundTypeNormalization.collectFields_namesNodup schema
+        · exact collectFields_namesNodup schema
             variableValues lookupParent (.object groundType identity) rest
   | Selection.inlineFragment (some typeCondition) directives selectionSet
       :: rest, hagrees, hsourceVars => by
@@ -149,7 +149,7 @@ theorem collectedResponseSelectionSet_collectFields_staticScopedFieldsWithRespon
           schema variableValues operation lookupParent groundType responseName
           identity boolCase selectionSet hagrees hselectionVars
       have hselectionTyped :
-          GroundTypeNormalization.collectedResponseSelectionSet responseName
+          collectedResponseSelectionSet responseName
               (Execution.collectFields schema variableValues lookupParent
                 (.object groundType identity) selectionSet)
             =
@@ -205,13 +205,13 @@ theorem collectedResponseSelectionSet_collectFields_staticScopedFieldsWithRespon
         rw [collectFields_inlineFragment_some_directives_allowed_flatten_object
           schema variableValues lookupParent groundType typeCondition identity
           directives selectionSet rest hexecAllow hincludes]
-        rw [GroundTypeNormalization.collectFields_append]
+        rw [collectFields_append]
         rw [GroundTypeNormalization.collectedResponseSelectionSet_mergeExecutableGroups]
         · simp [staticScopedFieldsWithResponseName, hbranch,
             eraseCompleteScopedSelectionSet_append,
             GroundTypeNormalization.mergeSelectionSets_append, hselectionTyped,
             hrest]
-        · exact GroundTypeNormalization.collectFields_namesNodup schema
+        · exact collectFields_namesNodup schema
             variableValues lookupParent (.object groundType identity) rest
 
 theorem collectedResponseSelectionSet_collectFields_completeScopedSelectionSetStaticFieldsWithResponseName
@@ -227,7 +227,7 @@ theorem collectedResponseSelectionSet_collectFields_completeScopedSelectionSetSt
       varName ∈ selectionSetBooleanVariables
           (eraseCompleteScopedSelectionSet scopedSelections) ->
         varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-      GroundTypeNormalization.collectedResponseSelectionSet responseName
+      collectedResponseSelectionSet responseName
           (Execution.collectFields schema variableValues execParent
             (.object groundType identity)
             (eraseCompleteScopedSelectionSet scopedSelections))
@@ -299,7 +299,7 @@ theorem mergedFieldSelectionSet_source_field_head_eq_staticScopedFields
       (Selection.field responseName fieldName arguments directives selectionSet
         :: rest)
       hagrees hsourceVars
-  simp [GroundTypeNormalization.collectedResponseSelectionSet, hcollect,
+  simp [collectedResponseSelectionSet, hcollect,
     staticScopedFieldsWithResponseName, hallow, eraseCompleteScopedSelectionSet,
     eraseCompleteScopedSelection, mergeSelectionSets, Selection.subselections]
     at hprojection
@@ -385,7 +385,7 @@ theorem mergedFieldSelectionSet_source_completeScoped_field_head_eq_staticFields
       } :: sourceFields) :: sourceTail := by
     simpa [eraseCompleteScopedSelectionSet, eraseCompleteScopedSelection]
       using hcollect
-  simp [GroundTypeNormalization.collectedResponseSelectionSet, hcollectRaw,
+  simp [collectedResponseSelectionSet, hcollectRaw,
     completeScopedSelectionSetStaticFieldsWithResponseName, hallow,
     eraseCompleteScopedSelectionSet, eraseCompleteScopedSelection,
     mergeSelectionSets, Selection.subselections] at hprojection
@@ -399,13 +399,13 @@ theorem collectFields_withoutFieldsWithResponseName_directives
       Execution.collectFields schema variableValues parentType source
           (withoutFieldsWithResponseName schema responseName selectionSet)
         =
-        GroundTypeNormalization.withoutExecutableGroupsWithResponseName
+        withoutExecutableGroupsWithResponseName
           responseName
           (Execution.collectFields schema variableValues parentType source
             selectionSet)
   | [] => by
       simp [Execution.collectFields, withoutFieldsWithResponseName,
-        GroundTypeNormalization.withoutExecutableGroupsWithResponseName]
+        withoutExecutableGroupsWithResponseName]
   | Selection.field fieldResponseName fieldName arguments directives
       selectionSet :: rest => by
       have hrest :=
@@ -424,7 +424,7 @@ theorem collectFields_withoutFieldsWithResponseName_directives
           simp [Execution.collectSelection, hallow]
           rw [GroundTypeNormalization.withoutExecutableGroupsWithResponseName_mergeExecutableGroups]
           have hsingleton :
-              GroundTypeNormalization.withoutExecutableGroupsWithResponseName
+              withoutExecutableGroupsWithResponseName
                 responseName
                 [(fieldResponseName, [{
                   parentType := parentType,
@@ -434,17 +434,17 @@ theorem collectFields_withoutFieldsWithResponseName_directives
                   selectionSet := selectionSet
                 }])]
               = [] := by
-            simp [GroundTypeNormalization.withoutExecutableGroupsWithResponseName,
+            simp [withoutExecutableGroupsWithResponseName,
               hresponse]
           rw [hsingleton]
-          rw [GroundTypeNormalization.mergeExecutableGroups_nil_left_of_namesNodup]
+          rw [mergeExecutableGroups_nil_left_of_namesNodup]
           · exact hrest
           · exact
               GroundTypeNormalization.withoutExecutableGroupsWithResponseName_namesNodup
                 responseName
                 (Execution.collectFields schema variableValues parentType
                   source rest)
-                (GroundTypeNormalization.collectFields_namesNodup schema
+                (collectFields_namesNodup schema
                   variableValues parentType source rest)
       · have hfalse : (fieldResponseName == responseName) = false := by
           cases hmatch : fieldResponseName == responseName
@@ -468,7 +468,7 @@ theorem collectFields_withoutFieldsWithResponseName_directives
           simp [Execution.collectSelection, hallow]
           rw [GroundTypeNormalization.withoutExecutableGroupsWithResponseName_mergeExecutableGroups]
           have hsingleton :
-              GroundTypeNormalization.withoutExecutableGroupsWithResponseName
+              withoutExecutableGroupsWithResponseName
                 responseName
                 [(fieldResponseName, [{
                   parentType := parentType,
@@ -485,7 +485,7 @@ theorem collectFields_withoutFieldsWithResponseName_directives
                 arguments := arguments,
                 selectionSet := selectionSet
               }])] := by
-            simp [GroundTypeNormalization.withoutExecutableGroupsWithResponseName,
+            simp [withoutExecutableGroupsWithResponseName,
               hfalse]
           rw [hsingleton]
           rw [hrest]
@@ -512,8 +512,8 @@ theorem collectFields_withoutFieldsWithResponseName_directives
           (withoutFieldsWithResponseName schema responseName rest) hallow]
         rw [collectFields_inlineFragment_none_directives_allowed_flatten schema
           variableValues parentType source directives selectionSet rest hallow]
-        rw [GroundTypeNormalization.collectFields_append]
-        rw [GroundTypeNormalization.collectFields_append]
+        rw [collectFields_append]
+        rw [collectFields_append]
         rw [GroundTypeNormalization.withoutExecutableGroupsWithResponseName_mergeExecutableGroups]
         rw [hselection, hrest]
   | Selection.inlineFragment (some typeCondition) directives selectionSet
@@ -564,8 +564,8 @@ theorem collectFields_withoutFieldsWithResponseName_directives
           rw [collectFields_inlineFragment_some_directives_allowed_flatten
             schema variableValues parentType source typeCondition directives
             selectionSet rest hallow happly]
-          rw [GroundTypeNormalization.collectFields_append]
-          rw [GroundTypeNormalization.collectFields_append]
+          rw [collectFields_append]
+          rw [collectFields_append]
           rw [GroundTypeNormalization.withoutExecutableGroupsWithResponseName_mergeExecutableGroups]
           rw [hselection, hrest]
 
@@ -588,10 +588,10 @@ theorem collectFields_withoutFieldsWithResponseName_eq_sourceRest_of_cons_direct
     collectFields_withoutFieldsWithResponseName_directives schema
       variableValues parentType source responseName selectionSet
   have hnodup :
-      GroundTypeNormalization.executableGroupNamesNodup
+      executableGroupNamesNodup
         ((responseName, fields) :: sourceRest) := by
     simpa [hcollect] using
-      GroundTypeNormalization.collectFields_namesNodup schema variableValues
+      collectFields_namesNodup schema variableValues
         parentType source selectionSet
   rw [hcollect] at hfilter
   exact hfilter.trans
@@ -862,13 +862,13 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_dup
           (sourceField :: sourceFields)
           (resolvers.resolve lookupParent fieldName arguments source) := by
     have hleft :=
-      GroundTypeNormalization.completeValue_eq_mergedFieldSelectionSet
+      completeValue_eq_mergedFieldSelectionSet
         schema resolvers variableValues (depth - 1)
         ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
         (normalizedField :: normalizedFields)
         (resolvers.resolve lookupParent fieldName arguments source)
     have hright :=
-      GroundTypeNormalization.completeValue_eq_mergedFieldSelectionSet
+      completeValue_eq_mergedFieldSelectionSet
         schema resolvers variableValues (depth - 1)
         ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
         (sourceField :: sourceFields)

@@ -444,7 +444,7 @@ theorem collectFields_normalizeForTypeIn_append_runtime_of_schemaWellFormed
           (.object runtimeType identity)
           (staticCollectForGround schema variables runtimeType
             runtimeType boolCase right)) := by
-        rw [GroundTypeNormalization.collectFields_append]
+        rw [collectFields_append]
     _ =
       Execution.mergeExecutableGroups
         (Execution.collectFields schema variableValues runtimeType
@@ -463,7 +463,7 @@ theorem collectFields_normalizeForTypeIn_append_runtime_of_schemaWellFormed
             boolCase returnType left
           ++ normalizeForTypeIn schema
             variables boolCase returnType right) := by
-        rw [GroundTypeNormalization.collectFields_append]
+        rw [collectFields_append]
 
 theorem executeSelectionSet_normalizeForTypeIn_append_runtime_of_schemaWellFormed
     (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
@@ -590,7 +590,7 @@ theorem collectFields_merge_staticCollectCompleteScopedSelectionSet_runtime
                       (mergeSelectionSets
                         (staticCollectCompleteScopedSelectionSet schema
                           variables groundType boolCase rest))) := by
-                    rw [GroundTypeNormalization.collectFields_append]
+                    rw [collectFields_append]
                 _ =
                   Execution.mergeExecutableGroups
                     (Execution.collectFields schema variableValues runtimeType
@@ -612,7 +612,7 @@ theorem collectFields_merge_staticCollectCompleteScopedSelectionSet_runtime
                       (selectionSet ++
                         mergeSelectionSets
                           (eraseCompleteScopedSelectionSet rest))) := by
-                    rw [← GroundTypeNormalization.collectFields_append]
+                    rw [← collectFields_append]
                     rw [staticCollectForGround_append]
                 _ =
                   Execution.collectFields schema variableValues runtimeType
@@ -728,7 +728,7 @@ theorem collectFields_normalizeForTypeIn_staticScoped_runtime
           (mergeSelectionSets
             (staticCollectCompleteScopedSelectionSet schema variables
               groundType boolCase scopedMatches))) := by
-        rw [GroundTypeNormalization.collectFields_append]
+        rw [collectFields_append]
     _ =
       Execution.mergeExecutableGroups
         (Execution.collectFields schema variableValues runtimeType
@@ -751,7 +751,7 @@ theorem collectFields_normalizeForTypeIn_staticScoped_runtime
             runtimeType boolCase
             (mergeSelectionSets
               (eraseCompleteScopedSelectionSet scopedMatches))) := by
-        rw [GroundTypeNormalization.collectFields_append]
+        rw [collectFields_append]
     _ =
       Execution.collectFields schema variableValues runtimeType
         (.object runtimeType identity)
@@ -847,7 +847,7 @@ theorem completeValue_normalizeForTypeIn_staticScoped_eq_of_staticCollect_child
             (eraseCompleteScopedSelectionSet scopedMatches))
         value := by
   intro hschema hleafFalse hscopedReady hchild
-  apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
+  apply completeValue_eq_of_child_object_lt_includes
     schema resolvers variableValues
   intro childDepth runtimeType identity hlt hinclude
   have hmem :

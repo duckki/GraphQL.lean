@@ -421,7 +421,7 @@ theorem collectFields_normalizeForType_append_runtime_of_schemaWellFormed
           (staticCollectForGround schema
             (operationBoolVars operation) runtimeType
             runtimeType runtimeCase right)) := by
-        rw [GroundTypeNormalization.collectFields_append]
+        rw [collectFields_append]
     _ =
       Execution.mergeExecutableGroups
         (Execution.collectFields schema variableValues runtimeType
@@ -440,7 +440,7 @@ theorem collectFields_normalizeForType_append_runtime_of_schemaWellFormed
             (operationBoolVars operation) returnType left
           ++ normalizeForType schema
             (operationBoolVars operation) returnType right) := by
-        rw [GroundTypeNormalization.collectFields_append]
+        rw [collectFields_append]
 
 theorem executeSelectionSet_normalizeForType_append_runtime_of_schemaWellFormed
     (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)

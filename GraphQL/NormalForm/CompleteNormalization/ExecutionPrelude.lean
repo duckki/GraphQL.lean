@@ -26,7 +26,7 @@ theorem collectFields_append_left_nil
         =
       Execution.collectFields schema variableValues parentType source right := by
   intro hleft
-  rw [GroundTypeNormalization.collectFields_append]
+  rw [collectFields_append]
   rw [hleft]
   exact GroundTypeNormalization.mergeExecutableGroups_nil_left_collectFields_eq
     schema variableValues parentType source right
@@ -41,7 +41,7 @@ theorem collectFields_append_right_nil
         =
       Execution.collectFields schema variableValues parentType source left := by
   intro hright
-  rw [GroundTypeNormalization.collectFields_append]
+  rw [collectFields_append]
   rw [hright]
   simp [Execution.mergeExecutableGroups]
 
@@ -57,7 +57,7 @@ theorem collectedResponseSelectionSet_collectFields_allFields_topNoDirectives
             candidateArguments candidateDirectives candidateSubselections
             ∈ selectionSet ->
           candidateDirectives = []) ->
-        GroundTypeNormalization.collectedResponseSelectionSet responseName
+        collectedResponseSelectionSet responseName
             (Execution.collectFields schema variableValues parentType source
               selectionSet)
           =
@@ -66,7 +66,7 @@ theorem collectedResponseSelectionSet_collectFields_allFields_topNoDirectives
             selectionSet)
   | [], _hall, _hdirectives => by
       simp [Execution.collectFields,
-        GroundTypeNormalization.collectedResponseSelectionSet,
+        collectedResponseSelectionSet,
         validFieldsWithResponseName, mergeSelectionSets]
   | selection :: rest, hall, hdirectives => by
       have htailAll : selectionsAllFields rest := by
@@ -99,11 +99,11 @@ theorem collectedResponseSelectionSet_collectFields_allFields_topNoDirectives
           rw [GroundTypeNormalization.collectFields_field_noDirectives]
           rw [GroundTypeNormalization.collectedResponseSelectionSet_mergeExecutableGroups]
           · cases hresponse : fieldResponseName == responseName <;>
-              simp [GroundTypeNormalization.collectedResponseSelectionSet,
+              simp [collectedResponseSelectionSet,
                 validFieldsWithResponseName, hresponse, hrest,
                 mergeSelectionSets, Selection.subselections,
                 Execution.mergedFieldSelectionSet]
-          · exact GroundTypeNormalization.collectFields_namesNodup schema
+          · exact collectFields_namesNodup schema
               variableValues parentType source rest
       | inlineFragment typeCondition directives selectionSet =>
           simp [Selection.isField] at hheadField
@@ -150,7 +150,7 @@ theorem mergedFieldSelectionSet_field_head_eq_validFieldsWithResponseName_topNoD
       (Selection.field responseName fieldName arguments [] subselections
         :: rest)
       hall hdirectives
-  simp [GroundTypeNormalization.collectedResponseSelectionSet, hcollect,
+  simp [collectedResponseSelectionSet, hcollect,
     validFieldsWithResponseName, mergeSelectionSets, Selection.subselections]
     at hprojection
   simpa [sourceField] using hprojection

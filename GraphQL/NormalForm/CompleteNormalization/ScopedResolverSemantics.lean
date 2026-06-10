@@ -778,14 +778,14 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_field_allowe
               (resolvers.resolve execParent fieldName arguments
                 (.object groundType identity)) := by
         have hleft :=
-          GroundTypeNormalization.completeValue_eq_mergedFieldSelectionSet
+          completeValue_eq_mergedFieldSelectionSet
             schema resolvers variableValues fieldDepth
             ((schema.fieldReturnType? execParent fieldName).getD fieldName)
             (normalizedField :: normalizedFields)
             (resolvers.resolve execParent fieldName arguments
               (.object groundType identity))
         have hright :=
-          GroundTypeNormalization.completeValue_eq_mergedFieldSelectionSet
+          completeValue_eq_mergedFieldSelectionSet
             schema resolvers variableValues fieldDepth
             ((schema.fieldReturnType? execParent fieldName).getD fieldName)
             (sourceField :: sourceFields)

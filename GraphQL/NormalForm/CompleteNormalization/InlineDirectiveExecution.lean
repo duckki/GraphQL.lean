@@ -23,7 +23,7 @@ theorem collectFields_inlineFragment_none_directives_allowed_flatten
   intro hallow
   rw [GroundTypeNormalization.collectFields_cons]
   simp [Execution.collectSelection, hallow]
-  rw [GroundTypeNormalization.collectFields_append]
+  rw [collectFields_append]
 
 theorem collectFields_inlineFragment_none_directives_skipped_eq
     (schema : Schema) (variableValues : Execution.VariableValues)
@@ -99,7 +99,7 @@ theorem collectFields_inlineFragment_some_directives_allowed_flatten_object
   simp [Execution.collectSelection, hallow,
     Execution.doesFragmentTypeApplyBool, Execution.runtimeObjectType?,
     hincludes]
-  rw [GroundTypeNormalization.collectFields_append]
+  rw [collectFields_append]
 
 theorem collectFields_inlineFragment_some_directives_allowed_flatten
     (schema : Schema) (variableValues : Execution.VariableValues)
@@ -119,7 +119,7 @@ theorem collectFields_inlineFragment_some_directives_allowed_flatten
   intro hallow happly
   rw [GroundTypeNormalization.collectFields_cons]
   simp [Execution.collectSelection, hallow, happly]
-  rw [GroundTypeNormalization.collectFields_append]
+  rw [collectFields_append]
 
 theorem executeSelectionSet_inlineFragment_some_directives_allowed_flatten_object
     (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)

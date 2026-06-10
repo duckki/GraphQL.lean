@@ -153,12 +153,12 @@ theorem collectFields_staticCollectForGround_inline_none_allowed_case
   rw [staticCollectForGround_inline_none_allowed schema
     (operationBoolVars operation) lookupParent groundType
     boolCase directives selectionSet rest hallow]
-  rw [GroundTypeNormalization.collectFields_append]
+  rw [collectFields_append]
   rw [hselection, hrest]
   rw [collectFields_inlineFragment_none_directives_allowed_flatten schema
     variableValues lookupParent source directives selectionSet rest
     hexecAllow]
-  rw [GroundTypeNormalization.collectFields_append]
+  rw [collectFields_append]
 
 theorem collectFields_staticCollectForGround_inline_some_skipped_case
     (schema : Schema) (variableValues : Execution.VariableValues)
@@ -273,12 +273,12 @@ theorem collectFields_staticCollectForGround_inline_some_allowed_case
   rw [staticCollectForGround_inline_some_allowed schema
     (operationBoolVars operation) lookupParent groundType
     typeCondition boolCase directives selectionSet rest hallow hincludes]
-  rw [GroundTypeNormalization.collectFields_append]
+  rw [collectFields_append]
   rw [hselection, hrest]
   rw [collectFields_inlineFragment_some_directives_allowed_flatten_object
     schema variableValues lookupParent groundType typeCondition identity
     directives selectionSet rest hexecAllow hincludes]
-  rw [GroundTypeNormalization.collectFields_append]
+  rw [collectFields_append]
 
 theorem executeSelectionSet_staticCollectForGround_field_skipped_case
     (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)

@@ -748,25 +748,8 @@ theorem executeField_singleton_groundLift_eq_on_store
         ((store.resolvers schema).resolve sourceField.parentType
           sourceField.fieldName sourceField.arguments
           (.object runtimeType identity)) := by
-    have hleft :
-        Execution.completeValue schema (store.resolvers schema) variableValues
-          depth
-          ((schema.fieldReturnType? sourceField.parentType
-            sourceField.fieldName).getD sourceField.fieldName)
-          [{ sourceField with selectionSet := liftedSelectionSet }]
-          ((store.resolvers schema).resolve sourceField.parentType
-            sourceField.fieldName sourceField.arguments
-            (.object runtimeType identity))
-        =
-        Execution.completeValue schema (store.resolvers schema) variableValues
-          depth
-          ((schema.fieldReturnType? sourceField.parentType
-            sourceField.fieldName).getD sourceField.fieldName)
-          liftedFields
-          ((store.resolvers schema).resolve sourceField.parentType
-            sourceField.fieldName sourceField.arguments
-            (.object runtimeType identity)) := by
-      apply completeValue_eq_of_child_object_lt_includes schema
+    have hleft :=
+      completeValue_eq_of_mergedFieldSelectionSet_eq schema
         (store.resolvers schema) variableValues depth
         ((schema.fieldReturnType? sourceField.parentType
           sourceField.fieldName).getD sourceField.fieldName)
@@ -775,37 +758,18 @@ theorem executeField_singleton_groundLift_eq_on_store
         ((store.resolvers schema).resolve sourceField.parentType
           sourceField.fieldName sourceField.arguments
           (.object runtimeType identity))
-      intro childDepth childRuntimeType childIdentity hlt hincludeChild
-      simp [Execution.mergedFieldSelectionSet, liftedFields, liftedSelectionSet]
-    have hright :
-        Execution.completeValue schema (store.resolvers schema) variableValues
-          depth
-          ((schema.fieldReturnType? sourceField.parentType
-            sourceField.fieldName).getD sourceField.fieldName)
-          [sourceField]
-          ((store.resolvers schema).resolve sourceField.parentType
-            sourceField.fieldName sourceField.arguments
-            (.object runtimeType identity))
-        =
-        Execution.completeValue schema (store.resolvers schema) variableValues
-          depth
-          ((schema.fieldReturnType? sourceField.parentType
-            sourceField.fieldName).getD sourceField.fieldName)
-          selectionSet
-          ((store.resolvers schema).resolve sourceField.parentType
-            sourceField.fieldName sourceField.arguments
-            (.object runtimeType identity)) := by
-      apply completeValue_eq_of_child_object_lt_includes schema
+        (by
+          simp [Execution.mergedFieldSelectionSet, liftedFields,
+            liftedSelectionSet])
+    have hright :=
+      completeValue_singleton_selectionSet_eq schema
         (store.resolvers schema) variableValues depth
         ((schema.fieldReturnType? sourceField.parentType
           sourceField.fieldName).getD sourceField.fieldName)
-        [sourceField]
-        selectionSet
+        sourceField selectionSet
         ((store.resolvers schema).resolve sourceField.parentType
           sourceField.fieldName sourceField.arguments
           (.object runtimeType identity))
-      intro childDepth childRuntimeType childIdentity hlt hincludeChild
-      simp [sourceField, Execution.mergedFieldSelectionSet]
     exact hleft.trans (hcomplete.trans hright.symm)
   simpa [sourceField, liftedSelectionSet] using
     executeField_singleton_eq_group_of_completeValue schema
@@ -961,25 +925,8 @@ theorem executeField_singleton_groundLift_scoped_eq_on_store
         ((store.resolvers schema).resolve sourceField.parentType
           sourceField.fieldName sourceField.arguments
           (.object runtimeType identity)) := by
-    have hleft :
-        Execution.completeValue schema (store.resolvers schema) variableValues
-          depth
-          ((schema.fieldReturnType? sourceField.parentType
-            sourceField.fieldName).getD sourceField.fieldName)
-          [{ sourceField with selectionSet := liftedSelectionSet }]
-          ((store.resolvers schema).resolve sourceField.parentType
-            sourceField.fieldName sourceField.arguments
-            (.object runtimeType identity))
-        =
-        Execution.completeValue schema (store.resolvers schema) variableValues
-          depth
-          ((schema.fieldReturnType? sourceField.parentType
-            sourceField.fieldName).getD sourceField.fieldName)
-          liftedFields
-          ((store.resolvers schema).resolve sourceField.parentType
-            sourceField.fieldName sourceField.arguments
-            (.object runtimeType identity)) := by
-      apply completeValue_eq_of_child_object_lt_includes schema
+    have hleft :=
+      completeValue_eq_of_mergedFieldSelectionSet_eq schema
         (store.resolvers schema) variableValues depth
         ((schema.fieldReturnType? sourceField.parentType
           sourceField.fieldName).getD sourceField.fieldName)
@@ -988,37 +935,18 @@ theorem executeField_singleton_groundLift_scoped_eq_on_store
         ((store.resolvers schema).resolve sourceField.parentType
           sourceField.fieldName sourceField.arguments
           (.object runtimeType identity))
-      intro childDepth childRuntimeType childIdentity hlt hincludeChild
-      simp [Execution.mergedFieldSelectionSet, liftedFields, liftedSelectionSet]
-    have hright :
-        Execution.completeValue schema (store.resolvers schema) variableValues
-          depth
-          ((schema.fieldReturnType? sourceField.parentType
-            sourceField.fieldName).getD sourceField.fieldName)
-          [sourceField]
-          ((store.resolvers schema).resolve sourceField.parentType
-            sourceField.fieldName sourceField.arguments
-            (.object runtimeType identity))
-        =
-        Execution.completeValue schema (store.resolvers schema) variableValues
-          depth
-          ((schema.fieldReturnType? sourceField.parentType
-            sourceField.fieldName).getD sourceField.fieldName)
-          selectionSet
-          ((store.resolvers schema).resolve sourceField.parentType
-            sourceField.fieldName sourceField.arguments
-            (.object runtimeType identity)) := by
-      apply completeValue_eq_of_child_object_lt_includes schema
+        (by
+          simp [Execution.mergedFieldSelectionSet, liftedFields,
+            liftedSelectionSet])
+    have hright :=
+      completeValue_singleton_selectionSet_eq schema
         (store.resolvers schema) variableValues depth
         ((schema.fieldReturnType? sourceField.parentType
           sourceField.fieldName).getD sourceField.fieldName)
-        [sourceField]
-        selectionSet
+        sourceField selectionSet
         ((store.resolvers schema).resolve sourceField.parentType
           sourceField.fieldName sourceField.arguments
           (.object runtimeType identity))
-      intro childDepth childRuntimeType childIdentity hlt hincludeChild
-      simp [sourceField, Execution.mergedFieldSelectionSet]
     exact hleft.trans (hcomplete.trans hright.symm)
   simpa [sourceField, liftedSelectionSet] using
     executeField_singleton_eq_group_of_completeValue schema

@@ -230,6 +230,70 @@ theorem completeValue_eq_of_child_object_lt_includes
                   exact hobject childDepth runtimeType identity
                     (Nat.lt_trans hlt (Nat.lt_succ_self depth)) hinclude))
 
+theorem completeValue_eq_of_mergedFieldSelectionSet_eq
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (variableValues : Execution.VariableValues)
+    (depth : Nat) (parentType : Name)
+    (leftFields rightFields : List Execution.ExecutableField)
+    (value : Execution.Value ObjectIdentity) :
+    Execution.mergedFieldSelectionSet leftFields =
+      Execution.mergedFieldSelectionSet rightFields ->
+      Execution.completeValue schema resolvers variableValues depth
+        parentType leftFields value
+        =
+      Execution.completeValue schema resolvers variableValues depth
+        parentType rightFields value := by
+  intro hmerged
+  apply completeValue_eq_of_child_object_lt_includes schema resolvers
+    variableValues
+  intro childDepth runtimeType identity hlt hinclude
+  simp [hmerged]
+
+theorem completeValue_eq_mergedFieldSelectionSet
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (variableValues : Execution.VariableValues)
+    (depth : Nat) (parentType : Name)
+    (fields : List Execution.ExecutableField)
+    (value : Execution.Value ObjectIdentity) :
+    Execution.completeValue schema resolvers variableValues depth
+      parentType fields value
+      =
+    Execution.completeValue schema resolvers variableValues depth
+      parentType (Execution.mergedFieldSelectionSet fields) value := by
+  apply completeValue_eq_of_mergedFieldSelectionSet_eq
+  simp
+
+theorem completeValue_singleton_selectionSet_eq
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (variableValues : Execution.VariableValues)
+    (depth : Nat) (parentType : Name)
+    (field : Execution.ExecutableField)
+    (selectionSet : List Selection)
+    (value : Execution.Value ObjectIdentity) :
+    Execution.completeValue schema resolvers variableValues depth
+      parentType [{ field with selectionSet := selectionSet }] value
+      =
+    Execution.completeValue schema resolvers variableValues depth
+      parentType selectionSet value := by
+  apply completeValue_eq_of_mergedFieldSelectionSet_eq
+  simp [Execution.mergedFieldSelectionSet]
+
+theorem completeValue_selectionSet_eq_singleton
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (variableValues : Execution.VariableValues)
+    (depth : Nat) (parentType : Name)
+    (field : Execution.ExecutableField)
+    (selectionSet : List Selection)
+    (value : Execution.Value ObjectIdentity) :
+    Execution.completeValue schema resolvers variableValues depth
+      parentType selectionSet value
+      =
+    Execution.completeValue schema resolvers variableValues depth
+      parentType [{ field with selectionSet := selectionSet }] value := by
+  exact
+    (completeValue_singleton_selectionSet_eq schema resolvers
+      variableValues depth parentType field selectionSet value).symm
+
 theorem executeField_singleton_eq_group_of_child_object_lt
     (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
     (variableValues : Execution.VariableValues)

@@ -777,58 +777,20 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_field_allowe
               (sourceField :: sourceFields)
               (resolvers.resolve execParent fieldName arguments
                 (.object groundType identity)) := by
-        have hleft :
-            Execution.completeValue schema resolvers
-                variableValues fieldDepth
-                ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-                (normalizedField :: normalizedFields)
-                (resolvers.resolve execParent fieldName arguments
-                  (.object groundType identity))
-              =
-            Execution.completeValue schema resolvers
-                variableValues fieldDepth
-                ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-                (Execution.mergedFieldSelectionSet
-                  (normalizedField :: normalizedFields))
-                (resolvers.resolve execParent fieldName arguments
-                  (.object groundType identity)) := by
-          apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
+        have hleft :=
+          GroundTypeNormalization.completeValue_eq_mergedFieldSelectionSet
             schema resolvers variableValues fieldDepth
             ((schema.fieldReturnType? execParent fieldName).getD fieldName)
             (normalizedField :: normalizedFields)
-            (Execution.mergedFieldSelectionSet
-              (normalizedField :: normalizedFields))
             (resolvers.resolve execParent fieldName arguments
               (.object groundType identity))
-          intro childDepth childRuntimeType childIdentity hlt hincludeChild
-          simp [Execution.mergedFieldSelectionSet,
-            Execution.mergedFieldSelectionSet_append]
-        have hright :
-            Execution.completeValue schema resolvers
-                variableValues fieldDepth
-                ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-                (sourceField :: sourceFields)
-                (resolvers.resolve execParent fieldName arguments
-                  (.object groundType identity))
-              =
-            Execution.completeValue schema resolvers
-                variableValues fieldDepth
-                ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-                (Execution.mergedFieldSelectionSet
-                  (sourceField :: sourceFields))
-                (resolvers.resolve execParent fieldName arguments
-                  (.object groundType identity)) := by
-          apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
+        have hright :=
+          GroundTypeNormalization.completeValue_eq_mergedFieldSelectionSet
             schema resolvers variableValues fieldDepth
             ((schema.fieldReturnType? execParent fieldName).getD fieldName)
             (sourceField :: sourceFields)
-            (Execution.mergedFieldSelectionSet
-              (sourceField :: sourceFields))
             (resolvers.resolve execParent fieldName arguments
               (.object groundType identity))
-          intro childDepth childRuntimeType childIdentity hlt hincludeChild
-          simp [Execution.mergedFieldSelectionSet,
-            Execution.mergedFieldSelectionSet_append]
         exact hleft.trans (hcomplete.trans hright.symm)
       simpa [normalizedField, sourceField] using
         Execution.executeSelectionSet_field_head_same_group_eq_of_completeValue

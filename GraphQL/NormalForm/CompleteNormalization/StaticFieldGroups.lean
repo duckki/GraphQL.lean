@@ -861,46 +861,18 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_dup
           ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
           (sourceField :: sourceFields)
           (resolvers.resolve lookupParent fieldName arguments source) := by
-    have hleft :
-        Execution.completeValue schema resolvers variableValues (depth - 1)
-            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
-            (normalizedField :: normalizedFields)
-            (resolvers.resolve lookupParent fieldName arguments source)
-          =
-        Execution.completeValue schema resolvers variableValues (depth - 1)
-            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
-            (Execution.mergedFieldSelectionSet
-              (normalizedField :: normalizedFields))
-            (resolvers.resolve lookupParent fieldName arguments source) := by
-      apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
+    have hleft :=
+      GroundTypeNormalization.completeValue_eq_mergedFieldSelectionSet
         schema resolvers variableValues (depth - 1)
         ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
         (normalizedField :: normalizedFields)
-        (Execution.mergedFieldSelectionSet (normalizedField :: normalizedFields))
         (resolvers.resolve lookupParent fieldName arguments source)
-      intro childDepth childRuntimeType childIdentity hlt hincludeChild
-      simp [Execution.mergedFieldSelectionSet,
-        Execution.mergedFieldSelectionSet_append]
-    have hright :
-        Execution.completeValue schema resolvers variableValues (depth - 1)
-            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
-            (sourceField :: sourceFields)
-            (resolvers.resolve lookupParent fieldName arguments source)
-          =
-        Execution.completeValue schema resolvers variableValues (depth - 1)
-            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
-            (Execution.mergedFieldSelectionSet
-              (sourceField :: sourceFields))
-            (resolvers.resolve lookupParent fieldName arguments source) := by
-      apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
+    have hright :=
+      GroundTypeNormalization.completeValue_eq_mergedFieldSelectionSet
         schema resolvers variableValues (depth - 1)
         ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
         (sourceField :: sourceFields)
-        (Execution.mergedFieldSelectionSet (sourceField :: sourceFields))
         (resolvers.resolve lookupParent fieldName arguments source)
-      intro childDepth childRuntimeType childIdentity hlt hincludeChild
-      simp [Execution.mergedFieldSelectionSet,
-        Execution.mergedFieldSelectionSet_append]
     have hmiddle :
         Execution.completeValue schema resolvers variableValues (depth - 1)
             ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)

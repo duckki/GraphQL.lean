@@ -841,7 +841,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_valueInclu
                     execParent responseName rest)))]
           ((store.resolvers schema).resolve execParent fieldName arguments
             (.object runtimeType identity)) := by
-      apply completeValue_eq_of_child_object_lt_includes schema
+      apply completeValue_eq_of_mergedFieldSelectionSet_eq schema
         (store.resolvers schema) variableValues fieldDepth
         ((schema.fieldReturnType? execParent fieldName).getD fieldName)
         (liftedField :: liftedFields)
@@ -854,15 +854,8 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_valueInclu
                   execParent responseName rest)))]
         ((store.resolvers schema).resolve execParent fieldName arguments
           (.object runtimeType identity))
-      intro childDepth childRuntimeType childIdentity hlt hincludeChild
       simpa [Execution.mergedFieldSelectionSet, completeValueSelectionSetField,
-        liftedField, liftedSelectionSet] using
-        congrArg
-          (fun selectionSet =>
-            Execution.executeSelectionSet schema (store.resolvers schema)
-              variableValues childDepth childRuntimeType
-              (.object childRuntimeType childIdentity) selectionSet)
-          hliftProjection
+        liftedField, liftedSelectionSet] using hliftProjection
     have hright :
         Execution.completeValue schema (store.resolvers schema) variableValues
           fieldDepth
@@ -883,7 +876,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_valueInclu
                     execParent responseName rest)))]
           ((store.resolvers schema).resolve execParent fieldName arguments
             (.object runtimeType identity)) := by
-      apply completeValue_eq_of_child_object_lt_includes schema
+      apply completeValue_eq_of_mergedFieldSelectionSet_eq schema
         (store.resolvers schema) variableValues fieldDepth
         ((schema.fieldReturnType? execParent fieldName).getD fieldName)
         (sourceField :: sourceFields)
@@ -896,16 +889,9 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_valueInclu
                   execParent responseName rest)))]
         ((store.resolvers schema).resolve execParent fieldName arguments
           (.object runtimeType identity))
-      intro childDepth childRuntimeType childIdentity hlt hincludeChild
       simpa [Execution.mergedFieldSelectionSet, completeValueSelectionSetField,
         sourceField, eraseScopedSelectionSet_validFieldsWithResponseName schema
-          execParent responseName rest] using
-        congrArg
-          (fun selectionSet =>
-            Execution.executeSelectionSet schema (store.resolvers schema)
-              variableValues childDepth childRuntimeType
-              (.object childRuntimeType childIdentity) selectionSet)
-          hsourceProjection
+          execParent responseName rest] using hsourceProjection
     exact hleft.trans (hcomplete.trans hright.symm)
   · exact htail
 

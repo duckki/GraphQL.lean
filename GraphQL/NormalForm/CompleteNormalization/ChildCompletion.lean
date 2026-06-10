@@ -293,80 +293,35 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_no_
             selectionSet := selectionSet
           }]
           (resolvers.resolve lookupParent fieldName arguments source) := by
-    have hleft :
-        Execution.completeValue schema resolvers variableValues (depth - 1)
-            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
-            [{
-              parentType := lookupParent,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet :=
-                normalizeForTypeIn schema
-                  (operationBoolVars operation)
-                  boolCase
-                  fieldDefinition.outputType.namedType selectionSet
-            }]
-            (resolvers.resolve lookupParent fieldName arguments source)
-          =
-        Execution.completeValue schema resolvers variableValues (depth - 1)
-            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
-            (normalizeForTypeIn schema
-              (operationBoolVars operation)
-              boolCase
-              fieldDefinition.outputType.namedType selectionSet)
-            (resolvers.resolve lookupParent fieldName arguments source) := by
-      apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
+    have hleft :=
+      GroundTypeNormalization.completeValue_singleton_selectionSet_eq
         schema resolvers variableValues (depth - 1)
         ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
-        [{
-          parentType := lookupParent,
-          responseName := responseName,
-          fieldName := fieldName,
-          arguments := arguments,
-          selectionSet :=
-            normalizeForTypeIn schema
-              (operationBoolVars operation)
-              boolCase
-              fieldDefinition.outputType.namedType selectionSet
-        }]
-        (normalizeForTypeIn schema
-          (operationBoolVars operation)
-          boolCase
-          fieldDefinition.outputType.namedType selectionSet)
-        (resolvers.resolve lookupParent fieldName arguments source)
-      intro childDepth childRuntimeType childIdentity hlt hincludeChild
-      simp [Execution.mergedFieldSelectionSet]
-    have hright :
-        Execution.completeValue schema resolvers variableValues (depth - 1)
-            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
-            [{
-              parentType := lookupParent,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := selectionSet
-            }]
-            (resolvers.resolve lookupParent fieldName arguments source)
-          =
-        Execution.completeValue schema resolvers variableValues (depth - 1)
-            ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
-            selectionSet
-            (resolvers.resolve lookupParent fieldName arguments source) := by
-      apply GroundTypeNormalization.completeValue_eq_of_child_object_lt_includes
-        schema resolvers variableValues (depth - 1)
-        ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
-        [{
+        {
           parentType := lookupParent,
           responseName := responseName,
           fieldName := fieldName,
           arguments := arguments,
           selectionSet := selectionSet
-        }]
+        }
+        (normalizeForTypeIn schema
+          (operationBoolVars operation)
+          boolCase
+          fieldDefinition.outputType.namedType selectionSet)
+        (resolvers.resolve lookupParent fieldName arguments source)
+    have hright :=
+      GroundTypeNormalization.completeValue_singleton_selectionSet_eq
+        schema resolvers variableValues (depth - 1)
+        ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
+        {
+          parentType := lookupParent,
+          responseName := responseName,
+          fieldName := fieldName,
+          arguments := arguments,
+          selectionSet := selectionSet
+        }
         selectionSet
         (resolvers.resolve lookupParent fieldName arguments source)
-      intro childDepth childRuntimeType childIdentity hlt hincludeChild
-      simp [Execution.mergedFieldSelectionSet]
     exact hleft.trans (hcomplete.trans hright.symm)
   exact
     executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_no_duplicate_case

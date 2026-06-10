@@ -209,6 +209,123 @@ theorem completeNormalizationNestedDirectiveSmoke :
         completeNormalizationNestedDirectiveOutputSnapshot = true := by
   native_decide
 
+def completeNormalizationDuplicateIncludeInputQuery : Operation :=
+  operationWith [
+    .field "hero" "hero" [] [.include (.variable "x")] [
+      .field "id" "id" [] [] []
+    ],
+    .field "hero" "hero" [] [.include (.variable "x")] [
+      .field "name" "name" [] [] []
+    ]
+  ]
+
+def completeNormalizationDuplicateIncludeOutputSnapshot : Operation :=
+  operationWith [
+    .inlineFragment none [.skip (.variable "x")] [],
+    .inlineFragment none [.include (.variable "x")] [
+      .field "hero" "hero" [] [] [
+        .field "id" "id" [] [] []
+      ],
+      .field "hero" "hero" [] [] [
+        .field "name" "name" [] [] []
+      ]
+    ]
+  ]
+
+theorem completeNormalizationDuplicateIncludeSmoke :
+    operationEqBool
+        (completeNormalizeOperation groundTypingSchema
+          completeNormalizationDuplicateIncludeInputQuery)
+        completeNormalizationDuplicateIncludeOutputSnapshot = true := by
+  native_decide
+
+def completeNormalizationDuplicateSkipInputQuery : Operation :=
+  operationWith [
+    .field "hero" "hero" [] [.skip (.variable "x")] [
+      .field "id" "id" [] [] []
+    ],
+    .field "hero" "hero" [] [.skip (.variable "x")] [
+      .field "name" "name" [] [] []
+    ]
+  ]
+
+def completeNormalizationDuplicateSkipOutputSnapshot : Operation :=
+  operationWith [
+    .inlineFragment none [.skip (.variable "x")] [
+      .field "hero" "hero" [] [] [
+        .field "id" "id" [] [] []
+      ],
+      .field "hero" "hero" [] [] [
+        .field "name" "name" [] [] []
+      ]
+    ],
+    .inlineFragment none [.include (.variable "x")] []
+  ]
+
+theorem completeNormalizationDuplicateSkipSmoke :
+    operationEqBool
+        (completeNormalizeOperation groundTypingSchema
+          completeNormalizationDuplicateSkipInputQuery)
+        completeNormalizationDuplicateSkipOutputSnapshot = true := by
+  native_decide
+
+def completeNormalizationSpineConflictInputQuery : Operation :=
+  operationWith [
+    .inlineFragment none [.skip (.variable "x")] [
+      .field "hero" "hero" [] [] [
+        .field "id" "id" [] [] []
+      ],
+      .field "hero" "hero" [] [.include (.variable "x")] [
+        .field "name" "name" [] [] []
+      ]
+    ]
+  ]
+
+def completeNormalizationSpineConflictOutputSnapshot : Operation :=
+  operationWith [
+    .inlineFragment none [.skip (.variable "x")] [
+      .field "hero" "hero" [] [] [
+        .field "id" "id" [] [] []
+      ]
+    ],
+    .inlineFragment none [.include (.variable "x")] []
+  ]
+
+theorem completeNormalizationSpineConflictSmoke :
+    operationEqBool
+        (completeNormalizeOperation groundTypingSchema
+          completeNormalizationSpineConflictInputQuery)
+        completeNormalizationSpineConflictOutputSnapshot = true := by
+  native_decide
+
+def completeNormalizationIncludeSkipInputQuery : Operation :=
+  operationWith [
+    .field "hero" "hero" [] [
+      .include (.variable "x"),
+      .skip (.variable "y")
+    ] [
+      .field "id" "id" [] [] []
+    ]
+  ]
+
+def completeNormalizationIncludeSkipOutputSnapshot : Operation :=
+  operationWith (completeNormalizationRootBoolCaseBranchesFor ["x", "y"] (fun
+    | [("x", false), ("y", false)] => []
+    | [("x", false), ("y", true)] => []
+    | [("x", true), ("y", false)] =>
+        [.field "hero" "hero" [] [] [
+          .field "id" "id" [] [] [],
+        ]]
+    | [("x", true), ("y", true)] => []
+    | _ => []))
+
+theorem completeNormalizationIncludeSkipSmoke :
+    operationEqBool
+        (completeNormalizeOperation groundTypingSchema
+          completeNormalizationIncludeSkipInputQuery)
+        completeNormalizationIncludeSkipOutputSnapshot = true := by
+  native_decide
+
 def completeNormalizationResolvers : Execution.Resolvers String :=
   { resolve := fun parentType fieldName _arguments _source =>
       match parentType, fieldName with

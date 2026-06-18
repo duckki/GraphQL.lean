@@ -27,11 +27,14 @@ operation transformation algorithms.
 ## Current Status
 
 `GraphQL.DataModel` is the proof-facing data model. It defines a typed graph
-store whose object identities are field-access paths. Store conformance ties
-execution to the graph root, validates field-label arguments, rejects semantic
-duplicate paths/properties/edge keys, enforces list-index discipline, and
-requires non-root nodes to be covered by graph edges. Store-backed resolvers and
-operation equivalence run over this graph-backed execution model.
+store with path-independent node ids. Runtime object values are parameterized by
+opaque resolver-owned refs; store-backed execution is the spec executor
+instantiated with data-model refs and resolvers. Store conformance ties
+execution to the graph root, validates field-label arguments, rejects duplicate
+node ids and semantic duplicate property/edge keys, enforces list-index
+discipline, and requires edge target types to be available in the store.
+Store-backed operation equivalence runs over this resolver-instantiated
+execution model.
 
 `NormalForm.groundNormalFormCorrect` uses
 `DataModel.operationsEquivalentOnData`. The ground-type normalizer has no fuel
@@ -44,7 +47,9 @@ belong in top-level `GraphQL/NormalForm.lean`; proof work belongs under
 The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
 `ObjectNode.lookupProperty?_some_conformsToLookupField`,
-`Store.lookupNode?_some_mem`, `Store.lookupNode?_some_path`,
+`Store.lookupNode?_some_mem`, `Store.lookupNode?_some_id`,
+`Store.lookupNode?_some_of_mem_unique`,
+`Store.firstNodeWithType?_some_mem`, `Store.firstNodeWithType?_some_typeName`,
 `Store.resolveValue_ne_scalar_of_compositeLookupField`,
 `possibleTypes_eq_nil_of_isLeafType`,
 `fieldReturnType?_some_lookupField`, and

@@ -7,6 +7,8 @@ namespace GraphQL
 
 namespace Execution
 
+variable {ObjectRef : Type}
+
 theorem mergeExecutableGroups_nil_right
     (groups : List (Name × List ExecutableField)) :
     mergeExecutableGroups groups [] = groups := by
@@ -18,15 +20,17 @@ theorem mergeExecutableGroups_append
       = mergeExecutableGroups (mergeExecutableGroups left middle) right := by
   simp [mergeExecutableGroups, List.foldl_append]
 
-theorem collectSubfields_nil {ObjectIdentity : Type}
+theorem collectSubfields_nil
     (schema : Schema) (variableValues : VariableValues)
-    (objectType : Name) (objectValue : Value ObjectIdentity) :
+    (objectType : Name)
+    (objectValue : Value ObjectRef) :
     collectSubfields schema variableValues objectType objectValue [] = [] := by
   rfl
 
-theorem collectSubfields_cons {ObjectIdentity : Type}
+theorem collectSubfields_cons
     (schema : Schema) (variableValues : VariableValues)
-    (objectType : Name) (objectValue : Value ObjectIdentity)
+    (objectType : Name)
+    (objectValue : Value ObjectRef)
     (field : ExecutableField) (rest : List ExecutableField) :
     collectSubfields schema variableValues objectType objectValue
         (field :: rest)
@@ -39,9 +43,10 @@ theorem collectSubfields_cons {ObjectIdentity : Type}
   rfl
 
 theorem executeCollectedFields_cons_eq_of_parts
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : Value ObjectRef)
     (leftHead rightHead : Name × List ExecutableField)
     (leftTail rightTail : List (Name × List ExecutableField)) :
     executeField schema resolvers variableValues depth source
@@ -67,10 +72,11 @@ theorem executeCollectedFields_cons_eq_of_parts
           simp [executeCollectedFields, hhead, htail]
 
 theorem executeSelectionSet_eq_of_collectFields_head_parts
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
     (depth : Nat) (parentType : Name)
-    (source : Value ObjectIdentity)
+    (source : Value ObjectRef)
     (left right : List Selection)
     (leftGroup rightGroup : Name × List ExecutableField)
     (leftRest rightRest : List (Name × List ExecutableField)) :
@@ -101,9 +107,10 @@ theorem executeSelectionSet_eq_of_collectFields_head_parts
     hhead htail
 
 theorem executeField_same_head_eq_of_completeValue
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : Value ObjectRef)
     (responseName parentType fieldName : Name) (arguments : List Argument)
     (leftSelectionSet rightSelectionSet : List Selection)
     (leftFields rightFields : List ExecutableField) :
@@ -142,10 +149,11 @@ theorem executeField_same_head_eq_of_completeValue
     hcomplete]
 
 theorem executeSelectionSet_field_head_same_group_eq_of_completeValue
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
     (fieldDepth : Nat) (parentType : Name)
-    (source : Value ObjectIdentity)
+    (source : Value ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (leftSelectionSet rightSelectionSet left right : List Selection)
     (leftFields rightFields : List ExecutableField)

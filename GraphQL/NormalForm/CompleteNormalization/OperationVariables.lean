@@ -9,6 +9,8 @@ namespace NormalForm
 
 namespace CompleteNormalization
 
+variable {ObjectRef : Type}
+
 theorem completeNormalizeOperation_uses_global_variables
     (operation : Operation) :
     operationBoolVars operation =
@@ -230,9 +232,10 @@ theorem operationBoolVars_case_mismatch_of_ne
     hleft hright hagrees hne
 
 theorem collectFields_wrapWithBoolCase_of_nonruntime_case
-    (schema : Schema) (variableValues : Execution.VariableValues)
+    (schema : Schema)
+    (variableValues : Execution.VariableValues)
     (operation : Operation)
-    (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (parentType : Name) (source : Execution.Value ObjectRef)
     (selectionSet : List Selection)
     {runtimeCase candidateCase : BoolCase} :
     runtimeCase ∈

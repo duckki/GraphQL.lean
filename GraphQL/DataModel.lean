@@ -1,12 +1,13 @@
 import GraphQL.Execution
+import GraphQL.DataModel.ObjectRef
 import GraphQL.Validation
 
 /-! GraphQL data model for store-backed resolvers
 
 This module models the server-side graph accessed through resolvers. Runtime objects are
-typed nodes keyed by field-access paths; scalar facts are node properties, and object
-relationships are labeled edges. The model assumes scalar/input/result coercion,
-execution errors, null bubbling, and serialization are outside the current scoped fragment.
+typed nodes; scalar facts are node properties, and object relationships are labeled edges.
+The model assumes scalar/input/result coercion, execution errors, null bubbling, and
+serialization are outside the current scoped fragment.
 -/
 namespace GraphQL
 
@@ -24,12 +25,25 @@ structure FieldAccess where
   arguments : List Argument := []
 deriving Repr
 
-inductive PathStep where
-  | field : FieldAccess -> PathStep
-  | index : Nat -> PathStep
-deriving Repr
-
-abbrev ObjectPath := List PathStep
+-- Assumption boundary for the scoped model: result values are already type-conformant.
+def valueConformsToType (schema : Schema) :
+    Execution.Value ObjectRef -> TypeRef -> Prop
+  | .null, .nonNull _inner => False
+  | .null, _typeRef => True
+  | .scalar _value, .named typeName => schema.isLeafType typeName
+  | .scalar value, .nonNull inner =>
+      valueConformsToType schema (.scalar value) inner
+  | .scalar _value, .list _inner => False
+  | .object objectType _ref, .named typeName =>
+      schema.typeIncludesObject typeName objectType
+  | .object objectType ref, .nonNull inner =>
+      valueConformsToType schema (.object objectType ref) inner
+  | .object _objectType _ref, .list _inner => False
+  | .list values, .list inner =>
+      ∀ value, value ∈ values -> valueConformsToType schema value inner
+  | .list values, .nonNull inner =>
+      valueConformsToType schema (.list values) inner
+  | .list _values, .named _typeName => False
 
 namespace FieldAccess
 
@@ -133,63 +147,7 @@ def argumentsWellTyped (schema : Schema) (fieldDefinition : FieldDefinition)
     (field : FieldAccess) : Prop :=
   Validation.argumentsValid schema fieldDefinition.arguments [] field.arguments
 
-def childPath (sourcePath : ObjectPath) (field : FieldAccess) : ObjectPath :=
-  sourcePath ++ [.field field.canonical]
-
-def childListElementPath
-    (sourcePath : ObjectPath) (field : FieldAccess) (index : Nat) :
-    ObjectPath :=
-  sourcePath ++ [.field field.canonical, .index index]
-
 end FieldAccess
-
-namespace PathStep
-
-def eqBool : PathStep -> PathStep -> Bool
-  | .field left, .field right => FieldAccess.eqBool left right
-  | .index left, .index right => left == right
-  | _, _ => false
-
-end PathStep
-
-namespace ObjectPath
-
-def eqBool : ObjectPath -> ObjectPath -> Bool
-  | [], [] => true
-  | left :: leftRest, right :: rightRest =>
-      PathStep.eqBool left right && eqBool leftRest rightRest
-  | _, _ => false
-
-end ObjectPath
-
--- Host result values before GraphQL response serialization, retaining runtime object type.
-inductive Value where
-  | null
-  | scalar (value : String)
-  | object (typeName : Name) (identity : ObjectPath)
-  | list (values : List Value)
-deriving Repr
-
-namespace Value
-
--- Assumption boundary for the scoped model: result values are already type-conformant.
-def conformsToType (schema : Schema) : Value -> TypeRef -> Prop
-  | .null, .nonNull _inner => False
-  | .null, _typeRef => True
-  | .scalar _value, .named typeName => schema.isLeafType typeName
-  | .scalar value, .nonNull inner => conformsToType schema (.scalar value) inner
-  | .scalar _value, .list _inner => False
-  | .object objectType _identity, .named typeName =>
-      schema.typeIncludesObject typeName objectType
-  | .object objectType identity, .nonNull inner =>
-      conformsToType schema (.object objectType identity) inner
-  | .object _objectType _identity, .list _inner => False
-  | .list values, .list inner =>
-      ∀ value, value ∈ values -> conformsToType schema value inner
-  | .list values, .nonNull inner => conformsToType schema (.list values) inner
-  | .list _values, .named _typeName => False
-
-end Value
 
 -- Node-local property values. Object relationships are represented by graph edges.
 inductive PropertyValue where
@@ -200,14 +158,14 @@ deriving Repr
 
 namespace PropertyValue
 
-def toValue : PropertyValue -> Value
+def toValue : PropertyValue -> Execution.Value ObjectRef
   | .null => .null
   | .scalar value => .scalar value
   | .list values => .list (values.map toValue)
 
 def conformsToType (schema : Schema) (value : PropertyValue)
     (typeRef : TypeRef) : Prop :=
-  value.toValue.conformsToType schema typeRef
+  valueConformsToType schema value.toValue typeRef
 
 end PropertyValue
 
@@ -218,8 +176,8 @@ def typeRefIsListLike : TypeRef -> Bool
 
 -- Graph node for one typed runtime object.
 structure ObjectNode where
+  id : ObjectId
   typeName : Name
-  path : ObjectPath
   properties : List (FieldAccess × PropertyValue) := []
 deriving Repr
 
@@ -262,41 +220,37 @@ end ObjectNode
 
 -- Graph edge for one object-valued field access.
 structure ObjectEdge where
-  sourcePath : ObjectPath
+  sourceId : ObjectId
   field : FieldAccess
   index? : Option Nat := none
+  targetId : ObjectId
   targetType : Name
 deriving Repr
 
 namespace ObjectEdge
 
-def targetPath (edge : ObjectEdge) : ObjectPath :=
-  match edge.index? with
-  | none => FieldAccess.childPath edge.sourcePath edge.field
-  | some index => FieldAccess.childListElementPath edge.sourcePath edge.field index
-
-def matchesField (sourcePath : ObjectPath) (field : FieldAccess)
+def matchesField (sourceId : ObjectId) (field : FieldAccess)
     (edge : ObjectEdge) : Bool :=
-  ObjectPath.eqBool edge.sourcePath sourcePath
+  (edge.sourceId == sourceId)
     && FieldAccess.eqBool edge.field field
 
 end ObjectEdge
 
-structure FieldPathKey where
-  sourcePath : ObjectPath
+structure FieldAccessKey where
+  sourceId : ObjectId
   field : FieldAccess
 deriving Repr
 
-namespace FieldPathKey
+namespace FieldAccessKey
 
-def eqBool (left right : FieldPathKey) : Bool :=
-  ObjectPath.eqBool left.sourcePath right.sourcePath
+def eqBool (left right : FieldAccessKey) : Bool :=
+  (left.sourceId == right.sourceId)
     && FieldAccess.eqBool left.field right.field
 
-end FieldPathKey
+end FieldAccessKey
 
 structure ListIndexKey where
-  sourcePath : ObjectPath
+  sourceId : ObjectId
   field : FieldAccess
   index : Nat
 deriving Repr
@@ -304,7 +258,7 @@ deriving Repr
 namespace ListIndexKey
 
 def eqBool (left right : ListIndexKey) : Bool :=
-  ObjectPath.eqBool left.sourcePath right.sourcePath
+  (left.sourceId == right.sourceId)
     && FieldAccess.eqBool left.field right.field
     && (left.index == right.index)
 
@@ -312,16 +266,16 @@ end ListIndexKey
 
 namespace ObjectEdge
 
-def nonListKey? (edge : ObjectEdge) : Option FieldPathKey :=
+def nonListKey? (edge : ObjectEdge) : Option FieldAccessKey :=
   match edge.index? with
-  | none => some { sourcePath := edge.sourcePath, field := edge.field }
+  | none => some { sourceId := edge.sourceId, field := edge.field }
   | some _ => none
 
 def listIndexKey? (edge : ObjectEdge) : Option ListIndexKey :=
   match edge.index? with
   | none => none
   | some index =>
-      some { sourcePath := edge.sourcePath, field := edge.field, index := index }
+      some { sourceId := edge.sourceId, field := edge.field, index := index }
 
 end ObjectEdge
 
@@ -337,26 +291,20 @@ namespace Store
 def allNodes (store : Store) : List ObjectNode :=
   store.root :: store.nodes
 
-def lookupNodeIn? (path : ObjectPath) :
-    List ObjectNode -> Option ObjectNode
-  | [] => none
-  | node :: rest =>
-      if ObjectPath.eqBool node.path path then
-        some node
-      else
-        lookupNodeIn? path rest
+def lookupNode? (store : Store) (id : ObjectId) : Option ObjectNode :=
+  store.allNodes.find? (fun node => node.id == id)
 
-def lookupNode? (store : Store) (path : ObjectPath) : Option ObjectNode :=
-  lookupNodeIn? path store.allNodes
+def firstNodeWithType? (store : Store) (runtimeType : Name) : Option ObjectNode :=
+  store.allNodes.find? (fun node => node.typeName == runtimeType)
 
-def matchingEdges (store : Store) (sourcePath : ObjectPath)
+def matchingEdges (store : Store) (sourceId : ObjectId)
     (field : FieldAccess) : List ObjectEdge :=
-  store.edges.filter (fun edge => edge.matchesField sourcePath field)
+  store.edges.filter (fun edge => edge.matchesField sourceId field)
 
-def firstMatchingEdge? (store : Store) (sourcePath : ObjectPath)
+def firstMatchingEdge? (store : Store) (sourceId : ObjectId)
     (field : FieldAccess) (index? : Option Nat) : Option ObjectEdge :=
   store.edges.find? (fun edge =>
-    edge.matchesField sourcePath field && edge.index? == index?)
+    edge.matchesField sourceId field && edge.index? == index?)
 
 def insertEdgeByIndex (edge : ObjectEdge) : List ObjectEdge -> List ObjectEdge
   | [] => [edge]
@@ -370,51 +318,62 @@ def sortEdgesByIndex : List ObjectEdge -> List ObjectEdge
   | [] => []
   | edge :: rest => insertEdgeByIndex edge (sortEdgesByIndex rest)
 
-def indexedMatchingEdgesUnsorted (store : Store) (sourcePath : ObjectPath)
+def indexedMatchingEdgesUnsorted (store : Store) (sourceId : ObjectId)
     (field : FieldAccess) : List ObjectEdge :=
-  (store.matchingEdges sourcePath field).filter (fun edge =>
+  (store.matchingEdges sourceId field).filter (fun edge =>
     match edge.index? with
     | some _ => true
     | none => false)
 
-def indexedMatchingEdges (store : Store) (sourcePath : ObjectPath)
+def indexedMatchingEdges (store : Store) (sourceId : ObjectId)
     (field : FieldAccess) : List ObjectEdge :=
-  sortEdgesByIndex (store.indexedMatchingEdgesUnsorted sourcePath field)
+  sortEdgesByIndex (store.indexedMatchingEdgesUnsorted sourceId field)
 
 def fieldAccess (fieldName : Name) (arguments : List Argument) : FieldAccess :=
   { name := fieldName, arguments := arguments }
 
-def resolveValue (store : Store) (schema : Schema)
-    (fieldName : Name) (arguments : List Argument) : Value -> Value
-  | .object runtimeType sourcePath =>
-      match store.lookupNode? sourcePath with
-      | none => .null
-      | some node =>
-          if node.typeName == runtimeType then
-            match schema.lookupField runtimeType fieldName with
-            | none => .null
-            | some fieldDefinition =>
-                let field := fieldAccess fieldName arguments
-                if schema.getPossibleTypes fieldDefinition.outputType.namedType = [] then
-                  match node.lookupProperty? field with
-                  | none => .null
-                  | some property => property.toValue
-                else if typeRefIsListLike fieldDefinition.outputType then
-                  .list ((store.indexedMatchingEdges sourcePath field).map
-                    (fun edge => .object edge.targetType edge.targetPath))
-                else
-                  match store.firstMatchingEdge? sourcePath field none with
-                  | none => .null
-                  | some edge => .object edge.targetType edge.targetPath
-          else
-            .null
-  | _ => .null
+def resolveValueFromNode (store : Store) (schema : Schema)
+    (fieldName : Name) (arguments : List Argument)
+    (sourceNode : ObjectNode) : Execution.Value ObjectRef :=
+  match schema.lookupField sourceNode.typeName fieldName with
+  | none => .null
+  | some fieldDefinition =>
+      let field := fieldAccess fieldName arguments
+      if schema.getPossibleTypes fieldDefinition.outputType.namedType = [] then
+        match sourceNode.lookupProperty? field with
+        | none => .null
+        | some property => property.toValue
+      else if typeRefIsListLike fieldDefinition.outputType then
+        .list ((store.indexedMatchingEdges sourceNode.id field).map
+          (fun edge => .object edge.targetType
+            (some (objectRefOfId edge.targetId))))
+      else
+        match store.firstMatchingEdge? sourceNode.id field none with
+        | none => .null
+        | some edge => .object edge.targetType
+            (some (objectRefOfId edge.targetId))
 
-def nonListCompositeEdgeKeys (store : Store) : List FieldPathKey :=
+def resolveValueAtNode (store : Store) (schema : Schema)
+    (fieldName : Name) (arguments : List Argument)
+    (sourceId : ObjectId) : Execution.Value ObjectRef :=
+  match store.lookupNode? sourceId with
+  | none => .null
+  | some sourceNode =>
+      store.resolveValueFromNode schema fieldName arguments sourceNode
+
+def resolveValue (store : Store) (schema : Schema)
+    (fieldName : Name) (arguments : List Argument)
+    (runtimeType : Name) : Execution.Value ObjectRef :=
+  match store.firstNodeWithType? runtimeType with
+  | none => .null
+  | some sourceNode =>
+      store.resolveValueFromNode schema fieldName arguments sourceNode
+
+def nonListCompositeEdgeKeys (store : Store) : List FieldAccessKey :=
   store.edges.filterMap ObjectEdge.nonListKey?
 
 def nonListCompositeEdgesUnique (store : Store) : Prop :=
-  pairwiseUniqueByEqBool FieldPathKey.eqBool store.nonListCompositeEdgeKeys
+  pairwiseUniqueByEqBool FieldAccessKey.eqBool store.nonListCompositeEdgeKeys
 
 def listCompositeEdgeKeys (store : Store) : List ListIndexKey :=
   store.edges.filterMap ObjectEdge.listIndexKey?
@@ -427,41 +386,36 @@ def listCompositeEdgesDense (store : Store) : Prop :=
     match edge.index? with
     | none => True
     | some index =>
-        let edges := store.indexedMatchingEdges edge.sourcePath edge.field
+        let edges := store.indexedMatchingEdges edge.sourceId edge.field
         index < edges.length
           ∧ ∀ expected, expected < edges.length ->
             ∃ candidate, candidate ∈ edges ∧ candidate.index? = some expected
 
-def nodePathsUnique (store : Store) : Prop :=
-  pairwiseUniqueByEqBool ObjectPath.eqBool (store.allNodes.map ObjectNode.path)
+def nodeIds (store : Store) : List ObjectId :=
+  store.allNodes.map ObjectNode.id
 
-def nodeCoveredByRootOrEdge (store : Store) (node : ObjectNode) : Prop :=
-  ObjectPath.eqBool node.path store.root.path = true
-    ∨ ∃ edge, edge ∈ store.edges ∧ ObjectPath.eqBool edge.targetPath node.path = true
-
-def nodesCoveredByRootOrEdge (store : Store) : Prop :=
-  ∀ node, node ∈ store.allNodes -> store.nodeCoveredByRootOrEdge node
+def nodeIdsUnique (store : Store) : Prop :=
+  pairwiseUniqueByEqBool (fun left right : ObjectId => left == right)
+    store.nodeIds
 
 def rootWellTyped (schema : Schema) (store : Store) : Prop :=
-  store.root.path = []
-    ∧ schema.typeIncludesObject schema.queryType store.root.typeName
+  schema.typeIncludesObject schema.queryType store.root.typeName
 
 def edgeWellTyped (schema : Schema) (store : Store)
     (edge : ObjectEdge) : Prop :=
-  ∃ sourceNode fieldDefinition targetNode,
-    store.lookupNode? edge.sourcePath = some sourceNode
+  ∃ sourceNode targetNode fieldDefinition,
+    store.lookupNode? edge.sourceId = some sourceNode
+      ∧ store.lookupNode? edge.targetId = some targetNode
+      ∧ targetNode.typeName = edge.targetType
       ∧ schema.lookupField sourceNode.typeName edge.field.name = some fieldDefinition
       ∧ schema.getPossibleTypes fieldDefinition.outputType.namedType ≠ []
       ∧ edge.field.argumentsWellTyped schema fieldDefinition
       ∧ (typeRefIsListLike fieldDefinition.outputType = true ↔ edge.index?.isSome)
-      ∧ schema.typeIncludesObject fieldDefinition.outputType.namedType edge.targetType
-      ∧ store.lookupNode? edge.targetPath = some targetNode
-      ∧ targetNode.typeName = edge.targetType
+      ∧ schema.typeIncludesObject fieldDefinition.outputType.namedType targetNode.typeName
 
 def wellTyped (schema : Schema) (store : Store) : Prop :=
   store.rootWellTyped schema
-    ∧ store.nodePathsUnique
-    ∧ store.nodesCoveredByRootOrEdge
+    ∧ store.nodeIdsUnique
     ∧ (∀ node, node ∈ store.allNodes -> node.wellTyped schema)
     ∧ (∀ edge, edge ∈ store.edges -> store.edgeWellTyped schema edge)
     ∧ store.nonListCompositeEdgesUnique
@@ -470,32 +424,35 @@ def wellTyped (schema : Schema) (store : Store) : Prop :=
 
 end Store
 
-namespace Value
-
--- Spec-related bridge from proof-facing store values to execution resolver values.
-def toExecutionValue : Value -> Execution.Value ObjectPath
-  | .null => .null
-  | .scalar value => .scalar value
-  | .object typeName identity => .object typeName identity
-  | .list values => .list (values.map toExecutionValue)
-
-end Value
-
 namespace Store
 
-def rootExecutionValue (store : Store) : Execution.Value ObjectPath :=
-  .object store.root.typeName store.root.path
+def rootExecutionValue (store : Store) : Execution.Value ObjectRef :=
+  .object store.root.typeName (some (objectRefOfId store.root.id))
 
 def resolve (store : Store) (schema : Schema) (fieldName : Name)
-    (arguments : List Argument) (source : Execution.Value ObjectPath) :
-    Execution.Value ObjectPath :=
+    (arguments : List Argument) (source : Execution.Value ObjectRef) :
+    Execution.Value ObjectRef :=
   match source with
-  | .object runtimeType identity =>
-      (store.resolveValue schema fieldName arguments
-        (.object runtimeType identity)).toExecutionValue
+  | .object runtimeType ref? =>
+      match ref? with
+      | some ref =>
+          match objectIdOfRef? ref with
+          | some sourceId =>
+              match store.lookupNode? sourceId with
+              | some sourceNode =>
+                  if sourceNode.typeName == runtimeType then
+                    store.resolveValueFromNode schema fieldName arguments sourceNode
+                  else
+                    .null
+              | none =>
+                  .null
+          | none =>
+              .null
+      | none =>
+          store.resolveValue schema fieldName arguments runtimeType
   | _ => .null
 
-def resolvers (store : Store) (schema : Schema) : Execution.Resolvers ObjectPath :=
+def resolvers (store : Store) (schema : Schema) : Execution.Resolvers ObjectRef :=
   { resolve := fun _parentType fieldName arguments source =>
       store.resolve schema fieldName arguments source }
 

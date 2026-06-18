@@ -11,14 +11,15 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
-variable {ObjectIdentity : Type}
+variable {ObjectRef : Type}
 
 theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_case
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (variableDefinitions : List VariableDefinition)
     (depth : Nat) (parentType responseName fieldName : Name)
-    (arguments : List Argument) (source : Execution.Value ObjectIdentity)
+    (arguments : List Argument) (source : Execution.Value ObjectRef)
     (selectionSet rest : List Selection) :
     Validation.selectionSetValid schema variableDefinitions parentType
       (Selection.field responseName fieldName arguments [] selectionSet
@@ -40,10 +41,11 @@ theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_case
       hvalid hlookup)
 
 theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_lookupValid_case
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType responseName fieldName : Name)
-    (arguments : List Argument) (source : Execution.Value ObjectIdentity)
+    (arguments : List Argument) (source : Execution.Value ObjectRef)
     (selectionSet rest : List Selection) :
     selectionSetLookupValid schema parentType
       (Selection.field responseName fieldName arguments [] selectionSet
@@ -64,9 +66,10 @@ theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_lookupValid_
     (selectionSetLookupValid_field_head_lookup_none_false hvalid hlookup)
 
 theorem executeField_singleton_eq_group_of_completeValue
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (source : Execution.Value ObjectIdentity) (responseName : Name)
+    (depth : Nat) (source : Execution.Value ObjectRef) (responseName : Name)
     (field : Execution.ExecutableField)
     (fields : List Execution.ExecutableField)
     (normalizedSelectionSet : List Selection) :
@@ -92,20 +95,21 @@ theorem executeField_singleton_eq_group_of_completeValue
   simpa [resolved, childType] using hcomplete
 
 theorem executeField_singleton_eq_group_of_child_object_lt
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (source : Execution.Value ObjectIdentity) (responseName : Name)
+    (depth : Nat) (source : Execution.Value ObjectRef) (responseName : Name)
     (field : Execution.ExecutableField)
     (fields : List Execution.ExecutableField)
     (normalizedSelectionSet : List Selection) :
-    (∀ childDepth runtimeType identity,
+    (∀ childDepth runtimeType ref,
       childDepth < depth ->
         Execution.executeSelectionSet schema resolvers variableValues
-          childDepth runtimeType (.object runtimeType identity)
+          childDepth runtimeType (.object runtimeType ref)
           normalizedSelectionSet
           =
         Execution.executeSelectionSet schema resolvers variableValues
-          childDepth runtimeType (.object runtimeType identity)
+          childDepth runtimeType (.object runtimeType ref)
           (Execution.mergedFieldSelectionSet (field :: fields))) ->
       Execution.executeField schema resolvers variableValues (depth + 1)
         source responseName
@@ -125,14 +129,15 @@ theorem executeField_singleton_eq_group_of_child_object_lt
     (field :: fields)
     (resolvers.resolve field.parentType field.fieldName field.arguments
       source)
-  intro childDepth runtimeType identity hlt
+  intro childDepth runtimeType ref hlt
   simpa [Execution.mergedFieldSelectionSet] using
-    hcomplete childDepth runtimeType identity hlt
+    hcomplete childDepth runtimeType ref hlt
 
 theorem executeCollectedFields_cons_eq_of_parts
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (source : Execution.Value ObjectIdentity)
+    (depth : Nat) (source : Execution.Value ObjectRef)
     (normalizedGroup sourceGroup :
       Name × List Execution.ExecutableField)
     (normalizedRest sourceRest :
@@ -161,8 +166,9 @@ theorem executeCollectedFields_cons_eq_of_parts
           rw [hhead, htail]
 
 theorem executeCollectedFields_zero
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
-    (variableValues : Execution.VariableValues) (source : Execution.Value ObjectIdentity) :
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
+    (variableValues : Execution.VariableValues) (source : Execution.Value ObjectRef) :
     ∀ groups,
       Execution.executeCollectedFields schema resolvers variableValues 0 source
         groups
@@ -176,9 +182,10 @@ theorem executeCollectedFields_zero
             rest]
 
 theorem executeSelectionSet_field_head_eq_of_completeValue
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections normalizedSubselections normalizedRest rest :
       List Selection)
@@ -272,9 +279,10 @@ theorem executeSelectionSet_field_head_eq_of_completeValue
         sourceRest hhead htail
 
 theorem normalizeSelectionSet_executeSelectionSet_field_head_of_completeValue
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections rest normalizedSubselections : List Selection)
     (fieldDefinition : FieldDefinition)
@@ -300,10 +308,8 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_of_completeValue
       if objectTypeNameBool schema returnType then
         normalizeSelectionSet schema returnType mergedSubselections
       else
-        (schema.getPossibleTypes returnType).map
-          (fun objectType =>
-            Selection.inlineFragment (some objectType) []
-              (normalizeSelectionSet schema objectType mergedSubselections))
+        possibleTypeNormalizations schema (schema.getPossibleTypes returnType)
+          mergedSubselections
     schema.lookupField parentType fieldName = some fieldDefinition ->
     normalizedSubselections = computedSubselections ->
     responseName ∉
@@ -351,7 +357,9 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_of_completeValue
       Selection.field responseName fieldName arguments [] normalizedSubselections
         :: normalizedRest := by
     simp [normalizeSelectionSet, hlookup, matching, mergedSubselections,
-      returnType, normalizedRest, computedSubselections, hsubsections]
+      returnType, normalizedRest, computedSubselections, hsubsections,
+      normalizedField, possibleTypeNormalizations]
+    rfl
   rw [hnormalized]
   exact executeSelectionSet_field_head_eq_of_completeValue
     schema resolvers variableValues depth parentType source responseName
@@ -361,15 +369,16 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_of_completeValue
     htail
 
 theorem normalizeSelectionSet_executeSelectionSet_field_head_case
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections rest normalizedSubselections : List Selection)
     (fieldDefinition : FieldDefinition) :
     objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType identity,
-        source = .object runtimeType identity
+      (∃ runtimeType ref,
+        source = .object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
         selectionSetDirectiveFree
           (Selection.field responseName fieldName arguments [] subselections
@@ -384,22 +393,19 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case
           if objectTypeNameBool schema returnType then
             normalizeSelectionSet schema returnType mergedSubselections
           else
-            (schema.getPossibleTypes returnType).map
-              (fun objectType =>
-                Selection.inlineFragment (some objectType) []
-                  (normalizeSelectionSet schema objectType
-                    mergedSubselections))) ->
-        (∀ childDepth runtimeType identity,
+            possibleTypeNormalizations schema
+              (schema.getPossibleTypes returnType) mergedSubselections) ->
+        (∀ childDepth runtimeType ref,
           childDepth < depth ->
             schema.typeIncludesObjectBool
               ((schema.fieldReturnType? parentType fieldName).getD fieldName)
               runtimeType = true ->
               Execution.executeSelectionSet schema resolvers variableValues
-                childDepth runtimeType (.object runtimeType identity)
+                childDepth runtimeType (.object runtimeType ref)
                 normalizedSubselections
                 =
               Execution.executeSelectionSet schema resolvers variableValues
-                childDepth runtimeType (.object runtimeType identity)
+                childDepth runtimeType (.object runtimeType ref)
                 (subselections
                   ++ mergeSelectionSets
                     (validFieldsWithResponseName schema parentType responseName
@@ -434,6 +440,13 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case
       arguments := arguments,
       selectionSet := subselections
     }
+  have hsourceValue :
+      ∃ runtimeType ref,
+        source = .object runtimeType ref
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true := by
+    rcases hsource with ⟨runtimeType, ref, hsourceEq, hinclude⟩
+    subst source
+    exact ⟨runtimeType, ref, by simp [], hinclude⟩
   let normalizedRest :=
     normalizeSelectionSet schema parentType
       (withoutFieldsWithResponseName schema responseName rest)
@@ -443,7 +456,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case
           normalizedRest).map Prod.fst := by
     unfold normalizedRest
     exact collectFields_responseName_not_mem_of_responseNameFree schema
-      variableValues parentType source responseName hobject hsource
+      variableValues parentType source responseName hobject hsourceValue
       (normalizeSelectionSet schema parentType
         (withoutFieldsWithResponseName schema responseName rest))
       (normalizeSelectionSet_directiveFree schema parentType
@@ -461,7 +474,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case
       sourceRest := by
     exact collectFields_withoutFieldsWithResponseName_fieldHead_rest_eq_sourceRest
       schema variableValues parentType source responseName fieldName arguments
-      subselections rest sourceFields sourceRest hobject hsource hfree
+      subselections rest sourceFields sourceRest hobject hsourceValue hfree
       (by simpa [sourceField] using hsourceCollect)
   have htailCollected :
       Execution.executeCollectedFields schema resolvers variableValues depth
@@ -489,7 +502,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case
       [{ sourceField with selectionSet := normalizedSubselections }]
       (sourceField :: sourceFields)
       (resolvers.resolve parentType fieldName arguments source)
-    intro childDepth runtimeType identity hlt hinclude
+    intro childDepth runtimeType ref hlt hinclude
     have hmerged :
         Execution.mergedFieldSelectionSet (sourceField :: sourceFields)
           =
@@ -501,28 +514,29 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case
           variableValues parentType source responseName
           (Selection.field responseName fieldName arguments [] subselections
             :: rest)
-          hobject hsource hfree
+          hobject hsourceValue hfree
       simp [collectedResponseSelectionSet, hsourceCollect,
         validFieldsWithResponseName, mergeSelectionSets,
         Selection.subselections] at hprojection
       simpa [sourceField] using hprojection
     rw [hmerged]
     simpa [Execution.mergedFieldSelectionSet] using
-      hchild childDepth runtimeType identity (Nat.lt_of_lt_of_le hlt
+      hchild childDepth runtimeType ref (Nat.lt_of_lt_of_le hlt
         (Nat.sub_le depth 1)) hinclude
   · exact htailCollected
 
 theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections rest : List Selection)
     (fieldDefinition : FieldDefinition) :
     objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType identity,
-        source = .object runtimeType identity
+      (∃ runtimeType ref,
+        source = .object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
     selectionSetDirectiveFree
       (Selection.field responseName fieldName arguments [] subselections
@@ -538,20 +552,20 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
       subselections
         ++ mergeSelectionSets
           (validFieldsWithResponseName schema parentType responseName rest)
-    ∀ (childDepth : Nat) (runtimeType : Name) (identity : ObjectIdentity),
+    ∀ (childDepth : Nat) (runtimeType : Name) (ref : Option ObjectRef),
       childDepth < depth ->
         objectTypeNameBool schema runtimeType = true ->
         selectionSetDirectiveFree mergedSubselections ->
         selectionSetLookupValid schema runtimeType mergedSubselections ->
         selectionSetSemanticsReady schema runtimeType mergedSubselections ->
-        FieldMerge.fieldsInSetCanMerge schema runtimeType mergedSubselections ->
-          Execution.executeSelectionSet schema resolvers variableValues
-            childDepth runtimeType (.object runtimeType identity)
-            (normalizeSelectionSet schema runtimeType mergedSubselections)
-          =
-          Execution.executeSelectionSet schema resolvers variableValues
-            childDepth runtimeType (.object runtimeType identity)
-            mergedSubselections) ->
+          FieldMerge.fieldsInSetCanMerge schema runtimeType mergedSubselections ->
+            Execution.executeSelectionSet schema resolvers variableValues
+              childDepth runtimeType (.object runtimeType ref)
+              (normalizeSelectionSet schema runtimeType mergedSubselections)
+            =
+            Execution.executeSelectionSet schema resolvers variableValues
+              childDepth runtimeType (.object runtimeType ref)
+              mergedSubselections) ->
     Execution.executeSelectionSet schema resolvers variableValues depth
       parentType source
       (normalizeSelectionSet schema parentType
@@ -601,17 +615,15 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
     (if objectTypeNameBool schema returnType then
       normalizeSelectionSet schema returnType mergedSubselections
     else
-      (schema.getPossibleTypes returnType).map
-        (fun objectType =>
-          Selection.inlineFragment (some objectType) []
-            (normalizeSelectionSet schema objectType mergedSubselections)))
+      possibleTypeNormalizations schema (schema.getPossibleTypes returnType)
+        mergedSubselections)
     fieldDefinition
   · exact hobject
   · exact hsource
   · exact hfree
   · exact hlookup
   · simp [matching, mergedSubselections, returnType]
-  · intro childDepth runtimeType identity hlt hinclude
+  · intro childDepth runtimeType ref hlt hinclude
     have hincludeReturn :
         schema.typeIncludesObjectBool returnType runtimeType = true := by
       simpa [hreturnEq] using hinclude
@@ -641,7 +653,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
           hreturnObject hincludeReturn
       subst runtimeType
       simp [hreturnObject]
-      exact hrecursive childDepth returnType identity hlt hreturnObject
+      exact hrecursive childDepth returnType ref hlt hreturnObject
         hmergedFree hmergedLookup hmergedReady hmergedCanMerge
     · have hreturnObjectFalse :
           objectTypeNameBool schema returnType = false := by
@@ -659,17 +671,16 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
           (SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects
             hschema returnType objectType hobjectType)
       simp [hreturnObjectFalse]
-      exact executeSelectionSet_possibleTypeFragments_runtime_branch schema
-        resolvers variableValues childDepth runtimeType identity
+      exact executeSelectionSet_possibleTypeNormalizations_runtime_branch
+        schema resolvers variableValues childDepth runtimeType (ref := ref)
         (schema.getPossibleTypes returnType) mergedSubselections hobjects
         (SchemaWellFormedness.schemaWellFormed_possibleTypesNodup hschema
           returnType)
         hpossible
-        (hrecursive childDepth runtimeType identity hlt
+        (hrecursive childDepth runtimeType ref hlt
           (hobjects runtimeType hpossible) hmergedFree hmergedLookup
           hmergedReady hmergedCanMerge)
   · exact htail
-
 
 end GroundTypeNormalization
 

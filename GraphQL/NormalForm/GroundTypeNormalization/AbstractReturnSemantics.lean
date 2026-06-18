@@ -1,4 +1,6 @@
 import GraphQL.NormalForm.GroundTypeNormalization.InlineFragmentSemantics
+import GraphQL.NormalForm.GroundTypeNormalization.Normality
+import GraphQL.DataModel.StoreValueInclusion
 
 /-!
 Abstract return grounding semantics for ground-type normalization.
@@ -9,17 +11,17 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
-variable {ObjectIdentity : Type}
+variable {ObjectRef : Type}
 
 theorem collectFields_possibleTypeFragments_not_mem_eq_nil
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (runtimeType : Name) (identity : ObjectIdentity)
+    (runtimeType : Name) (ref : Option ObjectRef := none)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       objectTypeNameBool schema objectType = true) ->
     runtimeType ∉ possibleTypes ->
       Execution.collectFields schema variableValues runtimeType
-        (.object runtimeType identity)
+        (.object runtimeType ref)
         (possibleTypes.map
           (fun objectType =>
             Selection.inlineFragment (some objectType) []
@@ -47,19 +49,22 @@ theorem collectFields_possibleTypeFragments_not_mem_eq_nil
       rw [List.map_cons]
       rw [collectFields_inlineFragment_some_directiveFree_skip_eq]
       · exact ih hrestObjects hrestNotin
-      · exact doesFragmentTypeApplyBool_object_other_false schema hobject hne
+      · exact doesFragmentTypeApplyBool_object_other_false schema
+          (ref := ref)
+          hobject hne
 
 theorem executeSelectionSet_append_possibleTypeFragments_not_mem
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (runtimeType : Name) (identity : ObjectIdentity)
+    (depth : Nat) (runtimeType : Name) (ref : Option ObjectRef := none)
     (possibleTypes : List Name)
     (selectionSet suffix : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       objectTypeNameBool schema objectType = true) ->
     runtimeType ∉ possibleTypes ->
       Execution.executeSelectionSet schema resolvers variableValues depth
-        runtimeType (.object runtimeType identity)
+        runtimeType (.object runtimeType ref)
         (suffix ++
           possibleTypes.map
             (fun objectType =>
@@ -67,12 +72,86 @@ theorem executeSelectionSet_append_possibleTypeFragments_not_mem
                 (normalizeSelectionSet schema objectType selectionSet)))
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        runtimeType (.object runtimeType identity) suffix := by
+        runtimeType (.object runtimeType ref) suffix := by
   intro hobjects hnotin
-  simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet]
+  simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+    ]
   rw [collectFields_append]
   rw [collectFields_possibleTypeFragments_not_mem_eq_nil schema
-    variableValues runtimeType identity possibleTypes selectionSet hobjects
+    variableValues runtimeType (ref := ref) possibleTypes selectionSet hobjects
+    hnotin]
+  simp [Execution.mergeExecutableGroups_nil_right]
+
+theorem collectFields_possibleTypeNormalizations_not_mem_eq_nil
+    (schema : Schema) (variableValues : Execution.VariableValues)
+    (runtimeType : Name) (ref : Option ObjectRef := none)
+    (possibleTypes : List Name) (selectionSet : List Selection) :
+    (∀ objectType, objectType ∈ possibleTypes ->
+      objectTypeNameBool schema objectType = true) ->
+    runtimeType ∉ possibleTypes ->
+      Execution.collectFields schema variableValues runtimeType
+        (.object runtimeType ref)
+        (possibleTypeNormalizations schema possibleTypes selectionSet)
+      = [] := by
+  intro hobjects hnotin
+  induction possibleTypes with
+  | nil =>
+      simp [possibleTypeNormalizations, Execution.collectFields]
+  | cons objectType rest ih =>
+      have hobject : objectTypeNameBool schema objectType = true :=
+        hobjects objectType (by simp)
+      have hne : objectType ≠ runtimeType := by
+        intro heq
+        subst objectType
+        exact hnotin (by simp)
+      have hrestNotin : runtimeType ∉ rest := by
+        intro hmem
+        exact hnotin (by simp [hmem])
+      have hrestObjects :
+          ∀ candidate, candidate ∈ rest ->
+            objectTypeNameBool schema candidate = true := by
+        intro candidate hcandidate
+        exact hobjects candidate (List.mem_cons_of_mem objectType hcandidate)
+      cases hnormalized :
+          normalizeSelectionSet schema objectType selectionSet with
+      | nil =>
+          simpa [possibleTypeNormalizations, hnormalized] using
+            ih hrestObjects hrestNotin
+      | cons selection restNormalized =>
+          rw [show possibleTypeNormalizations schema (objectType :: rest)
+              selectionSet =
+              Selection.inlineFragment (some objectType) []
+                (selection :: restNormalized)
+                :: possibleTypeNormalizations schema rest selectionSet by
+            simp [possibleTypeNormalizations, hnormalized]]
+          rw [collectFields_inlineFragment_some_directiveFree_skip_eq]
+          · exact ih hrestObjects hrestNotin
+          · exact doesFragmentTypeApplyBool_object_other_false schema
+              (ref := ref)
+              hobject hne
+
+theorem executeSelectionSet_append_possibleTypeNormalizations_not_mem
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
+    (variableValues : Execution.VariableValues)
+    (depth : Nat) (runtimeType : Name) (ref : Option ObjectRef := none)
+    (possibleTypes : List Name)
+    (selectionSet suffix : List Selection) :
+    (∀ objectType, objectType ∈ possibleTypes ->
+      objectTypeNameBool schema objectType = true) ->
+    runtimeType ∉ possibleTypes ->
+    Execution.executeSelectionSet schema resolvers variableValues depth
+      runtimeType (.object runtimeType ref)
+      (suffix ++ possibleTypeNormalizations schema possibleTypes selectionSet)
+    =
+    Execution.executeSelectionSet schema resolvers variableValues depth
+      runtimeType (.object runtimeType ref) suffix := by
+  intro hobjects hnotin
+  simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+    ]
+  rw [collectFields_append]
+  rw [collectFields_possibleTypeNormalizations_not_mem_eq_nil schema
+    variableValues runtimeType (ref := ref) possibleTypes selectionSet hobjects
     hnotin]
   simp [Execution.mergeExecutableGroups_nil_right]
 
@@ -88,29 +167,30 @@ def completeValueSelectionSetField
   }
 
 theorem executeSelectionSet_possibleTypeFragments_runtime_branch
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (runtimeType : Name) (identity : ObjectIdentity)
+      (depth : Nat) (runtimeType : Name) (ref : Option ObjectRef := none)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       objectTypeNameBool schema objectType = true) ->
     possibleTypes.Nodup ->
     runtimeType ∈ possibleTypes ->
     Execution.executeSelectionSet schema resolvers variableValues depth
-      runtimeType (.object runtimeType identity)
+      runtimeType (.object runtimeType ref)
       (normalizeSelectionSet schema runtimeType selectionSet)
       =
     Execution.executeSelectionSet schema resolvers variableValues depth
-      runtimeType (.object runtimeType identity) selectionSet ->
+      runtimeType (.object runtimeType ref) selectionSet ->
       Execution.executeSelectionSet schema resolvers variableValues depth
-        runtimeType (.object runtimeType identity)
+        runtimeType (.object runtimeType ref)
         (possibleTypes.map
           (fun objectType =>
             Selection.inlineFragment (some objectType) []
               (normalizeSelectionSet schema objectType selectionSet)))
         =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        runtimeType (.object runtimeType identity) selectionSet := by
+        runtimeType (.object runtimeType ref) selectionSet := by
   intro hobjects hnodup hmem hrecursive
   induction possibleTypes with
   | nil =>
@@ -133,17 +213,19 @@ theorem executeSelectionSet_possibleTypeFragments_runtime_branch
           simp at hhead
         have hskip :
             Execution.doesFragmentTypeApplyBool schema runtimeType
-              (.object runtimeType identity) objectType = false :=
-          doesFragmentTypeApplyBool_object_other_false schema hobject hne
+              (.object runtimeType ref) objectType = false :=
+          doesFragmentTypeApplyBool_object_other_false schema
+            (ref := ref)
+            hobject hne
         rw [executeSelectionSet_inlineFragment_some_directiveFree_skip
           schema resolvers variableValues depth runtimeType objectType
-          (.object runtimeType identity)
+          (.object runtimeType ref)
           (normalizeSelectionSet schema objectType selectionSet)
           (rest.map
             (fun objectType =>
               Selection.inlineFragment (some objectType) []
                 (normalizeSelectionSet schema objectType selectionSet)))
-          hskip]
+          (by simpa [] using hskip)]
         have hrestMem : runtimeType ∈ rest := by
           cases List.mem_cons.mp hmem with
           | inl hmemHead =>
@@ -157,37 +239,160 @@ theorem executeSelectionSet_possibleTypeFragments_runtime_branch
           exact (List.nodup_cons.mp hnodup).1
         have happly :
             Execution.doesFragmentTypeApplyBool schema runtimeType
-              (.object runtimeType identity) runtimeType = true :=
-          doesFragmentTypeApplyBool_object_self schema hobject
+              (.object runtimeType ref) runtimeType = true :=
+          doesFragmentTypeApplyBool_object_self schema (ref := ref) hobject
         rw [executeSelectionSet_inlineFragment_some_directiveFree_apply_flatten
           schema resolvers variableValues depth runtimeType runtimeType
-          (.object runtimeType identity)
+          (.object runtimeType ref)
           (normalizeSelectionSet schema runtimeType selectionSet)
           (rest.map
             (fun objectType =>
               Selection.inlineFragment (some objectType) []
                 (normalizeSelectionSet schema objectType selectionSet)))
-          happly]
+          (by simpa [] using happly)]
         rw [executeSelectionSet_append_possibleTypeFragments_not_mem schema
-          resolvers variableValues depth runtimeType identity rest
-          selectionSet (normalizeSelectionSet schema runtimeType selectionSet)
+          resolvers variableValues depth runtimeType (ref := ref) rest
+          selectionSet
+          (normalizeSelectionSet schema runtimeType selectionSet)
           hrestObjects hrestNotin]
         exact hrecursive
 
+theorem executeSelectionSet_possibleTypeNormalizations_runtime_branch
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
+    (variableValues : Execution.VariableValues)
+      (depth : Nat) (runtimeType : Name) (ref : Option ObjectRef := none)
+    (possibleTypes : List Name) (selectionSet : List Selection) :
+    (∀ objectType, objectType ∈ possibleTypes ->
+      objectTypeNameBool schema objectType = true) ->
+    possibleTypes.Nodup ->
+    runtimeType ∈ possibleTypes ->
+    Execution.executeSelectionSet schema resolvers variableValues depth
+      runtimeType (.object runtimeType ref)
+      (normalizeSelectionSet schema runtimeType selectionSet)
+      =
+    Execution.executeSelectionSet schema resolvers variableValues depth
+      runtimeType (.object runtimeType ref) selectionSet ->
+      Execution.executeSelectionSet schema resolvers variableValues depth
+        runtimeType (.object runtimeType ref)
+        (possibleTypeNormalizations schema possibleTypes selectionSet)
+        =
+      Execution.executeSelectionSet schema resolvers variableValues depth
+        runtimeType (.object runtimeType ref) selectionSet := by
+  intro hobjects hnodup hmem hrecursive
+  induction possibleTypes with
+  | nil =>
+      cases hmem
+  | cons objectType rest ih =>
+      have hobject : objectTypeNameBool schema objectType = true :=
+        hobjects objectType (by simp)
+      have hrestObjects :
+          ∀ candidate, candidate ∈ rest ->
+            objectTypeNameBool schema candidate = true := by
+        intro candidate hcandidate
+        exact hobjects candidate (List.mem_cons_of_mem objectType hcandidate)
+      have hrestNodup : rest.Nodup := by
+        exact hnodup.tail
+      cases hnormalized :
+          normalizeSelectionSet schema objectType selectionSet with
+      | nil =>
+          by_cases heq : objectType = runtimeType
+          · subst objectType
+            have hrestNotin : runtimeType ∉ rest :=
+              (List.nodup_cons.mp hnodup).1
+            have hnilEq :
+                Execution.executeSelectionSet schema resolvers variableValues
+                  depth runtimeType (.object runtimeType ref) []
+                =
+                Execution.executeSelectionSet schema resolvers variableValues
+                  depth runtimeType (.object runtimeType ref)
+                  selectionSet := by
+              simpa [hnormalized] using hrecursive
+            have hrestEq :
+                Execution.executeSelectionSet schema resolvers variableValues
+                  depth runtimeType (.object runtimeType ref)
+                  (possibleTypeNormalizations schema rest selectionSet)
+                =
+                Execution.executeSelectionSet schema resolvers variableValues
+                  depth runtimeType (.object runtimeType ref) [] := by
+              simpa using
+                executeSelectionSet_append_possibleTypeNormalizations_not_mem
+                  schema resolvers variableValues depth runtimeType (ref := ref)
+                  rest selectionSet [] hrestObjects hrestNotin
+            simpa [possibleTypeNormalizations, hnormalized] using
+              hrestEq.trans hnilEq
+          · have hrestMem : runtimeType ∈ rest := by
+              cases List.mem_cons.mp hmem with
+              | inl hmemHead => exact False.elim (heq hmemHead.symm)
+              | inr hmemRest => exact hmemRest
+            simpa [possibleTypeNormalizations, hnormalized] using
+              ih hrestObjects hrestNodup hrestMem
+      | cons selection restNormalized =>
+          rw [show possibleTypeNormalizations schema (objectType :: rest)
+              selectionSet =
+              Selection.inlineFragment (some objectType) []
+                (selection :: restNormalized)
+                :: possibleTypeNormalizations schema rest selectionSet by
+            simp [possibleTypeNormalizations, hnormalized]]
+          cases hhead : objectType == runtimeType
+          · have hne : objectType ≠ runtimeType := by
+              intro heq
+              subst objectType
+              simp at hhead
+            have hskip :
+                Execution.doesFragmentTypeApplyBool schema runtimeType
+              (.object runtimeType ref) objectType = false :=
+              doesFragmentTypeApplyBool_object_other_false schema
+                (ref := ref)
+                hobject hne
+            rw [executeSelectionSet_inlineFragment_some_directiveFree_skip
+              schema resolvers variableValues depth runtimeType objectType
+              (.object runtimeType ref)
+              (selection :: restNormalized)
+              (possibleTypeNormalizations schema rest selectionSet)
+              (by simpa [] using hskip)]
+            have hrestMem : runtimeType ∈ rest := by
+              cases List.mem_cons.mp hmem with
+              | inl hmemHead =>
+                  exact False.elim (hne hmemHead.symm)
+              | inr hmemRest => exact hmemRest
+            exact ih hrestObjects hrestNodup hrestMem
+          · have heq : objectType = runtimeType :=
+              beq_iff_eq.mp hhead
+            subst objectType
+            have hrestNotin : runtimeType ∉ rest := by
+              exact (List.nodup_cons.mp hnodup).1
+            have happly :
+                Execution.doesFragmentTypeApplyBool schema runtimeType
+              (.object runtimeType ref) runtimeType = true :=
+              doesFragmentTypeApplyBool_object_self schema (ref := ref) hobject
+            rw [executeSelectionSet_inlineFragment_some_directiveFree_apply_flatten
+              schema resolvers variableValues depth runtimeType runtimeType
+              (.object runtimeType ref)
+              (selection :: restNormalized)
+              (possibleTypeNormalizations schema rest selectionSet)
+              (by simpa [] using happly)]
+            rw [executeSelectionSet_append_possibleTypeNormalizations_not_mem
+              schema resolvers variableValues depth runtimeType (ref := ref) rest
+              selectionSet (selection :: restNormalized) hrestObjects
+              hrestNotin]
+            simpa [hnormalized] using hrecursive
+
 theorem completeValue_possibleTypeFragments_eq_of_child_object_lt
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema) :
-    ∀ depth childType selectionSet value,
-      (∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          runtimeType ∈ schema.getPossibleTypes childType ->
+      ∀ depth childType selectionSet value,
+        (∀ childDepth runtimeType ref,
+          childDepth < depth ->
+            runtimeType ∈ schema.getPossibleTypes childType ->
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               (normalizeSelectionSet schema runtimeType selectionSet)
               =
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               selectionSet) ->
         Execution.completeValue schema resolvers variableValues depth
           childType [completeValueSelectionSetField childType
@@ -205,9 +410,9 @@ theorem completeValue_possibleTypeFragments_eq_of_child_object_lt
       cases value with
       | null =>
           simp [Execution.completeValue]
-      | scalar value =>
-          simp [Execution.completeValue]
-      | object runtimeType identity =>
+        | scalar value =>
+            simp [Execution.completeValue]
+        | object runtimeType ref =>
           by_cases hinclude :
               schema.typeIncludesObjectBool childType runtimeType = true
           · have hmem :
@@ -222,12 +427,13 @@ theorem completeValue_possibleTypeFragments_eq_of_child_object_lt
                   hschema childType objectType hobjectType)
             have hbranch :=
               executeSelectionSet_possibleTypeFragments_runtime_branch
-                schema resolvers variableValues depth runtimeType identity
+                schema resolvers variableValues depth runtimeType
+                (ref := ref)
                 (schema.getPossibleTypes childType) selectionSet hobjects
                 (SchemaWellFormedness.schemaWellFormed_possibleTypesNodup
                   hschema childType)
                 hmem
-                (hrecursive depth runtimeType identity
+                (hrecursive depth runtimeType ref
                   (Nat.lt_succ_self depth) hmem)
             simp [Execution.completeValue, hinclude]
             simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
@@ -247,9 +453,9 @@ theorem completeValue_possibleTypeFragments_eq_of_child_object_lt
             schema resolvers variableValues hschema depth childType
             selectionSet element
             (by
-              intro childDepth runtimeType identity hlt hmem
-              exact hrecursive childDepth runtimeType identity
-                (Nat.lt_trans hlt (Nat.lt_succ_self depth)) hmem)
+                intro childDepth runtimeType ref hlt hmem
+                exact hrecursive childDepth runtimeType ref
+                  (Nat.lt_trans hlt (Nat.lt_succ_self depth)) hmem)
 
 
 

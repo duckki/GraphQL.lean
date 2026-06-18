@@ -106,8 +106,7 @@ end Execution
 
 namespace NormalForm
 
-
-variable {ObjectIdentity : Type}
+variable {ObjectRef : Type}
 
 def executableGroupNamesNodup :
     List (Name × List Execution.ExecutableField) -> Prop
@@ -175,7 +174,8 @@ theorem selectionDirectiveFree_directivesAllowBool
 
 theorem collectSelection_field_noDirectives
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (parentType : Name)
+    (source : Execution.Value ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (selectionSet : List Selection) :
     Execution.collectSelection schema variableValues parentType source
@@ -192,7 +192,8 @@ theorem collectSelection_field_noDirectives
 
 theorem collectSelection_inlineFragment_none_noDirectives
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (parentType : Name)
+    (source : Execution.Value ObjectRef)
     (selectionSet : List Selection) :
     Execution.collectSelection schema variableValues parentType source
       (Selection.inlineFragment none [] selectionSet)
@@ -203,7 +204,8 @@ theorem collectSelection_inlineFragment_none_noDirectives
 
 theorem collectSelection_inlineFragment_some_noDirectives
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType typeCondition : Name) (source : Execution.Value ObjectIdentity)
+    (parentType typeCondition : Name)
+    (source : Execution.Value ObjectRef)
     (selectionSet : List Selection) :
     Execution.collectSelection schema variableValues parentType source
       (Selection.inlineFragment (some typeCondition) [] selectionSet)
@@ -570,7 +572,8 @@ theorem mergeExecutableGroups_namesNodup
 mutual
   theorem collectSelection_namesNodup
       (schema : Schema) (variableValues : Execution.VariableValues)
-      (parentType : Name) (source : Execution.Value ObjectIdentity)
+      (parentType : Name)
+      (source : Execution.Value ObjectRef)
       (selection : Selection) :
       executableGroupNamesNodup
         (Execution.collectSelection schema variableValues parentType source
@@ -642,7 +645,8 @@ mutual
 
   theorem collectFields_namesNodup
       (schema : Schema) (variableValues : Execution.VariableValues)
-      (parentType : Name) (source : Execution.Value ObjectIdentity)
+      (parentType : Name)
+      (source : Execution.Value ObjectRef)
       (selectionSet : List Selection) :
       executableGroupNamesNodup
         (Execution.collectFields schema variableValues parentType source
@@ -662,7 +666,8 @@ end
 
 theorem collectFields_append
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (parentType : Name)
+    (source : Execution.Value ObjectRef)
     (left right : List Selection) :
     Execution.collectFields schema variableValues parentType source
       (left ++ right)
@@ -687,7 +692,8 @@ theorem collectFields_append
 
 @[simp] theorem collectSubfields_eq_collectFields_mergedFieldSelectionSet
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (objectType : Name) (objectValue : Execution.Value ObjectIdentity)
+    (objectType : Name)
+    (objectValue : Execution.Value ObjectRef)
     (fields : List Execution.ExecutableField) :
     Execution.collectSubfields schema variableValues objectType objectValue
       fields
@@ -703,11 +709,12 @@ theorem collectFields_append
       rw [collectFields_append]
 
 theorem completeValue_list_eq_of_forall
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
     (leftFields rightFields : List Execution.ExecutableField)
-    (values : List (Execution.Value ObjectIdentity)) :
+    (values : List (Execution.Value ObjectRef)) :
     (∀ value, value ∈ values ->
       Execution.completeValue schema resolvers variableValues depth parentType
         leftFields value
@@ -725,76 +732,18 @@ theorem completeValue_list_eq_of_forall
   exact hvalues value hvalue
 
 theorem completeValue_eq_of_child_object_lt
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) :
-    ∀ depth parentType leftFields rightFields value,
-      (∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          Execution.executeSelectionSet schema resolvers variableValues
-            childDepth runtimeType (.object runtimeType identity)
-            (Execution.mergedFieldSelectionSet leftFields)
-            =
-          Execution.executeSelectionSet schema resolvers variableValues
-            childDepth runtimeType (.object runtimeType identity)
-            (Execution.mergedFieldSelectionSet rightFields)) ->
-        Execution.completeValue schema resolvers variableValues depth
-          parentType leftFields value
-          =
-        Execution.completeValue schema resolvers variableValues depth
-          parentType rightFields value
-  | 0, _parentType, _leftFields, _rightFields, _value,
-      _hobject => by
-      simp [Execution.completeValue]
-  | depth + 1, parentType, leftFields, rightFields, value,
-      hobject => by
-      cases value with
-      | null =>
-          simp [Execution.completeValue]
-      | scalar value =>
-          simp [Execution.completeValue]
-      | object runtimeType identity =>
-          by_cases hinclude :
-              schema.typeIncludesObjectBool parentType runtimeType = true
-          · simp [Execution.completeValue, hinclude]
-            simpa [Execution.executeSelectionSet,
-              Execution.executeRootSelectionSet,
-              collectSubfields_eq_collectFields_mergedFieldSelectionSet]
-              using hobject depth runtimeType identity
-                (Nat.lt_succ_self depth)
-          · have hfalse :
-                schema.typeIncludesObjectBool parentType runtimeType = false := by
-              cases hmatch :
-                  schema.typeIncludesObjectBool parentType runtimeType
-              · rfl
-              · contradiction
-            simp [Execution.completeValue, hfalse]
-      | list values =>
-          exact completeValue_list_eq_of_forall schema resolvers
-            variableValues depth parentType leftFields
-            rightFields values
-            (by
-              intro element helement
-              exact completeValue_eq_of_child_object_lt schema resolvers
-                variableValues depth parentType leftFields
-                rightFields element
-                (by
-                  intro childDepth runtimeType identity hlt
-                  exact hobject childDepth runtimeType identity
-                    (Nat.lt_trans hlt (Nat.lt_succ_self depth))))
-
-theorem completeValue_eq_of_child_object_lt_includes
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
-    (variableValues : Execution.VariableValues) :
-    ∀ depth parentType leftFields rightFields value,
-      (∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          schema.typeIncludesObjectBool parentType runtimeType = true ->
+      ∀ depth parentType leftFields rightFields value,
+        (∀ childDepth runtimeType ref,
+          childDepth < depth ->
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               (Execution.mergedFieldSelectionSet leftFields)
               =
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               (Execution.mergedFieldSelectionSet rightFields)) ->
         Execution.completeValue schema resolvers variableValues depth
           parentType leftFields value
@@ -806,47 +755,104 @@ theorem completeValue_eq_of_child_object_lt_includes
       simp [Execution.completeValue]
   | depth + 1, parentType, leftFields, rightFields, value,
       hobject => by
-      cases value with
-      | null =>
-          simp [Execution.completeValue]
-      | scalar value =>
-          simp [Execution.completeValue]
-      | object runtimeType identity =>
-          by_cases hinclude :
-              schema.typeIncludesObjectBool parentType runtimeType = true
-          · simp [Execution.completeValue, hinclude]
-            simpa [Execution.executeSelectionSet,
-              Execution.executeRootSelectionSet,
-              collectSubfields_eq_collectFields_mergedFieldSelectionSet]
-              using hobject depth runtimeType identity
-                (Nat.lt_succ_self depth) hinclude
-          · have hfalse :
-                schema.typeIncludesObjectBool parentType runtimeType = false := by
-              cases hmatch :
-                  schema.typeIncludesObjectBool parentType runtimeType
-              · rfl
-              · contradiction
-            simp [Execution.completeValue, hfalse]
-      | list values =>
-          exact completeValue_list_eq_of_forall schema resolvers
-            variableValues depth parentType leftFields
-            rightFields values
-            (by
-              intro element helement
-              exact completeValue_eq_of_child_object_lt_includes schema
-                resolvers variableValues depth parentType leftFields
-                rightFields element
-                (by
-                  intro childDepth runtimeType identity hlt hinclude
-                  exact hobject childDepth runtimeType identity
-                    (Nat.lt_trans hlt (Nat.lt_succ_self depth)) hinclude))
+        cases value with
+        | null =>
+            simp [Execution.completeValue]
+        | scalar value =>
+            simp [Execution.completeValue]
+        | object runtimeType ref =>
+            by_cases hinclude :
+                schema.typeIncludesObjectBool parentType runtimeType = true
+            · simp [Execution.completeValue, hinclude]
+              simpa [Execution.executeSelectionSet,
+                Execution.executeRootSelectionSet,
+                collectSubfields_eq_collectFields_mergedFieldSelectionSet]
+                using hobject depth runtimeType ref (Nat.lt_succ_self depth)
+            · have hfalse :
+                  schema.typeIncludesObjectBool parentType runtimeType = false := by
+                cases hmatch :
+                    schema.typeIncludesObjectBool parentType runtimeType <;>
+                  simp_all
+              simp [Execution.completeValue, hfalse]
+        | list values =>
+            exact completeValue_list_eq_of_forall schema resolvers
+              variableValues depth parentType leftFields
+              rightFields values
+              (by
+                intro element helement
+                exact completeValue_eq_of_child_object_lt schema resolvers
+                  variableValues depth parentType leftFields
+                  rightFields element
+                  (by
+                    intro childDepth runtimeType ref hlt
+                    exact hobject childDepth runtimeType ref
+                      (Nat.lt_trans hlt (Nat.lt_succ_self depth))))
+
+theorem completeValue_eq_of_child_object_lt_includes
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
+    (variableValues : Execution.VariableValues) :
+      ∀ depth parentType leftFields rightFields value,
+        (∀ childDepth runtimeType ref,
+          childDepth < depth ->
+            schema.typeIncludesObjectBool parentType runtimeType = true ->
+              Execution.executeSelectionSet schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType ref)
+                (Execution.mergedFieldSelectionSet leftFields)
+                =
+              Execution.executeSelectionSet schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType ref)
+                (Execution.mergedFieldSelectionSet rightFields)) ->
+        Execution.completeValue schema resolvers variableValues depth
+          parentType leftFields value
+          =
+        Execution.completeValue schema resolvers variableValues depth
+          parentType rightFields value
+  | 0, _parentType, _leftFields, _rightFields, _value,
+      _hobject => by
+      simp [Execution.completeValue]
+  | depth + 1, parentType, leftFields, rightFields, value,
+      hobject => by
+        cases value with
+        | null =>
+            simp [Execution.completeValue]
+        | scalar value =>
+            simp [Execution.completeValue]
+        | object runtimeType ref =>
+            by_cases hinclude :
+                schema.typeIncludesObjectBool parentType runtimeType = true
+            · simp [Execution.completeValue, hinclude]
+              simpa [Execution.executeSelectionSet,
+                Execution.executeRootSelectionSet,
+                collectSubfields_eq_collectFields_mergedFieldSelectionSet]
+                using hobject depth runtimeType ref (Nat.lt_succ_self depth) hinclude
+            · have hfalse :
+                  schema.typeIncludesObjectBool parentType runtimeType = false := by
+                cases hmatch :
+                    schema.typeIncludesObjectBool parentType runtimeType <;>
+                  simp_all
+              simp [Execution.completeValue, hfalse]
+        | list values =>
+            exact completeValue_list_eq_of_forall schema resolvers
+              variableValues depth parentType leftFields
+              rightFields values
+              (by
+                intro element helement
+                exact completeValue_eq_of_child_object_lt_includes schema
+                  resolvers variableValues depth parentType leftFields
+                  rightFields element
+                  (by
+                    intro childDepth runtimeType ref hlt hinclude
+                    exact hobject childDepth runtimeType ref
+                      (Nat.lt_trans hlt (Nat.lt_succ_self depth)) hinclude))
 
 theorem completeValue_eq_of_mergedFieldSelectionSet_eq
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
     (leftFields rightFields : List Execution.ExecutableField)
-    (value : Execution.Value ObjectIdentity) :
+    (value : Execution.Value ObjectRef) :
     Execution.mergedFieldSelectionSet leftFields =
       Execution.mergedFieldSelectionSet rightFields ->
       Execution.completeValue schema resolvers variableValues depth
@@ -854,18 +860,19 @@ theorem completeValue_eq_of_mergedFieldSelectionSet_eq
         =
       Execution.completeValue schema resolvers variableValues depth
         parentType rightFields value := by
-  intro hmerged
-  apply completeValue_eq_of_child_object_lt_includes schema resolvers
-    variableValues
-  intro childDepth runtimeType identity hlt hinclude
-  simp [hmerged]
+    intro hmerged
+    apply completeValue_eq_of_child_object_lt_includes schema resolvers
+      variableValues
+    · intro childDepth runtimeType ref hlt hinclude
+      simp [hmerged]
 
 theorem completeValue_eq_mergedFieldSelectionSet
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
     (fields : List Execution.ExecutableField)
-    (value : Execution.Value ObjectIdentity) :
+    (value : Execution.Value ObjectRef) :
     Execution.completeValue schema resolvers variableValues depth
       parentType fields value
       =
@@ -875,12 +882,13 @@ theorem completeValue_eq_mergedFieldSelectionSet
   simp
 
 theorem completeValue_singleton_selectionSet_eq
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
     (field : Execution.ExecutableField)
     (selectionSet : List Selection)
-    (value : Execution.Value ObjectIdentity) :
+    (value : Execution.Value ObjectRef) :
     Execution.completeValue schema resolvers variableValues depth
       parentType [{ field with selectionSet := selectionSet }] value
       =
@@ -890,12 +898,13 @@ theorem completeValue_singleton_selectionSet_eq
   simp [Execution.mergedFieldSelectionSet]
 
 theorem completeValue_selectionSet_eq_singleton
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
     (field : Execution.ExecutableField)
     (selectionSet : List Selection)
-    (value : Execution.Value ObjectIdentity) :
+    (value : Execution.Value ObjectRef) :
     Execution.completeValue schema resolvers variableValues depth
       parentType selectionSet value
       =

@@ -9,10 +9,13 @@ namespace NormalForm
 
 namespace CompleteNormalization
 
+variable {ObjectRef : Type}
+
 theorem collectFields_flatten_boolCaseWrappers_nonruntime
-    (schema : Schema) (variableValues : Execution.VariableValues)
+    (schema : Schema)
+    (variableValues : Execution.VariableValues)
     (operation : Operation)
-    (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (parentType : Name) (source : Execution.Value ObjectRef)
     (runtimeCase : BoolCase)
     (selectionSetForCase : BoolCase -> List Selection) :
     ∀ boolCases : List BoolCase,
@@ -81,9 +84,10 @@ theorem collectFields_flatten_boolCaseWrappers_nonruntime
           hhead).trans hrest
 
 theorem collectFields_flatten_boolCaseWrappers_split_runtime
-    (schema : Schema) (variableValues : Execution.VariableValues)
+    (schema : Schema)
+    (variableValues : Execution.VariableValues)
     (operation : Operation)
-    (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (parentType : Name) (source : Execution.Value ObjectRef)
     (runtimeCase : BoolCase)
     (selectionSetForCase : BoolCase -> List Selection)
     (before after : List BoolCase) :
@@ -178,9 +182,10 @@ theorem collectFields_flatten_boolCaseWrappers_split_runtime
   exact hruntimeCollect
 
 theorem collectFields_flatten_boolCaseWrappers_runtime
-    (schema : Schema) (variableValues : Execution.VariableValues)
+    (schema : Schema)
+    (variableValues : Execution.VariableValues)
     (operation : Operation)
-    (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (parentType : Name) (source : Execution.Value ObjectRef)
     (runtimeCase : BoolCase)
     (selectionSetForCase : BoolCase -> List Selection) :
     runtimeCase ∈
@@ -208,9 +213,10 @@ theorem collectFields_flatten_boolCaseWrappers_runtime
     hagrees
 
 theorem collectFields_boolCaseBranchesForGround_runtime
-    (schema : Schema) (variableValues : Execution.VariableValues)
+    (schema : Schema)
+    (variableValues : Execution.VariableValues)
     (operation : Operation)
-    (groundType : Name) (source : Execution.Value ObjectIdentity)
+    (groundType : Name) (source : Execution.Value ObjectRef)
     (runtimeCase : BoolCase)
     (selectionSet : List Selection) :
     runtimeCase ∈
@@ -236,11 +242,12 @@ theorem collectFields_boolCaseBranchesForGround_runtime
     hruntime hagrees
 
 theorem executeSelectionSet_boolCaseBranchesForGround_runtime
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (operation : Operation)
-    (depth : Nat)
-    (groundType : Name) (source : Execution.Value ObjectIdentity)
+      (operation : Operation)
+      (depth : Nat)
+      (groundType : Name) (source : Execution.Value ObjectRef)
     (runtimeCase : BoolCase)
     (selectionSet : List Selection) :
     runtimeCase ∈
@@ -257,11 +264,11 @@ theorem executeSelectionSet_boolCaseBranchesForGround_runtime
         (staticCollectForGround schema
           (operationBoolVars operation) groundType groundType
           runtimeCase selectionSet) := by
-  intro hruntime hagrees
-  apply executeSelectionSet_eq_of_collectFields_eq
-  exact collectFields_boolCaseBranchesForGround_runtime schema
-    variableValues operation groundType source runtimeCase selectionSet
-    hruntime hagrees
+    intro hruntime hagrees
+    apply executeSelectionSet_eq_of_collectFields_eq
+    exact collectFields_boolCaseBranchesForGround_runtime schema
+      variableValues operation groundType source runtimeCase selectionSet
+      hruntime hagrees
 
 
 end CompleteNormalization

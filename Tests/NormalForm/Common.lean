@@ -203,6 +203,11 @@ def operationEqBool (left right : Operation) : Bool :=
       left.variableDefinitions right.variableDefinitions
     && selectionSetEqBool left.selectionSet right.selectionSet
 
+def optionOperationEqBool : Option Operation -> Option Operation -> Bool
+  | none, none => true
+  | some left, some right => operationEqBool left right
+  | _, _ => false
+
 mutual
   def responseEqBool : Execution.Response -> Execution.Response -> Bool
     | .null, .null => true
@@ -253,8 +258,10 @@ def completeNormalizationRootBoolCaseBranchesFor
     List Selection :=
   List.flatten ((allBoolCases variables).map
     (fun boolCase =>
-      wrapWithBoolCase boolCase
-        (selectionSetForCase boolCase)))
+      match selectionSetForCase boolCase with
+      | [] => []
+      | selection :: rest =>
+          wrapWithBoolCase boolCase (selection :: rest)))
 
 end NormalForm
 end Tests

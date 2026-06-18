@@ -65,12 +65,13 @@ theorem fieldsInSetCanMerge_inline_some_head_clear_directives
     (liftMem left hleft) (liftMem right hright) hresponse
 
 theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_case
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema) (resolvers : Execution.Resolvers)
     (variableValues : Execution.VariableValues)
     (operation : Operation)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (hfieldCase :
-      ∀ depth execParent lookupParent groundType identity boolCase
+      ∀ depth execParent lookupParent groundType
+        boolCase
         responseName fieldName arguments directives selectionSet
         (rest : List CompleteScopedSelection),
         schema.objectType execParent ->
@@ -112,7 +113,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
           varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
         directivesAllowIn boolCase directives = true ->
           Execution.executeSelectionSet schema resolvers variableValues depth
-              execParent (.object groundType identity)
+              execParent (.object groundType)
               (staticCollectCompleteScopedSelectionSet schema
                 (operationBoolVars operation)
                 groundType boolCase
@@ -123,14 +124,14 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
                   :: rest))
             =
           Execution.executeSelectionSet schema resolvers variableValues depth
-            execParent (.object groundType identity)
+            execParent (.object groundType)
             (eraseCompleteScopedSelectionSet
               ({ lookupParent := lookupParent,
                  selection :=
                   Selection.field responseName fieldName arguments directives
                     selectionSet }
                 :: rest))) :
-    ∀ depth execParent groundType identity boolCase scopedSelections,
+    ∀ depth execParent groundType boolCase scopedSelections,
       schema.objectType execParent ->
       schema.typeIncludesObjectBool execParent groundType = true ->
       completeScopedSelectionSetSemanticsReady schema execParent
@@ -146,20 +147,20 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
             (eraseCompleteScopedSelectionSet scopedSelections) ->
           varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
         Execution.executeSelectionSet schema resolvers variableValues depth
-            execParent (.object groundType identity)
+            execParent (.object groundType)
             (staticCollectCompleteScopedSelectionSet schema
               (operationBoolVars operation)
               groundType boolCase scopedSelections)
           =
         Execution.executeSelectionSet schema resolvers variableValues depth
-          execParent (.object groundType identity)
+          execParent (.object groundType)
           (eraseCompleteScopedSelectionSet scopedSelections)
-  | depth, execParent, groundType, identity, boolCase, [], _hobject,
+  | depth, execParent, groundType, boolCase, [], _hobject,
     _hground, _hready, _hlookup, _hmerge, _happlies, _hagrees,
     _hsourceVars => by
       simp [staticCollectCompleteScopedSelectionSet,
         eraseCompleteScopedSelectionSet, Execution.executeSelectionSet]
-  | depth, execParent, groundType, identity, boolCase,
+  | depth, execParent, groundType, boolCase,
       scopedSelection :: rest, hobject, hground, hready, hlookup, hmerge,
       happlies, hagrees, hsourceVars => by
       cases scopedSelection with
@@ -171,13 +172,13 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
               · apply
                   executeSelectionSet_staticCollectCompleteScopedSelectionSet_field_skipped_execution_case
                     schema resolvers variableValues operation depth execParent
-                    lookupParent groundType identity boolCase responseName
+                    lookupParent groundType boolCase responseName
                     fieldName arguments directives selectionSet rest hagrees
                     hsourceVars hallow
                 exact
                   executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_case
                     schema resolvers variableValues operation hschema
-                    hfieldCase depth execParent groundType identity boolCase
+                    hfieldCase depth execParent groundType boolCase
                     rest hobject hground
                     (completeScopedSelectionSetSemanticsReady_tail hready)
                     (completeScopedSelectionSetLookupValid_tail hlookup)
@@ -198,7 +199,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
                             eraseCompleteScopedSelection,
                             selectionSetBooleanVariables, hmem]))
               · exact
-                  hfieldCase depth execParent lookupParent groundType identity
+                  hfieldCase depth execParent lookupParent groundType
                     boolCase responseName fieldName arguments directives
                     selectionSet rest hobject hground hready hlookup hmerge
                     happlies hagrees hsourceVars hallow
@@ -210,12 +211,12 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
                   · apply
                       executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_none_skipped_execution_case
                         schema resolvers variableValues operation depth
-                        execParent lookupParent groundType identity boolCase
+                        execParent lookupParent groundType boolCase
                         directives selectionSet rest hagrees hsourceVars hallow
                     exact
                       executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_case
                         schema resolvers variableValues operation hschema
-                        hfieldCase depth execParent groundType identity
+                        hfieldCase depth execParent groundType
                         boolCase rest hobject hground
                         (completeScopedSelectionSetSemanticsReady_tail hready)
                         (completeScopedSelectionSetLookupValid_tail hlookup)
@@ -238,12 +239,12 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
                   · apply
                       executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_none_allowed_flatten_case
                         schema resolvers variableValues operation depth
-                        execParent lookupParent groundType identity boolCase
+                        execParent lookupParent groundType boolCase
                         directives selectionSet rest hagrees hsourceVars hallow
                     exact
                       executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_case
                         schema resolvers variableValues operation hschema
-                        hfieldCase depth execParent groundType identity
+                        hfieldCase depth execParent groundType
                         boolCase
                         (completeScopedSelectionSet lookupParent selectionSet
                           ++ rest)
@@ -363,12 +364,12 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
                       executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_skipped_execution_case
                         schema resolvers variableValues operation depth
                         execParent lookupParent groundType typeCondition
-                        identity boolCase directives selectionSet rest
+                        boolCase directives selectionSet rest
                         hagrees hsourceVars hbranch
                     exact
                       executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_case
                         schema resolvers variableValues operation hschema
-                        hfieldCase depth execParent groundType identity
+                        hfieldCase depth execParent groundType
                         boolCase rest hobject hground
                         (completeScopedSelectionSetSemanticsReady_tail hready)
                         (completeScopedSelectionSetLookupValid_tail hlookup)
@@ -410,7 +411,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
                       executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_allowed_flatten_case
                         schema resolvers variableValues operation depth
                         execParent lookupParent groundType typeCondition
-                        identity boolCase directives selectionSet rest
+                        boolCase directives selectionSet rest
                         hagrees hsourceVars hallow hincludes
                     have hobjectBool :
                         objectTypeNameBool schema execParent = true :=
@@ -418,18 +419,20 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
                         schema hobject
                     have happly :
                         Execution.doesFragmentTypeApplyBool schema execParent
-                            (.object groundType identity) typeCondition =
+                            (Execution.Value.object (ObjectRef := PUnit)
+                              groundType) typeCondition =
                           true := by
                       simpa [Execution.doesFragmentTypeApplyBool,
                         Execution.runtimeObjectType?] using hincludes
                     have hsource :
-                        ∃ runtimeType identity',
-                          (Execution.Value.object groundType identity :
-                              Execution.Value ObjectIdentity)
-                            = .object runtimeType identity'
+                        ∃ runtimeType ref,
+                          (Execution.Value.object (ObjectRef := PUnit)
+                              groundType :
+                              Execution.Value PUnit)
+                            = .object runtimeType ref
                             ∧ schema.typeIncludesObjectBool execParent
                               runtimeType = true :=
-                      ⟨groundType, identity, rfl, hground⟩
+                      ⟨groundType, (none : Option PUnit), rfl, hground⟩
                     have hoverlap :
                         schema.typesOverlapBool execParent typeCondition =
                           true := by
@@ -439,7 +442,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
                     exact
                       executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_case
                         schema resolvers variableValues operation hschema
-                        hfieldCase depth execParent groundType identity
+                        hfieldCase depth execParent groundType
                         boolCase
                         (completeScopedSelectionSet typeCondition selectionSet
                           ++ rest)
@@ -622,7 +625,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
                                   (some typeCondition) directives selectionSet)
                                 (eraseCompleteScopedSelectionSet rest)
                                 hsourceVarsRaw varName htail)
-termination_by _depth _execParent _groundType _identity _boolCase scopedSelections =>
+termination_by _depth _execParent _groundType _boolCase scopedSelections =>
   SelectionSet.size (eraseCompleteScopedSelectionSet scopedSelections)
 decreasing_by
   all_goals

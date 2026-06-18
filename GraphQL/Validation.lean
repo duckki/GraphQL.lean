@@ -346,6 +346,55 @@ mutual
         ∧ selectionSetValid schema variableDefinitions returnType selectionSet))
 end
 
+-- Operation-level implementation validity for abstract selections: every field must
+-- remain valid in each concrete object scope where normalization may ground it.
+mutual
+  def selectionImplementationValid (schema : Schema)
+      (variableDefinitions : List VariableDefinition)
+      (parentType : Name) : Selection -> Prop
+    | fieldSelection@(.field _responseName fieldName _arguments _directives selectionSet) =>
+        selectionValid schema variableDefinitions parentType fieldSelection
+          ∧ match schema.lookupField parentType fieldName with
+            | none => False
+            | some fieldDefinition =>
+                selectionSetImplementationValidInScope schema variableDefinitions
+                  fieldDefinition.outputType.namedType selectionSet
+                  ∧ ∀ objectType,
+                    objectType ∈
+                        schema.getPossibleTypes fieldDefinition.outputType.namedType ->
+                      selectionSetImplementationValidInScope schema
+                        variableDefinitions objectType selectionSet
+    | .inlineFragment none _directives selectionSet =>
+        selectionSetImplementationValidInScope schema variableDefinitions
+          parentType selectionSet
+    | .inlineFragment (some typeCondition) _directives selectionSet =>
+        schema.typesOverlapBool parentType typeCondition = true ->
+          selectionSetImplementationValidInScope schema variableDefinitions
+            typeCondition selectionSet
+          ∧ ∀ objectType, objectType ∈ schema.getPossibleTypes typeCondition ->
+            selectionSetImplementationValidInScope schema variableDefinitions
+              objectType selectionSet
+
+  def selectionSetImplementationValidInScope (schema : Schema)
+      (variableDefinitions : List VariableDefinition)
+      (parentType : Name) : List Selection -> Prop
+    | [] => True
+    | selection :: rest =>
+        selectionImplementationValid schema variableDefinitions parentType
+          selection
+          ∧ selectionSetImplementationValidInScope schema variableDefinitions
+            parentType rest
+end
+
+def selectionSetImplementationValid (schema : Schema)
+    (variableDefinitions : List VariableDefinition)
+    (parentType : Name) (selectionSet : List Selection) : Prop :=
+  selectionSetImplementationValidInScope schema variableDefinitions parentType
+    selectionSet
+    ∧ ∀ objectType, objectType ∈ schema.getPossibleTypes parentType ->
+      selectionSetImplementationValidInScope schema variableDefinitions
+        objectType selectionSet
+
 end Validation
 
 namespace FieldMerge
@@ -427,9 +476,12 @@ mutual
             left.fieldName = right.fieldName
               ∧ Argument.argumentsEquivalent left.arguments right.arguments)
         (hsubfields :
-          ∀ objectType,
-            FieldsInSetCanMerge schema objectType
-              (left.selectionSet ++ right.selectionSet)) :
+          (left.parentType = right.parentType
+              ∨ ¬ schema.objectType left.parentType
+              ∨ ¬ schema.objectType right.parentType) ->
+            ∀ objectType,
+              FieldsInSetCanMerge schema objectType
+                (left.selectionSet ++ right.selectionSet)) :
         FieldsForNameCanMerge schema left right
 end
 
@@ -446,13 +498,16 @@ end FieldMerge
 namespace Validation
 
 -- Spec 5.2 Operation validation plus referenced executable validation rules: partial
--- aggregate predicate over the modeled single-operation representation.
+-- aggregate predicate over the modeled single-operation representation. The operation
+-- selection set may be empty here so total normalizers can preserve this predicate after
+-- statically erasing all selections.
 def operationDefinitionValid (schema : Schema) (operation : Operation) : Prop :=
   operation.rootType = schema.queryType
     ∧ schema.isCompositeType operation.rootType
     ∧ variableDefinitionsValid schema operation.variableDefinitions
-    ∧ operation.selectionSet ≠ []
     ∧ selectionSetValid schema operation.variableDefinitions
+      operation.rootType operation.selectionSet
+    ∧ selectionSetImplementationValid schema operation.variableDefinitions
       operation.rootType operation.selectionSet
     ∧ FieldMerge.fieldsInSetCanMerge schema
       operation.rootType operation.selectionSet

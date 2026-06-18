@@ -10,16 +10,17 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
-variable {ObjectIdentity : Type}
+variable {ObjectRef : Type}
 
 theorem normalizeSelectionSet_executeSelectionSet
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema) :
-    ∀ depth parentType source selectionSet,
+    ∀ depth parentType (source : Execution.Value ObjectRef) selectionSet,
       objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType identity,
-        source = .object runtimeType identity
+      (∃ runtimeType ref,
+        source = .object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
       selectionSetDirectiveFree selectionSet ->
       selectionSetSemanticsReady schema parentType selectionSet ->
@@ -53,7 +54,7 @@ theorem normalizeSelectionSet_executeSelectionSet
           hlookup)
   | case3 parentType rest responseName fieldName arguments directives
       subselections fieldDefinition hlookup matching mergedSubselections
-      returnType hrest hmerged hpossible =>
+      returnType htailIH hobjectIH hpossibleIH =>
       intro depth source hobject hsource hfree hready hmerge
       have hheadFree :
           selectionDirectiveFree
@@ -102,7 +103,7 @@ theorem normalizeSelectionSet_executeSelectionSet
           Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
             (withoutFieldsWithResponseName schema responseName rest) :=
-        hrest depth source hobject hsource hfilteredFree hfilteredReady
+        htailIH depth source hobject hsource hfilteredFree hfilteredReady
           hfilteredMerge
       apply
         normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
@@ -110,21 +111,21 @@ theorem normalizeSelectionSet_executeSelectionSet
           responseName fieldName arguments subselections rest fieldDefinition
           hobject hsource hfree hready hmerge hlookup
       · dsimp
-        intro (childDepth : Nat) (runtimeType : Name) (identity : ObjectIdentity)
+        intro (childDepth : Nat) (runtimeType : Name) (ref : Option ObjectRef)
           hlt hchildObject hmergedFree
           _hmergedLookup hmergedReady hmergedMerge
         have hchildSource :
-            ∃ childRuntime childIdentity,
-              (Execution.Value.object runtimeType identity)
+            ∃ childRuntime childRef,
+              (Execution.Value.object runtimeType ref)
                 =
-                Execution.Value.object childRuntime childIdentity
-                ∧ schema.typeIncludesObjectBool runtimeType childRuntime =
-                  true :=
-          ⟨runtimeType, identity, rfl,
+                Execution.Value.object childRuntime childRef
+              ∧ schema.typeIncludesObjectBool runtimeType childRuntime =
+                true :=
+          ⟨runtimeType, ref, rfl,
             typeIncludesObjectBool_self_of_objectTypeNameBool schema
               hchildObject⟩
-        exact hpossible runtimeType childDepth
-          (Execution.Value.object runtimeType identity) hchildObject
+        exact hpossibleIH runtimeType childDepth
+          (Execution.Value.object runtimeType ref) hchildObject
           hchildSource hmergedFree hmergedReady hmergedMerge
       · exact htailEq
   | case4 parentType rest directives selectionSet happend =>
@@ -287,7 +288,6 @@ theorem normalizeSelectionSet_executeSelectionSet
       exact normalizeSelectionSet_executeSelectionSet_inlineFragment_some_noOverlap_case
         schema resolvers variableValues depth parentType typeCondition source
         selectionSet rest hsource hoverlapFalse hrestEq
-
 
 end GroundTypeNormalization
 

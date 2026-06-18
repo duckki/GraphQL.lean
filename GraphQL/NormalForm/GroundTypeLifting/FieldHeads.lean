@@ -9,22 +9,23 @@ namespace NormalForm
 
 namespace GroundTypeLifting
 
+variable {ObjectRef : Type}
+
 open GroundTypeNormalization
 open DataModel.Store
 
-variable {ObjectIdentity : Type}
-
 theorem executeSelectionSet_append_groundLift_possibleTypeFragments_not_mem
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (runtimeType : Name) (identity : ObjectIdentity)
+    (depth : Nat) (runtimeType : Name) (ref : Option ObjectRef := none)
     (possibleTypes : List Name)
     (selectionSet suffix : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       objectTypeNameBool schema objectType = true) ->
     runtimeType ∉ possibleTypes ->
     Execution.executeSelectionSet schema resolvers variableValues depth
-      runtimeType (.object runtimeType identity)
+      runtimeType (.object runtimeType ref)
       (suffix ++
         possibleTypes.map
           (fun objectType =>
@@ -32,39 +33,49 @@ theorem executeSelectionSet_append_groundLift_possibleTypeFragments_not_mem
               (groundLiftSelectionSet schema objectType selectionSet)))
     =
     Execution.executeSelectionSet schema resolvers variableValues depth
-      runtimeType (.object runtimeType identity) suffix := by
+      runtimeType (.object runtimeType ref) suffix := by
   intro hobjects hnotin
   simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet]
   rw [collectFields_append]
-  rw [collectFields_groundLift_possibleTypeFragments_not_mem_eq_nil schema
-    variableValues runtimeType identity possibleTypes selectionSet hobjects
-    hnotin]
+  have hnil :
+      Execution.collectFields schema variableValues runtimeType
+        (Execution.Value.object runtimeType ref)
+        (possibleTypes.map
+          (fun objectType =>
+            Selection.inlineFragment (some objectType) []
+              (groundLiftSelectionSet schema objectType selectionSet))) = [] := by
+    simpa [] using
+      collectFields_groundLift_possibleTypeFragments_not_mem_eq_nil schema
+        variableValues runtimeType (ref := ref) possibleTypes selectionSet hobjects
+        hnotin
+  rw [hnil]
   simp [Execution.mergeExecutableGroups_nil_right]
 
 theorem executeSelectionSet_groundLift_possibleTypeFragments_runtime_branch
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (runtimeType : Name) (identity : ObjectIdentity)
+    (depth : Nat) (runtimeType : Name) (ref : Option ObjectRef := none)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       objectTypeNameBool schema objectType = true) ->
     possibleTypes.Nodup ->
     runtimeType ∈ possibleTypes ->
     Execution.executeSelectionSet schema resolvers variableValues depth
-      runtimeType (.object runtimeType identity)
+      runtimeType (.object runtimeType ref)
       (groundLiftSelectionSet schema runtimeType selectionSet)
       =
     Execution.executeSelectionSet schema resolvers variableValues depth
-      runtimeType (.object runtimeType identity) selectionSet ->
+      runtimeType (.object runtimeType ref) selectionSet ->
     Execution.executeSelectionSet schema resolvers variableValues depth
-      runtimeType (.object runtimeType identity)
+      runtimeType (.object runtimeType ref)
       (possibleTypes.map
         (fun objectType =>
           Selection.inlineFragment (some objectType) []
             (groundLiftSelectionSet schema objectType selectionSet)))
     =
     Execution.executeSelectionSet schema resolvers variableValues depth
-      runtimeType (.object runtimeType identity) selectionSet := by
+      runtimeType (.object runtimeType ref) selectionSet := by
   intro hobjects hnodup hmem hrecursive
   induction possibleTypes with
   | nil =>
@@ -87,17 +98,18 @@ theorem executeSelectionSet_groundLift_possibleTypeFragments_runtime_branch
           simp at hhead
         have hskip :
             Execution.doesFragmentTypeApplyBool schema runtimeType
-              (.object runtimeType identity) objectType = false :=
-          doesFragmentTypeApplyBool_object_other_false schema hobject hne
+              (.object runtimeType ref) objectType = false :=
+          doesFragmentTypeApplyBool_object_other_false schema
+            (ref := ref) hobject hne
         rw [executeSelectionSet_inlineFragment_some_directiveFree_skip
           schema resolvers variableValues depth runtimeType objectType
-          (.object runtimeType identity)
+          (.object runtimeType ref)
           (groundLiftSelectionSet schema objectType selectionSet)
           (rest.map
             (fun objectType =>
               Selection.inlineFragment (some objectType) []
                 (groundLiftSelectionSet schema objectType selectionSet)))
-          hskip]
+          (by simpa [] using hskip)]
         have hrestMem : runtimeType ∈ rest := by
           cases List.mem_cons.mp hmem with
           | inl hmemHead =>
@@ -111,37 +123,38 @@ theorem executeSelectionSet_groundLift_possibleTypeFragments_runtime_branch
           exact (List.nodup_cons.mp hnodup).1
         have happly :
             Execution.doesFragmentTypeApplyBool schema runtimeType
-              (.object runtimeType identity) runtimeType = true :=
-          doesFragmentTypeApplyBool_object_self schema hobject
+              (.object runtimeType ref) runtimeType = true :=
+          doesFragmentTypeApplyBool_object_self schema (ref := ref) hobject
         rw [executeSelectionSet_inlineFragment_some_directiveFree_apply_flatten
           schema resolvers variableValues depth runtimeType runtimeType
-          (.object runtimeType identity)
+          (.object runtimeType ref)
           (groundLiftSelectionSet schema runtimeType selectionSet)
           (rest.map
             (fun objectType =>
               Selection.inlineFragment (some objectType) []
                 (groundLiftSelectionSet schema objectType selectionSet)))
-          happly]
+          (by simpa [] using happly)]
         rw [executeSelectionSet_append_groundLift_possibleTypeFragments_not_mem
-          schema resolvers variableValues depth runtimeType identity rest
+          schema resolvers variableValues depth runtimeType (ref := ref) rest
           selectionSet (groundLiftSelectionSet schema runtimeType selectionSet)
           hrestObjects hrestNotin]
         exact hrecursive
 
 theorem completeValue_groundLift_possibleTypeFragments_eq_of_child_object_lt
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema) :
     ∀ depth childType selectionSet value,
-      (∀ childDepth runtimeType identity,
+      (∀ childDepth runtimeType ref,
         childDepth < depth ->
           runtimeType ∈ schema.getPossibleTypes childType ->
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               (groundLiftSelectionSet schema runtimeType selectionSet)
               =
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               selectionSet) ->
         Execution.completeValue schema resolvers variableValues depth
           childType
@@ -161,7 +174,7 @@ theorem completeValue_groundLift_possibleTypeFragments_eq_of_child_object_lt
           simp [Execution.completeValue]
       | scalar value =>
           simp [Execution.completeValue]
-      | object runtimeType identity =>
+      | object runtimeType ref =>
           by_cases hinclude :
               schema.typeIncludesObjectBool childType runtimeType = true
           · have hmem :
@@ -176,12 +189,12 @@ theorem completeValue_groundLift_possibleTypeFragments_eq_of_child_object_lt
                   hschema childType objectType hobjectType)
             have hbranch :=
               executeSelectionSet_groundLift_possibleTypeFragments_runtime_branch
-                schema resolvers variableValues depth runtimeType identity
+                schema resolvers variableValues depth runtimeType (ref := ref)
                 (schema.getPossibleTypes childType) selectionSet hobjects
                 (SchemaWellFormedness.schemaWellFormed_possibleTypesNodup
                   hschema childType)
                 hmem
-                (hrecursive depth runtimeType identity
+                (hrecursive depth runtimeType ref
                   (Nat.lt_succ_self depth) hmem)
             simp [Execution.completeValue, hinclude]
             simpa [Execution.executeSelectionSet,
@@ -202,24 +215,25 @@ theorem completeValue_groundLift_possibleTypeFragments_eq_of_child_object_lt
             schema resolvers variableValues hschema depth childType
             selectionSet element
             (by
-              intro childDepth runtimeType identity hlt hmem
-              exact hrecursive childDepth runtimeType identity
+              intro childDepth runtimeType ref hlt hmem
+              exact hrecursive childDepth runtimeType ref
                 (Nat.lt_trans hlt (Nat.lt_succ_self depth)) hmem)
 
 theorem completeValue_groundLiftSelectionSet_eq_of_object_child_lt
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) :
     ∀ depth childType selectionSet value,
       objectTypeNameBool schema childType = true ->
-      (∀ childDepth runtimeType identity,
+      (∀ childDepth runtimeType ref,
         childDepth < depth ->
           schema.typeIncludesObjectBool childType runtimeType = true ->
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               (groundLiftSelectionSet schema runtimeType selectionSet)
               =
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               selectionSet) ->
         Execution.completeValue schema resolvers variableValues depth
           childType (groundLiftSelectionSet schema childType selectionSet)
@@ -235,11 +249,11 @@ theorem completeValue_groundLiftSelectionSet_eq_of_object_child_lt
           simp [Execution.completeValue]
       | scalar value =>
           simp [Execution.completeValue]
-      | object runtimeType identity =>
+      | object runtimeType ref =>
           by_cases hinclude :
               schema.typeIncludesObjectBool childType runtimeType = true
           · have hrecursiveBranch :=
-              hrecursive depth runtimeType identity (Nat.lt_succ_self depth)
+              hrecursive depth runtimeType ref (Nat.lt_succ_self depth)
                 hinclude
             have hruntime : runtimeType = childType :=
               typeIncludesObjectBool_eq_of_objectTypeNameBool_true schema
@@ -261,27 +275,28 @@ theorem completeValue_groundLiftSelectionSet_eq_of_object_child_lt
             schema resolvers variableValues depth childType selectionSet
             element hobject
             (by
-              intro childDepth runtimeType identity hlt hinclude
-              exact hrecursive childDepth runtimeType identity
+              intro childDepth runtimeType ref hlt hinclude
+              exact hrecursive childDepth runtimeType ref
                 (Nat.lt_trans hlt (Nat.lt_succ_self depth)) hinclude)
 
 theorem completeValue_groundLift_possibleTypeFragments_eq_of_subtype_lt
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema) :
     ∀ depth actualType branchType selectionSet value,
       (∀ runtimeType,
         schema.typeIncludesObjectBool actualType runtimeType = true ->
           runtimeType ∈ schema.getPossibleTypes branchType) ->
-      (∀ childDepth runtimeType identity,
+      (∀ childDepth runtimeType ref,
         childDepth < depth ->
           runtimeType ∈ schema.getPossibleTypes branchType ->
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               (groundLiftSelectionSet schema runtimeType selectionSet)
               =
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               selectionSet) ->
         Execution.completeValue schema resolvers variableValues depth
           actualType
@@ -303,7 +318,7 @@ theorem completeValue_groundLift_possibleTypeFragments_eq_of_subtype_lt
           simp [Execution.completeValue]
       | scalar value =>
           simp [Execution.completeValue]
-      | object runtimeType identity =>
+      | object runtimeType ref =>
           by_cases hinclude :
               schema.typeIncludesObjectBool actualType runtimeType = true
           · have hmem :
@@ -318,12 +333,12 @@ theorem completeValue_groundLift_possibleTypeFragments_eq_of_subtype_lt
                   hschema branchType objectType hobjectType)
             have hbranch :=
               executeSelectionSet_groundLift_possibleTypeFragments_runtime_branch
-                schema resolvers variableValues depth runtimeType identity
+                schema resolvers variableValues depth runtimeType (ref := ref)
                 (schema.getPossibleTypes branchType) selectionSet hobjects
                 (SchemaWellFormedness.schemaWellFormed_possibleTypesNodup
                   hschema branchType)
                 hmem
-                (hrecursive depth runtimeType identity
+                (hrecursive depth runtimeType ref
                   (Nat.lt_succ_self depth) hmem)
             simp [Execution.completeValue, hinclude]
             simpa [Execution.executeSelectionSet,
@@ -345,27 +360,28 @@ theorem completeValue_groundLift_possibleTypeFragments_eq_of_subtype_lt
             branchType selectionSet element
             hsubtype
             (by
-              intro childDepth runtimeType identity hlt hmem
-              exact hrecursive childDepth runtimeType identity
+              intro childDepth runtimeType ref hlt hmem
+              exact hrecursive childDepth runtimeType ref
                 (Nat.lt_trans hlt (Nat.lt_succ_self depth)) hmem)
 
 theorem completeValue_groundLiftSelectionSet_eq_of_object_subtype_lt
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) :
     ∀ depth actualType liftType selectionSet value,
       objectTypeNameBool schema liftType = true ->
       (∀ runtimeType,
         schema.typeIncludesObjectBool actualType runtimeType = true ->
           schema.typeIncludesObjectBool liftType runtimeType = true) ->
-      (∀ childDepth runtimeType identity,
+      (∀ childDepth runtimeType ref,
         childDepth < depth ->
           schema.typeIncludesObjectBool liftType runtimeType = true ->
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               (groundLiftSelectionSet schema runtimeType selectionSet)
               =
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               selectionSet) ->
         Execution.completeValue schema resolvers variableValues depth
           actualType (groundLiftSelectionSet schema liftType selectionSet)
@@ -383,7 +399,7 @@ theorem completeValue_groundLiftSelectionSet_eq_of_object_subtype_lt
           simp [Execution.completeValue]
       | scalar value =>
           simp [Execution.completeValue]
-      | object runtimeType identity =>
+      | object runtimeType ref =>
           by_cases hinclude :
               schema.typeIncludesObjectBool actualType runtimeType = true
           · have hliftInclude :
@@ -394,7 +410,7 @@ theorem completeValue_groundLiftSelectionSet_eq_of_object_subtype_lt
                 hliftObject hliftInclude
             subst runtimeType
             simp [Execution.completeValue, hinclude]
-            exact hrecursive depth liftType identity
+            exact hrecursive depth liftType ref
               (Nat.lt_succ_self depth) hliftInclude
           · have hfalse :
                 schema.typeIncludesObjectBool actualType runtimeType = false := by
@@ -410,27 +426,28 @@ theorem completeValue_groundLiftSelectionSet_eq_of_object_subtype_lt
             schema resolvers variableValues depth actualType liftType
             selectionSet element hliftObject hsubtype
             (by
-              intro childDepth runtimeType identity hlt hinclude
-              exact hrecursive childDepth runtimeType identity
+              intro childDepth runtimeType ref hlt hinclude
+              exact hrecursive childDepth runtimeType ref
                 (Nat.lt_trans hlt (Nat.lt_succ_self depth)) hinclude)
 
 theorem completeValue_groundLiftFieldSelectionSet_eq_of_subtype_lt
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema) :
     ∀ depth actualType expectedType selectionSet value,
       (∀ runtimeType,
         schema.typeIncludesObjectBool actualType runtimeType = true ->
           schema.typeIncludesObjectBool expectedType runtimeType = true) ->
-      (∀ childDepth runtimeType identity,
+      (∀ childDepth runtimeType ref,
         childDepth < depth ->
           schema.typeIncludesObjectBool expectedType runtimeType = true ->
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               (groundLiftSelectionSet schema runtimeType selectionSet)
               =
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               selectionSet) ->
         Execution.completeValue schema resolvers variableValues depth
           actualType
@@ -452,7 +469,7 @@ theorem completeValue_groundLiftFieldSelectionSet_eq_of_subtype_lt
   · simp [hleaf]
     apply completeValue_eq_of_child_object_lt_includes schema resolvers
       variableValues depth actualType [] selectionSet value
-    intro childDepth runtimeType identity _hlt hactual
+    intro childDepth runtimeType ref _hlt hactual
     have hexpected :
         schema.typeIncludesObjectBool expectedType runtimeType = true :=
       hsubtype runtimeType hactual
@@ -482,25 +499,26 @@ theorem completeValue_groundLiftFieldSelectionSet_eq_of_subtype_lt
         selectionSet value
       · intro runtimeType hactual
         exact List.contains_iff_mem.mp (hsubtype runtimeType hactual)
-      · intro childDepth runtimeType identity hlt hmem
-        exact hrecursive childDepth runtimeType identity hlt
+      · intro childDepth runtimeType ref hlt hmem
+        exact hrecursive childDepth runtimeType ref hlt
           (List.contains_iff_mem.mpr hmem)
 
 theorem completeValue_groundLiftFieldSelectionSet_eq_of_valueObjectsInclude_lt
-    (schema : Schema) (resolvers : Execution.Resolvers DataModel.ObjectPath)
+    (schema : Schema) (resolvers : Execution.Resolvers DataModel.ObjectRef)
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema) :
-    ∀ depth actualType expectedType selectionSet value,
+    ∀ depth actualType expectedType selectionSet
+        (value : Execution.Value DataModel.ObjectRef),
       executionValueObjectsInclude schema expectedType value ->
-      (∀ childDepth runtimeType identity,
+      (∀ childDepth runtimeType ref,
         childDepth < depth ->
           schema.typeIncludesObjectBool expectedType runtimeType = true ->
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               (groundLiftSelectionSet schema runtimeType selectionSet)
               =
             Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType identity)
+              childDepth runtimeType (.object runtimeType ref)
               selectionSet) ->
         Execution.completeValue schema resolvers variableValues depth
           actualType
@@ -527,12 +545,13 @@ theorem completeValue_groundLiftFieldSelectionSet_eq_of_valueObjectsInclude_lt
           simp [Execution.completeValue]
       | scalar value =>
           simp [Execution.completeValue]
-      | object runtimeType identity =>
+      | object runtimeType ref =>
           by_cases hactual :
               schema.typeIncludesObjectBool actualType runtimeType = true
           · have hexpected :
                 schema.typeIncludesObjectBool expectedType runtimeType = true := by
-              simpa [executionValueObjectsInclude] using hinclude
+              simpa [executionValueObjectsInclude]
+                using hinclude
             by_cases hleaf : leafTypeNameBool schema expectedType = true
             · have hnil := possibleTypes_eq_nil_of_leafTypeNameBool schema
                 hleaf
@@ -553,7 +572,7 @@ theorem completeValue_groundLiftFieldSelectionSet_eq_of_valueObjectsInclude_lt
                     schema hobject hexpected
                 subst runtimeType
                 simp [Execution.completeValue, hactual, hleafFalse, hobject]
-                exact hrecursive depth expectedType identity
+                exact hrecursive depth expectedType ref
                   (Nat.lt_succ_self depth) hexpected
               · have hobjectFalse :
                     objectTypeNameBool schema expectedType = false := by
@@ -572,12 +591,12 @@ theorem completeValue_groundLiftFieldSelectionSet_eq_of_valueObjectsInclude_lt
                       hschema expectedType objectType hobjectType)
                 have hbranch :=
                   executeSelectionSet_groundLift_possibleTypeFragments_runtime_branch
-                    schema resolvers variableValues depth runtimeType identity
+                    schema resolvers variableValues depth runtimeType (ref := ref)
                     (schema.getPossibleTypes expectedType) selectionSet hobjects
                     (SchemaWellFormedness.schemaWellFormed_possibleTypesNodup
                       hschema expectedType)
                     hmem
-                    (hrecursive depth runtimeType identity
+                    (hrecursive depth runtimeType ref
                       (Nat.lt_succ_self depth) hexpected)
                 simp [Execution.completeValue, hactual, hleafFalse,
                   hobjectFalse, groundObjectTypesForType]
@@ -596,7 +615,15 @@ theorem completeValue_groundLiftFieldSelectionSet_eq_of_valueObjectsInclude_lt
           have hinclude' :
               ∀ value, value ∈ values ->
                 executionValueObjectsInclude schema expectedType value := by
-            simpa [executionValueObjectsInclude] using hinclude
+            intro value hvalue
+            have hincludeValues :
+                ∀ value,
+                  value ∈ values ->
+                    executionValueObjectsInclude schema expectedType value := by
+              simpa [executionValueObjectsInclude]
+                using hinclude
+            exact hincludeValues value
+              hvalue
           simp [Execution.completeValue]
           intro element helement
           exact
@@ -604,8 +631,8 @@ theorem completeValue_groundLiftFieldSelectionSet_eq_of_valueObjectsInclude_lt
               schema resolvers variableValues hschema depth actualType
               expectedType selectionSet element (hinclude' element helement)
               (by
-                intro childDepth runtimeType identity hlt hexpected
-                exact hrecursive childDepth runtimeType identity
+                intro childDepth runtimeType ref hlt hexpected
+                exact hrecursive childDepth runtimeType ref
                   (Nat.lt_trans hlt (Nat.lt_succ_self depth)) hexpected)
 
 theorem executeField_singleton_groundLift_eq_on_store
@@ -614,25 +641,24 @@ theorem executeField_singleton_groundLift_eq_on_store
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (hstore : store.wellTyped schema)
     (depth : Nat) (parentType runtimeType : Name)
-    (identity : DataModel.ObjectPath)
     (responseName fieldName : Name) (arguments : List Argument)
     (selectionSet : List Selection) (fieldDefinition : FieldDefinition) :
     schema.typeIncludesObjectBool parentType runtimeType = true ->
     schema.lookupField parentType fieldName = some fieldDefinition ->
-    (∀ childDepth runtimeType identity,
+    (∀ childDepth runtimeType ref,
       childDepth < depth ->
         schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
           runtimeType = true ->
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues childDepth runtimeType
-            (.object runtimeType identity)
+            (.object runtimeType ref)
             (groundLiftSelectionSet schema runtimeType selectionSet)
           =
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues childDepth runtimeType
-            (.object runtimeType identity) selectionSet) ->
+            (.object runtimeType ref) selectionSet) ->
       Execution.executeField schema (store.resolvers schema) variableValues
-        (depth + 1) (.object runtimeType identity) responseName
+        (depth + 1) (.object runtimeType) responseName
         [{
           parentType := parentType,
           responseName := responseName,
@@ -654,7 +680,7 @@ theorem executeField_singleton_groundLift_eq_on_store
         }]
       =
       Execution.executeField schema (store.resolvers schema) variableValues
-        (depth + 1) (.object runtimeType identity) responseName
+        (depth + 1) (.object runtimeType) responseName
         [{
           parentType := parentType,
           responseName := responseName,
@@ -704,23 +730,23 @@ theorem executeField_singleton_groundLift_eq_on_store
   have hincludeResolved :
       executionValueObjectsInclude schema fieldDefinition.outputType.namedType
         ((store.resolvers schema).resolve parentType fieldName arguments
-          (.object runtimeType identity)) := by
+          (.object runtimeType)) := by
     simpa [DataModel.Store.resolvers] using
       resolve_objectsInclude_of_static_lookupField schema store parentType
-        runtimeType identity fieldName arguments fieldDefinition hschema hstore
+        runtimeType fieldName arguments fieldDefinition hschema hstore
         hinclude hlookup
   have hcomplete :
       Execution.completeValue schema (store.resolvers schema) variableValues
         depth ((schema.fieldReturnType? parentType fieldName).getD fieldName)
         liftedFields
         ((store.resolvers schema).resolve parentType fieldName arguments
-          (.object runtimeType identity))
+          (.object runtimeType))
       =
       Execution.completeValue schema (store.resolvers schema) variableValues
         depth ((schema.fieldReturnType? parentType fieldName).getD fieldName)
         selectionSet
         ((store.resolvers schema).resolve parentType fieldName arguments
-          (.object runtimeType identity)) := by
+          (.object runtimeType)) := by
     rw [hreturn]
     simpa [liftedFields] using
       completeValue_groundLiftFieldSelectionSet_eq_of_valueObjectsInclude_lt
@@ -728,7 +754,7 @@ theorem executeField_singleton_groundLift_eq_on_store
         fieldDefinition.outputType.namedType
         fieldDefinition.outputType.namedType selectionSet
         ((store.resolvers schema).resolve parentType fieldName arguments
-          (.object runtimeType identity))
+          (.object runtimeType))
         hincludeResolved hrecursive
   have hcompleteGroup :
       Execution.completeValue schema (store.resolvers schema) variableValues
@@ -738,7 +764,7 @@ theorem executeField_singleton_groundLift_eq_on_store
         [{ sourceField with selectionSet := liftedSelectionSet }]
         ((store.resolvers schema).resolve sourceField.parentType
           sourceField.fieldName sourceField.arguments
-          (.object runtimeType identity))
+          (.object runtimeType))
       =
       Execution.completeValue schema (store.resolvers schema) variableValues
         depth
@@ -747,7 +773,7 @@ theorem executeField_singleton_groundLift_eq_on_store
         [sourceField]
         ((store.resolvers schema).resolve sourceField.parentType
           sourceField.fieldName sourceField.arguments
-          (.object runtimeType identity)) := by
+          (.object runtimeType)) := by
     have hleft :=
       completeValue_eq_of_mergedFieldSelectionSet_eq schema
         (store.resolvers schema) variableValues depth
@@ -757,7 +783,7 @@ theorem executeField_singleton_groundLift_eq_on_store
         liftedFields
         ((store.resolvers schema).resolve sourceField.parentType
           sourceField.fieldName sourceField.arguments
-          (.object runtimeType identity))
+          (.object runtimeType))
         (by
           simp [Execution.mergedFieldSelectionSet, liftedFields,
             liftedSelectionSet])
@@ -769,12 +795,12 @@ theorem executeField_singleton_groundLift_eq_on_store
         sourceField selectionSet
         ((store.resolvers schema).resolve sourceField.parentType
           sourceField.fieldName sourceField.arguments
-          (.object runtimeType identity))
+          (.object runtimeType))
     exact hleft.trans (hcomplete.trans hright.symm)
   simpa [sourceField, liftedSelectionSet] using
     executeField_singleton_eq_group_of_completeValue schema
       (store.resolvers schema) variableValues depth
-      (.object runtimeType identity) responseName sourceField []
+      (.object runtimeType) responseName sourceField []
       liftedSelectionSet hcompleteGroup
 
 theorem executeField_singleton_groundLift_scoped_eq_on_store
@@ -783,27 +809,26 @@ theorem executeField_singleton_groundLift_scoped_eq_on_store
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (hstore : store.wellTyped schema)
     (depth : Nat) (execParent liftParent runtimeType : Name)
-    (identity : DataModel.ObjectPath)
     (responseName fieldName : Name) (arguments : List Argument)
     (selectionSet : List Selection)
     (execFieldDefinition liftFieldDefinition : FieldDefinition) :
     schema.typeIncludesObjectBool liftParent runtimeType = true ->
     schema.lookupField execParent fieldName = some execFieldDefinition ->
     schema.lookupField liftParent fieldName = some liftFieldDefinition ->
-    (∀ childDepth runtimeType identity,
+    (∀ childDepth runtimeType ref,
       childDepth < depth ->
         schema.typeIncludesObjectBool liftFieldDefinition.outputType.namedType
           runtimeType = true ->
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues childDepth runtimeType
-            (.object runtimeType identity)
+            (.object runtimeType ref)
             (groundLiftSelectionSet schema runtimeType selectionSet)
           =
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues childDepth runtimeType
-            (.object runtimeType identity) selectionSet) ->
+            (.object runtimeType ref) selectionSet) ->
       Execution.executeField schema (store.resolvers schema) variableValues
-        (depth + 1) (.object runtimeType identity) responseName
+        (depth + 1) (.object runtimeType) responseName
         [{
           parentType := execParent,
           responseName := responseName,
@@ -826,7 +851,7 @@ theorem executeField_singleton_groundLift_scoped_eq_on_store
         }]
       =
       Execution.executeField schema (store.resolvers schema) variableValues
-        (depth + 1) (.object runtimeType identity) responseName
+        (depth + 1) (.object runtimeType) responseName
         [{
           parentType := execParent,
           responseName := responseName,
@@ -879,25 +904,25 @@ theorem executeField_singleton_groundLift_scoped_eq_on_store
       executionValueObjectsInclude schema
         liftFieldDefinition.outputType.namedType
         ((store.resolvers schema).resolve execParent fieldName arguments
-          (.object runtimeType identity)) := by
+          (.object runtimeType)) := by
     rw [resolvers_parentType_insensitive schema store execParent
-      liftParent fieldName arguments (.object runtimeType identity)]
+      liftParent fieldName arguments (.object runtimeType)]
     simpa [DataModel.Store.resolvers] using
       resolve_objectsInclude_of_static_lookupField schema store liftParent
-        runtimeType identity fieldName arguments liftFieldDefinition hschema
+        runtimeType fieldName arguments liftFieldDefinition hschema
         hstore hliftInclude hliftLookup
   have hcomplete :
       Execution.completeValue schema (store.resolvers schema) variableValues
         depth ((schema.fieldReturnType? execParent fieldName).getD fieldName)
         liftedFields
         ((store.resolvers schema).resolve execParent fieldName arguments
-          (.object runtimeType identity))
+          (.object runtimeType))
       =
       Execution.completeValue schema (store.resolvers schema) variableValues
         depth ((schema.fieldReturnType? execParent fieldName).getD fieldName)
         selectionSet
         ((store.resolvers schema).resolve execParent fieldName arguments
-          (.object runtimeType identity)) := by
+          (.object runtimeType)) := by
     rw [hreturn]
     simpa [liftedFields] using
       completeValue_groundLiftFieldSelectionSet_eq_of_valueObjectsInclude_lt
@@ -905,7 +930,7 @@ theorem executeField_singleton_groundLift_scoped_eq_on_store
         execFieldDefinition.outputType.namedType
         liftFieldDefinition.outputType.namedType selectionSet
         ((store.resolvers schema).resolve execParent fieldName arguments
-          (.object runtimeType identity))
+          (.object runtimeType))
         hincludeResolved hrecursive
   have hcompleteGroup :
       Execution.completeValue schema (store.resolvers schema) variableValues
@@ -915,7 +940,7 @@ theorem executeField_singleton_groundLift_scoped_eq_on_store
         [{ sourceField with selectionSet := liftedSelectionSet }]
         ((store.resolvers schema).resolve sourceField.parentType
           sourceField.fieldName sourceField.arguments
-          (.object runtimeType identity))
+          (.object runtimeType))
       =
       Execution.completeValue schema (store.resolvers schema) variableValues
         depth
@@ -924,7 +949,7 @@ theorem executeField_singleton_groundLift_scoped_eq_on_store
         [sourceField]
         ((store.resolvers schema).resolve sourceField.parentType
           sourceField.fieldName sourceField.arguments
-          (.object runtimeType identity)) := by
+          (.object runtimeType)) := by
     have hleft :=
       completeValue_eq_of_mergedFieldSelectionSet_eq schema
         (store.resolvers schema) variableValues depth
@@ -934,7 +959,7 @@ theorem executeField_singleton_groundLift_scoped_eq_on_store
         liftedFields
         ((store.resolvers schema).resolve sourceField.parentType
           sourceField.fieldName sourceField.arguments
-          (.object runtimeType identity))
+          (.object runtimeType))
         (by
           simp [Execution.mergedFieldSelectionSet, liftedFields,
             liftedSelectionSet])
@@ -946,12 +971,12 @@ theorem executeField_singleton_groundLift_scoped_eq_on_store
         sourceField selectionSet
         ((store.resolvers schema).resolve sourceField.parentType
           sourceField.fieldName sourceField.arguments
-          (.object runtimeType identity))
+          (.object runtimeType))
     exact hleft.trans (hcomplete.trans hright.symm)
   simpa [sourceField, liftedSelectionSet] using
     executeField_singleton_eq_group_of_completeValue schema
       (store.resolvers schema) variableValues depth
-      (.object runtimeType identity) responseName sourceField []
+      (.object runtimeType) responseName sourceField []
       liftedSelectionSet hcompleteGroup
 
 theorem executeSelectionSet_field_head_groundLift_noDuplicate_on_store
@@ -960,7 +985,6 @@ theorem executeSelectionSet_field_head_groundLift_noDuplicate_on_store
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (hstore : store.wellTyped schema)
     (depth : Nat) (parentType runtimeType : Name)
-    (identity : DataModel.ObjectPath)
     (responseName fieldName : Name) (arguments : List Argument)
     (selectionSet liftedRest rest : List Selection)
     (fieldDefinition : FieldDefinition) :
@@ -968,30 +992,32 @@ theorem executeSelectionSet_field_head_groundLift_noDuplicate_on_store
     schema.lookupField parentType fieldName = some fieldDefinition ->
     responseName ∉
       (Execution.collectFields schema variableValues parentType
-        (.object runtimeType identity) liftedRest).map Prod.fst ->
+        (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+        liftedRest).map Prod.fst ->
     responseName ∉
       (Execution.collectFields schema variableValues parentType
-        (.object runtimeType identity) rest).map Prod.fst ->
+        (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+        rest).map Prod.fst ->
     Execution.executeSelectionSet schema (store.resolvers schema)
-      variableValues depth parentType (.object runtimeType identity)
+      variableValues depth parentType (.object runtimeType)
       liftedRest
       =
     Execution.executeSelectionSet schema (store.resolvers schema)
-      variableValues depth parentType (.object runtimeType identity) rest ->
-    (∀ childDepth runtimeType identity,
+      variableValues depth parentType (.object runtimeType) rest ->
+    (∀ childDepth runtimeType ref,
       childDepth < depth - 1 ->
         schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
           runtimeType = true ->
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues childDepth runtimeType
-            (.object runtimeType identity)
+            (.object runtimeType ref)
             (groundLiftSelectionSet schema runtimeType selectionSet)
           =
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues childDepth runtimeType
-            (.object runtimeType identity) selectionSet) ->
+            (.object runtimeType ref) selectionSet) ->
       Execution.executeSelectionSet schema (store.resolvers schema)
-        variableValues depth parentType (.object runtimeType identity)
+        variableValues depth parentType (.object runtimeType)
         (Selection.field responseName fieldName arguments []
           (if leafTypeNameBool schema fieldDefinition.outputType.namedType then
             []
@@ -1008,7 +1034,7 @@ theorem executeSelectionSet_field_head_groundLift_noDuplicate_on_store
           :: liftedRest)
       =
       Execution.executeSelectionSet schema (store.resolvers schema)
-        variableValues depth parentType (.object runtimeType identity)
+        variableValues depth parentType (.object runtimeType)
         (Selection.field responseName fieldName arguments [] selectionSet
           :: rest) := by
   intro hinclude hlookup hnotinLift hnotinOriginal htail hrecursive
@@ -1048,85 +1074,115 @@ theorem executeSelectionSet_field_head_groundLift_noDuplicate_on_store
         }
       have hliftCollect :
           Execution.collectFields schema variableValues parentType
-            (.object runtimeType identity)
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
             (Selection.field responseName fieldName arguments []
               liftedSelectionSet :: liftedRest)
           =
           (responseName, [liftedField])
             :: Execution.collectFields schema variableValues parentType
-              (.object runtimeType identity) liftedRest := by
+              (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+              liftedRest := by
         simpa [liftedField] using
           collectFields_field_noDirectives_cons_of_responseName_not_mem
-            schema variableValues parentType (.object runtimeType identity)
+            schema variableValues parentType
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
             responseName fieldName arguments liftedSelectionSet liftedRest
             hnotinLift
       have horiginalCollect :
           Execution.collectFields schema variableValues parentType
-            (.object runtimeType identity)
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
             (Selection.field responseName fieldName arguments []
               selectionSet :: rest)
           =
           (responseName, [originalField])
             :: Execution.collectFields schema variableValues parentType
-              (.object runtimeType identity) rest := by
+              (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+              rest := by
         simpa [originalField] using
           collectFields_field_noDirectives_cons_of_responseName_not_mem
-            schema variableValues parentType (.object runtimeType identity)
+            schema variableValues parentType
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
             responseName fieldName arguments selectionSet rest
             hnotinOriginal
       have hhead :
           Execution.executeField schema (store.resolvers schema) variableValues
-            (fieldDepth + 1) (.object runtimeType identity) responseName
+            (fieldDepth + 1) (.object runtimeType) responseName
             [liftedField]
           =
           Execution.executeField schema (store.resolvers schema) variableValues
-            (fieldDepth + 1) (.object runtimeType identity) responseName
+            (fieldDepth + 1) (.object runtimeType) responseName
             [originalField] := by
         simpa [liftedField, originalField, liftedSelectionSet] using
           executeField_singleton_groundLift_eq_on_store schema store
             variableValues hschema hstore fieldDepth parentType runtimeType
-            identity responseName fieldName arguments selectionSet
+            responseName fieldName arguments selectionSet
             fieldDefinition hinclude hlookup
             (by
-              intro childDepth runtimeType identity hlt hchildInclude
-              exact hrecursive childDepth runtimeType identity
+              intro childDepth runtimeType ref hlt hchildInclude
+              exact hrecursive childDepth runtimeType ref
                 (Nat.lt_of_lt_of_le hlt (Nat.sub_le fieldDepth 0))
                 hchildInclude)
       have htailCollected :
           Execution.executeCollectedFields schema (store.resolvers schema)
-            variableValues (fieldDepth + 1) (.object runtimeType identity)
+            variableValues (fieldDepth + 1) (.object runtimeType)
             (Execution.collectFields schema variableValues parentType
-              (.object runtimeType identity) liftedRest)
+              (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+              liftedRest)
           =
           Execution.executeCollectedFields schema (store.resolvers schema)
-            variableValues (fieldDepth + 1) (.object runtimeType identity)
+            variableValues (fieldDepth + 1) (.object runtimeType)
             (Execution.collectFields schema variableValues parentType
-              (.object runtimeType identity) rest) := by
-        simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet]
+              (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+              rest) := by
+        simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+          ]
           using htail
       change
         Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues (fieldDepth + 1) parentType
-            (.object runtimeType identity)
+            (.object runtimeType)
             (Selection.field responseName fieldName arguments []
               liftedSelectionSet :: liftedRest)
           =
         Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues (fieldDepth + 1) parentType
-            (.object runtimeType identity)
+            (.object runtimeType)
             (Selection.field responseName fieldName arguments []
               selectionSet :: rest)
       simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet]
-      rw [hliftCollect, horiginalCollect]
-      exact executeCollectedFields_cons_eq_of_parts schema
-        (store.resolvers schema) variableValues (fieldDepth + 1)
-        (.object runtimeType identity) (responseName, [liftedField])
-        (responseName, [originalField])
-        (Execution.collectFields schema variableValues parentType
-          (.object runtimeType identity) liftedRest)
-        (Execution.collectFields schema variableValues parentType
-          (.object runtimeType identity) rest)
-        hhead htailCollected
+      rw [
+        show Execution.collectFields schema variableValues parentType
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+            (Selection.field responseName fieldName arguments []
+              liftedSelectionSet :: liftedRest)
+          =
+          (responseName, [liftedField])
+            :: Execution.collectFields schema variableValues parentType
+              (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+              liftedRest by
+          simpa [] using hliftCollect,
+        show Execution.collectFields schema variableValues parentType
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+            (Selection.field responseName fieldName arguments []
+              selectionSet :: rest)
+          =
+          (responseName, [originalField])
+            :: Execution.collectFields schema variableValues parentType
+              (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+              rest by
+          simpa [] using horiginalCollect]
+      simpa [] using
+        executeCollectedFields_cons_eq_of_parts schema
+          (store.resolvers schema) variableValues (fieldDepth + 1)
+          (.object runtimeType) (responseName, [liftedField])
+          (responseName, [originalField])
+          (Execution.collectFields schema variableValues parentType
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+            liftedRest)
+          (Execution.collectFields schema variableValues parentType
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+            rest)
+          hhead htailCollected
 
 theorem executeSelectionSet_field_head_groundLift_scoped_noDuplicate_on_store
     (schema : Schema) (store : DataModel.Store)
@@ -1134,7 +1190,6 @@ theorem executeSelectionSet_field_head_groundLift_scoped_noDuplicate_on_store
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (hstore : store.wellTyped schema)
     (depth : Nat) (execParent liftParent runtimeType : Name)
-    (identity : DataModel.ObjectPath)
     (responseName fieldName : Name) (arguments : List Argument)
     (selectionSet liftedRest rest : List Selection)
     (execFieldDefinition liftFieldDefinition : FieldDefinition) :
@@ -1143,30 +1198,32 @@ theorem executeSelectionSet_field_head_groundLift_scoped_noDuplicate_on_store
     schema.lookupField liftParent fieldName = some liftFieldDefinition ->
     responseName ∉
       (Execution.collectFields schema variableValues execParent
-        (.object runtimeType identity) liftedRest).map Prod.fst ->
+        (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+        liftedRest).map Prod.fst ->
     responseName ∉
       (Execution.collectFields schema variableValues execParent
-        (.object runtimeType identity) rest).map Prod.fst ->
+        (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+        rest).map Prod.fst ->
     Execution.executeSelectionSet schema (store.resolvers schema)
-      variableValues depth execParent (.object runtimeType identity)
+      variableValues depth execParent (.object runtimeType)
       liftedRest
       =
     Execution.executeSelectionSet schema (store.resolvers schema)
-      variableValues depth execParent (.object runtimeType identity) rest ->
-    (∀ childDepth runtimeType identity,
+      variableValues depth execParent (.object runtimeType) rest ->
+    (∀ childDepth runtimeType ref,
       childDepth < depth - 1 ->
         schema.typeIncludesObjectBool liftFieldDefinition.outputType.namedType
           runtimeType = true ->
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues childDepth runtimeType
-            (.object runtimeType identity)
+            (.object runtimeType ref)
             (groundLiftSelectionSet schema runtimeType selectionSet)
           =
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues childDepth runtimeType
-            (.object runtimeType identity) selectionSet) ->
+            (.object runtimeType ref) selectionSet) ->
       Execution.executeSelectionSet schema (store.resolvers schema)
-        variableValues depth execParent (.object runtimeType identity)
+        variableValues depth execParent (.object runtimeType)
         (Selection.field responseName fieldName arguments []
           (if leafTypeNameBool schema liftFieldDefinition.outputType.namedType
           then
@@ -1184,7 +1241,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_noDuplicate_on_store
           :: liftedRest)
       =
       Execution.executeSelectionSet schema (store.resolvers schema)
-        variableValues depth execParent (.object runtimeType identity)
+        variableValues depth execParent (.object runtimeType)
         (Selection.field responseName fieldName arguments [] selectionSet
           :: rest) := by
   intro hliftInclude hexecLookup hliftLookup hnotinLift hnotinOriginal
@@ -1225,85 +1282,115 @@ theorem executeSelectionSet_field_head_groundLift_scoped_noDuplicate_on_store
         }
       have hliftCollect :
           Execution.collectFields schema variableValues execParent
-            (.object runtimeType identity)
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
             (Selection.field responseName fieldName arguments []
               liftedSelectionSet :: liftedRest)
           =
           (responseName, [liftedField])
             :: Execution.collectFields schema variableValues execParent
-              (.object runtimeType identity) liftedRest := by
+              (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+              liftedRest := by
         simpa [liftedField] using
           collectFields_field_noDirectives_cons_of_responseName_not_mem
-            schema variableValues execParent (.object runtimeType identity)
+            schema variableValues execParent
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
             responseName fieldName arguments liftedSelectionSet liftedRest
             hnotinLift
       have horiginalCollect :
           Execution.collectFields schema variableValues execParent
-            (.object runtimeType identity)
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
             (Selection.field responseName fieldName arguments []
               selectionSet :: rest)
           =
           (responseName, [originalField])
             :: Execution.collectFields schema variableValues execParent
-              (.object runtimeType identity) rest := by
+              (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+              rest := by
         simpa [originalField] using
           collectFields_field_noDirectives_cons_of_responseName_not_mem
-            schema variableValues execParent (.object runtimeType identity)
+            schema variableValues execParent
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
             responseName fieldName arguments selectionSet rest
             hnotinOriginal
       have hhead :
           Execution.executeField schema (store.resolvers schema) variableValues
-            (fieldDepth + 1) (.object runtimeType identity) responseName
+            (fieldDepth + 1) (.object runtimeType) responseName
             [liftedField]
           =
           Execution.executeField schema (store.resolvers schema) variableValues
-            (fieldDepth + 1) (.object runtimeType identity) responseName
+            (fieldDepth + 1) (.object runtimeType) responseName
             [originalField] := by
         simpa [liftedField, originalField, liftedSelectionSet] using
           executeField_singleton_groundLift_scoped_eq_on_store schema store
             variableValues hschema hstore fieldDepth execParent liftParent
-            runtimeType identity responseName fieldName arguments selectionSet
+            runtimeType responseName fieldName arguments selectionSet
             execFieldDefinition liftFieldDefinition hliftInclude hexecLookup
             hliftLookup
             (by
-              intro childDepth runtimeType identity hlt hchildInclude
-              exact hrecursive childDepth runtimeType identity
+              intro childDepth runtimeType ref hlt hchildInclude
+              exact hrecursive childDepth runtimeType ref
                 (by simpa using hlt) hchildInclude)
       have htailCollected :
           Execution.executeCollectedFields schema (store.resolvers schema)
-            variableValues (fieldDepth + 1) (.object runtimeType identity)
+            variableValues (fieldDepth + 1) (.object runtimeType)
             (Execution.collectFields schema variableValues execParent
-              (.object runtimeType identity) liftedRest)
+              (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+              liftedRest)
           =
           Execution.executeCollectedFields schema (store.resolvers schema)
-            variableValues (fieldDepth + 1) (.object runtimeType identity)
+            variableValues (fieldDepth + 1) (.object runtimeType)
             (Execution.collectFields schema variableValues execParent
-              (.object runtimeType identity) rest) := by
-        simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet]
+              (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+              rest) := by
+        simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+          ]
           using htail
       change
         Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues (fieldDepth + 1) execParent
-            (.object runtimeType identity)
+            (.object runtimeType)
             (Selection.field responseName fieldName arguments []
               liftedSelectionSet :: liftedRest)
           =
         Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues (fieldDepth + 1) execParent
-            (.object runtimeType identity)
+            (.object runtimeType)
             (Selection.field responseName fieldName arguments []
               selectionSet :: rest)
       simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet]
-      rw [hliftCollect, horiginalCollect]
-      exact executeCollectedFields_cons_eq_of_parts schema
-        (store.resolvers schema) variableValues (fieldDepth + 1)
-        (.object runtimeType identity) (responseName, [liftedField])
-        (responseName, [originalField])
-        (Execution.collectFields schema variableValues execParent
-          (.object runtimeType identity) liftedRest)
-        (Execution.collectFields schema variableValues execParent
-          (.object runtimeType identity) rest)
-        hhead htailCollected
+      rw [
+        show Execution.collectFields schema variableValues execParent
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+            (Selection.field responseName fieldName arguments []
+              liftedSelectionSet :: liftedRest)
+          =
+          (responseName, [liftedField])
+            :: Execution.collectFields schema variableValues execParent
+              (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+              liftedRest by
+          simpa [] using hliftCollect,
+        show Execution.collectFields schema variableValues execParent
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+            (Selection.field responseName fieldName arguments []
+              selectionSet :: rest)
+          =
+          (responseName, [originalField])
+            :: Execution.collectFields schema variableValues execParent
+              (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+              rest by
+          simpa [] using horiginalCollect]
+      simpa [] using
+        executeCollectedFields_cons_eq_of_parts schema
+          (store.resolvers schema) variableValues (fieldDepth + 1)
+          (.object runtimeType) (responseName, [liftedField])
+          (responseName, [originalField])
+          (Execution.collectFields schema variableValues execParent
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+            liftedRest)
+          (Execution.collectFields schema variableValues execParent
+            (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+            rest)
+          hhead htailCollected
 
 theorem executeSelectionSet_field_head_groundLift_scoped_responseNameFree_on_store
     (schema : Schema) (store : DataModel.Store)
@@ -1311,7 +1398,6 @@ theorem executeSelectionSet_field_head_groundLift_scoped_responseNameFree_on_sto
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (hstore : store.wellTyped schema)
     (depth : Nat) (execParent liftParent runtimeType : Name)
-    (identity : DataModel.ObjectPath)
     (responseName fieldName : Name) (arguments : List Argument)
     (selectionSet rest : List Selection)
     (execFieldDefinition liftFieldDefinition : FieldDefinition) :
@@ -1323,49 +1409,51 @@ theorem executeSelectionSet_field_head_groundLift_scoped_responseNameFree_on_sto
     selectionSetDirectiveFree rest ->
     selectionSetResponseNameFree schema execParent responseName rest ->
     Execution.executeSelectionSet schema (store.resolvers schema)
-      variableValues depth execParent (.object runtimeType identity)
+      variableValues depth execParent (.object runtimeType)
       (groundLiftSelectionSet schema liftParent rest)
       =
     Execution.executeSelectionSet schema (store.resolvers schema)
-      variableValues depth execParent (.object runtimeType identity) rest ->
-    (∀ childDepth runtimeType identity,
+      variableValues depth execParent (.object runtimeType) rest ->
+    (∀ childDepth runtimeType ref,
       childDepth < depth - 1 ->
         schema.typeIncludesObjectBool liftFieldDefinition.outputType.namedType
           runtimeType = true ->
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues childDepth runtimeType
-            (.object runtimeType identity)
+            (.object runtimeType ref)
             (groundLiftSelectionSet schema runtimeType selectionSet)
           =
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues childDepth runtimeType
-            (.object runtimeType identity) selectionSet) ->
+            (.object runtimeType ref) selectionSet) ->
       Execution.executeSelectionSet schema (store.resolvers schema)
-        variableValues depth execParent (.object runtimeType identity)
+        variableValues depth execParent (.object runtimeType)
         (groundLiftSelectionSet schema liftParent
           (Selection.field responseName fieldName arguments [] selectionSet
             :: rest))
       =
       Execution.executeSelectionSet schema (store.resolvers schema)
-        variableValues depth execParent (.object runtimeType identity)
+        variableValues depth execParent (.object runtimeType)
         (Selection.field responseName fieldName arguments [] selectionSet
           :: rest) := by
   intro hexecObject hexecInclude hliftInclude hexecLookup hliftLookup
     hrestFree hrestResponseFree htail hrecursive
-  have hsource :
-      ∃ runtimeType' identity',
-        (Execution.Value.object runtimeType identity :
-            Execution.Value DataModel.ObjectPath)
-          = .object runtimeType' identity'
+  have hsourceValue :
+      ∃ runtimeType' ref,
+        Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType =
+          .object runtimeType' ref
           ∧ schema.typeIncludesObjectBool execParent runtimeType' = true :=
-    ⟨runtimeType, identity, rfl, hexecInclude⟩
+    ⟨runtimeType, (none : Option DataModel.ObjectRef), rfl, hexecInclude⟩
   have hnotinOriginal :
       responseName ∉
         (Execution.collectFields schema variableValues execParent
-          (.object runtimeType identity) rest).map Prod.fst :=
+          (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+          rest).map Prod.fst :=
     collectFields_responseName_not_mem_of_responseNameFree schema
-      variableValues execParent (.object runtimeType identity) responseName
-      hexecObject hsource rest hrestFree hrestResponseFree
+      variableValues execParent
+      (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+      responseName
+      hexecObject hsourceValue rest hrestFree hrestResponseFree
   have hliftRestFree :
       selectionSetDirectiveFree
         (groundLiftSelectionSet schema liftParent rest) :=
@@ -1378,16 +1466,18 @@ theorem executeSelectionSet_field_head_groundLift_scoped_responseNameFree_on_sto
   have hnotinLift :
       responseName ∉
         (Execution.collectFields schema variableValues execParent
-          (.object runtimeType identity)
+          (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
           (groundLiftSelectionSet schema liftParent rest)).map Prod.fst :=
     collectFields_responseName_not_mem_of_responseNameFree schema
-      variableValues execParent (.object runtimeType identity) responseName
-      hexecObject hsource (groundLiftSelectionSet schema liftParent rest)
+      variableValues execParent
+      (Execution.Value.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+      responseName
+      hexecObject hsourceValue (groundLiftSelectionSet schema liftParent rest)
       hliftRestFree hliftResponseFree
   simpa [groundLiftSelectionSet, groundLiftSelection, hliftLookup] using
     executeSelectionSet_field_head_groundLift_scoped_noDuplicate_on_store
       schema store variableValues hschema hstore depth execParent liftParent
-      runtimeType identity responseName fieldName arguments selectionSet
+      runtimeType responseName fieldName arguments selectionSet
       (groundLiftSelectionSet schema liftParent rest) rest
       execFieldDefinition liftFieldDefinition hliftInclude hexecLookup
       hliftLookup hnotinLift hnotinOriginal htail hrecursive

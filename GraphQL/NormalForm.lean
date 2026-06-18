@@ -4,10 +4,9 @@ import GraphQL.SchemaWellFormedness
 /-! GraphQL operation normal form
 
 This project-specific normal form merges same-response-name field selections and grounds
-abstract returns through possible object types. The public semantic-preservation predicates
-in this module are proved by
-`GraphQL.NormalForm.GroundTypeNormalization.groundTypeNormalFormSemanticsPreservation` and
-`GraphQL.NormalForm.GroundTypeNormalization.groundNormalFormCorrect`.
+abstract returns through possible object types. The ground-type normalizer is total:
+empty normalized roots remain empty, and composite fields whose normalized child selection
+set is empty are retained as empty object selections.
 -/
 namespace GraphQL
 
@@ -110,6 +109,100 @@ end
 def operationDirectiveFree (operation : Operation) : Prop :=
   selectionSetDirectiveFree operation.selectionSet
 
+-- Type-condition feasibility for one field occurrence: the inline-fragment type
+-- conditions between the field and its nearest parent field/root selection set,
+-- including that parent type itself, have a nonempty possible-object intersection.
+def typeConditionStackFeasible (schema : Schema) (typeConditions : List Name) :
+    Prop :=
+  ∃ objectType,
+    ∀ typeCondition, typeCondition ∈ typeConditions ->
+      objectType ∈ schema.getPossibleTypes typeCondition
+
+mutual
+  -- Existential helper: this selection may expose a field whose accumulated
+  -- type-condition stack is feasible.
+  def selectionContainsTypeConditionFeasibleField (schema : Schema)
+      (typeConditions : List Name) : Selection -> Prop
+    | .field _responseName _fieldName _arguments _directives _selectionSet =>
+        typeConditionStackFeasible schema typeConditions
+    | .inlineFragment none _directives selectionSet =>
+        selectionSetContainsTypeConditionFeasibleField schema typeConditions
+          selectionSet
+    | .inlineFragment (some typeCondition) _directives selectionSet =>
+        selectionSetContainsTypeConditionFeasibleField schema
+          (typeCondition :: typeConditions) selectionSet
+
+  def selectionSetContainsTypeConditionFeasibleField (schema : Schema)
+      (typeConditions : List Name) (selectionSet : List Selection) : Prop :=
+    match selectionSet with
+    | [] => False
+    | selection :: rest =>
+        selectionContainsTypeConditionFeasibleField schema typeConditions
+          selection
+          ∨ selectionSetContainsTypeConditionFeasibleField schema
+            typeConditions rest
+end
+
+mutual
+  -- Recursive source-operation assumption for validity preservation: every nonempty
+  -- selection set has at least one field whose inline-fragment type-condition stack is
+  -- feasible, and the same property holds for nested nonempty field selection sets.
+  def selectionTypeConditionFeasible (schema : Schema)
+      (parentType : Name) (typeConditions : List Name) : Selection -> Prop
+    | .field _responseName fieldName _arguments _directives selectionSet =>
+        match selectionSet with
+        | [] => True
+        | _ :: _ =>
+            match schema.lookupField parentType fieldName with
+            | some fieldDefinition =>
+                selectionSetContainsTypeConditionFeasibleField schema
+                  [fieldDefinition.outputType.namedType] selectionSet
+                  ∧ selectionsTypeConditionFeasible schema
+                    fieldDefinition.outputType.namedType
+                    [fieldDefinition.outputType.namedType] selectionSet
+            | none => False
+    | .inlineFragment none _directives selectionSet =>
+        selectionsTypeConditionFeasible schema parentType
+          typeConditions selectionSet
+    | .inlineFragment (some typeCondition) _directives selectionSet =>
+        selectionsTypeConditionFeasible schema parentType
+          (typeCondition :: typeConditions) selectionSet
+
+  def selectionsTypeConditionFeasible (schema : Schema)
+      (parentType : Name) (typeConditions : List Name)
+      (selectionSet : List Selection) : Prop :=
+    match selectionSet with
+    | [] => True
+    | selection :: rest =>
+        selectionTypeConditionFeasible schema parentType typeConditions selection
+          ∧ selectionsTypeConditionFeasible schema parentType typeConditions rest
+end
+
+def selectionSetTypeConditionFeasible (schema : Schema)
+    (parentType : Name) (typeConditions : List Name)
+    (selectionSet : List Selection) : Prop :=
+  selectionSetContainsTypeConditionFeasibleField schema typeConditions
+    selectionSet
+    ∧ selectionsTypeConditionFeasible schema parentType typeConditions
+      selectionSet
+
+-- Operation-level wrapper for the source-operation assumption needed by
+-- ground-normalization validity preservation.
+def operationSelectionSetsTypeConditionFeasible (schema : Schema)
+    (operation : Operation) : Prop :=
+  selectionSetTypeConditionFeasible schema operation.rootType [operation.rootType]
+    operation.selectionSet
+
+-- Strong proof-facing form used by validity preservation: whenever the normalizer is
+-- asked to process a nonempty selection set in a concrete scope, that selection set has a
+-- feasible field in that scope. This is intentionally stronger than the operation-level
+-- wrapper above; later proofs can try to derive it from source-operation reachability.
+def selectionSetsTypeConditionFeasibleInEveryScope (schema : Schema) : Prop :=
+  ∀ parentType selectionSet,
+    selectionSet ≠ [] ->
+      selectionSetTypeConditionFeasible schema parentType [parentType]
+        selectionSet
+
 mutual
   -- Helper predicate: one selection cannot contribute a field with the given response
   -- name in the current type scope.
@@ -158,6 +251,10 @@ def groundObjectTypesForType (schema : Schema) (returnType : Name) :
 def mergeSelectionSets : List Selection -> List Selection
   | [] => []
   | selection :: rest => selection.subselections ++ mergeSelectionSets rest
+
+section NormalizeSelectionSetTermination
+
+/-! Private termination support for `normalizeSelectionSet`. -/
 
 private theorem selectionSet_size_append (left right : List Selection) :
     SelectionSet.size (left ++ right)
@@ -325,7 +422,17 @@ decreasing_by
     simp [SelectionSet.size, Selection.size]
     omega
 
--- Spec 5.3.2 field merging / 6.3.2 subfield collection: partial normalizer; merges
+end NormalizeSelectionSetTermination
+
+-- Normalized fields are retained even when a composite child selection normalizes to
+-- empty; execution still produces the parent response name with an empty object.
+def normalizedField
+    (_schema : Schema) (_returnType responseName fieldName : Name)
+    (arguments : List Argument) (directives : List DirectiveApplication)
+    (normalizedSubselections : List Selection) : Selection :=
+  .field responseName fieldName arguments directives normalizedSubselections
+
+-- Spec 5.3.2 field merging / 6.3.2 subfield collection: total normalizer; merges
 -- same-response-name fields, recursively normalizes child selections, and grounds
 -- abstract field return types through possible object types. This is terminating by
 -- selection-set size.
@@ -350,12 +457,16 @@ def normalizeSelectionSet (schema : Schema) (parentType : Name) :
                 if objectTypeNameBool schema returnType then
                   normalizeSelectionSet schema returnType mergedSubselections
                 else
-                  (schema.getPossibleTypes returnType).map
+                  (schema.getPossibleTypes returnType).filterMap
                     (fun objectType =>
-                      .inlineFragment (some objectType) []
-                        (normalizeSelectionSet schema objectType mergedSubselections))
-              .field responseName fieldName arguments directives normalizedSubselections
-                :: normalizedRest
+                      match normalizeSelectionSet schema objectType
+                          mergedSubselections with
+                      | [] => none
+                      | selection :: rest =>
+                          some (.inlineFragment (some objectType) []
+                            (selection :: rest)))
+              normalizedField schema returnType responseName fieldName
+                arguments directives normalizedSubselections :: normalizedRest
       | .inlineFragment none _directives subselections =>
           normalizeSelectionSet schema parentType (subselections ++ rest)
       | .inlineFragment (some typeCondition) _directives subselections =>
@@ -385,50 +496,53 @@ decreasing_by
        simp [SelectionSet.size, Selection.size]
        try omega)
 
--- Public GraphCoQL-style grounding helper: object return types normalize directly; abstract
--- interface/union return types specialize into one object fragment per possible type.
-def normalizeMergedSelectionSetForType
-    (schema : Schema) (returnType : Name)
-    (selectionSet : List Selection) : List Selection :=
-  if objectTypeNameBool schema returnType then
-    normalizeSelectionSet schema returnType selectionSet
-  else
-    (schema.getPossibleTypes returnType).map
-      (fun objectType =>
-        .inlineFragment (some objectType) []
-          (normalizeSelectionSet schema objectType selectionSet))
-
--- Spec-inspired operation normalizer: non-spec wrapper around selection-set normalization.
+-- Spec-inspired operation normalizer: non-spec wrapper around selection-set
+-- normalization.
 def normalizeOperation (schema : Schema)
     (operation : Operation) : Operation :=
   { operation with
-    selectionSet := normalizeSelectionSet schema operation.rootType
-      operation.selectionSet }
+    selectionSet :=
+      normalizeSelectionSet schema operation.rootType operation.selectionSet }
 
 def operationsEquivalent (schema : Schema)
     (left right : Operation) : Prop :=
-  ∀ (ObjectIdentity : Type) (resolvers : Execution.Resolvers ObjectIdentity)
-    variableValues depth (source : Execution.Value ObjectIdentity),
+  ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
+    variableValues depth (source : Execution.Value ObjectRef),
     Execution.executeQueryAtDepth schema resolvers variableValues left depth source
       =
     Execution.executeQueryAtDepth schema resolvers variableValues right depth source
 
 def groundTypeNormalFormSemanticsPreserved (schema : Schema)
     (operation : Operation) : Prop :=
-  operationsEquivalent schema operation
-    (normalizeOperation schema operation)
+  operationsEquivalent schema operation (normalizeOperation schema operation)
 
--- Store-backed correctness statement for the ground-type normalizer. The theorem witness is
--- `GraphQL.NormalForm.GroundTypeNormalization.groundNormalFormCorrect`.
+-- Public validity-preservation statement for the ground-type normalizer.
+def normalizeOperationValid (schema : Schema)
+    (operation : Operation) : Prop :=
+      SchemaWellFormedness.schemaWellFormed schema ->
+      Validation.operationDefinitionValid schema operation ->
+      operationDirectiveFree operation ->
+        selectionSetsTypeConditionFeasibleInEveryScope schema ->
+          Validation.operationDefinitionValid schema
+            (normalizeOperation schema operation)
+
+-- Public normality statement for the ground-type normalizer. The theorem witness is
+-- `GraphQL.NormalForm.GroundTypeNormalization.normalizeOperation_normal`.
+def normalizeOperationNormal (schema : Schema)
+    (operation : Operation) : Prop :=
+  SchemaWellFormedness.schemaWellFormed schema ->
+    operationNormal schema (normalizeOperation schema operation)
+
+-- Store-backed correctness statement for the ground-type normalizer.
 def groundNormalFormCorrect (schema : Schema)
     (operation : Operation) : Prop :=
   DataModel.operationsEquivalentOnData schema operation
     (normalizeOperation schema operation)
 
 
--- Final resolver-parametric correctness statement for the ground-type normalizer. The theorem
--- witness is
--- `GraphQL.NormalForm.GroundTypeNormalization.groundTypeNormalFormSemanticsPreservation`.
+-- Final resolver-parametric correctness statement for the ground-type normalizer.
+-- Operation-level proof wrappers live in
+-- `GraphQL.NormalForm.GroundTypeNormalization.OperationSemantics`.
 def groundTypeNormalFormSemanticsPreservation (schema : Schema)
     (operation : Operation) : Prop :=
   SchemaWellFormedness.schemaWellFormed schema ->
@@ -590,6 +704,46 @@ def directivesAllowIn
   directives.all (fun directive =>
     directiveAllowsIn boolCase directive)
 
+mutual
+  def selectionContributesInBoolCase
+      (boolCase : BoolCase) : Selection -> Prop
+    | .field _responseName _fieldName _arguments directives _selectionSet =>
+        directivesAllowIn boolCase directives = true
+    | .inlineFragment _typeCondition directives selectionSet =>
+        directivesAllowIn boolCase directives = true
+          ∧ selectionSetContributesInBoolCase boolCase selectionSet
+
+  def selectionSetContributesInBoolCase
+      (boolCase : BoolCase) : List Selection -> Prop
+    | [] => False
+    | selection :: rest =>
+        selectionContributesInBoolCase boolCase selection
+          ∨ selectionSetContributesInBoolCase boolCase rest
+end
+
+mutual
+  def selectionBoolCaseCompositeChildrenSurvive
+      (boolCase : BoolCase) : Selection -> Prop
+    | .field _responseName _fieldName _arguments directives selectionSet =>
+        directivesAllowIn boolCase directives = true ->
+          match selectionSet with
+          | [] => True
+          | _ :: _ =>
+              selectionSetContributesInBoolCase boolCase selectionSet
+                ∧ selectionSetBoolCaseCompositeChildrenSurvive boolCase
+                  selectionSet
+    | .inlineFragment _typeCondition directives selectionSet =>
+        directivesAllowIn boolCase directives = true ->
+          selectionSetBoolCaseCompositeChildrenSurvive boolCase selectionSet
+
+  def selectionSetBoolCaseCompositeChildrenSurvive
+      (boolCase : BoolCase) : List Selection -> Prop
+    | [] => True
+    | selection :: rest =>
+        selectionBoolCaseCompositeChildrenSurvive boolCase selection
+          ∧ selectionSetBoolCaseCompositeChildrenSurvive boolCase rest
+end
+
 def directiveForBit
     (varName : BoolVar) (value : Bool) : DirectiveApplication :=
   if value then
@@ -606,6 +760,10 @@ def wrapWithBoolCase
       | (varName, value) :: rest =>
           [ .inlineFragment none [directiveForBit varName value]
               (wrapWithBoolCase rest selectionSet) ]
+
+section FilterSelectionSetBoolCaseTermination
+
+/-! Private termination support for `filterSelectionSetBoolCase`. -/
 
 private theorem selection_size_pos (selection : Selection) :
     0 < selection.size := by
@@ -638,176 +796,156 @@ private theorem selectionSet_size_child_lt_cons_inline
   simp [SelectionSet.size, Selection.size]
   omega
 
-mutual
-  def staticCollectForGround
-      (schema : Schema) (variables : List BoolVar)
-      (lookupParent groundType : Name) (boolCase : BoolCase) :
-      List Selection -> List Selection
-    | [] => []
-    | selection :: rest =>
-        let collectedRest :=
-          staticCollectForGround schema variables lookupParent
-            groundType boolCase rest
-        match selection with
-        | .field responseName fieldName arguments directives selectionSet =>
-            if directivesAllowIn boolCase directives then
-              match schema.lookupField lookupParent fieldName with
-              | none =>
-                  .field responseName fieldName arguments []
-                    (normalizeSelectionSetIn schema
-                      variables boolCase lookupParent selectionSet)
-                    :: collectedRest
-              | some fieldDefinition =>
-                  .field responseName fieldName arguments []
-                    (normalizeForTypeIn schema
-                      variables boolCase fieldDefinition.outputType.namedType
-                      selectionSet)
-                    :: collectedRest
-            else
-              collectedRest
-        | .inlineFragment none directives selectionSet =>
-            if directivesAllowIn boolCase directives then
-              staticCollectForGround schema variables lookupParent
-                groundType boolCase selectionSet ++ collectedRest
-            else
-              collectedRest
-        | .inlineFragment (some typeCondition) directives selectionSet =>
-            if directivesAllowIn boolCase directives
-                && schema.typeIncludesObjectBool typeCondition groundType then
-              staticCollectForGround schema variables typeCondition
-                groundType boolCase selectionSet ++ collectedRest
-            else
-              collectedRest
-  termination_by selectionSet => (SelectionSet.size selectionSet, 0)
-  decreasing_by
-    all_goals
-      first
-      | exact Prod.Lex.left _ _ (selectionSet_size_tail_lt_cons selection rest)
-      | exact Prod.Lex.left _ _
-          (selectionSet_size_child_lt_cons_field responseName fieldName
-            arguments directives selectionSet rest)
-      | exact Prod.Lex.left _ _
-          (selectionSet_size_child_lt_cons_inline none directives
-            selectionSet rest)
-      | exact Prod.Lex.left _ _
-          (selectionSet_size_child_lt_cons_inline (some typeCondition)
-            directives selectionSet rest)
+end FilterSelectionSetBoolCaseTermination
 
-  def normalizeForTypeIn
-      (schema : Schema) (variables : List BoolVar)
-      (boolCase : BoolCase) (returnType : Name)
-      (selectionSet : List Selection) : List Selection :=
-    if leafTypeNameBool schema returnType then
-      []
-    else if objectTypeNameBool schema returnType then
-      staticCollectForGround schema variables returnType
-        returnType boolCase selectionSet
-    else
-      (groundObjectTypesForType schema returnType).map
-        (fun objectType =>
-          .inlineFragment (some objectType) []
-            (staticCollectForGround schema variables objectType
-              objectType boolCase selectionSet))
-  termination_by (SelectionSet.size selectionSet, 1)
-  decreasing_by
-    all_goals
-      apply Prod.Lex.right
-      omega
+def filterSelectionSetBoolCase
+    (boolCase : BoolCase) :
+    List Selection -> List Selection
+  | [] => []
+  | selection :: rest =>
+      let collectedRest :=
+        filterSelectionSetBoolCase boolCase rest
+      match selection with
+      | .field responseName fieldName arguments directives selectionSet =>
+          if directivesAllowIn boolCase directives then
+            let filteredSelectionSet :=
+              filterSelectionSetBoolCase boolCase selectionSet
+            match selectionSet, filteredSelectionSet with
+            | [], _ =>
+                .field responseName fieldName arguments [] [] :: collectedRest
+            | _ :: _, [] =>
+                .field responseName fieldName arguments [] [] :: collectedRest
+            | _ :: _, child :: children =>
+                .field responseName fieldName arguments [] (child :: children)
+                  :: collectedRest
+          else
+            collectedRest
+      | .inlineFragment typeCondition directives selectionSet =>
+          if directivesAllowIn boolCase directives then
+            match filterSelectionSetBoolCase boolCase selectionSet with
+            | [] => collectedRest
+            | child :: children =>
+                .inlineFragment typeCondition [] (child :: children)
+                  :: collectedRest
+          else
+            collectedRest
+termination_by selectionSet => SelectionSet.size selectionSet
+decreasing_by
+  all_goals
+    first
+    | exact selectionSet_size_tail_lt_cons selection rest
+    | exact selectionSet_size_child_lt_cons_field responseName fieldName
+        arguments directives selectionSet rest
+    | exact selectionSet_size_child_lt_cons_inline typeCondition
+        directives selectionSet rest
 
-  def normalizeSelectionIn
-      (schema : Schema) (variables : List BoolVar)
-      (boolCase : BoolCase) (parentType : Name) :
-      Selection -> List Selection
-    | .field responseName fieldName arguments _directives selectionSet =>
-        match schema.lookupField parentType fieldName with
-        | none =>
-            [.field responseName fieldName arguments []
-              (normalizeSelectionSetIn schema variables
-                boolCase parentType selectionSet)]
-        | some fieldDefinition =>
-            [.field responseName fieldName arguments []
-              (normalizeForTypeIn schema
-                variables boolCase fieldDefinition.outputType.namedType
-                selectionSet)]
-    | .inlineFragment none _directives selectionSet =>
-        normalizeSelectionSetIn schema variables boolCase
-          parentType selectionSet
-    | .inlineFragment (some typeCondition) _directives selectionSet =>
-        if schema.typesOverlapBool parentType typeCondition then
-          normalizeSelectionSetIn schema variables
-            boolCase typeCondition selectionSet
-        else
-          []
-  termination_by selection => (Selection.size selection, 2)
-  decreasing_by
-    all_goals
-      apply Prod.Lex.left
-      simp [Selection.size]
-
-  def normalizeSelectionSetIn
-      (schema : Schema) (variables : List BoolVar)
-      (boolCase : BoolCase) (parentType : Name) :
-      List Selection -> List Selection
-    | [] => []
-    | selection :: rest =>
-        normalizeSelectionIn schema variables boolCase
-          parentType selection
-          ++ normalizeSelectionSetIn schema variables
-            boolCase parentType rest
-  termination_by selectionSet => (SelectionSet.size selectionSet, 3)
-  decreasing_by
-    all_goals
-      first
-      | exact Prod.Lex.left _ _ (selectionSet_size_tail_lt_cons selection rest)
-      | cases rest with
-        | nil =>
-            apply Prod.Lex.right
-            omega
-        | cons head tail =>
-            apply Prod.Lex.left
-            have hpos : 0 < SelectionSet.size (head :: tail) := by
-              simp [SelectionSet.size]
-              have hhead := selection_size_pos head
-              omega
-            change selection.size <
-              selection.size + SelectionSet.size (head :: tail)
-            exact Nat.lt_add_of_pos_right hpos
-end
-
-def boolCaseBranchesForGround
-    (schema : Schema) (groundType : Name)
-    (variables : List BoolVar)
+def normalizeBoolCaseForType
+    (schema : Schema) (boolCase : BoolCase) (returnType : Name)
     (selectionSet : List Selection) : List Selection :=
+  normalizeSelectionSet schema returnType
+    (filterSelectionSetBoolCase boolCase selectionSet)
+
+def completeNormalizeRootSelectionSet
+    (schema : Schema) (variables : List BoolVar)
+    (parentType : Name) (selectionSet : List Selection) :
+    List Selection :=
   List.flatten ((allBoolCases variables).map
     (fun boolCase =>
-      wrapWithBoolCase boolCase
-        (staticCollectForGround schema variables groundType
-          groundType boolCase selectionSet)))
-
-def normalizeForType
-    (schema : Schema) (variables : List BoolVar) (returnType : Name)
-    (selectionSet : List Selection) : List Selection :=
-  if leafTypeNameBool schema returnType then
-    []
-  else
-    List.flatten ((allBoolCases variables).map
-      (fun boolCase =>
-        wrapWithBoolCase boolCase
-          (normalizeForTypeIn schema variables
-            boolCase returnType selectionSet)))
+      match normalizeSelectionSet schema parentType
+          (filterSelectionSetBoolCase boolCase selectionSet) with
+      | [] => []
+      | selection :: rest =>
+          wrapWithBoolCase boolCase (selection :: rest)))
 
 -- Named operation-global variable policy used by CompleteNormalization predicates.
 def operationBoolVars (operation : Operation) :
     List BoolVar :=
   dedupBoolVars (selectionSetBooleanVariables operation.selectionSet)
 
+def completeBoolCasesCompositeChildrenSurvive
+    (operation : Operation) : Prop :=
+  ∀ boolCase, boolCase ∈ allBoolCases (operationBoolVars operation) ->
+    selectionSetBoolCaseCompositeChildrenSurvive boolCase
+      operation.selectionSet
+
 def completeNormalizeOperation
     (schema : Schema) (operation : Operation) : Operation :=
   let variables := operationBoolVars operation
   { operation with
     selectionSet :=
-      normalizeForType schema variables operation.rootType
+      completeNormalizeRootSelectionSet schema variables operation.rootType
         operation.selectionSet }
+
+-- Complete Boolean minterm: every operation Boolean variable appears exactly once.
+-- The order in the `BoolCase` is intentionally irrelevant to the variable list order.
+def completeNormalBoolCase
+    (variables : List BoolVar) (boolCase : BoolCase) : Prop :=
+  variables.Nodup
+    ∧ (boolCase.map Prod.fst).Nodup
+    ∧ ∀ varName,
+      varName ∈ boolCase.map Prod.fst ↔ varName ∈ variables
+
+-- Boolean conditions are compared extensionally, so different stem orders can denote
+-- the same minterm.
+def completeNormalBoolCasesEquivalent (left right : BoolCase) : Prop :=
+  ∀ varName value,
+    (varName, value) ∈ left ↔ (varName, value) ∈ right
+
+-- A Boolean stem directive is one include/skip bit over a variable.
+def completeNormalConditionDirective
+    (directive : DirectiveApplication) (varName : BoolVar)
+    (value : Bool) : Prop :=
+  directive = directiveForBit varName value
+
+-- A Boolean case stem is a chain of anonymous inline fragments, one singleton
+-- skip/include directive per variable, ending in the branch body.
+def completeNormalBooleanStem :
+    BoolCase -> Selection -> List Selection -> Prop
+  | [], _selection, _body => False
+  | [(varName, value)],
+      .inlineFragment none [directive] body, branchBody =>
+        completeNormalConditionDirective directive varName value
+          ∧ body = branchBody
+  | (varName, value) :: rest,
+      .inlineFragment none [directive] [child], branchBody =>
+        completeNormalConditionDirective directive varName value
+          ∧ completeNormalBooleanStem rest child branchBody
+  | _, _, _ => False
+
+-- Complete DNF over Boolean directive variables for the nonempty cases. Branch
+-- order is irrelevant; stem variable order is irrelevant; empty cases are omitted;
+-- repeated branch selections are rejected.
+def completeNormalSelectionSet
+    (schema : Schema) (variables : List BoolVar)
+    (selectionSet : List Selection) : Prop :=
+  variables.Nodup
+    ∧ match variables with
+      | [] => selectionSetNormal schema selectionSet
+          ∧ selectionSetDirectiveFree selectionSet
+      | _ :: _ =>
+          selectionSet.Nodup
+          ∧ (∀ selection, selection ∈ selectionSet ->
+            ∃ boolCase body,
+              completeNormalBoolCase variables boolCase
+                ∧ completeNormalBooleanStem boolCase selection body
+                ∧ selectionSetNormal schema body
+                ∧ selectionSetDirectiveFree body)
+          ∧ (∀ left right leftCase rightCase leftBody rightBody,
+            left ∈ selectionSet ->
+            right ∈ selectionSet ->
+            completeNormalBoolCase variables leftCase ->
+            completeNormalBoolCase variables rightCase ->
+            completeNormalBooleanStem leftCase left leftBody ->
+            completeNormalBooleanStem rightCase right rightBody ->
+            selectionSetDirectiveFree leftBody ->
+            selectionSetDirectiveFree rightBody ->
+            completeNormalBoolCasesEquivalent leftCase rightCase ->
+              left = right)
+
+def completeNormalOperation
+    (schema : Schema) (operation : Operation) : Prop :=
+  completeNormalSelectionSet schema
+    (operationBoolVars operation) operation.selectionSet
 
 end CompleteNormalization
 
@@ -819,12 +957,33 @@ export CompleteNormalization
     dedupBoolVars allBoolCases BoolCase.lookup?
     inputValueBoolIn? directiveAllowsIn
     directivesAllowIn directiveForBit
-    wrapWithBoolCase staticCollectForGround
-    normalizeForTypeIn
-    normalizeSelectionIn
-    normalizeSelectionSetIn
-    boolCaseBranchesForGround normalizeForType
-    completeNormalizeOperation operationBoolVars)
+    wrapWithBoolCase
+    selectionContributesInBoolCase selectionSetContributesInBoolCase
+    selectionBoolCaseCompositeChildrenSurvive
+    selectionSetBoolCaseCompositeChildrenSurvive
+    completeBoolCasesCompositeChildrenSurvive
+    filterSelectionSetBoolCase normalizeBoolCaseForType
+    completeNormalizeRootSelectionSet
+    completeNormalizeOperation operationBoolVars
+    completeNormalBoolCase completeNormalBoolCasesEquivalent
+    completeNormalConditionDirective completeNormalBooleanStem
+    completeNormalSelectionSet completeNormalOperation)
+
+def completeNormalizeOperationNormal
+    (schema : Schema) (operation : Operation) : Prop :=
+  SchemaWellFormedness.schemaWellFormed schema ->
+    Validation.operationDefinitionValid schema operation ->
+      completeNormalOperation schema
+        (completeNormalizeOperation schema operation)
+
+def completeNormalizeOperationValid
+    (schema : Schema) (operation : Operation) : Prop :=
+  SchemaWellFormedness.schemaWellFormed schema ->
+    Validation.operationDefinitionValid schema operation ->
+    selectionSetsTypeConditionFeasibleInEveryScope schema ->
+    completeBoolCasesCompositeChildrenSurvive operation ->
+      Validation.operationDefinitionValid schema
+        (completeNormalizeOperation schema operation)
 
 def variableValuesCompleteForBoolVars
     (variableValues : Execution.VariableValues)
@@ -841,25 +1000,29 @@ def operationBoolVarsComplete
 
 def completeNormalizationSemanticsPreserved
     (schema : Schema) (operation : Operation) : Prop :=
-  ∀ (ObjectIdentity : Type) (resolvers : Execution.Resolvers ObjectIdentity)
-    variableValues depth (source : Execution.Value ObjectIdentity),
-    operationBoolVarsComplete operation variableValues ->
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
-        depth source
-        =
-      Execution.executeQueryAtDepth schema resolvers variableValues
-        (completeNormalizeOperation schema operation) depth source
+  SchemaWellFormedness.schemaWellFormed schema ->
+    Validation.operationDefinitionValid schema operation ->
+      ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
+        variableValues depth (source : Execution.Value ObjectRef),
+        operationBoolVarsComplete operation variableValues ->
+          Execution.executeQueryAtDepth schema resolvers variableValues operation
+            depth source
+            =
+          Execution.executeQueryAtDepth schema resolvers variableValues
+            (completeNormalizeOperation schema operation) depth source
 
 def completeNormalizationCorrect
     (schema : Schema) (operation : Operation) : Prop :=
-  ∀ store variableValues depth,
-    store.wellTyped schema ->
-      operationBoolVarsComplete operation variableValues ->
-        DataModel.executeOperationAtDepth schema store variableValues operation
-          depth
-          =
-        DataModel.executeOperationAtDepth schema store variableValues
-          (completeNormalizeOperation schema operation) depth
+  SchemaWellFormedness.schemaWellFormed schema ->
+    Validation.operationDefinitionValid schema operation ->
+      ∀ store variableValues depth,
+        store.wellTyped schema ->
+          operationBoolVarsComplete operation variableValues ->
+            DataModel.executeOperationAtDepth schema store variableValues
+              operation depth
+              =
+            DataModel.executeOperationAtDepth schema store variableValues
+              (completeNormalizeOperation schema operation) depth
 
 end NormalForm
 

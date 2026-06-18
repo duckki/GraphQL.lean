@@ -17,8 +17,6 @@ namespace GroundTypeLifting
 open GroundTypeNormalization
 open DataModel.Store
 
-variable {ObjectIdentity : Type}
-
 private theorem selectionSet_size_append (left right : List Selection) :
     SelectionSet.size (left ++ right)
       = SelectionSet.size left + SelectionSet.size right := by
@@ -482,7 +480,6 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_field_on_store
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (hstore : store.wellTyped schema)
     (depth : Nat) (execParent liftParent runtimeType : Name)
-    (identity : DataModel.ObjectPath)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections : List Selection) (rest : List ScopedSelection) :
     objectTypeNameBool schema execParent = true ->
@@ -512,25 +509,26 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_field_on_store
          selection :=
           Selection.field responseName fieldName arguments [] subselections }
         :: rest) ->
+    (ref : Option DataModel.ObjectRef := none) ->
     Execution.executeSelectionSet schema (store.resolvers schema)
-      variableValues depth execParent (.object runtimeType identity)
+      variableValues depth execParent (.object runtimeType ref)
       (groundLiftScopedSelectionSet schema
         (scopedSelectionSetWithoutFieldsWithResponseName schema responseName
           rest))
       =
     Execution.executeSelectionSet schema (store.resolvers schema)
-      variableValues depth execParent (.object runtimeType identity)
+      variableValues depth execParent (.object runtimeType ref)
       (eraseScopedSelectionSet
         (scopedSelectionSetWithoutFieldsWithResponseName schema responseName
           rest)) ->
-    (∀ childDepth childRuntimeType childIdentity,
+    (∀ childDepth childRuntimeType ref,
       childDepth < depth - 1 ->
       schema.typeIncludesObjectBool
           ((schema.fieldReturnType? execParent fieldName).getD fieldName)
           childRuntimeType = true ->
         Execution.executeSelectionSet schema (store.resolvers schema)
           variableValues childDepth childRuntimeType
-          (.object childRuntimeType childIdentity)
+          (.object childRuntimeType ref)
           (groundLiftSelectionSet schema childRuntimeType
             (subselections
               ++ mergeSelectionSets
@@ -540,14 +538,14 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_field_on_store
         =
         Execution.executeSelectionSet schema (store.resolvers schema)
           variableValues childDepth childRuntimeType
-          (.object childRuntimeType childIdentity)
+          (.object childRuntimeType ref)
           (subselections
             ++ mergeSelectionSets
               (eraseScopedSelectionSet
                 (scopedSelectionSetValidFieldsWithResponseName schema
                   execParent responseName rest)))) ->
       Execution.executeSelectionSet schema (store.resolvers schema)
-        variableValues depth execParent (.object runtimeType identity)
+        variableValues depth execParent (.object runtimeType ref)
         (groundLiftScopedSelectionSet schema
           ({ liftParent := liftParent,
              selection :=
@@ -556,14 +554,14 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_field_on_store
             :: rest))
       =
       Execution.executeSelectionSet schema (store.resolvers schema)
-        variableValues depth execParent (.object runtimeType identity)
+        variableValues depth execParent (.object runtimeType ref)
         (eraseScopedSelectionSet
           ({ liftParent := liftParent,
              selection :=
               Selection.field responseName fieldName arguments []
                 subselections }
             :: rest)) := by
-  intro hobject hinclude hfree hready hlookup hmerge happlies htail
+  intro hobject hinclude hfree hready hlookup hmerge happlies ref htail
     hchildren
   cases depth with
   | zero =>
@@ -590,19 +588,19 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_field_on_store
                 (groundLiftSelectionSet schema objectType subselections))
       have hliftCollectExists :=
         collectFields_field_head_exists schema variableValues execParent
-          (.object runtimeType identity) responseName fieldName arguments
+          (Execution.Value.object runtimeType ref) responseName fieldName arguments
           liftedSelectionSet (groundLiftScopedSelectionSet schema rest)
       rcases hliftCollectExists with
         ⟨liftedFields, liftedRestGroups, hliftCollectRaw⟩
       have hsourceCollectExists :=
         collectFields_field_head_exists schema variableValues execParent
-          (.object runtimeType identity) responseName fieldName arguments
+          (Execution.Value.object runtimeType ref) responseName fieldName arguments
           subselections (eraseScopedSelectionSet rest)
       rcases hsourceCollectExists with
         ⟨sourceFields, sourceRest, hsourceCollect⟩
       have hliftCollect :
           Execution.collectFields schema variableValues execParent
-            (.object runtimeType identity)
+            (Execution.Value.object runtimeType ref)
             (groundLiftScopedSelectionSet schema
               ({ liftParent := liftParent,
                  selection :=
@@ -634,9 +632,9 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_field_on_store
           executionValueObjectsInclude schema
             liftFieldDefinition.outputType.namedType
             ((store.resolvers schema).resolve execParent fieldName arguments
-              (.object runtimeType identity)) :=
+              (.object runtimeType ref)) :=
         scopedFieldHead_valueIncludes_on_store schema store hschema hstore
-          execParent liftParent runtimeType identity fieldName arguments
+          execParent liftParent runtimeType (ref := ref) fieldName arguments
           liftFieldDefinition hheadApplies hliftLookup
       have hrawLookup :
           selectionSetLookupValid schema execParent
@@ -649,41 +647,41 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_field_on_store
       have hmatchesInclude :
           scopedFieldOutputValuesInclude schema
             ((store.resolvers schema).resolve execParent fieldName arguments
-              (.object runtimeType identity))
+              (.object runtimeType ref))
             (scopedSelectionSetValidFieldsWithResponseName schema execParent
               responseName rest) :=
         scopedSelectionSetValidFieldsWithResponseName_valuesInclude_on_store
-          schema store hschema hstore execParent runtimeType identity
+          schema store hschema hstore execParent runtimeType (ref := ref)
           responseName fieldName arguments subselections rest hobject hinclude
           hrawLookup hmerge (scopedSelectionSetRuntimeApplies_tail happlies)
           (scopedSelectionSetLookupValid_tail hlookup)
       have htailCollected :
           Execution.executeCollectedFields schema (store.resolvers schema)
-            variableValues (fieldDepth + 1) (.object runtimeType identity)
+            variableValues (fieldDepth + 1) (.object runtimeType ref)
             liftedRestGroups
           =
           Execution.executeCollectedFields schema (store.resolvers schema)
-            variableValues (fieldDepth + 1) (.object runtimeType identity)
+            variableValues (fieldDepth + 1) (.object runtimeType ref)
             sourceRest := by
         simpa [liftedSelectionSet] using
           executeCollectedFields_groundLift_scoped_fieldHead_tail_eq_of_withoutFields
             schema store variableValues (fieldDepth + 1) execParent
-            liftParent runtimeType identity responseName fieldName arguments
+            liftParent runtimeType responseName fieldName arguments
             subselections rest liftedFields sourceFields liftedRestGroups
-            sourceRest liftFieldDefinition hobject hinclude hfree hliftLookup
+            sourceRest liftFieldDefinition (ref := ref) hobject hinclude hfree hliftLookup
             hliftCollect hsourceCollect htail
       simpa [eraseScopedSelectionSet, eraseScopedSelection,
         liftedSelectionSet] using
         executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_valueIncludes
           schema store variableValues hschema fieldDepth execParent liftParent
-          runtimeType identity responseName fieldName arguments subselections
+          runtimeType responseName fieldName arguments subselections
           rest liftedFields sourceFields liftedRestGroups sourceRest
-          execFieldDefinition liftFieldDefinition hobject hinclude hfree
+          execFieldDefinition liftFieldDefinition (ref := ref) hobject hinclude hfree
           hexecLookup hliftLookup hliftCollect hsourceCollect hheadInclude
           hmatchesInclude
           (by
-            intro childDepth childRuntimeType childIdentity hlt hchildInclude
-            exact hchildren childDepth childRuntimeType childIdentity
+            intro childDepth childRuntimeType ref hlt hchildInclude
+            exact hchildren childDepth childRuntimeType ref
               (by simpa using hlt) hchildInclude)
           htailCollected
 
@@ -692,7 +690,7 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (hstore : store.wellTyped schema) :
-    ∀ depth execParent runtimeType identity scopedSelections,
+    ∀ depth execParent runtimeType scopedSelections,
       objectTypeNameBool schema execParent = true ->
       schema.typeIncludesObjectBool execParent runtimeType = true ->
       scopedSelectionSetDirectiveFree scopedSelections ->
@@ -700,19 +698,20 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
       scopedSelectionSetLookupValid schema scopedSelections ->
       scopedSelectionSetCanMerge schema execParent scopedSelections ->
       scopedSelectionSetRuntimeApplies schema runtimeType scopedSelections ->
+      (ref : Option DataModel.ObjectRef := none) ->
         Execution.executeSelectionSet schema (store.resolvers schema)
-          variableValues depth execParent (.object runtimeType identity)
+          variableValues depth execParent (.object runtimeType ref)
           (groundLiftScopedSelectionSet schema scopedSelections)
         =
         Execution.executeSelectionSet schema (store.resolvers schema)
-          variableValues depth execParent (.object runtimeType identity)
+          variableValues depth execParent (.object runtimeType ref)
           (eraseScopedSelectionSet scopedSelections)
-  | depth, execParent, runtimeType, identity, [] => by
-      intro _hobject _hinclude _hfree _hready _hlookup _hmerge _happlies
+  | depth, execParent, runtimeType, [] => by
+      intro _hobject _hinclude _hfree _hready _hlookup _hmerge _happlies ref
       simp [groundLiftScopedSelectionSet, eraseScopedSelectionSet,
         Execution.executeSelectionSet]
-  | depth, execParent, runtimeType, identity, scopedSelection :: rest => by
-      intro hobject hinclude hfree hready hlookup hmerge happlies
+  | depth, execParent, runtimeType, scopedSelection :: rest => by
+      intro hobject hinclude hfree hready hlookup hmerge happlies ref
       cases scopedSelection with
       | mk liftParent selection =>
           cases selection with
@@ -728,13 +727,13 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
               apply
                 groundLiftScopedSelectionSet_executeSelectionSet_field_on_store
                   schema store variableValues hschema hstore depth execParent
-                  liftParent runtimeType identity responseName fieldName
+                  liftParent runtimeType responseName fieldName
                   arguments subselections rest hobject hinclude hfree hready
-                  hlookup hmerge happlies
+                  hlookup hmerge happlies (ref := ref)
               · exact
                   groundLiftScopedSelectionSet_executeSelectionSet_on_store
                     schema store variableValues hschema hstore
-                    depth execParent runtimeType identity
+                    depth execParent runtimeType
                     (scopedSelectionSetWithoutFieldsWithResponseName schema
                       responseName rest)
                     hobject hinclude
@@ -758,7 +757,8 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
                     (scopedSelectionSetWithoutFieldsWithResponseName_runtimeApplies
                       schema responseName runtimeType rest
                       (scopedSelectionSetRuntimeApplies_tail happlies))
-              · intro childDepth childRuntimeType childIdentity hlt
+                    (ref := ref)
+              · intro childDepth childRuntimeType ref hlt
                   hchildInclude
                 rcases scopedFieldHead_lookupPair_of_semanticsReady_lookupValid
                     schema execParent liftParent responseName fieldName
@@ -810,7 +810,7 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
                 have hchildScoped :=
                   groundLiftScopedSelectionSet_executeSelectionSet_on_store
                     schema store variableValues hschema hstore
-                    childDepth childRuntimeType childRuntimeType childIdentity
+                    childDepth childRuntimeType childRuntimeType
                     (scopedSelectionSet childRuntimeType childSelectionSet)
                     hchildObject
                     (typeIncludesObjectBool_self_of_objectTypeNameBool schema
@@ -829,6 +829,7 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
                       schema childRuntimeType childRuntimeType childSelectionSet
                       (typeIncludesObjectBool_self_of_objectTypeNameBool schema
                         hchildObject))
+                    (ref := ref)
                 simpa [childSelectionSet,
                   groundLiftScopedSelectionSet_scopedSelectionSet,
                   eraseScopedSelectionSet_scopedSelectionSet] using hchildScoped
@@ -847,8 +848,8 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
               exact
                 groundLiftScopedSelectionSet_executeSelectionSet_on_store
                   schema store variableValues hschema hstore
-                  depth execParent runtimeType identity
-                  (scopedSelectionSet liftParent selectionSet ++ rest)
+                  depth execParent runtimeType
+                    (scopedSelectionSet liftParent selectionSet ++ rest)
                   hobject hinclude
                   (scopedSelectionSetDirectiveFree_append
                     ((scopedSelectionSetDirectiveFree_scopedSelectionSet
@@ -899,16 +900,17 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
                             Selection.inlineFragment none [] selectionSet }
                         (by simp)))
                     (scopedSelectionSetRuntimeApplies_tail happlies))
+                  (ref := ref)
               | some typeCondition =>
               cases happly :
                   Execution.doesFragmentTypeApplyBool schema execParent
-                    (.object runtimeType identity) typeCondition
+                    (Execution.Value.object runtimeType ref) typeCondition
               · apply executeSelectionSet_inlineFragment_some_groundLift_scoped_skip
-                · exact happly
+                · simpa [] using happly
                 · exact
                     groundLiftScopedSelectionSet_executeSelectionSet_on_store
                       schema store variableValues hschema hstore
-                      depth execParent runtimeType identity rest hobject
+                      depth execParent runtimeType rest hobject
                       hinclude (selectionSetDirectiveFree_tail hfree)
                       (scopedSelectionSetSemanticsReady_tail hready)
                       (scopedSelectionSetLookupValid_tail hlookup)
@@ -919,22 +921,22 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
                               selectionSet }
                         rest hmerge)
                       (scopedSelectionSetRuntimeApplies_tail happlies)
+                      (ref := ref)
               · apply
                   executeSelectionSet_inlineFragment_some_groundLift_scoped_apply_flatten
-                · exact happly
+                · simpa [] using happly
                 · have htypeRuntime :
                       schema.typeIncludesObjectBool typeCondition runtimeType =
                         true := by
                     simpa [Execution.doesFragmentTypeApplyBool,
                       Execution.runtimeObjectType?] using happly
                   have hsource :
-                      ∃ runtimeType' identity',
-                        (Execution.Value.object runtimeType identity :
-                            Execution.Value DataModel.ObjectPath)
-                          = .object runtimeType' identity'
+                      ∃ runtimeType' objectRef,
+                        Execution.Value.object runtimeType ref
+                          = .object runtimeType' objectRef
                           ∧ schema.typeIncludesObjectBool execParent
                             runtimeType' = true :=
-                    ⟨runtimeType, identity, rfl, hinclude⟩
+                    ⟨runtimeType, ref, rfl, hinclude⟩
                   have hoverlap :
                       schema.typesOverlapBool execParent typeCondition =
                         true := by
@@ -944,8 +946,8 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
                   exact
                     groundLiftScopedSelectionSet_executeSelectionSet_on_store
                       schema store variableValues hschema hstore
-                      depth execParent runtimeType identity
-                      (scopedSelectionSet typeCondition selectionSet ++ rest)
+                      depth execParent runtimeType
+                    (scopedSelectionSet typeCondition selectionSet ++ rest)
                       hobject hinclude
                       (scopedSelectionSetDirectiveFree_append
                         ((scopedSelectionSetDirectiveFree_scopedSelectionSet
@@ -1055,7 +1057,8 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
                           schema typeCondition runtimeType selectionSet
                           htypeRuntime)
                         (scopedSelectionSetRuntimeApplies_tail happlies))
-termination_by _depth _execParent _runtimeType _identity scopedSelections =>
+                      (ref := ref)
+termination_by _depth _execParent _runtimeType scopedSelections =>
   SelectionSet.size (eraseScopedSelectionSet scopedSelections)
 decreasing_by
   all_goals
@@ -1088,7 +1091,7 @@ decreasing_by
 theorem groundLiftSelectionSet_executeSelectionSet_on_store_of_scoped
     (schema : Schema) (store : DataModel.Store)
     (variableValues : Execution.VariableValues) :
-    (∀ depth execParent runtimeType identity scopedSelections,
+    (∀ depth execParent runtimeType scopedSelections,
       objectTypeNameBool schema execParent = true ->
       schema.typeIncludesObjectBool execParent runtimeType = true ->
       scopedSelectionSetDirectiveFree scopedSelections ->
@@ -1096,33 +1099,35 @@ theorem groundLiftSelectionSet_executeSelectionSet_on_store_of_scoped
       scopedSelectionSetLookupValid schema scopedSelections ->
       scopedSelectionSetCanMerge schema execParent scopedSelections ->
       scopedSelectionSetRuntimeApplies schema runtimeType scopedSelections ->
+      (ref : Option DataModel.ObjectRef := none) ->
         Execution.executeSelectionSet schema (store.resolvers schema)
-          variableValues depth execParent (.object runtimeType identity)
+          variableValues depth execParent (.object runtimeType ref)
           (groundLiftScopedSelectionSet schema scopedSelections)
         =
         Execution.executeSelectionSet schema (store.resolvers schema)
-          variableValues depth execParent (.object runtimeType identity)
+          variableValues depth execParent (.object runtimeType ref)
           (eraseScopedSelectionSet scopedSelections)) ->
-      ∀ depth parentType runtimeType identity selectionSet,
+      ∀ depth parentType runtimeType selectionSet,
         objectTypeNameBool schema parentType = true ->
         schema.typeIncludesObjectBool parentType runtimeType = true ->
         selectionSetDirectiveFree selectionSet ->
         selectionSetSemanticsReady schema parentType selectionSet ->
         FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
+        (ref : Option DataModel.ObjectRef := none) ->
           Execution.executeSelectionSet schema (store.resolvers schema)
-            variableValues depth parentType (.object runtimeType identity)
+            variableValues depth parentType (.object runtimeType ref)
             (groundLiftSelectionSet schema parentType selectionSet)
           =
           Execution.executeSelectionSet schema (store.resolvers schema)
-            variableValues depth parentType (.object runtimeType identity)
+            variableValues depth parentType (.object runtimeType ref)
             selectionSet := by
-  intro hscoped depth parentType runtimeType identity selectionSet hobject
-    hinclude hfree hready hmerge
+  intro hscoped depth parentType runtimeType selectionSet hobject
+    hinclude hfree hready hmerge ref
   have hlookup :
       selectionSetLookupValid schema parentType selectionSet :=
     selectionSetLookupValid_of_selectionSetSemanticsReady selectionSet hready
   have hscopedEq :=
-    hscoped depth parentType runtimeType identity
+    hscoped depth parentType runtimeType
       (scopedSelectionSet parentType selectionSet)
       hobject hinclude
       ((scopedSelectionSetDirectiveFree_scopedSelectionSet parentType
@@ -1135,6 +1140,7 @@ theorem groundLiftSelectionSet_executeSelectionSet_on_store_of_scoped
         parentType selectionSet).mpr hmerge)
       (scopedSelectionSetRuntimeApplies_scopedSelectionSet schema parentType
         runtimeType selectionSet hinclude)
+      (ref := ref)
   simpa [groundLiftScopedSelectionSet_scopedSelectionSet,
     eraseScopedSelectionSet_scopedSelectionSet] using hscopedEq
 

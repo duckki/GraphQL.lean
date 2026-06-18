@@ -14,25 +14,25 @@ namespace NormalForm
 
 namespace GroundTypeLifting
 
+variable {ObjectRef : Type}
+
 open GroundTypeNormalization
 
-variable {ObjectIdentity : Type}
-
 theorem rootSourceAppliesBool_groundLiftOperation
-    (schema : Schema) (operation : Operation)
-    (source : Execution.Value ObjectIdentity) :
+    (schema : Schema) (operation : Operation) (source : Execution.Value ObjectRef) :
     Execution.rootSourceAppliesBool schema
         (groundLiftOperation schema operation) source =
       Execution.rootSourceAppliesBool schema operation source := by
   rfl
 
 theorem executeQueryAtDepth_groundLiftOperation_eq_of_selectionSet
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (operation : Operation) (depth : Nat)
-    (source : Execution.Value ObjectIdentity) :
-    (∀ runtimeType identity,
-      source = .object runtimeType identity ->
+    (source : Execution.Value ObjectRef) :
+    (∀ runtimeType ref,
+      source = Execution.Value.object runtimeType ref ->
       schema.typeIncludesObjectBool operation.rootType runtimeType = true ->
         Execution.executeSelectionSet schema resolvers variableValues depth
           operation.rootType source
@@ -54,16 +54,16 @@ theorem executeQueryAtDepth_groundLiftOperation_eq_of_selectionSet
       Execution.rootSourceAppliesBool schema operation source
   · simp
   · rcases rootSourceAppliesBool_true_object schema operation source hroot with
-      ⟨runtimeType, identity, hsource, hinclude⟩
+      ⟨runtimeType, ref, hsource, hinclude⟩
     simp [groundLiftOperation]
-    exact hselection runtimeType identity hsource hinclude
+    exact hselection runtimeType ref hsource hinclude
 
 theorem executeOperationAtDepth_groundLiftOperation_eq_of_selectionSet
     (schema : Schema) (store : DataModel.Store)
     (variableValues : Execution.VariableValues)
     (operation : Operation) (depth : Nat) :
-    (∀ runtimeType identity,
-      store.rootExecutionValue = .object runtimeType identity ->
+    (∀ runtimeType ref,
+      store.rootExecutionValue = .object runtimeType ref ->
       schema.typeIncludesObjectBool operation.rootType runtimeType = true ->
         Execution.executeSelectionSet schema (store.resolvers schema)
           variableValues depth operation.rootType store.rootExecutionValue
@@ -90,21 +90,24 @@ theorem executeOperationAtDepth_groundLiftOperation_eq_of_scoped
     SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
     operationDirectiveFree operation ->
-    (∀ depth execParent runtimeType identity scopedSelections,
+    (∀ depth execParent runtimeType scopedSelections,
       objectTypeNameBool schema execParent = true ->
       schema.typeIncludesObjectBool execParent runtimeType = true ->
       scopedSelectionSetDirectiveFree scopedSelections ->
       scopedSelectionSetSemanticsReady schema execParent scopedSelections ->
       scopedSelectionSetLookupValid schema scopedSelections ->
       scopedSelectionSetCanMerge schema execParent scopedSelections ->
-      scopedSelectionSetRuntimeApplies schema runtimeType scopedSelections ->
-        Execution.executeSelectionSet schema (store.resolvers schema)
-          variableValues depth execParent (.object runtimeType identity)
-          (groundLiftScopedSelectionSet schema scopedSelections)
-        =
-        Execution.executeSelectionSet schema (store.resolvers schema)
-          variableValues depth execParent (.object runtimeType identity)
-          (eraseScopedSelectionSet scopedSelections)) ->
+        scopedSelectionSetRuntimeApplies schema runtimeType scopedSelections ->
+        (ref : Option DataModel.ObjectRef := none) ->
+          Execution.executeSelectionSet schema (store.resolvers schema)
+            variableValues depth execParent
+            (Execution.Value.object runtimeType ref)
+            (groundLiftScopedSelectionSet schema scopedSelections)
+          =
+          Execution.executeSelectionSet schema (store.resolvers schema)
+            variableValues depth execParent
+            (Execution.Value.object runtimeType ref)
+            (eraseScopedSelectionSet scopedSelections)) ->
       DataModel.executeOperationAtDepth schema store variableValues
         (groundLiftOperation schema operation) depth
       =
@@ -112,7 +115,7 @@ theorem executeOperationAtDepth_groundLiftOperation_eq_of_scoped
         operation depth := by
   intro hschema hvalid hfree hscoped
   apply executeOperationAtDepth_groundLiftOperation_eq_of_selectionSet
-  intro runtimeType identity hroot hinclude
+  intro runtimeType ref hroot hinclude
   have hrootObject : schema.objectType operation.rootType := by
     have hrootEq := Validation.operationDefinitionValid_rootType_eq hvalid
     rw [hrootEq]
@@ -136,8 +139,14 @@ theorem executeOperationAtDepth_groundLiftOperation_eq_of_scoped
     Validation.operationDefinitionValid_fieldsInSetCanMerge hvalid
   have hselection :=
     groundLiftSelectionSet_executeSelectionSet_on_store_of_scoped schema store
-      variableValues hscoped depth operation.rootType runtimeType identity
-      operation.selectionSet hobject hinclude hfree hready hmerge
+      variableValues
+      (fun depth execParent runtimeType scopedSelections hobject
+          hinclude hfree hready hlookup hmerge happlies ref =>
+        hscoped depth execParent runtimeType scopedSelections hobject
+          hinclude hfree hready hlookup hmerge happlies (ref := ref))
+      depth operation.rootType runtimeType
+      operation.selectionSet hobject hinclude hfree hready
+      hmerge (ref := ref)
   simpa [hroot] using hselection
 
 theorem executeOperationAtDepth_groundLiftOperation_eq_on_store
@@ -156,8 +165,12 @@ theorem executeOperationAtDepth_groundLiftOperation_eq_on_store
   intro hschema hstore hvalid hfree
   exact executeOperationAtDepth_groundLiftOperation_eq_of_scoped schema store
     variableValues operation depth hschema hvalid hfree
-    (groundLiftScopedSelectionSet_executeSelectionSet_on_store schema store
-      variableValues hschema hstore)
+    (fun depth execParent runtimeType scopedSelections hobject
+        hinclude hfree hready hlookup hmerge happlies ref =>
+      groundLiftScopedSelectionSet_executeSelectionSet_on_store schema store
+        variableValues hschema hstore depth execParent runtimeType
+        scopedSelections hobject hinclude hfree hready hlookup hmerge
+        happlies (ref := ref))
 
 theorem groundLiftOperation_operationsEquivalentOnData
     (schema : Schema) (operation : Operation) :

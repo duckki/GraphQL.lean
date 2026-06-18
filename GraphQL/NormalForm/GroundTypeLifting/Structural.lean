@@ -9,8 +9,6 @@ namespace NormalForm
 
 namespace GroundTypeLifting
 
-variable {ObjectIdentity : Type}
-
 mutual
   theorem groundLiftSelection_directiveFree
       (schema : Schema) (parentType : Name) :

@@ -97,59 +97,72 @@ end ObjectNode
 
 namespace Store
 
-theorem lookupNodeIn?_some_mem {path : ObjectPath} {node : ObjectNode} :
-    ∀ nodes,
-      lookupNodeIn? path nodes = some node ->
-        node ∈ nodes
-  | [], hlookup => by
-      simp [lookupNodeIn?] at hlookup
-  | candidate :: rest, hlookup => by
-      by_cases hmatch : ObjectPath.eqBool candidate.path path = true
-      · have hnode : candidate = node := by
-          simpa [lookupNodeIn?, hmatch] using hlookup
-        subst node
-        simp
-      · have hmatchFalse : ObjectPath.eqBool candidate.path path = false := by
-          cases h : ObjectPath.eqBool candidate.path path
-          · rfl
-          · contradiction
-        have hrest : lookupNodeIn? path rest = some node := by
-          simpa [lookupNodeIn?, hmatchFalse] using hlookup
-        exact List.mem_cons_of_mem candidate (lookupNodeIn?_some_mem rest hrest)
-
-theorem lookupNode?_some_mem (store : Store) {path : ObjectPath}
-    {node : ObjectNode} :
-    store.lookupNode? path = some node ->
+theorem lookupNode?_some_mem (store : Store)
+    {id : ObjectId} {node : ObjectNode} :
+    store.lookupNode? id = some node ->
       node ∈ store.allNodes := by
   intro hlookup
-  exact lookupNodeIn?_some_mem store.allNodes hlookup
+  exact List.mem_of_find?_eq_some hlookup
 
-theorem lookupNodeIn?_some_path {path : ObjectPath} {node : ObjectNode} :
-    ∀ nodes,
-      lookupNodeIn? path nodes = some node ->
-        ObjectPath.eqBool node.path path = true
-  | [], hlookup => by
-      simp [lookupNodeIn?] at hlookup
-  | candidate :: rest, hlookup => by
-      by_cases hmatch : ObjectPath.eqBool candidate.path path = true
-      · have hnode : candidate = node := by
-          simpa [lookupNodeIn?, hmatch] using hlookup
-        subst node
-        exact hmatch
-      · have hmatchFalse : ObjectPath.eqBool candidate.path path = false := by
-          cases h : ObjectPath.eqBool candidate.path path
-          · rfl
-          · contradiction
-        have hrest : lookupNodeIn? path rest = some node := by
-          simpa [lookupNodeIn?, hmatchFalse] using hlookup
-        exact lookupNodeIn?_some_path rest hrest
-
-theorem lookupNode?_some_path (store : Store) {path : ObjectPath}
-    {node : ObjectNode} :
-    store.lookupNode? path = some node ->
-      ObjectPath.eqBool node.path path = true := by
+theorem lookupNode?_some_id (store : Store)
+    {id : ObjectId} {node : ObjectNode} :
+    store.lookupNode? id = some node ->
+      node.id = id := by
   intro hlookup
-  exact lookupNodeIn?_some_path store.allNodes hlookup
+  have hpredicate := List.find?_some hlookup
+  exact beq_iff_eq.mp hpredicate
+
+private theorem findNodeById?_some_of_mem_unique (node : ObjectNode) :
+    ∀ nodes : List ObjectNode,
+      pairwiseUniqueByEqBool (fun left right : ObjectId => left == right)
+        (nodes.map ObjectNode.id) ->
+      node ∈ nodes ->
+        nodes.find? (fun candidate => candidate.id == node.id) = some node
+  | [], _hunique, hmem => by
+      simp at hmem
+  | candidate :: rest, hunique, hmem => by
+      cases hmem with
+      | head =>
+          simp
+      | tail _ htail =>
+        have hnotSame : (candidate.id == node.id) = false := by
+          have hnodeIdMem : node.id ∈ rest.map ObjectNode.id :=
+            List.mem_map.mpr ⟨node, htail, rfl⟩
+          exact hunique.1 node.id hnodeIdMem
+        have hrestUnique :
+            pairwiseUniqueByEqBool
+              (fun left right : ObjectId => left == right)
+              (rest.map ObjectNode.id) :=
+          hunique.2
+        have hfindRest :
+            rest.find? (fun candidate => candidate.id == node.id) =
+              some node :=
+          findNodeById?_some_of_mem_unique node rest hrestUnique htail
+        simp [hnotSame, hfindRest]
+
+theorem lookupNode?_some_of_mem_unique (store : Store)
+    (node : ObjectNode) :
+    store.nodeIdsUnique ->
+    node ∈ store.allNodes ->
+      store.lookupNode? node.id = some node := by
+  intro hunique hmem
+  simpa [lookupNode?, nodeIds] using
+    findNodeById?_some_of_mem_unique node store.allNodes hunique hmem
+
+theorem firstNodeWithType?_some_mem (store : Store)
+    {runtimeType : Name} {node : ObjectNode} :
+    store.firstNodeWithType? runtimeType = some node ->
+      node ∈ store.allNodes := by
+  intro hlookup
+  exact List.mem_of_find?_eq_some hlookup
+
+theorem firstNodeWithType?_some_typeName (store : Store)
+    {runtimeType : Name} {node : ObjectNode} :
+    store.firstNodeWithType? runtimeType = some node ->
+      node.typeName = runtimeType := by
+  intro hlookup
+  have hpredicate := List.find?_some hlookup
+  exact beq_iff_eq.mp hpredicate
 
 end Store
 
@@ -181,7 +194,7 @@ theorem scalar_not_conformsToType_of_possibleTypes_nonempty (schema : Schema)
     (value : String) :
     ∀ (typeRef : TypeRef),
       ¬ schema.getPossibleTypes typeRef.namedType = [] ->
-        ¬ Value.conformsToType schema (.scalar value) typeRef
+        ¬ valueConformsToType schema (.scalar value) typeRef
   | .named _typeName, hnonempty, hconforms =>
       hnonempty (possibleTypes_eq_nil_of_isLeafType schema hconforms)
   | .list _inner, _hnonempty, hconforms =>
@@ -191,55 +204,56 @@ theorem scalar_not_conformsToType_of_possibleTypes_nonempty (schema : Schema)
         inner hnonempty hconforms
 
 theorem object_conformsToType_typeIncludesObject (schema : Schema)
-    (runtimeType : Name) (identity : ObjectPath) (parentType : Name) :
+    (runtimeType : Name) (parentType : Name) :
     ∀ (typeRef : TypeRef),
       typeRef.namedType = parentType ->
-        Value.conformsToType schema (.object runtimeType identity) typeRef ->
+        valueConformsToType schema (.object runtimeType) typeRef ->
           schema.typeIncludesObject parentType runtimeType
   | .named typeName, hnamed, hconforms => by
       simpa [← hnamed] using hconforms
   | .list _inner, _hnamed, hconforms => by
       cases hconforms
   | .nonNull inner, hnamed, hconforms => by
-      exact object_conformsToType_typeIncludesObject schema runtimeType identity
+      exact object_conformsToType_typeIncludesObject schema runtimeType
         parentType inner hnamed hconforms
 
 namespace Store
 
 theorem resolveValue_ne_scalar_of_compositeLookupField (schema : Schema)
-    (store : Store) (runtimeType : Name) (identity : ObjectPath)
+    (store : Store) (runtimeType : Name)
     (fieldName : Name) (arguments : List Argument)
     (fieldDefinition : FieldDefinition) (value : String) :
     store.wellTyped schema ->
       schema.lookupField runtimeType fieldName = some fieldDefinition ->
         ¬ schema.getPossibleTypes fieldDefinition.outputType.namedType = [] ->
           store.resolveValue schema fieldName arguments
-            (.object runtimeType identity) ≠ .scalar value := by
+            runtimeType ≠ .scalar value := by
   intro _hstore hfieldDefinition hnonempty hscalar
-  cases hnode : store.lookupNode? identity with
+  cases hnode : store.firstNodeWithType? runtimeType with
   | none =>
       simp [resolveValue, hnode] at hscalar
   | some node =>
-      by_cases htype : (node.typeName == runtimeType) = true
-      · have hpossible :
-            ¬ schema.getPossibleTypes fieldDefinition.outputType.namedType = [] :=
-          hnonempty
-        by_cases hlist : typeRefIsListLike fieldDefinition.outputType = true
-        · simp [resolveValue, hnode, htype, hfieldDefinition, hpossible,
-            hlist] at hscalar
-        · cases hedge :
-            store.firstMatchingEdge? identity (fieldAccess fieldName arguments) none with
-          | none =>
-              simp [resolveValue, hnode, htype, hfieldDefinition, hpossible,
-                hlist, hedge] at hscalar
-          | some edge =>
-              simp [resolveValue, hnode, htype, hfieldDefinition, hpossible,
-                hlist, hedge] at hscalar
-      · have htypeFalse : (node.typeName == runtimeType) = false := by
-          cases h : node.typeName == runtimeType
-          · rfl
-          · contradiction
-        simp [resolveValue, hnode, htypeFalse] at hscalar
+      have hnodeType : node.typeName = runtimeType :=
+        firstNodeWithType?_some_typeName store hnode
+      have hfieldDefinitionNode :
+          schema.lookupField node.typeName fieldName = some fieldDefinition := by
+        simpa [hnodeType] using hfieldDefinition
+      have hpossible :
+          ¬ schema.getPossibleTypes fieldDefinition.outputType.namedType = [] :=
+        hnonempty
+      by_cases hlist :
+          typeRefIsListLike fieldDefinition.outputType = true
+      · simp [resolveValue, hnode, hpossible,
+          hfieldDefinitionNode, hlist, resolveValueFromNode] at hscalar
+      · cases hedge :
+          store.firstMatchingEdge? node.id
+            (fieldAccess fieldName arguments) none with
+        | none =>
+            simp [resolveValue, hnode, hpossible,
+              hfieldDefinitionNode, hlist, hedge, resolveValueFromNode] at hscalar
+        | some edge =>
+            simp [resolveValue, hnode, hpossible,
+              hfieldDefinitionNode, hlist, hedge, resolveValueFromNode] at hscalar
 
 end Store
 

@@ -9,6 +9,8 @@ namespace NormalForm
 
 namespace CompleteNormalization
 
+variable {ObjectRef : Type}
+
 theorem completeNormalizeOperation_rootType
     (schema : Schema) (operation : Operation) :
     (completeNormalizeOperation schema operation).rootType =
@@ -17,8 +19,7 @@ theorem completeNormalizeOperation_rootType
 
 theorem completeNormalizeOperation_name
     (schema : Schema) (operation : Operation) :
-    (completeNormalizeOperation schema operation).name =
-      operation.name := by
+    (completeNormalizeOperation schema operation).name = operation.name := by
   rfl
 
 theorem completeNormalizeOperation_variableDefinitions
@@ -30,23 +31,24 @@ theorem completeNormalizeOperation_variableDefinitions
 theorem completeNormalizeOperation_selectionSet
     (schema : Schema) (operation : Operation) :
     (completeNormalizeOperation schema operation).selectionSet =
-      normalizeForType schema
-        (operationBoolVars operation)
+      completeNormalizeRootSelectionSet schema (operationBoolVars operation)
         operation.rootType operation.selectionSet := by
   rfl
 
 theorem completeNormalizeOperation_rootSourceAppliesBool
-    (schema : Schema) (operation : Operation)
-    (source : Execution.Value ObjectIdentity) :
+    (schema : Schema) (operation : Operation) (source : Execution.Value ObjectRef) :
     Execution.rootSourceAppliesBool schema
         (completeNormalizeOperation schema operation) source =
-      Execution.rootSourceAppliesBool schema operation source := by
-  rfl
+        Execution.rootSourceAppliesBool schema operation source := by
+  have hroot := completeNormalizeOperation_rootType schema operation
+  simp [Execution.rootSourceAppliesBool, hroot]
 
 theorem completeNormalizationSemanticsPreserved_of_selectionSet
     (schema : Schema) (operation : Operation) :
-    (∀ (ObjectIdentity : Type) (resolvers : Execution.Resolvers ObjectIdentity)
-      variableValues depth (source : Execution.Value ObjectIdentity),
+    (SchemaWellFormedness.schemaWellFormed schema ->
+      Validation.operationDefinitionValid schema operation ->
+      ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
+      variableValues depth (source : Execution.Value ObjectRef),
       operationBoolVarsComplete operation variableValues ->
       Execution.rootSourceAppliesBool schema operation source = true ->
         Execution.executeSelectionSet schema resolvers variableValues depth
@@ -56,50 +58,42 @@ theorem completeNormalizationSemanticsPreserved_of_selectionSet
           operation.rootType source
           (completeNormalizeOperation schema operation).selectionSet) ->
       completeNormalizationSemanticsPreserved schema operation := by
-  intro hselection ObjectIdentity resolvers variableValues depth source hcomplete
+  intro hselection hschema hvalid ObjectRef resolvers variableValues depth
+    source hcomplete
   cases hroot : Execution.rootSourceAppliesBool schema operation source with
   | false =>
       have hnormalizedRoot :
           Execution.rootSourceAppliesBool schema
-              (completeNormalizeOperation schema operation) source = false := by
-        simpa [completeNormalizeOperation_rootSourceAppliesBool] using hroot
+              (completeNormalizeOperation schema operation) source =
+            false := by
+        simpa [completeNormalizeOperation_rootSourceAppliesBool
+          schema operation source] using hroot
       simp [Execution.executeQueryAtDepth, hroot, hnormalizedRoot]
   | true =>
       have hnormalizedRoot :
           Execution.rootSourceAppliesBool schema
-              (completeNormalizeOperation schema operation) source = true := by
-        simpa [completeNormalizeOperation_rootSourceAppliesBool] using hroot
+              (completeNormalizeOperation schema operation) source =
+            true := by
+        simpa [completeNormalizeOperation_rootSourceAppliesBool
+          schema operation source] using hroot
+      have hnormalizedRootType :
+          (completeNormalizeOperation schema operation).rootType =
+            operation.rootType :=
+        completeNormalizeOperation_rootType schema operation
       have hselectionEq :=
-        hselection ObjectIdentity resolvers variableValues depth source
+        hselection hschema hvalid resolvers variableValues depth source
           hcomplete hroot
       simp [Execution.executeQueryAtDepth, hroot, hnormalizedRoot]
-      simpa [completeNormalizeOperation] using hselectionEq
+      simpa [hnormalizedRootType] using hselectionEq
 
 theorem completeNormalizationCorrect_of_semanticsPreserved
     (schema : Schema) (operation : Operation) :
     completeNormalizationSemanticsPreserved schema operation ->
       completeNormalizationCorrect schema operation := by
-  intro hpreserved store variableValues depth _hwellTyped hcomplete
-  exact hpreserved DataModel.ObjectPath (store.resolvers schema) variableValues
-    depth store.rootExecutionValue hcomplete
-
-theorem completeNormalizationCorrect_of_selectionSet
-    (schema : Schema) (operation : Operation) :
-    (∀ (ObjectIdentity : Type) (resolvers : Execution.Resolvers ObjectIdentity)
-      variableValues depth (source : Execution.Value ObjectIdentity),
-      operationBoolVarsComplete operation variableValues ->
-      Execution.rootSourceAppliesBool schema operation source = true ->
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          operation.rootType source operation.selectionSet
-          =
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          operation.rootType source
-          (completeNormalizeOperation schema operation).selectionSet) ->
-      completeNormalizationCorrect schema operation := by
-  intro hselection
-  exact completeNormalizationCorrect_of_semanticsPreserved schema operation
-    (completeNormalizationSemanticsPreserved_of_selectionSet schema operation
-      hselection)
+  intro hpreserved hschema hvalid store variableValues depth _hwellTyped
+    hcomplete
+  exact hpreserved hschema hvalid (store.resolvers schema)
+    variableValues depth store.rootExecutionValue hcomplete
 
 end CompleteNormalization
 

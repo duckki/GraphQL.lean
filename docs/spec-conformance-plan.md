@@ -65,23 +65,20 @@ The main modules are:
   compatibility with the nullable-variable default exception, plus
   same-response-name merge compatibility checks.
 - `GraphQL.Execution`: bounded resolver-based execution.
-- `GraphQL.DataModel`: typed graph store with path-based object identities,
-  graph-root execution, schema-conformant field labels, semantic uniqueness for
-  paths and edge/property keys, list-index discipline, store-backed resolvers,
-  and semantic equivalence/correctness predicates over graph-backed execution.
+- `GraphQL.DataModel`: typed graph store with graph-root execution,
+  schema-conformant field labels, semantic uniqueness for edge/property keys,
+  list-index discipline, store-backed resolvers, and semantic
+  equivalence/correctness predicates over graph-backed execution.
 - `GraphQL.DataModel.Store`: store-resolution bridge lemmas for connecting
-  path-based graph lookup and composite-field resolution to schema facts.
+  type-keyed store lookup and composite-field resolution to schema facts.
 
-`GraphQL.DataModel` uses the field-access path from the graph root as object
-identity. The root path is `[]`; singleton composite field children use
-`source ++ [.field access]`; list composite field elements use
-`source ++ [.field access, .index i]`. Nodes store scalar/null/list leaf facts
-as properties, edges store composite relationships, and store well-typedness
-enforces object type validity, path uniqueness, edge/property key uniqueness,
-target coverage, and list-index discipline. `GraphQL.Execution` remains generic
-over an opaque object identity type, while the store-backed data model
-instantiates that identity with `ObjectPath`; final response data remains
-identity-free.
+`GraphQL.Execution` is parametric over resolver-owned object references.
+`GraphQL.DataModel` instantiates those references with a private wrapper around
+path-independent node ids. Nodes store scalar/null/list leaf facts as
+properties, and edges store source-id/field-labeled composite relationships.
+Store well-typedness enforces object type validity, node-id uniqueness,
+edge/property key uniqueness, target type availability, and list-index
+discipline.
 
 ## Related Documentation
 

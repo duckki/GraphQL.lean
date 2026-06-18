@@ -1,4 +1,4 @@
-import GraphQL
+import GraphQL.Operation
 
 namespace GraphQL
 namespace Tests

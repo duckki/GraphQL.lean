@@ -10,8 +10,6 @@ namespace NormalForm
 
 namespace GroundTypeLifting
 
-variable {ObjectIdentity : Type}
-
 structure ScopedSelection where
   liftParent : Name
   selection : Selection

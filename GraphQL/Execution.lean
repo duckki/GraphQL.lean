@@ -19,11 +19,11 @@ namespace Execution
 
 -- Spec 6.4.3 values before completion: non-spec internal value domain used to stand in
 -- for host-language resolver results.
-inductive Value (ObjectIdentity : Type) where
+inductive Value (ObjectRef : Type := PUnit) where
   | null
   | scalar (value : String)
-  | object (typeName : Name) (identity : ObjectIdentity)
-  | list (values : List (Value ObjectIdentity))
+  | object (typeName : Name) (ref : Option ObjectRef := none)
+  | list (values : List (Value ObjectRef))
 deriving Repr
 
 -- Spec 7.1.5 `data`: partial; models response data recursively, omitting request error
@@ -37,14 +37,16 @@ deriving Repr
 
 -- Spec 6.4.2 `ResolveFieldValue`: partial; one synchronous resolver function stands in
 -- for object-type field resolvers and receives uncoerced modeled arguments.
-structure Resolvers (ObjectIdentity : Type) where
+structure Resolvers (ObjectRef : Type := PUnit) where
   resolve :
     Name -> Name -> List Argument ->
-      Value ObjectIdentity -> Value ObjectIdentity
+      Value ObjectRef -> Value ObjectRef
 
 -- Spec 6.1.2 `CoerceVariableValues`: partial; variables are assumed already supplied as
 -- modeled input values without coercion or validation.
 abbrev VariableValues := List (Name × InputValue)
+
+variable {ObjectRef : Type}
 
 -- Spec 6.1.2 variable value lookup helper for already-coerced modeled variables.
 def lookupVariableValue? (variableValues : VariableValues) (name : Name) : Option InputValue :=
@@ -81,16 +83,15 @@ def selectionDirectivesAllowBool (variableValues : VariableValues)
 
 -- Spec 6.3.2 `DoesFragmentTypeApply` needs a runtime object type when the source value
 -- is object-like.
-def runtimeObjectType? {ObjectIdentity : Type} :
-    Value ObjectIdentity -> Option Name
-  | .object typeName _identity => some typeName
+def runtimeObjectType? : Value ObjectRef -> Option Name
+  | .object typeName _ref => some typeName
   | _ => none
 
 -- Spec 6.3.2 `DoesFragmentTypeApply`: partial; faithful when runtime object type is
 -- known, but falls back to parent/type overlap for non-object placeholder values.
-def doesFragmentTypeApplyBool {ObjectIdentity : Type}
+def doesFragmentTypeApplyBool
     (schema : Schema) (parentType : Name)
-    (source : Value ObjectIdentity) (typeCondition : Name) : Bool :=
+    (source : Value ObjectRef) (typeCondition : Name) : Bool :=
   match runtimeObjectType? source with
   | some objectName => schema.typeIncludesObjectBool typeCondition objectName
   | none => schema.typesOverlapBool parentType typeCondition
@@ -122,10 +123,10 @@ def mergeExecutableGroups (left right : List (Name × List ExecutableField)) :
 
 -- Spec 6.4.3 `CompleteValue`: partial fallback for exhausted execution depth; converts
 -- internal values structurally without type-directed coercion or errors.
-def shallowResponse {ObjectIdentity : Type} : Value ObjectIdentity -> Response
+def shallowResponse : Value ObjectRef -> Response
   | .null => .null
   | .scalar value => .scalar value
-  | .object _typeName _identity => .object []
+  | .object _typeName _ref => .object []
   | .list values => .list (values.map shallowResponse)
 
 -- Spec 6.3 `ExecuteRootSelectionSet`, 6.3.2 `CollectFields`, 6.3.3
@@ -134,10 +135,10 @@ def shallowResponse {ObjectIdentity : Type} : Value ObjectIdentity -> Response
 mutual
   -- Spec 6.3.1 `ExecuteRootSelectionSet`: partial; directly returns data
   -- fields and omits error collection.
-  def executeRootSelectionSet {ObjectIdentity : Type}
-      (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+  def executeRootSelectionSet
+      (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues)
-      (depth : Nat) (parentType : Name) (source : Value ObjectIdentity) :
+      (depth : Nat) (parentType : Name) (source : Value ObjectRef) :
       List Selection -> List (Name × Response)
     | selectionSet =>
         executeCollectedFields schema resolvers variableValues depth source
@@ -145,9 +146,9 @@ mutual
 
   -- Spec 6.3.2 `CollectFields` selection step: partial; handles built-in directives and
   -- inline fragments.
-  def collectSelection {ObjectIdentity : Type}
+  def collectSelection
       (schema : Schema) (variableValues : VariableValues) :
-      Name -> Value ObjectIdentity -> Selection ->
+      Name -> Value ObjectRef -> Selection ->
         List (Name × List ExecutableField)
     | parentType, _source, .field responseName fieldName arguments directives selectionSet =>
         if selectionDirectivesAllowBool variableValues directives then
@@ -176,9 +177,9 @@ mutual
 
   -- Spec 6.3.2 `CollectFields`: partial; list-backed ordered grouping of executable
   -- fields by response name.
-  def collectFields {ObjectIdentity : Type}
+  def collectFields
       (schema : Schema) (variableValues : VariableValues) :
-      Name -> Value ObjectIdentity -> List Selection ->
+      Name -> Value ObjectRef -> List Selection ->
         List (Name × List ExecutableField)
     | _parentType, _source, [] => []
     | parentType, source, selection :: rest =>
@@ -189,9 +190,9 @@ mutual
   -- Spec 6.3.2 `CollectSubfields`: all grouped fields for one response name
   -- contribute child selections, which are collected under the runtime object
   -- type.
-  def collectSubfields {ObjectIdentity : Type}
+  def collectSubfields
       (schema : Schema) (variableValues : VariableValues)
-      (objectType : Name) (objectValue : Value ObjectIdentity) :
+      (objectType : Name) (objectValue : Value ObjectRef) :
       List ExecutableField -> List (Name × List ExecutableField)
     | [] => []
     | field :: fields =>
@@ -201,10 +202,10 @@ mutual
 
   -- Spec 6.3.3 `ExecuteCollectedFields`: executes each response-name group in
   -- stored order, without serial/parallel distinction or errors.
-  def executeCollectedFields {ObjectIdentity : Type}
-      (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+  def executeCollectedFields
+      (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) (depth : Nat)
-      (source : Value ObjectIdentity) :
+      (source : Value ObjectRef) :
       List (Name × List ExecutableField) -> List (Name × Response)
     | [] => []
     | (responseName, fields) :: rest =>
@@ -213,10 +214,10 @@ mutual
 
   -- Spec 6.4 `ExecuteField`: partial; resolves one grouped response name once and
   -- completes with merged subselections.
-  def executeField {ObjectIdentity : Type}
-      (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+  def executeField
+      (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) (depth : Nat)
-      (source : Value ObjectIdentity)
+      (source : Value ObjectRef)
       (responseName : Name) : List ExecutableField -> List (Name × Response)
     | [] => []
     | field :: fields =>
@@ -234,14 +235,14 @@ mutual
 
   -- Spec 6.4.3 `CompleteValue`: partial; ignores declared `fieldType` wrappers and result
   -- coercion/errors, using the runtime value shape instead.
-  def completeValue {ObjectIdentity : Type}
-      (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+  def completeValue
+      (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) :
-      Nat -> Name -> List ExecutableField -> Value ObjectIdentity -> Response
+      Nat -> Name -> List ExecutableField -> Value ObjectRef -> Response
     | 0, _parentType, _fields, value => shallowResponse value
     | _depth + 1, _parentType, _fields, .null => .null
     | _depth + 1, _parentType, _fields, .scalar value => .scalar value
-    | depth + 1, parentType, fields, source@(.object runtimeType _identity) =>
+    | depth + 1, parentType, fields, source@(.object runtimeType _ref) =>
         if schema.typeIncludesObjectBool parentType runtimeType then
           .object (executeCollectedFields schema resolvers variableValues depth source
             (collectSubfields schema variableValues runtimeType source fields))
@@ -256,10 +257,10 @@ end
 
 -- Compatibility wrapper of `executeRootSelectionSet` for proof modules using the older
 -- name.
-def executeSelectionSet {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+def executeSelectionSet
+    (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
-    (depth : Nat) (parentType : Name) (source : Value ObjectIdentity) :
+    (depth : Nat) (parentType : Name) (source : Value ObjectRef) :
     List Selection -> List (Name × Response) :=
   executeRootSelectionSet schema resolvers variableValues depth parentType source
 
@@ -270,19 +271,19 @@ def executeQueryDepthBound (operation : Operation) : Nat :=
 -- Spec 6.2.1 root execution expects a runtime object matching the operation root type.
 -- The model still accepts arbitrary host values, but non-root sources execute to empty
 -- data so equivalence statements are not forced to account for invalid roots.
-def rootSourceAppliesBool {ObjectIdentity : Type}
+def rootSourceAppliesBool
     (schema : Schema) (operation : Operation)
-    (source : Value ObjectIdentity) : Bool :=
+    (source : Value ObjectRef) : Bool :=
   match runtimeObjectType? source with
   | some objectName => schema.typeIncludesObjectBool operation.rootType objectName
   | none => false
 
 -- Spec 6.2.1 `ExecuteQuery` / 6.3.1 `ExecuteRootSelectionSet`: partial; executes a
 -- query operation as normal data-only object response at an explicit recursion depth.
-def executeQueryAtDepth {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+def executeQueryAtDepth
+    (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity) : Response :=
+    (depth : Nat) (source : Value ObjectRef) : Response :=
   if rootSourceAppliesBool schema operation source then
     .object (executeRootSelectionSet schema resolvers variableValues
       depth operation.rootType source operation.selectionSet)
@@ -290,10 +291,10 @@ def executeQueryAtDepth {ObjectIdentity : Type}
     .object []
 
 -- Default executable query entry point using the local operation-derived depth bound.
-def executeQuery {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+def executeQuery
+    (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
-    (source : Value ObjectIdentity) : Response :=
+    (source : Value ObjectRef) : Response :=
   executeQueryAtDepth schema resolvers variableValues operation
     (executeQueryDepthBound operation) source
 

@@ -69,6 +69,84 @@ theorem fieldMerge_collectFields_mem_outputType
               · exact fieldMerge_collectFields_mem_outputType schema
                   parentType rest scopedField hschema htailValid hrest
 
+theorem fieldMerge_collectFields_mem_lookupField_outputType
+    (schema : Schema) :
+    ∀ parentType selectionSet scopedField,
+      scopedField ∈ FieldMerge.collectFields schema parentType
+        selectionSet ->
+        ∃ fieldDefinition,
+          schema.lookupField scopedField.parentType scopedField.fieldName =
+              some fieldDefinition
+            ∧ scopedField.outputType = fieldDefinition.outputType
+  | _parentType, [], _scopedField, hfield => by
+      simp [FieldMerge.collectFields] at hfield
+  | parentType, selection :: rest, scopedField, hfield => by
+      cases selection with
+      | field responseName fieldName arguments directives selectionSet =>
+          cases hlookup : schema.lookupField parentType fieldName with
+          | none =>
+              simp [FieldMerge.collectFields, hlookup] at hfield
+              exact
+                fieldMerge_collectFields_mem_lookupField_outputType schema
+                  parentType rest scopedField hfield
+          | some fieldDefinition =>
+              simp [FieldMerge.collectFields, hlookup] at hfield
+              rcases hfield with hhead | htail
+              · subst scopedField
+                exact ⟨fieldDefinition, by simp [hlookup]⟩
+              · exact
+                  fieldMerge_collectFields_mem_lookupField_outputType schema
+                    parentType rest scopedField htail
+      | inlineFragment typeCondition directives selectionSet =>
+          cases typeCondition with
+          | none =>
+              simp [FieldMerge.collectFields] at hfield
+              rcases hfield with hselection | hrest
+              · exact
+                  fieldMerge_collectFields_mem_lookupField_outputType schema
+                    parentType selectionSet scopedField hselection
+              · exact
+                  fieldMerge_collectFields_mem_lookupField_outputType schema
+                    parentType rest scopedField hrest
+          | some typeCondition =>
+              simp [FieldMerge.collectFields] at hfield
+              rcases hfield with hselection | hrest
+              · exact
+                  fieldMerge_collectFields_mem_lookupField_outputType schema
+                    typeCondition selectionSet scopedField hselection
+              · exact
+                  fieldMerge_collectFields_mem_lookupField_outputType schema
+                    parentType rest scopedField hrest
+
+theorem fieldMerge_collectFields_outputType_eq_of_same_parent_field
+    (schema : Schema)
+    {leftParent rightParent : Name}
+    {leftSet rightSet : List Selection}
+    {left right : FieldMerge.ScopedField} :
+    left ∈ FieldMerge.collectFields schema leftParent leftSet ->
+    right ∈ FieldMerge.collectFields schema rightParent rightSet ->
+    left.parentType = right.parentType ->
+    left.fieldName = right.fieldName ->
+      left.outputType = right.outputType := by
+  intro hleft hright hparent hfield
+  rcases
+    fieldMerge_collectFields_mem_lookupField_outputType schema leftParent
+      leftSet left hleft with
+    ⟨leftDefinition, hleftLookup, hleftOutput⟩
+  rcases
+    fieldMerge_collectFields_mem_lookupField_outputType schema rightParent
+      rightSet right hright with
+    ⟨rightDefinition, hrightLookup, hrightOutput⟩
+  have hsome : some leftDefinition = some rightDefinition := by
+    calc
+      some leftDefinition =
+          schema.lookupField left.parentType left.fieldName := hleftLookup.symm
+      _ = schema.lookupField right.parentType right.fieldName := by
+          simp [hparent, hfield]
+      _ = some rightDefinition := hrightLookup
+  injection hsome with hdefinitions
+  simp [hleftOutput, hrightOutput, hdefinitions]
+
 def scopedFieldSameSelection
     (left right : FieldMerge.ScopedField) : Prop :=
   left.responseName = right.responseName
@@ -80,6 +158,83 @@ theorem scopedFieldSameSelection_refl
     (field : FieldMerge.ScopedField) :
     scopedFieldSameSelection field field := by
   simp [scopedFieldSameSelection]
+
+theorem fieldMerge_collectFields_allFields_lookupParent_sameSelection
+    (schema : Schema) :
+    ∀ lookupParent collectParent selectionSet scopedField,
+      selectionsAllFields selectionSet ->
+      selectionSetLookupValid schema lookupParent selectionSet ->
+      scopedField ∈ FieldMerge.collectFields schema collectParent
+        selectionSet ->
+        ∃ lookupField,
+          lookupField ∈ FieldMerge.collectFields schema lookupParent
+            selectionSet
+            ∧ scopedFieldSameSelection scopedField lookupField
+  | _lookupParent, _collectParent, [], _scopedField, _hallFields,
+      _hlookupValid, hfield => by
+      simp [FieldMerge.collectFields] at hfield
+  | lookupParent, collectParent, selection :: rest, scopedField,
+      hallFields, hlookupValid, hfield => by
+      have hheadField : Selection.isField selection :=
+        hallFields selection (by simp)
+      have htailAll : selectionsAllFields rest := by
+        intro candidate hcandidate
+        exact hallFields candidate (by simp [hcandidate])
+      have htailLookup :
+          selectionSetLookupValid schema lookupParent rest :=
+        selectionSetLookupValid_tail hlookupValid
+      cases selection with
+      | field responseName fieldName arguments directives selectionSet =>
+          have hheadLookup :
+              selectionLookupValid schema lookupParent
+                (Selection.field responseName fieldName arguments directives
+                  selectionSet) :=
+            selectionSetLookupValid_head hlookupValid
+          rcases (by simpa [selectionLookupValid] using hheadLookup) with
+            ⟨lookupDefinition, hlookup⟩
+          cases hcollectLookup :
+              schema.lookupField collectParent fieldName with
+          | none =>
+              simp [FieldMerge.collectFields, hcollectLookup] at hfield
+              rcases
+                fieldMerge_collectFields_allFields_lookupParent_sameSelection
+                  schema lookupParent collectParent rest scopedField
+                  htailAll htailLookup hfield with
+                ⟨lookupField, hlookupField, hsame⟩
+              exact ⟨lookupField,
+                fieldMerge_collectFields_tail_mem schema lookupParent
+                  (Selection.field responseName fieldName arguments
+                    directives selectionSet)
+                  rest lookupField hlookupField,
+                hsame⟩
+          | some collectDefinition =>
+              simp [FieldMerge.collectFields, hcollectLookup] at hfield
+              rcases hfield with hhead | htail
+              · subst scopedField
+                let lookupField : FieldMerge.ScopedField := {
+                  parentType := lookupParent,
+                  responseName := responseName,
+                  fieldName := fieldName,
+                  arguments := arguments,
+                  outputType := lookupDefinition.outputType,
+                  selectionSet := selectionSet
+                }
+                refine ⟨lookupField, ?_, ?_⟩
+                · simp [lookupField, FieldMerge.collectFields, hlookup]
+                · simp [lookupField, scopedFieldSameSelection]
+              · rcases
+                  fieldMerge_collectFields_allFields_lookupParent_sameSelection
+                    schema lookupParent collectParent rest scopedField
+                    htailAll htailLookup htail with
+                  ⟨lookupField, hlookupField, hsame⟩
+                exact ⟨lookupField,
+                  fieldMerge_collectFields_tail_mem schema lookupParent
+                    (Selection.field responseName fieldName arguments
+                      directives selectionSet)
+                    rest lookupField hlookupField,
+                  hsame⟩
+      | inlineFragment typeCondition directives selectionSet =>
+          simp [Selection.isField] at hheadField
 
 theorem possibleObjectParent_eq_or_abstract_not_object
     (schema : Schema) {objectParent abstractParent : Name} :
@@ -167,9 +322,35 @@ theorem fieldsForNameCanMerge_of_sameSelection_bridge
           objectRight.arguments := by
       simpa [hleftArguments, hrightArguments] using habstractArguments
     exact ⟨hfield, harguments⟩
-  · intro objectType
+  · intro hobjectParentCondition objectType
+    have habstractParentCondition :
+        abstractLeft.parentType = abstractRight.parentType
+          ∨ ¬ schema.objectType abstractLeft.parentType
+          ∨ ¬ schema.objectType abstractRight.parentType := by
+      rcases hleftParent with hleftParentEq | hleftNotObject
+      · rcases hrightParent with hrightParentEq | hrightNotObject
+        · rcases hobjectParentCondition with hobjectParentEq
+            | hobjectNotObject
+          · exact Or.inl
+              (hleftParentEq.trans
+                (hobjectParentEq.trans hrightParentEq.symm))
+          · rcases hobjectNotObject with hobjectLeftNotObject
+              | hobjectRightNotObject
+            · exact Or.inr (Or.inl
+                (by
+                  intro habstractObject
+                  exact hobjectLeftNotObject
+                    (by simpa [hleftParentEq] using habstractObject)))
+            · exact Or.inr (Or.inr
+                (by
+                  intro habstractObject
+                  exact hobjectRightNotObject
+                    (by simpa [hrightParentEq] using habstractObject)))
+        · exact Or.inr (Or.inr hrightNotObject)
+      · exact Or.inr (Or.inl hleftNotObject)
     have hsubfields :=
-      FieldMerge.fieldsForNameCanMerge_subfields habstractMerge objectType
+      FieldMerge.fieldsForNameCanMerge_subfields habstractMerge
+        habstractParentCondition objectType
     simpa [hleftSelectionSet, hrightSelectionSet] using hsubfields
 
 theorem fieldMerge_collectFields_objectParent_possibleParent

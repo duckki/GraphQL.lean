@@ -75,11 +75,20 @@ theorem fieldSelectionSetValid_composite_child
       selectionSet ≠ [] ->
       selectionSetValid schema variableDefinitions
         fieldDefinition.outputType.namedType selectionSet := by
-  intro hvalid _hcomposite hnonempty
+  intro hvalid hcomposite _hnonempty
   simp [fieldSelectionSetValid] at hvalid
   cases hvalid.2 with
   | inl hleaf =>
-      exact False.elim (hnonempty hleaf.2)
+      exact False.elim
+        (by
+          rcases hleaf.1 with ⟨typeDefinition, hlookup, hleafDefinition⟩
+          rcases hcomposite with
+            ⟨compositeDefinition, hcompositeLookup, hcompositeDefinition⟩
+          rw [hlookup] at hcompositeLookup
+          cases hcompositeLookup
+          cases typeDefinition <;>
+            simp [TypeDefinition.isLeafType, TypeDefinition.isCompositeType]
+              at hleafDefinition hcompositeDefinition)
   | inr hchild =>
       exact hchild.2.2
 
@@ -191,20 +200,13 @@ theorem operationDefinitionValid_variableDefinitionsValid
   intro hvalid
   exact hvalid.2.2.1
 
-theorem operationDefinitionValid_selectionSet_nonempty
-    {schema : Schema} {operation : Operation} :
-    operationDefinitionValid schema operation ->
-      operation.selectionSet ≠ [] := by
-  intro hvalid
-  exact hvalid.2.2.2.1
-
 theorem operationDefinitionValid_selectionSetValid
     {schema : Schema} {operation : Operation} :
     operationDefinitionValid schema operation ->
       selectionSetValid schema operation.variableDefinitions operation.rootType
         operation.selectionSet := by
   intro hvalid
-  exact hvalid.2.2.2.2.1
+  exact hvalid.2.2.2.1
 
 theorem operationDefinitionValid_fieldsInSetCanMerge
     {schema : Schema} {operation : Operation} :
@@ -213,6 +215,14 @@ theorem operationDefinitionValid_fieldsInSetCanMerge
         operation.selectionSet := by
   intro hvalid
   exact hvalid.2.2.2.2.2
+
+theorem operationDefinitionValid_selectionSetImplementationValid
+    {schema : Schema} {operation : Operation} :
+    operationDefinitionValid schema operation ->
+      selectionSetImplementationValid schema operation.variableDefinitions
+        operation.rootType operation.selectionSet := by
+  intro hvalid
+  exact hvalid.2.2.2.2.1
 
 end Validation
 

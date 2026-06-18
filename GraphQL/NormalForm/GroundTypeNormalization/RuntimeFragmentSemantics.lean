@@ -10,13 +10,14 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
-variable {ObjectIdentity : Type}
+variable {ObjectRef : Type}
 
 theorem executeSelectionSet_inlineFragment_some_directiveFree_skip
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
-    (source : Execution.Value ObjectIdentity)
+    (source : Execution.Value ObjectRef)
     (selectionSet rest : List Selection) :
     Execution.doesFragmentTypeApplyBool schema parentType source typeCondition =
       false ->
@@ -27,15 +28,19 @@ theorem executeSelectionSet_inlineFragment_some_directiveFree_skip
       Execution.executeSelectionSet schema resolvers variableValues depth
         parentType source rest := by
   intro hskip
-  simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+  have hcollect :=
     collectFields_inlineFragment_some_directiveFree_skip_eq schema
-      variableValues parentType typeCondition source selectionSet rest hskip]
+      variableValues parentType typeCondition source selectionSet rest
+      hskip
+  simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+    hcollect]
 
 theorem executeSelectionSet_inlineFragment_none_directiveFree_flatten
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
-    (source : Execution.Value ObjectIdentity)
+    (source : Execution.Value ObjectRef)
     (selectionSet rest : List Selection) :
     Execution.executeSelectionSet schema resolvers variableValues depth
       parentType source
@@ -47,10 +52,11 @@ theorem executeSelectionSet_inlineFragment_none_directiveFree_flatten
     collectFields_inlineFragment_none_directiveFree_flatten]
 
 theorem executeSelectionSet_inlineFragment_some_directiveFree_apply_flatten
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
-    (source : Execution.Value ObjectIdentity)
+    (source : Execution.Value ObjectRef)
     (selectionSet rest : List Selection) :
     Execution.doesFragmentTypeApplyBool schema parentType source typeCondition =
       true ->
@@ -98,17 +104,16 @@ theorem typeIncludesObjectBool_eq_of_objectTypeNameBool_true
       | inputObject inputObjectType => simp [hlookup] at hobject
 
 theorem doesFragmentTypeApplyBool_true_of_typesOverlapBool_true_of_object_source
-    (schema : Schema) {parentType typeCondition : Name}
-    {source : Execution.Value ObjectIdentity} :
+    (schema : Schema) {parentType typeCondition : Name} {source : Execution.Value ObjectRef} :
     objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType identity,
-        source = .object runtimeType identity
+      (∃ runtimeType ref,
+        source = .object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
         schema.typesOverlapBool parentType typeCondition = true ->
           Execution.doesFragmentTypeApplyBool schema parentType source
             typeCondition = true := by
   intro hobject hsource hoverlap
-  rcases hsource with ⟨runtimeType, identity, hsourceEq, hparent⟩
+  rcases hsource with ⟨runtimeType, ref, hsourceEq, hparent⟩
   subst source
   have hruntime :
       runtimeType = parentType :=
@@ -136,12 +141,11 @@ theorem doesFragmentTypeApplyBool_true_of_typesOverlapBool_true_of_object_source
       | inputObject inputObjectType => simp [hlookup] at hobject
 
 theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false
-    (schema : Schema) {parentType typeCondition runtimeType : Name}
-    {identity : ObjectIdentity} :
+    (schema : Schema) {parentType typeCondition runtimeType : Name} (ref : Option ObjectRef := none) :
     schema.typeIncludesObjectBool parentType runtimeType = true ->
       schema.typesOverlapBool parentType typeCondition = false ->
         Execution.doesFragmentTypeApplyBool schema parentType
-          (.object runtimeType identity) typeCondition = false := by
+          (.object runtimeType ref) typeCondition = false := by
   intro hparent hoverlap
   unfold Execution.doesFragmentTypeApplyBool
   cases hcondition :
@@ -159,36 +163,40 @@ theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false
     contradiction
 
 theorem rootSourceAppliesBool_true_object
-    (schema : Schema) (operation : Operation) (source : Execution.Value ObjectIdentity) :
+    (schema : Schema) (operation : Operation) (source : Execution.Value ObjectRef) :
     Execution.rootSourceAppliesBool schema operation source = true ->
-      ∃ runtimeType identity,
-        source = .object runtimeType identity
+      ∃ runtimeType ref,
+        source = .object runtimeType ref
           ∧ schema.typeIncludesObjectBool operation.rootType runtimeType = true := by
-  intro hroot
-  cases source with
-  | null =>
-      simp [Execution.rootSourceAppliesBool, Execution.runtimeObjectType?] at hroot
-  | scalar value =>
-      simp [Execution.rootSourceAppliesBool, Execution.runtimeObjectType?] at hroot
-  | object runtimeType identity =>
-      exact ⟨runtimeType, identity, rfl, hroot⟩
-  | list values =>
-      simp [Execution.rootSourceAppliesBool, Execution.runtimeObjectType?] at hroot
+    intro hroot
+    cases source with
+    | null =>
+        simp [Execution.rootSourceAppliesBool,
+          Execution.runtimeObjectType?] at hroot
+    | scalar value =>
+        simp [Execution.rootSourceAppliesBool,
+          Execution.runtimeObjectType?] at hroot
+    | object runtimeType ref =>
+        simp [Execution.rootSourceAppliesBool,
+          Execution.runtimeObjectType?] at hroot
+        exact ⟨runtimeType, ref, rfl, hroot⟩
+    | list values =>
+        simp [Execution.rootSourceAppliesBool,
+          Execution.runtimeObjectType?] at hroot
 
 theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false_of_source
-    (schema : Schema) {parentType typeCondition : Name}
-    {source : Execution.Value ObjectIdentity} :
-    (∃ runtimeType identity,
-      source = .object runtimeType identity
+    (schema : Schema) {parentType typeCondition : Name} {source : Execution.Value ObjectRef} :
+    (∃ runtimeType ref,
+      source = .object runtimeType ref
         ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
       schema.typesOverlapBool parentType typeCondition = false ->
         Execution.doesFragmentTypeApplyBool schema parentType source
           typeCondition = false := by
   intro hsource hoverlap
-  rcases hsource with ⟨runtimeType, identity, hsourceEq, hparent⟩
+  rcases hsource with ⟨runtimeType, ref, hsourceEq, hparent⟩
   subst source
   exact doesFragmentTypeApplyBool_false_of_typesOverlapBool_false schema
-    hparent hoverlap
+    (ref := ref) hparent hoverlap
 
 theorem objectTypeNameBool_eq_true_of_objectType
     (schema : Schema) {typeName : Name} :
@@ -222,20 +230,22 @@ theorem typeIncludesObjectBool_self_of_objectTypeNameBool
       | inputObject inputObjectType => simp [hlookup] at hobject
 
 theorem doesFragmentTypeApplyBool_object_self
-    (schema : Schema) {runtimeType : Name} {identity : ObjectIdentity} :
+    (schema : Schema) {runtimeType : Name} (ref : Option ObjectRef := none) :
     objectTypeNameBool schema runtimeType = true ->
       Execution.doesFragmentTypeApplyBool schema runtimeType
-        (.object runtimeType identity) runtimeType = true := by
+        (.object runtimeType ref)
+        runtimeType = true := by
   intro hobject
   simp [Execution.doesFragmentTypeApplyBool, Execution.runtimeObjectType?,
     typeIncludesObjectBool_self_of_objectTypeNameBool schema hobject]
 
 theorem doesFragmentTypeApplyBool_object_other_false
-    (schema : Schema) {runtimeType objectType : Name} {identity : ObjectIdentity} :
+    (schema : Schema) {runtimeType objectType : Name} (ref : Option ObjectRef := none) :
     objectTypeNameBool schema objectType = true ->
       objectType ≠ runtimeType ->
         Execution.doesFragmentTypeApplyBool schema runtimeType
-          (.object runtimeType identity) objectType = false := by
+          (.object runtimeType ref)
+          objectType = false := by
   intro hobject hne
   unfold Execution.doesFragmentTypeApplyBool
   cases hinclude :

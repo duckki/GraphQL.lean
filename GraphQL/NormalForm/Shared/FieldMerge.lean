@@ -857,12 +857,19 @@ theorem fieldsInSetCanMerge_fieldHead_merged_of_canMerge_object
           scopedField ∈ FieldMerge.collectFields schema parentType
             (headSelection :: rest)
             ∧ scopedField.responseName = responseName
-            ∧ scopedField.selectionSet = selection.subselections := by
+            ∧ scopedField.selectionSet = selection.subselections
+            ∧ (schema.objectType scopedField.parentType ->
+              schema.typesOverlapBool parentType scopedField.parentType =
+                true) := by
     intro selection hselection
     rcases List.mem_cons.mp hselection with hhead | hmatched
     · subst selection
       exact ⟨headScoped, hheadMem, rfl, by
-        simp [headScoped, headSelection, Selection.subselections]⟩
+        simp [headScoped, headSelection, Selection.subselections],
+        by
+          intro _hscopedObject
+          simp [headScoped]
+          exact object_typesOverlapBool_self schema hobject⟩
     · rcases
         validFieldsWithResponseName_mem_field schema parentType responseName
           rest selection hmatched with
@@ -876,23 +883,25 @@ theorem fieldsInSetCanMerge_fieldHead_merged_of_canMerge_object
           matchedSubselections hoverlapSelf htailValid
           hmatched with
         ⟨scopedField, hscopedRest, hresponse, _hfieldName,
-          _harguments, hselectionSet, _hoverlap⟩
+          _harguments, hselectionSet, hoverlap⟩
       have hscoped :
           scopedField ∈ FieldMerge.collectFields schema parentType
             (headSelection :: rest) := by
         simp [headSelection, FieldMerge.collectFields, hlookup,
           hscopedRest]
       exact ⟨scopedField, hscoped, hresponse, by
-        simpa [Selection.subselections] using hselectionSet⟩
+        simpa [Selection.subselections] using hselectionSet, hoverlap⟩
   have hgroupMerge :
       FieldMerge.fieldsInSetCanMerge schema objectType
         (mergeSelectionSets group) := by
     apply fieldsInSetCanMerge_mergeSelectionSets_of_pairwise
     intro leftSelection hleftSelection rightSelection hrightSelection
     rcases hscopedOf leftSelection hleftSelection with
-      ⟨leftScoped, hleftScoped, hleftResponse, hleftSelectionSet⟩
+      ⟨leftScoped, hleftScoped, hleftResponse, hleftSelectionSet,
+        hleftOverlap⟩
     rcases hscopedOf rightSelection hrightSelection with
-      ⟨rightScoped, hrightScoped, hrightResponse, hrightSelectionSet⟩
+      ⟨rightScoped, hrightScoped, hrightResponse, hrightSelectionSet,
+        hrightOverlap⟩
     have hresponse :
         leftScoped.responseName = rightScoped.responseName :=
       hleftResponse.trans hrightResponse.symm
@@ -900,8 +909,26 @@ theorem fieldsInSetCanMerge_fieldHead_merged_of_canMerge_object
         FieldMerge.fieldsForNameCanMerge schema leftScoped rightScoped :=
       FieldMerge.fieldsInSetCanMerge_pair hmerge hleftScoped hrightScoped
         hresponse
+    have hparents :
+        leftScoped.parentType = rightScoped.parentType
+          ∨ ¬ schema.objectType leftScoped.parentType
+          ∨ ¬ schema.objectType rightScoped.parentType := by
+      by_cases hleftObject : schema.objectType leftScoped.parentType
+      · by_cases hrightObject : schema.objectType rightScoped.parentType
+        · have hleftParent :
+              leftScoped.parentType = parentType :=
+            object_typesOverlapBool_eq schema hobject hleftObject
+              (hleftOverlap hleftObject)
+          have hrightParent :
+              rightScoped.parentType = parentType :=
+            object_typesOverlapBool_eq schema hobject hrightObject
+              (hrightOverlap hrightObject)
+          exact Or.inl (hleftParent.trans hrightParent.symm)
+        · exact Or.inr (Or.inr hrightObject)
+      · exact Or.inr (Or.inl hleftObject)
     have hsubfields :=
-      FieldMerge.fieldsForNameCanMerge_subfields hfieldMerge objectType
+      FieldMerge.fieldsForNameCanMerge_subfields hfieldMerge hparents
+        objectType
     rw [hleftSelectionSet, hrightSelectionSet] at hsubfields
     exact hsubfields
   simpa [group, headSelection, matching, mergeSelectionSets,

@@ -9,30 +9,71 @@ open GraphQL.DataModel
 abbrev field (name : Name) (arguments : List Argument := []) : FieldAccess :=
   { name, arguments }
 
-abbrev rootPath : ObjectPath :=
-  []
-
-abbrev listElementPath (sourcePath : ObjectPath) (field : FieldAccess)
-    (index : Nat) : ObjectPath :=
-  FieldAccess.childListElementPath sourcePath field index
-
-abbrev node (typeName : Name) (path : ObjectPath)
+abbrev node (id : ObjectId) (typeName : Name)
     (properties : List (FieldAccess × PropertyValue) := []) : ObjectNode :=
-  { typeName, path, properties }
+  { id, typeName, properties }
 
-abbrev edge (sourcePath : ObjectPath) (field : FieldAccess)
-    (targetType : Name) : ObjectEdge :=
-  { sourcePath, field, index? := none, targetType }
+abbrev edge (sourceId : ObjectId) (field : FieldAccess)
+    (targetId : ObjectId) (targetType : Name) : ObjectEdge :=
+  { sourceId, field, index? := none, targetId, targetType }
 
-abbrev listEdge (sourcePath : ObjectPath) (field : FieldAccess)
-    (index : Nat) (targetType : Name) : ObjectEdge :=
-  { sourcePath, field, index? := some index, targetType }
+abbrev listEdge (sourceId : ObjectId) (field : FieldAccess)
+    (index : Nat) (targetId : ObjectId) (targetType : Name) : ObjectEdge :=
+  { sourceId, field, index? := some index, targetId, targetType }
 
 notation "field!" name => field name []
-infixl:65 " /> " => FieldAccess.childPath
+
+mutual
+  def valueEqBool :
+      Execution.Value ObjectRef -> Execution.Value ObjectRef -> Bool
+    | .null, .null => true
+    | .scalar left, .scalar right => left == right
+    | .object leftType leftRef, .object rightType rightRef =>
+        (leftType == rightType) && (leftRef == rightRef)
+    | .list left, .list right => valueListEqBool left right
+    | _, _ => false
+
+  def valueListEqBool :
+      List (Execution.Value ObjectRef) ->
+        List (Execution.Value ObjectRef) -> Bool
+    | [], [] => true
+    | left :: lefts, right :: rights =>
+        valueEqBool left right && valueListEqBool lefts rights
+    | _, _ => false
+end
+
+mutual
+  def responseEqBool :
+      Execution.Response -> Execution.Response -> Bool
+    | .null, .null => true
+    | .scalar left, .scalar right => left == right
+    | .object left, .object right => responseFieldsEqBool left right
+    | .list left, .list right => responseListEqBool left right
+    | _, _ => false
+
+  def responseListEqBool :
+      List Execution.Response -> List Execution.Response -> Bool
+    | [], [] => true
+    | left :: lefts, right :: rights =>
+        responseEqBool left right && responseListEqBool lefts rights
+    | _, _ => false
+
+  def responseFieldsEqBool :
+      List (Name × Execution.Response) ->
+        List (Name × Execution.Response) -> Bool
+    | [], [] => true
+    | (leftName, leftValue) :: lefts, (rightName, rightValue) :: rights =>
+        (leftName == rightName)
+          && responseEqBool leftValue rightValue
+          && responseFieldsEqBool lefts rights
+    | _, _ => false
+end
 
 def heroAccess : FieldAccess :=
   field! "hero"
+
+def villainAccess : FieldAccess :=
+  field! "villain"
 
 def friendsAccess : FieldAccess :=
   field! "friends"
@@ -46,20 +87,11 @@ def heroEpisodeArg : Argument :=
 def heroFormatArg : Argument :=
   { name := "format", value := .string "compact" }
 
-def heroEpisodeStringArg : Argument :=
-  { name := "episode", value := .string "JEDI" }
-
 def heroAccessWithArgsA : FieldAccess :=
   field "hero" [heroEpisodeArg, heroFormatArg]
 
 def heroAccessWithArgsB : FieldAccess :=
   field "hero" [heroFormatArg, heroEpisodeArg]
-
-def heroAccessWithStringArgsA : FieldAccess :=
-  field "hero" [heroEpisodeStringArg, heroFormatArg]
-
-def heroAccessWithStringArgsB : FieldAccess :=
-  field "hero" [heroFormatArg, heroEpisodeStringArg]
 
 def nameAccessWithUnexpectedArg : FieldAccess :=
   field "name" [heroFormatArg]
@@ -79,45 +111,11 @@ def searchAccessWithArgsA : FieldAccess :=
 def searchAccessWithArgsB : FieldAccess :=
   field "search" [searchFilterArgB]
 
-def heroPath : ObjectPath :=
-  rootPath /> heroAccess
-
-def firstFriendPath : ObjectPath :=
-  listElementPath rootPath friendsAccess 0
-
-def firstHeroFriendPath : ObjectPath :=
-  listElementPath heroPath friendsAccess 0
-
-def secondHeroFriendPath : ObjectPath :=
-  listElementPath heroPath friendsAccess 1
-
-def heroPathWithStringArgs : ObjectPath :=
-  rootPath /> heroAccessWithStringArgsA
-
-def heroPathWithUnexpectedArg : ObjectPath :=
-  rootPath /> heroAccessWithUnexpectedArg
-
-def rawHeroPathWithStringArgsA : ObjectPath :=
-  [.field heroAccessWithStringArgsA]
-
-def rawHeroPathWithStringArgsB : ObjectPath :=
-  [.field heroAccessWithStringArgsB]
-
 def queryType : ObjectType :=
   { name := "Query",
     fields := [
-      { name := "hero", outputType := .named "Character" }
-    ] }
-
-def queryTypeWithHeroArgs : ObjectType :=
-  { name := "Query",
-    fields := [
-      { name := "hero",
-        outputType := .named "Character",
-        arguments := [
-          { name := "episode", inputType := .named "String" },
-          { name := "format", inputType := .named "String" }
-        ] }
+      { name := "hero", outputType := .named "Character" },
+      { name := "villain", outputType := .named "Character" }
     ] }
 
 def characterType : ObjectType :=
@@ -131,18 +129,17 @@ def graphSchema : Schema :=
   { queryType := "Query",
     types := [.object queryType, .object characterType] }
 
-def graphSchemaWithHeroArgs : Schema :=
-  { queryType := "Query",
-    types := [.object queryTypeWithHeroArgs, .object characterType] }
-
 def rootNode : ObjectNode :=
-  node "Query" rootPath
+  node 0 "Query"
 
 def mismatchedRootNode : ObjectNode :=
-  node "Character" rootPath
+  node 0 "Character"
 
 def heroNode : ObjectNode :=
-  node "Character" heroPath [(nameAccess, .scalar "R2-D2")]
+  node 1 "Character" [(nameAccess, .scalar "R2-D2")]
+
+def villainNode : ObjectNode :=
+  node 2 "Character" [(nameAccess, .scalar "Darth Vader")]
 
 def heroNodeWithUnexpectedPropertyArg : ObjectNode :=
   { heroNode with properties := [(nameAccessWithUnexpectedArg, .scalar "R2-D2")] }
@@ -154,35 +151,26 @@ def heroNodeWithDuplicateProperties : ObjectNode :=
       (nameAccess, .scalar "Artoo")
     ] }
 
-def heroNodeWithStringArgsA : ObjectNode :=
-  { heroNode with path := rawHeroPathWithStringArgsA }
-
-def heroNodeWithStringArgsB : ObjectNode :=
-  { heroNode with path := rawHeroPathWithStringArgsB }
-
-def heroNodeWithUnexpectedArgPath : ObjectNode :=
-  { heroNode with path := heroPathWithUnexpectedArg }
-
 def firstHeroFriendNode : ObjectNode :=
-  node "Character" firstHeroFriendPath [(nameAccess, .scalar "C-3PO")]
+  node 3 "Character" [(nameAccess, .scalar "C-3PO")]
 
 def secondHeroFriendNode : ObjectNode :=
-  node "Character" secondHeroFriendPath [(nameAccess, .scalar "Luke")]
+  node 4 "Character" [(nameAccess, .scalar "Luke")]
 
 def heroEdge : ObjectEdge :=
-  edge rootPath heroAccess "Character"
+  edge 0 heroAccess 1 "Character"
 
-def heroEdgeWithStringArgs : ObjectEdge :=
-  edge rootPath heroAccessWithStringArgsA "Character"
+def villainEdge : ObjectEdge :=
+  edge 0 villainAccess 2 "Character"
 
 def heroEdgeWithUnexpectedArg : ObjectEdge :=
-  edge rootPath heroAccessWithUnexpectedArg "Character"
+  edge 0 heroAccessWithUnexpectedArg 1 "Character"
 
 def firstHeroFriendEdge : ObjectEdge :=
-  listEdge heroPath friendsAccess 0 "Character"
+  listEdge 1 friendsAccess 0 3 "Character"
 
 def secondHeroFriendEdge : ObjectEdge :=
-  listEdge heroPath friendsAccess 1 "Character"
+  listEdge 1 friendsAccess 1 4 "Character"
 
 def graphStore : Store :=
   { root := rootNode,
@@ -194,21 +182,6 @@ def duplicateHeroEdgeStore : Store :=
 
 def mismatchedRootStore : Store :=
   { root := mismatchedRootNode }
-
-def unexpectedPropertyArgumentStore : Store :=
-  { root := rootNode,
-    nodes := [heroNodeWithUnexpectedPropertyArg],
-    edges := [heroEdge] }
-
-def unexpectedEdgeArgumentStore : Store :=
-  { root := rootNode,
-    nodes := [heroNodeWithUnexpectedArgPath],
-    edges := [heroEdgeWithUnexpectedArg] }
-
-def duplicateSemanticPathStore : Store :=
-  { root := rootNode,
-    nodes := [heroNodeWithStringArgsA, heroNodeWithStringArgsB],
-    edges := [heroEdgeWithStringArgs] }
 
 def duplicatePropertyStore : Store :=
   { root := rootNode,
@@ -228,38 +201,45 @@ def outOfOrderListStore : Store :=
     nodes := [heroNode, firstHeroFriendNode, secondHeroFriendNode],
     edges := [heroEdge, secondHeroFriendEdge, firstHeroFriendEdge] }
 
-def orphanNodeStore : Store :=
+def pathSensitiveStore : Store :=
   { root := rootNode,
-    nodes := [heroNode],
-    edges := [] }
+    nodes := [heroNode, villainNode],
+    edges := [heroEdge, villainEdge] }
 
-theorem rootPathSmoke : ([] : ObjectPath) = ([] : ObjectPath) := by
+def pathSensitiveQuery : Operation :=
+  { name := some "PathSensitive"
+    rootType := "Query"
+    selectionSet := [
+      .field "hero" "hero" [] [] [
+        .field "name" "name" [] [] []
+      ],
+      .field "villain" "villain" [] [] [
+        .field "name" "name" [] [] []
+      ]
+    ] }
+
+def pathSensitiveExpectedResponse : Execution.Response :=
+  .object [
+    ("hero", .object [("name", .scalar "R2-D2")]),
+    ("villain", .object [("name", .scalar "Darth Vader")])
+  ]
+
+def pathInsensitiveSpecResponse : Execution.Response :=
+  .object [
+    ("hero", .object [("name", .scalar "R2-D2")]),
+    ("villain", .object [("name", .scalar "R2-D2")])
+  ]
+
+def pathSensitiveActualResponse : Execution.Response :=
+  executeOperationAtDepth graphSchema pathSensitiveStore []
+    pathSensitiveQuery 6
+
+theorem fieldAccessCanonicalizesArgumentOrder :
+    FieldAccess.eqBool heroAccessWithArgsA heroAccessWithArgsB = true := by
   rfl
 
-theorem singletonPathSmoke :
-    heroPath = [.field heroAccess] := by
-  rfl
-
-theorem listElementPathSmoke :
-    firstFriendPath = [.field friendsAccess, .index 0] := by
-  rfl
-
-theorem fieldAccessPathCanonicalizesArgumentOrder :
-    FieldAccess.childPath [] heroAccessWithArgsA =
-      FieldAccess.childPath [] heroAccessWithArgsB := by
-  rfl
-
-theorem fieldAccessPathCanonicalizesInputObjectFieldOrder :
-    FieldAccess.childPath [] searchAccessWithArgsA =
-      FieldAccess.childPath [] searchAccessWithArgsB := by
-  rfl
-
-theorem heroEdgeTargetPathSmoke :
-    heroEdge.targetPath = heroPath := by
-  rfl
-
-theorem firstHeroFriendEdgeTargetPathSmoke :
-    firstHeroFriendEdge.targetPath = firstHeroFriendPath := by
+theorem fieldAccessCanonicalizesInputObjectFieldOrder :
+    FieldAccess.eqBool searchAccessWithArgsA searchAccessWithArgsB = true := by
   rfl
 
 theorem mismatchedRootRejected :
@@ -283,23 +263,6 @@ theorem unexpectedEdgeArgumentRejected :
     Validation.argumentValid, Schema.lookupArgumentDefinition,
     heroAccessWithUnexpectedArg, heroFormatArg]
 
-set_option linter.unusedSimpArgs false in
-theorem duplicateSemanticPathRejected :
-    ¬ duplicateSemanticPathStore.nodePathsUnique := by
-  simp [duplicateSemanticPathStore, Store.nodePathsUnique, Store.allNodes,
-    pairwiseUniqueByEqBool, ObjectPath.eqBool, PathStep.eqBool,
-    FieldAccess.eqBool, FieldAccess.argumentsEqBool,
-    FieldAccess.argumentsEqBoolOrdered, FieldAccess.argumentEqBool,
-    FieldAccess.canonicalInputValue, FieldAccess.structuralInputValueEqBool,
-    FieldAccess.structuralInputValuesEqBool, FieldAccess.canonicalArguments,
-    FieldAccess.canonicalArgument, FieldAccess.sortArgumentsByName,
-    FieldAccess.insertArgumentSorted, InputValue.canonical,
-    rootNode, heroNodeWithStringArgsA, heroNodeWithStringArgsB,
-    rawHeroPathWithStringArgsA,
-    rawHeroPathWithStringArgsB, heroAccessWithStringArgsA,
-    heroAccessWithStringArgsB, heroEpisodeStringArg, heroFormatArg,
-    nameAccess]
-
 theorem duplicatePropertyRejected :
     ¬ heroNodeWithDuplicateProperties.propertyKeysUnique := by
   simp [ObjectNode.propertyKeysUnique, ObjectNode.propertyKeys,
@@ -312,11 +275,11 @@ theorem duplicateListIndexRejected :
     ¬ duplicateListIndexStore.listCompositeEdgesUnique := by
   simp [duplicateListIndexStore, graphStore, Store.listCompositeEdgesUnique,
     Store.listCompositeEdgeKeys, ObjectEdge.listIndexKey?,
-    pairwiseUniqueByEqBool, ListIndexKey.eqBool, ObjectPath.eqBool,
-    PathStep.eqBool, FieldAccess.eqBool, FieldAccess.argumentsEqBool,
+    pairwiseUniqueByEqBool, ListIndexKey.eqBool,
+    FieldAccess.eqBool, FieldAccess.argumentsEqBool,
     FieldAccess.argumentsEqBoolOrdered, FieldAccess.canonicalArguments,
-    FieldAccess.sortArgumentsByName, FieldAccess.childPath, FieldAccess.canonical,
-    firstHeroFriendEdge, heroEdge, heroPath, friendsAccess, heroAccess]
+    FieldAccess.sortArgumentsByName, FieldAccess.canonical,
+    firstHeroFriendEdge, heroEdge, friendsAccess, heroAccess]
 
 set_option linter.unusedSimpArgs false in
 theorem gapListIndexRejected :
@@ -324,86 +287,76 @@ theorem gapListIndexRejected :
   simp [gapListIndexStore, Store.listCompositeEdgesDense,
     Store.indexedMatchingEdges, Store.indexedMatchingEdgesUnsorted,
     Store.sortEdgesByIndex, Store.insertEdgeByIndex, Store.matchingEdges,
-    ObjectEdge.matchesField, ObjectPath.eqBool, PathStep.eqBool,
-    FieldAccess.eqBool, FieldAccess.argumentsEqBool,
+    ObjectEdge.matchesField, FieldAccess.eqBool, FieldAccess.argumentsEqBool,
     FieldAccess.argumentsEqBoolOrdered, FieldAccess.canonicalArguments,
-    FieldAccess.sortArgumentsByName, FieldAccess.childPath, FieldAccess.canonical,
-    heroEdge, secondHeroFriendEdge, heroPath, heroAccess, friendsAccess]
+    FieldAccess.sortArgumentsByName, FieldAccess.canonical,
+    heroEdge, secondHeroFriendEdge, heroAccess, friendsAccess]
 
-set_option linter.unusedSimpArgs false in
-theorem orphanNodeRejected :
-    ¬ orphanNodeStore.nodesCoveredByRootOrEdge := by
-  simp [orphanNodeStore, Store.nodesCoveredByRootOrEdge,
-    Store.nodeCoveredByRootOrEdge, Store.allNodes, ObjectPath.eqBool,
-    PathStep.eqBool, FieldAccess.eqBool, FieldAccess.argumentsEqBool,
-    FieldAccess.argumentsEqBoolOrdered, FieldAccess.canonicalArguments,
-    FieldAccess.sortArgumentsByName, FieldAccess.childPath, FieldAccess.canonical,
-    rootNode, heroNode, heroPath, heroAccess]
+theorem heroFieldResolvesToObject :
+    valueEqBool
+      (graphStore.resolveValue graphSchema "hero" [] "Query")
+      (.object "Character" (some (objectRefOfId 1))) = true := by
+  native_decide
 
-theorem heroFieldResolvesToPath :
-    graphStore.resolveValue graphSchema "hero" []
-      (.object "Query" ([] : ObjectPath)) =
-        .object "Character" heroPath := by
-  rfl
-
-set_option linter.unusedSimpArgs false in
 theorem heroNamePropertyResolves :
-    graphStore.resolveValue graphSchema "name" []
-      (.object "Character" heroPath) =
-        .scalar "R2-D2" := by
-  simp [graphStore, graphSchema, Store.resolveValue, Store.lookupNode?,
-    Store.lookupNodeIn?, Store.allNodes, Store.fieldAccess,
-    Store.indexedMatchingEdges, Store.matchingEdges, Store.firstMatchingEdge?,
-    ObjectNode.lookupProperty?, ObjectNode.lookupPropertyIn?,
-    Schema.lookupField, Schema.lookupType, Schema.allTypes,
-    Schema.builtinScalarDefinitions, Schema.getPossibleTypes,
-    TypeDefinition.name, TypeDefinition.fields?, TypeRef.namedType,
-    BuiltinScalar.name, List.find?,
-    PropertyValue.toValue, typeRefIsListLike,
-    ObjectPath.eqBool, PathStep.eqBool, FieldAccess.eqBool,
-    FieldAccess.argumentsEqBool, FieldAccess.argumentsEqBoolOrdered,
-    FieldAccess.argumentEqBool, FieldAccess.canonicalArgument,
-    FieldAccess.canonicalInputValue, FieldAccess.canonicalArguments,
-    FieldAccess.sortArgumentsByName, FieldAccess.insertArgumentSorted,
-    FieldAccess.childPath, FieldAccess.childListElementPath,
-    FieldAccess.canonical,
-    rootNode, heroNode, firstHeroFriendNode, heroPath, heroAccess, nameAccess,
-    queryType, characterType]
+    valueEqBool
+      (graphStore.resolveValue graphSchema "name" [] "Character")
+      (.scalar "R2-D2") = true := by
+  native_decide
 
-theorem heroFriendsListResolvesToIndexedPath :
-    graphStore.resolveValue graphSchema "friends" []
-      (.object "Character" heroPath) =
-        .list [.object "Character" firstHeroFriendPath] := by
-  rfl
+theorem heroFriendsListResolvesByIndex :
+    valueEqBool
+      (graphStore.resolveValue graphSchema "friends" [] "Character")
+      (.list [.object "Character" (some (objectRefOfId 3))]) = true := by
+  native_decide
 
 theorem outOfOrderListResolvesByIndex :
-    outOfOrderListStore.resolveValue graphSchema "friends" []
-      (.object "Character" heroPath) =
-        .list [
-          .object "Character" firstHeroFriendPath,
-          .object "Character" secondHeroFriendPath
-        ] := by
-  rfl
+    valueEqBool
+      (outOfOrderListStore.resolveValue graphSchema "friends" [] "Character")
+      (.list [
+        .object "Character" (some (objectRefOfId 3)),
+        .object "Character" (some (objectRefOfId 4))
+      ]) = true := by
+  native_decide
+
+theorem specExecutionDistinguishesSameTypeObjects :
+    responseEqBool pathSensitiveActualResponse pathInsensitiveSpecResponse = false := by
+  native_decide
+
+theorem specExecutionMatchesPathSensitiveObjects :
+    responseEqBool pathSensitiveActualResponse pathSensitiveExpectedResponse = true := by
+  native_decide
 
 theorem resolverBridgeResolvesHero :
-    (graphStore.resolvers graphSchema).resolve "Query" "hero" []
-      (.object "Query" ([] : ObjectPath)) =
-        Execution.Value.object "Character" heroPath := by
-  change (graphStore.resolveValue graphSchema "hero" []
-    (GraphQL.DataModel.Value.object "Query" ([] : ObjectPath))).toExecutionValue =
-      Execution.Value.object "Character" heroPath
-  rw [heroFieldResolvesToPath]
-  simp [GraphQL.DataModel.Value.toExecutionValue]
+    valueEqBool
+      ((graphStore.resolvers graphSchema).resolve "Query" "hero" []
+        (.object "Query"))
+      (Execution.Value.object "Character" (some (objectRefOfId 1))) = true := by
+  native_decide
+
+theorem resolverBridgeRejectsMismatchedRef :
+    valueEqBool
+      ((pathSensitiveStore.resolvers graphSchema).resolve "Character" "name" []
+        (.object "Character" (some (objectRefOfId 0))))
+      .null = true := by
+  native_decide
+
+theorem resolverBridgeRejectsMissingRef :
+    valueEqBool
+      ((pathSensitiveStore.resolvers graphSchema).resolve "Character" "name" []
+        (.object "Character" (some (objectRefOfId 99))))
+      .null = true := by
+  native_decide
 
 theorem duplicateHeroEdgeRejected :
     ¬ duplicateHeroEdgeStore.nonListCompositeEdgesUnique := by
   simp [duplicateHeroEdgeStore, graphStore, Store.nonListCompositeEdgesUnique,
     Store.nonListCompositeEdgeKeys, ObjectEdge.nonListKey?,
-    pairwiseUniqueByEqBool, FieldPathKey.eqBool, ObjectPath.eqBool,
+    pairwiseUniqueByEqBool, FieldAccessKey.eqBool,
     FieldAccess.eqBool, FieldAccess.argumentsEqBool,
     FieldAccess.argumentsEqBoolOrdered, FieldAccess.canonicalArguments,
-    FieldAccess.sortArgumentsByName, FieldAccess.childPath, FieldAccess.canonical,
-    heroEdge, firstHeroFriendEdge, heroPath, heroAccess, friendsAccess]
+    FieldAccess.sortArgumentsByName,
+    heroEdge, firstHeroFriendEdge, heroAccess, friendsAccess]
 
 end DataModel
 end Tests

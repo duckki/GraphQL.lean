@@ -73,6 +73,54 @@ theorem selectionDirectiveFree_subselections
   | inlineFragment typeCondition directives selectionSet =>
       simpa [Selection.subselections, selectionDirectiveFree] using hfree.2
 
+theorem fieldMerge_collectFields_mem_selectionSetDirectiveFree
+    (schema : Schema) :
+    ∀ parentType selectionSet scopedField,
+      selectionSetDirectiveFree selectionSet ->
+      scopedField ∈ FieldMerge.collectFields schema parentType selectionSet ->
+        selectionSetDirectiveFree scopedField.selectionSet
+  | _parentType, [], _scopedField, _hfree, hmem => by
+      simp [FieldMerge.collectFields] at hmem
+  | parentType, selection :: rest, scopedField, hfree, hmem => by
+      have hselectionFree : selectionDirectiveFree selection :=
+        selectionSetDirectiveFree_head hfree
+      have hrestFree : selectionSetDirectiveFree rest :=
+        selectionSetDirectiveFree_tail hfree
+      cases selection with
+      | field responseName fieldName arguments directives selectionSet =>
+          cases hlookup : schema.lookupField parentType fieldName with
+          | none =>
+              simp [FieldMerge.collectFields, hlookup] at hmem
+              exact fieldMerge_collectFields_mem_selectionSetDirectiveFree
+                schema parentType rest scopedField hrestFree hmem
+          | some fieldDefinition =>
+              simp [FieldMerge.collectFields, hlookup] at hmem
+              rcases hmem with hhead | htail
+              · subst scopedField
+                simpa [selectionDirectiveFree] using hselectionFree.2
+              · exact fieldMerge_collectFields_mem_selectionSetDirectiveFree
+                  schema parentType rest scopedField hrestFree htail
+      | inlineFragment typeCondition directives selectionSet =>
+          cases typeCondition with
+          | none =>
+              simp [FieldMerge.collectFields] at hmem
+              rcases hmem with hbody | htail
+              · exact fieldMerge_collectFields_mem_selectionSetDirectiveFree
+                  schema parentType selectionSet scopedField
+                  (by simpa [selectionDirectiveFree] using hselectionFree.2)
+                  hbody
+              · exact fieldMerge_collectFields_mem_selectionSetDirectiveFree
+                  schema parentType rest scopedField hrestFree htail
+          | some typeCondition =>
+              simp [FieldMerge.collectFields] at hmem
+              rcases hmem with hbody | htail
+              · exact fieldMerge_collectFields_mem_selectionSetDirectiveFree
+                  schema typeCondition selectionSet scopedField
+                  (by simpa [selectionDirectiveFree] using hselectionFree.2)
+                  hbody
+              · exact fieldMerge_collectFields_mem_selectionSetDirectiveFree
+                  schema parentType rest scopedField hrestFree htail
+
 theorem selectionSetDirectiveFree_mergeSelectionSets
     {selections : List Selection} :
     selectionSetDirectiveFree selections ->

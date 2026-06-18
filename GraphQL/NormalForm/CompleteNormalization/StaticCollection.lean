@@ -1,3 +1,4 @@
+import GraphQL.NormalForm.CompleteNormalization.TypeBranches
 import GraphQL.NormalForm.CompleteNormalization.BoolCaseWrappers
 import GraphQL.NormalForm.Shared.DirectiveFree
 
@@ -30,21 +31,29 @@ theorem staticCollectForGround_field_allowed
         (Selection.field responseName fieldName arguments directives
           selectionSet :: rest)
         =
-      (match schema.lookupField lookupParent fieldName with
+        (let collectedRest :=
+          staticCollectForGround schema variables lookupParent groundType
+            boolCase rest
+        match schema.lookupField lookupParent fieldName with
         | none =>
+            let normalizedSelectionSet :=
+              normalizeSelectionSetIn schema variables boolCase
+                lookupParent selectionSet
             Selection.field responseName fieldName arguments []
-              (normalizeSelectionSetIn schema variables
-                boolCase lookupParent selectionSet)
+              normalizedSelectionSet :: collectedRest
         | some fieldDefinition =>
+            let returnType := fieldDefinition.outputType.namedType
+            let normalizedSelectionSet :=
+              normalizeBoolCaseForType schema boolCase returnType
+                selectionSet
             Selection.field responseName fieldName arguments []
-              (normalizeForTypeIn schema
-                variables boolCase fieldDefinition.outputType.namedType
-                selectionSet))
-        :: staticCollectForGround schema variables lookupParent
-          groundType boolCase rest := by
+              normalizedSelectionSet :: collectedRest) := by
   intro hallow
-  cases hlookup : schema.lookupField lookupParent fieldName <;>
-    simp [staticCollectForGround, hallow, hlookup]
+  cases hlookup : schema.lookupField lookupParent fieldName with
+  | none =>
+      simp [staticCollectForGround, normalizeSelectionSetIn, hallow, hlookup]
+  | some fieldDefinition =>
+      simp [staticCollectForGround, hallow, hlookup]
 
 theorem staticCollectForGround_field_skipped
     (schema : Schema) (variables : List BoolVar)
@@ -150,36 +159,36 @@ theorem staticCollectForGround_field_shape
   | sourceSelection :: rest, selection, hmem => by
       cases sourceSelection with
       | field responseName fieldName arguments directives selectionSet =>
-          cases hallow :
-              directivesAllowIn boolCase directives
-          · simp [staticCollectForGround, hallow] at hmem
-            exact staticCollectForGround_field_shape schema
-              variables lookupParent groundType boolCase hmem
-          · cases hlookup : schema.lookupField lookupParent fieldName with
-            | none =>
-                simp [staticCollectForGround, hallow, hlookup] at hmem
-                rcases hmem with hhead | htail
-                · subst selection
-                  exact ⟨responseName, fieldName, arguments,
-                    normalizeSelectionSetIn schema
-                      variables boolCase lookupParent selectionSet, rfl⟩
-                · exact staticCollectForGround_field_shape schema
-                    variables lookupParent groundType boolCase htail
-            | some fieldDefinition =>
-                simp [staticCollectForGround, hallow, hlookup] at hmem
-                rcases hmem with hhead | htail
-                · subst selection
-                  exact ⟨responseName, fieldName, arguments,
-                    normalizeForTypeIn schema
-                      variables boolCase fieldDefinition.outputType.namedType
-                      selectionSet, rfl⟩
-                · exact staticCollectForGround_field_shape schema
-                    variables lookupParent groundType boolCase htail
+          cases hallow : directivesAllowIn boolCase directives with
+          | false =>
+              simp [staticCollectForGround, hallow] at hmem
+              exact staticCollectForGround_field_shape schema
+                variables lookupParent groundType boolCase hmem
+          | true =>
+              cases hlookup : schema.lookupField lookupParent fieldName with
+              | none =>
+                  simp [staticCollectForGround, hallow, hlookup] at hmem
+                  rcases hmem with hhead | htail
+                  · subst selection
+                    exact ⟨responseName, fieldName, arguments,
+                      normalizeSelectionSetIn schema variables boolCase
+                        lookupParent selectionSet, rfl⟩
+                  · exact staticCollectForGround_field_shape schema
+                      variables lookupParent groundType boolCase htail
+              | some fieldDefinition =>
+                  simp [staticCollectForGround, hallow, hlookup] at hmem
+                  rcases hmem with hhead | htail
+                  · subst selection
+                    exact ⟨responseName, fieldName, arguments,
+                      normalizeBoolCaseForType schema boolCase
+                        fieldDefinition.outputType.namedType selectionSet,
+                      rfl⟩
+                  · exact staticCollectForGround_field_shape schema
+                      variables lookupParent groundType boolCase htail
       | inlineFragment typeCondition directives selectionSet =>
           cases typeCondition with
           | none =>
-              cases hallow :
-                  directivesAllowIn boolCase directives
+              cases hallow : directivesAllowIn boolCase directives
               · simp [staticCollectForGround, hallow] at hmem
                 exact staticCollectForGround_field_shape schema
                   variables lookupParent groundType boolCase hmem
@@ -190,9 +199,7 @@ theorem staticCollectForGround_field_shape
                 · exact staticCollectForGround_field_shape schema
                     variables lookupParent groundType boolCase hrest
           | some typeCondition =>
-              cases hbranch :
-                  directivesAllowIn boolCase directives
-                    && schema.typeIncludesObjectBool typeCondition groundType
+              cases hbranch : directivesAllowIn boolCase directives && schema.typeIncludesObjectBool typeCondition groundType
               · simp [staticCollectForGround, hbranch] at hmem
                 exact staticCollectForGround_field_shape schema
                   variables lookupParent groundType boolCase hmem
@@ -236,8 +243,7 @@ theorem staticCollectForGround_append
   | selection :: rest, right => by
       cases selection with
       | field responseName fieldName arguments directives selectionSet =>
-          cases hallow :
-              directivesAllowIn boolCase directives
+          cases hallow : directivesAllowIn boolCase directives
           · simp [staticCollectForGround, hallow,
               staticCollectForGround_append schema variables
                 lookupParent groundType boolCase rest right]
@@ -246,15 +252,18 @@ theorem staticCollectForGround_append
                 simp [staticCollectForGround, hallow, hlookup,
                   staticCollectForGround_append schema variables
                     lookupParent groundType boolCase rest right]
+                repeat split <;> simp
             | some fieldDefinition =>
-                simp [staticCollectForGround, hallow, hlookup,
-                  staticCollectForGround_append schema variables
-                    lookupParent groundType boolCase rest right]
+                cases hnormalized : normalizeBoolCaseForType schema boolCase
+                      fieldDefinition.outputType.namedType selectionSet <;>
+                    simp [staticCollectForGround, hallow, hlookup,
+                      hnormalized,
+                      staticCollectForGround_append schema variables
+                        lookupParent groundType boolCase rest right]
       | inlineFragment typeCondition directives selectionSet =>
           cases typeCondition with
           | none =>
-              cases hallow :
-                  directivesAllowIn boolCase directives
+              cases hallow : directivesAllowIn boolCase directives
               · simp [staticCollectForGround, hallow,
                   staticCollectForGround_append schema variables
                     lookupParent groundType boolCase rest right]
@@ -263,9 +272,7 @@ theorem staticCollectForGround_append
                     lookupParent groundType boolCase rest right,
                   List.append_assoc]
           | some typeCondition =>
-              cases hbranch :
-                  directivesAllowIn boolCase directives
-                    && schema.typeIncludesObjectBool typeCondition groundType
+              cases hbranch : directivesAllowIn boolCase directives && schema.typeIncludesObjectBool typeCondition groundType
               · simp [staticCollectForGround, hbranch,
                   staticCollectForGround_append schema variables
                     lookupParent groundType boolCase rest right]
@@ -312,20 +319,61 @@ theorem staticCollectForGround_withoutFieldsWithResponseName
   | selection :: rest => by
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
-          cases hresponse : fieldResponseName == responseName <;>
-          cases hallow :
-              directivesAllowIn boolCase directives <;>
-          cases hlookup : schema.lookupField lookupParent fieldName <;>
-            simp [staticCollectForGround,
-              withoutFieldsWithResponseName, hresponse, hallow, hlookup,
-              staticCollectForGround_withoutFieldsWithResponseName
-                schema variables lookupParent groundType boolCase
-                responseName rest]
+          cases hresponse : fieldResponseName == responseName
+          · cases hallow : directivesAllowIn boolCase directives
+            · simp [staticCollectForGround,
+                withoutFieldsWithResponseName, hresponse, hallow,
+                staticCollectForGround_withoutFieldsWithResponseName
+                  schema variables lookupParent groundType boolCase
+                  responseName rest]
+            · cases hlookup : schema.lookupField lookupParent fieldName with
+              | none =>
+                  simp [staticCollectForGround,
+                    withoutFieldsWithResponseName, hresponse, hallow,
+                    hlookup,
+                    staticCollectForGround_withoutFieldsWithResponseName
+                      schema variables lookupParent groundType boolCase
+                      responseName rest]
+                  repeat split <;>
+                    simp [withoutFieldsWithResponseName, hresponse]
+              | some fieldDefinition =>
+                  cases hnormalized : normalizeBoolCaseForType schema boolCase
+                        fieldDefinition.outputType.namedType selectionSet <;>
+                      simp [staticCollectForGround,
+                        withoutFieldsWithResponseName, hresponse, hallow,
+                        hlookup, hnormalized,
+                        staticCollectForGround_withoutFieldsWithResponseName
+                          schema variables lookupParent groundType boolCase
+                          responseName rest]
+          · cases hallow : directivesAllowIn boolCase directives
+            · simp [staticCollectForGround,
+                withoutFieldsWithResponseName, hresponse, hallow,
+                staticCollectForGround_withoutFieldsWithResponseName
+                  schema variables lookupParent groundType boolCase
+                  responseName rest]
+            · cases hlookup : schema.lookupField lookupParent fieldName with
+              | none =>
+                  simp [staticCollectForGround,
+                    withoutFieldsWithResponseName, hresponse, hallow,
+                    hlookup,
+                    staticCollectForGround_withoutFieldsWithResponseName
+                      schema variables lookupParent groundType boolCase
+                      responseName rest]
+                  repeat split <;>
+                    simp [withoutFieldsWithResponseName, hresponse]
+              | some fieldDefinition =>
+                  cases hnormalized : normalizeBoolCaseForType schema boolCase
+                        fieldDefinition.outputType.namedType selectionSet <;>
+                      simp [staticCollectForGround,
+                        withoutFieldsWithResponseName, hresponse, hallow,
+                        hlookup, hnormalized,
+                        staticCollectForGround_withoutFieldsWithResponseName
+                          schema variables lookupParent groundType boolCase
+                          responseName rest]
       | inlineFragment typeCondition directives selectionSet =>
           cases typeCondition with
           | none =>
-              cases hallow :
-                  directivesAllowIn boolCase directives
+              cases hallow : directivesAllowIn boolCase directives
               · simp [staticCollectForGround,
                   withoutFieldsWithResponseName, hallow,
                   staticCollectForGround_withoutFieldsWithResponseName
@@ -341,9 +389,7 @@ theorem staticCollectForGround_withoutFieldsWithResponseName
                     responseName rest,
                   withoutFieldsWithResponseName_append]
           | some typeCondition =>
-              cases hbranch :
-                  directivesAllowIn boolCase directives
-                    && schema.typeIncludesObjectBool typeCondition groundType
+              cases hbranch : directivesAllowIn boolCase directives && schema.typeIncludesObjectBool typeCondition groundType
               · simp [staticCollectForGround,
                   withoutFieldsWithResponseName, hbranch,
                   staticCollectForGround_withoutFieldsWithResponseName
@@ -372,12 +418,13 @@ theorem normalizeSelectionSetIn_append
           ++ normalizeSelectionSetIn schema variables
             boolCase parentType right
   | [], right => by
-      simp [normalizeSelectionSetIn]
+      simpa [normalizeSelectionSetIn] using
+        staticCollectForGround_append schema variables parentType parentType
+          boolCase [] right
   | selection :: rest, right => by
-      simp [normalizeSelectionSetIn,
-        normalizeSelectionSetIn_append schema variables
-          boolCase parentType rest right,
-        List.append_assoc]
+      simpa [normalizeSelectionSetIn] using
+        staticCollectForGround_append schema variables parentType parentType
+          boolCase (selection :: rest) right
 
 theorem boolCaseBranchesForGround_noVariables
     (schema : Schema) (groundType : Name)

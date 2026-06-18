@@ -171,8 +171,93 @@ theorem nonOverlappingInlineFragmentGroundTypingSmoke :
     operationWellFormedBool nonOverlappingInlineFragmentInputQuery = true
       ∧ operationWellFormedBool nonOverlappingInlineFragmentOutputSnapshot = true
       ∧ operationEqBool
-        (normalizeOperation groundTypingSchema nonOverlappingInlineFragmentInputQuery)
+        (normalizeOperation groundTypingSchema
+          nonOverlappingInlineFragmentInputQuery)
         nonOverlappingInlineFragmentOutputSnapshot = true := by
+  native_decide
+
+def abstractFieldEmptyGroundBranchInputQuery : Operation :=
+  query {
+    field "search" {
+      on "Human" {
+        field "homePlanet"
+      }
+    }
+  }
+
+def abstractFieldEmptyGroundBranchOutputSnapshot : Operation :=
+  query {
+    field "search" {
+      on "Human" {
+        field "homePlanet"
+      }
+    }
+  }
+
+theorem abstractFieldEmptyGroundBranchSmoke :
+    operationWellFormedBool abstractFieldEmptyGroundBranchInputQuery = true
+      ∧ operationWellFormedBool
+        abstractFieldEmptyGroundBranchOutputSnapshot = true
+      ∧ operationEqBool
+        (normalizeOperation groundTypingSchema
+          abstractFieldEmptyGroundBranchInputQuery)
+        abstractFieldEmptyGroundBranchOutputSnapshot = true := by
+  native_decide
+
+def emptyInterfaceSchema : Schema :=
+  { queryType := rootType
+    types :=
+      [ .object
+          { name := rootType
+            fields :=
+              [ objectFieldDefinition "empty" "EmptyInterface"
+              , stringFieldDefinition "name" ]
+            interfaces := [] }
+      , .interface
+          { name := "EmptyInterface"
+            fields := [stringFieldDefinition "id"]
+            interfaces := [] } ] }
+
+def emptyInterfaceFieldInputQuery : Operation :=
+  query {
+    field "empty" {
+      field "id"
+    },
+    field "name"
+  }
+
+def emptyInterfaceFieldOutputSnapshot : Operation :=
+  query {
+    field "empty" {},
+    field "name"
+  }
+
+theorem emptyInterfaceFieldDropsSmoke :
+    operationWellFormedBool emptyInterfaceFieldInputQuery = true
+      ∧ operationWellFormedBool emptyInterfaceFieldOutputSnapshot = true
+      ∧ operationEqBool
+        (normalizeOperation emptyInterfaceSchema emptyInterfaceFieldInputQuery)
+        emptyInterfaceFieldOutputSnapshot = true := by
+  native_decide
+
+def emptyInterfaceOnlyFieldInputQuery : Operation :=
+  query {
+    field "empty" {
+      field "id"
+    }
+  }
+
+def emptyInterfaceOnlyFieldOutputSnapshot : Operation :=
+  query {
+    field "empty" {}
+  }
+
+theorem emptyInterfaceOnlyFieldDropsSmoke :
+    operationWellFormedBool emptyInterfaceOnlyFieldInputQuery = true
+      ∧ operationEqBool
+        (normalizeOperation emptyInterfaceSchema
+          emptyInterfaceOnlyFieldInputQuery)
+        emptyInterfaceOnlyFieldOutputSnapshot = true := by
   native_decide
 
 theorem normalizedSmokeInputsAreNormal
@@ -188,15 +273,22 @@ theorem normalizedSmokeInputsAreNormal
       ∧ operationNormal groundTypingSchema
         (normalizeOperation groundTypingSchema untypedInlineFragmentInputQuery)
       ∧ operationNormal groundTypingSchema
-        (normalizeOperation groundTypingSchema nonOverlappingInlineFragmentInputQuery) := by
+        (normalizeOperation groundTypingSchema
+          nonOverlappingInlineFragmentInputQuery)
+      ∧ operationNormal groundTypingSchema
+        (normalizeOperation groundTypingSchema
+          abstractFieldEmptyGroundBranchInputQuery) := by
   exact ⟨
-    normalizeOperation_normal groundTypingSchema hschema objectFieldInputQuery,
-    normalizeOperation_normal groundTypingSchema hschema abstractFieldInputQuery,
-    normalizeOperation_normal groundTypingSchema hschema duplicateFieldInputQuery,
-    normalizeOperation_normal groundTypingSchema hschema aliasedDuplicateFieldInputQuery,
-    normalizeOperation_normal groundTypingSchema hschema untypedInlineFragmentInputQuery,
-    normalizeOperation_normal groundTypingSchema hschema
-      nonOverlappingInlineFragmentInputQuery⟩
+    normalizeOperation_normal groundTypingSchema objectFieldInputQuery hschema,
+    normalizeOperation_normal groundTypingSchema abstractFieldInputQuery hschema,
+    normalizeOperation_normal groundTypingSchema duplicateFieldInputQuery hschema,
+    normalizeOperation_normal groundTypingSchema aliasedDuplicateFieldInputQuery hschema,
+    normalizeOperation_normal groundTypingSchema untypedInlineFragmentInputQuery
+      hschema,
+    normalizeOperation_normal groundTypingSchema
+      nonOverlappingInlineFragmentInputQuery hschema,
+    normalizeOperation_normal groundTypingSchema
+      abstractFieldEmptyGroundBranchInputQuery hschema⟩
 
 end NormalForm
 end Tests

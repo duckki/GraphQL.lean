@@ -10,6 +10,26 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
+theorem normalizedField_eq
+    (schema : Schema) (returnType responseName fieldName : Name)
+    (arguments : List Argument) (directives : List DirectiveApplication)
+    (normalizedSubselections : List Selection) :
+    normalizedField schema returnType responseName fieldName arguments
+      directives normalizedSubselections =
+        Selection.field responseName fieldName arguments directives
+          normalizedSubselections := by
+  rfl
+
+def possibleTypeNormalizations (schema : Schema)
+    (possibleTypes : List Name) (selectionSet : List Selection) :
+    List Selection :=
+  possibleTypes.filterMap (fun objectType =>
+    match normalizeSelectionSet schema objectType selectionSet with
+    | [] => none
+    | selection :: rest =>
+        some (Selection.inlineFragment (some objectType) []
+          (selection :: rest)))
+
 theorem selectionSetDirectiveFree_possibleTypeNormalizations
     (schema : Schema)
     (possibleTypes : List Name) {selectionSet : List Selection} :
@@ -17,45 +37,28 @@ theorem selectionSetDirectiveFree_possibleTypeNormalizations
       selectionSetDirectiveFree
         (normalizeSelectionSet schema objectType selectionSet)) ->
       selectionSetDirectiveFree
-        (possibleTypes.map
-          (fun objectType =>
-            Selection.inlineFragment (some objectType) []
-              (normalizeSelectionSet schema objectType selectionSet))) := by
+        (possibleTypeNormalizations schema possibleTypes selectionSet) := by
   intro hnormalize
   induction possibleTypes with
   | nil =>
       exact selectionSetDirectiveFree_nil
   | cons objectType rest ih =>
-      exact ⟨
-        ⟨rfl, hnormalize objectType (by simp)⟩,
-        ih (fun candidate hcandidate =>
-          hnormalize candidate (List.mem_cons_of_mem objectType hcandidate))⟩
-
-theorem normalizeMergedSelectionSetForType_directiveFree
-    (schema : Schema)
-    (hnormalize :
-      ∀ parentType selectionSet,
-        selectionSetDirectiveFree selectionSet ->
-          selectionSetDirectiveFree
-            (normalizeSelectionSet schema parentType selectionSet))
-    (returnType : Name) {selectionSet : List Selection} :
-    selectionSetDirectiveFree selectionSet ->
-      selectionSetDirectiveFree
-        (normalizeMergedSelectionSetForType schema returnType selectionSet) := by
-  intro hfree
-  unfold normalizeMergedSelectionSetForType
-  by_cases hobject : objectTypeNameBool schema returnType = true
-  · simp [hobject]
-    exact hnormalize returnType selectionSet hfree
-  · have hfalse : objectTypeNameBool schema returnType = false := by
-      cases hmatch : objectTypeNameBool schema returnType
-      · rfl
-      · contradiction
-    simp [hfalse]
-    exact selectionSetDirectiveFree_possibleTypeNormalizations schema
-      (schema.getPossibleTypes returnType)
-      (fun objectType _hobjectType =>
-        hnormalize objectType selectionSet hfree)
+      cases hnormalized :
+          normalizeSelectionSet schema objectType selectionSet with
+      | nil =>
+          simp [possibleTypeNormalizations, hnormalized]
+          exact ih (fun candidate hcandidate =>
+            hnormalize candidate
+              (List.mem_cons_of_mem objectType hcandidate))
+      | cons selection restSelection =>
+          have hheadFree :
+              selectionSetDirectiveFree (selection :: restSelection) := by
+            simpa [hnormalized] using hnormalize objectType (by simp)
+          simp [possibleTypeNormalizations, hnormalized]
+          exact ⟨⟨rfl, hheadFree⟩,
+            ih (fun candidate hcandidate =>
+              hnormalize candidate
+                (List.mem_cons_of_mem objectType hcandidate))⟩
 
 theorem normalizeSelectionSet_directiveFree (schema : Schema) :
     ∀ parentType selectionSet,
@@ -81,6 +84,12 @@ theorem normalizeSelectionSet_directiveFree (schema : Schema) :
       selectionSet fieldDefinition hlookup matching mergedSubselections
       returnType hrest hmerged hpossible =>
     intro hfree
+    let normalizedSubselections :=
+      if objectTypeNameBool schema returnType then
+        normalizeSelectionSet schema returnType mergedSubselections
+      else
+        possibleTypeNormalizations schema
+          (schema.getPossibleTypes returnType) mergedSubselections
     have hselectionFree :=
       selectionSetDirectiveFree_head hfree
     have hrestFree :=
@@ -112,10 +121,9 @@ theorem normalizeSelectionSet_directiveFree (schema : Schema) :
           (if objectTypeNameBool schema returnType then
             normalizeSelectionSet schema returnType mergedSubselections
           else
-            (schema.getPossibleTypes returnType).map
-              (fun objectType =>
-                Selection.inlineFragment (some objectType) []
-                  (normalizeSelectionSet schema objectType mergedSubselections))) := by
+            possibleTypeNormalizations schema
+              (schema.getPossibleTypes returnType)
+              mergedSubselections) := by
       by_cases hobject : objectTypeNameBool schema returnType = true
       · simp [hobject]
         exact hmerged hmergedSubselectionsFree
@@ -128,20 +136,13 @@ theorem normalizeSelectionSet_directiveFree (schema : Schema) :
           (schema.getPossibleTypes returnType)
           (fun objectType _hobjectType =>
             hpossible objectType hmergedSubselectionsFree)
-    simpa [normalizeSelectionSet, hlookup, matching, mergedSubselections,
-      returnType] using
-      (show selectionSetDirectiveFree
-        (Selection.field responseName fieldName arguments []
-          (if objectTypeNameBool schema returnType then
-            normalizeSelectionSet schema returnType mergedSubselections
-          else
-            (schema.getPossibleTypes returnType).map
-              (fun objectType =>
-                Selection.inlineFragment (some objectType) []
-                  (normalizeSelectionSet schema objectType mergedSubselections)))
-          :: normalizeSelectionSet schema parentType
-            (withoutFieldsWithResponseName schema responseName rest)) from
-        ⟨⟨rfl, hnormalizedSubselections⟩, hnormalizedRest⟩)
+    have hnormalizedField :
+        selectionDirectiveFree
+          (normalizedField schema returnType responseName fieldName
+            arguments [] normalizedSubselections) := by
+      exact ⟨rfl, hnormalizedSubselections⟩
+    simp [normalizeSelectionSet, hlookup]
+    exact ⟨hnormalizedField, hnormalizedRest⟩
   | case4 parentType rest directives selectionSet happend =>
     intro hfree
     have hselectionFree :=
@@ -174,19 +175,12 @@ theorem normalizeSelectionSet_directiveFree (schema : Schema) :
       · contradiction
     simpa [normalizeSelectionSet, hfalse] using hrest hrestFree
 
-theorem normalizeMergedSelectionSetForType_directiveFree_self
-    (schema : Schema) (returnType : Name) {selectionSet : List Selection} :
-    selectionSetDirectiveFree selectionSet ->
-      selectionSetDirectiveFree
-        (normalizeMergedSelectionSetForType schema returnType selectionSet) := by
-  exact normalizeMergedSelectionSetForType_directiveFree schema
-    (normalizeSelectionSet_directiveFree schema) returnType
-
 theorem normalizeOperation_directiveFree (schema : Schema)
     (operation : Operation) :
     operationDirectiveFree operation ->
       operationDirectiveFree (normalizeOperation schema operation) := by
   intro hfree
+  simp [normalizeOperation, operationDirectiveFree]
   exact normalizeSelectionSet_directiveFree schema operation.rootType
     operation.selectionSet hfree
 
@@ -205,12 +199,13 @@ theorem normalizeSelectionSet_allFields (schema : Schema) :
   | case3 parentType rest responseName fieldName arguments directives
       selectionSet fieldDefinition hlookup matching mergedSubselections
       returnType hrest hmerged hpossible =>
+      simp [normalizeSelectionSet, hlookup]
       intro selection hmem
-      simp [normalizeSelectionSet, hlookup] at hmem
+      simp at hmem
       cases hmem with
       | inl hhead =>
           subst selection
-          simp [Selection.isField]
+          simp [normalizedField, Selection.isField]
       | inr htail =>
           exact hrest selection htail
   | case4 parentType rest directives selectionSet happend =>
@@ -230,14 +225,19 @@ theorem possibleTypeNormalizations_allInlineFragments
     (schema : Schema)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     selectionsAllInlineFragments
-      (possibleTypes.map
-        (fun objectType =>
-          Selection.inlineFragment (some objectType) []
-            (normalizeSelectionSet schema objectType selectionSet))) := by
+      (possibleTypeNormalizations schema possibleTypes selectionSet) := by
   intro selection hmem
-  rcases List.mem_map.mp hmem with ⟨objectType, _hobjectType, hselection⟩
-  subst selection
-  simp [Selection.isInlineFragment]
+  unfold possibleTypeNormalizations at hmem
+  rw [List.mem_filterMap] at hmem
+  rcases hmem with ⟨objectType, _hobjectType, hselection⟩
+  cases hnormalized :
+      normalizeSelectionSet schema objectType selectionSet with
+  | nil =>
+      simp [hnormalized] at hselection
+  | cons head tail =>
+      simp [hnormalized] at hselection
+      subst selection
+      simp [Selection.isInlineFragment]
 
 theorem possibleTypeNormalizations_groundTyped
     (schema : Schema)
@@ -249,23 +249,32 @@ theorem possibleTypeNormalizations_groundTyped
         selectionSetGroundTyped schema
           (normalizeSelectionSet schema objectType selectionSet)) :
     selectionSetGroundTyped schema
-      (possibleTypes.map
-        (fun objectType =>
-          Selection.inlineFragment (some objectType) []
-            (normalizeSelectionSet schema objectType selectionSet))) := by
+      (possibleTypeNormalizations schema possibleTypes selectionSet) := by
   unfold selectionSetGroundTyped
   constructor
   · exact Or.inr
       (possibleTypeNormalizations_allInlineFragments schema possibleTypes
         selectionSet)
   · intro selection hmem
-    rcases List.mem_map.mp hmem with ⟨objectType, hobjectType, hselection⟩
-    subst selection
-    unfold selectionGroundTyped
-    exact ⟨
-      hpossible objectType hobjectType,
-      normalizeSelectionSet_allFields schema objectType selectionSet,
-      hnormalize objectType hobjectType⟩
+    unfold possibleTypeNormalizations at hmem
+    rw [List.mem_filterMap] at hmem
+    rcases hmem with ⟨objectType, hobjectType, hselection⟩
+    cases hnormalized :
+        normalizeSelectionSet schema objectType selectionSet with
+    | nil =>
+        simp [hnormalized] at hselection
+    | cons head tail =>
+        simp [hnormalized] at hselection
+        subst selection
+        unfold selectionGroundTyped
+        exact ⟨
+          hpossible objectType hobjectType,
+          by
+            simpa [hnormalized] using
+              normalizeSelectionSet_allFields schema objectType selectionSet,
+          by
+            simpa [hnormalized] using
+              hnormalize objectType hobjectType⟩
 
 theorem normalizeSelectionSet_groundTyped (schema : Schema)
     (hschema : SchemaWellFormedness.schemaWellFormed schema) :
@@ -290,10 +299,8 @@ theorem normalizeSelectionSet_groundTyped (schema : Schema)
         if objectTypeNameBool schema returnType then
           normalizeSelectionSet schema returnType mergedSubselections
         else
-          (schema.getPossibleTypes returnType).map
-            (fun objectType =>
-              Selection.inlineFragment (some objectType) []
-                (normalizeSelectionSet schema objectType mergedSubselections))
+          possibleTypeNormalizations schema
+            (schema.getPossibleTypes returnType) mergedSubselections
       have hsubselectionsGround :
           selectionSetGroundTyped schema normalizedSubselections := by
         unfold normalizedSubselections
@@ -334,7 +341,7 @@ theorem normalizeSelectionSet_groundTyped (schema : Schema)
           (Selection.field responseName fieldName arguments directives
             selectionSet :: rest))
       · intro selection hmem
-        simp [normalizeSelectionSet, hlookup] at hmem
+        simp [normalizeSelectionSet, hlookup, normalizedField] at hmem
         cases hmem with
         | inl hhead =>
             subst selection
@@ -384,25 +391,24 @@ theorem normalizeSelectionSet_responseNameFree (schema : Schema) :
       selectionSet fieldDefinition hlookup matching mergedSubselections
       returnType hrest hmerged hpossible =>
       intro hfree
+      let normalizedSubselections :=
+        if objectTypeNameBool schema returnType then
+          normalizeSelectionSet schema returnType mergedSubselections
+        else
+          possibleTypeNormalizations schema
+            (schema.getPossibleTypes returnType) mergedSubselections
       have hhead := selectionSetResponseNameFree_head hfree
       have htail := selectionSetResponseNameFree_tail hfree
       have hfiltered :=
         withoutFieldsWithResponseName_preserves_responseNameFree schema
           fieldResponseName parentType responseName rest htail
       have hnormalizedRest := hrest hfiltered
-      simp [normalizeSelectionSet, hlookup]
       have hnormalizedHead :
           selectionResponseNameFree schema parentType responseName
-            (Selection.field fieldResponseName fieldName arguments directives
-              (if objectTypeNameBool schema returnType then
-                normalizeSelectionSet schema returnType mergedSubselections
-              else
-                (schema.getPossibleTypes returnType).map
-                  (fun objectType =>
-                    Selection.inlineFragment (some objectType) []
-                      (normalizeSelectionSet schema objectType
-                        mergedSubselections)))) := by
-        simpa [selectionResponseNameFree] using hhead
+            (normalizedField schema returnType fieldResponseName fieldName
+              arguments directives normalizedSubselections) := by
+        simpa [selectionResponseNameFree, normalizedField] using hhead
+      simp [normalizeSelectionSet, hlookup]
       exact selectionSetResponseNameFree_cons hnormalizedHead hnormalizedRest
   | case4 parentType rest directives selectionSet happend =>
       intro hfree
@@ -496,13 +502,19 @@ theorem normalizeSelectionSet_responseNamesNodup (schema : Schema) :
   | case3 parentType rest responseName fieldName arguments directives
       selectionSet fieldDefinition hlookup matching mergedSubselections
       returnType hrest hmerged hpossible =>
+      let normalizedSubselections :=
+        if objectTypeNameBool schema returnType then
+          normalizeSelectionSet schema returnType mergedSubselections
+        else
+          possibleTypeNormalizations schema
+            (schema.getPossibleTypes returnType) mergedSubselections
       have htailNoResponseName :=
         normalizeSelectionSet_without_responseName_not_mem schema parentType
           responseName rest
       have htailNodup := hrest
       simp [normalizeSelectionSet, hlookup]
       unfold responseNamesNodup at htailNodup ⊢
-      simp [Selection.responseName?]
+      simp [normalizedField, Selection.responseName?]
       constructor
       · intro name hname hresponse
         exact htailNoResponseName
@@ -553,18 +565,23 @@ theorem possibleTypeNormalizations_responseNamesNodup
     (schema : Schema) (possibleTypes : List Name)
     (selectionSet : List Selection) :
     responseNamesNodup
-      (possibleTypes.map
-        (fun objectType =>
-          Selection.inlineFragment (some objectType) []
-            (normalizeSelectionSet schema objectType selectionSet))) := by
+      (possibleTypeNormalizations schema possibleTypes selectionSet) := by
   have hfilterNone :
       ∀ names : List Name,
-        (names.filterMap (fun _ => (none : Option Name))).Nodup := by
+        ((possibleTypeNormalizations schema names selectionSet).filterMap
+          Selection.responseName?).Nodup := by
     intro names
     induction names with
-    | nil => simp
-    | cons name rest ih => simp [ih]
-  simpa [responseNamesNodup, Selection.responseName?] using
+    | nil => simp [possibleTypeNormalizations]
+    | cons name rest ih =>
+        cases hnormalized :
+            normalizeSelectionSet schema name selectionSet with
+      | nil =>
+            simpa [possibleTypeNormalizations, hnormalized] using ih
+      | cons head tail =>
+            simpa [possibleTypeNormalizations, hnormalized,
+              Selection.responseName?] using ih
+  simpa [responseNamesNodup] using
     hfilterNone possibleTypes
 
 theorem possibleTypeNormalizations_inlineFragmentTypeConditionsNodup
@@ -572,12 +589,51 @@ theorem possibleTypeNormalizations_inlineFragmentTypeConditionsNodup
     (selectionSet : List Selection) :
     possibleTypes.Nodup ->
       inlineFragmentTypeConditionsNodup
-        (possibleTypes.map
-          (fun objectType =>
-            Selection.inlineFragment (some objectType) []
-              (normalizeSelectionSet schema objectType selectionSet))) := by
+        (possibleTypeNormalizations schema possibleTypes selectionSet) := by
   intro hnodup
-  simpa [inlineFragmentTypeConditionsNodup, Function.comp_def] using hnodup
+  induction possibleTypes with
+  | nil =>
+      simp [inlineFragmentTypeConditionsNodup, possibleTypeNormalizations]
+  | cons objectType rest ih =>
+      have hparts := List.nodup_cons.mp hnodup
+      have hobjectNotMem : objectType ∉ rest := hparts.1
+      have hrestNodup : rest.Nodup := hparts.2
+      cases hnormalized :
+          normalizeSelectionSet schema objectType selectionSet with
+      | nil =>
+          simpa [inlineFragmentTypeConditionsNodup,
+            possibleTypeNormalizations, hnormalized] using ih hrestNodup
+      | cons head tail =>
+          have hobjectNotInRestConditions :
+              ∀ selection restObjectType,
+                restObjectType ∈ rest ->
+                  (match normalizeSelectionSet schema restObjectType
+                      selectionSet with
+                  | [] => none
+                  | head :: tail =>
+                      some (Selection.inlineFragment (some restObjectType)
+                        [] (head :: tail))) =
+                    some selection ->
+                  (match selection with
+                  | Selection.inlineFragment (some typeCondition)
+                      _directives _selectionSet =>
+                      some typeCondition
+                  | _ => none) ≠ some objectType := by
+            intro selection restObjectType hrestObjectType hbranch
+              hcondition
+            cases hrestNormalized :
+                normalizeSelectionSet schema restObjectType selectionSet with
+            | nil =>
+                simp [hrestNormalized] at hbranch
+            | cons restHead restTail =>
+                simp [hrestNormalized] at hbranch
+                subst selection
+                simp at hcondition
+                subst restObjectType
+                exact hobjectNotMem hrestObjectType
+          simp [inlineFragmentTypeConditionsNodup,
+            possibleTypeNormalizations, hnormalized]
+          exact ⟨hobjectNotInRestConditions, ih hrestNodup⟩
 
 theorem possibleTypeNormalizations_nonRedundant
     (schema : Schema) (possibleTypes : List Name)
@@ -587,10 +643,7 @@ theorem possibleTypeNormalizations_nonRedundant
         selectionSetNonRedundant
           (normalizeSelectionSet schema objectType selectionSet)) ->
         selectionSetNonRedundant
-          (possibleTypes.map
-            (fun objectType =>
-              Selection.inlineFragment (some objectType) []
-                (normalizeSelectionSet schema objectType selectionSet))) := by
+          (possibleTypeNormalizations schema possibleTypes selectionSet) := by
   intro hnodup hnormalize
   unfold selectionSetNonRedundant
   constructor
@@ -600,11 +653,19 @@ theorem possibleTypeNormalizations_nonRedundant
     · exact possibleTypeNormalizations_inlineFragmentTypeConditionsNodup
         schema possibleTypes selectionSet hnodup
     · intro selection hselection
-      rcases List.mem_map.mp hselection with
+      unfold possibleTypeNormalizations at hselection
+      rw [List.mem_filterMap] at hselection
+      rcases hselection with
         ⟨objectType, hobjectType, hselectionEq⟩
-      subst selection
-      unfold selectionNonRedundant
-      exact hnormalize objectType hobjectType
+      cases hnormalized :
+          normalizeSelectionSet schema objectType selectionSet with
+      | nil =>
+          simp [hnormalized] at hselectionEq
+      | cons head tail =>
+          simp [hnormalized] at hselectionEq
+          subst selection
+          unfold selectionNonRedundant
+          simpa [hnormalized] using hnormalize objectType hobjectType
 
 theorem normalizeSelectionSet_nonRedundant (schema : Schema)
     (hpossibleTypesNodup :
@@ -627,10 +688,8 @@ theorem normalizeSelectionSet_nonRedundant (schema : Schema)
         if objectTypeNameBool schema returnType then
           normalizeSelectionSet schema returnType mergedSubselections
         else
-          (schema.getPossibleTypes returnType).map
-            (fun objectType =>
-              Selection.inlineFragment (some objectType) []
-                (normalizeSelectionSet schema objectType mergedSubselections))
+          possibleTypeNormalizations schema
+            (schema.getPossibleTypes returnType) mergedSubselections
       have hsubselectionsNonRedundant :
           selectionSetNonRedundant normalizedSubselections := by
         unfold normalizedSubselections
@@ -657,7 +716,7 @@ theorem normalizeSelectionSet_nonRedundant (schema : Schema)
               (Selection.field responseName fieldName arguments directives
                 selectionSet :: rest))
         · intro selection hselection
-          simp [normalizeSelectionSet, hlookup] at hselection
+          simp [normalizeSelectionSet, hlookup, normalizedField] at hselection
           cases hselection with
           | inl hhead =>
               subst selection
@@ -691,11 +750,12 @@ theorem normalizeSelectionSet_normal (schema : Schema)
       parentType selectionSet⟩
 
 theorem normalizeOperation_normal (schema : Schema)
-    (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (operation : Operation) :
-    operationNormal schema (normalizeOperation schema operation) := by
-  exact normalizeSelectionSet_normal schema hschema operation.rootType
-    operation.selectionSet
+    normalizeOperationNormal schema operation := by
+  intro hschema
+  simpa [normalizeOperation, operationNormal] using
+    normalizeSelectionSet_normal schema hschema operation.rootType
+      operation.selectionSet
 
 
 

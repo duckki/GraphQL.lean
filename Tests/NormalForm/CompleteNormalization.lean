@@ -1,5 +1,5 @@
 import Tests.NormalForm.GroundTypeNormalization
-import GraphQL.NormalForm.CompleteNormalization.Normality
+import GraphQL.NormalForm.CompleteNormalization.OperationNormality
 
 namespace GraphQL
 namespace Tests
@@ -69,10 +69,7 @@ def completeNormalizationGlobalVariablesOutputSnapshot : Operation :=
           .field "hero" "hero" [] [] [
             .field "id" "id" [] [] []
           ],
-          .field "search" "search" [] [] [
-            .inlineFragment (some "Human") [] [],
-            .inlineFragment (some "Droid") [] []
-          ]
+          .field "search" "search" [] [] []
         ]
     | [("y", false), ("x", true)] =>
         [
@@ -94,10 +91,7 @@ def completeNormalizationGlobalVariablesOutputSnapshot : Operation :=
             .field "id" "id" [] [] [],
             .field "name" "name" [] [] []
           ],
-          .field "search" "search" [] [] [
-            .inlineFragment (some "Human") [] [],
-            .inlineFragment (some "Droid") [] []
-          ]
+          .field "search" "search" [] [] []
         ]
     | [("y", true), ("x", true)] =>
         [
@@ -182,12 +176,7 @@ def completeNormalizationNestedDirectiveOutputSnapshot : Operation :=
   operationWith (completeNormalizationRootBoolCaseBranchesFor ["x"] (fun
     | [("x", false)] =>
         [.field "hero" "hero" [] [] [
-          .field "companion" "companion" [] [] [
-          .inlineFragment (some "Human") [] [
-            ],
-            .inlineFragment (some "Droid") [] [
-            ]
-          ]
+          .field "companion" "companion" [] [] []
         ]]
     | [("x", true)] =>
         [.field "hero" "hero" [] [] [
@@ -221,12 +210,9 @@ def completeNormalizationDuplicateIncludeInputQuery : Operation :=
 
 def completeNormalizationDuplicateIncludeOutputSnapshot : Operation :=
   operationWith [
-    .inlineFragment none [.skip (.variable "x")] [],
     .inlineFragment none [.include (.variable "x")] [
       .field "hero" "hero" [] [] [
-        .field "id" "id" [] [] []
-      ],
-      .field "hero" "hero" [] [] [
+        .field "id" "id" [] [] [],
         .field "name" "name" [] [] []
       ]
     ]
@@ -253,13 +239,10 @@ def completeNormalizationDuplicateSkipOutputSnapshot : Operation :=
   operationWith [
     .inlineFragment none [.skip (.variable "x")] [
       .field "hero" "hero" [] [] [
-        .field "id" "id" [] [] []
-      ],
-      .field "hero" "hero" [] [] [
+        .field "id" "id" [] [] [],
         .field "name" "name" [] [] []
       ]
-    ],
-    .inlineFragment none [.include (.variable "x")] []
+    ]
   ]
 
 theorem completeNormalizationDuplicateSkipSmoke :
@@ -287,8 +270,7 @@ def completeNormalizationSpineConflictOutputSnapshot : Operation :=
       .field "hero" "hero" [] [] [
         .field "id" "id" [] [] []
       ]
-    ],
-    .inlineFragment none [.include (.variable "x")] []
+    ]
   ]
 
 theorem completeNormalizationSpineConflictSmoke :
@@ -326,15 +308,15 @@ theorem completeNormalizationIncludeSkipSmoke :
         completeNormalizationIncludeSkipOutputSnapshot = true := by
   native_decide
 
-def completeNormalizationResolvers : Execution.Resolvers String :=
+def completeNormalizationResolvers : Execution.Resolvers :=
   { resolve := fun parentType fieldName _arguments _source =>
       match parentType, fieldName with
-      | "Query", "hero" => .object "Human" "hero"
-      | "Query", "search" => .object "Human" "hero"
+      | "Query", "hero" => .object "Human"
+      | "Query", "search" => .object "Human"
       | "Human", "id" => .scalar "human-id"
       | "Human", "name" => .scalar "human-name"
       | "Human", "homePlanet" => .scalar "earth"
-      | "Human", "companion" => .object "Droid" "droid"
+      | "Human", "companion" => .object "Droid"
       | "Droid", "id" => .scalar "droid-id"
       | "Droid", "name" => .scalar "droid-name"
       | "Droid", "primaryFunction" => .scalar "protocol"
@@ -343,17 +325,22 @@ def completeNormalizationResolvers : Execution.Resolvers String :=
 def completeNormalizationVariableValues : Execution.VariableValues :=
   [("x", .boolean true), ("y", .boolean false)]
 
+def executeCompleteNormalizedAtDepth
+    (operation : Operation) (depth : Nat)
+    (source : Execution.Value) : Execution.Response :=
+  Execution.executeQueryAtDepth groundTypingSchema
+    completeNormalizationResolvers completeNormalizationVariableValues
+    (completeNormalizeOperation groundTypingSchema operation) depth source
+
 theorem completeNormalizationExecutionSmoke :
     responseEqBool
       (Execution.executeQueryAtDepth groundTypingSchema
         completeNormalizationResolvers completeNormalizationVariableValues
         completeNormalizationDirectiveInputQuery 12
-        (.object "Query" "root"))
-      (Execution.executeQueryAtDepth groundTypingSchema
-        completeNormalizationResolvers completeNormalizationVariableValues
-        (completeNormalizeOperation groundTypingSchema
-          completeNormalizationDirectiveInputQuery) 12
-        (.object "Query" "root")) = true := by
+        (Execution.Value.object "Query"))
+      (executeCompleteNormalizedAtDepth
+        completeNormalizationDirectiveInputQuery 12
+        (Execution.Value.object "Query")) = true := by
   native_decide
 
 theorem completeNormalizationNestedExecutionSmoke :
@@ -361,43 +348,29 @@ theorem completeNormalizationNestedExecutionSmoke :
       (Execution.executeQueryAtDepth groundTypingSchema
         completeNormalizationResolvers completeNormalizationVariableValues
         completeNormalizationNestedDirectiveInputQuery 16
-        (.object "Query" "root"))
-      (Execution.executeQueryAtDepth groundTypingSchema
-        completeNormalizationResolvers completeNormalizationVariableValues
-        (completeNormalizeOperation groundTypingSchema
-          completeNormalizationNestedDirectiveInputQuery) 16
-        (.object "Query" "root")) = true := by
+        (Execution.Value.object "Query"))
+      (executeCompleteNormalizedAtDepth
+        completeNormalizationNestedDirectiveInputQuery 16
+        (Execution.Value.object "Query")) = true := by
   native_decide
 
-theorem completeNormalizationSmokeInputsHaveCompleteShape :
-    CompleteNormalization.completeSelectionSetShape
-        (operationBoolVars
-          completeNormalizationDirectiveInputQuery)
-        (completeNormalizeOperation groundTypingSchema
-          completeNormalizationDirectiveInputQuery).selectionSet
-      ∧ CompleteNormalization.completeSelectionSetShape
-        (operationBoolVars
-          completeNormalizationGlobalVariablesInputQuery)
-        (completeNormalizeOperation groundTypingSchema
-          completeNormalizationGlobalVariablesInputQuery).selectionSet
-      ∧ CompleteNormalization.completeSelectionSetShape
-        (operationBoolVars
-          completeNormalizationAbstractInputQuery)
-        (completeNormalizeOperation groundTypingSchema
-          completeNormalizationAbstractInputQuery).selectionSet
-      ∧ CompleteNormalization.completeSelectionSetShape
-        (operationBoolVars
-          completeNormalizationNestedDirectiveInputQuery)
-        (completeNormalizeOperation groundTypingSchema
-          completeNormalizationNestedDirectiveInputQuery).selectionSet := by
+theorem completeNormalizationSmokeInputsHaveCompleteNormalTheorem :
+    completeNormalizeOperationNormal groundTypingSchema
+      completeNormalizationDirectiveInputQuery
+      ∧ completeNormalizeOperationNormal groundTypingSchema
+        completeNormalizationGlobalVariablesInputQuery
+      ∧ completeNormalizeOperationNormal groundTypingSchema
+        completeNormalizationAbstractInputQuery
+      ∧ completeNormalizeOperationNormal groundTypingSchema
+        completeNormalizationNestedDirectiveInputQuery := by
   exact ⟨
-    CompleteNormalization.completeNormalizeOperation_rootSelectionSetShape
+    CompleteNormalization.completeNormalizeOperation_normal
       groundTypingSchema completeNormalizationDirectiveInputQuery,
-    CompleteNormalization.completeNormalizeOperation_rootSelectionSetShape
+    CompleteNormalization.completeNormalizeOperation_normal
       groundTypingSchema completeNormalizationGlobalVariablesInputQuery,
-    CompleteNormalization.completeNormalizeOperation_rootSelectionSetShape
+    CompleteNormalization.completeNormalizeOperation_normal
       groundTypingSchema completeNormalizationAbstractInputQuery,
-    CompleteNormalization.completeNormalizeOperation_rootSelectionSetShape
+    CompleteNormalization.completeNormalizeOperation_normal
       groundTypingSchema completeNormalizationNestedDirectiveInputQuery⟩
 
 end NormalForm

@@ -8,35 +8,18 @@ import GraphQL.Validation.SelectionValidity
 import GraphQL.Validation.FieldMerge
 import GraphQL.Execution
 import GraphQL.Execution.FieldCollection
+import GraphQL.DataModel.ObjectRef
 import GraphQL.DataModel
 import GraphQL.DataModel.Store
 import GraphQL.DataModel.StoreValueInclusion
 import GraphQL.NormalForm
-import GraphQL.NormalForm.GroundTypeNormalization.FieldCollection
+import GraphQL.NormalForm.GroundTypeNormalization.Normality
 import GraphQL.NormalForm.GroundTypeNormalization.Semantics
+import GraphQL.NormalForm.GroundTypeNormalization.Validity
 import GraphQL.NormalForm.GroundTypeLifting.OperationSemantics
-import GraphQL.NormalForm.CompleteNormalization.Variables
-import GraphQL.NormalForm.CompleteNormalization.DirectiveSemantics
-import GraphQL.NormalForm.CompleteNormalization.BoolCaseWrappers
-import GraphQL.NormalForm.CompleteNormalization.StaticCollection
-import GraphQL.NormalForm.CompleteNormalization.Normality
-import GraphQL.NormalForm.CompleteNormalization.OperationVariables
-import GraphQL.NormalForm.CompleteNormalization.OperationWrappers
-import GraphQL.NormalForm.CompleteNormalization.ScopedSelections
-import GraphQL.NormalForm.CompleteNormalization.FieldOutput
-import GraphQL.NormalForm.CompleteNormalization.ExecutionPrelude
-import GraphQL.NormalForm.CompleteNormalization.FieldDirectiveExecution
-import GraphQL.NormalForm.CompleteNormalization.InlineDirectiveExecution
-import GraphQL.NormalForm.CompleteNormalization.StaticFieldGroups
-import GraphQL.NormalForm.CompleteNormalization.StaticCollectionExecution
-import GraphQL.NormalForm.CompleteNormalization.ScopedStaticExecution
-import GraphQL.NormalForm.CompleteNormalization.StaticMergeReadiness
-import GraphQL.NormalForm.CompleteNormalization.BoolCaseRuntime
-import GraphQL.NormalForm.CompleteNormalization.RuntimeTypes
-import GraphQL.NormalForm.CompleteNormalization.BoolCaseChildSemantics
-import GraphQL.NormalForm.CompleteNormalization.ScopedResolverSemantics
-import GraphQL.NormalForm.CompleteNormalization.ChildCompletion
-import GraphQL.NormalForm.CompleteNormalization.RootSemantics
+import GraphQL.NormalForm.CompleteNormalization.OperationNormality
+import GraphQL.NormalForm.CompleteNormalization.Semantics
+import GraphQL.NormalForm.CompleteNormalization.Validity
 
 /-!
 Spec reference: GraphQL September 2025.
@@ -45,5 +28,7 @@ Spec reference: GraphQL September 2025.
 - Import order follows the intended reading order for the existing scoped model:
   syntax/type system, validation, execution/data semantics, then project-specific normal
   form machinery.
+- Complete-normalization proof modules expose semantic preservation, normality, and
+  validity under explicit retained-empty-composite-field assumptions.
 - It is an import surface only; fidelity is documented in the individual modules.
 -/

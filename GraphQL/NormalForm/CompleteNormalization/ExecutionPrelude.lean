@@ -16,9 +16,12 @@ namespace NormalForm
 
 namespace CompleteNormalization
 
+variable {ObjectRef : Type}
+
 theorem collectFields_append_left_nil
-    (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (schema : Schema)
+    (variableValues : Execution.VariableValues)
+    (parentType : Name) (source : Execution.Value ObjectRef)
     (left right : List Selection) :
     Execution.collectFields schema variableValues parentType source left = [] ->
       Execution.collectFields schema variableValues parentType source
@@ -32,8 +35,9 @@ theorem collectFields_append_left_nil
     schema variableValues parentType source right
 
 theorem collectFields_append_right_nil
-    (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (schema : Schema)
+    (variableValues : Execution.VariableValues)
+    (parentType : Name) (source : Execution.Value ObjectRef)
     (left right : List Selection) :
     Execution.collectFields schema variableValues parentType source right = [] ->
       Execution.collectFields schema variableValues parentType source
@@ -46,8 +50,9 @@ theorem collectFields_append_right_nil
   simp [Execution.mergeExecutableGroups]
 
 theorem collectedResponseSelectionSet_collectFields_allFields_topNoDirectives
-    (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (schema : Schema)
+    (variableValues : Execution.VariableValues)
+    (parentType : Name) (source : Execution.Value ObjectRef)
     (responseName : Name) :
     ∀ selectionSet,
       selectionsAllFields selectionSet ->
@@ -109,8 +114,9 @@ theorem collectedResponseSelectionSet_collectFields_allFields_topNoDirectives
           simp [Selection.isField] at hheadField
 
 theorem mergedFieldSelectionSet_field_head_eq_validFieldsWithResponseName_topNoDirectives
-    (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (schema : Schema)
+    (variableValues : Execution.VariableValues)
+    (parentType : Name) (source : Execution.Value ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections rest : List Selection)
     (sourceFields : List Execution.ExecutableField)
@@ -156,9 +162,10 @@ theorem mergedFieldSelectionSet_field_head_eq_validFieldsWithResponseName_topNoD
   simpa [sourceField] using hprojection
 
 theorem mergedFieldSelectionSet_staticCollect_field_head_eq_staticScopedFields
-    (schema : Schema) (variableValues : Execution.VariableValues)
+    (schema : Schema)
+    (variableValues : Execution.VariableValues)
     (variables : List BoolVar)
-    (lookupParent groundType : Name) (source : Execution.Value ObjectIdentity)
+    (lookupParent groundType : Name) (source : Execution.Value ObjectRef)
     (boolCase : BoolCase)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
@@ -180,8 +187,7 @@ theorem mergedFieldSelectionSet_staticCollect_field_head_eq_staticScopedFields
         fieldName := fieldName,
         arguments := arguments,
         selectionSet :=
-          normalizeForTypeIn schema variables
-            boolCase fieldDefinition.outputType.namedType selectionSet
+          normalizeBoolCaseForType schema boolCase fieldDefinition.outputType.namedType selectionSet
       } :: normalizedFields) :: normalizedTail ->
       Execution.mergedFieldSelectionSet
           ({
@@ -190,13 +196,11 @@ theorem mergedFieldSelectionSet_staticCollect_field_head_eq_staticScopedFields
             fieldName := fieldName,
             arguments := arguments,
             selectionSet :=
-              normalizeForTypeIn schema
-                variables boolCase fieldDefinition.outputType.namedType
+              normalizeBoolCaseForType schema boolCase fieldDefinition.outputType.namedType
                 selectionSet
           } :: normalizedFields)
         =
-      normalizeForTypeIn schema variables
-          boolCase fieldDefinition.outputType.namedType selectionSet
+      normalizeBoolCaseForType schema boolCase fieldDefinition.outputType.namedType selectionSet
         ++ mergeSelectionSets
           (staticCollectCompleteScopedSelectionSet schema variables groundType
             boolCase
@@ -204,8 +208,7 @@ theorem mergedFieldSelectionSet_staticCollect_field_head_eq_staticScopedFields
               groundType responseName rest)) := by
   intro hallow hlookup hcollect
   let normalizedSelectionSet :=
-    normalizeForTypeIn schema variables
-      boolCase fieldDefinition.outputType.namedType selectionSet
+    normalizeBoolCaseForType schema boolCase fieldDefinition.outputType.namedType selectionSet
   let normalizedRest :=
     staticCollectForGround schema variables lookupParent
       groundType boolCase rest
@@ -224,10 +227,13 @@ theorem mergedFieldSelectionSet_staticCollect_field_head_eq_staticScopedFields
         =
         (responseName, normalizedField :: normalizedFields)
           :: normalizedTail := by
-    simpa [staticCollectForGround_field_allowed schema variables
-      lookupParent groundType responseName fieldName boolCase arguments
-      directives selectionSet rest hallow, hlookup, normalizedSelectionSet,
-      normalizedRest, normalizedField] using hcollect
+    cases hnormalized :
+        normalizeBoolCaseForType schema boolCase
+          fieldDefinition.outputType.namedType selectionSet <;>
+      simpa [staticCollectForGround_field_allowed schema variables
+        lookupParent groundType responseName fieldName boolCase arguments
+        directives selectionSet rest hallow, hlookup, normalizedSelectionSet,
+        normalizedRest, normalizedField, hnormalized] using hcollect
   have hall :
       selectionsAllFields
         (Selection.field responseName fieldName arguments []
@@ -393,10 +399,11 @@ theorem staticCollectCompleteScopedSelectionSet_withoutFieldsWithResponseName
                 withoutFieldsWithResponseName]
 
 theorem mergedFieldSelectionSet_staticCollectCompleteScoped_field_head_eq_staticFields
-    (schema : Schema) (variableValues : Execution.VariableValues)
+    (schema : Schema)
+    (variableValues : Execution.VariableValues)
     (variables : List BoolVar)
     (execParent lookupParent groundType : Name)
-    (source : Execution.Value ObjectIdentity)
+    (source : Execution.Value ObjectRef)
     (boolCase : BoolCase)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
@@ -421,8 +428,7 @@ theorem mergedFieldSelectionSet_staticCollectCompleteScoped_field_head_eq_static
         fieldName := fieldName,
         arguments := arguments,
         selectionSet :=
-          normalizeForTypeIn schema variables
-            boolCase fieldDefinition.outputType.namedType selectionSet
+          normalizeBoolCaseForType schema boolCase fieldDefinition.outputType.namedType selectionSet
       } :: normalizedFields) :: normalizedTail ->
       Execution.mergedFieldSelectionSet
           ({
@@ -431,13 +437,11 @@ theorem mergedFieldSelectionSet_staticCollectCompleteScoped_field_head_eq_static
             fieldName := fieldName,
             arguments := arguments,
             selectionSet :=
-              normalizeForTypeIn schema
-                variables boolCase fieldDefinition.outputType.namedType
+              normalizeBoolCaseForType schema boolCase fieldDefinition.outputType.namedType
                 selectionSet
           } :: normalizedFields)
         =
-      normalizeForTypeIn schema variables
-          boolCase fieldDefinition.outputType.namedType selectionSet
+      normalizeBoolCaseForType schema boolCase fieldDefinition.outputType.namedType selectionSet
         ++ mergeSelectionSets
           (staticCollectCompleteScopedSelectionSet schema variables groundType
             boolCase
@@ -445,8 +449,7 @@ theorem mergedFieldSelectionSet_staticCollectCompleteScoped_field_head_eq_static
               boolCase groundType responseName rest)) := by
   intro hallow hlookup hcollect
   let normalizedSelectionSet :=
-    normalizeForTypeIn schema variables
-      boolCase fieldDefinition.outputType.namedType selectionSet
+    normalizeBoolCaseForType schema boolCase fieldDefinition.outputType.namedType selectionSet
   let normalizedRest :=
     staticCollectCompleteScopedSelectionSet schema variables groundType
       boolCase rest
@@ -471,8 +474,11 @@ theorem mergedFieldSelectionSet_staticCollectCompleteScoped_field_head_eq_static
       lookupParent groundType responseName fieldName boolCase arguments
       directives selectionSet [] hallow] at hcollect
     simp [hlookup, staticCollectForGround] at hcollect
-    simpa [normalizedSelectionSet, normalizedRest, normalizedField] using
-      hcollect
+    cases hnormalized :
+        normalizeBoolCaseForType schema boolCase
+          fieldDefinition.outputType.namedType selectionSet <;>
+      simpa [normalizedSelectionSet, normalizedRest, normalizedField,
+        hnormalized] using hcollect
   have hall :
       selectionsAllFields
         (Selection.field responseName fieldName arguments []
@@ -517,10 +523,11 @@ theorem mergedFieldSelectionSet_staticCollectCompleteScoped_field_head_eq_static
     using hprojection
 
 theorem executeSelectionSet_eq_of_collectFields_eq
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
-    (source : Execution.Value ObjectIdentity)
+    (source : Execution.Value ObjectRef)
     (left right : List Selection) :
     Execution.collectFields schema variableValues parentType source left =
       Execution.collectFields schema variableValues parentType source right ->
@@ -534,9 +541,10 @@ theorem executeSelectionSet_eq_of_collectFields_eq
     hcollect]
 
 theorem executeField_cons_eq_cons_of_completeValue
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (source : Execution.Value ObjectIdentity)
+    (depth : Nat) (source : Execution.Value ObjectRef)
     (responseName : Name)
     (sourceField normalizedField : Execution.ExecutableField)
     (sourceFields normalizedFields : List Execution.ExecutableField) :
@@ -585,9 +593,10 @@ theorem executeField_cons_eq_cons_of_completeValue
       exact hcomplete'
 
 theorem executeSelectionSet_field_head_group_eq_of_completeValue
-    (schema : Schema) (resolvers : Execution.Resolvers ObjectIdentity)
+    (schema : Schema)
+    (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectIdentity)
+    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
     (normalizedSubselections sourceSubselections normalizedRest sourceRest :

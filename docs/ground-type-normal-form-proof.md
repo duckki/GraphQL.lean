@@ -37,26 +37,11 @@ object, with fields statically collected for that object and the selected
 case.
 
 This construction is tracked under
-`GraphQL/NormalForm/CompleteNormalization/`. Its current proof modules establish
-the BoolCase enumeration, directive-BoolCase agreement, wrapper-selection
-facts, static-collection cases, operation metadata preservation,
-same-response-field projection via scoped selections, duplicate-group child
-execution bridges, operation-root branch selection, and BoolCase-threaded
-child runtime branch selection.
-
-The store-backed recursive static-collection theorem is now proved as
-`GraphQL.NormalForm.CompleteNormalization.executeSelectionSet_staticCollectCompleteScopedSelectionSet_on_store`.
-It uses scoped selections to make the execution context explicit, then relies on
-store well-typedness to connect statically selected field lookup contexts with
-runtime object values. The public store-backed correctness witness is
-`GraphQL.NormalForm.CompleteNormalization.completeNormalizationCorrect_onData`.
-There is also a resolver-parametric theorem,
-`GraphQL.NormalForm.CompleteNormalization.completeNormalizationSemanticsPreserved_of_resolverFieldValuesInclude`,
-under the explicit
-`GraphQL.NormalForm.CompleteNormalization.completeScopedResolverFieldValuesInclude`
-assumption. That assumption states the resolver outputs contain only runtime
-objects compatible with the lookup contexts selected by each scoped static
-branch.
+`GraphQL/NormalForm/CompleteNormalization/`. Its maintained proof modules
+establish BoolCase enumeration, directive-BoolCase agreement, wrapper-selection
+facts, operation metadata preservation, output normality, validity preservation,
+resolver-parametric semantic preservation, and the store-backed correctness
+corollary.
 
 ## Final Statements
 
@@ -69,26 +54,16 @@ The public predicates live in `GraphQL/NormalForm.lean`.
   values.
 - `NormalForm.groundNormalFormCorrect` says the same transformation is correct
   for the store-backed data model, again under the same public assumptions.
-- `NormalForm.completeNormalizationCorrect` is the store-backed correctness
-  predicate for directive-aware CompleteNormalization. Its theorem witness is
-  `GraphQL.NormalForm.CompleteNormalization.completeNormalizationCorrect_onData`,
-  assuming a well-formed schema, a valid operation, and variable values complete
-  for the operation-global Boolean directive variables.
-- `NormalForm.completeNormalizationSemanticsPreserved` has a conditional
-  CompleteNormalization theorem witness for arbitrary resolvers:
-  `GraphQL.NormalForm.CompleteNormalization.completeNormalizationSemanticsPreserved_of_resolverFieldValuesInclude`.
-  It adds the resolver-output inclusion assumption described above.
+- `NormalForm.completeNormalizationSemanticsPreserved` is the resolver-parametric
+  correctness predicate for directive-aware CompleteNormalization.
+- `NormalForm.completeNormalizationCorrect` is the store-backed data-model
+  corollary for directive-aware CompleteNormalization.
 
 The directive-free ground-type theorem witnesses are in
 `GraphQL/NormalForm/GroundTypeNormalization/OperationSemantics.lean`:
 
 - `GraphQL.NormalForm.GroundTypeNormalization.groundTypeNormalFormSemanticsPreservation`
 - `GraphQL.NormalForm.GroundTypeNormalization.groundNormalFormCorrect`
-
-The CompleteNormalization store-backed theorem witness is in
-`GraphQL/NormalForm/CompleteNormalization/RootSemantics.lean`:
-
-- `GraphQL.NormalForm.CompleteNormalization.completeNormalizationCorrect_onData`
 
 The directive-free ground-type assumptions are intentionally narrow:
 

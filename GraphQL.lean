@@ -1,19 +1,10 @@
-import GraphQL.Schema
-import GraphQL.SchemaWellFormedness
-import GraphQL.SchemaWellFormedness.FieldLookup
 import GraphQL.SchemaWellFormedness.PossibleTypes
-import GraphQL.Operation
-import GraphQL.Validation
 import GraphQL.Validation.SelectionValidity
 import GraphQL.Validation.FieldMerge
-import GraphQL.Execution
 import GraphQL.Execution.FieldCollection
-import GraphQL.DataModel.ObjectRef
-import GraphQL.DataModel
-import GraphQL.DataModel.Store
+import GraphQL.Algorithms.ExecutionUngrouped.DataModel
+import GraphQL.Algorithms.ExecutionUngrouped.Equivalence
 import GraphQL.DataModel.StoreValueInclusion
-import GraphQL.NormalForm
-import GraphQL.NormalForm.GroundTypeNormalization.Normality
 import GraphQL.NormalForm.GroundTypeNormalization.Semantics
 import GraphQL.NormalForm.GroundTypeNormalization.Validity
 import GraphQL.NormalForm.GroundTypeLifting.OperationSemantics
@@ -25,10 +16,10 @@ import GraphQL.NormalForm.CompleteNormalization.Validity
 Spec reference: GraphQL September 2025.
 - 2 Language, 3 Type System, 5 Validation, 6 Execution, and 7 Response: this root module
   re-exports the partial GraphQL formalization modules.
-- Import order follows the intended reading order for the existing scoped model:
-  syntax/type system, validation, execution/data semantics, then project-specific normal
-  form machinery.
-- Complete-normalization proof modules expose semantic preservation, normality, and
-  validity under explicit retained-empty-composite-field assumptions.
-- It is an import surface only; fidelity is documented in the individual modules.
+- This root module intentionally imports public surfaces and aggregators rather than
+  every internal proof module. Import implementation modules directly when working on
+  localized proof internals.
+- Import order follows the intended reading order for the scoped model: schema and
+  validation support, execution, ungrouped execution semantics, data-model support,
+  then normal-form theorem surfaces.
 -/

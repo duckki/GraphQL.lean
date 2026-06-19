@@ -41,6 +41,18 @@ mutual
           selectionSetDirectiveFree_booleanVariables_nil rest hfree.2]
 end
 
+theorem operationBoolVarsComplete_of_operationDirectiveFree
+    (operation : Operation)
+    (variableValues : Execution.VariableValues) :
+    operationDirectiveFree operation ->
+      operationBoolVarsComplete operation variableValues := by
+  intro hfree varName hmem
+  have hvariables :
+      selectionSetBooleanVariables operation.selectionSet = [] :=
+    selectionSetDirectiveFree_booleanVariables_nil operation.selectionSet
+      hfree
+  simp [operationBoolVars, hvariables, dedupBoolVars] at hmem
+
 private theorem selection_size_pos (selection : Selection) :
     0 < selection.size := by
   cases selection <;> simp [Selection.size] <;> omega

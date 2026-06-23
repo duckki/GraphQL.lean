@@ -565,8 +565,97 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_field_on_store
     hchildren
   cases depth with
   | zero =>
+      rcases scopedFieldHead_lookupPair_of_semanticsReady_lookupValid schema
+          execParent liftParent responseName fieldName arguments
+          subselections rest hready hlookup with
+        ⟨_execFieldDefinition, liftFieldDefinition, _hexecLookup,
+          hliftLookup⟩
+      let liftedSelectionSet :=
+        if leafTypeNameBool schema liftFieldDefinition.outputType.namedType then
+          []
+        else if objectTypeNameBool schema
+            liftFieldDefinition.outputType.namedType then
+          groundLiftSelectionSet schema
+            liftFieldDefinition.outputType.namedType subselections
+        else
+          (groundObjectTypesForType schema
+            liftFieldDefinition.outputType.namedType).map
+            (fun objectType =>
+              Selection.inlineFragment (some objectType) []
+                (groundLiftSelectionSet schema objectType subselections))
+      have hliftCollectExists :=
+        collectFields_field_head_exists schema variableValues execParent
+          (Execution.ResolverValue.object runtimeType ref) responseName fieldName arguments
+          liftedSelectionSet (groundLiftScopedSelectionSet schema rest)
+      rcases hliftCollectExists with
+        ⟨liftedFields, liftedRestGroups, hliftCollectRaw⟩
+      have hsourceCollectExists :=
+        collectFields_field_head_exists schema variableValues execParent
+          (Execution.ResolverValue.object runtimeType ref) responseName fieldName arguments
+          subselections (eraseScopedSelectionSet rest)
+      rcases hsourceCollectExists with
+        ⟨sourceFields, sourceRest, hsourceCollectRaw⟩
+      have hliftCollect :
+          Execution.collectFields schema variableValues execParent
+            (Execution.ResolverValue.object runtimeType ref)
+            (groundLiftScopedSelectionSet schema
+              ({ liftParent := liftParent,
+                 selection :=
+                  Selection.field responseName fieldName arguments []
+                    subselections }
+                :: rest))
+          =
+          (responseName,
+            ({
+              parentType := execParent,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := liftedSelectionSet
+            } : Execution.ExecutableField) :: liftedFields)
+            :: liftedRestGroups := by
+        simpa [groundLiftScopedSelectionSet, groundLiftScopedSelection,
+          groundLiftSelection, hliftLookup, liftedSelectionSet]
+          using hliftCollectRaw
+      have hsourceCollect :
+          Execution.collectFields schema variableValues execParent
+            (Execution.ResolverValue.object runtimeType ref)
+            (eraseScopedSelectionSet
+              ({ liftParent := liftParent,
+                 selection :=
+                  Selection.field responseName fieldName arguments []
+                    subselections }
+                :: rest))
+          =
+          (responseName,
+            ({
+              parentType := execParent,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := subselections
+            } : Execution.ExecutableField) :: sourceFields)
+            :: sourceRest := by
+        simpa [eraseScopedSelectionSet, eraseScopedSelection]
+          using hsourceCollectRaw
+      have htailCollected :
+          Execution.executeCollectedFields schema (store.resolvers schema)
+            variableValues 0 (.object runtimeType ref)
+            liftedRestGroups
+          =
+          Execution.executeCollectedFields schema (store.resolvers schema)
+            variableValues 0 (.object runtimeType ref)
+            sourceRest := by
+        simpa [liftedSelectionSet] using
+          executeCollectedFields_groundLift_scoped_fieldHead_tail_eq_of_withoutFields
+            schema store variableValues 0 execParent
+            liftParent runtimeType responseName fieldName arguments
+            subselections rest liftedFields sourceFields liftedRestGroups
+            sourceRest liftFieldDefinition (ref := ref) hobject hinclude hfree hliftLookup
+            hliftCollect hsourceCollect htail
       simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
-        executeCollectedFields_zero]
+        hliftCollect, hsourceCollect, Execution.executeCollectedFields,
+        Execution.executeField, Execution.Result.combine, htailCollected]
   | succ fieldDepth =>
       rcases scopedFieldHead_lookupPair_of_semanticsReady_lookupValid schema
           execParent liftParent responseName fieldName arguments
@@ -588,19 +677,19 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_field_on_store
                 (groundLiftSelectionSet schema objectType subselections))
       have hliftCollectExists :=
         collectFields_field_head_exists schema variableValues execParent
-          (Execution.Value.object runtimeType ref) responseName fieldName arguments
+          (Execution.ResolverValue.object runtimeType ref) responseName fieldName arguments
           liftedSelectionSet (groundLiftScopedSelectionSet schema rest)
       rcases hliftCollectExists with
         ⟨liftedFields, liftedRestGroups, hliftCollectRaw⟩
       have hsourceCollectExists :=
         collectFields_field_head_exists schema variableValues execParent
-          (Execution.Value.object runtimeType ref) responseName fieldName arguments
+          (Execution.ResolverValue.object runtimeType ref) responseName fieldName arguments
           subselections (eraseScopedSelectionSet rest)
       rcases hsourceCollectExists with
         ⟨sourceFields, sourceRest, hsourceCollect⟩
       have hliftCollect :
           Execution.collectFields schema variableValues execParent
-            (Execution.Value.object runtimeType ref)
+            (Execution.ResolverValue.object runtimeType ref)
             (groundLiftScopedSelectionSet schema
               ({ liftParent := liftParent,
                  selection :=
@@ -904,7 +993,7 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
               | some typeCondition =>
               cases happly :
                   Execution.doesFragmentTypeApplyBool schema execParent
-                    (Execution.Value.object runtimeType ref) typeCondition
+                    (Execution.ResolverValue.object runtimeType ref) typeCondition
               · apply executeSelectionSet_inlineFragment_some_groundLift_scoped_skip
                 · simpa [] using happly
                 · exact
@@ -932,7 +1021,7 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
                       Execution.runtimeObjectType?] using happly
                   have hsource :
                       ∃ runtimeType' objectRef,
-                        Execution.Value.object runtimeType ref
+                        Execution.ResolverValue.object runtimeType ref
                           = .object runtimeType' objectRef
                           ∧ schema.typeIncludesObjectBool execParent
                             runtimeType' = true :=

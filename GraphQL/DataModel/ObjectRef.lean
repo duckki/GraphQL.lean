@@ -6,7 +6,7 @@ namespace DataModel
 
 abbrev ObjectId := Nat
 
--- Store-owned resolver reference type used to instantiate `Execution.Value`.
+-- Store-owned resolver reference type used to instantiate `Execution.ResolverValue`.
 structure ObjectRef where
   private mk ::
   id : ObjectId

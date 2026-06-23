@@ -1,4 +1,5 @@
 import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.AppendSelection
+import GraphQL.Execution.ResolverValue
 
 namespace GraphQL
 
@@ -7,783 +8,534 @@ namespace ExecutionUngrouped
 
 open GraphQL.Execution
 
-theorem executeRootSelectionSet_executableFieldSelections_duplicate_eq_spec_of_completeValue_merge
+local instance : Coe (ResponseValue × VisitStatus) ResponseValue where
+  coe := Prod.fst
+
+theorem mergeResponseField_null_of_lookup_null
+    (responseName : Name) :
+    ∀ fields : List (Name × ResponseValue),
+      lookupResponseField? responseName fields = some .null ->
+        mergeResponseField responseName .null fields = fields
+  | [], hlookup => by
+      simp [lookupResponseField?] at hlookup
+  | (fieldResponseName, response) :: rest, hlookup => by
+      by_cases h : fieldResponseName == responseName
+      · simp [lookupResponseField?, h] at hlookup
+        subst response
+        simp [mergeResponseField, mergeResponse, h]
+      · simp [lookupResponseField?, mergeResponseField, h] at hlookup ⊢
+        exact mergeResponseField_null_of_lookup_null responseName rest hlookup
+
+theorem responseObjectField?_append_singleton_null_of_not_mem
+    (responseName : Name) :
+    ∀ fields : List (Name × ResponseValue),
+      responseName ∉ fields.map Prod.fst ->
+        responseObjectField? responseName
+            (.object (fields ++ [(responseName, .null)])) =
+          some .null
+  | [], _hfresh => by
+      simp [responseObjectField?, lookupResponseField?]
+  | (fieldResponseName, response) :: rest, hfresh => by
+      have hhead : (fieldResponseName == responseName) = false := by
+        cases h : fieldResponseName == responseName
+        · exact rfl
+        · exfalso
+          exact hfresh (by simp [beq_iff_eq.mp h])
+      have hrest : responseName ∉ rest.map Prod.fst := by
+        intro hmem
+        exact hfresh (by simp [hmem])
+      have htail :
+          lookupResponseField? responseName
+              (rest ++ [(responseName, .null)]) =
+            some .null := by
+        simpa [responseObjectField?] using
+          responseObjectField?_append_singleton_null_of_not_mem responseName
+            rest hrest
+      simp [responseObjectField?, lookupResponseField?, hhead, htail]
+
+def groupedFieldVisitResult (responseName : Name) :
+    Result (List (Name × ResponseValue)) -> ResponseValue × VisitStatus
+  | .error errors => (.object [(responseName, .null)], .error errors)
+  | .ok (fields, errors) => (.object fields, visitOk errors)
+
+def ExecutableFieldsMergedRaw
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
-    (responseName fieldName : Name) (arguments : List Argument)
-    (firstSelectionSet secondSelectionSet : List Selection)
-    (resolved : Value ObjectIdentity)
-    (hresolve :
-      resolvers.resolve parentType fieldName arguments source = resolved)
-    (hcomplete :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          firstSelectionSet resolved .null)
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          secondSelectionSet resolved
-          (completeValue schema resolvers variableValues depth
-            ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-            firstSelectionSet resolved .null)) =
-      GraphQL.Execution.completeValue schema resolvers variableValues depth
-        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        [ executableField parentType responseName fieldName arguments
-            firstSelectionSet
-        , executableField parentType responseName fieldName arguments
-            secondSelectionSet ]
-        resolved) :
-    executeRootSelectionSet schema resolvers variableValues (depth + 1)
-      parentType source
-      (executableFieldSelections
-        [ executableField parentType responseName fieldName arguments
-            firstSelectionSet
-        , executableField parentType responseName fieldName arguments
-            secondSelectionSet ]) =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      (depth + 1) parentType source
-      (executableFieldSelections
-        [ executableField parentType responseName fieldName arguments
-            firstSelectionSet
-        , executableField parentType responseName fieldName arguments
-            secondSelectionSet ]) := by
-  simpa [executableFieldSelections, executableFieldSelection, executableField] using
-    executeRootSelectionSet_duplicate_field_succ_eq_spec_of_completeValue_merge
-      schema resolvers variableValues depth parentType source responseName
-      fieldName arguments [] firstSelectionSet secondSelectionSet resolved
-      rfl hresolve hcomplete
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (responseName : Name) (field : ExecutableField)
+    (fields : List ExecutableField)
+    (_resolved : Option (ResolverValue ObjectIdentity)) : Prop :=
+  visitSubfields schema resolvers variableValues (depth + 1)
+    parentType source (executableFieldSelections (field :: fields))
+    (.object []) =
+  groupedFieldVisitResult responseName
+    (GraphQL.Execution.executeField schema resolvers variableValues
+      (depth + 1) source responseName (field :: fields))
 
-theorem completeValue_duplicate_merge_eq_spec_of_append_completeValue
+theorem ExecutableFieldsMergedResponse_of_raw
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name)
-    (responseName fieldName : Name) (arguments : List Argument)
-    (firstSelectionSet secondSelectionSet : List Selection)
-    (resolved : Value ObjectIdentity)
-    (happend :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          firstSelectionSet resolved .null)
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          secondSelectionSet resolved
-          (completeValue schema resolvers variableValues depth
-            ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-            firstSelectionSet resolved .null)) =
-      completeValue schema resolvers variableValues depth
-        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        (firstSelectionSet ++ secondSelectionSet) resolved .null)
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-        schema.typeIncludesObjectBool
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := firstSelectionSet ++ secondSelectionSet }
-              initial := .object [] }) :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          firstSelectionSet resolved .null)
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          secondSelectionSet resolved
-          (completeValue schema resolvers variableValues depth
-            ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-            firstSelectionSet resolved .null)) =
-      GraphQL.Execution.completeValue schema resolvers variableValues depth
-        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        [ executableField parentType responseName fieldName arguments
-            firstSelectionSet
-        , executableField parentType responseName fieldName arguments
-            secondSelectionSet ]
-        resolved := by
-  rw [happend]
-  simpa [GraphQL.Execution.mergedFieldSelectionSet, executableField] using
-    completeValue_group_eq_spec_of_guarded_merged_child_states schema resolvers
-      variableValues
-      [ executableField parentType responseName fieldName arguments
-          firstSelectionSet
-      , executableField parentType responseName fieldName arguments
-          secondSelectionSet ]
-      depth ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-      resolved
-      (by
-        intro childDepth runtimeType identity hlt hincludes
-        simpa [GraphQL.Execution.mergedFieldSelectionSet, executableField] using
-          hchildren childDepth runtimeType identity hlt hincludes)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (responseName : Name) (field : ExecutableField)
+    (fields : List ExecutableField)
+    (resolved : Option (ResolverValue ObjectIdentity)) :
+    ExecutableFieldsMergedRaw schema resolvers variableValues depth
+      parentType source responseName field fields resolved ->
+    ExecutableFieldsMergedResponse schema resolvers variableValues depth
+      parentType source responseName field fields resolved := by
+  intro hraw
+  unfold ExecutableFieldsMergedRaw at hraw
+  unfold ExecutableFieldsMergedResponse executeRootSelectionSet
+  rw [hraw]
+  cases hspec :
+      GraphQL.Execution.executeField schema resolvers variableValues
+        (depth + 1) source responseName (field :: fields) with
+  | error errors =>
+      simp [groupedFieldVisitResult]
+  | ok result =>
+      rcases result with ⟨completedFields, errors⟩
+      simp [groupedFieldVisitResult, visitOk]
 
-theorem completeValue_duplicate_merge_eq_spec_of_append_completeValue_contained
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name)
-    (responseName fieldName : Name) (arguments : List Argument)
-    (firstSelectionSet secondSelectionSet : List Selection)
-    (resolved : Value ObjectIdentity)
-    (happend :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          firstSelectionSet resolved .null)
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          secondSelectionSet resolved
-          (completeValue schema resolvers variableValues depth
-            ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-            firstSelectionSet resolved .null)) =
-      completeValue schema resolvers variableValues depth
-        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        (firstSelectionSet ++ secondSelectionSet) resolved .null)
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-        ValueContainsObject resolved runtimeType identity ->
-        schema.typeIncludesObjectBool
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := firstSelectionSet ++ secondSelectionSet }
-              initial := .object [] }) :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          firstSelectionSet resolved .null)
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          secondSelectionSet resolved
-          (completeValue schema resolvers variableValues depth
-            ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-            firstSelectionSet resolved .null)) =
-      GraphQL.Execution.completeValue schema resolvers variableValues depth
-        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        [ executableField parentType responseName fieldName arguments
-            firstSelectionSet
-        , executableField parentType responseName fieldName arguments
-            secondSelectionSet ]
-        resolved := by
-  rw [happend]
-  simpa [GraphQL.Execution.mergedFieldSelectionSet, executableField] using
-    completeValue_group_eq_spec_of_contained_child_states schema resolvers
-      variableValues
-      [ executableField parentType responseName fieldName arguments
-          firstSelectionSet
-      , executableField parentType responseName fieldName arguments
-          secondSelectionSet ]
-      depth ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-      resolved
-      (by
-        intro childDepth runtimeType identity hlt hcontains hincludes
-        simpa [GraphQL.Execution.mergedFieldSelectionSet, executableField] using
-          hchildren childDepth runtimeType identity hlt hcontains hincludes)
+theorem mergeResponseFieldResult_empty_eq_groupedFieldVisitResult_singleFieldResult
+    (responseName : Name) (completed : Result ResponseValue) :
+    mergeResponseFieldResult responseName completed (.object []) =
+      groupedFieldVisitResult responseName
+        (GraphQL.Execution.singleFieldResult responseName completed) := by
+  cases completed with
+  | error errors =>
+      simp [mergeResponseFieldResult, groupedFieldVisitResult,
+        GraphQL.Execution.singleFieldResult, resultValueOrNull, resultStatus,
+        mergeResponseFieldIntoObject, mergeResponseField]
+  | ok result =>
+      rcases result with ⟨value, errors⟩
+      simp [mergeResponseFieldResult, groupedFieldVisitResult,
+        GraphQL.Execution.singleFieldResult, resultValueOrNull, resultStatus,
+        mergeResponseFieldIntoObject, mergeResponseField, visitOk]
 
-theorem executeRootSelectionSet_executableFieldSelections_duplicate_eq_spec_of_append_completeValue
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
-    (responseName fieldName : Name) (arguments : List Argument)
-    (firstSelectionSet secondSelectionSet : List Selection)
-    (resolved : Value ObjectIdentity)
-    (hresolve :
-      resolvers.resolve parentType fieldName arguments source = resolved)
-    (happend :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          firstSelectionSet resolved .null)
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          secondSelectionSet resolved
-          (completeValue schema resolvers variableValues depth
-            ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-            firstSelectionSet resolved .null)) =
-      completeValue schema resolvers variableValues depth
-        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        (firstSelectionSet ++ secondSelectionSet) resolved .null)
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := firstSelectionSet ++ secondSelectionSet }
-              initial := .object [] }) :
-    executeRootSelectionSet schema resolvers variableValues (depth + 1)
-      parentType source
-      (executableFieldSelections
-        [ executableField parentType responseName fieldName arguments
-            firstSelectionSet
-        , executableField parentType responseName fieldName arguments
-            secondSelectionSet ]) =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      (depth + 1) parentType source
-      (executableFieldSelections
-        [ executableField parentType responseName fieldName arguments
-            firstSelectionSet
-        , executableField parentType responseName fieldName arguments
-            secondSelectionSet ]) := by
-  apply
-    executeRootSelectionSet_executableFieldSelections_duplicate_eq_spec_of_completeValue_merge
-      schema resolvers variableValues depth parentType source responseName
-      fieldName arguments firstSelectionSet secondSelectionSet resolved
-      hresolve
-  exact completeValue_duplicate_merge_eq_spec_of_append_completeValue schema
-    resolvers variableValues depth parentType responseName fieldName arguments
-    firstSelectionSet secondSelectionSet resolved happend
-    (by
-      intro childDepth runtimeType identity hlt _hincludes
-      exact hchildren childDepth runtimeType identity hlt)
+theorem groupedFieldVisitResult_singleFieldResult_combine_neutral
+    (responseName : Name)
+    (leftCompleted rightCompleted combinedCompleted : Result ResponseValue)
+    (hright : resultStatus rightCompleted = visitOk)
+    (hcombine :
+      GraphQL.Execution.Result.combine mergeResponse leftCompleted
+        rightCompleted = combinedCompleted) :
+    let left :=
+      groupedFieldVisitResult responseName
+        (GraphQL.Execution.singleFieldResult responseName leftCompleted)
+    let right := mergeResponseFieldResult responseName rightCompleted left.fst
+    (right.fst, combineVisitStatus left.snd right.snd) =
+      groupedFieldVisitResult responseName
+        (GraphQL.Execution.singleFieldResult responseName
+          combinedCompleted) := by
+  cases leftCompleted with
+  | error prefixErrors =>
+      cases rightCompleted with
+      | error laterErrors =>
+          simp [resultStatus, visitOk] at hright
+      | ok laterResult =>
+          rcases laterResult with ⟨laterValue, laterErrors⟩
+          cases laterErrors with
+          | zero =>
+              cases hcombine
+              cases laterValue <;> dsimp <;> simp [groupedFieldVisitResult,
+                GraphQL.Execution.singleFieldResult,
+                mergeResponseFieldResult, mergeResponseFieldIntoObject,
+                mergeResponseField, mergeResponse, resultValueOrNull, resultStatus,
+                combineVisitStatus, Result.combine,
+                GraphQL.Execution.Result.combine, visitOk]
+          | succ laterErrors =>
+              simp [resultStatus, visitOk] at hright
+  | ok prefixResult =>
+      rcases prefixResult with ⟨prefixValue, prefixErrors⟩
+      cases rightCompleted with
+      | error laterErrors =>
+          simp [resultStatus, visitOk] at hright
+      | ok laterResult =>
+          rcases laterResult with ⟨laterValue, laterErrors⟩
+          cases laterErrors with
+          | zero =>
+              cases hcombine
+              dsimp
+              simp [groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, mergeResponseFieldResult, mergeResponseFieldIntoObject, mergeResponseField, resultValueOrNull, resultStatus, combineVisitStatus, GraphQL.Execution.Result.combine, visitOk]
+          | succ laterErrors =>
+              simp [resultStatus, visitOk] at hright
 
-theorem completeValue_append_slices_zero
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues)
-    (parentType : Name)
-    (firstSelectionSet secondSelectionSet : List Selection)
-    (value : Value ObjectIdentity) :
-    mergeResponse
-      (completeValue schema resolvers variableValues 0 parentType
-        firstSelectionSet value .null)
-      (completeValue schema resolvers variableValues 0 parentType
-        secondSelectionSet value
-        (completeValue schema resolvers variableValues 0 parentType
-          firstSelectionSet value .null)) =
-    completeValue schema resolvers variableValues 0 parentType
-      (firstSelectionSet ++ secondSelectionSet) value .null := by
-  simp [completeValue]
-  exact mergeResponse_self_of_ready (shallowResponse value)
-    (ResponseMergeReady_shallowResponse value)
-
-theorem completeValue_append_slices_null
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name)
-    (firstSelectionSet secondSelectionSet : List Selection) :
-    mergeResponse
-      (completeValue schema resolvers variableValues (depth + 1) parentType
-        firstSelectionSet (.null : Value ObjectIdentity) .null)
-      (completeValue schema resolvers variableValues (depth + 1) parentType
-        secondSelectionSet (.null : Value ObjectIdentity)
-        (completeValue schema resolvers variableValues (depth + 1) parentType
-          firstSelectionSet (.null : Value ObjectIdentity) .null)) =
-    completeValue schema resolvers variableValues (depth + 1) parentType
-      (firstSelectionSet ++ secondSelectionSet) (.null : Value ObjectIdentity)
-      .null := by
-  simp [completeValue, mergeResponse]
-
-theorem completeValue_append_slices_scalar
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name)
-    (firstSelectionSet secondSelectionSet : List Selection)
-    (value : String) :
-    mergeResponse
-      (completeValue schema resolvers variableValues (depth + 1) parentType
-        firstSelectionSet (.scalar value : Value ObjectIdentity) .null)
-      (completeValue schema resolvers variableValues (depth + 1) parentType
-        secondSelectionSet (.scalar value : Value ObjectIdentity)
-        (completeValue schema resolvers variableValues (depth + 1) parentType
-          firstSelectionSet (.scalar value : Value ObjectIdentity) .null)) =
-    completeValue schema resolvers variableValues (depth + 1) parentType
-      (firstSelectionSet ++ secondSelectionSet)
-      (.scalar value : Value ObjectIdentity) .null := by
-  simp [completeValue, mergeResponse]
-
-theorem completeValue_append_slices_empty_list
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name)
-    (firstSelectionSet secondSelectionSet : List Selection) :
-    mergeResponse
-      (completeValue schema resolvers variableValues (depth + 1) parentType
-        firstSelectionSet (.list ([] : List (Value ObjectIdentity))) .null)
-      (completeValue schema resolvers variableValues (depth + 1) parentType
-        secondSelectionSet (.list ([] : List (Value ObjectIdentity)))
-        (completeValue schema resolvers variableValues (depth + 1) parentType
-          firstSelectionSet (.list ([] : List (Value ObjectIdentity))) .null)) =
-    completeValue schema resolvers variableValues (depth + 1) parentType
-      (firstSelectionSet ++ secondSelectionSet)
-      (.list ([] : List (Value ObjectIdentity))) .null := by
-  simp [completeValue, mergeResponse, mergeResponseLists]
-
-theorem completeValue_append_slices_singleton_list_of_value
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name)
-    (firstSelectionSet secondSelectionSet : List Selection)
-    (value : Value ObjectIdentity)
-    (hvalue :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth parentType
-          firstSelectionSet value .null)
-        (completeValue schema resolvers variableValues depth parentType
-          secondSelectionSet value
-          (completeValue schema resolvers variableValues depth parentType
-            firstSelectionSet value .null)) =
-      completeValue schema resolvers variableValues depth parentType
-        (firstSelectionSet ++ secondSelectionSet) value .null) :
-    mergeResponse
-      (completeValue schema resolvers variableValues (depth + 1) parentType
-        firstSelectionSet (.list [value]) .null)
-      (completeValue schema resolvers variableValues (depth + 1) parentType
-        secondSelectionSet (.list [value])
-        (completeValue schema resolvers variableValues (depth + 1) parentType
-          firstSelectionSet (.list [value]) .null)) =
-    completeValue schema resolvers variableValues (depth + 1) parentType
-      (firstSelectionSet ++ secondSelectionSet) (.list [value]) .null := by
-  simpa [completeValue, mergeResponse, mergeResponseLists] using hvalue
-
-theorem completeValue_append_slices_object_of_visit_absorbs
+theorem completeValue_object_append_eq_visitSubfields_append_result
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (childDepth : Nat)
     (parentType runtimeType : Name) (identity : Option ObjectIdentity)
     (firstSelectionSet secondSelectionSet : List Selection)
-    (hvisitAbsorb :
+    (hincludes :
+      schema.typeIncludesObjectBool parentType runtimeType = true) :
+    completeValue schema resolvers variableValues (childDepth + 1)
+      (.named parentType) (firstSelectionSet ++ secondSelectionSet)
+      (.object runtimeType identity) none =
+    let firstResult :=
+      visitSubfields schema resolvers variableValues childDepth runtimeType
+        (.object runtimeType identity) firstSelectionSet (.object [])
+    let secondResult :=
+      visitSubfields schema resolvers variableValues childDepth runtimeType
+        (.object runtimeType identity) secondSelectionSet firstResult.fst
+    catchVisitBubbleAsNull secondResult.fst
+      (combineVisitStatus firstResult.snd secondResult.snd) := by
+  simp [completeValue, hincludes, reuseOrCreateObject?]
+  rw [visitSubfields_append_equivalence schema resolvers variableValues
+    childDepth runtimeType (.object runtimeType identity) firstSelectionSet
+    secondSelectionSet (.object [])]
+
+def VisitSubfieldsErrorNeutral
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (selectionSet : List Selection) (current : ResponseValue) : Prop :=
+  (visitSubfields schema resolvers variableValues depth parentType source
+    selectionSet current).snd = visitOk
+
+theorem resultValueOrNull_nonNullCompletion
+    (completed : Result ResponseValue) :
+    resultValueOrNull (nonNullCompletion completed) =
+      resultValueOrNull completed := by
+  cases completed with
+  | error errors =>
+      simp [nonNullCompletion, resultValueOrNull]
+  | ok result =>
+      rcases result with ⟨value, errors⟩
+      cases value <;> cases errors <;>
+        simp [nonNullCompletion, resultValueOrNull]
+
+theorem resultStatus_nonNullCompletion_eq_ok_of_status_eq_ok_of_nonNull
+    (completed : Result ResponseValue)
+    (hstatus : resultStatus completed = visitOk)
+    (hnonNull : resultValueOrNull completed ≠ .null) :
+    resultStatus (nonNullCompletion completed) = visitOk := by
+  cases completed with
+  | error errors =>
+      simp [resultStatus, visitOk] at hstatus
+  | ok result =>
+      rcases result with ⟨value, errors⟩
+      cases value <;> cases errors <;>
+        simp [resultStatus, visitOk, resultValueOrNull, nonNullCompletion]
+          at hstatus hnonNull ⊢
+
+theorem resultStatus_completeResolvedValue_nonNull_eq_ok_of_inner_status_eq_ok_of_nonNull
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (inner : TypeRef) (selectionSet : List Selection)
+    (resolved : ResolverValue ObjectIdentity) (previous? : Option ResponseValue)
+    (hstatus :
+      resultStatus
+        (completeResolvedValue schema resolvers variableValues depth inner
+          selectionSet resolved previous?) =
+      visitOk)
+    (hnonNull :
+      resultValueOrNull
+        (completeResolvedValue schema resolvers variableValues depth inner
+          selectionSet resolved previous?) ≠
+      .null) :
+    resultStatus
+      (completeResolvedValue schema resolvers variableValues depth
+        (.nonNull inner) selectionSet resolved previous?) =
+    visitOk := by
+  cases hreuse :
+      reusablePreviousValue? schema (.nonNull inner) previous? with
+  | some previous =>
+      simp [completeResolvedValue, hreuse, resultStatus, visitOk]
+  | none =>
+      simpa [completeResolvedValue, hreuse] using
+        resultStatus_nonNullCompletion_eq_ok_of_status_eq_ok_of_nonNull
+          (completeResolvedValue schema resolvers variableValues depth inner
+            selectionSet resolved previous?)
+          hstatus hnonNull
+
+theorem resultValueOrNull_completeResolvedValue_nonNull_ne_null_of_inner_ne_null
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (inner : TypeRef) (selectionSet : List Selection)
+    (resolved : ResolverValue ObjectIdentity) (previous? : Option ResponseValue)
+    (hnonNull :
+      resultValueOrNull
+        (completeResolvedValue schema resolvers variableValues depth inner
+          selectionSet resolved previous?) ≠
+      .null) :
+    resultValueOrNull
+      (completeResolvedValue schema resolvers variableValues depth
+        (.nonNull inner) selectionSet resolved previous?) ≠
+    .null := by
+  cases hinner :
+      completeResolvedValue schema resolvers variableValues depth inner
+        selectionSet resolved previous? with
+  | error errors =>
+      simp [resultValueOrNull, hinner] at hnonNull
+  | ok result =>
+      rcases result with ⟨value, errors⟩
+      have hvalue : value ≠ .null := by
+        intro hnull
+        exact hnonNull (by
+          simp [resultValueOrNull, hinner, hnull])
+      have hwrapped :=
+        completeResolvedValue_nonNull_ok_of_inner_ok
+          schema resolvers variableValues depth inner selectionSet resolved
+          previous? value errors hinner hvalue
+      simpa [resultValueOrNull, hwrapped] using hvalue
+
+mutual
+  theorem specCompleteValue_eq_of_no_object
+      {ObjectIdentity : Type}
+      (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+      (variableValues : VariableValues) :
+      ∀ (depth : Nat) (fieldType : TypeRef)
+        (fields otherFields : List ExecutableField)
+        (resolved : ResolverValue ObjectIdentity),
+        fieldType.isCompositeBool schema = false ->
+          GraphQL.Execution.completeValue schema resolvers variableValues
+            depth fieldType fields resolved =
+          GraphQL.Execution.completeValue schema resolvers variableValues
+            depth fieldType otherFields resolved
+    | 0, fieldType, fields, otherFields, resolved, _hno => by
+        simp [GraphQL.Execution.completeValue]
+    | depth + 1, .named typeName, fields, otherFields, resolved, hno => by
+        cases resolved with
+        | null =>
+            simp [GraphQL.Execution.completeValue]
+        | scalar value =>
+            simp [GraphQL.Execution.completeValue]
+        | object runtimeType identity =>
+            have hincludes :
+                schema.typeIncludesObjectBool typeName runtimeType = false := by
+              cases hlookup : schema.lookupType typeName with
+              | none =>
+                  simp [Schema.typeIncludesObjectBool, Schema.getPossibleTypes,
+                    hlookup]
+              | some typeDefinition =>
+                  cases typeDefinition <;>
+                    simp [TypeRef.isCompositeBool, TypeRef.namedType,
+                      Schema.typeIncludesObjectBool,
+                      Schema.getPossibleTypes, hlookup] at hno ⊢
+            simp [GraphQL.Execution.completeValue, hincludes]
+        | list values =>
+            simp [GraphQL.Execution.completeValue]
+    | depth + 1, .list inner, fields, otherFields, resolved, hno => by
+        cases resolved with
+        | null =>
+            simp [GraphQL.Execution.completeValue]
+        | scalar value =>
+            simp [GraphQL.Execution.completeValue]
+        | object runtimeType identity =>
+            simp [GraphQL.Execution.completeValue]
+        | list values =>
+            have hinner :
+                inner.isCompositeBool schema = false := by
+              simpa [TypeRef.isCompositeBool] using hno
+            have hlist :=
+              specCompleteValueList_eq_of_no_object schema resolvers
+                variableValues depth inner fields otherFields values hinner
+            simp [GraphQL.Execution.completeValue, hlist]
+    | depth + 1, .nonNull inner, fields, otherFields, resolved, hno => by
+        have hinner :
+            inner.isCompositeBool schema = false := by
+          simpa [TypeRef.isCompositeBool] using hno
+        have hvalue :=
+          specCompleteValue_eq_of_no_object schema resolvers variableValues
+            (depth + 1) inner fields otherFields resolved hinner
+        simp [GraphQL.Execution.completeValue, hvalue]
+  termination_by depth fieldType _fields _otherFields resolved _hno =>
+    (depth, 0, sizeOf fieldType, sizeOf resolved)
+  decreasing_by
+    all_goals
+      try subst_vars
+      simp_wf
+      try simp [List._sizeOf_1]
+      repeat first
+        | apply Prod.Lex.right
+        | apply Prod.Lex.left
+      omega
+
+  theorem specCompleteValueList_eq_of_no_object
+      {ObjectIdentity : Type}
+      (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+      (variableValues : VariableValues) :
+      ∀ (depth : Nat) (itemType : TypeRef)
+        (fields otherFields : List ExecutableField)
+        (values : List (ResolverValue ObjectIdentity)),
+        itemType.isCompositeBool schema = false ->
+          GraphQL.Execution.completeValueList schema resolvers variableValues
+            depth itemType fields values =
+          GraphQL.Execution.completeValueList schema resolvers variableValues
+            depth itemType otherFields values
+    | depth, itemType, fields, otherFields, [], _hno => by
+        simp [GraphQL.Execution.completeValueList]
+    | depth, itemType, fields, otherFields, value :: values, hno => by
+        have hhead :=
+          specCompleteValue_eq_of_no_object schema resolvers variableValues
+            depth itemType fields otherFields value hno
+        have htail :=
+          specCompleteValueList_eq_of_no_object schema resolvers variableValues
+            depth itemType fields otherFields values hno
+        simp [GraphQL.Execution.completeValueList, hhead, htail]
+  termination_by depth itemType _fields _otherFields values _hno =>
+    (depth, 1, sizeOf itemType, sizeOf values)
+  decreasing_by
+    all_goals
+      try subst_vars
+      simp_wf
+      try simp [List._sizeOf_1]
+      repeat first
+        | apply Prod.Lex.right
+        | apply Prod.Lex.left
+      omega
+end
+
+theorem resultValueOrNull_catchVisitBubbleAsNull
+    (value : ResponseValue) (status : VisitStatus) :
+    resultValueOrNull (catchVisitBubbleAsNull value status) =
+      match status with
+      | .error _errors => .null
+      | .ok _result => value := by
+  cases status with
+  | error errors =>
+      simp [catchVisitBubbleAsNull, resultValueOrNull]
+  | ok result =>
+      rcases result with ⟨unitValue, errors⟩
+      cases unitValue
+      simp [catchVisitBubbleAsNull, resultValueOrNull]
+
+theorem completeValue_object_append_result_of_absorbs_errorNeutral
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (childDepth : Nat)
+    (parentType runtimeType : Name) (identity : Option ObjectIdentity)
+    (firstSelectionSet secondSelectionSet : List Selection)
+    (hincludes :
+      schema.typeIncludesObjectBool parentType runtimeType = true)
+    (habsorbs :
       ResponseAbsorbs
         (visitSubfields schema resolvers variableValues childDepth runtimeType
           (.object runtimeType identity) firstSelectionSet (.object []))
         (visitSubfields schema resolvers variableValues childDepth runtimeType
           (.object runtimeType identity) secondSelectionSet
           (visitSubfields schema resolvers variableValues childDepth runtimeType
-            (.object runtimeType identity) firstSelectionSet (.object [])))) :
-    mergeResponse
-      (completeValue schema resolvers variableValues (childDepth + 1)
-        parentType firstSelectionSet (.object runtimeType identity) .null)
-      (completeValue schema resolvers variableValues (childDepth + 1)
-        parentType secondSelectionSet (.object runtimeType identity)
-        (completeValue schema resolvers variableValues (childDepth + 1)
-          parentType firstSelectionSet (.object runtimeType identity) .null)) =
-    completeValue schema resolvers variableValues (childDepth + 1)
-      parentType (firstSelectionSet ++ secondSelectionSet)
-      (.object runtimeType identity) .null := by
-  by_cases hincludes :
-      schema.typeIncludesObjectBool parentType runtimeType = true
-  · obtain ⟨previousFields, hpreviousFields⟩ :=
-      visitSubfields_preserves_object schema resolvers variableValues
-        childDepth runtimeType (.object runtimeType identity) firstSelectionSet
-        []
-    rw [hpreviousFields] at hvisitAbsorb
-    unfold ResponseAbsorbs at hvisitAbsorb
-    simp [completeValue, hincludes]
-    rw [hpreviousFields]
-    simp [completeValue, hincludes]
-    rw [hvisitAbsorb]
-    rw [visitSubfields_append_equivalence schema resolvers variableValues childDepth
-      runtimeType (.object runtimeType identity) firstSelectionSet
-      secondSelectionSet (.object [])]
-    rw [hpreviousFields]
-  · have hnotIncludes :
-        schema.typeIncludesObjectBool parentType runtimeType = false := by
-      cases h : schema.typeIncludesObjectBool parentType runtimeType <;>
-        simp [h] at hincludes ⊢
-    simp [completeValue, hnotIncludes, mergeResponse]
+            (.object runtimeType identity) firstSelectionSet (.object [])).fst))
+    (herrors :
+      VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+        runtimeType (.object runtimeType identity) secondSelectionSet
+        (visitSubfields schema resolvers variableValues childDepth runtimeType
+          (.object runtimeType identity) firstSelectionSet (.object [])).fst) :
+    let first :=
+        completeValue schema resolvers variableValues (childDepth + 1)
+          (.named parentType) firstSelectionSet (.object runtimeType identity)
+          none
+    GraphQL.Execution.Result.combine mergeResponse first
+        (completeResolvedValue schema resolvers variableValues (childDepth + 1)
+          (.named parentType) secondSelectionSet (.object runtimeType identity)
+          (some (resultValueOrNull first))) =
+      completeValue schema resolvers variableValues (childDepth + 1)
+        (.named parentType) (firstSelectionSet ++ secondSelectionSet)
+        (.object runtimeType identity) none := by
+  rw [completeValue_object_append_eq_visitSubfields_append_result schema
+    resolvers variableValues childDepth parentType runtimeType identity
+    firstSelectionSet secondSelectionSet hincludes]
+  unfold ResponseAbsorbs at habsorbs
+  unfold VisitSubfieldsErrorNeutral at herrors
+  have hparentComposite :
+      (TypeRef.named parentType).isCompositeBool schema = true := by
+    cases hlookup : schema.lookupType parentType with
+    | none =>
+        simp [Schema.typeIncludesObjectBool, Schema.getPossibleTypes, hlookup]
+          at hincludes
+    | some typeDefinition =>
+        cases typeDefinition <;>
+          simp [TypeRef.isCompositeBool, TypeRef.namedType,
+            Schema.typeIncludesObjectBool, Schema.getPossibleTypes, hlookup]
+            at hincludes ⊢
+  cases hfirst :
+      visitSubfields schema resolvers variableValues childDepth runtimeType
+        (.object runtimeType identity) firstSelectionSet (.object []) with
+  | mk firstOutput firstStatus =>
+      cases hsecond :
+          visitSubfields schema resolvers variableValues childDepth runtimeType
+            (.object runtimeType identity) secondSelectionSet firstOutput with
+      | mk secondOutput secondStatus =>
+          simp [hfirst, hsecond] at habsorbs herrors
+          cases firstStatus with
+          | error firstErrors =>
+              simp [completeResolvedValue_previous_null, completeValue, reuseOrCreateObject?, hincludes, hfirst, resultValueOrNull, hsecond, herrors, catchVisitBubbleAsNull, combineVisitStatus, GraphQL.Execution.Result.combine, visitOk, mergeResponse]
+          | ok firstStatusResult =>
+              rcases firstStatusResult with ⟨unitValue, firstErrors⟩
+              cases unitValue
+              obtain ⟨firstFields, hfirstFields⟩ :=
+                visitSubfields_preserves_object schema resolvers variableValues
+                  childDepth runtimeType (.object runtimeType identity)
+                  firstSelectionSet []
+              rw [hfirst] at hfirstFields
+              simp at hfirstFields
+              subst firstOutput
+              simp [completeResolvedValue, reusablePreviousValue?, completeValue, reuseOrCreateObject?, hincludes, hparentComposite, hfirst, resultValueOrNull, hsecond, herrors, habsorbs, catchVisitBubbleAsNull, combineVisitStatus, GraphQL.Execution.Result.combine, visitOk]
 
-theorem completeValue_append_slices_of_visit_absorbs
+theorem resultStatus_completeValue_object_append_second_of_errorNeutral
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues)
-    (firstSelectionSet secondSelectionSet : List Selection) :
-    ∀ (depth : Nat) (parentType : Name) (value : Value ObjectIdentity),
-      (∀ childDepth runtimeType (identity : Option ObjectIdentity),
-        childDepth < depth ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) firstSelectionSet
-              (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) secondSelectionSet
-              (visitSubfields schema resolvers variableValues childDepth
-                runtimeType (.object runtimeType identity) firstSelectionSet
-                (.object [])))) ->
-      mergeResponse
-        (completeValue schema resolvers variableValues depth parentType
-          firstSelectionSet value .null)
-        (completeValue schema resolvers variableValues depth parentType
-          secondSelectionSet value
-          (completeValue schema resolvers variableValues depth parentType
-            firstSelectionSet value .null)) =
-      completeValue schema resolvers variableValues depth parentType
-        (firstSelectionSet ++ secondSelectionSet) value .null := by
-  intro depth
-  induction depth with
-  | zero =>
-      intro parentType value _hobjects
-      exact completeValue_append_slices_zero schema resolvers variableValues
-        parentType firstSelectionSet secondSelectionSet value
-  | succ depth ih =>
-      intro parentType value hobjects
-      cases value with
-      | null =>
-          exact completeValue_append_slices_null schema resolvers
-            variableValues depth parentType firstSelectionSet secondSelectionSet
-      | scalar value =>
-          exact completeValue_append_slices_scalar schema resolvers
-            variableValues depth parentType firstSelectionSet secondSelectionSet
-            value
-      | object runtimeType identity =>
-          exact completeValue_append_slices_object_of_visit_absorbs schema
-            resolvers variableValues depth parentType runtimeType identity
-            firstSelectionSet secondSelectionSet
-            (hobjects depth runtimeType identity (Nat.lt_succ_self depth))
-      | list values =>
-          apply completeValue_append_slices_list_of_values schema resolvers
-            variableValues depth parentType firstSelectionSet secondSelectionSet
-            values
-          intro childValue hmem
-          exact ih parentType childValue
-            (by
-              intro childDepth runtimeType identity hlt
-              exact hobjects childDepth runtimeType identity
-                (Nat.lt_trans hlt (Nat.lt_succ_self depth)))
-
-theorem completeValue_append_slices_of_contained_visit_absorbs
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues)
-    (firstSelectionSet secondSelectionSet : List Selection) :
-    ∀ (depth : Nat) (parentType : Name) (value : Value ObjectIdentity),
-      (∀ childDepth runtimeType (identity : Option ObjectIdentity),
-        childDepth < depth ->
-        ValueContainsObject value runtimeType identity ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) firstSelectionSet
-              (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) secondSelectionSet
-              (visitSubfields schema resolvers variableValues childDepth
-                runtimeType (.object runtimeType identity) firstSelectionSet
-                (.object [])))) ->
-      mergeResponse
-        (completeValue schema resolvers variableValues depth parentType
-          firstSelectionSet value .null)
-        (completeValue schema resolvers variableValues depth parentType
-          secondSelectionSet value
-          (completeValue schema resolvers variableValues depth parentType
-            firstSelectionSet value .null)) =
-      completeValue schema resolvers variableValues depth parentType
-        (firstSelectionSet ++ secondSelectionSet) value .null := by
-  intro depth
-  induction depth with
-  | zero =>
-      intro parentType value _hobjects
-      exact completeValue_append_slices_zero schema resolvers variableValues
-        parentType firstSelectionSet secondSelectionSet value
-  | succ depth ih =>
-      intro parentType value hobjects
-      cases value with
-      | null =>
-          exact completeValue_append_slices_null schema resolvers
-            variableValues depth parentType firstSelectionSet secondSelectionSet
-      | scalar value =>
-          exact completeValue_append_slices_scalar schema resolvers
-            variableValues depth parentType firstSelectionSet secondSelectionSet
-            value
-      | object runtimeType identity =>
-          exact completeValue_append_slices_object_of_visit_absorbs schema
-            resolvers variableValues depth parentType runtimeType identity
-            firstSelectionSet secondSelectionSet
-            (hobjects depth runtimeType identity (Nat.lt_succ_self depth)
-              ValueContainsObject.here)
-      | list values =>
-          apply completeValue_append_slices_list_of_values schema resolvers
-            variableValues depth parentType firstSelectionSet secondSelectionSet
-            values
-          intro childValue hmem
-          exact ih parentType childValue
-            (by
-              intro childDepth runtimeType identity hlt hcontains
-              exact hobjects childDepth runtimeType identity
-                (Nat.lt_trans hlt (Nat.lt_succ_self depth))
-                (ValueContainsObject.list hmem hcontains))
-
-theorem completeValue_duplicate_merge_eq_spec_of_visit_absorbs
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name)
-    (responseName fieldName : Name) (arguments : List Argument)
+    (variableValues : VariableValues) (childDepth : Nat)
+    (parentType runtimeType : Name) (identity : Option ObjectIdentity)
     (firstSelectionSet secondSelectionSet : List Selection)
-    (resolved : Value ObjectIdentity)
-    (hobjects :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) firstSelectionSet
-              (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) secondSelectionSet
-              (visitSubfields schema resolvers variableValues childDepth
-                runtimeType (.object runtimeType identity) firstSelectionSet
-                (.object []))))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := firstSelectionSet ++ secondSelectionSet }
-              initial := .object [] }) :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          firstSelectionSet resolved .null)
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          secondSelectionSet resolved
-          (completeValue schema resolvers variableValues depth
-            ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-            firstSelectionSet resolved .null)) =
-      GraphQL.Execution.completeValue schema resolvers variableValues depth
-        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        [ executableField parentType responseName fieldName arguments
-            firstSelectionSet
-        , executableField parentType responseName fieldName arguments
-            secondSelectionSet ]
-        resolved := by
-  apply completeValue_duplicate_merge_eq_spec_of_append_completeValue schema
-    resolvers variableValues depth parentType responseName fieldName arguments
-    firstSelectionSet secondSelectionSet resolved
-  · exact completeValue_append_slices_of_visit_absorbs schema resolvers
-      variableValues firstSelectionSet secondSelectionSet depth
-      ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-      resolved hobjects
-  · intro childDepth runtimeType identity hlt _hincludes
-    exact hchildren childDepth runtimeType identity hlt
+    (hincludes :
+      schema.typeIncludesObjectBool parentType runtimeType = true)
+    (herrors :
+      VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+        runtimeType (.object runtimeType identity) secondSelectionSet
+        (visitSubfields schema resolvers variableValues childDepth runtimeType
+          (.object runtimeType identity) firstSelectionSet (.object [])).fst) :
+    let first :=
+        completeValue schema resolvers variableValues (childDepth + 1)
+          (.named parentType) firstSelectionSet (.object runtimeType identity)
+          none
+    resultStatus
+        (completeResolvedValue schema resolvers variableValues (childDepth + 1)
+          (.named parentType) secondSelectionSet (.object runtimeType identity)
+          (some (resultValueOrNull first))) =
+      visitOk := by
+  unfold VisitSubfieldsErrorNeutral at herrors
+  have hparentComposite :
+      (TypeRef.named parentType).isCompositeBool schema = true := by
+    cases hlookup : schema.lookupType parentType with
+    | none =>
+        simp [Schema.typeIncludesObjectBool, Schema.getPossibleTypes, hlookup]
+          at hincludes
+    | some typeDefinition =>
+        cases typeDefinition <;>
+          simp [TypeRef.isCompositeBool, TypeRef.namedType,
+            Schema.typeIncludesObjectBool, Schema.getPossibleTypes, hlookup]
+            at hincludes ⊢
+  cases hfirst :
+      visitSubfields schema resolvers variableValues childDepth runtimeType
+        (.object runtimeType identity) firstSelectionSet (.object []) with
+  | mk firstOutput firstStatus =>
+      simp [hfirst] at herrors
+      cases firstStatus with
+      | error firstErrors =>
+          simp [completeResolvedValue_previous_null, completeValue, reuseOrCreateObject?, hincludes, hfirst, resultValueOrNull, catchVisitBubbleAsNull, resultStatus, visitOk]
+      | ok firstStatusResult =>
+          rcases firstStatusResult with ⟨unitValue, firstErrors⟩
+          cases unitValue
+          obtain ⟨firstFields, hfirstFields⟩ :=
+            visitSubfields_preserves_object schema resolvers variableValues
+              childDepth runtimeType (.object runtimeType identity)
+              firstSelectionSet []
+          rw [hfirst] at hfirstFields
+          simp at hfirstFields
+          subst firstOutput
+          simp [completeResolvedValue, reusablePreviousValue?, completeValue, reuseOrCreateObject?, hincludes, hparentComposite, hfirst, resultValueOrNull, catchVisitBubbleAsNull, herrors, resultStatus, visitOk]
 
-theorem completeValue_duplicate_merge_eq_spec_of_visit_absorbs_contained
+theorem completeValue_named_group_append_one_result_eq_spec
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name)
-    (responseName fieldName : Name) (arguments : List Argument)
-    (firstSelectionSet secondSelectionSet : List Selection)
-    (resolved : Value ObjectIdentity)
-    (hobjects :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-        ValueContainsObject resolved runtimeType identity ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) firstSelectionSet
-              (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) secondSelectionSet
-              (visitSubfields schema resolvers variableValues childDepth
-                runtimeType (.object runtimeType identity) firstSelectionSet
-                (.object []))))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-        ValueContainsObject resolved runtimeType identity ->
-        schema.typeIncludesObjectBool
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := firstSelectionSet ++ secondSelectionSet }
-              initial := .object [] }) :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          firstSelectionSet resolved .null)
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          secondSelectionSet resolved
-          (completeValue schema resolvers variableValues depth
-            ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-            firstSelectionSet resolved .null)) =
-      GraphQL.Execution.completeValue schema resolvers variableValues depth
-        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        [ executableField parentType responseName fieldName arguments
-            firstSelectionSet
-        , executableField parentType responseName fieldName arguments
-            secondSelectionSet ]
-        resolved := by
-  apply completeValue_duplicate_merge_eq_spec_of_append_completeValue_contained
-    schema resolvers variableValues depth parentType responseName fieldName
-    arguments firstSelectionSet secondSelectionSet resolved
-  · exact completeValue_append_slices_of_contained_visit_absorbs schema resolvers
-      variableValues firstSelectionSet secondSelectionSet depth
-      ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-      resolved hobjects
-  · intro childDepth runtimeType identity hlt hcontains hincludes
-    exact hchildren childDepth runtimeType identity hlt hcontains hincludes
-
-theorem completeValue_two_fields_merge_eq_spec_of_visit_absorbs
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (first later : ExecutableField)
-    (resolved : Value ObjectIdentity)
-    (hobjects :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) later.selectionSet
-              (visitSubfields schema resolvers variableValues childDepth
-                runtimeType (.object runtimeType identity) first.selectionSet
-                (.object []))))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-        schema.typeIncludesObjectBool parentType runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet ++ later.selectionSet }
-              initial := .object [] }) :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth parentType
-          first.selectionSet resolved .null)
-        (completeValue schema resolvers variableValues depth parentType
-          later.selectionSet resolved
-          (completeValue schema resolvers variableValues depth parentType
-            first.selectionSet resolved .null)) =
-      GraphQL.Execution.completeValue schema resolvers variableValues depth
-        parentType [first, later] resolved := by
-  have happend :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth parentType
-          first.selectionSet resolved .null)
-        (completeValue schema resolvers variableValues depth parentType
-          later.selectionSet resolved
-          (completeValue schema resolvers variableValues depth parentType
-            first.selectionSet resolved .null)) =
-      completeValue schema resolvers variableValues depth parentType
-        (first.selectionSet ++ later.selectionSet) resolved .null :=
-    completeValue_append_slices_of_visit_absorbs schema resolvers variableValues
-      first.selectionSet later.selectionSet depth parentType resolved hobjects
-  rw [happend]
-  simpa [GraphQL.Execution.mergedFieldSelectionSet] using
-    completeValue_group_eq_spec_of_guarded_merged_child_states schema resolvers
-      variableValues [first, later] depth parentType resolved
-      (by
-        intro childDepth runtimeType identity hlt hincludes
-        simpa [GraphQL.Execution.mergedFieldSelectionSet] using
-          hchildren childDepth runtimeType identity hlt hincludes)
-
-theorem completeValue_two_fields_merge_eq_spec_of_visit_absorbs_contained
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (first later : ExecutableField)
-    (resolved : Value ObjectIdentity)
-    (hobjects :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-        ValueContainsObject resolved runtimeType identity ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) later.selectionSet
-              (visitSubfields schema resolvers variableValues childDepth
-                runtimeType (.object runtimeType identity) first.selectionSet
-                (.object []))))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-        ValueContainsObject resolved runtimeType identity ->
-        schema.typeIncludesObjectBool parentType runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet ++ later.selectionSet }
-              initial := .object [] }) :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth parentType
-          first.selectionSet resolved .null)
-        (completeValue schema resolvers variableValues depth parentType
-          later.selectionSet resolved
-          (completeValue schema resolvers variableValues depth parentType
-            first.selectionSet resolved .null)) =
-      GraphQL.Execution.completeValue schema resolvers variableValues depth
-        parentType [first, later] resolved := by
-  have happend :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth parentType
-          first.selectionSet resolved .null)
-        (completeValue schema resolvers variableValues depth parentType
-          later.selectionSet resolved
-          (completeValue schema resolvers variableValues depth parentType
-            first.selectionSet resolved .null)) =
-      completeValue schema resolvers variableValues depth parentType
-        (first.selectionSet ++ later.selectionSet) resolved .null :=
-    completeValue_append_slices_of_contained_visit_absorbs schema resolvers
-      variableValues
-      first.selectionSet later.selectionSet depth parentType resolved hobjects
-  rw [happend]
-  simpa [GraphQL.Execution.mergedFieldSelectionSet] using
-    completeValue_group_eq_spec_of_contained_child_states schema resolvers
-      variableValues [first, later] depth parentType resolved
-      (by
-        intro childDepth runtimeType identity hlt hcontains hincludes
-        simpa [GraphQL.Execution.mergedFieldSelectionSet] using
-          hchildren childDepth runtimeType identity hlt hcontains hincludes)
-
-theorem completeValue_group_append_one_merge_eq_spec_of_visit_absorbs
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (resolved : Value ObjectIdentity)
+    (parentType : Name) (resolved : ResolverValue ObjectIdentity)
     (prefixFields : List ExecutableField) (later : ExecutableField)
     (hprefixChildren :
       ∀ childDepth runtimeType identity,
@@ -797,7 +549,8 @@ theorem completeValue_group_append_one_merge_eq_spec_of_visit_absorbs
                 depth := childDepth
                 parentType := runtimeType
                 source := .object runtimeType identity
-                selectionSet := GraphQL.Execution.mergedFieldSelectionSet prefixFields }
+                selectionSet :=
+                  GraphQL.Execution.mergedFieldSelectionSet prefixFields }
               initial := .object [] })
     (hobjects :
       ∀ childDepth runtimeType identity,
@@ -805,311 +558,27 @@ theorem completeValue_group_append_one_merge_eq_spec_of_visit_absorbs
           ResponseAbsorbs
             (visitSubfields schema resolvers variableValues childDepth
               runtimeType (.object runtimeType identity)
-              (GraphQL.Execution.mergedFieldSelectionSet prefixFields) (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) later.selectionSet
-              (visitSubfields schema resolvers variableValues childDepth
-                runtimeType (.object runtimeType identity)
-                (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
-                (.object []))))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-        schema.typeIncludesObjectBool parentType runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet :=
-                  GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]) }
-              initial := .object [] }) :
-    mergeResponse
-      (GraphQL.Execution.completeValue schema resolvers variableValues depth
-        parentType prefixFields resolved)
-      (completeValue schema resolvers variableValues depth parentType
-        later.selectionSet resolved
-        (GraphQL.Execution.completeValue schema resolvers variableValues depth
-          parentType prefixFields resolved)) =
-    GraphQL.Execution.completeValue schema resolvers variableValues depth
-      parentType (prefixFields ++ [later]) resolved := by
-  have hprefix :
-      completeValue schema resolvers variableValues depth parentType
-        (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved .null =
-      GraphQL.Execution.completeValue schema resolvers variableValues depth
-        parentType prefixFields resolved :=
-    completeValue_group_eq_spec_of_guarded_merged_child_states schema resolvers
-      variableValues prefixFields depth parentType resolved hprefixChildren
-  have happended :
-      completeValue schema resolvers variableValues depth parentType
-        (GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]))
-        resolved .null =
-      GraphQL.Execution.completeValue schema resolvers variableValues depth
-        parentType (prefixFields ++ [later]) resolved :=
-    completeValue_group_eq_spec_of_guarded_merged_child_states schema resolvers
-      variableValues (prefixFields ++ [later]) depth parentType resolved hchildren
-  have hmergedAppend :
-      GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]) =
-        GraphQL.Execution.mergedFieldSelectionSet prefixFields ++
-          later.selectionSet := by
-    simp [GraphQL.Execution.mergedFieldSelectionSet_append]
-  have hslice :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth parentType
-          (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved .null)
-        (completeValue schema resolvers variableValues depth parentType
-          later.selectionSet resolved
-          (completeValue schema resolvers variableValues depth parentType
-            (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved .null)) =
-      completeValue schema resolvers variableValues depth parentType
-        (GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]))
-        resolved .null := by
-    calc
-      mergeResponse
-          (completeValue schema resolvers variableValues depth parentType
-            (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved .null)
-          (completeValue schema resolvers variableValues depth parentType
-            later.selectionSet resolved
-            (completeValue schema resolvers variableValues depth parentType
-              (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved
-              .null)) =
-        completeValue schema resolvers variableValues depth parentType
-          (GraphQL.Execution.mergedFieldSelectionSet prefixFields ++
-            later.selectionSet)
-          resolved .null := by
-          exact completeValue_append_slices_of_visit_absorbs schema resolvers
-            variableValues (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
-            later.selectionSet depth parentType resolved hobjects
-      _ =
-        completeValue schema resolvers variableValues depth parentType
-          (GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]))
-          resolved .null := by
-          rw [hmergedAppend]
-  calc
-    mergeResponse
-        (GraphQL.Execution.completeValue schema resolvers variableValues depth
-          parentType prefixFields resolved)
-        (completeValue schema resolvers variableValues depth parentType
-          later.selectionSet resolved
-          (GraphQL.Execution.completeValue schema resolvers variableValues depth
-            parentType prefixFields resolved)) =
-      mergeResponse
-        (completeValue schema resolvers variableValues depth parentType
-          (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved .null)
-        (completeValue schema resolvers variableValues depth parentType
-          later.selectionSet resolved
-          (completeValue schema resolvers variableValues depth parentType
-            (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved
-            .null)) := by
-          rw [hprefix]
-    _ =
-      completeValue schema resolvers variableValues depth parentType
-        (GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]))
-        resolved .null := hslice
-    _ =
-      GraphQL.Execution.completeValue schema resolvers variableValues depth
-        parentType (prefixFields ++ [later]) resolved := happended
-
-theorem completeValue_group_append_one_merge_eq_spec_of_contained_visit_absorbs
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (resolved : Value ObjectIdentity)
-    (prefixFields : List ExecutableField) (later : ExecutableField)
-    (hprefixChildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-        ValueContainsObject resolved runtimeType identity ->
-        schema.typeIncludesObjectBool parentType runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := GraphQL.Execution.mergedFieldSelectionSet prefixFields }
-              initial := .object [] })
-    (hobjects :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-        ValueContainsObject resolved runtimeType identity ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity)
-              (GraphQL.Execution.mergedFieldSelectionSet prefixFields) (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) later.selectionSet
-              (visitSubfields schema resolvers variableValues childDepth
-                runtimeType (.object runtimeType identity)
-                (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
-                (.object []))))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-        ValueContainsObject resolved runtimeType identity ->
-        schema.typeIncludesObjectBool parentType runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet :=
-                  GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]) }
-              initial := .object [] }) :
-    mergeResponse
-      (GraphQL.Execution.completeValue schema resolvers variableValues depth
-        parentType prefixFields resolved)
-      (completeValue schema resolvers variableValues depth parentType
-        later.selectionSet resolved
-        (GraphQL.Execution.completeValue schema resolvers variableValues depth
-          parentType prefixFields resolved)) =
-    GraphQL.Execution.completeValue schema resolvers variableValues depth
-      parentType (prefixFields ++ [later]) resolved := by
-  have hprefix :
-      completeValue schema resolvers variableValues depth parentType
-        (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved .null =
-      GraphQL.Execution.completeValue schema resolvers variableValues depth
-        parentType prefixFields resolved :=
-    completeValue_group_eq_spec_of_contained_child_states schema resolvers
-      variableValues prefixFields depth parentType resolved hprefixChildren
-  have happended :
-      completeValue schema resolvers variableValues depth parentType
-        (GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]))
-        resolved .null =
-      GraphQL.Execution.completeValue schema resolvers variableValues depth
-        parentType (prefixFields ++ [later]) resolved :=
-    completeValue_group_eq_spec_of_contained_child_states schema resolvers
-      variableValues (prefixFields ++ [later]) depth parentType resolved
-      hchildren
-  have hmergedAppend :
-      GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]) =
-        GraphQL.Execution.mergedFieldSelectionSet prefixFields ++
-          later.selectionSet := by
-    simp [GraphQL.Execution.mergedFieldSelectionSet_append]
-  have hslice :
-      mergeResponse
-        (completeValue schema resolvers variableValues depth parentType
-          (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved .null)
-        (completeValue schema resolvers variableValues depth parentType
-          later.selectionSet resolved
-          (completeValue schema resolvers variableValues depth parentType
-            (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved .null)) =
-      completeValue schema resolvers variableValues depth parentType
-        (GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]))
-        resolved .null := by
-    calc
-      mergeResponse
-          (completeValue schema resolvers variableValues depth parentType
-            (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved .null)
-          (completeValue schema resolvers variableValues depth parentType
-            later.selectionSet resolved
-            (completeValue schema resolvers variableValues depth parentType
-              (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved
-              .null)) =
-        completeValue schema resolvers variableValues depth parentType
-          (GraphQL.Execution.mergedFieldSelectionSet prefixFields ++
-            later.selectionSet)
-          resolved .null := by
-          exact
-            completeValue_append_slices_of_contained_visit_absorbs schema
-              resolvers variableValues
               (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
-              later.selectionSet depth parentType resolved hobjects
-      _ =
-        completeValue schema resolvers variableValues depth parentType
-          (GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]))
-          resolved .null := by
-          rw [hmergedAppend]
-  calc
-    mergeResponse
-        (GraphQL.Execution.completeValue schema resolvers variableValues depth
-          parentType prefixFields resolved)
-        (completeValue schema resolvers variableValues depth parentType
-          later.selectionSet resolved
-          (GraphQL.Execution.completeValue schema resolvers variableValues depth
-            parentType prefixFields resolved)) =
-      mergeResponse
-        (completeValue schema resolvers variableValues depth parentType
-          (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved .null)
-        (completeValue schema resolvers variableValues depth parentType
-          later.selectionSet resolved
-          (completeValue schema resolvers variableValues depth parentType
-            (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved
-            .null)) := by
-          rw [hprefix]
-    _ =
-      completeValue schema resolvers variableValues depth parentType
-        (GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]))
-        resolved .null := hslice
-    _ =
-      GraphQL.Execution.completeValue schema resolvers variableValues depth
-        parentType (prefixFields ++ [later]) resolved := happended
-
-theorem ExecutableFieldsMergedResponse_append_one_of_prefix
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
-    (responseName : Name) (field : ExecutableField)
-    (fields : List ExecutableField) (later : ExecutableField)
-    (resolved : Value ObjectIdentity)
-    (hprefix :
-      ExecutableFieldsMergedResponse schema resolvers variableValues depth
-        parentType source responseName field fields resolved)
-    (hlaterResponse : later.responseName = responseName)
-    (hfieldParent : field.parentType = parentType)
-    (hlaterParent : later.parentType = parentType)
-    (hfieldName : later.fieldName = field.fieldName)
-    (hresolveLater :
-      resolvers.resolve later.parentType later.fieldName later.arguments source =
-        resolved)
-    (hprefixChildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-        schema.typeIncludesObjectBool
-          ((schema.fieldReturnType? field.parentType field.fieldName).getD
-            field.fieldName)
-          runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet :=
-                  GraphQL.Execution.mergedFieldSelectionSet (field :: fields) }
-              initial := .object [] })
-    (hobjects :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity)
-              (GraphQL.Execution.mergedFieldSelectionSet (field :: fields))
               (.object []))
             (visitSubfields schema resolvers variableValues childDepth
               runtimeType (.object runtimeType identity) later.selectionSet
               (visitSubfields schema resolvers variableValues childDepth
                 runtimeType (.object runtimeType identity)
-                (GraphQL.Execution.mergedFieldSelectionSet (field :: fields))
+                (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
                 (.object []))))
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+            runtimeType (.object runtimeType identity) later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+              (.object [])))
     (hchildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
-        schema.typeIncludesObjectBool
-          ((schema.fieldReturnType? field.parentType field.fieldName).getD
-            field.fieldName)
-          runtimeType = true ->
+        schema.typeIncludesObjectBool parentType runtimeType = true ->
           ExecutionStateEquivalent
             { window :=
               { schema := schema
@@ -1120,77 +589,4194 @@ theorem ExecutableFieldsMergedResponse_append_one_of_prefix
                 source := .object runtimeType identity
                 selectionSet :=
                   GraphQL.Execution.mergedFieldSelectionSet
-                    ((field :: fields) ++ [later]) }
+                    (prefixFields ++ [later]) }
               initial := .object [] }) :
-    ExecutableFieldsMergedResponse schema resolvers variableValues depth
-      parentType source responseName field (fields ++ [later]) resolved := by
-  unfold ExecutableFieldsMergedResponse at hprefix ⊢
-  have hcomplete :
-      mergeResponse
-        (GraphQL.Execution.completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? field.parentType field.fieldName).getD
-            field.fieldName)
-          (field :: fields) resolved)
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? field.parentType field.fieldName).getD
-            field.fieldName)
+    GraphQL.Execution.Result.combine mergeResponse
+      (GraphQL.Execution.completeValue schema resolvers variableValues depth
+        (.named parentType) prefixFields resolved)
+        (completeResolvedValue schema resolvers variableValues depth (.named parentType)
           later.selectionSet resolved
-          (GraphQL.Execution.completeValue schema resolvers variableValues depth
-            ((schema.fieldReturnType? field.parentType field.fieldName).getD
-              field.fieldName)
-            (field :: fields) resolved)) =
+          (some (resultValueOrNull
+            (GraphQL.Execution.completeValue schema resolvers variableValues depth
+              (.named parentType) prefixFields resolved)))) =
+    GraphQL.Execution.completeValue schema resolvers variableValues depth
+      (.named parentType) (prefixFields ++ [later]) resolved := by
+  have hprefix :
+      completeValue schema resolvers variableValues depth (.named parentType)
+        (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved
+        none =
       GraphQL.Execution.completeValue schema resolvers variableValues depth
-        ((schema.fieldReturnType? field.parentType field.fieldName).getD
-          field.fieldName)
-        ((field :: fields) ++ [later]) resolved :=
-    completeValue_group_append_one_merge_eq_spec_of_visit_absorbs schema
-      resolvers variableValues depth
-      ((schema.fieldReturnType? field.parentType field.fieldName).getD
-        field.fieldName)
-      resolved (field :: fields) later hprefixChildren hobjects hchildren
-  rw [show
-      executableFieldSelections (field :: (fields ++ [later])) =
-        executableFieldSelections (field :: fields) ++
-          [executableFieldSelection later] by
-    simp [executableFieldSelections]]
-  rw [visitSubfields_append_equivalence schema resolvers variableValues (depth + 1)
-    parentType source (executableFieldSelections (field :: fields))
-    [executableFieldSelection later] (.object [])]
-  rw [hprefix]
-  cases field with
-  | mk fieldParent fieldResponse fieldName fieldArguments fieldSelectionSet =>
-      cases later with
-      | mk laterParent laterResponse laterFieldName laterArguments
-          laterSelectionSet =>
-          dsimp at hlaterResponse hfieldParent hlaterParent hfieldName hresolveLater hcomplete ⊢
-          subst fieldParent
-          subst laterResponse
-          subst laterParent
-          subst laterFieldName
-          simp [GraphQL.NormalForm.completeValue_eq_mergedFieldSelectionSet] at hcomplete
-          simpa [visitSubfields, visitSelection, executeField,
-            executableFieldSelection, executableField, responseObjectField?,
-            lookupResponseField?, mergeResponseFieldIntoObject,
-            mergeResponseField, selectionDirectivesAllowBool_empty,
-            hresolveLater,
-            GraphQL.NormalForm.completeValue_eq_mergedFieldSelectionSet] using
-            hcomplete
+        (.named parentType) prefixFields resolved :=
+    completeValue_group_eq_spec_of_guarded_merged_child_states schema resolvers
+      variableValues prefixFields depth parentType resolved hprefixChildren
+  have hextended :
+      completeValue schema resolvers variableValues depth (.named parentType)
+        (GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]))
+        resolved none =
+      GraphQL.Execution.completeValue schema resolvers variableValues depth
+        (.named parentType) (prefixFields ++ [later]) resolved :=
+    completeValue_group_eq_spec_of_guarded_merged_child_states schema resolvers
+      variableValues (prefixFields ++ [later]) depth parentType resolved
+      hchildren
+  have hmergedAppend :
+      GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]) =
+        GraphQL.Execution.mergedFieldSelectionSet prefixFields ++
+          later.selectionSet := by
+    simp [GraphQL.Execution.mergedFieldSelectionSet_append]
+  cases depth with
+  | zero =>
+      cases resolved <;>
+        simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, outOfFuel, resultValueOrNull, GraphQL.Execution.Result.combine]
+  | succ childDepth =>
+      cases resolved with
+      | null =>
+            simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, GraphQL.Execution.Result.combine, mergeResponse]
+      | scalar value =>
+            by_cases hcomposite :
+                (TypeRef.named parentType).isCompositeBool schema = true
+            · simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, GraphQL.Execution.Result.combine, hcomposite]
+            · simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_scalar, resultValueOrNull, GraphQL.Execution.Result.combine, mergeResponse, hcomposite]
+      | list values =>
+            simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, GraphQL.Execution.Result.combine]
+      | object runtimeType identity =>
+          by_cases hincludes :
+              schema.typeIncludesObjectBool parentType runtimeType = true
+          · have hslice :
+                GraphQL.Execution.Result.combine mergeResponse
+                    (completeValue schema resolvers variableValues
+                      (childDepth + 1) (.named parentType)
+                      (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+                      (.object runtimeType identity) none)
+                  (completeResolvedValue schema resolvers variableValues
+                    (childDepth + 1) (.named parentType)
+                    later.selectionSet (.object runtimeType identity)
+                      (some (resultValueOrNull
+                        (completeValue schema resolvers variableValues
+                          (childDepth + 1) (.named parentType)
+                          (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+                          (.object runtimeType identity) none)))) =
+                completeValue schema resolvers variableValues (childDepth + 1)
+                    (.named parentType)
+                    (GraphQL.Execution.mergedFieldSelectionSet
+                      (prefixFields ++ [later]))
+                    (.object runtimeType identity) none := by
+              calc
+                GraphQL.Execution.Result.combine mergeResponse
+                      (completeValue schema resolvers variableValues
+                        (childDepth + 1) (.named parentType)
+                        (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+                        (.object runtimeType identity) none)
+                    (completeResolvedValue schema resolvers variableValues
+                      (childDepth + 1) (.named parentType)
+                      later.selectionSet (.object runtimeType identity)
+                        (some (resultValueOrNull
+                          (completeValue schema resolvers variableValues
+                            (childDepth + 1) (.named parentType)
+                            (GraphQL.Execution.mergedFieldSelectionSet
+                              prefixFields)
+                            (.object runtimeType identity) none)))) =
+                  completeValue schema resolvers variableValues (childDepth + 1)
+                      (.named parentType)
+                      (GraphQL.Execution.mergedFieldSelectionSet prefixFields ++
+                        later.selectionSet)
+                      (.object runtimeType identity) none := by
+                    exact
+                      completeValue_object_append_result_of_absorbs_errorNeutral
+                        schema resolvers variableValues childDepth parentType
+                        runtimeType identity
+                        (GraphQL.Execution.mergedFieldSelectionSet
+                          prefixFields)
+                        later.selectionSet hincludes
+                        (hobjects childDepth runtimeType identity
+                          (Nat.lt_succ_self childDepth))
+                        (herrors childDepth runtimeType identity
+                          (Nat.lt_succ_self childDepth))
+                _ =
+                  completeValue schema resolvers variableValues
+                      (childDepth + 1) (.named parentType)
+                      (GraphQL.Execution.mergedFieldSelectionSet
+                        (prefixFields ++ [later]))
+                      (.object runtimeType identity) none := by
+                    rw [hmergedAppend]
+            rw [← hprefix]
+            rw [← hextended]
+            exact hslice
+          · have hnotIncludes :
+                schema.typeIncludesObjectBool parentType runtimeType = false := by
+              cases h : schema.typeIncludesObjectBool parentType runtimeType <;>
+                simp [h] at hincludes ⊢
+            simp [GraphQL.Execution.completeValue, hnotIncludes, resultValueOrNull, GraphQL.Execution.Result.combine, completeResolvedValue_previous_null]
 
-theorem ExecutableFieldsMergedComplete_append_one_of_prefix
+theorem resultStatus_completeValue_named_group_append_second_eq_ok
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (resolved : ResolverValue ObjectIdentity)
+    (prefixFields : List ExecutableField) (later : ExecutableField)
+    (hprefixChildren :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        schema.typeIncludesObjectBool parentType runtimeType = true ->
+          ExecutionStateEquivalent
+            { window :=
+              { schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := childDepth
+                parentType := runtimeType
+                source := .object runtimeType identity
+                selectionSet :=
+                  GraphQL.Execution.mergedFieldSelectionSet prefixFields }
+              initial := .object [] })
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+            runtimeType (.object runtimeType identity) later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+              (.object []))) :
+    resultStatus
+        (completeResolvedValue schema resolvers variableValues depth (.named parentType)
+          later.selectionSet resolved
+          (some (resultValueOrNull
+            (GraphQL.Execution.completeValue schema resolvers variableValues depth
+              (.named parentType) prefixFields resolved)))) =
+      visitOk := by
+  have hprefix :
+      completeValue schema resolvers variableValues depth (.named parentType)
+        (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved
+        none =
+      GraphQL.Execution.completeValue schema resolvers variableValues depth
+        (.named parentType) prefixFields resolved :=
+    completeValue_group_eq_spec_of_guarded_merged_child_states schema resolvers
+      variableValues prefixFields depth parentType resolved hprefixChildren
+  cases depth with
+  | zero =>
+      cases resolved <;>
+        simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, outOfFuel, resultValueOrNull, resultStatus, visitOk]
+  | succ childDepth =>
+      cases resolved with
+      | null =>
+          simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, resultStatus, visitOk]
+      | scalar value =>
+          by_cases hcomposite :
+              (TypeRef.named parentType).isCompositeBool schema = true
+          · simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, resultStatus, visitOk, hcomposite]
+          · simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_scalar, resultValueOrNull, resultStatus, visitOk, hcomposite]
+      | list values =>
+          simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, resultStatus, visitOk]
+      | object runtimeType identity =>
+          by_cases hincludes :
+              schema.typeIncludesObjectBool parentType runtimeType = true
+          · have hrightLocal :=
+              resultStatus_completeValue_object_append_second_of_errorNeutral
+                schema resolvers variableValues childDepth parentType
+                runtimeType identity
+                (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+                later.selectionSet hincludes
+                (herrors childDepth runtimeType identity
+                  (Nat.lt_succ_self childDepth))
+            dsimp at hrightLocal
+            rw [hprefix] at hrightLocal
+            exact hrightLocal
+          · have hnotIncludes :
+                schema.typeIncludesObjectBool parentType runtimeType = false := by
+              cases h : schema.typeIncludesObjectBool parentType runtimeType <;>
+                simp [h] at hincludes ⊢
+            simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, hnotIncludes, resultValueOrNull, resultStatus, visitOk]
+
+theorem completeValue_named_group_append_one_result_eq_spec_of_contained
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (resolved : ResolverValue ObjectIdentity)
+    (prefixFields : List ExecutableField) (later : ExecutableField)
+    (hprefixChildren :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+        schema.typeIncludesObjectBool parentType runtimeType = true ->
+          ExecutionStateEquivalent
+            { window :=
+              { schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := childDepth
+                parentType := runtimeType
+                source := .object runtimeType identity
+                selectionSet :=
+                  GraphQL.Execution.mergedFieldSelectionSet prefixFields }
+              initial := .object [] })
+    (hobjects :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+          ResponseAbsorbs
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+              (.object []))
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity) later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity)
+                (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+                (.object []))))
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+            runtimeType (.object runtimeType identity) later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+              (.object [])))
+    (hchildren :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+        schema.typeIncludesObjectBool parentType runtimeType = true ->
+          ExecutionStateEquivalent
+            { window :=
+              { schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := childDepth
+                parentType := runtimeType
+                source := .object runtimeType identity
+                selectionSet :=
+                  GraphQL.Execution.mergedFieldSelectionSet
+                    (prefixFields ++ [later]) }
+              initial := .object [] }) :
+    GraphQL.Execution.Result.combine mergeResponse
+      (GraphQL.Execution.completeValue schema resolvers variableValues depth
+        (.named parentType) prefixFields resolved)
+        (completeResolvedValue schema resolvers variableValues depth (.named parentType)
+          later.selectionSet resolved
+          (some (resultValueOrNull
+            (GraphQL.Execution.completeValue schema resolvers variableValues depth
+              (.named parentType) prefixFields resolved)))) =
+    GraphQL.Execution.completeValue schema resolvers variableValues depth
+      (.named parentType) (prefixFields ++ [later]) resolved := by
+  have hprefix :
+      completeValue schema resolvers variableValues depth (.named parentType)
+        (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved
+        none =
+      GraphQL.Execution.completeValue schema resolvers variableValues depth
+        (.named parentType) prefixFields resolved :=
+    completeValue_group_eq_spec_of_contained_child_states schema resolvers
+      variableValues prefixFields depth parentType resolved
+      (by
+        intro childDepth runtimeType identity hlt hcontains hincludes
+        exact hprefixChildren childDepth runtimeType identity hlt hcontains
+          (by simpa using hincludes))
+  have hextended :
+      completeValue schema resolvers variableValues depth (.named parentType)
+        (GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]))
+        resolved none =
+      GraphQL.Execution.completeValue schema resolvers variableValues depth
+        (.named parentType) (prefixFields ++ [later]) resolved :=
+    completeValue_group_eq_spec_of_contained_child_states schema resolvers
+      variableValues (prefixFields ++ [later]) depth parentType resolved
+      (by
+        intro childDepth runtimeType identity hlt hcontains hincludes
+        exact hchildren childDepth runtimeType identity hlt hcontains
+          (by simpa using hincludes))
+  have hmergedAppend :
+      GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]) =
+        GraphQL.Execution.mergedFieldSelectionSet prefixFields ++
+          later.selectionSet := by
+    simp [GraphQL.Execution.mergedFieldSelectionSet_append]
+  cases depth with
+  | zero =>
+      cases resolved <;>
+        simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, outOfFuel, resultValueOrNull, GraphQL.Execution.Result.combine]
+  | succ childDepth =>
+      cases resolved with
+      | null =>
+          simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, GraphQL.Execution.Result.combine, mergeResponse]
+      | scalar value =>
+          by_cases hcomposite :
+              (TypeRef.named parentType).isCompositeBool schema = true
+          · simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, GraphQL.Execution.Result.combine, hcomposite]
+          · simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_scalar, resultValueOrNull, GraphQL.Execution.Result.combine, mergeResponse, hcomposite]
+      | list values =>
+          simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, GraphQL.Execution.Result.combine]
+      | object runtimeType identity =>
+          by_cases hincludes :
+              schema.typeIncludesObjectBool parentType runtimeType = true
+          · have hslice :
+                GraphQL.Execution.Result.combine mergeResponse
+                    (completeValue schema resolvers variableValues
+                      (childDepth + 1) (.named parentType)
+                      (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+                      (.object runtimeType identity) none)
+                  (completeResolvedValue schema resolvers variableValues
+                    (childDepth + 1) (.named parentType)
+                    later.selectionSet (.object runtimeType identity)
+                      (some (resultValueOrNull
+                        (completeValue schema resolvers variableValues
+                          (childDepth + 1) (.named parentType)
+                          (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+                          (.object runtimeType identity) none)))) =
+                completeValue schema resolvers variableValues (childDepth + 1)
+                    (.named parentType)
+                    (GraphQL.Execution.mergedFieldSelectionSet
+                      (prefixFields ++ [later]))
+                    (.object runtimeType identity) none := by
+              calc
+                GraphQL.Execution.Result.combine mergeResponse
+                      (completeValue schema resolvers variableValues
+                        (childDepth + 1) (.named parentType)
+                        (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+                        (.object runtimeType identity) none)
+                    (completeResolvedValue schema resolvers variableValues
+                      (childDepth + 1) (.named parentType)
+                      later.selectionSet (.object runtimeType identity)
+                        (some (resultValueOrNull
+                          (completeValue schema resolvers variableValues
+                            (childDepth + 1) (.named parentType)
+                            (GraphQL.Execution.mergedFieldSelectionSet
+                              prefixFields)
+                            (.object runtimeType identity) none)))) =
+                  completeValue schema resolvers variableValues (childDepth + 1)
+                      (.named parentType)
+                      (GraphQL.Execution.mergedFieldSelectionSet prefixFields ++
+                        later.selectionSet)
+                      (.object runtimeType identity) none := by
+                    exact
+                      completeValue_object_append_result_of_absorbs_errorNeutral
+                        schema resolvers variableValues childDepth parentType
+                        runtimeType identity
+                        (GraphQL.Execution.mergedFieldSelectionSet
+                          prefixFields)
+                        later.selectionSet hincludes
+                        (hobjects childDepth runtimeType identity
+                          (Nat.lt_succ_self childDepth)
+                          ValueContainsObject.here)
+                        (herrors childDepth runtimeType identity
+                          (Nat.lt_succ_self childDepth)
+                          ValueContainsObject.here)
+                _ =
+                  completeValue schema resolvers variableValues
+                      (childDepth + 1) (.named parentType)
+                      (GraphQL.Execution.mergedFieldSelectionSet
+                        (prefixFields ++ [later]))
+                      (.object runtimeType identity) none := by
+                    rw [hmergedAppend]
+            rw [← hprefix]
+            rw [← hextended]
+            exact hslice
+          · have hnotIncludes :
+                schema.typeIncludesObjectBool parentType runtimeType = false := by
+              cases h : schema.typeIncludesObjectBool parentType runtimeType <;>
+                simp [h] at hincludes ⊢
+            simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, hnotIncludes, resultValueOrNull, GraphQL.Execution.Result.combine]
+
+theorem resultStatus_completeValue_named_group_append_second_eq_ok_of_contained
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (resolved : ResolverValue ObjectIdentity)
+    (prefixFields : List ExecutableField) (later : ExecutableField)
+    (hprefixChildren :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+        schema.typeIncludesObjectBool parentType runtimeType = true ->
+          ExecutionStateEquivalent
+            { window :=
+              { schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := childDepth
+                parentType := runtimeType
+                source := .object runtimeType identity
+                selectionSet :=
+                  GraphQL.Execution.mergedFieldSelectionSet prefixFields }
+              initial := .object [] })
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+            runtimeType (.object runtimeType identity) later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+              (.object []))) :
+    resultStatus
+        (completeResolvedValue schema resolvers variableValues depth (.named parentType)
+          later.selectionSet resolved
+          (some (resultValueOrNull
+            (GraphQL.Execution.completeValue schema resolvers variableValues depth
+              (.named parentType) prefixFields resolved)))) =
+      visitOk := by
+  have hprefix :
+      completeValue schema resolvers variableValues depth (.named parentType)
+        (GraphQL.Execution.mergedFieldSelectionSet prefixFields) resolved
+        none =
+      GraphQL.Execution.completeValue schema resolvers variableValues depth
+        (.named parentType) prefixFields resolved :=
+    completeValue_group_eq_spec_of_contained_child_states schema resolvers
+      variableValues prefixFields depth parentType resolved
+      (by
+        intro childDepth runtimeType identity hlt hcontains hincludes
+        exact hprefixChildren childDepth runtimeType identity hlt hcontains
+          (by simpa using hincludes))
+  cases depth with
+  | zero =>
+      cases resolved <;>
+        simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, outOfFuel, resultValueOrNull, resultStatus, visitOk]
+  | succ childDepth =>
+      cases resolved with
+      | null =>
+          simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, resultStatus, visitOk]
+      | scalar value =>
+          by_cases hcomposite :
+              (TypeRef.named parentType).isCompositeBool schema = true
+          · simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, resultStatus, visitOk, hcomposite]
+          · simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_scalar, resultValueOrNull, resultStatus, visitOk, hcomposite]
+      | list values =>
+          simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, resultStatus, visitOk]
+      | object runtimeType identity =>
+          by_cases hincludes :
+              schema.typeIncludesObjectBool parentType runtimeType = true
+          · have hrightLocal :=
+              resultStatus_completeValue_object_append_second_of_errorNeutral
+                schema resolvers variableValues childDepth parentType
+                runtimeType identity
+                (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+                later.selectionSet hincludes
+                (herrors childDepth runtimeType identity
+                  (Nat.lt_succ_self childDepth) ValueContainsObject.here)
+            dsimp at hrightLocal
+            rw [hprefix] at hrightLocal
+            exact hrightLocal
+          · have hnotIncludes :
+                schema.typeIncludesObjectBool parentType runtimeType = false := by
+              cases h : schema.typeIncludesObjectBool parentType runtimeType <;>
+                simp [h] at hincludes ⊢
+            simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, hnotIncludes, resultValueOrNull, resultStatus, visitOk]
+
+theorem completeValueList_head_eq_completeResolvedValue_of_composite
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (itemType : TypeRef) (selectionSet : List Selection)
+    (value : ResolverValue ObjectIdentity) (previous : ResponseValue)
+    (hitemComposite : itemType.isCompositeBool schema = true) :
+    (match (some previous : Option ResponseValue) with
+    | some .null => .ok (.null, 0)
+    | _ =>
+        completeValue schema resolvers variableValues depth itemType
+          selectionSet value (some previous)) =
+      completeResolvedValue schema resolvers variableValues depth itemType
+        selectionSet value (some previous) := by
+  induction itemType generalizing previous with
+  | named typeName =>
+      cases previous <;>
+        unfold completeResolvedValue <;>
+        simp [reusablePreviousValue?, hitemComposite]
+  | list inner ih =>
+      cases previous <;>
+        unfold completeResolvedValue <;>
+        simp [reusablePreviousValue?, hitemComposite]
+  | nonNull inner ih =>
+      have hinnerComposite : inner.isCompositeBool schema = true := by
+        simpa [TypeRef.isCompositeBool] using hitemComposite
+      cases previous with
+      | null =>
+          unfold completeResolvedValue
+          simp [reusablePreviousValue?]
+      | scalar previousValue =>
+          cases depth with
+          | zero =>
+              have hinner :=
+                ih (ResponseValue.scalar previousValue) hinnerComposite
+              simp [completeResolvedValue, reusablePreviousValue?,
+                hitemComposite, completeValue, outOfFuel,
+                nonNullCompletion, ← hinner]
+          | succ childDepth =>
+              have hinner :=
+                ih (ResponseValue.scalar previousValue) hinnerComposite
+              simp [completeResolvedValue, reusablePreviousValue?,
+                hitemComposite, completeValue, nonNullCompletion, ← hinner]
+      | object fields =>
+          cases depth with
+          | zero =>
+              have hinner := ih (ResponseValue.object fields) hinnerComposite
+              simp [completeResolvedValue, reusablePreviousValue?,
+                hitemComposite, completeValue, outOfFuel,
+                nonNullCompletion, ← hinner]
+          | succ childDepth =>
+              have hinner := ih (ResponseValue.object fields) hinnerComposite
+              simp [completeResolvedValue, reusablePreviousValue?,
+                hitemComposite, completeValue, nonNullCompletion, ← hinner]
+      | list values =>
+          cases depth with
+          | zero =>
+              have hinner := ih (ResponseValue.list values) hinnerComposite
+              simp [completeResolvedValue, reusablePreviousValue?,
+                hitemComposite, completeValue, outOfFuel,
+                nonNullCompletion, ← hinner]
+          | succ childDepth =>
+              have hinner := ih (ResponseValue.list values) hinnerComposite
+              simp [completeResolvedValue, reusablePreviousValue?,
+                hitemComposite, completeValue, nonNullCompletion, ← hinner]
+
+theorem resultStatus_completeValueList_append_second_eq_ok_of_each
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (itemType : TypeRef) (prefixFields : List ExecutableField)
+    (later : ExecutableField)
+    (hitemComposite : itemType.isCompositeBool schema = true)
+    (hstatus :
+      ∀ value : ResolverValue ObjectIdentity,
+          resultStatus
+            (completeResolvedValue schema resolvers variableValues depth itemType
+              later.selectionSet value
+              (some (resultValueOrNull
+                (GraphQL.Execution.completeValue schema resolvers variableValues
+                  depth itemType prefixFields value)))) =
+          visitOk) :
+    ∀ values : List (ResolverValue ObjectIdentity),
+      match
+        GraphQL.Execution.completeValueList schema resolvers variableValues
+          depth itemType prefixFields values
+      with
+      | .error _errors => True
+      | .ok (previousValues, _errors) =>
+          resultStatus
+            (completeValueList schema resolvers variableValues depth itemType
+              later.selectionSet values previousValues) =
+            visitOk := by
+  intro values
+  induction values with
+  | nil =>
+      simp [GraphQL.Execution.completeValueList, completeValueList,
+        resultStatus, visitOk]
+  | cons value rest ih =>
+      cases hhead :
+          GraphQL.Execution.completeValue schema resolvers variableValues
+            depth itemType prefixFields value with
+      | error headErrors =>
+          cases htail :
+              GraphQL.Execution.completeValueList schema resolvers
+                variableValues depth itemType prefixFields rest with
+          | error tailErrors =>
+              simp [GraphQL.Execution.completeValueList, hhead, htail,
+                GraphQL.Execution.Result.combine]
+          | ok tailResult =>
+              rcases tailResult with ⟨tailValues, tailErrors⟩
+              simp [GraphQL.Execution.completeValueList, hhead, htail,
+                GraphQL.Execution.Result.combine]
+      | ok headResult =>
+          rcases headResult with ⟨headValue, headErrors⟩
+          cases htail :
+              GraphQL.Execution.completeValueList schema resolvers
+                variableValues depth itemType prefixFields rest with
+          | error tailErrors =>
+              simp [GraphQL.Execution.completeValueList, hhead, htail,
+                GraphQL.Execution.Result.combine]
+          | ok tailResult =>
+              rcases tailResult with ⟨tailValues, tailErrors⟩
+              have hheadStatus :
+                  resultStatus
+                    (completeResolvedValue schema resolvers variableValues depth
+                      itemType later.selectionSet value (some headValue)) =
+                  visitOk := by
+                simpa [hhead, resultValueOrNull] using hstatus value
+              have htailStatus : resultStatus
+                    (completeValueList schema resolvers variableValues depth
+                      itemType later.selectionSet rest tailValues) =
+                  visitOk := by
+                simpa [htail] using ih
+              cases hrightHead :
+                  completeResolvedValue schema resolvers variableValues depth itemType
+                    later.selectionSet value (some headValue) with
+              | error rightHeadErrors =>
+                  simp [hrightHead, resultStatus, visitOk] at hheadStatus
+              | ok rightHeadResult =>
+                  rcases rightHeadResult with ⟨rightHeadValue, rightHeadErrors⟩
+                  cases rightHeadErrors with
+                  | zero =>
+                      cases hrightTail :
+                          completeValueList schema resolvers variableValues
+                            depth itemType later.selectionSet rest tailValues with
+                      | error rightTailErrors =>
+                          simp [hrightTail, resultStatus, visitOk] at htailStatus
+                      | ok rightTailResult =>
+                          rcases rightTailResult with
+                            ⟨rightTailValues, rightTailErrors⟩
+                          cases rightTailErrors with
+                          | zero =>
+                              have hrightHeadList :
+                                  (match (some headValue : Option ResponseValue) with
+                                  | some .null =>
+                                      Except.ok (ResponseValue.null, 0)
+                                  | _ =>
+                                      completeValue schema resolvers
+                                        variableValues depth itemType
+                                        later.selectionSet value
+                                        (some headValue)) =
+                                    .ok (rightHeadValue, 0) := by
+                                rw [
+                                  completeValueList_head_eq_completeResolvedValue_of_composite
+                                    schema resolvers variableValues depth
+                                    itemType later.selectionSet value
+                                    headValue hitemComposite]
+                                exact hrightHead
+                              have hstatusList :
+                                  resultStatus
+                                    (Result.combine List.cons
+                                      (match
+                                        (some headValue : Option ResponseValue)
+                                      with
+                                      | some .null =>
+                                          Except.ok (ResponseValue.null, 0)
+                                      | _ =>
+                                          completeValue schema resolvers
+                                            variableValues depth itemType
+                                            later.selectionSet value
+                                            (some headValue))
+                                      (Except.ok (rightTailValues, 0))) =
+                                    visitOk := by
+                                rw [hrightHeadList]
+                                simp [Result.combine,
+                                  GraphQL.Execution.Result.combine,
+                                  resultStatus, visitOk]
+                              simpa [GraphQL.Execution.completeValueList,
+                                completeValueList, hhead, htail,
+                                hrightTail, Result.combine,
+                                GraphQL.Execution.Result.combine,
+                                resultStatus, visitOk] using hstatusList
+                          | succ rightTailErrors =>
+                              simp [hrightTail, resultStatus, visitOk] at htailStatus
+                  | succ rightHeadErrors =>
+                      simp [hrightHead, resultStatus, visitOk] at hheadStatus
+
+theorem resultStatus_completeValueList_append_second_eq_ok_of_mem
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (itemType : TypeRef) (prefixFields : List ExecutableField)
+    (later : ExecutableField) :
+    ∀ values : List (ResolverValue ObjectIdentity),
+      itemType.isCompositeBool schema = true ->
+      (∀ value,
+        value ∈ values ->
+          resultStatus
+              (completeResolvedValue schema resolvers variableValues depth itemType
+                later.selectionSet value
+                (some (resultValueOrNull
+                  (GraphQL.Execution.completeValue schema resolvers variableValues
+                    depth itemType prefixFields value)))) =
+            visitOk) ->
+      match
+        GraphQL.Execution.completeValueList schema resolvers variableValues
+          depth itemType prefixFields values
+      with
+      | .error _errors => True
+      | .ok (previousValues, _errors) =>
+          resultStatus
+            (completeValueList schema resolvers variableValues depth itemType
+              later.selectionSet values previousValues) =
+            visitOk
+  | [], _hitemComposite, _hstatus => by
+      simp [GraphQL.Execution.completeValueList, completeValueList,
+        resultStatus, visitOk]
+  | value :: rest, hitemComposite, hstatus => by
+      cases hhead :
+          GraphQL.Execution.completeValue schema resolvers variableValues
+            depth itemType prefixFields value with
+      | error headErrors =>
+          cases htail :
+              GraphQL.Execution.completeValueList schema resolvers
+                variableValues depth itemType prefixFields rest with
+          | error tailErrors =>
+              simp [GraphQL.Execution.completeValueList, hhead, htail,
+                GraphQL.Execution.Result.combine]
+          | ok tailResult =>
+              rcases tailResult with ⟨tailValues, tailErrors⟩
+              simp [GraphQL.Execution.completeValueList, hhead, htail,
+                GraphQL.Execution.Result.combine]
+      | ok headResult =>
+          rcases headResult with ⟨headValue, headErrors⟩
+          cases htail :
+              GraphQL.Execution.completeValueList schema resolvers
+                variableValues depth itemType prefixFields rest with
+          | error tailErrors =>
+              simp [GraphQL.Execution.completeValueList, hhead, htail,
+                GraphQL.Execution.Result.combine]
+          | ok tailResult =>
+              rcases tailResult with ⟨tailValues, tailErrors⟩
+              have hheadStatus :
+                  resultStatus
+                    (completeResolvedValue schema resolvers variableValues depth
+                      itemType later.selectionSet value (some headValue)) =
+                  visitOk := by
+                simpa [hhead, resultValueOrNull] using
+                  hstatus value (by simp)
+              have htailStatus : resultStatus
+                    (completeValueList schema resolvers variableValues depth
+                      itemType later.selectionSet rest tailValues) =
+                  visitOk := by
+                have htailStatusRaw :=
+                  resultStatus_completeValueList_append_second_eq_ok_of_mem
+                    schema resolvers variableValues depth itemType prefixFields
+                    later rest hitemComposite
+                    (by
+                      intro restValue hmem
+                      exact hstatus restValue (by simp [hmem]))
+                simpa [htail] using htailStatusRaw
+              cases hrightHead :
+                  completeResolvedValue schema resolvers variableValues depth itemType
+                    later.selectionSet value (some headValue) with
+              | error rightHeadErrors =>
+                  simp [hrightHead, resultStatus, visitOk] at hheadStatus
+              | ok rightHeadResult =>
+                  rcases rightHeadResult with ⟨rightHeadValue, rightHeadErrors⟩
+                  cases rightHeadErrors with
+                  | zero =>
+                      cases hrightTail :
+                          completeValueList schema resolvers variableValues
+                            depth itemType later.selectionSet rest tailValues with
+                      | error rightTailErrors =>
+                          simp [hrightTail, resultStatus, visitOk] at htailStatus
+                      | ok rightTailResult =>
+                          rcases rightTailResult with
+                            ⟨rightTailValues, rightTailErrors⟩
+                          cases rightTailErrors with
+                          | zero =>
+                              have hrightHeadList :
+                                  (match (some headValue : Option ResponseValue) with
+                                  | some .null =>
+                                      Except.ok (ResponseValue.null, 0)
+                                  | _ =>
+                                      completeValue schema resolvers
+                                        variableValues depth itemType
+                                        later.selectionSet value
+                                        (some headValue)) =
+                                    .ok (rightHeadValue, 0) := by
+                                rw [
+                                  completeValueList_head_eq_completeResolvedValue_of_composite
+                                    schema resolvers variableValues depth
+                                    itemType later.selectionSet value
+                                    headValue hitemComposite]
+                                exact hrightHead
+                              have hstatusList :
+                                  resultStatus
+                                    (Result.combine List.cons
+                                      (match
+                                        (some headValue : Option ResponseValue)
+                                      with
+                                      | some .null =>
+                                          Except.ok (ResponseValue.null, 0)
+                                      | _ =>
+                                          completeValue schema resolvers
+                                            variableValues depth itemType
+                                            later.selectionSet value
+                                            (some headValue))
+                                      (Except.ok (rightTailValues, 0))) =
+                                    visitOk := by
+                                rw [hrightHeadList]
+                                simp [Result.combine,
+                                  GraphQL.Execution.Result.combine,
+                                  resultStatus, visitOk]
+                              simpa [GraphQL.Execution.completeValueList,
+                                completeValueList, hhead, htail,
+                                hrightTail, Result.combine,
+                                GraphQL.Execution.Result.combine,
+                                resultStatus, visitOk] using hstatusList
+                          | succ rightTailErrors =>
+                              simp [hrightTail, resultStatus, visitOk] at htailStatus
+                  | succ rightHeadErrors =>
+                      simp [hrightHead, resultStatus, visitOk] at hheadStatus
+
+theorem completeValueList_append_result_eq_spec_of_each
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (itemType : TypeRef) (prefixFields : List ExecutableField)
+    (later : ExecutableField)
+    (hitemComposite : itemType.isCompositeBool schema = true)
+    (happend :
+      ∀ value : ResolverValue ObjectIdentity,
+        GraphQL.Execution.Result.combine mergeResponse
+          (GraphQL.Execution.completeValue schema resolvers variableValues
+            depth itemType prefixFields value)
+          (completeResolvedValue schema resolvers variableValues depth itemType
+            later.selectionSet value
+            (some (resultValueOrNull
+              (GraphQL.Execution.completeValue schema resolvers variableValues
+                depth itemType prefixFields value)))) =
+        GraphQL.Execution.completeValue schema resolvers variableValues
+          depth itemType (prefixFields ++ [later]) value)
+    (hstatus :
+      ∀ value : ResolverValue ObjectIdentity,
+        resultStatus
+          (completeResolvedValue schema resolvers variableValues depth itemType
+            later.selectionSet value
+            (some (resultValueOrNull
+              (GraphQL.Execution.completeValue schema resolvers variableValues
+                depth itemType prefixFields value)))) =
+          visitOk) :
+    ∀ values : List (ResolverValue ObjectIdentity),
+      GraphQL.Execution.Result.combine mergeResponseLists
+        (GraphQL.Execution.completeValueList schema resolvers variableValues
+          depth itemType prefixFields values)
+        (match
+          GraphQL.Execution.completeValueList schema resolvers variableValues
+            depth itemType prefixFields values
+        with
+        | .error _errors => .ok ([], 0)
+        | .ok (previousValues, _errors) =>
+            completeValueList schema resolvers variableValues depth itemType
+              later.selectionSet values previousValues) =
+      GraphQL.Execution.completeValueList schema resolvers variableValues
+        depth itemType (prefixFields ++ [later]) values := by
+  intro values
+  induction values with
+  | nil =>
+      simp [GraphQL.Execution.completeValueList, completeValueList,
+        GraphQL.Execution.Result.combine, mergeResponseLists]
+  | cons value rest ih =>
+      have hheadAppend := happend value
+      have hheadStatus :
+          resultStatus
+            (completeResolvedValue schema resolvers variableValues depth itemType
+              later.selectionSet value
+              (some (resultValueOrNull
+                (GraphQL.Execution.completeValue schema resolvers variableValues
+                  depth itemType prefixFields value)))) =
+          visitOk :=
+        hstatus value
+      have hrestStatus :=
+        resultStatus_completeValueList_append_second_eq_ok_of_each schema
+          resolvers variableValues depth itemType prefixFields later
+          hitemComposite hstatus rest
+      cases hhead :
+          GraphQL.Execution.completeValue schema resolvers variableValues
+            depth itemType prefixFields value with
+      | error headErrors =>
+          cases htail :
+              GraphQL.Execution.completeValueList schema resolvers
+                variableValues depth itemType prefixFields rest with
+          | error tailErrors =>
+              cases hrightHead :
+                  completeResolvedValue schema resolvers variableValues depth itemType
+                    later.selectionSet value (some .null) with
+              | error rightHeadErrors =>
+                  simp [hhead, hrightHead, resultValueOrNull, resultStatus,
+                    visitOk] at hheadStatus
+              | ok rightHeadResult =>
+                  rcases rightHeadResult with ⟨rightHeadValue, rightHeadErrors⟩
+                  cases rightHeadErrors with
+                  | zero =>
+                      have hheadAppend' :
+                          GraphQL.Execution.completeValue schema resolvers
+                            variableValues depth itemType
+                            (prefixFields ++ [later]) value =
+                          .error headErrors := by
+                        simpa [hhead, hrightHead, resultValueOrNull,
+                          GraphQL.Execution.Result.combine] using hheadAppend.symm
+                      have htailAppend' :
+                          GraphQL.Execution.completeValueList schema resolvers
+                            variableValues depth itemType
+                            (prefixFields ++ [later]) rest =
+                          .error tailErrors := by
+                        simpa [htail, GraphQL.Execution.Result.combine] using
+                          ih.symm
+                      simp [GraphQL.Execution.completeValueList, hhead, htail,
+                        hheadAppend', htailAppend', Result.combine,
+                        GraphQL.Execution.Result.combine]
+                  | succ rightHeadErrors =>
+                      simp [hhead, hrightHead, resultValueOrNull, resultStatus,
+                        visitOk] at hheadStatus
+          | ok tailResult =>
+              rcases tailResult with ⟨tailValues, tailErrors⟩
+              cases hrightHead :
+                  completeResolvedValue schema resolvers variableValues depth itemType
+                    later.selectionSet value (some .null) with
+              | error rightHeadErrors =>
+                  simp [hhead, hrightHead, resultValueOrNull, resultStatus,
+                    visitOk] at hheadStatus
+              | ok rightHeadResult =>
+                  rcases rightHeadResult with ⟨rightHeadValue, rightHeadErrors⟩
+                  cases rightHeadErrors with
+                  | zero =>
+                      have hheadAppend' :
+                          GraphQL.Execution.completeValue schema resolvers
+                            variableValues depth itemType
+                            (prefixFields ++ [later]) value =
+                          .error headErrors := by
+                        simpa [hhead, hrightHead, resultValueOrNull,
+                          GraphQL.Execution.Result.combine] using hheadAppend.symm
+                      have htailAppend' :
+                          GraphQL.Execution.completeValueList schema resolvers
+                            variableValues depth itemType
+                            (prefixFields ++ [later]) rest =
+                          GraphQL.Execution.Result.combine mergeResponseLists
+                            (.ok (tailValues, tailErrors))
+                            (completeValueList schema resolvers variableValues
+                              depth itemType later.selectionSet rest tailValues) := by
+                        simpa [htail] using ih.symm
+                      cases hrightTail :
+                          completeValueList schema resolvers variableValues
+                            depth itemType later.selectionSet rest tailValues with
+                      | error rightTailErrors =>
+                          have htailStatus' :
+                              resultStatus
+                                (completeValueList schema resolvers
+                                  variableValues depth itemType
+                                  later.selectionSet rest tailValues) =
+                              visitOk := by
+                            simpa [htail] using hrestStatus
+                          simp [hrightTail, resultStatus, visitOk] at htailStatus'
+                      | ok rightTailResult =>
+                          rcases rightTailResult with
+                            ⟨rightTailValues, rightTailErrors⟩
+                          cases rightTailErrors with
+                          | zero =>
+                              simp [GraphQL.Execution.completeValueList, hhead,
+                                htail, hheadAppend', htailAppend',
+                                hrightTail, Result.combine,
+                                GraphQL.Execution.Result.combine]
+                          | succ rightTailErrors =>
+                              have htailStatus' :
+                                  resultStatus
+                                    (completeValueList schema resolvers
+                                      variableValues depth itemType
+                                      later.selectionSet rest tailValues) =
+                                  visitOk := by
+                                simpa [htail] using hrestStatus
+                              simp [hrightTail, resultStatus, visitOk] at htailStatus'
+                  | succ rightHeadErrors =>
+                      simp [hhead, hrightHead, resultValueOrNull, resultStatus,
+                        visitOk] at hheadStatus
+      | ok headResult =>
+          rcases headResult with ⟨headValue, headErrors⟩
+          cases htail :
+              GraphQL.Execution.completeValueList schema resolvers
+                variableValues depth itemType prefixFields rest with
+          | error tailErrors =>
+              have htailAppend' :
+                  GraphQL.Execution.completeValueList schema resolvers
+                    variableValues depth itemType
+                    (prefixFields ++ [later]) rest =
+                  .error tailErrors := by
+                simpa [htail, GraphQL.Execution.Result.combine] using ih.symm
+              cases hrightHead :
+                  completeResolvedValue schema resolvers variableValues depth itemType
+                    later.selectionSet value (some headValue) with
+              | error rightHeadErrors =>
+                  have hheadStatus' :
+                      resultStatus
+                        (completeResolvedValue schema resolvers variableValues depth
+                          itemType later.selectionSet value (some headValue)) =
+                      visitOk := by
+                    simpa [hhead, resultValueOrNull] using hheadStatus
+                  simp [hrightHead, resultStatus, visitOk] at hheadStatus'
+              | ok rightHeadResult =>
+                  rcases rightHeadResult with ⟨rightHeadValue, rightHeadErrors⟩
+                  cases rightHeadErrors with
+                  | zero =>
+                      have hheadAppend' :
+                          GraphQL.Execution.completeValue schema resolvers
+                            variableValues depth itemType
+                            (prefixFields ++ [later]) value =
+                          .ok (mergeResponse headValue rightHeadValue,
+                            headErrors) := by
+                        simpa [hhead, hrightHead, resultValueOrNull,
+                          GraphQL.Execution.Result.combine] using hheadAppend.symm
+                      simp [GraphQL.Execution.completeValueList, hhead, htail,
+                        hheadAppend', htailAppend', Result.combine,
+                        GraphQL.Execution.Result.combine]
+                  | succ rightHeadErrors =>
+                      have hheadStatus' :
+                          resultStatus
+                            (completeResolvedValue schema resolvers variableValues depth
+                              itemType later.selectionSet value (some headValue)) =
+                          visitOk := by
+                        simpa [hhead, resultValueOrNull] using hheadStatus
+                      simp [hrightHead, resultStatus, visitOk] at hheadStatus'
+          | ok tailResult =>
+              rcases tailResult with ⟨tailValues, tailErrors⟩
+              have htailStatus' :
+                  resultStatus
+                    (completeValueList schema resolvers variableValues depth
+                      itemType later.selectionSet rest tailValues) =
+                  visitOk := by
+                simpa [htail] using hrestStatus
+              have htailAppend' :
+                  GraphQL.Execution.completeValueList schema resolvers
+                    variableValues depth itemType
+                    (prefixFields ++ [later]) rest =
+                  GraphQL.Execution.Result.combine mergeResponseLists
+                    (.ok (tailValues, tailErrors))
+                    (completeValueList schema resolvers variableValues depth
+                      itemType later.selectionSet rest tailValues) := by
+                simpa [htail] using ih.symm
+              cases hrightHead :
+                  completeResolvedValue schema resolvers variableValues depth itemType
+                    later.selectionSet value (some headValue) with
+              | error rightHeadErrors =>
+                  have hheadStatus' :
+                      resultStatus
+                        (completeResolvedValue schema resolvers variableValues depth
+                          itemType later.selectionSet value (some headValue)) =
+                      visitOk := by
+                    simpa [hhead, resultValueOrNull] using hheadStatus
+                  simp [hrightHead, resultStatus, visitOk] at hheadStatus'
+              | ok rightHeadResult =>
+                  rcases rightHeadResult with ⟨rightHeadValue, rightHeadErrors⟩
+                  cases rightHeadErrors with
+                  | zero =>
+                      have hheadAppend' :
+                          GraphQL.Execution.completeValue schema resolvers
+                            variableValues depth itemType
+                            (prefixFields ++ [later]) value =
+                          .ok (mergeResponse headValue rightHeadValue,
+                            headErrors) := by
+                        simpa [hhead, hrightHead, resultValueOrNull,
+                          GraphQL.Execution.Result.combine] using hheadAppend.symm
+                      cases hrightTail :
+                          completeValueList schema resolvers variableValues
+                            depth itemType later.selectionSet rest tailValues with
+                      | error rightTailErrors =>
+                          simp [hrightTail, resultStatus, visitOk] at htailStatus'
+                      | ok rightTailResult =>
+                          rcases rightTailResult with
+                            ⟨rightTailValues, rightTailErrors⟩
+                          cases rightTailErrors with
+                          | zero =>
+                              have hrightHeadList :
+                                  (match (some headValue : Option ResponseValue) with
+                                  | some .null =>
+                                      Except.ok (ResponseValue.null, 0)
+                                  | _ =>
+                                      completeValue schema resolvers
+                                        variableValues depth itemType
+                                        later.selectionSet value
+                                        (some headValue)) =
+                                    Except.ok (rightHeadValue, 0) := by
+                                rw [
+                                  completeValueList_head_eq_completeResolvedValue_of_composite
+                                    schema resolvers variableValues depth
+                                    itemType later.selectionSet value
+                                    headValue hitemComposite]
+                                exact hrightHead
+                              have hcombinedList :
+                                  GraphQL.Execution.Result.combine
+                                      mergeResponseLists
+                                      (Except.ok
+                                        (headValue :: tailValues,
+                                          headErrors + tailErrors))
+                                      (Result.combine List.cons
+                                        (match
+                                          (some headValue : Option ResponseValue)
+                                        with
+                                        | some .null =>
+                                            Except.ok (ResponseValue.null, 0)
+                                        | _ =>
+                                            completeValue schema resolvers
+                                              variableValues depth itemType
+                                              later.selectionSet value
+                                              (some headValue))
+                                        (Except.ok (rightTailValues, 0))) =
+                                    Except.ok
+                                      (mergeResponse headValue rightHeadValue ::
+                                        mergeResponseLists tailValues
+                                          rightTailValues,
+                                        headErrors + tailErrors) := by
+                                rw [hrightHeadList]
+                                simp [Result.combine,
+                                  GraphQL.Execution.Result.combine,
+                                  mergeResponseLists]
+                              simpa [GraphQL.Execution.completeValueList,
+                                completeValueList, hhead, htail, hrightTail,
+                                hheadAppend', htailAppend', Result.combine,
+                                GraphQL.Execution.Result.combine] using
+                                hcombinedList
+                          | succ rightTailErrors =>
+                              simp [hrightTail, resultStatus, visitOk] at htailStatus'
+                  | succ rightHeadErrors =>
+                      have hheadStatus' :
+                          resultStatus
+                            (completeResolvedValue schema resolvers variableValues depth
+                              itemType later.selectionSet value (some headValue)) =
+                          visitOk := by
+                        simpa [hhead, resultValueOrNull] using hheadStatus
+                      simp [hrightHead, resultStatus, visitOk] at hheadStatus'
+
+theorem completeValueList_append_result_eq_spec_of_mem
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (itemType : TypeRef) (prefixFields : List ExecutableField)
+    (later : ExecutableField) :
+    ∀ values : List (ResolverValue ObjectIdentity),
+      itemType.isCompositeBool schema = true ->
+      (∀ value,
+        value ∈ values ->
+          GraphQL.Execution.Result.combine mergeResponse
+            (GraphQL.Execution.completeValue schema resolvers variableValues
+              depth itemType prefixFields value)
+            (completeResolvedValue schema resolvers variableValues depth itemType
+              later.selectionSet value
+              (some (resultValueOrNull
+                (GraphQL.Execution.completeValue schema resolvers variableValues
+                  depth itemType prefixFields value)))) =
+          GraphQL.Execution.completeValue schema resolvers variableValues
+            depth itemType (prefixFields ++ [later]) value) ->
+      (∀ value,
+        value ∈ values ->
+          resultStatus
+            (completeResolvedValue schema resolvers variableValues depth itemType
+              later.selectionSet value
+              (some (resultValueOrNull
+                (GraphQL.Execution.completeValue schema resolvers variableValues
+                  depth itemType prefixFields value)))) =
+            visitOk) ->
+      GraphQL.Execution.Result.combine mergeResponseLists
+        (GraphQL.Execution.completeValueList schema resolvers variableValues
+          depth itemType prefixFields values)
+        (match
+          GraphQL.Execution.completeValueList schema resolvers variableValues
+            depth itemType prefixFields values
+        with
+        | .error _errors => .ok ([], 0)
+        | .ok (previousValues, _errors) =>
+            completeValueList schema resolvers variableValues depth itemType
+              later.selectionSet values previousValues) =
+      GraphQL.Execution.completeValueList schema resolvers variableValues
+        depth itemType (prefixFields ++ [later]) values
+  | [], _hitemComposite, _happend, _hstatus => by
+      simp [GraphQL.Execution.completeValueList, completeValueList,
+        GraphQL.Execution.Result.combine, mergeResponseLists]
+  | value :: rest, hitemComposite, happend, hstatus => by
+      have hheadAppend := happend value (by simp)
+      have hheadStatus :
+          resultStatus
+            (completeResolvedValue schema resolvers variableValues depth itemType
+              later.selectionSet value
+              (some (resultValueOrNull
+                (GraphQL.Execution.completeValue schema resolvers variableValues
+                  depth itemType prefixFields value)))) =
+          visitOk :=
+        hstatus value (by simp)
+      have htailAppendAll :=
+        completeValueList_append_result_eq_spec_of_mem schema resolvers
+          variableValues depth itemType prefixFields later rest
+          hitemComposite
+          (by
+            intro restValue hmem
+            exact happend restValue (by simp [hmem]))
+          (by
+            intro restValue hmem
+            exact hstatus restValue (by simp [hmem]))
+      have hrestStatus :=
+        resultStatus_completeValueList_append_second_eq_ok_of_mem schema
+          resolvers variableValues depth itemType prefixFields later rest
+          hitemComposite
+          (by
+            intro restValue hmem
+            exact hstatus restValue (by simp [hmem]))
+      cases hhead :
+          GraphQL.Execution.completeValue schema resolvers variableValues
+            depth itemType prefixFields value with
+      | error headErrors =>
+          cases htail :
+              GraphQL.Execution.completeValueList schema resolvers
+                variableValues depth itemType prefixFields rest with
+          | error tailErrors =>
+              cases hrightHead :
+                  completeResolvedValue schema resolvers variableValues depth itemType
+                    later.selectionSet value (some .null) with
+              | error rightHeadErrors =>
+                  simp [hhead, hrightHead, resultValueOrNull, resultStatus,
+                    visitOk] at hheadStatus
+              | ok rightHeadResult =>
+                  rcases rightHeadResult with ⟨rightHeadValue, rightHeadErrors⟩
+                  cases rightHeadErrors with
+                  | zero =>
+                      have hheadAppend' :
+                          GraphQL.Execution.completeValue schema resolvers
+                            variableValues depth itemType
+                            (prefixFields ++ [later]) value =
+                          .error headErrors := by
+                        simpa [hhead, hrightHead, resultValueOrNull,
+                          GraphQL.Execution.Result.combine] using hheadAppend.symm
+                      have htailAppend' :
+                          GraphQL.Execution.completeValueList schema resolvers
+                            variableValues depth itemType
+                            (prefixFields ++ [later]) rest =
+                          .error tailErrors := by
+                        simpa [htail, GraphQL.Execution.Result.combine] using
+                          htailAppendAll.symm
+                      simp [GraphQL.Execution.completeValueList, hhead, htail,
+                        hheadAppend', htailAppend', Result.combine,
+                        GraphQL.Execution.Result.combine]
+                  | succ rightHeadErrors =>
+                      simp [hhead, hrightHead, resultValueOrNull, resultStatus,
+                        visitOk] at hheadStatus
+          | ok tailResult =>
+              rcases tailResult with ⟨tailValues, tailErrors⟩
+              cases hrightHead :
+                  completeResolvedValue schema resolvers variableValues depth itemType
+                    later.selectionSet value (some .null) with
+              | error rightHeadErrors =>
+                  simp [hhead, hrightHead, resultValueOrNull, resultStatus,
+                    visitOk] at hheadStatus
+              | ok rightHeadResult =>
+                  rcases rightHeadResult with ⟨rightHeadValue, rightHeadErrors⟩
+                  cases rightHeadErrors with
+                  | zero =>
+                      have hheadAppend' :
+                          GraphQL.Execution.completeValue schema resolvers
+                            variableValues depth itemType
+                            (prefixFields ++ [later]) value =
+                          .error headErrors := by
+                        simpa [hhead, hrightHead, resultValueOrNull,
+                          GraphQL.Execution.Result.combine] using hheadAppend.symm
+                      have htailAppend' :
+                          GraphQL.Execution.completeValueList schema resolvers
+                            variableValues depth itemType
+                            (prefixFields ++ [later]) rest =
+                          GraphQL.Execution.Result.combine mergeResponseLists
+                            (.ok (tailValues, tailErrors))
+                            (completeValueList schema resolvers variableValues
+                              depth itemType later.selectionSet rest tailValues) := by
+                        simpa [htail] using htailAppendAll.symm
+                      cases hrightTail :
+                          completeValueList schema resolvers variableValues
+                            depth itemType later.selectionSet rest tailValues with
+                      | error rightTailErrors =>
+                          have htailStatus' :
+                              resultStatus
+                                (completeValueList schema resolvers
+                                  variableValues depth itemType
+                                  later.selectionSet rest tailValues) =
+                              visitOk := by
+                            simpa [htail] using hrestStatus
+                          simp [hrightTail, resultStatus, visitOk] at htailStatus'
+                      | ok rightTailResult =>
+                          rcases rightTailResult with
+                            ⟨rightTailValues, rightTailErrors⟩
+                          cases rightTailErrors with
+                          | zero =>
+                              simp [GraphQL.Execution.completeValueList, hhead,
+                                htail, hheadAppend', htailAppend',
+                                hrightTail, Result.combine,
+                                GraphQL.Execution.Result.combine]
+                          | succ rightTailErrors =>
+                              have htailStatus' :
+                                  resultStatus
+                                    (completeValueList schema resolvers
+                                      variableValues depth itemType
+                                      later.selectionSet rest tailValues) =
+                                  visitOk := by
+                                simpa [htail] using hrestStatus
+                              simp [hrightTail, resultStatus, visitOk] at htailStatus'
+                  | succ rightHeadErrors =>
+                      simp [hhead, hrightHead, resultValueOrNull, resultStatus,
+                        visitOk] at hheadStatus
+      | ok headResult =>
+          rcases headResult with ⟨headValue, headErrors⟩
+          cases htail :
+              GraphQL.Execution.completeValueList schema resolvers
+                variableValues depth itemType prefixFields rest with
+          | error tailErrors =>
+              have htailAppend' :
+                  GraphQL.Execution.completeValueList schema resolvers
+                    variableValues depth itemType
+                    (prefixFields ++ [later]) rest =
+                  .error tailErrors := by
+                simpa [htail, GraphQL.Execution.Result.combine] using
+                  htailAppendAll.symm
+              cases hrightHead :
+                  completeResolvedValue schema resolvers variableValues depth itemType
+                    later.selectionSet value (some headValue) with
+              | error rightHeadErrors =>
+                  have hheadStatus' :
+                      resultStatus
+                        (completeResolvedValue schema resolvers variableValues depth
+                          itemType later.selectionSet value (some headValue)) =
+                      visitOk := by
+                    simpa [hhead, resultValueOrNull] using hheadStatus
+                  simp [hrightHead, resultStatus, visitOk] at hheadStatus'
+              | ok rightHeadResult =>
+                  rcases rightHeadResult with ⟨rightHeadValue, rightHeadErrors⟩
+                  cases rightHeadErrors with
+                  | zero =>
+                      have hheadAppend' :
+                          GraphQL.Execution.completeValue schema resolvers
+                            variableValues depth itemType
+                            (prefixFields ++ [later]) value =
+                          .ok (mergeResponse headValue rightHeadValue,
+                            headErrors) := by
+                        simpa [hhead, hrightHead, resultValueOrNull,
+                          GraphQL.Execution.Result.combine] using hheadAppend.symm
+                      simp [GraphQL.Execution.completeValueList, hhead, htail,
+                        hheadAppend', htailAppend', Result.combine,
+                        GraphQL.Execution.Result.combine]
+                  | succ rightHeadErrors =>
+                      have hheadStatus' :
+                          resultStatus
+                            (completeResolvedValue schema resolvers variableValues depth
+                              itemType later.selectionSet value (some headValue)) =
+                          visitOk := by
+                        simpa [hhead, resultValueOrNull] using hheadStatus
+                      simp [hrightHead, resultStatus, visitOk] at hheadStatus'
+          | ok tailResult =>
+              rcases tailResult with ⟨tailValues, tailErrors⟩
+              have htailStatus' :
+                  resultStatus
+                    (completeValueList schema resolvers variableValues depth
+                      itemType later.selectionSet rest tailValues) =
+                  visitOk := by
+                simpa [htail] using hrestStatus
+              have htailAppend' :
+                  GraphQL.Execution.completeValueList schema resolvers
+                    variableValues depth itemType
+                    (prefixFields ++ [later]) rest =
+                  GraphQL.Execution.Result.combine mergeResponseLists
+                    (.ok (tailValues, tailErrors))
+                    (completeValueList schema resolvers variableValues depth
+                      itemType later.selectionSet rest tailValues) := by
+                simpa [htail] using htailAppendAll.symm
+              cases hrightHead :
+                  completeResolvedValue schema resolvers variableValues depth itemType
+                    later.selectionSet value (some headValue) with
+              | error rightHeadErrors =>
+                  have hheadStatus' :
+                      resultStatus
+                        (completeResolvedValue schema resolvers variableValues depth
+                          itemType later.selectionSet value (some headValue)) =
+                      visitOk := by
+                    simpa [hhead, resultValueOrNull] using hheadStatus
+                  simp [hrightHead, resultStatus, visitOk] at hheadStatus'
+              | ok rightHeadResult =>
+                  rcases rightHeadResult with ⟨rightHeadValue, rightHeadErrors⟩
+                  cases rightHeadErrors with
+                  | zero =>
+                      have hheadAppend' :
+                          GraphQL.Execution.completeValue schema resolvers
+                            variableValues depth itemType
+                            (prefixFields ++ [later]) value =
+                          .ok (mergeResponse headValue rightHeadValue,
+                            headErrors) := by
+                        simpa [hhead, hrightHead, resultValueOrNull,
+                          GraphQL.Execution.Result.combine] using hheadAppend.symm
+                      cases hrightTail :
+                          completeValueList schema resolvers variableValues
+                            depth itemType later.selectionSet rest tailValues with
+                      | error rightTailErrors =>
+                          simp [hrightTail, resultStatus, visitOk] at htailStatus'
+                      | ok rightTailResult =>
+                          rcases rightTailResult with
+                            ⟨rightTailValues, rightTailErrors⟩
+                          cases rightTailErrors with
+                          | zero =>
+                              have hrightHeadList :
+                                  (match (some headValue : Option ResponseValue) with
+                                  | some .null =>
+                                      Except.ok (ResponseValue.null, 0)
+                                  | _ =>
+                                      completeValue schema resolvers
+                                        variableValues depth itemType
+                                        later.selectionSet value
+                                        (some headValue)) =
+                                    Except.ok (rightHeadValue, 0) := by
+                                rw [
+                                  completeValueList_head_eq_completeResolvedValue_of_composite
+                                    schema resolvers variableValues depth
+                                    itemType later.selectionSet value
+                                    headValue hitemComposite]
+                                exact hrightHead
+                              have hcombinedList :
+                                  GraphQL.Execution.Result.combine
+                                      mergeResponseLists
+                                      (Except.ok
+                                        (headValue :: tailValues,
+                                          headErrors + tailErrors))
+                                      (Result.combine List.cons
+                                        (match
+                                          (some headValue : Option ResponseValue)
+                                        with
+                                        | some .null =>
+                                            Except.ok (ResponseValue.null, 0)
+                                        | _ =>
+                                            completeValue schema resolvers
+                                              variableValues depth itemType
+                                              later.selectionSet value
+                                              (some headValue))
+                                        (Except.ok (rightTailValues, 0))) =
+                                    Except.ok
+                                      (mergeResponse headValue rightHeadValue ::
+                                        mergeResponseLists tailValues
+                                          rightTailValues,
+                                        headErrors + tailErrors) := by
+                                rw [hrightHeadList]
+                                simp [Result.combine,
+                                  GraphQL.Execution.Result.combine,
+                                  mergeResponseLists]
+                              simpa [GraphQL.Execution.completeValueList,
+                                completeValueList, hhead, htail, hrightTail,
+                                hheadAppend', htailAppend', Result.combine,
+                                GraphQL.Execution.Result.combine] using
+                                hcombinedList
+                          | succ rightTailErrors =>
+                              simp [hrightTail, resultStatus, visitOk] at htailStatus'
+                  | succ rightHeadErrors =>
+                      have hheadStatus' :
+                          resultStatus
+                            (completeResolvedValue schema resolvers variableValues depth
+                              itemType later.selectionSet value (some headValue)) =
+                          visitOk := by
+                        simpa [hhead, resultValueOrNull] using hheadStatus
+                      simp [hrightHead, resultStatus, visitOk] at hheadStatus'
+
+theorem completeValue_group_append_one_result_eq_spec_and_status
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (fieldType : TypeRef) :
+    ∀ (depth : Nat) (resolved : ResolverValue ObjectIdentity)
+      (prefixFields : List ExecutableField) (later : ExecutableField),
+      (∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+        schema.typeIncludesObjectBool fieldType.namedType runtimeType = true ->
+          ExecutionStateEquivalent
+            { window :=
+              { schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := childDepth
+                parentType := runtimeType
+                source := .object runtimeType identity
+                selectionSet :=
+                  GraphQL.Execution.mergedFieldSelectionSet prefixFields }
+              initial := .object [] }) ->
+      (∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+          ResponseAbsorbs
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+              (.object []))
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity) later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity)
+                (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+                (.object [])))) ->
+      (∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          ValueContainsObject resolved runtimeType identity ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+            runtimeType (.object runtimeType identity) later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
+              (.object []))) ->
+      (∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+        schema.typeIncludesObjectBool fieldType.namedType runtimeType = true ->
+          ExecutionStateEquivalent
+            { window :=
+              { schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := childDepth
+                parentType := runtimeType
+                source := .object runtimeType identity
+                selectionSet :=
+                  GraphQL.Execution.mergedFieldSelectionSet
+                    (prefixFields ++ [later]) }
+              initial := .object [] }) ->
+          GraphQL.Execution.Result.combine mergeResponse
+            (GraphQL.Execution.completeValue schema resolvers variableValues
+              depth fieldType prefixFields resolved)
+            (completeResolvedValue schema resolvers variableValues depth fieldType
+              later.selectionSet resolved
+              (some (resultValueOrNull
+                (GraphQL.Execution.completeValue schema resolvers variableValues
+                depth fieldType prefixFields resolved)))) =
+        GraphQL.Execution.completeValue schema resolvers variableValues depth
+          fieldType (prefixFields ++ [later]) resolved
+        ∧
+          resultStatus
+            (completeResolvedValue schema resolvers variableValues depth fieldType
+              later.selectionSet resolved
+              (some (resultValueOrNull
+                (GraphQL.Execution.completeValue schema resolvers variableValues
+                depth fieldType prefixFields resolved)))) =
+          visitOk ∧
+        (resultValueOrNull
+            (GraphQL.Execution.completeValue schema resolvers variableValues
+              depth fieldType prefixFields resolved) ≠ .null ->
+            resultValueOrNull
+              (completeResolvedValue schema resolvers variableValues depth fieldType
+                later.selectionSet resolved
+                (some (resultValueOrNull
+                  (GraphQL.Execution.completeValue schema resolvers
+                  variableValues depth fieldType prefixFields resolved)))) ≠
+            .null) := by
+  induction fieldType with
+  | named typeName =>
+      intro depth resolved prefixFields later hprefixChildren hobjects herrors
+        hchildren
+      constructor
+      · exact completeValue_named_group_append_one_result_eq_spec_of_contained schema
+          resolvers variableValues depth typeName resolved prefixFields later
+          (by
+            intro childDepth runtimeType identity hlt hcontains hincludes
+            exact hprefixChildren childDepth runtimeType identity hlt
+              hcontains
+              (by simpa using hincludes))
+          hobjects herrors
+          (by
+            intro childDepth runtimeType identity hlt hcontains hincludes
+            exact hchildren childDepth runtimeType identity hlt
+              hcontains
+              (by simpa using hincludes))
+      · constructor
+        · exact resultStatus_completeValue_named_group_append_second_eq_ok_of_contained
+            schema resolvers variableValues depth typeName resolved prefixFields
+            later
+            (by
+              intro childDepth runtimeType identity hlt hcontains hincludes
+              exact hprefixChildren childDepth runtimeType identity hlt
+                hcontains
+                (by simpa using hincludes))
+            herrors
+        · intro hprefixNonNull
+          cases depth with
+          | zero =>
+              cases resolved <;>
+                simp [GraphQL.Execution.completeValue, outOfFuel,
+                  resultValueOrNull] at hprefixNonNull
+          | succ childDepth =>
+              cases resolved with
+              | null =>
+                  simp [GraphQL.Execution.completeValue, resultValueOrNull]
+                    at hprefixNonNull
+              | scalar value =>
+                  by_cases hcomposite :
+                      (TypeRef.named typeName).isCompositeBool schema = true
+                  · simp [GraphQL.Execution.completeValue, resultValueOrNull,
+                      hcomposite] at hprefixNonNull
+                  · simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_scalar, resultValueOrNull, hcomposite]
+              | list values =>
+                  simp [GraphQL.Execution.completeValue, resultValueOrNull]
+                    at hprefixNonNull
+              | object runtimeType identity =>
+                  by_cases hincludes :
+                      schema.typeIncludesObjectBool typeName runtimeType = true
+                  · have hrightStatus :
+                        resultStatus
+                          (completeResolvedValue schema resolvers variableValues
+                            (childDepth + 1) (.named typeName)
+                            later.selectionSet (.object runtimeType identity)
+                            (some (resultValueOrNull
+                              (GraphQL.Execution.completeValue schema
+                                resolvers variableValues (childDepth + 1)
+                                (.named typeName) prefixFields
+                                (.object runtimeType identity))))) =
+                        visitOk :=
+                      resultStatus_completeValue_named_group_append_second_eq_ok_of_contained
+                        schema resolvers variableValues (childDepth + 1)
+                        typeName (.object runtimeType identity) prefixFields
+                        later
+                        (by
+                          intro childDepth' runtimeType' identity' hlt
+                            hcontains hincludes'
+                          exact hprefixChildren childDepth' runtimeType'
+                            identity' hlt hcontains
+                            (by simpa using hincludes'))
+                        herrors
+                    cases hprevious :
+                        resultValueOrNull
+                          (GraphQL.Execution.completeValue schema resolvers
+                            variableValues (childDepth + 1) (.named typeName)
+                            prefixFields (.object runtimeType identity)) with
+                    | null =>
+                        exact False.elim (hprefixNonNull hprevious)
+                    | scalar previousValue =>
+                        cases hcompleted :
+                            GraphQL.Execution.executeCollectedFields schema
+                              resolvers variableValues childDepth
+                              (.object runtimeType identity)
+                              (GraphQL.Execution.collectFields schema
+                                variableValues runtimeType
+                                (.object runtimeType identity)
+                                (GraphQL.Execution.mergedFieldSelectionSet
+                                  prefixFields)) with
+                        | error prefixErrors =>
+                            simp [GraphQL.Execution.completeValue, hincludes,
+                              hcompleted, catchBubbleAsNull,
+                              resultValueOrNull] at hprevious
+                        | ok prefixResult =>
+                            rcases prefixResult with
+                              ⟨prefixOutput, prefixErrors⟩
+                            simp [GraphQL.Execution.completeValue, hincludes,
+                              hcompleted, catchBubbleAsNull,
+                              resultValueOrNull] at hprevious
+                    | object previousFields =>
+                        obtain ⟨outputFields, hvisited⟩ :=
+                          visitSubfields_preserves_object schema resolvers
+                            variableValues childDepth runtimeType
+                            (.object runtimeType identity)
+                            later.selectionSet previousFields
+                        have hstatus' :
+                            (visitSubfields schema resolvers variableValues
+                              childDepth runtimeType
+                              (.object runtimeType identity)
+                              later.selectionSet
+                              (.object previousFields)).snd =
+                            visitOk := by
+                          have hprefixEq :
+                              completeValue schema resolvers variableValues
+                                (childDepth + 1) (.named typeName)
+                                  (GraphQL.Execution.mergedFieldSelectionSet
+                                    prefixFields)
+                                  (.object runtimeType identity) none =
+                              GraphQL.Execution.completeValue schema resolvers
+                                variableValues (childDepth + 1)
+                                (.named typeName) prefixFields
+                                (.object runtimeType identity) :=
+                            completeValue_group_eq_spec_of_contained_child_states
+                              schema resolvers variableValues prefixFields
+                              (childDepth + 1) typeName
+                              (.object runtimeType identity)
+                              (by
+                                intro childDepth' runtimeType' identity' hlt
+                                  hcontains hincludes'
+                                exact hprefixChildren childDepth' runtimeType'
+                                  identity' hlt hcontains
+                                  (by simpa using hincludes'))
+                          have hprefixPrev :
+                              resultValueOrNull
+                                (completeValue schema resolvers variableValues
+                                  (childDepth + 1) (.named typeName)
+                                    (GraphQL.Execution.mergedFieldSelectionSet
+                                      prefixFields)
+                                    (.object runtimeType identity) none) =
+                              .object previousFields := by
+                            rw [hprefixEq]
+                            exact hprevious
+                          cases hfirst :
+                              visitSubfields schema resolvers variableValues
+                                childDepth runtimeType
+                                (.object runtimeType identity)
+                                (GraphQL.Execution.mergedFieldSelectionSet
+                                  prefixFields)
+                                (.object []) with
+                          | mk firstOutput firstStatus =>
+                              cases firstStatus with
+                              | error firstErrors =>
+                                  simp [completeValue, hincludes,
+                                    reuseOrCreateObject?, hfirst,
+                                    catchVisitBubbleAsNull, resultValueOrNull]
+                                    at hprefixPrev
+                              | ok firstStatusResult =>
+                                  rcases firstStatusResult with
+                                    ⟨unitValue, firstErrors⟩
+                                  cases unitValue
+                                  have hfirstOutput :
+                                      firstOutput = .object previousFields := by
+                                    simpa [completeValue, hincludes,
+                                      reuseOrCreateObject?, hfirst,
+                                      catchVisitBubbleAsNull,
+                                      resultValueOrNull]
+                                      using hprefixPrev
+                                  have herrors' :=
+                                    herrors childDepth runtimeType identity
+                                      (Nat.lt_succ_self childDepth)
+                                      ValueContainsObject.here
+                                  unfold VisitSubfieldsErrorNeutral at herrors'
+                                  simpa [hfirst, hfirstOutput] using herrors'
+                        have hparentComposite :
+                            (TypeRef.named typeName).isCompositeBool schema =
+                              true := by
+                          cases hlookup : schema.lookupType typeName with
+                          | none =>
+                              simp [Schema.typeIncludesObjectBool,
+                                Schema.getPossibleTypes, hlookup] at hincludes
+                          | some typeDefinition =>
+                              cases typeDefinition <;>
+                                simp [TypeRef.isCompositeBool,
+                                  TypeRef.namedType,
+                                  Schema.typeIncludesObjectBool,
+                                  Schema.getPossibleTypes, hlookup]
+                                  at hincludes ⊢
+                        simp [completeResolvedValue, reusablePreviousValue?, completeValue, reuseOrCreateObject?, hincludes, hparentComposite, hvisited, hstatus', resultValueOrNull, catchVisitBubbleAsNull, visitOk]
+                    | list previousValues =>
+                        cases hcompleted :
+                            GraphQL.Execution.executeCollectedFields schema
+                              resolvers variableValues childDepth
+                              (.object runtimeType identity)
+                              (GraphQL.Execution.collectFields schema
+                                variableValues runtimeType
+                                (.object runtimeType identity)
+                                (GraphQL.Execution.mergedFieldSelectionSet
+                                  prefixFields)) with
+                        | error prefixErrors =>
+                            simp [GraphQL.Execution.completeValue, hincludes,
+                              hcompleted, catchBubbleAsNull,
+                              resultValueOrNull] at hprevious
+                        | ok prefixResult =>
+                            rcases prefixResult with
+                              ⟨prefixOutput, prefixErrors⟩
+                            simp [GraphQL.Execution.completeValue, hincludes,
+                              hcompleted, catchBubbleAsNull,
+                              resultValueOrNull] at hprevious
+                  · have hnotIncludes :
+                        schema.typeIncludesObjectBool typeName runtimeType =
+                          false := by
+                      cases h :
+                          schema.typeIncludesObjectBool typeName runtimeType <;>
+                        simp [h] at hincludes ⊢
+                    simp [GraphQL.Execution.completeValue, hnotIncludes,
+                      resultValueOrNull] at hprefixNonNull
+  | list inner ih =>
+      intro depth resolved prefixFields later hprefixChildren hobjects herrors
+        hchildren
+      constructor
+      · cases depth with
+          | zero =>
+            cases resolved <;>
+              simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, outOfFuel, resultValueOrNull, GraphQL.Execution.Result.combine]
+          | succ childDepth =>
+            cases resolved with
+            | null =>
+                simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, GraphQL.Execution.Result.combine, mergeResponse]
+            | scalar value =>
+                simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, GraphQL.Execution.Result.combine]
+            | object runtimeType identity =>
+                simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, GraphQL.Execution.Result.combine]
+            | list values =>
+                have hvalueAppend :
+                    ∀ value : ResolverValue ObjectIdentity,
+                    value ∈ values ->
+                      GraphQL.Execution.Result.combine mergeResponse
+                        (GraphQL.Execution.completeValue schema resolvers
+                          variableValues childDepth inner prefixFields value)
+                        (completeResolvedValue schema resolvers variableValues
+                          childDepth inner later.selectionSet value
+                          (some (resultValueOrNull
+                            (GraphQL.Execution.completeValue schema resolvers
+                              variableValues childDepth inner prefixFields
+                              value)))) =
+                      GraphQL.Execution.completeValue schema resolvers
+                        variableValues childDepth inner (prefixFields ++ [later])
+                        value := by
+                  intro value hmem
+                  exact (ih childDepth value prefixFields later
+                    (by
+                      intro childDepth' runtimeType identity hlt hcontains
+                        hincludes
+                      exact hprefixChildren childDepth' runtimeType identity
+                        (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                        (ValueContainsObject.list hmem hcontains)
+                        (by simpa using hincludes))
+                    (by
+                      intro childDepth' runtimeType identity hlt hcontains
+                      exact hobjects childDepth' runtimeType identity
+                        (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                        (ValueContainsObject.list hmem hcontains))
+                    (by
+                      intro childDepth' runtimeType identity hlt hcontains
+                      exact herrors childDepth' runtimeType identity
+                        (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                        (ValueContainsObject.list hmem hcontains))
+                    (by
+                      intro childDepth' runtimeType identity hlt hcontains
+                        hincludes
+                      exact hchildren childDepth' runtimeType identity
+                        (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                        (ValueContainsObject.list hmem hcontains)
+                        (by simpa using hincludes))).left
+                have hvalueStatus :
+                    ∀ value : ResolverValue ObjectIdentity,
+                    value ∈ values ->
+                      resultStatus
+                        (completeResolvedValue schema resolvers variableValues
+                          childDepth inner later.selectionSet value
+                          (some (resultValueOrNull
+                            (GraphQL.Execution.completeValue schema resolvers
+                              variableValues childDepth inner prefixFields
+                          value)))) =
+                        visitOk := by
+                  intro value hmem
+                  exact (ih childDepth value prefixFields later
+                    (by
+                      intro childDepth' runtimeType identity hlt hcontains
+                        hincludes
+                      exact hprefixChildren childDepth' runtimeType identity
+                        (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                        (ValueContainsObject.list hmem hcontains)
+                        (by simpa using hincludes))
+                    (by
+                      intro childDepth' runtimeType identity hlt hcontains
+                      exact hobjects childDepth' runtimeType identity
+                        (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                        (ValueContainsObject.list hmem hcontains))
+                    (by
+                      intro childDepth' runtimeType identity hlt hcontains
+                      exact herrors childDepth' runtimeType identity
+                        (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                        (ValueContainsObject.list hmem hcontains))
+                    (by
+                      intro childDepth' runtimeType identity hlt hcontains
+                        hincludes
+                      exact hchildren childDepth' runtimeType identity
+                        (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                        (ValueContainsObject.list hmem hcontains)
+                        (by simpa using hincludes))).right.left
+                cases hcontains : inner.isCompositeBool schema with
+                | false =>
+                    have happendedPrefix :
+                        GraphQL.Execution.completeValueList schema resolvers
+                          variableValues childDepth inner
+                          (prefixFields ++ [later]) values =
+                        GraphQL.Execution.completeValueList schema resolvers
+                          variableValues childDepth inner prefixFields values :=
+                      specCompleteValueList_eq_of_no_object schema resolvers
+                        variableValues childDepth inner (prefixFields ++ [later])
+                        prefixFields values hcontains
+                    cases hprefixList :
+                        GraphQL.Execution.completeValueList schema resolvers
+                          variableValues childDepth inner prefixFields values with
+                    | error prefixErrors =>
+                        have happended :
+                            GraphQL.Execution.completeValueList schema
+                              resolvers variableValues childDepth inner
+                              (prefixFields ++ [later]) values =
+                            .error prefixErrors := by
+                          rw [happendedPrefix, hprefixList]
+                        simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, hprefixList, happended, resultValueOrNull, GraphQL.Execution.Result.combine, mergeResponse, catchBubbleAsNull]
+                    | ok prefixResult =>
+                        rcases prefixResult with ⟨prefixValues, prefixErrors⟩
+                        have happended :
+                            GraphQL.Execution.completeValueList schema
+                              resolvers variableValues childDepth inner
+                              (prefixFields ++ [later]) values =
+                            .ok (prefixValues, prefixErrors) := by
+                          rw [happendedPrefix, hprefixList]
+                        have hprefixReady :
+                            ∀ response, response ∈ prefixValues ->
+                              ResponseMergeReady response :=
+                          specCompleteValueList_values_ready schema resolvers
+                            variableValues childDepth inner prefixFields values
+                            prefixValues prefixErrors hprefixList
+                        have hself :
+                            mergeResponseLists prefixValues prefixValues =
+                              prefixValues :=
+                          mergeResponseLists_self_of_ready prefixValues
+                            hprefixReady
+                        have houterContains :
+                            (TypeRef.list inner).isCompositeBool schema =
+                              false := by
+                          simpa [TypeRef.isCompositeBool,
+                            TypeRef.namedType] using hcontains
+                        simp [GraphQL.Execution.completeValue, completeResolvedValue, reusablePreviousValue?, hprefixList, happended, houterContains, hself, resultValueOrNull, GraphQL.Execution.Result.combine, mergeResponse, catchBubbleAsNull]
+                | true =>
+                    have hlistAppend :=
+                      completeValueList_append_result_eq_spec_of_mem schema
+                        resolvers variableValues childDepth inner prefixFields
+                        later values hcontains hvalueAppend hvalueStatus
+                    cases hprefixList :
+                        GraphQL.Execution.completeValueList schema resolvers
+                          variableValues childDepth inner prefixFields values with
+                    | error prefixErrors =>
+                        have happended :
+                            GraphQL.Execution.completeValueList schema resolvers
+                              variableValues childDepth inner
+                              (prefixFields ++ [later]) values =
+                            .error prefixErrors := by
+                          have hcombined := hlistAppend
+                          simp [hprefixList, GraphQL.Execution.Result.combine]
+                            at hcombined
+                          simpa using hcombined.symm
+                        simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, hprefixList, happended, resultValueOrNull, GraphQL.Execution.Result.combine, mergeResponse, catchBubbleAsNull]
+                    | ok prefixResult =>
+                        rcases prefixResult with ⟨prefixValues, prefixErrors⟩
+                        have hlistStatus :=
+                          resultStatus_completeValueList_append_second_eq_ok_of_mem
+                            schema resolvers variableValues childDepth inner
+                            prefixFields later values hcontains hvalueStatus
+                        have hrightStatus :
+                            resultStatus
+                              (completeValueList schema resolvers
+                                variableValues childDepth inner
+                                later.selectionSet values prefixValues) =
+                            visitOk := by
+                          simpa [hprefixList] using hlistStatus
+                        cases hrightList :
+                            completeValueList schema resolvers variableValues
+                              childDepth inner later.selectionSet values
+                              prefixValues with
+                        | error rightErrors =>
+                            simp [hrightList, resultStatus, visitOk]
+                              at hrightStatus
+                        | ok rightResult =>
+                            rcases rightResult with ⟨rightValues, rightErrors⟩
+                            cases rightErrors with
+                            | zero =>
+                                have happended :
+                                    GraphQL.Execution.completeValueList schema
+                                      resolvers variableValues childDepth inner
+                                      (prefixFields ++ [later]) values =
+                                    .ok (mergeResponseLists prefixValues
+                                      rightValues, prefixErrors) := by
+                                  simpa [hprefixList, hrightList,
+                                    GraphQL.Execution.Result.combine]
+                                    using hlistAppend.symm
+                                have houterContains :
+                                    (TypeRef.list inner).isCompositeBool
+                                        schema =
+                                      true := by
+                                  simpa [TypeRef.isCompositeBool,
+                                    TypeRef.namedType] using hcontains
+                                simp [GraphQL.Execution.completeValue, completeResolvedValue, reusablePreviousValue?, completeValue, reuseOrCreateList?, hprefixList, hrightList, happended, resultValueOrNull, houterContains, GraphQL.Execution.Result.combine, mergeResponse, catchBubbleAsNull]
+                            | succ rightErrors =>
+                                simp [hrightList, resultStatus, visitOk]
+                                  at hrightStatus
+      · constructor
+        · cases depth with
+          | zero =>
+              cases resolved <;>
+                simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, outOfFuel, resultValueOrNull, resultStatus, visitOk]
+          | succ childDepth =>
+              cases resolved with
+              | null =>
+                  simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, resultStatus, visitOk]
+              | scalar value =>
+                  simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, resultStatus, visitOk]
+              | object runtimeType identity =>
+                  simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, resultValueOrNull, resultStatus, visitOk]
+              | list values =>
+                  have hvalueStatus :
+                      ∀ value : ResolverValue ObjectIdentity,
+                      value ∈ values ->
+                        resultStatus
+                          (completeResolvedValue schema resolvers variableValues
+                            childDepth inner later.selectionSet value
+                            (some (resultValueOrNull
+                              (GraphQL.Execution.completeValue schema resolvers
+                                variableValues childDepth inner prefixFields
+                            value)))) =
+                          visitOk := by
+                    intro value hmem
+                    exact (ih childDepth value prefixFields later
+                      (by
+                        intro childDepth' runtimeType identity hlt hcontains
+                          hincludes
+                        exact hprefixChildren childDepth' runtimeType identity
+                          (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                          (ValueContainsObject.list hmem hcontains)
+                          (by simpa using hincludes))
+                      (by
+                        intro childDepth' runtimeType identity hlt hcontains
+                        exact hobjects childDepth' runtimeType identity
+                          (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                          (ValueContainsObject.list hmem hcontains))
+                      (by
+                        intro childDepth' runtimeType identity hlt hcontains
+                        exact herrors childDepth' runtimeType identity
+                          (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                          (ValueContainsObject.list hmem hcontains))
+                      (by
+                        intro childDepth' runtimeType identity hlt hcontains
+                          hincludes
+                        exact hchildren childDepth' runtimeType identity
+                          (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                          (ValueContainsObject.list hmem hcontains)
+                          (by simpa using hincludes))).right.left
+                  cases hcontains : inner.isCompositeBool schema with
+                  | false =>
+                      have houterContains :
+                          (TypeRef.list inner).isCompositeBool schema =
+                            false := by
+                        simpa [TypeRef.isCompositeBool,
+                          TypeRef.namedType] using hcontains
+                      cases hprefixList :
+                          GraphQL.Execution.completeValueList schema resolvers
+                            variableValues childDepth inner prefixFields
+                            values <;>
+                        simp [GraphQL.Execution.completeValue, completeResolvedValue, completeResolvedValue_previous_null, reusablePreviousValue?, houterContains, hprefixList, resultValueOrNull, resultStatus, visitOk, catchBubbleAsNull]
+                  | true =>
+                      cases hprefixList :
+                          GraphQL.Execution.completeValueList schema resolvers
+                            variableValues childDepth inner prefixFields values with
+                      | error prefixErrors =>
+                          simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, hprefixList, resultValueOrNull, resultStatus, visitOk, catchBubbleAsNull]
+                      | ok prefixResult =>
+                          rcases prefixResult with ⟨prefixValues, prefixErrors⟩
+                          have hlistStatus :=
+                            resultStatus_completeValueList_append_second_eq_ok_of_mem
+                              schema resolvers variableValues childDepth inner
+                              prefixFields later values hcontains hvalueStatus
+                          have hrightStatus :
+                              resultStatus
+                                (completeValueList schema resolvers
+                                  variableValues childDepth inner
+                                  later.selectionSet values prefixValues) =
+                              visitOk := by
+                            simpa [hprefixList] using hlistStatus
+                          cases hrightList :
+                              completeValueList schema resolvers variableValues
+                                childDepth inner later.selectionSet values
+                                prefixValues with
+                          | error rightErrors =>
+                              simp [hrightList, resultStatus, visitOk]
+                                at hrightStatus
+                          | ok rightResult =>
+                              rcases rightResult with
+                                ⟨rightValues, rightErrors⟩
+                              cases rightErrors with
+                              | zero =>
+                                  have houterContains :
+                                      (TypeRef.list inner).isCompositeBool
+                                          schema =
+                                        true := by
+                                    simpa [TypeRef.isCompositeBool,
+                                      TypeRef.namedType] using hcontains
+                                  simp [GraphQL.Execution.completeValue, completeResolvedValue, reusablePreviousValue?, completeValue, reuseOrCreateList?, houterContains, hprefixList, hrightList, resultValueOrNull, resultStatus, visitOk, catchBubbleAsNull]
+                              | succ rightErrors =>
+                                  simp [hrightList, resultStatus, visitOk]
+                                    at hrightStatus
+        · intro hprefixNonNull
+          cases depth with
+          | zero =>
+              cases resolved <;>
+                simp [GraphQL.Execution.completeValue, outOfFuel,
+                  resultValueOrNull] at hprefixNonNull
+          | succ childDepth =>
+              cases resolved with
+              | null =>
+                  simp [GraphQL.Execution.completeValue, resultValueOrNull]
+                    at hprefixNonNull
+              | scalar value =>
+                  simp [GraphQL.Execution.completeValue, resultValueOrNull]
+                    at hprefixNonNull
+              | object runtimeType identity =>
+                  simp [GraphQL.Execution.completeValue, resultValueOrNull]
+                    at hprefixNonNull
+              | list values =>
+                  have hvalueStatus :
+                      ∀ value : ResolverValue ObjectIdentity,
+                      value ∈ values ->
+                        resultStatus
+                          (completeResolvedValue schema resolvers variableValues
+                            childDepth inner later.selectionSet value
+                            (some (resultValueOrNull
+                              (GraphQL.Execution.completeValue schema resolvers
+                                variableValues childDepth inner prefixFields
+                            value)))) =
+                          visitOk := by
+                    intro value hmem
+                    exact (ih childDepth value prefixFields later
+                      (by
+                        intro childDepth' runtimeType identity hlt hcontains
+                          hincludes
+                        exact hprefixChildren childDepth' runtimeType identity
+                          (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                          (ValueContainsObject.list hmem hcontains)
+                          (by simpa using hincludes))
+                      (by
+                        intro childDepth' runtimeType identity hlt hcontains
+                        exact hobjects childDepth' runtimeType identity
+                          (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                          (ValueContainsObject.list hmem hcontains))
+                      (by
+                        intro childDepth' runtimeType identity hlt hcontains
+                        exact herrors childDepth' runtimeType identity
+                          (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                          (ValueContainsObject.list hmem hcontains))
+                      (by
+                        intro childDepth' runtimeType identity hlt hcontains
+                          hincludes
+                        exact hchildren childDepth' runtimeType identity
+                          (Nat.lt_trans hlt (Nat.lt_succ_self childDepth))
+                          (ValueContainsObject.list hmem hcontains)
+                          (by simpa using hincludes))).right.left
+                  cases hcontains : inner.isCompositeBool schema with
+                  | false =>
+                      have houterContains :
+                          (TypeRef.list inner).isCompositeBool schema =
+                            false := by
+                        simpa [TypeRef.isCompositeBool,
+                          TypeRef.namedType] using hcontains
+                      cases hprefixList :
+                          GraphQL.Execution.completeValueList schema resolvers
+                            variableValues childDepth inner prefixFields
+                            values with
+                      | error prefixErrors =>
+                          simp [GraphQL.Execution.completeValue, hprefixList, resultValueOrNull, catchBubbleAsNull]
+                            at hprefixNonNull
+                      | ok prefixResult =>
+                          rcases prefixResult with
+                            ⟨prefixValues, prefixErrors⟩
+                          simp [GraphQL.Execution.completeValue, completeResolvedValue, reusablePreviousValue?, houterContains, hprefixList, resultValueOrNull, catchBubbleAsNull]
+                  | true =>
+                      cases hprefixList :
+                          GraphQL.Execution.completeValueList schema resolvers
+                            variableValues childDepth inner prefixFields values with
+                      | error prefixErrors =>
+                          simp [GraphQL.Execution.completeValue, hprefixList, resultValueOrNull, catchBubbleAsNull]
+                            at hprefixNonNull
+                      | ok prefixResult =>
+                          rcases prefixResult with
+                            ⟨prefixValues, prefixErrors⟩
+                          have hlistStatus :=
+                            resultStatus_completeValueList_append_second_eq_ok_of_mem
+                              schema resolvers variableValues childDepth inner
+                              prefixFields later values hcontains hvalueStatus
+                          have hrightStatus :
+                              resultStatus
+                                (completeValueList schema resolvers
+                                  variableValues childDepth inner
+                                  later.selectionSet values prefixValues) =
+                              visitOk := by
+                            simpa [hprefixList] using hlistStatus
+                          cases hrightList :
+                              completeValueList schema resolvers variableValues
+                                childDepth inner later.selectionSet values
+                                prefixValues with
+                          | error rightErrors =>
+                              simp [hrightList, resultStatus, visitOk]
+                                at hrightStatus
+                          | ok rightResult =>
+                              rcases rightResult with
+                                ⟨rightValues, rightErrors⟩
+                              cases rightErrors with
+                              | zero =>
+                                  have houterContains :
+                                      (TypeRef.list inner).isCompositeBool
+                                          schema =
+                                        true := by
+                                    simpa [TypeRef.isCompositeBool,
+                                      TypeRef.namedType] using hcontains
+                                  simp [GraphQL.Execution.completeValue, completeResolvedValue, reusablePreviousValue?, completeValue, reuseOrCreateList?, houterContains, hprefixList, hrightList, resultValueOrNull, catchBubbleAsNull]
+                              | succ rightErrors =>
+                                  simp [hrightList, resultStatus, visitOk]
+                                    at hrightStatus
+  | nonNull inner ih =>
+      intro depth resolved prefixFields later hprefixChildren hobjects herrors
+        hchildren
+      cases depth with
+      | zero =>
+            constructor <;>
+              cases resolved <;>
+                simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, outOfFuel, resultValueOrNull, resultStatus, visitOk, GraphQL.Execution.Result.combine]
+      | succ depth =>
+          have hinner :=
+            ih (depth + 1) resolved prefixFields later
+              (by
+                intro childDepth runtimeType identity hlt hcontains hincludes
+                exact hprefixChildren childDepth runtimeType identity hlt
+                  hcontains
+                  (by simpa using hincludes))
+              hobjects herrors
+              (by
+                intro childDepth runtimeType identity hlt hcontains hincludes
+                exact hchildren childDepth runtimeType identity hlt
+                  hcontains
+                  (by simpa using hincludes))
+          rcases hinner with ⟨hcombine, hstatus, hnonnull⟩
+          constructor
+          · cases hprefix :
+              GraphQL.Execution.completeValue schema resolvers variableValues
+                (depth + 1) inner prefixFields resolved with
+            | error prefixErrors =>
+                cases hright :
+                    completeResolvedValue schema resolvers variableValues
+                      (depth + 1) inner later.selectionSet resolved
+                      (some (resultValueOrNull
+                        (GraphQL.Execution.completeValue schema resolvers
+                          variableValues (depth + 1) inner prefixFields
+                          resolved))) with
+                | error rightErrors =>
+                    have hrightStatus :
+                        resultStatus
+                          (completeResolvedValue schema resolvers variableValues
+                            (depth + 1) inner later.selectionSet resolved
+                            (some (resultValueOrNull
+                              (GraphQL.Execution.completeValue schema
+                                resolvers variableValues (depth + 1) inner
+                                prefixFields resolved)))) =
+                        visitOk := hstatus
+                    simp [hright, resultStatus, visitOk] at hrightStatus
+                | ok rightResult =>
+                    rcases rightResult with ⟨rightValue, rightErrors⟩
+                    cases rightErrors with
+                    | zero =>
+                        have hright' :
+                            completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some .null) =
+                            .ok (rightValue, 0) := by
+                          simpa [hprefix, resultValueOrNull,
+                            completeResolvedValue, completeResolvedValue_previous_null, completeResolvedValue_previous_scalar, reusablePreviousValue?]
+                            using hright
+                        have happended :
+                            GraphQL.Execution.completeValue schema resolvers
+                              variableValues (depth + 1) inner
+                              (prefixFields ++ [later]) resolved =
+                            .error prefixErrors := by
+                          have hcombined := hcombine
+                          simp [hprefix, hright', resultValueOrNull,
+                            GraphQL.Execution.Result.combine] at hcombined
+                          simpa using hcombined.symm
+                        simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, hprefix, happended, resultValueOrNull, nonNullCompletion, GraphQL.Execution.Result.combine]
+                    | succ rightErrors =>
+                        have hrightStatus :
+                            resultStatus
+                              (completeResolvedValue schema resolvers variableValues
+                                (depth + 1) inner later.selectionSet resolved
+                                (some (resultValueOrNull
+                                  (GraphQL.Execution.completeValue schema
+                                    resolvers variableValues (depth + 1)
+                                    inner prefixFields resolved)))) =
+                            visitOk := hstatus
+                        simp [hright, resultStatus, visitOk] at hrightStatus
+            | ok prefixResult =>
+                rcases prefixResult with ⟨prefixValue, prefixErrors⟩
+                cases hright :
+                    completeResolvedValue schema resolvers variableValues
+                      (depth + 1) inner later.selectionSet resolved
+                      (some (resultValueOrNull
+                        (GraphQL.Execution.completeValue schema resolvers
+                          variableValues (depth + 1) inner prefixFields
+                          resolved))) with
+                | error rightErrors =>
+                    have hrightStatus :
+                        resultStatus
+                          (completeResolvedValue schema resolvers variableValues
+                            (depth + 1) inner later.selectionSet resolved
+                            (some (resultValueOrNull
+                              (GraphQL.Execution.completeValue schema
+                                resolvers variableValues (depth + 1) inner
+                                prefixFields resolved)))) =
+                        visitOk := hstatus
+                    simp [hright, resultStatus, visitOk] at hrightStatus
+                | ok rightResult =>
+                    rcases rightResult with ⟨rightValue, rightErrors⟩
+                    cases rightErrors with
+                    | zero =>
+                        have hright' :
+                            completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some prefixValue) =
+                            .ok (rightValue, 0) := by
+                          simpa [hprefix, resultValueOrNull,
+                            completeResolvedValue, completeResolvedValue_previous_null, completeResolvedValue_previous_scalar, reusablePreviousValue?]
+                            using hright
+                        have happended :
+                            GraphQL.Execution.completeValue schema resolvers
+                              variableValues (depth + 1) inner
+                              (prefixFields ++ [later]) resolved =
+                            .ok (mergeResponse prefixValue rightValue,
+                              prefixErrors) := by
+                          have hcombined := hcombine
+                          simp [hprefix, hright', resultValueOrNull,
+                            GraphQL.Execution.Result.combine] at hcombined
+                          simpa using hcombined.symm
+                        cases prefixValue with
+                        | null =>
+                            cases rightValue <;>
+                                simp [completeResolvedValue_previous_null] at hright'
+                            simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, hprefix, happended, resultValueOrNull, nonNullCompletion, GraphQL.Execution.Result.combine, mergeResponse]
+                        | scalar prefixScalar =>
+                            have hrightNonNullRaw :
+                                resultValueOrNull
+                                  (completeResolvedValue schema resolvers variableValues
+                                    (depth + 1) inner later.selectionSet
+                                    resolved
+                                    (some (resultValueOrNull
+                                      (GraphQL.Execution.completeValue schema
+                                        resolvers variableValues (depth + 1)
+                                        inner prefixFields resolved)))) ≠
+                                .null :=
+                              hnonnull (by
+                                simp [hprefix, resultValueOrNull])
+                            have hrightNonNull :
+                                resultValueOrNull
+                                  (completeResolvedValue schema resolvers variableValues
+                                    (depth + 1) inner later.selectionSet
+                                    resolved (some (.scalar prefixScalar))) ≠
+                                .null :=
+                              by
+                                simpa [hprefix, resultValueOrNull]
+                                  using hrightNonNullRaw
+                            have hwrapped :
+                                completeResolvedValue schema resolvers variableValues
+                                  (depth + 1) inner.nonNull later.selectionSet
+                                  resolved (some (.scalar prefixScalar)) =
+                                .ok (rightValue, 0) :=
+                              have hrightValueNonNull : rightValue ≠ .null := by
+                                intro hnull
+                                exact hrightNonNull (by
+                                  simp [hright', hnull, resultValueOrNull])
+                              completeResolvedValue_nonNull_ok_of_inner_ok
+                                schema resolvers variableValues (depth + 1)
+                                inner later.selectionSet resolved
+                                (some (.scalar prefixScalar)) rightValue 0
+                                hright' hrightValueNonNull
+                            cases rightValue with
+                            | null =>
+                                exact False.elim (by
+                                  have hrightValueNonNull : ResponseValue.null ≠ .null := by
+                                    intro hnull
+                                    exact hrightNonNull (by
+                                      simp [hright', resultValueOrNull])
+                                  exact hrightValueNonNull rfl)
+                            | scalar rightScalar =>
+                                simp [GraphQL.Execution.completeValue, hprefix, hwrapped, happended, resultValueOrNull, nonNullCompletion, GraphQL.Execution.Result.combine, mergeResponse]
+                            | object rightFields =>
+                                simp [GraphQL.Execution.completeValue, hprefix, hwrapped, happended, resultValueOrNull, nonNullCompletion, GraphQL.Execution.Result.combine, mergeResponse]
+                            | list rightValues =>
+                                simp [GraphQL.Execution.completeValue, hprefix, hwrapped, happended, resultValueOrNull, nonNullCompletion, GraphQL.Execution.Result.combine, mergeResponse]
+                        | object prefixFieldsValue =>
+                            have hrightNonNullRaw :
+                                resultValueOrNull
+                                  (completeResolvedValue schema resolvers variableValues
+                                    (depth + 1) inner later.selectionSet
+                                    resolved
+                                    (some (resultValueOrNull
+                                      (GraphQL.Execution.completeValue schema
+                                        resolvers variableValues (depth + 1)
+                                        inner prefixFields resolved)))) ≠
+                                .null :=
+                              hnonnull (by
+                                simp [hprefix, resultValueOrNull])
+                            have hrightNonNull :
+                                resultValueOrNull
+                                  (completeResolvedValue schema resolvers variableValues
+                                    (depth + 1) inner later.selectionSet
+                                    resolved (some (.object prefixFieldsValue))) ≠
+                                .null :=
+                              by
+                                simpa [hprefix, resultValueOrNull]
+                                  using hrightNonNullRaw
+                            have hwrapped :
+                                completeResolvedValue schema resolvers variableValues
+                                  (depth + 1) inner.nonNull later.selectionSet
+                                  resolved (some (.object prefixFieldsValue)) =
+                                .ok (rightValue, 0) :=
+                              have hrightValueNonNull : rightValue ≠ .null := by
+                                intro hnull
+                                exact hrightNonNull (by
+                                  simp [hright', hnull, resultValueOrNull])
+                              completeResolvedValue_nonNull_ok_of_inner_ok
+                                schema resolvers variableValues (depth + 1)
+                                inner later.selectionSet resolved
+                                (some (.object prefixFieldsValue)) rightValue 0
+                                hright' hrightValueNonNull
+                            cases rightValue with
+                            | null =>
+                                exact False.elim (by
+                                  have hrightValueNonNull : ResponseValue.null ≠ .null := by
+                                    intro hnull
+                                    exact hrightNonNull (by
+                                      simp [hright', resultValueOrNull])
+                                  exact hrightValueNonNull rfl)
+                            | scalar rightScalar =>
+                                simp [GraphQL.Execution.completeValue, hprefix, hwrapped, happended, resultValueOrNull, nonNullCompletion, GraphQL.Execution.Result.combine, mergeResponse]
+                            | object rightFields =>
+                                simp [GraphQL.Execution.completeValue, hprefix, hwrapped, happended, resultValueOrNull, nonNullCompletion, GraphQL.Execution.Result.combine, mergeResponse]
+                            | list rightValues =>
+                                simp [GraphQL.Execution.completeValue, hprefix, hwrapped, happended, resultValueOrNull, nonNullCompletion, GraphQL.Execution.Result.combine, mergeResponse]
+                        | list prefixValues =>
+                            have hrightNonNullRaw :
+                                resultValueOrNull
+                                  (completeResolvedValue schema resolvers variableValues
+                                    (depth + 1) inner later.selectionSet
+                                    resolved
+                                    (some (resultValueOrNull
+                                      (GraphQL.Execution.completeValue schema
+                                        resolvers variableValues (depth + 1)
+                                        inner prefixFields resolved)))) ≠
+                                .null :=
+                              hnonnull (by
+                                simp [hprefix, resultValueOrNull])
+                            have hrightNonNull :
+                                resultValueOrNull
+                                  (completeResolvedValue schema resolvers variableValues
+                                    (depth + 1) inner later.selectionSet
+                                    resolved (some (.list prefixValues))) ≠
+                                .null :=
+                              by
+                                simpa [hprefix, resultValueOrNull]
+                                  using hrightNonNullRaw
+                            have hwrapped :
+                                completeResolvedValue schema resolvers variableValues
+                                  (depth + 1) inner.nonNull later.selectionSet
+                                  resolved (some (.list prefixValues)) =
+                                .ok (rightValue, 0) :=
+                              have hrightValueNonNull : rightValue ≠ .null := by
+                                intro hnull
+                                exact hrightNonNull (by
+                                  simp [hright', hnull, resultValueOrNull])
+                              completeResolvedValue_nonNull_ok_of_inner_ok
+                                schema resolvers variableValues (depth + 1)
+                                inner later.selectionSet resolved
+                                (some (.list prefixValues)) rightValue 0
+                                hright' hrightValueNonNull
+                            cases rightValue with
+                            | null =>
+                                exact False.elim (by
+                                  have hrightValueNonNull : ResponseValue.null ≠ .null := by
+                                    intro hnull
+                                    exact hrightNonNull (by
+                                      simp [hright', resultValueOrNull])
+                                  exact hrightValueNonNull rfl)
+                            | scalar rightScalar =>
+                                simp [GraphQL.Execution.completeValue, hprefix, hwrapped, happended, resultValueOrNull, nonNullCompletion, GraphQL.Execution.Result.combine, mergeResponse]
+                            | object rightFields =>
+                                simp [GraphQL.Execution.completeValue, hprefix, hwrapped, happended, resultValueOrNull, nonNullCompletion, GraphQL.Execution.Result.combine, mergeResponse]
+                            | list rightValues =>
+                                simp [GraphQL.Execution.completeValue, hprefix, hwrapped, happended, resultValueOrNull, nonNullCompletion, GraphQL.Execution.Result.combine, mergeResponse]
+                    | succ rightErrors =>
+                        have hrightStatus :
+                            resultStatus
+                              (completeResolvedValue schema resolvers variableValues
+                                (depth + 1) inner later.selectionSet resolved
+                                (some (resultValueOrNull
+                                  (GraphQL.Execution.completeValue schema
+                                    resolvers variableValues (depth + 1)
+                                    inner prefixFields resolved)))) =
+                            visitOk := hstatus
+                        simp [hright, resultStatus, visitOk] at hrightStatus
+          · constructor
+            · cases hprefix :
+                GraphQL.Execution.completeValue schema resolvers variableValues
+                  (depth + 1) inner prefixFields resolved with
+              | error prefixErrors =>
+                  simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, hprefix, resultValueOrNull, resultStatus, nonNullCompletion, visitOk]
+              | ok prefixResult =>
+                  rcases prefixResult with ⟨prefixValue, prefixErrors⟩
+                  cases prefixValue with
+                  | null =>
+                      simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, hprefix, resultValueOrNull, resultStatus, nonNullCompletion, visitOk]
+                  | scalar prefixScalar =>
+                      have hrightStatus :
+                          resultStatus
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (.scalar prefixScalar))) =
+                          visitOk := by
+                        simpa [hprefix, resultValueOrNull] using hstatus
+                      have hrightNonNullRaw :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (resultValueOrNull
+                                (GraphQL.Execution.completeValue schema
+                                  resolvers variableValues (depth + 1) inner
+                                  prefixFields resolved)))) ≠
+                          .null :=
+                        hnonnull (by simp [hprefix, resultValueOrNull])
+                      have hrightNonNull :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (.scalar prefixScalar))) ≠
+                          .null := by
+                        simpa [hprefix, resultValueOrNull]
+                          using hrightNonNullRaw
+                      simpa [GraphQL.Execution.completeValue, completeResolvedValue, completeResolvedValue_previous_null, completeResolvedValue_previous_scalar,
+                        completeValue, hprefix, resultValueOrNull,
+                        nonNullCompletion, resultStatus, visitOk]
+                        using
+                          resultStatus_completeResolvedValue_nonNull_eq_ok_of_inner_status_eq_ok_of_nonNull
+                            schema resolvers variableValues (depth + 1) inner
+                            later.selectionSet resolved
+                            (some (.scalar prefixScalar))
+                            hrightStatus hrightNonNull
+                  | object prefixFieldsValue =>
+                      have hrightStatus :
+                          resultStatus
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (.object prefixFieldsValue))) =
+                          visitOk := by
+                        simpa [hprefix, resultValueOrNull] using hstatus
+                      have hrightNonNullRaw :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (resultValueOrNull
+                                (GraphQL.Execution.completeValue schema
+                                  resolvers variableValues (depth + 1) inner
+                                  prefixFields resolved)))) ≠
+                          .null :=
+                        hnonnull (by simp [hprefix, resultValueOrNull])
+                      have hrightNonNull :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (.object prefixFieldsValue))) ≠
+                          .null := by
+                        simpa [hprefix, resultValueOrNull]
+                          using hrightNonNullRaw
+                      simpa [GraphQL.Execution.completeValue, completeResolvedValue, completeResolvedValue_previous_null, completeResolvedValue_previous_scalar,
+                        completeValue, hprefix, resultValueOrNull,
+                        nonNullCompletion]
+                        using
+                          resultStatus_completeResolvedValue_nonNull_eq_ok_of_inner_status_eq_ok_of_nonNull
+                            schema resolvers variableValues (depth + 1) inner
+                            later.selectionSet resolved
+                            (some (.object prefixFieldsValue))
+                            hrightStatus hrightNonNull
+                  | list prefixValues =>
+                      have hrightStatus :
+                          resultStatus
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (.list prefixValues))) =
+                          visitOk := by
+                        simpa [hprefix, resultValueOrNull] using hstatus
+                      have hrightNonNullRaw :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (resultValueOrNull
+                                (GraphQL.Execution.completeValue schema
+                                  resolvers variableValues (depth + 1) inner
+                                  prefixFields resolved)))) ≠
+                          .null :=
+                        hnonnull (by simp [hprefix, resultValueOrNull])
+                      have hrightNonNull :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (.list prefixValues))) ≠
+                          .null := by
+                        simpa [hprefix, resultValueOrNull]
+                          using hrightNonNullRaw
+                      simpa [GraphQL.Execution.completeValue, completeResolvedValue, completeResolvedValue_previous_null, completeResolvedValue_previous_scalar,
+                        completeValue, hprefix, resultValueOrNull,
+                        nonNullCompletion]
+                        using
+                          resultStatus_completeResolvedValue_nonNull_eq_ok_of_inner_status_eq_ok_of_nonNull
+                            schema resolvers variableValues (depth + 1) inner
+                            later.selectionSet resolved
+                            (some (.list prefixValues))
+                            hrightStatus hrightNonNull
+            · intro hprefixNonNull
+              cases hprefix :
+                  GraphQL.Execution.completeValue schema resolvers variableValues
+                    (depth + 1) inner prefixFields resolved with
+              | error prefixErrors =>
+                  simp [GraphQL.Execution.completeValue, hprefix, resultValueOrNull, nonNullCompletion]
+                    at hprefixNonNull
+              | ok prefixResult =>
+                  rcases prefixResult with ⟨prefixValue, prefixErrors⟩
+                  cases prefixValue with
+                  | null =>
+                      simp [GraphQL.Execution.completeValue, hprefix, resultValueOrNull, nonNullCompletion]
+                        at hprefixNonNull
+                  | scalar prefixScalar =>
+                      have hrightNonNullRaw :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (resultValueOrNull
+                                (GraphQL.Execution.completeValue schema
+                                  resolvers variableValues (depth + 1) inner
+                                  prefixFields resolved)))) ≠
+                          .null :=
+                        hnonnull (by simp [hprefix, resultValueOrNull])
+                      have hrightNonNull :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (.scalar prefixScalar))) ≠
+                          .null := by
+                        simpa [hprefix, resultValueOrNull]
+                          using hrightNonNullRaw
+                      have hproject :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner.nonNull later.selectionSet
+                              resolved (some (.scalar prefixScalar))) ≠
+                          .null := by
+                        exact
+                          resultValueOrNull_completeResolvedValue_nonNull_ne_null_of_inner_ne_null
+                            schema resolvers variableValues (depth + 1) inner
+                            later.selectionSet resolved
+                            (some (.scalar prefixScalar)) hrightNonNull
+                      simpa [GraphQL.Execution.completeValue, completeResolvedValue, completeResolvedValue_previous_null, completeResolvedValue_previous_scalar,
+                        completeValue, hprefix, resultValueOrNull,
+                        nonNullCompletion]
+                        using hproject
+                  | object prefixFieldsValue =>
+                      have hrightNonNullRaw :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (resultValueOrNull
+                                (GraphQL.Execution.completeValue schema
+                                  resolvers variableValues (depth + 1) inner
+                                  prefixFields resolved)))) ≠
+                          .null :=
+                        hnonnull (by simp [hprefix, resultValueOrNull])
+                      have hrightNonNull :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (.object prefixFieldsValue))) ≠
+                          .null := by
+                        simpa [hprefix, resultValueOrNull]
+                          using hrightNonNullRaw
+                      have hproject :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner.nonNull later.selectionSet
+                              resolved (some (.object prefixFieldsValue))) ≠
+                          .null := by
+                        exact
+                          resultValueOrNull_completeResolvedValue_nonNull_ne_null_of_inner_ne_null
+                            schema resolvers variableValues (depth + 1) inner
+                            later.selectionSet resolved
+                            (some (.object prefixFieldsValue)) hrightNonNull
+                      simpa [GraphQL.Execution.completeValue, completeResolvedValue, completeResolvedValue_previous_null, completeResolvedValue_previous_scalar,
+                        completeValue, hprefix, resultValueOrNull,
+                        nonNullCompletion]
+                        using hproject
+                  | list prefixValues =>
+                      have hrightNonNullRaw :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (resultValueOrNull
+                                (GraphQL.Execution.completeValue schema
+                                  resolvers variableValues (depth + 1) inner
+                                  prefixFields resolved)))) ≠
+                          .null :=
+                        hnonnull (by simp [hprefix, resultValueOrNull])
+                      have hrightNonNull :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner later.selectionSet resolved
+                              (some (.list prefixValues))) ≠
+                          .null := by
+                        simpa [hprefix, resultValueOrNull]
+                          using hrightNonNullRaw
+                      have hproject :
+                          resultValueOrNull
+                            (completeResolvedValue schema resolvers variableValues
+                              (depth + 1) inner.nonNull later.selectionSet
+                              resolved (some (.list prefixValues))) ≠
+                          .null := by
+                        exact
+                          resultValueOrNull_completeResolvedValue_nonNull_ne_null_of_inner_ne_null
+                            schema resolvers variableValues (depth + 1) inner
+                            later.selectionSet resolved
+                            (some (.list prefixValues)) hrightNonNull
+                      simpa [GraphQL.Execution.completeValue, completeResolvedValue, completeResolvedValue_previous_null, completeResolvedValue_previous_scalar,
+                        completeValue, hprefix, resultValueOrNull,
+                        nonNullCompletion]
+                        using hproject
+
+theorem resultValueOrNull_executeField_depth_zero_none
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (source : ResolverValue ObjectIdentity)
+    (field : ExecutableField) :
+    resultValueOrNull
+      (executeField schema resolvers variableValues 0 source none field) =
+    .null := by
+  cases hlookup : schema.lookupField field.parentType field.fieldName with
+      | none =>
+          simp [executeField, hlookup, resultValueOrNull]
+      | some fieldDefinition =>
+          cases hresolve :
+              resolvers.resolve field.parentType field.fieldName field.arguments
+                source with
+          | none =>
+              rcases fieldDefinition with ⟨fdName, fdOutput, fdArgs⟩
+              cases fdOutput <;>
+                simp [executeField, hlookup, hresolve, reusablePreviousValue?, handleFieldError, resultValueOrNull]
+          | some resolved =>
+              simp [executeField, hlookup, hresolve, reusablePreviousValue?, completeValue, outOfFuel, resultValueOrNull]
+
+theorem visitSubfields_executableFieldSelections_single_eq_groupedFieldVisitResult_of_guarded_child_states
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (responseName : Name) (field : ExecutableField)
+    (resolved : Option (ResolverValue ObjectIdentity))
+    (hfieldResponse : field.responseName = responseName)
+    (hfieldParent : field.parentType = parentType)
+    (hresolve :
+      resolvers.resolve field.parentType field.fieldName field.arguments source =
+        resolved)
+    (hchildren :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        schema.typeIncludesObjectBool
+          ((schema.fieldReturnType? field.parentType field.fieldName).getD
+            field.fieldName)
+          runtimeType = true ->
+          ExecutionStateEquivalent
+            { window :=
+              { schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := childDepth
+                parentType := runtimeType
+                source := .object runtimeType identity
+                selectionSet := field.selectionSet }
+              initial := .object [] }) :
+    visitSubfields schema resolvers variableValues (depth + 1) parentType
+      source (executableFieldSelections [field]) (.object []) =
+    groupedFieldVisitResult responseName
+      (GraphQL.Execution.executeField schema resolvers variableValues
+        (depth + 1) source responseName [field]) := by
+  cases field with
+  | mk fieldParent fieldResponseName fieldName arguments selectionSet =>
+      dsimp at hfieldResponse hfieldParent hresolve hchildren ⊢
+      subst fieldResponseName
+      subst fieldParent
+      cases hlookup : schema.lookupField parentType fieldName with
+      | none =>
+          simp [visitSubfields, visitSelection, executableFieldSelections, executableFieldSelection, executableField, selectionDirectivesAllowBool_empty, responseObjectField?, lookupResponseField?, executeField, GraphQL.Execution.executeField, hlookup, groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, mergeResponseFieldResult_empty_eq_groupedFieldVisitResult_singleFieldResult]
+      | some fieldDefinition =>
+          cases resolved with
+          | none =>
+              simp [visitSubfields, visitSelection, executableFieldSelections, executableFieldSelection, executableField, selectionDirectivesAllowBool_empty, responseObjectField?, lookupResponseField?, executeField, GraphQL.Execution.executeField, hlookup, hresolve, reusablePreviousValue?, groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, mergeResponseFieldResult_empty_eq_groupedFieldVisitResult_singleFieldResult]
+          | some resolvedValue =>
+              have hcomplete :
+                  completeValue schema resolvers variableValues depth
+                    fieldDefinition.outputType selectionSet resolvedValue
+                    none =
+                  GraphQL.Execution.completeValue schema resolvers
+                    variableValues depth fieldDefinition.outputType
+                    [executableField parentType responseName fieldName arguments
+                      selectionSet]
+                    resolvedValue :=
+                completeValue_single_field_eq_spec_of_guarded_child_states
+                  schema resolvers variableValues
+                  (executableField parentType responseName fieldName arguments
+                    selectionSet)
+                  fieldDefinition.outputType depth resolvedValue
+                  (by
+                    intro childDepth runtimeType identity hlt hincludes
+                    exact hchildren childDepth runtimeType identity hlt
+                      (by
+                        simpa [Schema.fieldReturnType?, hlookup] using
+                          hincludes))
+              rw [show
+                  executableFieldSelections
+                      [{ parentType := parentType
+                         responseName := responseName
+                         fieldName := fieldName
+                         arguments := arguments
+                         selectionSet := selectionSet }] =
+                    [executableFieldSelection
+                      { parentType := parentType
+                        responseName := responseName
+                        fieldName := fieldName
+                        arguments := arguments
+                        selectionSet := selectionSet }] by
+                rfl]
+              simp [visitSubfields, visitSelection, executableFieldSelection, executableField, selectionDirectivesAllowBool_empty, responseObjectField?, lookupResponseField?, executeField, GraphQL.Execution.executeField, hlookup, hresolve, reusablePreviousValue?, mergeResponseFieldResult_empty_eq_groupedFieldVisitResult_singleFieldResult, hcomplete]
+
+theorem visitSubfields_executableFieldSelections_single_eq_groupedFieldVisitResult_of_contained_child_states
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (responseName : Name) (field : ExecutableField)
+    (resolved : Option (ResolverValue ObjectIdentity))
+    (hfieldResponse : field.responseName = responseName)
+    (hfieldParent : field.parentType = parentType)
+    (hresolve :
+      resolvers.resolve field.parentType field.fieldName field.arguments source =
+        resolved)
+    (hchildren :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+        schema.typeIncludesObjectBool
+          ((schema.fieldReturnType? field.parentType field.fieldName).getD
+            field.fieldName)
+          runtimeType = true ->
+          ExecutionStateEquivalent
+            { window :=
+              { schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := childDepth
+                parentType := runtimeType
+                source := .object runtimeType identity
+                selectionSet := field.selectionSet }
+              initial := .object [] }) :
+    visitSubfields schema resolvers variableValues (depth + 1) parentType
+      source (executableFieldSelections [field]) (.object []) =
+    groupedFieldVisitResult responseName
+      (GraphQL.Execution.executeField schema resolvers variableValues
+        (depth + 1) source responseName [field]) := by
+  cases field with
+  | mk fieldParent fieldResponseName fieldName arguments selectionSet =>
+      dsimp at hfieldResponse hfieldParent hresolve hchildren ⊢
+      subst fieldResponseName
+      subst fieldParent
+      cases hlookup : schema.lookupField parentType fieldName with
+      | none =>
+          simp [visitSubfields, visitSelection, executableFieldSelections, executableFieldSelection, executableField, selectionDirectivesAllowBool_empty, responseObjectField?, lookupResponseField?, executeField, GraphQL.Execution.executeField, hlookup, groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, mergeResponseFieldResult_empty_eq_groupedFieldVisitResult_singleFieldResult]
+      | some fieldDefinition =>
+          cases resolved with
+          | none =>
+              simp [visitSubfields, visitSelection, executableFieldSelections, executableFieldSelection, executableField, selectionDirectivesAllowBool_empty, responseObjectField?, lookupResponseField?, executeField, GraphQL.Execution.executeField, hlookup, hresolve, reusablePreviousValue?, groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, mergeResponseFieldResult_empty_eq_groupedFieldVisitResult_singleFieldResult]
+          | some resolvedValue =>
+              have hcomplete :
+                    completeValue schema resolvers variableValues depth
+                      fieldDefinition.outputType selectionSet resolvedValue
+                      none =
+                  GraphQL.Execution.completeValue schema resolvers
+                    variableValues depth fieldDefinition.outputType
+                    [executableField parentType responseName fieldName arguments
+                      selectionSet]
+                    resolvedValue :=
+                completeValue_single_field_eq_spec_of_contained_child_states
+                  schema resolvers variableValues
+                  (executableField parentType responseName fieldName arguments
+                    selectionSet)
+                  fieldDefinition.outputType depth resolvedValue
+                  (by
+                    intro childDepth runtimeType identity hlt hcontains
+                      hincludes
+                    exact hchildren childDepth runtimeType identity hlt
+                      hcontains
+                      (by
+                        simpa [Schema.fieldReturnType?, hlookup] using
+                          hincludes))
+              rw [show
+                  executableFieldSelections
+                      [{ parentType := parentType
+                         responseName := responseName
+                         fieldName := fieldName
+                         arguments := arguments
+                         selectionSet := selectionSet }] =
+                    [executableFieldSelection
+                      { parentType := parentType
+                        responseName := responseName
+                        fieldName := fieldName
+                        arguments := arguments
+                        selectionSet := selectionSet }] by
+                rfl]
+              simp [visitSubfields, visitSelection, executableFieldSelection, executableField, selectionDirectivesAllowBool_empty, responseObjectField?, lookupResponseField?, executeField, GraphQL.Execution.executeField, hlookup, hresolve, reusablePreviousValue?, mergeResponseFieldResult_empty_eq_groupedFieldVisitResult_singleFieldResult, hcomplete]
+
+theorem ExecutableFieldsMergedRaw_single_of_guarded_child_states
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (responseName : Name) (field : ExecutableField)
+    (resolved : Option (ResolverValue ObjectIdentity))
+    (hresponse : field.responseName = responseName)
+    (hparent : field.parentType = parentType)
+    (hresolve :
+      resolvers.resolve field.parentType field.fieldName field.arguments source =
+        resolved)
+    (hchildren :
+      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+        childDepth < depth ->
+        schema.typeIncludesObjectBool
+          ((schema.fieldReturnType? field.parentType field.fieldName).getD
+            field.fieldName)
+          runtimeType = true ->
+          ExecutionStateEquivalent
+            { window :=
+              { schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := childDepth
+                parentType := runtimeType
+                source := .object runtimeType identity
+                selectionSet := field.selectionSet }
+              initial := .object [] }) :
+    ExecutableFieldsMergedRaw schema resolvers variableValues depth
+      parentType source responseName field [] resolved := by
+  unfold ExecutableFieldsMergedRaw
+  simpa using
+    visitSubfields_executableFieldSelections_single_eq_groupedFieldVisitResult_of_guarded_child_states
+      schema resolvers variableValues depth parentType source responseName
+      field resolved hresponse hparent hresolve hchildren
+
+theorem ExecutableFieldsMergedRaw_single_of_contained_child_states
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (responseName : Name) (field : ExecutableField)
+    (resolved : Option (ResolverValue ObjectIdentity))
+    (hresponse : field.responseName = responseName)
+    (hparent : field.parentType = parentType)
+    (hresolve :
+      resolvers.resolve field.parentType field.fieldName field.arguments source =
+        resolved)
+    (hchildren :
+      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+        schema.typeIncludesObjectBool
+          ((schema.fieldReturnType? field.parentType field.fieldName).getD
+            field.fieldName)
+          runtimeType = true ->
+          ExecutionStateEquivalent
+            { window :=
+              { schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := childDepth
+                parentType := runtimeType
+                source := .object runtimeType identity
+                selectionSet := field.selectionSet }
+              initial := .object [] }) :
+    ExecutableFieldsMergedRaw schema resolvers variableValues depth
+      parentType source responseName field [] resolved := by
+  unfold ExecutableFieldsMergedRaw
+  simpa using
+    visitSubfields_executableFieldSelections_single_eq_groupedFieldVisitResult_of_contained_child_states
+      schema resolvers variableValues depth parentType source responseName
+      field resolved hresponse hparent hresolve hchildren
+
+theorem visitSubfields_executableFieldSelections_existing_null
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (responseName : Name) :
+    ∀ (fields : List ExecutableField) (outputFields : List (Name × ResponseValue)),
+      (∀ field, field ∈ fields -> field.responseName = responseName) ->
+      (∀ field, field ∈ fields ->
+        ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+          some fieldDefinition) ->
+      responseObjectField? responseName (.object outputFields) = some .null ->
+        visitSubfields schema resolvers variableValues (depth + 1)
+          parentType source
+          (executableFieldSelections fields) (.object outputFields) =
+        (.object outputFields, visitOk)
+  | [], outputFields, _hresponse, _hlookups, _hlookup => by
+      simp [visitSubfields, executableFieldSelections, visitOk]
+  | field :: rest, outputFields, hresponse, hlookups, hlookup => by
+      have hfieldResponse : field.responseName = responseName :=
+        hresponse field (by simp)
+      rcases hlookups field (by simp) with ⟨fieldDefinition, hfieldLookup⟩
+      have hrestResponse :
+          ∀ restField, restField ∈ rest ->
+            restField.responseName = responseName := by
+        intro restField hmem
+        exact hresponse restField (by simp [hmem])
+      have hrestLookups :
+          ∀ restField, restField ∈ rest ->
+            ∃ fieldDefinition, schema.lookupField parentType
+              restField.fieldName = some fieldDefinition := by
+        intro restField hmem
+        exact hlookups restField (by simp [hmem])
+      have hmerge :
+          mergeResponseField responseName .null outputFields = outputFields :=
+        mergeResponseField_null_of_lookup_null responseName outputFields
+          (by simpa [responseObjectField?] using hlookup)
+      have hhead :
+          visitSelection schema resolvers variableValues (depth + 1)
+            parentType source
+            (executableFieldSelection field) (.object outputFields) =
+          (.object outputFields, visitOk) := by
+        cases field with
+        | mk fieldParent fieldResponseName fieldName arguments selectionSet =>
+            dsimp [executableFieldSelection] at hfieldResponse hfieldLookup ⊢
+            subst fieldResponseName
+            simp [visitSelection, selectionDirectivesAllowBool_empty, hlookup, executeField, executableField, hfieldLookup, reusablePreviousValue?_null, mergeResponseFieldResult, mergeResponseFieldIntoObject, hmerge, resultValueOrNull, resultStatus, visitOk]
+      have hrest :=
+        visitSubfields_executableFieldSelections_existing_null schema
+          resolvers variableValues depth parentType source responseName rest
+          outputFields hrestResponse hrestLookups hlookup
+      rw [show executableFieldSelections (field :: rest) =
+          executableFieldSelection field :: executableFieldSelections rest by
+        rfl]
+      simp [visitSubfields, hhead, hrest]
+
+theorem visitSubfields_executableFieldSelections_completion_zero_same_response_fresh
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (responseName : Name) (field : ExecutableField)
+    (rest : List ExecutableField)
+    (outputFields : List (Name × ResponseValue))
+    (hresponse :
+      ∀ candidate, candidate ∈ field :: rest ->
+        candidate.responseName = responseName)
+    (hrestLookups :
+      ∀ candidate, candidate ∈ rest ->
+        ∃ fieldDefinition, schema.lookupField parentType candidate.fieldName =
+          some fieldDefinition)
+    (hfresh : responseName ∉ outputFields.map Prod.fst) :
+    visitSubfields schema resolvers variableValues 1 parentType source
+      (executableFieldSelections (field :: rest)) (.object outputFields) =
+    let fieldResult :=
+      executeField schema resolvers variableValues 0 source none
+        (executableField parentType responseName field.fieldName field.arguments
+          field.selectionSet)
+    (.object (outputFields ++ [(responseName, .null)]),
+      resultStatus fieldResult) := by
+  have hfieldResponse : field.responseName = responseName :=
+    hresponse field (by simp)
+  have hrestResponse :
+      ∀ restField, restField ∈ rest ->
+        restField.responseName = responseName := by
+    intro restField hmem
+    exact hresponse restField (by simp [hmem])
+  let fieldResult :=
+    executeField schema resolvers variableValues 0 source none
+      (executableField parentType responseName field.fieldName field.arguments
+        field.selectionSet)
+  have hlookupFresh :
+      responseObjectField? responseName (.object outputFields) = none :=
+    responseObjectField?_none_of_not_mem responseName outputFields hfresh
+  have hvalueNull : resultValueOrNull fieldResult = .null := by
+    dsimp [fieldResult]
+    exact
+      resultValueOrNull_executeField_depth_zero_none schema resolvers variableValues
+        source
+        (executableField parentType responseName field.fieldName field.arguments
+          field.selectionSet)
+  have hmerge :
+      mergeResponseField responseName (resultValueOrNull fieldResult)
+          outputFields =
+        outputFields ++ [(responseName, .null)] := by
+    rw [hvalueNull]
+    exact mergeResponseField_of_not_mem responseName .null outputFields hfresh
+  have hhead :
+      visitSelection schema resolvers variableValues 1 parentType source
+        (executableFieldSelection field) (.object outputFields) =
+      (.object (outputFields ++ [(responseName, .null)]),
+        resultStatus fieldResult) := by
+    cases field with
+    | mk fieldParent fieldResponseName fieldName arguments selectionSet =>
+        dsimp [executableFieldSelection] at hfieldResponse ⊢
+        subst fieldResponseName
+        have hmerge' :
+            mergeResponseField responseName
+                (resultValueOrNull
+                    (executeField schema resolvers variableValues 0 source
+                      none
+                    { parentType := parentType
+                      responseName := responseName
+                      fieldName := fieldName
+                      arguments := arguments
+                      selectionSet := selectionSet }))
+                outputFields =
+              outputFields ++ [(responseName, .null)] := by
+          simpa [fieldResult, executableField] using hmerge
+        dsimp [fieldResult]
+        simp [visitSelection, selectionDirectivesAllowBool_empty, hlookupFresh, mergeResponseFieldResult, mergeResponseFieldIntoObject, hmerge', executableField]
+  have hlookupNull :
+      responseObjectField? responseName
+          (.object (outputFields ++ [(responseName, .null)])) =
+        some .null :=
+    responseObjectField?_append_singleton_null_of_not_mem responseName
+      outputFields hfresh
+  have hrest :=
+    visitSubfields_executableFieldSelections_existing_null schema resolvers
+      variableValues 0 parentType source responseName rest
+      (outputFields ++ [(responseName, .null)]) hrestResponse hrestLookups
+      hlookupNull
+  rw [show executableFieldSelections (field :: rest) =
+      executableFieldSelection field :: executableFieldSelections rest by
+    rfl]
+  simp [visitSubfields, hhead, hrest, fieldResult]
+
+theorem completeValue_previous_null
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (fuel : Nat) (fieldType : TypeRef)
+    (selectionSet : List Selection) (value : ResolverValue ObjectIdentity) :
+    completeValue schema resolvers variableValues (fuel + 1) fieldType selectionSet
+      value (some .null) = .ok (.null, 0) := by
+  simp [completeValue]
+
+theorem visitSubfields_executableFieldSelections_single_existing_eq_merge_complete
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (completionDepth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (responseName fieldName : Name) (arguments : List Argument)
+    (selectionSet : List Selection) (fieldDefinition : FieldDefinition)
+    (resolvedValue : ResolverValue ObjectIdentity) (previous : ResponseValue)
+    (hlookup : schema.lookupField parentType fieldName = some fieldDefinition)
+    (hresolve :
+      resolvers.resolve parentType fieldName arguments source =
+        some resolvedValue) :
+    visitSubfields schema resolvers variableValues (completionDepth + 1 + 1)
+      parentType source
+      (executableFieldSelections
+        [{ parentType := parentType
+           responseName := responseName
+           fieldName := fieldName
+           arguments := arguments
+           selectionSet := selectionSet }])
+      (.object [(responseName, previous)]) =
+    mergeResponseFieldResult responseName
+      (completeResolvedValue schema resolvers variableValues (completionDepth + 1)
+        fieldDefinition.outputType selectionSet resolvedValue (some previous))
+      (.object [(responseName, previous)]) := by
+  have hexec :
+      executeField schema resolvers variableValues (completionDepth + 1)
+          source (some previous)
+          { parentType := parentType
+            responseName := responseName
+            fieldName := fieldName
+            arguments := arguments
+            selectionSet := selectionSet } =
+      completeResolvedValue schema resolvers variableValues (completionDepth + 1)
+        fieldDefinition.outputType selectionSet resolvedValue (some previous) :=
+    executeField_resolved_eq_completeResolvedValue schema resolvers
+      variableValues completionDepth source
+      { parentType := parentType
+        responseName := responseName
+        fieldName := fieldName
+        arguments := arguments
+        selectionSet := selectionSet }
+      fieldDefinition resolvedValue previous hlookup hresolve
+  cases previous with
+  | null =>
+      simp [visitSubfields, visitSelection, executableFieldSelections, executableFieldSelection, executableField, selectionDirectivesAllowBool_empty, responseObjectField?, lookupResponseField?, completeResolvedValue_previous_null, mergeResponseFieldResult, mergeResponseFieldIntoObject, mergeResponseField, mergeResponse, resultValueOrNull, resultStatus, visitOk, combineVisitStatus, GraphQL.Execution.Result.combine, hexec]
+  | scalar value =>
+      cases hcomplete :
+          completeResolvedValue schema resolvers variableValues
+            (completionDepth + 1) fieldDefinition.outputType selectionSet
+            resolvedValue (some (ResponseValue.scalar value)) with
+      | error errors =>
+          simp [visitSubfields, visitSelection, executableFieldSelections, executableFieldSelection, executableField, selectionDirectivesAllowBool_empty, responseObjectField?, lookupResponseField?, mergeResponseFieldResult, mergeResponseFieldIntoObject, mergeResponseField, resultValueOrNull, resultStatus, visitOk, combineVisitStatus, GraphQL.Execution.Result.combine, hexec, hcomplete]
+      | ok completeResult =>
+          rcases completeResult with ⟨completeValue, completeErrors⟩
+          simp [visitSubfields, visitSelection, executableFieldSelections, executableFieldSelection, executableField, selectionDirectivesAllowBool_empty, responseObjectField?, lookupResponseField?, mergeResponseFieldResult, mergeResponseFieldIntoObject, mergeResponseField, resultValueOrNull, resultStatus, visitOk, combineVisitStatus, GraphQL.Execution.Result.combine, hexec, hcomplete]
+  | object fields =>
+      simp [visitSubfields, visitSelection, executableFieldSelections, executableFieldSelection, executableField, selectionDirectivesAllowBool_empty, responseObjectField?, lookupResponseField?, mergeResponseFieldResult, mergeResponseFieldIntoObject, mergeResponseField, resultValueOrNull, hexec]
+  | list values =>
+      simp [visitSubfields, visitSelection, executableFieldSelections, executableFieldSelection, executableField, selectionDirectivesAllowBool_empty, responseObjectField?, lookupResponseField?, mergeResponseFieldResult, mergeResponseFieldIntoObject, mergeResponseField, resultValueOrNull, hexec]
+
+theorem ExecutableFieldsMergedRaw_append_one_of_prefix
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField) (later : ExecutableField)
-    (resolved : Value ObjectIdentity)
-    (hprefix :
-      ExecutableFieldsMergedComplete schema resolvers variableValues depth
+    (resolved : Option (ResolverValue ObjectIdentity))
+    (hprefixRaw :
+      ExecutableFieldsMergedRaw schema resolvers variableValues depth
         parentType source responseName field fields resolved)
+    (hprefixResponses :
+      ∀ candidate, candidate ∈ field :: fields ->
+        candidate.responseName = responseName)
+    (hfieldResponse : field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hfieldParent : field.parentType = parentType)
     (hlaterParent : later.parentType = parentType)
     (hfieldName : later.fieldName = field.fieldName)
+    (htailLookups :
+      ∀ candidate, candidate ∈ fields ++ [later] ->
+        ∃ fieldDefinition, schema.lookupField parentType candidate.fieldName =
+          some fieldDefinition)
+    (hresolveFirst :
+      resolvers.resolve field.parentType field.fieldName field.arguments source =
+        resolved)
+    (hresolveLater :
+      resolvers.resolve later.parentType later.fieldName later.arguments source =
+        resolved)
+    (hprefixChildren :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+        schema.typeIncludesObjectBool
+          ((schema.fieldReturnType? field.parentType field.fieldName).getD
+            field.fieldName)
+          runtimeType = true ->
+          ExecutionStateEquivalent
+            { window :=
+              { schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := childDepth
+                parentType := runtimeType
+                source := .object runtimeType identity
+                selectionSet :=
+                  GraphQL.Execution.mergedFieldSelectionSet (field :: fields) }
+              initial := .object [] })
+    (hobjects :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+          ResponseAbsorbs
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet (field :: fields))
+              (.object []))
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity) later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity)
+                (GraphQL.Execution.mergedFieldSelectionSet (field :: fields))
+                (.object []))))
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          ValueContainsObject resolved runtimeType identity ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues
+            childDepth runtimeType (.object runtimeType identity)
+            later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet (field :: fields))
+              (.object [])))
+    (hchildren :
+        ∀ childDepth runtimeType identity,
+          childDepth < depth ->
+          ValueContainsObject resolved runtimeType identity ->
+          schema.typeIncludesObjectBool
+            ((schema.fieldReturnType? field.parentType field.fieldName).getD
+              field.fieldName)
+            runtimeType = true ->
+            ExecutionStateEquivalent
+              { window :=
+                { schema := schema
+                  resolvers := resolvers
+                  variableValues := variableValues
+                  depth := childDepth
+                  parentType := runtimeType
+                  source := .object runtimeType identity
+                  selectionSet :=
+                    GraphQL.Execution.mergedFieldSelectionSet
+                      ((field :: fields) ++ [later]) }
+                initial := .object [] }) :
+      ExecutableFieldsMergedRaw schema resolvers variableValues depth
+        parentType source responseName field (fields ++ [later]) resolved := by
+    unfold ExecutableFieldsMergedRaw at hprefixRaw ⊢
+    cases depth with
+    | zero =>
+        have hextendedResponses :
+            ∀ candidate, candidate ∈ field :: (fields ++ [later]) ->
+              candidate.responseName = responseName := by
+          intro candidate hmem
+          simp at hmem
+          rcases hmem with hhead | htail
+          · subst candidate
+            exact hfieldResponse
+          · rcases htail with hprefix | hlater
+            · exact hprefixResponses candidate (by simp [hprefix])
+            · subst candidate
+              exact hlaterResponse
+        have hextendedVisit :
+            visitSubfields schema resolvers variableValues 1 parentType source
+              (executableFieldSelections (field :: (fields ++ [later])))
+              (.object []) =
+            let fieldResult :=
+              executeField schema resolvers variableValues 0 source none
+                (executableField parentType responseName field.fieldName
+                  field.arguments field.selectionSet)
+            (.object [(responseName, .null)], resultStatus fieldResult) :=
+          visitSubfields_executableFieldSelections_completion_zero_same_response_fresh
+            schema resolvers variableValues parentType source responseName field
+            (fields ++ [later]) [] hextendedResponses htailLookups (by simp)
+        rw [hextendedVisit]
+        cases field with
+        | mk fieldParent fieldResponseName fieldName arguments selectionSet =>
+            dsimp at hfieldResponse hfieldParent hresolveFirst ⊢
+            subst fieldResponseName
+            subst fieldParent
+            cases hlookup : schema.lookupField parentType fieldName with
+            | none =>
+                simp [GraphQL.Execution.executeField, executeField, groupedFieldVisitResult, executableField, hlookup, resultStatus]
+            | some fieldDefinition =>
+                cases resolved with
+                | none =>
+                    cases fieldDefinition with
+                    | mk definitionName outputType definitionArguments =>
+                        cases outputType <;>
+                          simp [GraphQL.Execution.executeField, executeField, groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, executableField, hlookup, hresolveFirst, reusablePreviousValue?, handleFieldError, resultStatus, visitOk]
+                | some resolvedValue =>
+                    simp [GraphQL.Execution.executeField, executeField, GraphQL.Execution.completeValue, completeValue, outOfFuel, groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, executableField, hlookup, hresolveFirst, reusablePreviousValue?, resultStatus]
+    | succ childDepth =>
+        cases field with
+        | mk fieldParent fieldResponseName fieldName arguments selectionSet =>
+            cases later with
+            | mk laterParent laterResponseName laterFieldName laterArguments
+                laterSelectionSet =>
+                dsimp at hfieldResponse hlaterResponse hfieldParent
+                dsimp at hlaterParent hfieldName hresolveFirst hresolveLater
+                dsimp at hprefixResponses hprefixChildren hobjects herrors
+                dsimp at hchildren hprefixRaw ⊢
+                subst fieldResponseName
+                subst laterResponseName
+                subst fieldParent
+                subst laterParent
+                subst laterFieldName
+                have hselectionAppend :
+                    executableFieldSelections
+                        ({ parentType := parentType
+                           responseName := responseName
+                           fieldName := fieldName
+                           arguments := arguments
+                           selectionSet := selectionSet } ::
+                          (fields ++
+                            [{ parentType := parentType
+                               responseName := responseName
+                               fieldName := fieldName
+                               arguments := laterArguments
+                               selectionSet := laterSelectionSet }])) =
+                    executableFieldSelections
+                        ({ parentType := parentType
+                           responseName := responseName
+                           fieldName := fieldName
+                           arguments := arguments
+                           selectionSet := selectionSet } ::
+                          fields) ++
+                    executableFieldSelections
+                      [{ parentType := parentType
+                         responseName := responseName
+                         fieldName := fieldName
+                         arguments := laterArguments
+                         selectionSet := laterSelectionSet }] := by
+                  simp [executableFieldSelections]
+                rw [hselectionAppend]
+                rw [visitSubfields_append_equivalence schema resolvers
+                  variableValues (childDepth + 2) parentType source
+                  (executableFieldSelections
+                    ({ parentType := parentType
+                       responseName := responseName
+                       fieldName := fieldName
+                       arguments := arguments
+                       selectionSet := selectionSet } ::
+                      fields))
+                  (executableFieldSelections
+                    [{ parentType := parentType
+                       responseName := responseName
+                       fieldName := fieldName
+                       arguments := laterArguments
+                       selectionSet := laterSelectionSet }])
+                  (.object [])]
+                rw [hprefixRaw]
+                have hlaterResponseAll :
+                    ∀ (candidate : ExecutableField),
+                      candidate ∈
+                          ([{ parentType := parentType
+                              responseName := responseName
+                              fieldName := fieldName
+                              arguments := laterArguments
+                              selectionSet := laterSelectionSet }] :
+                            List ExecutableField) ->
+                        candidate.responseName = responseName := by
+                  intro candidate hmem
+                  simp at hmem
+                  subst candidate
+                  rfl
+                have htailNull :
+                    visitSubfields schema resolvers variableValues
+                      (childDepth + 2) parentType source
+                      (executableFieldSelections
+                        [{ parentType := parentType
+                           responseName := responseName
+                           fieldName := fieldName
+                           arguments := laterArguments
+                           selectionSet := laterSelectionSet }])
+                      (.object [(responseName, .null)]) =
+                    (.object [(responseName, .null)], visitOk) :=
+                  visitSubfields_executableFieldSelections_existing_null
+                    schema resolvers variableValues (childDepth + 1)
+                    parentType source responseName
+                    [{ parentType := parentType
+                       responseName := responseName
+                       fieldName := fieldName
+                       arguments := laterArguments
+                       selectionSet := laterSelectionSet }]
+                    [(responseName, .null)] hlaterResponseAll
+                    (by
+                      intro candidate hmem
+                      simp at hmem
+                      subst candidate
+                      exact htailLookups
+                        { parentType := parentType
+                          responseName := responseName
+                          fieldName := fieldName
+                          arguments := laterArguments
+                          selectionSet := laterSelectionSet }
+                        (by simp))
+                    (by simp [responseObjectField?, lookupResponseField?])
+                cases hlookup : schema.lookupField parentType fieldName with
+                | none =>
+                    simp [GraphQL.Execution.executeField, hlookup, groupedFieldVisitResult, htailNull, combineVisitStatus, GraphQL.Execution.Result.combine, visitOk]
+                | some fieldDefinition =>
+                    cases resolved with
+                    | none =>
+                        cases fieldDefinition with
+                        | mk definitionName outputType definitionArguments =>
+                            cases outputType <;>
+                              simp [GraphQL.Execution.executeField, hlookup, hresolveFirst, groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, handleFieldError, htailNull, combineVisitStatus, GraphQL.Execution.Result.combine, visitOk]
+                    | some resolvedValue =>
+                        cases fieldDefinition with
+                        | mk definitionName outputType definitionArguments =>
+                            cases outputType with
+                            | named typeName =>
+                                cases resolvedValue with
+                                | null =>
+                                    simp [GraphQL.Execution.executeField, hlookup, hresolveFirst, groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, combineVisitStatus, GraphQL.Execution.Result.combine, visitOk, GraphQL.Execution.completeValue, htailNull]
+                                | scalar value =>
+                                    by_cases hcomposite :
+                                        (TypeRef.named typeName).isCompositeBool
+                                            schema =
+                                          true
+                                    · simp [GraphQL.Execution.executeField, visitSubfields, visitSelection, executableFieldSelections, executableFieldSelection, selectionDirectivesAllowBool_empty, responseObjectField?, lookupResponseField?, executeField, mergeResponseFieldResult, mergeResponseFieldIntoObject, mergeResponseField, mergeResponse, resultValueOrNull, executableField, hlookup, hresolveFirst, groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, combineVisitStatus, GraphQL.Execution.Result.combine, resultStatus, visitOk, GraphQL.Execution.completeValue, reusablePreviousValue?, hcomposite]
+                                    · simp [GraphQL.Execution.executeField, visitSubfields, visitSelection, executableFieldSelections, executableFieldSelection, selectionDirectivesAllowBool_empty, responseObjectField?, lookupResponseField?, executeField, mergeResponseFieldResult, mergeResponseFieldIntoObject, mergeResponseField, mergeResponse, resultValueOrNull, executableField, hlookup, hresolveFirst, groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, combineVisitStatus, GraphQL.Execution.Result.combine, resultStatus, visitOk, GraphQL.Execution.completeValue, reusablePreviousValue?, hcomposite]
+                                | object runtimeType identity =>
+                                    have hspecAppend :
+                                        GraphQL.Execution.Result.combine
+                                          mergeResponse
+                                          (GraphQL.Execution.completeValue
+                                            schema resolvers variableValues
+                                            (childDepth + 1) (.named typeName)
+                                            ({ parentType := parentType
+                                               responseName := responseName
+                                               fieldName := fieldName
+                                               arguments := arguments
+                                               selectionSet := selectionSet } ::
+                                              fields)
+                                            (.object runtimeType identity))
+                                          (completeResolvedValue schema resolvers
+                                            variableValues (childDepth + 1)
+                                            (.named typeName)
+                                            laterSelectionSet
+                                            (.object runtimeType identity)
+                                            (some (resultValueOrNull
+                                              (GraphQL.Execution.completeValue
+                                                schema resolvers variableValues
+                                                (childDepth + 1)
+                                                (.named typeName)
+                                                ({ parentType := parentType
+                                                   responseName := responseName
+                                                   fieldName := fieldName
+                                                   arguments := arguments
+                                                   selectionSet := selectionSet } ::
+                                                  fields)
+                                                (.object runtimeType identity))))) =
+                                        GraphQL.Execution.completeValue
+                                          schema resolvers variableValues
+                                          (childDepth + 1) (.named typeName)
+                                          ({ parentType := parentType
+                                             responseName := responseName
+                                             fieldName := fieldName
+                                             arguments := arguments
+                                             selectionSet := selectionSet } ::
+                                            (fields ++
+                                              [{ parentType := parentType
+                                                 responseName := responseName
+                                                 fieldName := fieldName
+                                                 arguments := laterArguments
+                                                 selectionSet :=
+                                                   laterSelectionSet }]))
+                                          (.object runtimeType identity) :=
+                                      completeValue_named_group_append_one_result_eq_spec_of_contained
+                                        schema resolvers variableValues
+                                        (childDepth + 1) typeName
+                                        (.object runtimeType identity)
+                                        ({ parentType := parentType
+                                           responseName := responseName
+                                           fieldName := fieldName
+                                           arguments := arguments
+                                           selectionSet := selectionSet } ::
+                                          fields)
+                                        { parentType := parentType
+                                          responseName := responseName
+                                          fieldName := fieldName
+                                          arguments := laterArguments
+                                          selectionSet := laterSelectionSet }
+                                        (by
+                                          intro childDepth' runtimeType' identity'
+                                            hlt hcontains hincludes
+                                          exact hprefixChildren childDepth'
+                                            runtimeType' identity' hlt
+                                            (by simpa [resolvedValueOrNull] using
+                                              hcontains)
+                                            (by
+                                              simpa [Schema.fieldReturnType?,
+                                                hlookup] using hincludes))
+                                        (by
+                                          intro childDepth' runtimeType' identity'
+                                            hlt hcontains
+                                          exact hobjects childDepth'
+                                            runtimeType' identity' hlt
+                                            (by simpa [resolvedValueOrNull] using
+                                              hcontains))
+                                        (by
+                                          intro childDepth' runtimeType' identity'
+                                            hlt hcontains
+                                          exact herrors childDepth'
+                                            runtimeType' identity' hlt
+                                            (by simpa [resolvedValueOrNull] using
+                                              hcontains))
+                                        (by
+                                          intro childDepth' runtimeType' identity'
+                                            hlt hcontains hincludes
+                                          exact hchildren childDepth'
+                                            runtimeType' identity' hlt
+                                            (by simpa [resolvedValueOrNull] using
+                                              hcontains)
+                                            (by
+                                              simpa [Schema.fieldReturnType?,
+                                                hlookup] using hincludes))
+                                    have hprefixLocal :
+                                        completeValue schema resolvers
+                                          variableValues (childDepth + 1)
+                                          (.named typeName)
+                                          (GraphQL.Execution.mergedFieldSelectionSet
+                                            ({ parentType := parentType
+                                               responseName := responseName
+                                               fieldName := fieldName
+                                               arguments := arguments
+                                               selectionSet := selectionSet } ::
+                                          fields))
+                                          (.object runtimeType identity)
+                                          none =
+                                        GraphQL.Execution.completeValue
+                                          schema resolvers variableValues
+                                          (childDepth + 1) (.named typeName)
+                                          ({ parentType := parentType
+                                             responseName := responseName
+                                             fieldName := fieldName
+                                             arguments := arguments
+                                             selectionSet := selectionSet } ::
+                                            fields)
+                                          (.object runtimeType identity) :=
+                                      completeValue_group_eq_spec_of_contained_child_states
+                                        schema resolvers variableValues
+                                        ({ parentType := parentType
+                                           responseName := responseName
+                                           fieldName := fieldName
+                                           arguments := arguments
+                                           selectionSet := selectionSet } ::
+                                          fields)
+                                        (childDepth + 1) typeName
+                                        (.object runtimeType identity)
+                                        (by
+                                          intro childDepth' runtimeType' identity'
+                                            hlt hcontains hincludes
+                                          exact hprefixChildren childDepth'
+                                            runtimeType' identity' hlt
+                                            (by simpa [resolvedValueOrNull] using
+                                              hcontains)
+                                            (by
+                                              simpa [Schema.fieldReturnType?,
+                                                hlookup] using hincludes))
+                                    have hrightNeutral :
+                                        resultStatus
+                                          (completeResolvedValue schema resolvers
+                                            variableValues (childDepth + 1)
+                                            (.named typeName)
+                                            laterSelectionSet
+                                            (.object runtimeType identity)
+                                            (some (resultValueOrNull
+                                              (GraphQL.Execution.completeValue
+                                                schema resolvers variableValues
+                                                (childDepth + 1)
+                                                (.named typeName)
+                                                ({ parentType := parentType
+                                                   responseName := responseName
+                                                   fieldName := fieldName
+                                                   arguments := arguments
+                                                   selectionSet := selectionSet } ::
+                                                  fields)
+                                                (.object runtimeType identity))))) =
+                                          visitOk := by
+                                      by_cases hincludes :
+                                          schema.typeIncludesObjectBool typeName
+                                            runtimeType = true
+                                      · have hrightLocal :=
+                                          resultStatus_completeValue_object_append_second_of_errorNeutral
+                                            schema resolvers variableValues
+                                            childDepth typeName runtimeType
+                                            identity
+                                            (GraphQL.Execution.mergedFieldSelectionSet
+                                              ({ parentType := parentType
+                                                 responseName := responseName
+                                                 fieldName := fieldName
+                                                 arguments := arguments
+                                                 selectionSet := selectionSet } ::
+                                                fields))
+                                            laterSelectionSet hincludes
+                                            (herrors childDepth runtimeType
+                                              identity
+                                              (Nat.lt_succ_self childDepth)
+                                              (by
+                                                simp [resolvedValueOrNull,
+                                                  ValueContainsObject.here]))
+                                        dsimp at hrightLocal
+                                        rw [hprefixLocal] at hrightLocal
+                                        exact hrightLocal
+                                      · have hnotIncludes :
+                                            schema.typeIncludesObjectBool
+                                              typeName runtimeType = false := by
+                                          cases h :
+                                              schema.typeIncludesObjectBool
+                                                typeName runtimeType <;>
+                                            simp [h] at hincludes ⊢
+                                        simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, hnotIncludes, resultValueOrNull, resultStatus, visitOk]
+                                    have htailVisit :
+                                        visitSubfields schema resolvers
+                                          variableValues (childDepth + 2)
+                                          parentType source
+                                          (executableFieldSelections
+                                            [{ parentType := parentType
+                                               responseName := responseName
+                                               fieldName := fieldName
+                                               arguments := laterArguments
+                                               selectionSet :=
+                                                 laterSelectionSet }])
+                                          (groupedFieldVisitResult responseName
+                                            (GraphQL.Execution.singleFieldResult
+                                              responseName
+                                              (GraphQL.Execution.completeValue
+                                                schema resolvers variableValues
+                                                (childDepth + 1)
+                                                (.named typeName)
+                                                ({ parentType := parentType
+                                                   responseName := responseName
+                                                   fieldName := fieldName
+                                                   arguments := arguments
+                                                   selectionSet := selectionSet } ::
+                                                  fields)
+                                                (.object runtimeType identity)))).fst =
+                                        mergeResponseFieldResult responseName
+                                          (completeResolvedValue schema resolvers
+                                            variableValues (childDepth + 1)
+                                            (.named typeName)
+                                            laterSelectionSet
+                                            (.object runtimeType identity)
+                                            (some (resultValueOrNull
+                                              (GraphQL.Execution.completeValue
+                                                schema resolvers variableValues
+                                                (childDepth + 1)
+                                                (.named typeName)
+                                                ({ parentType := parentType
+                                                   responseName := responseName
+                                                   fieldName := fieldName
+                                                   arguments := arguments
+                                                   selectionSet := selectionSet } ::
+                                                  fields)
+                                                (.object runtimeType identity)))))
+                                          (groupedFieldVisitResult responseName
+                                            (GraphQL.Execution.singleFieldResult
+                                              responseName
+                                              (GraphQL.Execution.completeValue
+                                                schema resolvers variableValues
+                                                (childDepth + 1)
+                                                (.named typeName)
+                                                ({ parentType := parentType
+                                                   responseName := responseName
+                                                   fieldName := fieldName
+                                                   arguments := arguments
+                                                   selectionSet := selectionSet } ::
+                                                  fields)
+                                                (.object runtimeType identity)))).fst := by
+                                      cases hprefixCompleted :
+                                          GraphQL.Execution.completeValue
+                                            schema resolvers variableValues
+                                            (childDepth + 1) (.named typeName)
+                                            ({ parentType := parentType
+                                               responseName := responseName
+                                               fieldName := fieldName
+                                               arguments := arguments
+                                               selectionSet := selectionSet } ::
+                                              fields)
+                                            (.object runtimeType identity) with
+                                      | error prefixErrors =>
+                                          simp [groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, htailNull, completeResolvedValue_previous_null, mergeResponseFieldResult, mergeResponseFieldIntoObject, mergeResponseField, mergeResponse, resultValueOrNull, resultStatus, visitOk]
+                                      | ok prefixResult =>
+                                          rcases prefixResult with
+                                            ⟨prefixValue, prefixErrors⟩
+                                          have hlaterVisit :=
+                                            visitSubfields_executableFieldSelections_single_existing_eq_merge_complete
+                                              schema resolvers variableValues
+                                              childDepth parentType
+                                              source responseName fieldName
+                                              laterArguments laterSelectionSet
+                                              { name := definitionName
+                                                outputType := .named typeName
+                                                arguments :=
+                                                  definitionArguments }
+                                              (.object runtimeType identity)
+                                              prefixValue hlookup
+                                              hresolveLater
+                                          simpa [hprefixCompleted,
+                                            groupedFieldVisitResult,
+                                            GraphQL.Execution.singleFieldResult]
+                                            using hlaterVisit
+                                    have hcombined :=
+                                      groupedFieldVisitResult_singleFieldResult_combine_neutral
+                                        responseName
+                                        (GraphQL.Execution.completeValue
+                                          schema resolvers variableValues
+                                          (childDepth + 1) (.named typeName)
+                                          ({ parentType := parentType
+                                             responseName := responseName
+                                             fieldName := fieldName
+                                             arguments := arguments
+                                             selectionSet := selectionSet } ::
+                                            fields)
+                                          (.object runtimeType identity))
+                                        (completeResolvedValue schema resolvers
+                                          variableValues (childDepth + 1)
+                                          (.named typeName)
+                                          laterSelectionSet
+                                          (.object runtimeType identity)
+                                          (some (resultValueOrNull
+                                            (GraphQL.Execution.completeValue
+                                              schema resolvers variableValues
+                                              (childDepth + 1)
+                                              (.named typeName)
+                                              ({ parentType := parentType
+                                                 responseName := responseName
+                                                 fieldName := fieldName
+                                                 arguments := arguments
+                                                 selectionSet := selectionSet } ::
+                                                fields)
+                                              (.object runtimeType identity)))))
+                                        (GraphQL.Execution.completeValue
+                                          schema resolvers variableValues
+                                          (childDepth + 1) (.named typeName)
+                                          ({ parentType := parentType
+                                             responseName := responseName
+                                             fieldName := fieldName
+                                             arguments := arguments
+                                             selectionSet := selectionSet } ::
+                                            (fields ++
+                                              [{ parentType := parentType
+                                                 responseName := responseName
+                                                 fieldName := fieldName
+                                                 arguments := laterArguments
+                                                 selectionSet :=
+                                                   laterSelectionSet }]))
+                                          (.object runtimeType identity))
+                                        hrightNeutral hspecAppend
+                                    simp [GraphQL.Execution.executeField, hlookup, hresolveFirst, groupedFieldVisitResult, GraphQL.Execution.singleFieldResult] at htailVisit hcombined ⊢
+                                    rw [htailVisit]
+                                    exact hcombined
+                                | list values =>
+                                    simp [GraphQL.Execution.executeField, hlookup, hresolveFirst, groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, combineVisitStatus, GraphQL.Execution.Result.combine, visitOk, GraphQL.Execution.completeValue, htailNull]
+                            | list inner =>
+                                have happend :=
+                                  completeValue_group_append_one_result_eq_spec_and_status
+                                    schema resolvers variableValues (.list inner)
+                                    (childDepth + 1) resolvedValue
+                                    ({ parentType := parentType
+                                       responseName := responseName
+                                       fieldName := fieldName
+                                       arguments := arguments
+                                       selectionSet := selectionSet } ::
+                                      fields)
+                                    { parentType := parentType
+                                      responseName := responseName
+                                      fieldName := fieldName
+                                      arguments := laterArguments
+                                      selectionSet := laterSelectionSet }
+                                    (by
+                                      intro childDepth' runtimeType' identity'
+                                        hlt hcontains hincludes
+                                      exact hprefixChildren childDepth'
+                                        runtimeType' identity' hlt
+                                        (by simpa [resolvedValueOrNull] using
+                                          hcontains)
+                                        (by
+                                          simpa [Schema.fieldReturnType?,
+                                            hlookup] using hincludes))
+                                    (by
+                                      intro childDepth' runtimeType' identity'
+                                        hlt hcontains
+                                      exact hobjects childDepth' runtimeType'
+                                        identity' hlt
+                                        (by simpa [resolvedValueOrNull] using
+                                          hcontains))
+                                    (by
+                                      intro childDepth' runtimeType' identity'
+                                        hlt hcontains
+                                      exact herrors childDepth' runtimeType'
+                                        identity' hlt
+                                        (by simpa [resolvedValueOrNull] using
+                                          hcontains))
+                                    (by
+                                      intro childDepth' runtimeType' identity'
+                                        hlt hcontains hincludes
+                                      exact hchildren childDepth' runtimeType'
+                                        identity' hlt
+                                        (by simpa [resolvedValueOrNull] using
+                                          hcontains)
+                                        (by
+                                          simpa [Schema.fieldReturnType?,
+                                            hlookup] using hincludes))
+                                have hspecAppend := happend.left
+                                have hrightNeutral := happend.right.left
+                                have htailVisit :
+                                    visitSubfields schema resolvers
+                                      variableValues (childDepth + 2)
+                                      parentType source
+                                      (executableFieldSelections
+                                        [{ parentType := parentType
+                                           responseName := responseName
+                                           fieldName := fieldName
+                                           arguments := laterArguments
+                                           selectionSet := laterSelectionSet }])
+                                      (groupedFieldVisitResult responseName
+                                        (GraphQL.Execution.singleFieldResult
+                                          responseName
+                                          (GraphQL.Execution.completeValue
+                                            schema resolvers variableValues
+                                            (childDepth + 1) (.list inner)
+                                            ({ parentType := parentType
+                                               responseName := responseName
+                                               fieldName := fieldName
+                                               arguments := arguments
+                                               selectionSet := selectionSet } ::
+                                              fields)
+                                            resolvedValue))).fst =
+                                    mergeResponseFieldResult responseName
+                                      (completeResolvedValue schema resolvers
+                                        variableValues (childDepth + 1)
+                                        (.list inner) laterSelectionSet
+                                        resolvedValue
+                                        (some (resultValueOrNull
+                                          (GraphQL.Execution.completeValue
+                                            schema resolvers variableValues
+                                            (childDepth + 1) (.list inner)
+                                            ({ parentType := parentType
+                                               responseName := responseName
+                                               fieldName := fieldName
+                                               arguments := arguments
+                                               selectionSet := selectionSet } ::
+                                              fields)
+                                            resolvedValue))))
+                                      (groupedFieldVisitResult responseName
+                                        (GraphQL.Execution.singleFieldResult
+                                          responseName
+                                          (GraphQL.Execution.completeValue
+                                            schema resolvers variableValues
+                                            (childDepth + 1) (.list inner)
+                                            ({ parentType := parentType
+                                               responseName := responseName
+                                               fieldName := fieldName
+                                               arguments := arguments
+                                               selectionSet := selectionSet } ::
+                                              fields)
+                                            resolvedValue))).fst := by
+                                  cases hprefixCompleted :
+                                      GraphQL.Execution.completeValue schema
+                                        resolvers variableValues
+                                        (childDepth + 1) (.list inner)
+                                        ({ parentType := parentType
+                                           responseName := responseName
+                                           fieldName := fieldName
+                                           arguments := arguments
+                                           selectionSet := selectionSet } ::
+                                          fields)
+                                        resolvedValue with
+                                  | error prefixErrors =>
+                                      simp [groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, htailNull, completeResolvedValue_previous_null, mergeResponseFieldResult, mergeResponseFieldIntoObject, mergeResponseField, mergeResponse, resultValueOrNull, resultStatus, visitOk]
+                                  | ok prefixResult =>
+                                      rcases prefixResult with
+                                        ⟨prefixValue, prefixErrors⟩
+                                      have hlaterVisit :=
+                                        visitSubfields_executableFieldSelections_single_existing_eq_merge_complete
+                                          schema resolvers variableValues
+                                          childDepth parentType source
+                                          responseName fieldName laterArguments
+                                          laterSelectionSet
+                                          { name := definitionName
+                                            outputType := .list inner
+                                            arguments := definitionArguments }
+                                          resolvedValue prefixValue hlookup
+                                          hresolveLater
+                                      simpa [hprefixCompleted,
+                                        groupedFieldVisitResult,
+                                        GraphQL.Execution.singleFieldResult]
+                                        using hlaterVisit
+                                have hcombined :=
+                                  groupedFieldVisitResult_singleFieldResult_combine_neutral
+                                    responseName
+                                    (GraphQL.Execution.completeValue schema
+                                      resolvers variableValues (childDepth + 1)
+                                      (.list inner)
+                                      ({ parentType := parentType
+                                         responseName := responseName
+                                         fieldName := fieldName
+                                         arguments := arguments
+                                         selectionSet := selectionSet } ::
+                                        fields)
+                                      resolvedValue)
+                                    (completeResolvedValue schema resolvers
+                                      variableValues (childDepth + 1)
+                                      (.list inner) laterSelectionSet
+                                      resolvedValue
+                                      (some (resultValueOrNull
+                                        (GraphQL.Execution.completeValue schema
+                                          resolvers variableValues
+                                          (childDepth + 1) (.list inner)
+                                          ({ parentType := parentType
+                                             responseName := responseName
+                                             fieldName := fieldName
+                                             arguments := arguments
+                                             selectionSet := selectionSet } ::
+                                            fields)
+                                          resolvedValue))))
+                                    (GraphQL.Execution.completeValue schema
+                                      resolvers variableValues (childDepth + 1)
+                                      (.list inner)
+                                      (({ parentType := parentType
+                                          responseName := responseName
+                                          fieldName := fieldName
+                                          arguments := arguments
+                                          selectionSet := selectionSet } ::
+                                         fields) ++
+                                        [{ parentType := parentType
+                                           responseName := responseName
+                                           fieldName := fieldName
+                                           arguments := laterArguments
+                                           selectionSet :=
+                                             laterSelectionSet }])
+                                      resolvedValue)
+                                    hrightNeutral hspecAppend
+                                simp [GraphQL.Execution.executeField, hlookup, hresolveFirst, groupedFieldVisitResult, GraphQL.Execution.singleFieldResult]
+                                  at htailVisit hcombined ⊢
+                                rw [htailVisit]
+                                exact hcombined
+                            | nonNull inner =>
+                                have happend :=
+                                  completeValue_group_append_one_result_eq_spec_and_status
+                                    schema resolvers variableValues
+                                    (.nonNull inner) (childDepth + 1)
+                                    resolvedValue
+                                    ({ parentType := parentType
+                                       responseName := responseName
+                                       fieldName := fieldName
+                                       arguments := arguments
+                                       selectionSet := selectionSet } ::
+                                      fields)
+                                    { parentType := parentType
+                                      responseName := responseName
+                                      fieldName := fieldName
+                                      arguments := laterArguments
+                                      selectionSet := laterSelectionSet }
+                                    (by
+                                      intro childDepth' runtimeType' identity'
+                                        hlt hcontains hincludes
+                                      exact hprefixChildren childDepth'
+                                        runtimeType' identity' hlt
+                                        (by simpa [resolvedValueOrNull] using
+                                          hcontains)
+                                        (by
+                                          simpa [Schema.fieldReturnType?,
+                                            hlookup] using hincludes))
+                                    (by
+                                      intro childDepth' runtimeType' identity'
+                                        hlt hcontains
+                                      exact hobjects childDepth' runtimeType'
+                                        identity' hlt
+                                        (by simpa [resolvedValueOrNull] using
+                                          hcontains))
+                                    (by
+                                      intro childDepth' runtimeType' identity'
+                                        hlt hcontains
+                                      exact herrors childDepth' runtimeType'
+                                        identity' hlt
+                                        (by simpa [resolvedValueOrNull] using
+                                          hcontains))
+                                    (by
+                                      intro childDepth' runtimeType' identity'
+                                        hlt hcontains hincludes
+                                      exact hchildren childDepth' runtimeType'
+                                        identity' hlt
+                                        (by simpa [resolvedValueOrNull] using
+                                          hcontains)
+                                        (by
+                                          simpa [Schema.fieldReturnType?,
+                                            hlookup] using hincludes))
+                                have hspecAppend := happend.left
+                                have hrightNeutral := happend.right.left
+                                have htailVisit :
+                                    visitSubfields schema resolvers
+                                      variableValues (childDepth + 2)
+                                      parentType source
+                                      (executableFieldSelections
+                                        [{ parentType := parentType
+                                           responseName := responseName
+                                           fieldName := fieldName
+                                           arguments := laterArguments
+                                           selectionSet := laterSelectionSet }])
+                                      (groupedFieldVisitResult responseName
+                                        (GraphQL.Execution.singleFieldResult
+                                          responseName
+                                          (GraphQL.Execution.completeValue
+                                            schema resolvers variableValues
+                                            (childDepth + 1) (.nonNull inner)
+                                            ({ parentType := parentType
+                                               responseName := responseName
+                                               fieldName := fieldName
+                                               arguments := arguments
+                                               selectionSet := selectionSet } ::
+                                              fields)
+                                            resolvedValue))).fst =
+                                    mergeResponseFieldResult responseName
+                                      (completeResolvedValue schema resolvers
+                                        variableValues (childDepth + 1)
+                                        (.nonNull inner) laterSelectionSet
+                                        resolvedValue
+                                        (some (resultValueOrNull
+                                          (GraphQL.Execution.completeValue
+                                            schema resolvers variableValues
+                                            (childDepth + 1) (.nonNull inner)
+                                            ({ parentType := parentType
+                                               responseName := responseName
+                                               fieldName := fieldName
+                                               arguments := arguments
+                                               selectionSet := selectionSet } ::
+                                              fields)
+                                            resolvedValue))))
+                                      (groupedFieldVisitResult responseName
+                                        (GraphQL.Execution.singleFieldResult
+                                          responseName
+                                          (GraphQL.Execution.completeValue
+                                            schema resolvers variableValues
+                                            (childDepth + 1) (.nonNull inner)
+                                            ({ parentType := parentType
+                                               responseName := responseName
+                                               fieldName := fieldName
+                                               arguments := arguments
+                                               selectionSet := selectionSet } ::
+                                              fields)
+                                            resolvedValue))).fst := by
+                                  cases hprefixCompleted :
+                                      GraphQL.Execution.completeValue schema
+                                        resolvers variableValues
+                                        (childDepth + 1) (.nonNull inner)
+                                        ({ parentType := parentType
+                                           responseName := responseName
+                                           fieldName := fieldName
+                                           arguments := arguments
+                                           selectionSet := selectionSet } ::
+                                          fields)
+                                        resolvedValue with
+                                  | error prefixErrors =>
+                                      simp [groupedFieldVisitResult, GraphQL.Execution.singleFieldResult, htailNull, completeResolvedValue_previous_null, mergeResponseFieldResult, mergeResponseFieldIntoObject, mergeResponseField, mergeResponse, resultValueOrNull, resultStatus, visitOk]
+                                  | ok prefixResult =>
+                                      rcases prefixResult with
+                                        ⟨prefixValue, prefixErrors⟩
+                                      have hlaterVisit :=
+                                        visitSubfields_executableFieldSelections_single_existing_eq_merge_complete
+                                          schema resolvers variableValues
+                                          childDepth parentType source
+                                          responseName fieldName laterArguments
+                                          laterSelectionSet
+                                          { name := definitionName
+                                            outputType := .nonNull inner
+                                            arguments := definitionArguments }
+                                          resolvedValue prefixValue hlookup
+                                          hresolveLater
+                                      simpa [hprefixCompleted,
+                                        groupedFieldVisitResult,
+                                        GraphQL.Execution.singleFieldResult]
+                                        using hlaterVisit
+                                have hcombined :=
+                                  groupedFieldVisitResult_singleFieldResult_combine_neutral
+                                    responseName
+                                    (GraphQL.Execution.completeValue schema
+                                      resolvers variableValues (childDepth + 1)
+                                      (.nonNull inner)
+                                      ({ parentType := parentType
+                                         responseName := responseName
+                                         fieldName := fieldName
+                                         arguments := arguments
+                                         selectionSet := selectionSet } ::
+                                        fields)
+                                      resolvedValue)
+                                    (completeResolvedValue schema resolvers
+                                      variableValues (childDepth + 1)
+                                      (.nonNull inner) laterSelectionSet
+                                      resolvedValue
+                                      (some (resultValueOrNull
+                                        (GraphQL.Execution.completeValue schema
+                                          resolvers variableValues
+                                          (childDepth + 1) (.nonNull inner)
+                                          ({ parentType := parentType
+                                             responseName := responseName
+                                             fieldName := fieldName
+                                             arguments := arguments
+                                             selectionSet := selectionSet } ::
+                                            fields)
+                                          resolvedValue))))
+                                    (GraphQL.Execution.completeValue schema
+                                      resolvers variableValues (childDepth + 1)
+                                      (.nonNull inner)
+                                      (({ parentType := parentType
+                                          responseName := responseName
+                                          fieldName := fieldName
+                                          arguments := arguments
+                                          selectionSet := selectionSet } ::
+                                         fields) ++
+                                        [{ parentType := parentType
+                                           responseName := responseName
+                                           fieldName := fieldName
+                                           arguments := laterArguments
+                                           selectionSet :=
+                                             laterSelectionSet }])
+                                      resolvedValue)
+                                    hrightNeutral hspecAppend
+                                simp [GraphQL.Execution.executeField, hlookup, hresolveFirst, groupedFieldVisitResult, GraphQL.Execution.singleFieldResult]
+                                  at htailVisit hcombined ⊢
+                                rw [htailVisit]
+                                exact hcombined
+
+theorem ExecutableFieldsMergedResponse_append_one_of_prefix
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (responseName : Name) (field : ExecutableField)
+    (fields : List ExecutableField) (later : ExecutableField)
+    (resolved : Option (ResolverValue ObjectIdentity))
+    (hprefixRaw :
+      ExecutableFieldsMergedRaw schema resolvers variableValues depth
+        parentType source responseName field fields resolved)
+    (hprefixResponses :
+      ∀ candidate, candidate ∈ field :: fields ->
+        candidate.responseName = responseName)
+    (hfieldResponse : field.responseName = responseName)
+    (hlaterResponse : later.responseName = responseName)
+    (hfieldParent : field.parentType = parentType)
+    (hlaterParent : later.parentType = parentType)
+    (hfieldName : later.fieldName = field.fieldName)
+    (htailLookups :
+      ∀ candidate, candidate ∈ fields ++ [later] ->
+        ∃ fieldDefinition, schema.lookupField parentType candidate.fieldName =
+          some fieldDefinition)
+    (hresolveFirst :
+      resolvers.resolve field.parentType field.fieldName field.arguments source =
+        resolved)
     (hresolveLater :
       resolvers.resolve later.parentType later.fieldName later.arguments source =
         resolved)
@@ -1226,6 +4812,128 @@ theorem ExecutableFieldsMergedComplete_append_one_of_prefix
                 runtimeType (.object runtimeType identity)
                 (GraphQL.Execution.mergedFieldSelectionSet (field :: fields))
                 (.object []))))
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues
+            childDepth runtimeType (.object runtimeType identity)
+            later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet (field :: fields))
+              (.object [])))
+    (hchildren :
+        ∀ childDepth runtimeType identity,
+          childDepth < depth ->
+          schema.typeIncludesObjectBool
+            ((schema.fieldReturnType? field.parentType field.fieldName).getD
+              field.fieldName)
+            runtimeType = true ->
+            ExecutionStateEquivalent
+              { window :=
+                { schema := schema
+                  resolvers := resolvers
+                  variableValues := variableValues
+                  depth := childDepth
+                  parentType := runtimeType
+                  source := .object runtimeType identity
+                  selectionSet :=
+                    GraphQL.Execution.mergedFieldSelectionSet
+                      ((field :: fields) ++ [later]) }
+                initial := .object [] }) :
+      ExecutableFieldsMergedResponse schema resolvers variableValues depth
+        parentType source responseName field (fields ++ [later]) resolved := by
+  apply ExecutableFieldsMergedResponse_of_raw schema resolvers variableValues
+    depth parentType source responseName field (fields ++ [later]) resolved
+  exact
+    ExecutableFieldsMergedRaw_append_one_of_prefix schema resolvers
+      variableValues depth parentType source responseName field fields later
+      resolved hprefixRaw hprefixResponses hfieldResponse hlaterResponse
+      hfieldParent hlaterParent hfieldName htailLookups hresolveFirst hresolveLater
+      (by
+        intro childDepth runtimeType identity hlt _hcontains hincludes
+        exact hprefixChildren childDepth runtimeType identity hlt hincludes)
+      (by
+        intro childDepth runtimeType identity hlt _hcontains
+        exact hobjects childDepth runtimeType identity hlt)
+      (by
+        intro childDepth runtimeType identity hlt _hcontains
+        exact herrors childDepth runtimeType identity hlt)
+      (by
+        intro childDepth runtimeType identity hlt _hcontains hincludes
+        exact hchildren childDepth runtimeType identity hlt hincludes)
+
+theorem ExecutableFieldsMergedComplete_append_one_of_prefix
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (responseName : Name) (field : ExecutableField)
+    (fields : List ExecutableField) (later : ExecutableField)
+    (resolved : Option (ResolverValue ObjectIdentity))
+    (hprefixRaw :
+      ExecutableFieldsMergedRaw schema resolvers variableValues depth
+        parentType source responseName field fields resolved)
+    (hprefixResponses :
+      ∀ candidate, candidate ∈ field :: fields ->
+        candidate.responseName = responseName)
+    (hfieldResponse : field.responseName = responseName)
+    (hlaterResponse : later.responseName = responseName)
+    (hfieldParent : field.parentType = parentType)
+    (hlaterParent : later.parentType = parentType)
+    (hfieldName : later.fieldName = field.fieldName)
+    (htailLookups :
+      ∀ candidate, candidate ∈ fields ++ [later] ->
+        ∃ fieldDefinition, schema.lookupField parentType candidate.fieldName =
+          some fieldDefinition)
+    (hresolveFirst :
+      resolvers.resolve field.parentType field.fieldName field.arguments source =
+        resolved)
+    (hresolveLater :
+      resolvers.resolve later.parentType later.fieldName later.arguments source =
+        resolved)
+    (hprefixChildren :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        schema.typeIncludesObjectBool
+          ((schema.fieldReturnType? field.parentType field.fieldName).getD
+            field.fieldName)
+          runtimeType = true ->
+          ExecutionStateEquivalent
+            { window :=
+              { schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := childDepth
+                parentType := runtimeType
+                source := .object runtimeType identity
+                selectionSet :=
+                  GraphQL.Execution.mergedFieldSelectionSet (field :: fields) }
+              initial := .object [] })
+    (hobjects :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          ResponseAbsorbs
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet (field :: fields))
+              (.object []))
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity) later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity)
+                (GraphQL.Execution.mergedFieldSelectionSet (field :: fields))
+                (.object []))))
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues
+            childDepth runtimeType (.object runtimeType identity)
+            later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet (field :: fields))
+              (.object [])))
     (hchildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -1251,34 +4959,47 @@ theorem ExecutableFieldsMergedComplete_append_one_of_prefix
   apply ExecutableFieldsMergedResponse_append_one_of_prefix schema resolvers
     variableValues depth parentType source responseName field fields later
     resolved
-  · exact
-      ExecutableFieldsMergedResponse_of_MergedComplete schema resolvers
-        variableValues depth parentType source responseName field fields
-        resolved hprefix
+  · exact hprefixRaw
+  · exact hprefixResponses
+  · exact hfieldResponse
   · exact hlaterResponse
   · exact hfieldParent
   · exact hlaterParent
   · exact hfieldName
+  · exact htailLookups
+  · exact hresolveFirst
   · exact hresolveLater
   · exact hprefixChildren
   · exact hobjects
+  · exact herrors
   · exact hchildren
 
 theorem ExecutableFieldsMergedResponse_append_one_of_prefix_contained
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField) (later : ExecutableField)
-    (resolved : Value ObjectIdentity)
-    (hprefix :
-      ExecutableFieldsMergedResponse schema resolvers variableValues depth
+    (resolved : Option (ResolverValue ObjectIdentity))
+    (hprefixRaw :
+      ExecutableFieldsMergedRaw schema resolvers variableValues depth
         parentType source responseName field fields resolved)
+    (hprefixResponses :
+      ∀ candidate, candidate ∈ field :: fields ->
+        candidate.responseName = responseName)
+    (hfieldResponse : field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hfieldParent : field.parentType = parentType)
     (hlaterParent : later.parentType = parentType)
     (hfieldName : later.fieldName = field.fieldName)
+    (htailLookups :
+      ∀ candidate, candidate ∈ fields ++ [later] ->
+        ∃ fieldDefinition, schema.lookupField parentType candidate.fieldName =
+          some fieldDefinition)
+    (hresolveFirst :
+      resolvers.resolve field.parentType field.fieldName field.arguments source =
+        resolved)
     (hresolveLater :
       resolvers.resolve later.parentType later.fieldName later.arguments source =
         resolved)
@@ -1316,95 +5037,75 @@ theorem ExecutableFieldsMergedResponse_append_one_of_prefix_contained
                 runtimeType (.object runtimeType identity)
                 (GraphQL.Execution.mergedFieldSelectionSet (field :: fields))
                 (.object []))))
-    (hchildren :
+    (herrors :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
         ValueContainsObject resolved runtimeType identity ->
-        schema.typeIncludesObjectBool
-          ((schema.fieldReturnType? field.parentType field.fieldName).getD
-            field.fieldName)
-          runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet :=
-                  GraphQL.Execution.mergedFieldSelectionSet
-                    ((field :: fields) ++ [later]) }
-              initial := .object [] }) :
-    ExecutableFieldsMergedResponse schema resolvers variableValues depth
-      parentType source responseName field (fields ++ [later]) resolved := by
-  unfold ExecutableFieldsMergedResponse at hprefix ⊢
-  have hcomplete :
-      mergeResponse
-        (GraphQL.Execution.completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? field.parentType field.fieldName).getD
-            field.fieldName)
-          (field :: fields) resolved)
-        (completeValue schema resolvers variableValues depth
-          ((schema.fieldReturnType? field.parentType field.fieldName).getD
-            field.fieldName)
-          later.selectionSet resolved
-          (GraphQL.Execution.completeValue schema resolvers variableValues depth
+          VisitSubfieldsErrorNeutral schema resolvers variableValues
+            childDepth runtimeType (.object runtimeType identity)
+            later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet (field :: fields))
+              (.object [])))
+      (hchildren :
+        ∀ childDepth runtimeType identity,
+          childDepth < depth ->
+          ValueContainsObject resolved runtimeType identity ->
+          schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD
               field.fieldName)
-            (field :: fields) resolved)) =
-      GraphQL.Execution.completeValue schema resolvers variableValues depth
-        ((schema.fieldReturnType? field.parentType field.fieldName).getD
-          field.fieldName)
-        ((field :: fields) ++ [later]) resolved :=
-    completeValue_group_append_one_merge_eq_spec_of_contained_visit_absorbs
-      schema resolvers variableValues depth
-      ((schema.fieldReturnType? field.parentType field.fieldName).getD
-        field.fieldName)
-      resolved (field :: fields) later hprefixChildren hobjects hchildren
-  rw [show
-      executableFieldSelections (field :: (fields ++ [later])) =
-        executableFieldSelections (field :: fields) ++
-          [executableFieldSelection later] by
-    simp [executableFieldSelections]]
-  rw [visitSubfields_append_equivalence schema resolvers variableValues (depth + 1)
-    parentType source (executableFieldSelections (field :: fields))
-    [executableFieldSelection later] (.object [])]
-  rw [hprefix]
-  cases field with
-  | mk fieldParent fieldResponse fieldName fieldArguments fieldSelectionSet =>
-      cases later with
-      | mk laterParent laterResponse laterFieldName laterArguments
-          laterSelectionSet =>
-          dsimp at hlaterResponse hfieldParent hlaterParent hfieldName hresolveLater hcomplete ⊢
-          subst fieldParent
-          subst laterResponse
-          subst laterParent
-          subst laterFieldName
-          simp [GraphQL.NormalForm.completeValue_eq_mergedFieldSelectionSet] at hcomplete
-          simpa [visitSubfields, visitSelection, executeField,
-            executableFieldSelection, executableField, responseObjectField?,
-            lookupResponseField?, mergeResponseFieldIntoObject,
-            mergeResponseField, selectionDirectivesAllowBool_empty,
-            hresolveLater,
-            GraphQL.NormalForm.completeValue_eq_mergedFieldSelectionSet] using
-            hcomplete
+            runtimeType = true ->
+            ExecutionStateEquivalent
+              { window :=
+                { schema := schema
+                  resolvers := resolvers
+                  variableValues := variableValues
+                  depth := childDepth
+                  parentType := runtimeType
+                  source := .object runtimeType identity
+                  selectionSet :=
+                    GraphQL.Execution.mergedFieldSelectionSet
+                      ((field :: fields) ++ [later]) }
+                initial := .object [] }) :
+      ExecutableFieldsMergedResponse schema resolvers variableValues depth
+        parentType source responseName field (fields ++ [later]) resolved := by
+  apply ExecutableFieldsMergedResponse_of_raw schema resolvers variableValues
+    depth parentType source responseName field (fields ++ [later]) resolved
+  exact
+    ExecutableFieldsMergedRaw_append_one_of_prefix schema resolvers
+      variableValues depth parentType source responseName field fields later
+      resolved hprefixRaw hprefixResponses hfieldResponse hlaterResponse
+      hfieldParent hlaterParent hfieldName htailLookups hresolveFirst
+      hresolveLater
+      hprefixChildren hobjects herrors hchildren
 
 theorem ExecutableFieldsMergedComplete_append_one_of_prefix_contained
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField) (later : ExecutableField)
-    (resolved : Value ObjectIdentity)
-    (hprefix :
-      ExecutableFieldsMergedComplete schema resolvers variableValues depth
+    (resolved : Option (ResolverValue ObjectIdentity))
+    (hprefixRaw :
+      ExecutableFieldsMergedRaw schema resolvers variableValues depth
         parentType source responseName field fields resolved)
+    (hprefixResponses :
+      ∀ candidate, candidate ∈ field :: fields ->
+        candidate.responseName = responseName)
+    (hfieldResponse : field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hfieldParent : field.parentType = parentType)
     (hlaterParent : later.parentType = parentType)
     (hfieldName : later.fieldName = field.fieldName)
+    (htailLookups :
+      ∀ candidate, candidate ∈ fields ++ [later] ->
+        ∃ fieldDefinition, schema.lookupField parentType candidate.fieldName =
+          some fieldDefinition)
+    (hresolveFirst :
+      resolvers.resolve field.parentType field.fieldName field.arguments source =
+        resolved)
     (hresolveLater :
       resolvers.resolve later.parentType later.fieldName later.arguments source =
         resolved)
@@ -1442,6 +5143,17 @@ theorem ExecutableFieldsMergedComplete_append_one_of_prefix_contained
                 runtimeType (.object runtimeType identity)
                 (GraphQL.Execution.mergedFieldSelectionSet (field :: fields))
                 (.object []))))
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues
+            childDepth runtimeType (.object runtimeType identity)
+            later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet (field :: fields))
+              (.object [])))
     (hchildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -1468,26 +5180,28 @@ theorem ExecutableFieldsMergedComplete_append_one_of_prefix_contained
   apply ExecutableFieldsMergedResponse_append_one_of_prefix_contained
     schema resolvers variableValues depth parentType source responseName field
     fields later resolved
-  · exact
-      ExecutableFieldsMergedResponse_of_MergedComplete schema resolvers
-        variableValues depth parentType source responseName field fields
-        resolved hprefix
+  · exact hprefixRaw
+  · exact hprefixResponses
+  · exact hfieldResponse
   · exact hlaterResponse
   · exact hfieldParent
   · exact hlaterParent
   · exact hfieldName
+  · exact htailLookups
+  · exact hresolveFirst
   · exact hresolveLater
   · exact hprefixChildren
   · exact hobjects
+  · exact herrors
   · exact hchildren
 
 def ExecutableFieldsMergedCompleteAppendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
-    (resolved : Value ObjectIdentity) :
+    (resolved : Option (ResolverValue ObjectIdentity)) :
     List ExecutableField -> List ExecutableField -> Prop
   | _prefixTail, [] => True
   | prefixTail, later :: rest =>
@@ -1529,6 +5243,16 @@ def ExecutableFieldsMergedCompleteAppendSteps
                 (GraphQL.Execution.mergedFieldSelectionSet
                   (field :: prefixTail))
                 (.object [])))) ∧
+      (∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues
+            childDepth runtimeType (.object runtimeType identity)
+            later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet
+                (field :: prefixTail))
+              (.object []))) ∧
       (∀ childDepth runtimeType identity,
         childDepth < depth ->
         schema.typeIncludesObjectBool
@@ -1555,9 +5279,9 @@ def ExecutableFieldsMergedCompleteContainedAppendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
-    (resolved : Value ObjectIdentity) :
+    (resolved : Option (ResolverValue ObjectIdentity)) :
     List ExecutableField -> List ExecutableField -> Prop
   | _prefixTail, [] => True
   | prefixTail, later :: rest =>
@@ -1601,6 +5325,17 @@ def ExecutableFieldsMergedCompleteContainedAppendSteps
                 (GraphQL.Execution.mergedFieldSelectionSet
                   (field :: prefixTail))
                 (.object [])))) ∧
+      (∀ childDepth runtimeType identity,
+        childDepth < depth ->
+        ValueContainsObject resolved runtimeType identity ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues
+            childDepth runtimeType (.object runtimeType identity)
+            later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet
+                (field :: prefixTail))
+              (.object []))) ∧
       (∀ childDepth runtimeType identity,
         childDepth < depth ->
         ValueContainsObject resolved runtimeType identity ->
@@ -1628,9 +5363,9 @@ structure ExecutedFieldAppendStep
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
-    (resolved : Value ObjectIdentity)
+    (resolved : Option (ResolverValue ObjectIdentity))
     (prefixTail : List ExecutableField) (later : ExecutableField) where
   responseName_eq : later.responseName = responseName
   parent_eq : later.parentType = parentType
@@ -1673,6 +5408,17 @@ structure ExecutedFieldAppendStep
               (GraphQL.Execution.mergedFieldSelectionSet
                 (field :: prefixTail))
               (.object [])))
+  errorNeutral :
+    ∀ childDepth runtimeType identity,
+      childDepth < depth ->
+        VisitSubfieldsErrorNeutral schema resolvers variableValues
+          childDepth runtimeType (.object runtimeType identity)
+          later.selectionSet
+          (visitSubfields schema resolvers variableValues childDepth
+            runtimeType (.object runtimeType identity)
+            (GraphQL.Execution.mergedFieldSelectionSet
+              (field :: prefixTail))
+            (.object []))
   extendedChildren :
     ∀ childDepth runtimeType identity,
       childDepth < depth ->
@@ -1697,9 +5443,9 @@ def ExecutedFieldAppendPlan
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
-    (resolved : Value ObjectIdentity) :
+    (resolved : Option (ResolverValue ObjectIdentity)) :
     List ExecutableField -> List ExecutableField -> Prop
   | _prefixTail, [] => True
   | prefixTail, later :: rest =>
@@ -1768,6 +5514,16 @@ def ExecutedFieldAppendPlanState
                 (GraphQL.Execution.mergedFieldSelectionSet
                   (field :: prefixTail))
                 (.object [])))) ∧
+      (∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues
+            childDepth runtimeType (.object runtimeType identity)
+            later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet
+                (field :: prefixTail))
+              (.object []))) ∧
       (∀ childDepth runtimeType identity,
         childDepth < depth ->
         schema.typeIncludesObjectBool
@@ -1856,9 +5612,20 @@ theorem ExecutedFieldAppendPlanState.cons
               runtimeType (.object runtimeType identity) later.selectionSet
               (visitSubfields schema resolvers variableValues childDepth
                 runtimeType (.object runtimeType identity)
-                (GraphQL.Execution.mergedFieldSelectionSet
-                  (field :: prefixTail))
-                (.object []))))
+                    (GraphQL.Execution.mergedFieldSelectionSet
+                      (field :: prefixTail))
+                    (.object []))))
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues
+            childDepth runtimeType (.object runtimeType identity)
+            later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet
+                (field :: prefixTail))
+              (.object [])))
     (hchildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -1883,7 +5650,7 @@ theorem ExecutedFieldAppendPlanState.cons
         fields (prefixTail ++ [later]) rest) :
     ExecutedFieldAppendPlanState schema resolvers variableValues depth field
       fields prefixTail (later :: rest) :=
-  ⟨hprefixChildren, hlater, hobjects, hchildren, hrest⟩
+  ⟨hprefixChildren, hlater, hobjects, herrors, hchildren, hrest⟩
 
 theorem ExecutedFieldAppendPlanState.singleton
     {ObjectIdentity : Type}
@@ -1927,6 +5694,17 @@ theorem ExecutedFieldAppendPlanState.singleton
                 (GraphQL.Execution.mergedFieldSelectionSet
                   (field :: prefixTail))
                 (.object []))))
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues
+            childDepth runtimeType (.object runtimeType identity)
+            later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet
+                (field :: prefixTail))
+              (.object [])))
     (hchildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -1948,7 +5726,7 @@ theorem ExecutedFieldAppendPlanState.singleton
               initial := .object [] }) :
     ExecutedFieldAppendPlanState schema resolvers variableValues depth field
       fields prefixTail [later] := by
-  refine ⟨hprefixChildren, hlater, hobjects, hchildren, ?_⟩
+  refine ⟨hprefixChildren, hlater, hobjects, herrors, hchildren, ?_⟩
   intro childDepth runtimeType identity hlt hincludes
   simpa using hchildren childDepth runtimeType identity hlt hincludes
 
@@ -1994,6 +5772,16 @@ theorem ExecutedFieldAppendPlanState.cons_of_visit_absorbs
               (GraphQL.Execution.mergedFieldSelectionSet
                 (field :: prefixTail))
               (.object [])))
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+            runtimeType (.object runtimeType identity) later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet
+                (field :: prefixTail))
+              (.object [])))
     (hchildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -2032,6 +5820,7 @@ theorem ExecutedFieldAppendPlanState.cons_of_visit_absorbs
         (GraphQL.Execution.mergedFieldSelectionSet (field :: prefixTail))
         (.object []))
       (hsteps childDepth runtimeType identity hlt)
+  · exact herrors
   · exact hchildren
   · exact hrest
 
@@ -2077,6 +5866,16 @@ theorem ExecutedFieldAppendPlanState.singleton_of_visit_absorbs
               (GraphQL.Execution.mergedFieldSelectionSet
                 (field :: prefixTail))
               (.object [])))
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+            runtimeType (.object runtimeType identity) later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet
+                (field :: prefixTail))
+              (.object [])))
     (hchildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -2099,7 +5898,7 @@ theorem ExecutedFieldAppendPlanState.singleton_of_visit_absorbs
     ExecutedFieldAppendPlanState schema resolvers variableValues depth field
       fields prefixTail [later] := by
   apply ExecutedFieldAppendPlanState.cons_of_visit_absorbs hprefixChildren
-    hlater hsteps hchildren
+    hlater hsteps herrors hchildren
   intro childDepth runtimeType identity hlt hincludes
   simpa using hchildren childDepth runtimeType identity hlt hincludes
 
@@ -2179,6 +5978,19 @@ theorem ExecutedFieldAppendPlanState.of_all_prefixes_from_prefix
                     (GraphQL.Execution.mergedFieldSelectionSet
                       (field :: prefixTail))
                     (.object []))))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
     (hchildren :
       ∀ prefixTail later,
         later ∈ fields ->
@@ -2211,9 +6023,11 @@ theorem ExecutedFieldAppendPlanState.of_all_prefixes_from_prefix
       apply ExecutedFieldAppendPlanState.cons (hprefixChildren prefixTail)
       · exact List.mem_cons_of_mem field hlaterFields
       · exact hobjects prefixTail later hlaterFields
+      · exact herrors prefixTail later hlaterFields
       · exact hchildren prefixTail later hlaterFields
       · apply ExecutedFieldAppendPlanState.of_all_prefixes_from_prefix
-          hprefixChildren hobjects hchildren (prefixTail ++ [later]) rest
+          hprefixChildren hobjects herrors hchildren
+          (prefixTail ++ [later]) rest
         intro candidate hcandidate
         exact hremaining candidate (by simp [hcandidate])
 
@@ -2259,6 +6073,19 @@ theorem ExecutedFieldAppendPlanState.of_all_prefixes
                     (GraphQL.Execution.mergedFieldSelectionSet
                       (field :: prefixTail))
                     (.object []))))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
     (hchildren :
       ∀ prefixTail later,
         later ∈ fields ->
@@ -2283,7 +6110,7 @@ theorem ExecutedFieldAppendPlanState.of_all_prefixes
     ExecutedFieldAppendPlanState schema resolvers variableValues depth field
       fields [] fields := by
   apply ExecutedFieldAppendPlanState.of_all_prefixes_from_prefix
-    hprefixChildren hobjects hchildren
+    hprefixChildren hobjects herrors hchildren
   intro later hlater
   exact hlater
 
@@ -2329,6 +6156,19 @@ theorem ExecutedFieldAppendPlanState.of_all_prefixes_from_prefix_of_visit_absorb
                   (GraphQL.Execution.mergedFieldSelectionSet
                     (field :: prefixTail))
                   (.object [])))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
     (hchildren :
       ∀ prefixTail later,
         later ∈ fields ->
@@ -2362,10 +6202,12 @@ theorem ExecutedFieldAppendPlanState.of_all_prefixes_from_prefix_of_visit_absorb
         (hprefixChildren prefixTail)
       · exact List.mem_cons_of_mem field hlaterFields
       · exact hsteps prefixTail later hlaterFields
+      · exact herrors prefixTail later hlaterFields
       · exact hchildren prefixTail later hlaterFields
       · apply
           ExecutedFieldAppendPlanState.of_all_prefixes_from_prefix_of_visit_absorbs
-            hprefixChildren hsteps hchildren (prefixTail ++ [later]) rest
+            hprefixChildren hsteps herrors hchildren
+            (prefixTail ++ [later]) rest
         intro candidate hcandidate
         exact hremaining candidate (by simp [hcandidate])
 
@@ -2411,6 +6253,19 @@ theorem ExecutedFieldAppendPlanState.of_all_prefixes_of_visit_absorbs
                   (GraphQL.Execution.mergedFieldSelectionSet
                     (field :: prefixTail))
                   (.object [])))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
     (hchildren :
       ∀ prefixTail later,
         later ∈ fields ->
@@ -2436,7 +6291,7 @@ theorem ExecutedFieldAppendPlanState.of_all_prefixes_of_visit_absorbs
       fields [] fields := by
   apply
     ExecutedFieldAppendPlanState.of_all_prefixes_from_prefix_of_visit_absorbs
-      hprefixChildren hsteps hchildren
+      hprefixChildren hsteps herrors hchildren
   intro later hlater
   exact hlater
 
@@ -2470,6 +6325,19 @@ theorem ExecutedFieldAppendPlanState.of_all_prefixes_of_local_absorbs
           ∀ childDepth runtimeType identity,
             childDepth < depth ->
               VisitSubfieldsLocalAbsorbsFrom schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
                 childDepth runtimeType (.object runtimeType identity)
                 later.selectionSet
                 (visitSubfields schema resolvers variableValues childDepth
@@ -2520,15 +6388,16 @@ theorem ExecutedFieldAppendPlanState.of_all_prefixes_of_local_absorbs
         childDepth runtimeType (.object runtimeType identity) base
         later.selectionSet base hbaseReady hbaseAbsorbs
         (hlocal prefixTail later hlater childDepth runtimeType identity hlt)
+  · exact herrors
   · exact hchildren
 
 theorem ExecutedFieldAppendPlan.singleton
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
-    {resolved : Value ObjectIdentity}
+    {resolved : Option (ResolverValue ObjectIdentity)}
     {prefixTail : List ExecutableField} {later : ExecutableField}
     (step :
       ExecutedFieldAppendStep schema resolvers variableValues depth parentType
@@ -2541,9 +6410,9 @@ theorem ExecutedFieldAppendPlan.nil
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
-    {resolved : Value ObjectIdentity}
+    {resolved : Option (ResolverValue ObjectIdentity)}
     {prefixTail : List ExecutableField} :
     ExecutedFieldAppendPlan schema resolvers variableValues depth parentType
       source responseName field resolved prefixTail [] := by
@@ -2553,9 +6422,9 @@ theorem ExecutedFieldAppendPlan.cons
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
-    {resolved : Value ObjectIdentity}
+    {resolved : Option (ResolverValue ObjectIdentity)}
     {prefixTail : List ExecutableField} {later : ExecutableField}
     {rest : List ExecutableField}
     (step :
@@ -2572,9 +6441,9 @@ theorem ExecutedFieldAppendPlan.toAppendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
-    (resolved : Value ObjectIdentity) :
+    (resolved : Option (ResolverValue ObjectIdentity)) :
     ∀ prefixTail rest,
       ExecutedFieldAppendPlan schema resolvers variableValues depth parentType
         source responseName field resolved prefixTail rest ->
@@ -2588,7 +6457,7 @@ theorem ExecutedFieldAppendPlan.toAppendSteps
       exact
         ⟨step.responseName_eq, step.parent_eq, step.fieldName_eq,
           step.resolved_eq, step.prefixChildren, step.absorbs,
-          step.extendedChildren,
+          step.errorNeutral, step.extendedChildren,
           ExecutedFieldAppendPlan.toAppendSteps schema resolvers
             variableValues depth parentType source responseName field resolved
             (prefixTail ++ [later]) rest restPlan⟩
@@ -2597,10 +6466,10 @@ structure ExecutedFieldGroup
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField) where
-  resolved : Value ObjectIdentity
+  resolved : Option (ResolverValue ObjectIdentity)
   responseName_eq :
     ∀ candidate, candidate ∈ field :: fields ->
       candidate.responseName = responseName
@@ -2610,6 +6479,9 @@ structure ExecutedFieldGroup
   resolved_eq :
     resolvers.resolve field.parentType field.fieldName field.arguments source =
       resolved
+  headLookup :
+    ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+      some fieldDefinition
   headChildren :
     ∀ childDepth runtimeType identity,
       childDepth < depth ->
@@ -2635,52 +6507,119 @@ theorem ExecutableFieldsMergedComplete_of_appendSteps_from_prefix
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
-    (resolved : Value ObjectIdentity)
-    (hfieldParent : field.parentType = parentType) :
+    (resolved : Option (ResolverValue ObjectIdentity))
+    (hfieldParent : field.parentType = parentType)
+    (hfieldResponse : field.responseName = responseName)
+    (hresolveFirst :
+      resolvers.resolve field.parentType field.fieldName field.arguments source =
+        resolved) :
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition) ->
     ∀ prefixTail remaining,
+      ExecutableFieldsMergedRaw schema resolvers variableValues depth
+        parentType source responseName field prefixTail resolved ->
       ExecutableFieldsMergedComplete schema resolvers variableValues depth
         parentType source responseName field prefixTail resolved ->
       ExecutableFieldsMergedCompleteAppendSteps schema resolvers variableValues
         depth parentType source responseName field resolved prefixTail
         remaining ->
+      (∀ candidate, candidate ∈ field :: prefixTail ->
+        candidate.responseName = responseName) ->
+      (∀ candidate, candidate ∈ prefixTail ->
+        ∃ fieldDefinition, schema.lookupField parentType candidate.fieldName =
+          some fieldDefinition) ->
       ExecutableFieldsMergedComplete schema resolvers variableValues depth
         parentType source responseName field (prefixTail ++ remaining)
         resolved
-  | prefixTail, [], hprefix, _hsteps => by
+  | _hfieldLookup, prefixTail, [], _hprefixRaw, hprefix, _hsteps,
+      _hprefixResponses, _hprefixLookups => by
       simpa using hprefix
-  | prefixTail, later :: rest, hprefix, hsteps => by
+  | hfieldLookup, prefixTail, later :: rest, hprefixRaw, hprefix, hsteps,
+      hprefixResponses, hprefixLookups => by
       simp [ExecutableFieldsMergedCompleteAppendSteps] at hsteps
       rcases hsteps with
         ⟨hlaterResponse, hlaterParent, hfieldName, hresolveLater,
-          hprefixChildren, hobjects, hchildren, hrest⟩
+          hprefixChildren, hobjects, herrors, hchildren, hrest⟩
+      have htailLookups :
+          ∀ candidate, candidate ∈ prefixTail ++ [later] ->
+            ∃ fieldDefinition, schema.lookupField parentType
+              candidate.fieldName = some fieldDefinition := by
+        intro candidate hmem
+        simp at hmem
+        rcases hmem with hprefixMem | hlater
+        · exact hprefixLookups candidate hprefixMem
+        · subst candidate
+          rcases hfieldLookup with ⟨fieldDefinition, hlookup⟩
+          exact ⟨fieldDefinition, by simpa [hfieldName] using hlookup⟩
+      have hnextResponses :
+          ∀ candidate, candidate ∈ field :: (prefixTail ++ [later]) ->
+            candidate.responseName = responseName := by
+        intro candidate hmem
+        simp at hmem
+        rcases hmem with hhead | htail
+        · subst candidate
+          exact hfieldResponse
+        · rcases htail with hprefixTail | hlater
+          · exact hprefixResponses candidate (by simp [hprefixTail])
+          · subst candidate
+            exact hlaterResponse
+      have hnextRaw :
+          ExecutableFieldsMergedRaw schema resolvers variableValues depth
+            parentType source responseName field (prefixTail ++ [later])
+            resolved :=
+        ExecutableFieldsMergedRaw_append_one_of_prefix schema resolvers
+          variableValues depth parentType source responseName field prefixTail
+          later resolved hprefixRaw hprefixResponses hfieldResponse
+          hlaterResponse hfieldParent hlaterParent hfieldName htailLookups
+          hresolveFirst hresolveLater
+          (by
+            intro childDepth runtimeType identity hlt _hcontains hincludes
+            exact hprefixChildren childDepth runtimeType identity hlt hincludes)
+          (by
+            intro childDepth runtimeType identity hlt _hcontains
+            exact hobjects childDepth runtimeType identity hlt)
+          (by
+            intro childDepth runtimeType identity hlt _hcontains
+            exact herrors childDepth runtimeType identity hlt)
+          (by
+            intro childDepth runtimeType identity hlt _hcontains hincludes
+            exact hchildren childDepth runtimeType identity hlt hincludes)
       have hnext :
           ExecutableFieldsMergedComplete schema resolvers variableValues depth
             parentType source responseName field (prefixTail ++ [later])
             resolved :=
         ExecutableFieldsMergedComplete_append_one_of_prefix schema resolvers
           variableValues depth parentType source responseName field prefixTail
-          later resolved hprefix hlaterResponse hfieldParent hlaterParent
-          hfieldName hresolveLater hprefixChildren hobjects hchildren
+          later resolved hprefixRaw hprefixResponses hfieldResponse
+          hlaterResponse hfieldParent hlaterParent hfieldName htailLookups
+          hresolveFirst hresolveLater hprefixChildren hobjects herrors
+          hchildren
       have htail :=
         ExecutableFieldsMergedComplete_of_appendSteps_from_prefix schema
           resolvers variableValues depth parentType source responseName field
-          resolved hfieldParent (prefixTail ++ [later]) rest hnext hrest
+          resolved hfieldParent hfieldResponse hresolveFirst hfieldLookup
+          (prefixTail ++ [later]) rest hnextRaw hnext hrest
+          hnextResponses htailLookups
       simpa [List.append_assoc] using htail
 
 theorem ExecutableFieldsMergedComplete_of_appendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
-    (fields : List ExecutableField) (resolved : Value ObjectIdentity)
+    (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hfieldResponse : field.responseName = responseName)
     (hfieldParent : field.parentType = parentType)
     (hresolve :
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -2709,63 +6648,130 @@ theorem ExecutableFieldsMergedComplete_of_appendSteps
     ExecutableFieldsMergedComplete_single_of_guarded_child_states schema resolvers
       variableValues depth parentType source responseName field resolved
       hfieldResponse hfieldParent hresolve hfieldChildren
+  have hbaseRaw :
+      ExecutableFieldsMergedRaw schema resolvers variableValues depth
+        parentType source responseName field [] resolved :=
+    ExecutableFieldsMergedRaw_single_of_guarded_child_states schema resolvers
+      variableValues depth parentType source responseName field resolved
+      hfieldResponse hfieldParent hresolve hfieldChildren
   simpa using
     ExecutableFieldsMergedComplete_of_appendSteps_from_prefix schema resolvers
       variableValues depth parentType source responseName field resolved
-      hfieldParent [] fields hbase hsteps
+      hfieldParent hfieldResponse hresolve hfieldLookup [] fields hbaseRaw hbase
+      hsteps
+      (by
+        intro candidate hmem
+        simp at hmem
+        subst candidate
+        exact hfieldResponse)
+      (by simp)
 
 theorem ExecutableFieldsMergedComplete_of_contained_appendSteps_from_prefix
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
-    (resolved : Value ObjectIdentity)
-    (hfieldParent : field.parentType = parentType) :
+    (resolved : Option (ResolverValue ObjectIdentity))
+    (hfieldParent : field.parentType = parentType)
+    (hfieldResponse : field.responseName = responseName)
+    (hresolveFirst :
+      resolvers.resolve field.parentType field.fieldName field.arguments source =
+        resolved) :
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition) ->
     ∀ prefixTail remaining,
+      ExecutableFieldsMergedRaw schema resolvers variableValues depth
+        parentType source responseName field prefixTail resolved ->
       ExecutableFieldsMergedComplete schema resolvers variableValues depth
         parentType source responseName field prefixTail resolved ->
       ExecutableFieldsMergedCompleteContainedAppendSteps schema resolvers
         variableValues depth parentType source responseName field resolved
         prefixTail remaining ->
+      (∀ candidate, candidate ∈ field :: prefixTail ->
+        candidate.responseName = responseName) ->
+      (∀ candidate, candidate ∈ prefixTail ->
+        ∃ fieldDefinition, schema.lookupField parentType candidate.fieldName =
+          some fieldDefinition) ->
       ExecutableFieldsMergedComplete schema resolvers variableValues depth
         parentType source responseName field (prefixTail ++ remaining)
         resolved
-  | prefixTail, [], hprefix, _hsteps => by
+  | _hfieldLookup, prefixTail, [], _hprefixRaw, hprefix, _hsteps,
+      _hprefixResponses, _hprefixLookups => by
       simpa using hprefix
-  | prefixTail, later :: rest, hprefix, hsteps => by
+  | hfieldLookup, prefixTail, later :: rest, hprefixRaw, hprefix, hsteps,
+      hprefixResponses, hprefixLookups => by
       simp [ExecutableFieldsMergedCompleteContainedAppendSteps] at hsteps
       rcases hsteps with
         ⟨hlaterResponse, hlaterParent, hfieldName, hresolveLater,
-          hprefixChildren, hobjects, hchildren, hrest⟩
+          hprefixChildren, hobjects, herrors, hchildren, hrest⟩
+      have htailLookups :
+          ∀ candidate, candidate ∈ prefixTail ++ [later] ->
+            ∃ fieldDefinition, schema.lookupField parentType
+              candidate.fieldName = some fieldDefinition := by
+        intro candidate hmem
+        simp at hmem
+        rcases hmem with hprefixMem | hlater
+        · exact hprefixLookups candidate hprefixMem
+        · subst candidate
+          rcases hfieldLookup with ⟨fieldDefinition, hlookup⟩
+          exact ⟨fieldDefinition, by simpa [hfieldName] using hlookup⟩
+      have hnextResponses :
+          ∀ candidate, candidate ∈ field :: (prefixTail ++ [later]) ->
+            candidate.responseName = responseName := by
+        intro candidate hmem
+        simp at hmem
+        rcases hmem with hhead | htail
+        · subst candidate
+          exact hfieldResponse
+        · rcases htail with hprefixTail | hlater
+          · exact hprefixResponses candidate (by simp [hprefixTail])
+          · subst candidate
+            exact hlaterResponse
+      have hnextRaw :
+          ExecutableFieldsMergedRaw schema resolvers variableValues depth
+            parentType source responseName field (prefixTail ++ [later])
+            resolved :=
+        ExecutableFieldsMergedRaw_append_one_of_prefix schema resolvers
+          variableValues depth parentType source responseName field prefixTail
+          later resolved hprefixRaw hprefixResponses hfieldResponse
+          hlaterResponse hfieldParent hlaterParent hfieldName htailLookups
+          hresolveFirst hresolveLater hprefixChildren hobjects herrors
+          hchildren
       have hnext :
           ExecutableFieldsMergedComplete schema resolvers variableValues depth
             parentType source responseName field (prefixTail ++ [later])
             resolved :=
         ExecutableFieldsMergedComplete_append_one_of_prefix_contained schema
           resolvers variableValues depth parentType source responseName field
-          prefixTail later resolved hprefix hlaterResponse hfieldParent
-          hlaterParent hfieldName hresolveLater hprefixChildren hobjects
+          prefixTail later resolved hprefixRaw hprefixResponses hfieldResponse
+          hlaterResponse hfieldParent hlaterParent hfieldName htailLookups
+          hresolveFirst hresolveLater hprefixChildren hobjects herrors
           hchildren
       have htail :=
         ExecutableFieldsMergedComplete_of_contained_appendSteps_from_prefix
           schema resolvers variableValues depth parentType source responseName
-          field resolved hfieldParent (prefixTail ++ [later]) rest hnext
-          hrest
+          field resolved hfieldParent hfieldResponse hresolveFirst hfieldLookup
+          (prefixTail ++ [later]) rest hnextRaw hnext hrest
+          hnextResponses htailLookups
       simpa [List.append_assoc] using htail
 
 theorem ExecutableFieldsMergedComplete_of_contained_appendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
-    (fields : List ExecutableField) (resolved : Value ObjectIdentity)
+    (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hfieldResponse : field.responseName = responseName)
     (hfieldParent : field.parentType = parentType)
     (hresolve :
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -2796,10 +6802,23 @@ theorem ExecutableFieldsMergedComplete_of_contained_appendSteps
     ExecutableFieldsMergedComplete_single_of_contained_child_states schema
       resolvers variableValues depth parentType source responseName field
       resolved hfieldResponse hfieldParent hresolve hfieldChildren
+  have hbaseRaw :
+      ExecutableFieldsMergedRaw schema resolvers variableValues depth
+        parentType source responseName field [] resolved :=
+    ExecutableFieldsMergedRaw_single_of_contained_child_states schema
+      resolvers variableValues depth parentType source responseName field
+      resolved hfieldResponse hfieldParent hresolve hfieldChildren
   simpa using
     ExecutableFieldsMergedComplete_of_contained_appendSteps_from_prefix schema
       resolvers variableValues depth parentType source responseName field
-      resolved hfieldParent [] fields hbase hsteps
+      resolved hfieldParent hfieldResponse hresolve hfieldLookup [] fields
+      hbaseRaw hbase
+      hsteps (by
+        intro candidate hmem
+        simp at hmem
+        subst candidate
+        exact hfieldResponse)
+      (by simp)
 
 namespace ExecutedFieldGroup
 
@@ -2807,9 +6826,9 @@ def of_appendPlan
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
-    (fields : List ExecutableField) (resolved : Value ObjectIdentity)
+    (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse :
       ∀ candidate, candidate ∈ field :: fields ->
         candidate.responseName = responseName)
@@ -2819,6 +6838,9 @@ def of_appendPlan
     (hresolve :
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -2845,6 +6867,7 @@ def of_appendPlan
   responseName_eq := hresponse
   parent_eq := hparent
   resolved_eq := hresolve
+  headLookup := hfieldLookup
   headChildren := hfieldChildren
   appendSteps :=
     ExecutedFieldAppendPlan.toAppendSteps schema resolvers variableValues
@@ -2854,7 +6877,7 @@ theorem field_responseName
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
     {fields : List ExecutableField}
     (group :
@@ -2867,7 +6890,7 @@ theorem field_parent
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
     {fields : List ExecutableField}
     (group :
@@ -2880,7 +6903,7 @@ theorem mergedComplete
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
     {fields : List ExecutableField}
     (group :
@@ -2891,13 +6914,13 @@ theorem mergedComplete
   ExecutableFieldsMergedComplete_of_appendSteps schema resolvers variableValues
     depth parentType source responseName field fields group.resolved
     group.field_responseName group.field_parent group.resolved_eq
-    group.headChildren group.appendSteps
+    group.headLookup group.headChildren group.appendSteps
 
 theorem mergedComplete_resolved
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
     {fields : List ExecutableField}
     (group :
@@ -2914,7 +6937,7 @@ theorem flatSpecEquivalent
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
     {fields : List ExecutableField}
     (group :
@@ -2931,7 +6954,7 @@ theorem groupFlatSpecEquivalent
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
     {fields : List ExecutableField}
     (group :
@@ -2949,7 +6972,7 @@ def ExecutedFieldGroups
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity) :
+    (parentType : Name) (source : ResolverValue ObjectIdentity) :
     List (Name × List ExecutableField) -> Type
   | [] => Unit
   | (_responseName, []) :: _rest => Empty
@@ -2963,7 +6986,7 @@ def ExecutedFieldGroups.nil
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity} :
+    {parentType : Name} {source : ResolverValue ObjectIdentity} :
     ExecutedFieldGroups schema resolvers variableValues depth parentType source
       [] :=
   ()
@@ -2972,7 +6995,7 @@ def ExecutedFieldGroups.cons
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
     {fields : List ExecutableField}
     {rest : List (Name × List ExecutableField)}
@@ -2990,7 +7013,7 @@ def ExecutedFieldGroups.singleton
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
     {fields : List ExecutableField}
     (hgroup :
@@ -3004,7 +7027,7 @@ theorem ExecutedFieldGroups.no_empty_head
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {rest : List (Name × List ExecutableField)} :
     ExecutedFieldGroups schema resolvers variableValues depth parentType source
       ((responseName, []) :: rest) ->
@@ -3016,7 +7039,7 @@ def ExecutedFieldGroups.head
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
     {fields : List ExecutableField}
     {rest : List (Name × List ExecutableField)} :
@@ -3030,7 +7053,7 @@ def ExecutedFieldGroups.tail
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
     {fields : List ExecutableField}
     {rest : List (Name × List ExecutableField)} :
@@ -3044,7 +7067,7 @@ theorem ExecutedFieldGroups.nil_groupFlatSpecEquivalent
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity) :
+    (parentType : Name) (source : ResolverValue ObjectIdentity) :
     ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues
       (depth + 1) parentType source [] :=
   ExecutableGroupsFlatSpecEquivalent_nil schema resolvers variableValues
@@ -3054,7 +7077,7 @@ theorem ExecutedFieldGroups.head_groupFlatSpecEquivalent
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
     {fields : List ExecutableField}
     {rest : List (Name × List ExecutableField)}
@@ -3069,13 +7092,16 @@ def ExecutedFieldGroup.of_collected_appendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hgroup : (responseName, field :: fields) ∈ groups)
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent parentType groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3108,6 +7134,7 @@ def ExecutedFieldGroup.of_collected_appendSteps
   parent_eq :=
     hparents responseName (field :: fields) hgroup
   resolved_eq := rfl
+  headLookup := hfieldLookup
   headChildren := hfieldChildren
   appendSteps := hsteps
 
@@ -3115,13 +7142,16 @@ def ExecutedFieldGroup.of_collected_appendPlan
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hgroup : (responseName, field :: fields) ∈ groups)
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent parentType groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3149,7 +7179,7 @@ def ExecutedFieldGroup.of_collected_appendPlan
       responseName field fields :=
   ExecutedFieldGroup.of_collected_appendSteps schema resolvers variableValues
     depth parentType source groups responseName field fields hgroup
-    hresponses hparents hfieldChildren
+    hresponses hparents hfieldLookup hfieldChildren
     (ExecutedFieldAppendPlan.toAppendSteps schema resolvers variableValues
       depth parentType source responseName field
       (resolvers.resolve field.parentType field.fieldName field.arguments
@@ -3160,9 +7190,9 @@ theorem ExecutableFieldsFlatSpecEquivalent_nonempty_group_of_appendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
-    (fields : List ExecutableField) (resolved : Value ObjectIdentity)
+    (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse :
       ∀ candidate, candidate ∈ field :: fields ->
         candidate.responseName = responseName)
@@ -3172,6 +7202,9 @@ theorem ExecutableFieldsFlatSpecEquivalent_nonempty_group_of_appendSteps
     (hresolve :
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3204,7 +7237,7 @@ theorem ExecutableFieldsFlatSpecEquivalent_nonempty_group_of_appendSteps
     ExecutableFieldsMergedComplete_of_appendSteps schema resolvers
       variableValues depth parentType source responseName field fields resolved
       hfieldResponse hfieldParent hresolve
-      hfieldChildren
+      hfieldLookup hfieldChildren
       hsteps
   exact
     ExecutableFieldsFlatSpecEquivalent_nonempty_group_of_mergedComplete
@@ -3215,9 +7248,9 @@ theorem ExecutableGroupsFlatSpecEquivalent_nonempty_single_group_of_appendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
-    (fields : List ExecutableField) (resolved : Value ObjectIdentity)
+    (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse :
       ∀ candidate, candidate ∈ field :: fields ->
         candidate.responseName = responseName)
@@ -3227,6 +7260,9 @@ theorem ExecutableGroupsFlatSpecEquivalent_nonempty_single_group_of_appendSteps
     (hresolve :
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3254,19 +7290,23 @@ theorem ExecutableGroupsFlatSpecEquivalent_nonempty_single_group_of_appendSteps
   exact
     ExecutableFieldsFlatSpecEquivalent_nonempty_group_of_appendSteps
       schema resolvers variableValues depth parentType source responseName
-      field fields resolved hresponse hparent hresolve hfieldChildren hsteps
+      field fields resolved hresponse hparent hresolve hfieldLookup
+      hfieldChildren hsteps
 
 theorem ExecutableGroupsFlatSpecEquivalent_collected_nonempty_group_of_appendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hgroup : (responseName, field :: fields) ∈ groups)
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent parentType groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3299,7 +7339,7 @@ theorem ExecutableGroupsFlatSpecEquivalent_collected_nonempty_group_of_appendSte
       schema resolvers variableValues depth parentType source responseName
       field fields
       (resolvers.resolve field.parentType field.fieldName field.arguments source)
-      hgroupResponses hgroupParents rfl
+      hgroupResponses hgroupParents rfl hfieldLookup
       (by
         intro childDepth runtimeType identity hlt _hincludes
         exact hfieldChildren childDepth runtimeType identity hlt)
@@ -3309,9 +7349,9 @@ theorem ExecutableFieldsFlatSpecEquivalent_nonempty_group_of_contained_appendSte
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
-    (fields : List ExecutableField) (resolved : Value ObjectIdentity)
+    (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse :
       ∀ candidate, candidate ∈ field :: fields ->
         candidate.responseName = responseName)
@@ -3321,6 +7361,9 @@ theorem ExecutableFieldsFlatSpecEquivalent_nonempty_group_of_contained_appendSte
     (hresolve :
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3354,7 +7397,7 @@ theorem ExecutableFieldsFlatSpecEquivalent_nonempty_group_of_contained_appendSte
         parentType source responseName field fields resolved :=
     ExecutableFieldsMergedComplete_of_contained_appendSteps schema resolvers
       variableValues depth parentType source responseName field fields resolved
-      hfieldResponse hfieldParent hresolve hfieldChildren hsteps
+      hfieldResponse hfieldParent hresolve hfieldLookup hfieldChildren hsteps
   exact
     ExecutableFieldsFlatSpecEquivalent_nonempty_group_of_mergedComplete
       schema resolvers variableValues depth parentType source responseName
@@ -3364,9 +7407,9 @@ theorem ExecutableGroupsFlatSpecEquivalent_nonempty_single_group_of_contained_ap
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
-    (fields : List ExecutableField) (resolved : Value ObjectIdentity)
+    (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse :
       ∀ candidate, candidate ∈ field :: fields ->
         candidate.responseName = responseName)
@@ -3376,6 +7419,9 @@ theorem ExecutableGroupsFlatSpecEquivalent_nonempty_single_group_of_contained_ap
     (hresolve :
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3405,13 +7451,14 @@ theorem ExecutableGroupsFlatSpecEquivalent_nonempty_single_group_of_contained_ap
   exact
     ExecutableFieldsFlatSpecEquivalent_nonempty_group_of_contained_appendSteps
       schema resolvers variableValues depth parentType source responseName
-      field fields resolved hresponse hparent hresolve hfieldChildren hsteps
+      field fields resolved hresponse hparent hresolve hfieldLookup
+      hfieldChildren hsteps
 
 theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_appendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -3427,6 +7474,9 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_appendSteps
     (hparent :
       ∀ candidate, candidate ∈ field :: fields ->
         candidate.parentType = parentType)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3466,7 +7516,7 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_appendSteps
     ExecutableFieldsMergedComplete_of_appendSteps schema resolvers
       variableValues depth parentType source responseName field fields
       (resolvers.resolve field.parentType field.fieldName field.arguments source)
-      hfieldResponse hfieldParent rfl
+      hfieldResponse hfieldParent rfl hfieldLookup
       hfieldChildren
       hsteps
   exact
@@ -3478,7 +7528,7 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_contained_append
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -3494,6 +7544,9 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_contained_append
     (hparent :
       ∀ candidate, candidate ∈ field :: fields ->
         candidate.parentType = parentType)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3537,7 +7590,7 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_contained_append
     ExecutableFieldsMergedComplete_of_contained_appendSteps schema resolvers
       variableValues depth parentType source responseName field fields
       (resolvers.resolve field.parentType field.fieldName field.arguments source)
-      hfieldResponse hfieldParent rfl hfieldChildren hsteps
+      hfieldResponse hfieldParent rfl hfieldLookup hfieldChildren hsteps
   exact
     executeRootSelectionSet_eq_spec_of_exact_nonempty_group_mergedComplete
       schema resolvers variableValues depth parentType source selectionSet
@@ -3547,7 +7600,7 @@ theorem executeQueryAtDepth_eq_spec_of_exact_nonempty_group_appendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hroot : rootSourceAppliesBool schema operation source = true)
@@ -3563,6 +7616,9 @@ theorem executeQueryAtDepth_eq_spec_of_exact_nonempty_group_appendSteps
     (hparent :
       ∀ candidate, candidate ∈ field :: fields ->
         candidate.parentType = operation.rootType)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField operation.rootType
+        field.fieldName = some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3592,7 +7648,7 @@ theorem executeQueryAtDepth_eq_spec_of_exact_nonempty_group_appendSteps
     executeRootSelectionSet_eq_spec_of_exact_nonempty_group_appendSteps
       schema resolvers variableValues depth operation.rootType source
       operation.selectionSet responseName field fields hcollect hdirect
-      hresponse hparent
+      hresponse hparent hfieldLookup
       (by
         intro childDepth runtimeType identity hlt _hincludes
         exact hfieldChildren childDepth runtimeType identity hlt)
@@ -3602,7 +7658,7 @@ theorem executeQueryAtDepth_eq_spec_of_exact_nonempty_group_contained_appendStep
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hroot : rootSourceAppliesBool schema operation source = true)
@@ -3618,6 +7674,9 @@ theorem executeQueryAtDepth_eq_spec_of_exact_nonempty_group_contained_appendStep
     (hparent :
       ∀ candidate, candidate ∈ field :: fields ->
         candidate.parentType = operation.rootType)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField operation.rootType
+        field.fieldName = some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3655,13 +7714,13 @@ theorem executeQueryAtDepth_eq_spec_of_exact_nonempty_group_contained_appendStep
     executeRootSelectionSet_eq_spec_of_exact_nonempty_group_contained_appendSteps
       schema resolvers variableValues depth operation.rootType source
       operation.selectionSet responseName field fields hcollect hdirect
-      hresponse hparent hfieldChildren hsteps
+      hresponse hparent hfieldLookup hfieldChildren hsteps
 
 theorem executeQuery_eq_spec_of_exact_nonempty_group_appendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
@@ -3678,6 +7737,9 @@ theorem executeQuery_eq_spec_of_exact_nonempty_group_appendSteps
     (hparent :
       ∀ candidate, candidate ∈ field :: fields ->
         candidate.parentType = operation.rootType)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField operation.rootType
+        field.fieldName = some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3705,13 +7767,14 @@ theorem executeQuery_eq_spec_of_exact_nonempty_group_appendSteps
   exact
     executeQueryAtDepth_eq_spec_of_exact_nonempty_group_appendSteps schema
       resolvers variableValues operation depth source responseName field fields
-      hroot hcollect hdirect hresponse hparent hfieldChildren hsteps
+      hroot hcollect hdirect hresponse hparent hfieldLookup hfieldChildren
+      hsteps
 
 theorem executeQuery_eq_spec_of_exact_nonempty_group_contained_appendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
@@ -3728,6 +7791,9 @@ theorem executeQuery_eq_spec_of_exact_nonempty_group_contained_appendSteps
     (hparent :
       ∀ candidate, candidate ∈ field :: fields ->
         candidate.parentType = operation.rootType)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField operation.rootType
+        field.fieldName = some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3759,7 +7825,7 @@ theorem executeQuery_eq_spec_of_exact_nonempty_group_contained_appendSteps
   exact
     executeQueryAtDepth_eq_spec_of_exact_nonempty_group_contained_appendSteps
       schema resolvers variableValues operation depth source responseName field
-      fields hroot hcollect hdirect hresponse hparent
+      fields hroot hcollect hdirect hresponse hparent hfieldLookup
       (by
         intro childDepth runtimeType identity hlt hcontains _hincludes
         exact hfieldChildren childDepth runtimeType identity hlt hcontains)
@@ -3769,7 +7835,7 @@ theorem executeRootSelectionSet_eq_spec_of_executedFieldGroup
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -3796,7 +7862,7 @@ theorem executeQueryAtDepth_eq_spec_of_executedFieldGroup
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hroot : rootSourceAppliesBool schema operation source = true)
@@ -3824,7 +7890,7 @@ theorem executeQuery_eq_spec_of_executedFieldGroup
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
@@ -3852,7 +7918,7 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_appendPlan
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -3868,6 +7934,9 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_appendPlan
     (hparent :
       ∀ candidate, candidate ∈ field :: fields ->
         candidate.parentType = parentType)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3903,7 +7972,7 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_appendPlan
         parentType source responseName field fields
         (resolvers.resolve field.parentType field.fieldName field.arguments
           source)
-        hresponse hparent rfl
+        hresponse hparent rfl hfieldLookup
         hfieldChildren
         plan)
 
@@ -3911,7 +7980,7 @@ theorem executeQueryAtDepth_eq_spec_of_exact_nonempty_group_appendPlan
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hroot : rootSourceAppliesBool schema operation source = true)
@@ -3927,6 +7996,9 @@ theorem executeQueryAtDepth_eq_spec_of_exact_nonempty_group_appendPlan
     (hparent :
       ∀ candidate, candidate ∈ field :: fields ->
         candidate.parentType = operation.rootType)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField operation.rootType
+        field.fieldName = some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -3960,13 +8032,13 @@ theorem executeQueryAtDepth_eq_spec_of_exact_nonempty_group_appendPlan
     executeRootSelectionSet_eq_spec_of_exact_nonempty_group_appendPlan schema
       resolvers variableValues depth operation.rootType source
       operation.selectionSet responseName field fields hcollect hdirect
-      hresponse hparent hfieldChildren plan
+      hresponse hparent hfieldLookup hfieldChildren plan
 
 theorem executeQuery_eq_spec_of_exact_nonempty_group_appendPlan
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
@@ -3983,6 +8055,9 @@ theorem executeQuery_eq_spec_of_exact_nonempty_group_appendPlan
     (hparent :
       ∀ candidate, candidate ∈ field :: fields ->
         candidate.parentType = operation.rootType)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField operation.rootType
+        field.fieldName = some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -4010,7 +8085,7 @@ theorem executeQuery_eq_spec_of_exact_nonempty_group_appendPlan
   exact
     executeQueryAtDepth_eq_spec_of_exact_nonempty_group_appendPlan schema
       resolvers variableValues operation depth source responseName field fields
-      hroot hcollect hdirect hresponse hparent
+      hroot hcollect hdirect hresponse hparent hfieldLookup
       (by
         intro childDepth runtimeType identity hlt _hincludes
         exact hfieldChildren childDepth runtimeType identity hlt)
@@ -4020,7 +8095,7 @@ theorem executeRootSelectionSet_eq_spec_of_collected_appendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
@@ -4034,6 +8109,9 @@ theorem executeRootSelectionSet_eq_spec_of_collected_appendSteps
         parentType source selectionSet (.object []))
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent parentType groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -4066,6 +8144,7 @@ theorem executeRootSelectionSet_eq_spec_of_collected_appendSteps
       (ExecutedFieldGroup.of_collected_appendSteps schema resolvers
         variableValues depth parentType source [(responseName, field :: fields)]
         responseName field fields hgroup hresponses hparents
+        hfieldLookup
         (by
           intro childDepth runtimeType identity hlt _hincludes
           exact hfieldChildren childDepth runtimeType identity hlt)
@@ -4075,7 +8154,7 @@ theorem executeQueryAtDepth_eq_spec_of_collected_appendSteps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -4089,6 +8168,9 @@ theorem executeQueryAtDepth_eq_spec_of_collected_appendSteps
         operation.rootType source operation.selectionSet (.object []))
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent operation.rootType groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField operation.rootType
+        field.fieldName = some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -4120,13 +8202,13 @@ theorem executeQueryAtDepth_eq_spec_of_collected_appendSteps
     executeRootSelectionSet_eq_spec_of_collected_appendSteps schema resolvers
       variableValues depth operation.rootType source operation.selectionSet
       [(responseName, field :: fields)] responseName field fields hcollect
-      hgroup hdirect hresponses hparents hfieldChildren hsteps rfl
+      hgroup hdirect hresponses hparents hfieldLookup hfieldChildren hsteps rfl
 
 theorem executeRootSelectionSet_eq_spec_of_collected_appendPlan
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
@@ -4140,6 +8222,9 @@ theorem executeRootSelectionSet_eq_spec_of_collected_appendPlan
         parentType source selectionSet (.object []))
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent parentType groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -4176,6 +8261,7 @@ theorem executeRootSelectionSet_eq_spec_of_collected_appendPlan
       (ExecutedFieldGroup.of_collected_appendPlan schema resolvers
         variableValues depth parentType source [(responseName, field :: fields)]
         responseName field fields hgroup hresponses hparents
+        hfieldLookup
         hfieldChildren
         plan)
 
@@ -4183,7 +8269,7 @@ theorem executeQueryAtDepth_eq_spec_of_collected_appendPlan
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -4197,6 +8283,9 @@ theorem executeQueryAtDepth_eq_spec_of_collected_appendPlan
         operation.rootType source operation.selectionSet (.object []))
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent operation.rootType groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField operation.rootType
+        field.fieldName = some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -4229,6 +8318,7 @@ theorem executeQueryAtDepth_eq_spec_of_collected_appendPlan
       variableValues depth operation.rootType source operation.selectionSet
       [(responseName, field :: fields)] responseName field fields hcollect
       hgroup hdirect hresponses hparents
+      hfieldLookup
       (by
         intro childDepth runtimeType identity hlt _hincludes
         exact hfieldChildren childDepth runtimeType identity hlt)
@@ -4238,7 +8328,7 @@ structure ExecutedSingleGroupSelectionState
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection) where
   groups : List (Name × List ExecutableField)
   responseName : Name
@@ -4254,6 +8344,9 @@ structure ExecutedSingleGroupSelectionState
       parentType source selectionSet (.object [])
   responses : CollectedGroupsResponseName groups
   parents : CollectedGroupsParent parentType groups
+  headLookup :
+    ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+      some fieldDefinition
   headChildren :
     ∀ childDepth runtimeType identity,
       childDepth < depth ->
@@ -4284,7 +8377,7 @@ def of_collected_appendPlan
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
@@ -4297,6 +8390,9 @@ def of_collected_appendPlan
     (hdirect :
       VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
         parentType source selectionSet (.object []))
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hfieldChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -4354,6 +8450,7 @@ def of_collected_appendPlan
           selectionSet := selectionSet }
         initial := .object [] }
       groups hcollect
+  headLookup := hfieldLookup
   headChildren := hfieldChildren
   appendPlan := plan
 
@@ -4361,7 +8458,7 @@ def toExecutedFieldGroup
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {selectionSet : List Selection}
     (state :
       ExecutedSingleGroupSelectionState schema resolvers variableValues depth
@@ -4371,13 +8468,13 @@ def toExecutedFieldGroup
   ExecutedFieldGroup.of_collected_appendPlan schema resolvers variableValues
     depth parentType source state.groups state.responseName state.field
     state.fields state.group_mem state.responses state.parents
-    state.headChildren state.appendPlan
+    state.headLookup state.headChildren state.appendPlan
 
 theorem flatSpecEquivalent
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {selectionSet : List Selection}
     (state :
       ExecutedSingleGroupSelectionState schema resolvers variableValues depth
@@ -4390,7 +8487,7 @@ theorem groupFlatSpecEquivalent
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {selectionSet : List Selection}
     (state :
       ExecutedSingleGroupSelectionState schema resolvers variableValues depth
@@ -4404,7 +8501,7 @@ theorem executeRootSelectionSet_eq_spec
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {selectionSet : List Selection}
     (state :
       ExecutedSingleGroupSelectionState schema resolvers variableValues depth
@@ -4417,13 +8514,13 @@ theorem executeRootSelectionSet_eq_spec
     variableValues depth parentType source selectionSet state.groups
     state.responseName state.field state.fields state.collect_eq
     state.group_mem state.direct state.responses state.parents
-    state.headChildren state.appendPlan state.exact_groups
+    state.headLookup state.headChildren state.appendPlan state.exact_groups
 
 theorem stateEquivalent
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : Value ObjectIdentity}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
     {selectionSet : List Selection}
     (state :
       ExecutedSingleGroupSelectionState schema resolvers variableValues depth
@@ -4447,7 +8544,7 @@ theorem executeQueryAtDepth_eq_spec
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {operation : Operation}
-    {depth : Nat} {source : Value ObjectIdentity}
+    {depth : Nat} {source : ResolverValue ObjectIdentity}
     (hroot : rootSourceAppliesBool schema operation source = true)
     (state :
       ExecutedSingleGroupSelectionState schema resolvers variableValues depth
@@ -4464,7 +8561,7 @@ theorem executeQuery_eq_spec
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {operation : Operation}
-    {depth : Nat} {source : Value ObjectIdentity}
+    {depth : Nat} {source : ResolverValue ObjectIdentity}
     (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
     (state :
@@ -4483,9 +8580,9 @@ theorem ExecutedFieldAppendStep_two_of_visit_absorbs
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (first later : ExecutableField)
-    (resolved : Value ObjectIdentity)
+    (resolved : Option (ResolverValue ObjectIdentity))
     (hlaterParent : later.parentType = parentType)
     (hlaterResponse : later.responseName = responseName)
     (hfieldName : later.fieldName = first.fieldName)
@@ -4517,6 +8614,14 @@ theorem ExecutedFieldAppendStep_two_of_visit_absorbs
               (visitSubfields schema resolvers variableValues childDepth
                 runtimeType (.object runtimeType identity) first.selectionSet
                 (.object []))))
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+            runtimeType (.object runtimeType identity) later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity) first.selectionSet
+              (.object [])))
     (hchildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -4539,6 +8644,7 @@ theorem ExecutedFieldAppendStep_two_of_visit_absorbs
       resolved_eq := hresolveLater
       prefixChildren := ?prefixChildren
       absorbs := ?absorbs
+      errorNeutral := ?errorNeutral
       extendedChildren := ?extendedChildren }
   · intro childDepth runtimeType identity hlt _hincludes
     simpa [GraphQL.Execution.mergedFieldSelectionSet] using
@@ -4546,6 +8652,10 @@ theorem ExecutedFieldAppendStep_two_of_visit_absorbs
   · intro childDepth runtimeType identity hlt
     simpa [GraphQL.Execution.mergedFieldSelectionSet] using
       hobjects childDepth runtimeType identity hlt
+  · intro childDepth runtimeType identity hlt
+    simpa [GraphQL.Execution.mergedFieldSelectionSet,
+      VisitSubfieldsErrorNeutral] using
+      herrors childDepth runtimeType identity hlt
   · intro childDepth runtimeType identity hlt _hincludes
     simpa [GraphQL.Execution.mergedFieldSelectionSet] using
       hchildren childDepth runtimeType identity hlt
@@ -4554,9 +8664,9 @@ theorem ExecutedFieldAppendPlan_two_of_visit_absorbs
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (first later : ExecutableField)
-    (resolved : Value ObjectIdentity)
+    (resolved : Option (ResolverValue ObjectIdentity))
     (hlaterParent : later.parentType = parentType)
     (hlaterResponse : later.responseName = responseName)
     (hfieldName : later.fieldName = first.fieldName)
@@ -4588,6 +8698,14 @@ theorem ExecutedFieldAppendPlan_two_of_visit_absorbs
               (visitSubfields schema resolvers variableValues childDepth
                 runtimeType (.object runtimeType identity) first.selectionSet
                 (.object []))))
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+            runtimeType (.object runtimeType identity) later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity) first.selectionSet
+              (.object [])))
     (hchildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -4607,13 +8725,13 @@ theorem ExecutedFieldAppendPlan_two_of_visit_absorbs
     (ExecutedFieldAppendStep_two_of_visit_absorbs schema resolvers
       variableValues depth parentType source responseName first later resolved
       hlaterParent hlaterResponse hfieldName hresolveLater hfirstChildren
-      hobjects hchildren)
+      hobjects herrors hchildren)
 
 theorem ExecutedFieldAppendStep.of_collected_group
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields prefixTail : List ExecutableField) (later : ExecutableField)
@@ -4658,6 +8776,16 @@ theorem ExecutedFieldAppendStep.of_collected_group
                 (GraphQL.Execution.mergedFieldSelectionSet
                   (field :: prefixTail))
                 (.object []))))
+    (herrors :
+      ∀ childDepth runtimeType identity,
+        childDepth < depth ->
+          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+            runtimeType (.object runtimeType identity) later.selectionSet
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet
+                (field :: prefixTail))
+              (.object [])))
     (hchildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -4716,13 +8844,14 @@ theorem ExecutedFieldAppendStep.of_collected_group
       resolved_eq := hresolveLater
       prefixChildren := hprefixChildren
       absorbs := hobjects
+      errorNeutral := herrors
       extendedChildren := hchildren }
 
 theorem ExecutedFieldAppendPlan.of_collected_group_state
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -4743,13 +8872,13 @@ theorem ExecutedFieldAppendPlan.of_collected_group_state
       exact ExecutedFieldAppendPlan.nil
   | prefixTail, later :: rest, hstate => by
       rcases hstate with
-        ⟨hprefixChildren, hlater, hobjects, hchildren, hrest⟩
+        ⟨hprefixChildren, hlater, hobjects, herrors, hchildren, hrest⟩
       apply ExecutedFieldAppendPlan.cons
       · exact
           ExecutedFieldAppendStep.of_collected_group schema resolvers
             variableValues depth parentType source groups responseName field
             fields prefixTail later hgroup hlater hresponses hparents
-            hcompatible hstable hprefixChildren hobjects hchildren
+            hcompatible hstable hprefixChildren hobjects herrors hchildren
       · exact
           ExecutedFieldAppendPlan.of_collected_group_state schema resolvers
             variableValues depth parentType source groups responseName field
@@ -4760,7 +8889,7 @@ theorem ExecutedFieldAppendPlan.of_collected_group_from_prefix
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -4802,6 +8931,19 @@ theorem ExecutedFieldAppendPlan.of_collected_group_from_prefix
                     (GraphQL.Execution.mergedFieldSelectionSet
                       (field :: prefixTail))
                     (.object []))))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
     (hchildren :
       ∀ prefixTail later,
         later ∈ fields ->
@@ -4836,6 +8978,7 @@ theorem ExecutedFieldAppendPlan.of_collected_group_from_prefix
               intro prefixTail childDepth runtimeType identity hlt _hincludes
               exact hprefixChildren prefixTail childDepth runtimeType identity hlt)
             hobjects
+            herrors
             (by
               intro prefixTail later hlater childDepth runtimeType identity hlt
                 _hincludes
@@ -4847,7 +8990,7 @@ theorem ExecutedFieldAppendPlan.of_collected_group
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -4889,6 +9032,19 @@ theorem ExecutedFieldAppendPlan.of_collected_group
                     (GraphQL.Execution.mergedFieldSelectionSet
                       (field :: prefixTail))
                     (.object []))))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
     (hchildren :
       ∀ prefixTail later,
         later ∈ fields ->
@@ -4913,7 +9069,7 @@ theorem ExecutedFieldAppendPlan.of_collected_group
   apply ExecutedFieldAppendPlan.of_collected_group_from_prefix schema resolvers
     variableValues depth parentType source groups responseName field fields
     hgroup hresponses hparents hcompatible hstable hprefixChildren hobjects
-    hchildren
+    herrors hchildren
   intro later hlater
   exact hlater
 
@@ -4921,7 +9077,7 @@ def ExecutedFieldGroup.of_collected_group
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -4930,6 +9086,9 @@ def ExecutedFieldGroup.of_collected_group
     (hparents : CollectedGroupsParent parentType groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
     (hstable : CollectedGroupsResolveStable resolvers source groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hprefixChildren :
       ∀ prefixTail childDepth runtimeType identity,
         childDepth < depth ->
@@ -4963,6 +9122,19 @@ def ExecutedFieldGroup.of_collected_group
                     (GraphQL.Execution.mergedFieldSelectionSet
                       (field :: prefixTail))
                     (.object []))))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
     (hchildren :
       ∀ prefixTail later,
         later ∈ fields ->
@@ -4990,6 +9162,7 @@ def ExecutedFieldGroup.of_collected_group
         intro prefixTail childDepth runtimeType identity hlt _hincludes
         exact hprefixChildren prefixTail childDepth runtimeType identity hlt)
       hobjects
+      herrors
       (by
         intro prefixTail later hlater childDepth runtimeType identity hlt
           _hincludes
@@ -4998,7 +9171,7 @@ def ExecutedFieldGroup.of_collected_group
   exact
     ExecutedFieldGroup.of_collected_appendPlan schema resolvers variableValues
       depth parentType source groups responseName field fields hgroup hresponses
-      hparents
+      hparents hfieldLookup
       (by
         intro childDepth runtimeType identity hlt
         simpa [GraphQL.Execution.mergedFieldSelectionSet] using
@@ -5012,7 +9185,7 @@ def ExecutedFieldGroup.of_collected_group_state
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -5021,6 +9194,9 @@ def ExecutedFieldGroup.of_collected_group_state
     (hparents : CollectedGroupsParent parentType groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
     (hstable : CollectedGroupsResolveStable resolvers source groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hstate :
       ExecutedFieldAppendPlanState schema resolvers variableValues depth field
         fields [] fields) :
@@ -5028,7 +9204,7 @@ def ExecutedFieldGroup.of_collected_group_state
       responseName field fields :=
   ExecutedFieldGroup.of_collected_appendPlan schema resolvers variableValues
     depth parentType source groups responseName field fields hgroup hresponses
-    hparents
+    hparents hfieldLookup
     (by
       intro childDepth runtimeType identity hlt
       simpa [GraphQL.Execution.mergedFieldSelectionSet] using
@@ -5042,7 +9218,7 @@ theorem stateEquivalent_of_collected_field_group_of_invariant
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
@@ -5067,6 +9243,9 @@ theorem stateEquivalent_of_collected_field_group_of_invariant
             selectionSet := selectionSet }
           initial := .object [] })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hprefixChildren :
       ∀ prefixTail childDepth runtimeType identity,
         childDepth < depth ->
@@ -5100,6 +9279,19 @@ theorem stateEquivalent_of_collected_field_group_of_invariant
                     (GraphQL.Execution.mergedFieldSelectionSet
                       (field :: prefixTail))
                     (.object []))))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
     (hchildren :
       ∀ prefixTail later,
         later ∈ fields ->
@@ -5158,13 +9350,13 @@ theorem stateEquivalent_of_collected_field_group_of_invariant
       (ExecutedFieldGroup.of_collected_group schema resolvers variableValues
         depth parentType source [(responseName, field :: fields)] responseName
       field fields hgroup hresponses hparents hcompatible hstable
-      hprefixChildren hobjects hchildren)
+      hfieldLookup hprefixChildren hobjects herrors hchildren)
 
 theorem stateEquivalent_of_collected_field_group_state_of_invariant
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
@@ -5189,6 +9381,9 @@ theorem stateEquivalent_of_collected_field_group_state_of_invariant
             selectionSet := selectionSet }
           initial := .object [] })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hplanState :
       ExecutedFieldAppendPlanState schema resolvers variableValues depth field
         fields [] fields) :
@@ -5233,13 +9428,13 @@ theorem stateEquivalent_of_collected_field_group_state_of_invariant
       (ExecutedFieldGroup.of_collected_group_state schema resolvers
         variableValues depth parentType source [(responseName, field :: fields)]
         responseName field fields hgroup hresponses hparents hcompatible
-        hstable hplanState)
+        hstable hfieldLookup hplanState)
 
 theorem executeRootSelectionSet_eq_spec_of_collected_field_group_state_of_invariant
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
@@ -5264,6 +9459,9 @@ theorem executeRootSelectionSet_eq_spec_of_collected_field_group_state_of_invari
             selectionSet := selectionSet }
           initial := .object [] })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hplanState :
       ExecutedFieldAppendPlanState schema resolvers variableValues depth field
         fields [] fields) :
@@ -5282,13 +9480,13 @@ theorem executeRootSelectionSet_eq_spec_of_collected_field_group_state_of_invari
     (stateEquivalent_of_collected_field_group_state_of_invariant schema
       resolvers variableValues depth parentType source selectionSet groups
       responseName field fields hcollect hgroup hexact hdirect hinvariant
-      hcompatible hplanState)
+      hcompatible hfieldLookup hplanState)
 
 theorem executeQueryAtDepth_eq_spec_of_collected_field_group_state_of_invariant
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -5313,6 +9511,9 @@ theorem executeQueryAtDepth_eq_spec_of_collected_field_group_state_of_invariant
             selectionSet := operation.selectionSet }
           initial := .object [] })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField operation.rootType
+        field.fieldName = some fieldDefinition)
     (hplanState :
       ExecutedFieldAppendPlanState schema resolvers variableValues depth field
         fields [] fields) :
@@ -5326,13 +9527,13 @@ theorem executeQueryAtDepth_eq_spec_of_collected_field_group_state_of_invariant
     stateEquivalent_of_collected_field_group_state_of_invariant schema
       resolvers variableValues depth operation.rootType source
       operation.selectionSet groups responseName field fields hcollect hgroup
-      hexact hdirect hinvariant hcompatible hplanState
+      hexact hdirect hinvariant hcompatible hfieldLookup hplanState
 
 theorem executeQuery_eq_spec_of_collected_field_group_state_of_invariant
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -5358,6 +9559,9 @@ theorem executeQuery_eq_spec_of_collected_field_group_state_of_invariant
             selectionSet := operation.selectionSet }
           initial := .object [] })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField operation.rootType
+        field.fieldName = some fieldDefinition)
     (hplanState :
       ExecutedFieldAppendPlanState schema resolvers variableValues depth field
         fields [] fields) :
@@ -5370,13 +9574,13 @@ theorem executeQuery_eq_spec_of_collected_field_group_state_of_invariant
     executeQueryAtDepth_eq_spec_of_collected_field_group_state_of_invariant
       schema resolvers variableValues operation depth source groups responseName
       field fields hroot hcollect hgroup hexact hdirect hinvariant hcompatible
-      hplanState
+      hfieldLookup hplanState
 
 theorem stateEquivalent_of_collected_field_group_steps_of_invariant
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
@@ -5401,6 +9605,9 @@ theorem stateEquivalent_of_collected_field_group_steps_of_invariant
             selectionSet := selectionSet }
           initial := .object [] })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hprefixChildren :
       ∀ prefixTail childDepth runtimeType identity,
         childDepth < depth ->
@@ -5428,6 +9635,19 @@ theorem stateEquivalent_of_collected_field_group_steps_of_invariant
                   (GraphQL.Execution.mergedFieldSelectionSet
                     (field :: prefixTail))
                   (.object []))
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
                 later.selectionSet
                 (visitSubfields schema resolvers variableValues childDepth
                   runtimeType (.object runtimeType identity)
@@ -5464,12 +9684,13 @@ theorem stateEquivalent_of_collected_field_group_steps_of_invariant
   stateEquivalent_of_collected_field_group_state_of_invariant schema
     resolvers variableValues depth parentType source selectionSet groups
     responseName field fields hcollect hgroup hexact hdirect hinvariant
-    hcompatible
+    hcompatible hfieldLookup
     (ExecutedFieldAppendPlanState.of_all_prefixes_of_visit_absorbs
       (by
         intro prefixTail childDepth runtimeType identity hlt _hincludes
         exact hprefixChildren prefixTail childDepth runtimeType identity hlt)
       hsteps
+      herrors
       (by
         intro prefixTail later hlater childDepth runtimeType identity hlt
           _hincludes
@@ -5480,7 +9701,7 @@ theorem executeRootSelectionSet_eq_spec_of_collected_field_group_steps_of_invari
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
@@ -5505,6 +9726,9 @@ theorem executeRootSelectionSet_eq_spec_of_collected_field_group_steps_of_invari
             selectionSet := selectionSet }
           initial := .object [] })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hprefixChildren :
       ∀ prefixTail childDepth runtimeType identity,
         childDepth < depth ->
@@ -5532,6 +9756,19 @@ theorem executeRootSelectionSet_eq_spec_of_collected_field_group_steps_of_invari
                   (GraphQL.Execution.mergedFieldSelectionSet
                     (field :: prefixTail))
                   (.object []))
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
                 later.selectionSet
                 (visitSubfields schema resolvers variableValues childDepth
                   runtimeType (.object runtimeType identity)
@@ -5562,12 +9799,13 @@ theorem executeRootSelectionSet_eq_spec_of_collected_field_group_steps_of_invari
   executeRootSelectionSet_eq_spec_of_collected_field_group_state_of_invariant
     schema resolvers variableValues depth parentType source selectionSet groups
     responseName field fields hcollect hgroup hexact hdirect hinvariant
-    hcompatible
+    hcompatible hfieldLookup
     (ExecutedFieldAppendPlanState.of_all_prefixes_of_visit_absorbs
       (by
         intro prefixTail childDepth runtimeType identity hlt _hincludes
         exact hprefixChildren prefixTail childDepth runtimeType identity hlt)
       hsteps
+      herrors
       (by
         intro prefixTail later hlater childDepth runtimeType identity hlt
           _hincludes
@@ -5578,7 +9816,7 @@ theorem executeQueryAtDepth_eq_spec_of_collected_field_group_steps_of_invariant
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -5603,6 +9841,9 @@ theorem executeQueryAtDepth_eq_spec_of_collected_field_group_steps_of_invariant
             selectionSet := operation.selectionSet }
           initial := .object [] })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField operation.rootType
+        field.fieldName = some fieldDefinition)
     (hprefixChildren :
       ∀ prefixTail childDepth runtimeType identity,
         childDepth < depth ->
@@ -5630,6 +9871,19 @@ theorem executeQueryAtDepth_eq_spec_of_collected_field_group_steps_of_invariant
                   (GraphQL.Execution.mergedFieldSelectionSet
                     (field :: prefixTail))
                   (.object []))
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
                 later.selectionSet
                 (visitSubfields schema resolvers variableValues childDepth
                   runtimeType (.object runtimeType identity)
@@ -5660,11 +9914,13 @@ theorem executeQueryAtDepth_eq_spec_of_collected_field_group_steps_of_invariant
   executeQueryAtDepth_eq_spec_of_collected_field_group_state_of_invariant
     schema resolvers variableValues operation depth source groups responseName
     field fields hroot hcollect hgroup hexact hdirect hinvariant hcompatible
+    hfieldLookup
     (ExecutedFieldAppendPlanState.of_all_prefixes_of_visit_absorbs
       (by
         intro prefixTail childDepth runtimeType identity hlt _hincludes
         exact hprefixChildren prefixTail childDepth runtimeType identity hlt)
       hsteps
+      herrors
       (by
         intro prefixTail later hlater childDepth runtimeType identity hlt
           _hincludes
@@ -5675,7 +9931,7 @@ theorem executeQuery_eq_spec_of_collected_field_group_steps_of_invariant
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -5701,6 +9957,9 @@ theorem executeQuery_eq_spec_of_collected_field_group_steps_of_invariant
             selectionSet := operation.selectionSet }
           initial := .object [] })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField operation.rootType
+        field.fieldName = some fieldDefinition)
     (hprefixChildren :
       ∀ prefixTail childDepth runtimeType identity,
         childDepth < depth ->
@@ -5734,6 +9993,19 @@ theorem executeQuery_eq_spec_of_collected_field_group_steps_of_invariant
                   (GraphQL.Execution.mergedFieldSelectionSet
                     (field :: prefixTail))
                   (.object [])))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
     (hchildren :
       ∀ prefixTail later,
         later ∈ fields ->
@@ -5757,11 +10029,13 @@ theorem executeQuery_eq_spec_of_collected_field_group_steps_of_invariant
   executeQuery_eq_spec_of_collected_field_group_state_of_invariant schema
     resolvers variableValues operation depth source groups responseName field
     fields hdepth hroot hcollect hgroup hexact hdirect hinvariant hcompatible
+    hfieldLookup
     (ExecutedFieldAppendPlanState.of_all_prefixes_of_visit_absorbs
       (by
         intro prefixTail childDepth runtimeType identity hlt _hincludes
         exact hprefixChildren prefixTail childDepth runtimeType identity hlt)
       hsteps
+      herrors
       (by
         intro prefixTail later hlater childDepth runtimeType identity hlt
           _hincludes
@@ -5772,7 +10046,7 @@ theorem executeRootSelectionSet_eq_spec_of_collected_field_group_of_invariant
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
@@ -5797,6 +10071,9 @@ theorem executeRootSelectionSet_eq_spec_of_collected_field_group_of_invariant
             selectionSet := selectionSet }
           initial := .object [] })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition)
     (hprefixChildren :
       ∀ prefixTail childDepth runtimeType identity,
         childDepth < depth ->
@@ -5830,6 +10107,19 @@ theorem executeRootSelectionSet_eq_spec_of_collected_field_group_of_invariant
                     (GraphQL.Execution.mergedFieldSelectionSet
                       (field :: prefixTail))
                     (.object []))))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
     (hchildren :
       ∀ prefixTail later,
         later ∈ fields ->
@@ -5862,13 +10152,13 @@ theorem executeRootSelectionSet_eq_spec_of_collected_field_group_of_invariant
     (stateEquivalent_of_collected_field_group_of_invariant schema resolvers
       variableValues depth parentType source selectionSet groups responseName
       field fields hcollect hgroup hexact hdirect hinvariant hcompatible
-      hprefixChildren hobjects hchildren)
+      hfieldLookup hprefixChildren hobjects herrors hchildren)
 
 theorem executeQueryAtDepth_eq_spec_of_collected_field_group_of_invariant
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -5893,6 +10183,9 @@ theorem executeQueryAtDepth_eq_spec_of_collected_field_group_of_invariant
             selectionSet := operation.selectionSet }
           initial := .object [] })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField operation.rootType
+        field.fieldName = some fieldDefinition)
     (hprefixChildren :
       ∀ prefixTail childDepth runtimeType identity,
         childDepth < depth ->
@@ -5926,6 +10219,19 @@ theorem executeQueryAtDepth_eq_spec_of_collected_field_group_of_invariant
                     (GraphQL.Execution.mergedFieldSelectionSet
                       (field :: prefixTail))
                     (.object []))))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
     (hchildren :
       ∀ prefixTail later,
         later ∈ fields ->
@@ -5953,13 +10259,14 @@ theorem executeQueryAtDepth_eq_spec_of_collected_field_group_of_invariant
     stateEquivalent_of_collected_field_group_of_invariant schema resolvers
       variableValues depth operation.rootType source operation.selectionSet
       groups responseName field fields hcollect hgroup hexact hdirect
-      hinvariant hcompatible hprefixChildren hobjects hchildren
+      hinvariant hcompatible hfieldLookup hprefixChildren hobjects herrors
+      hchildren
 
 theorem executeQuery_eq_spec_of_collected_field_group_of_invariant
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectIdentity)
+    (depth : Nat) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
@@ -5985,6 +10292,9 @@ theorem executeQuery_eq_spec_of_collected_field_group_of_invariant
             selectionSet := operation.selectionSet }
           initial := .object [] })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup :
+      ∃ fieldDefinition, schema.lookupField operation.rootType
+        field.fieldName = some fieldDefinition)
     (hprefixChildren :
       ∀ prefixTail childDepth runtimeType identity,
         childDepth < depth ->
@@ -6018,6 +10328,19 @@ theorem executeQuery_eq_spec_of_collected_field_group_of_invariant
                     (GraphQL.Execution.mergedFieldSelectionSet
                       (field :: prefixTail))
                     (.object []))))
+    (herrors :
+      ∀ prefixTail later,
+        later ∈ fields ->
+          ∀ childDepth runtimeType identity,
+            childDepth < depth ->
+              VisitSubfieldsErrorNeutral schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType identity)
+                later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity)
+                  (GraphQL.Execution.mergedFieldSelectionSet
+                    (field :: prefixTail))
+                  (.object [])))
     (hchildren :
       ∀ prefixTail later,
         later ∈ fields ->
@@ -6044,7 +10367,7 @@ theorem executeQuery_eq_spec_of_collected_field_group_of_invariant
     executeQueryAtDepth_eq_spec_of_collected_field_group_of_invariant schema
       resolvers variableValues operation depth source groups responseName field
       fields hroot hcollect hgroup hexact hdirect hinvariant hcompatible
-      hprefixChildren hobjects hchildren
+      hfieldLookup hprefixChildren hobjects herrors hchildren
 
 end ExecutionUngrouped
 end Algorithms

@@ -14,7 +14,7 @@ variable {ObjectRef : Type}
 theorem collectFields_inlineFragment_none_directives_allowed_flatten
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
     Execution.selectionDirectivesAllowBool variableValues directives = true ->
@@ -31,7 +31,7 @@ theorem collectFields_inlineFragment_none_directives_allowed_flatten
 theorem collectFields_inlineFragment_none_directives_skipped_eq
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
     Execution.selectionDirectivesAllowBool variableValues directives = false ->
@@ -50,7 +50,7 @@ theorem executeSelectionSet_inlineFragment_none_directives_allowed_flatten
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
     Execution.selectionDirectivesAllowBool variableValues directives = true ->
@@ -70,7 +70,7 @@ theorem executeSelectionSet_inlineFragment_none_directives_skipped_eq
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
     Execution.selectionDirectivesAllowBool variableValues directives = false ->
@@ -94,12 +94,12 @@ theorem collectFields_inlineFragment_some_directives_allowed_flatten_object
     Execution.selectionDirectivesAllowBool variableValues directives = true ->
     schema.typeIncludesObjectBool typeCondition groundType = true ->
       Execution.collectFields schema variableValues lookupParent
-          (Execution.Value.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
           (Selection.inlineFragment (some typeCondition) directives
             selectionSet :: rest)
         =
       Execution.collectFields schema variableValues lookupParent
-        (Execution.Value.object (ObjectRef := ObjectRef) groundType)
+        (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
         (selectionSet ++ rest) := by
   intro hallow hincludes
   rw [GroundTypeNormalization.collectFields_cons]
@@ -111,7 +111,7 @@ theorem collectFields_inlineFragment_some_directives_allowed_flatten_object
 theorem collectFields_inlineFragment_some_directives_allowed_flatten
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (typeCondition : Name)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
@@ -140,12 +140,12 @@ theorem executeSelectionSet_inlineFragment_some_directives_allowed_flatten_objec
     Execution.selectionDirectivesAllowBool variableValues directives = true ->
     schema.typeIncludesObjectBool typeCondition groundType = true ->
       Execution.executeSelectionSet schema resolvers variableValues depth
-    lookupParent (Execution.Value.object (ObjectRef := ObjectRef) groundType)
+    lookupParent (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
           (Selection.inlineFragment (some typeCondition) directives
             selectionSet :: rest)
         =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        lookupParent (Execution.Value.object (ObjectRef := ObjectRef) groundType)
+        lookupParent (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
         (selectionSet ++ rest) := by
   intro hallow hincludes
   apply executeSelectionSet_eq_of_collectFields_eq
@@ -159,7 +159,7 @@ theorem executeSelectionSet_inlineFragment_some_directives_allowed_flatten
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (typeCondition : Name)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
@@ -188,12 +188,12 @@ theorem collectFields_inlineFragment_some_directives_skipped_eq_object
     (Execution.selectionDirectivesAllowBool variableValues directives
       && schema.typeIncludesObjectBool typeCondition groundType) = false ->
       Execution.collectFields schema variableValues lookupParent
-          (Execution.Value.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
           (Selection.inlineFragment (some typeCondition) directives
             selectionSet :: rest)
         =
       Execution.collectFields schema variableValues lookupParent
-        (Execution.Value.object (ObjectRef := ObjectRef) groundType) rest := by
+        (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType) rest := by
   intro hskip
   rw [GroundTypeNormalization.collectFields_cons]
   simp [Execution.collectSelection, Execution.doesFragmentTypeApplyBool,
@@ -203,19 +203,19 @@ theorem collectFields_inlineFragment_some_directives_skipped_eq_object
   · simp
     exact GroundTypeNormalization.mergeExecutableGroups_nil_left_collectFields_eq
       schema variableValues lookupParent
-      (Execution.Value.object (ObjectRef := ObjectRef) groundType) rest
+      (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType) rest
   · have hincludes :
         schema.typeIncludesObjectBool typeCondition groundType = false := by
       simpa [hallow] using hskip
     simp [hincludes]
     exact GroundTypeNormalization.mergeExecutableGroups_nil_left_collectFields_eq
       schema variableValues lookupParent
-      (Execution.Value.object (ObjectRef := ObjectRef) groundType) rest
+      (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType) rest
 
 theorem collectFields_inlineFragment_some_directives_skipped_eq
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (typeCondition : Name)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
@@ -254,12 +254,12 @@ theorem executeSelectionSet_inlineFragment_some_directives_skipped_eq_object
     (Execution.selectionDirectivesAllowBool variableValues directives
       && schema.typeIncludesObjectBool typeCondition groundType) = false ->
       Execution.executeSelectionSet schema resolvers variableValues depth
-          lookupParent (Execution.Value.object (ObjectRef := ObjectRef) groundType)
+          lookupParent (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
           (Selection.inlineFragment (some typeCondition) directives
             selectionSet :: rest)
         =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        lookupParent (Execution.Value.object (ObjectRef := ObjectRef) groundType)
+        lookupParent (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
         rest := by
   intro hskip
   apply executeSelectionSet_eq_of_collectFields_eq
@@ -273,7 +273,7 @@ theorem executeSelectionSet_inlineFragment_some_directives_skipped_eq
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (typeCondition : Name)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :

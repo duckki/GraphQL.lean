@@ -15,7 +15,7 @@ theorem collectFields_flatten_boolCaseWrappers_nonruntime
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (operation : Operation)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (runtimeCase : BoolCase)
     (selectionSetForCase : BoolCase -> List Selection) :
     ∀ boolCases : List BoolCase,
@@ -87,7 +87,7 @@ theorem collectFields_flatten_boolCaseWrappers_split_runtime
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (operation : Operation)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (runtimeCase : BoolCase)
     (selectionSetForCase : BoolCase -> List Selection)
     (before after : List BoolCase) :
@@ -185,7 +185,7 @@ theorem collectFields_flatten_boolCaseWrappers_runtime
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (operation : Operation)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (runtimeCase : BoolCase)
     (selectionSetForCase : BoolCase -> List Selection) :
     runtimeCase ∈
@@ -216,7 +216,7 @@ theorem collectFields_boolCaseBranchesForGround_runtime
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (operation : Operation)
-    (groundType : Name) (source : Execution.Value ObjectRef)
+    (groundType : Name) (source : Execution.ResolverValue ObjectRef)
     (runtimeCase : BoolCase)
     (selectionSet : List Selection) :
     runtimeCase ∈
@@ -247,7 +247,7 @@ theorem executeSelectionSet_boolCaseBranchesForGround_runtime
     (variableValues : Execution.VariableValues)
       (operation : Operation)
       (depth : Nat)
-      (groundType : Name) (source : Execution.Value ObjectRef)
+      (groundType : Name) (source : Execution.ResolverValue ObjectRef)
     (runtimeCase : BoolCase)
     (selectionSet : List Selection) :
     runtimeCase ∈

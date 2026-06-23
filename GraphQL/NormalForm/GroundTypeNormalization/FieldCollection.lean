@@ -143,7 +143,7 @@ theorem typeIncludesObjectBool_eq_of_objectTypeNameBool_true_for_collection
       | inputObject inputObjectType => simp [hlookup] at hobject
 
 theorem doesFragmentTypeApplyBool_eq_typesOverlapBool_of_object_parent_source
-    (schema : Schema) {parentType typeCondition : Name} {source : Execution.Value ObjectRef} :
+    (schema : Schema) {parentType typeCondition : Name} {source : Execution.ResolverValue ObjectRef} :
     objectTypeNameBool schema parentType = true ->
       (∃ runtimeType ref,
         source = .object runtimeType ref
@@ -667,14 +667,14 @@ theorem withoutExecutableGroupsWithResponseName_namesNodup
 theorem collectFields_nil
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef) :
+    (source : Execution.ResolverValue ObjectRef) :
     Execution.collectFields schema variableValues parentType source [] = [] := by
   rfl
 
 theorem collectFields_cons
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selection : Selection) (rest : List Selection) :
     Execution.collectFields schema variableValues parentType source
       (selection :: rest)
@@ -687,7 +687,7 @@ theorem collectFields_cons
 theorem collectFields_field_noDirectives
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (selectionSet rest : List Selection) :
     Execution.collectFields schema variableValues parentType source
@@ -707,7 +707,7 @@ theorem collectFields_field_noDirectives
 theorem collectFields_inlineFragment_none_directiveFree
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet rest : List Selection) :
     Execution.collectFields schema variableValues parentType source
       (Selection.inlineFragment none [] selectionSet :: rest)
@@ -720,7 +720,7 @@ theorem collectFields_inlineFragment_none_directiveFree
 theorem collectFields_inlineFragment_some_directiveFree_apply
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType typeCondition : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet rest : List Selection) :
     Execution.doesFragmentTypeApplyBool schema parentType source typeCondition = true ->
       Execution.collectFields schema variableValues parentType source
@@ -736,7 +736,7 @@ theorem collectFields_inlineFragment_some_directiveFree_apply
 theorem collectFields_inlineFragment_some_directiveFree_skip
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType typeCondition : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet rest : List Selection) :
     Execution.doesFragmentTypeApplyBool schema parentType source typeCondition = false ->
       Execution.collectFields schema variableValues parentType source
@@ -752,7 +752,7 @@ mutual
   theorem collectSelection_wellFormed
       (schema : Schema) (variableValues : Execution.VariableValues)
       (parentType : Name)
-      (source : Execution.Value ObjectRef)
+      (source : Execution.ResolverValue ObjectRef)
       (selection : Selection) :
       executableGroupsWellFormed
         (Execution.collectSelection schema variableValues parentType source
@@ -834,7 +834,7 @@ mutual
   theorem collectFields_wellFormed
       (schema : Schema) (variableValues : Execution.VariableValues)
       (parentType : Name)
-      (source : Execution.Value ObjectRef)
+      (source : Execution.ResolverValue ObjectRef)
       (selectionSet : List Selection) :
       executableGroupsWellFormed
         (Execution.collectFields schema variableValues parentType source
@@ -857,7 +857,7 @@ end
 theorem collectFields_inlineFragment_none_directiveFree_flatten
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet rest : List Selection) :
     Execution.collectFields schema variableValues parentType source
       (Selection.inlineFragment none [] selectionSet :: rest)
@@ -870,7 +870,7 @@ theorem collectFields_inlineFragment_none_directiveFree_flatten
 theorem collectFields_inlineFragment_some_directiveFree_apply_flatten
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType typeCondition : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet rest : List Selection) :
     Execution.doesFragmentTypeApplyBool schema parentType source typeCondition =
       true ->
@@ -887,7 +887,7 @@ theorem collectFields_inlineFragment_some_directiveFree_apply_flatten
 theorem collectFields_responseName_not_mem_of_responseNameFree
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (responseName : Name) :
     objectTypeNameBool schema parentType = true ->
       (∃ runtimeType ref,
@@ -1041,7 +1041,7 @@ theorem collectFields_responseName_not_mem_of_responseNameFree
 theorem collectFields_field_noDirectives_cons_of_responseName_not_mem
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (selectionSet rest : List Selection) :
     responseName ∉
@@ -1073,7 +1073,7 @@ theorem collectFields_field_noDirectives_cons_of_responseName_not_mem
 theorem collectFields_field_head_exists
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (selectionSet rest : List Selection) :
     ∃ sourceFields sourceRest,
@@ -1108,7 +1108,7 @@ theorem collectFields_field_head_exists
 theorem collectFields_withoutFieldsWithResponseName_directiveFree
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (responseName : Name) :
     objectTypeNameBool schema parentType = true ->
       (∃ runtimeType ref,
@@ -1275,7 +1275,7 @@ theorem collectFields_withoutFieldsWithResponseName_directiveFree
 theorem collectFields_withoutFieldsWithResponseName_eq_sourceRest_of_cons
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (responseName : Name) (fields : List Execution.ExecutableField)
     (sourceRest : List (Name × List Execution.ExecutableField))
     (selectionSet : List Selection) :
@@ -1310,7 +1310,7 @@ theorem collectFields_withoutFieldsWithResponseName_eq_sourceRest_of_cons
 theorem collectFields_withoutFieldsWithResponseName_fieldHead_rest_eq_sourceRest
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections rest : List Selection)
     (sourceFields : List Execution.ExecutableField)
@@ -1371,7 +1371,7 @@ theorem mergeSelectionSets_append
 theorem collectFields_validFieldsWithResponseName_responseSelection
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (responseName : Name) (selectionSet : List Selection) :
     objectTypeNameBool schema parentType = true ->
       (∃ runtimeType ref,
@@ -1519,7 +1519,7 @@ theorem collectFields_validFieldsWithResponseName_responseSelection
 theorem mergeExecutableGroups_nil_left_collectFields
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet : List Selection) :
     executableGroupNamesNodup
       (Execution.mergeExecutableGroups []
@@ -1532,7 +1532,7 @@ theorem mergeExecutableGroups_nil_left_collectFields
 theorem mergeExecutableGroups_nil_left_collectFields_eq
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet : List Selection) :
     Execution.mergeExecutableGroups []
       (Execution.collectFields schema variableValues parentType source
@@ -1548,7 +1548,7 @@ theorem mergeExecutableGroups_nil_left_collectFields_eq
 theorem collectFields_inlineFragment_some_directiveFree_skip_eq
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType typeCondition : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet rest : List Selection) :
     Execution.doesFragmentTypeApplyBool schema parentType source typeCondition = false ->
       Execution.collectFields schema variableValues parentType source

@@ -23,14 +23,14 @@ theorem mergeExecutableGroups_append
 theorem collectSubfields_nil
     (schema : Schema) (variableValues : VariableValues)
     (objectType : Name)
-    (objectValue : Value ObjectRef) :
+    (objectValue : ResolverValue ObjectRef) :
     collectSubfields schema variableValues objectType objectValue [] = [] := by
   rfl
 
 theorem collectSubfields_cons
     (schema : Schema) (variableValues : VariableValues)
     (objectType : Name)
-    (objectValue : Value ObjectRef)
+    (objectValue : ResolverValue ObjectRef)
     (field : ExecutableField) (rest : List ExecutableField) :
     collectSubfields schema variableValues objectType objectValue
         (field :: rest)
@@ -46,7 +46,7 @@ theorem executeCollectedFields_cons_eq_of_parts
     (schema : Schema)
     (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
-    (depth : Nat) (source : Value ObjectRef)
+    (depth : Nat) (source : ResolverValue ObjectRef)
     (leftHead rightHead : Name × List ExecutableField)
     (leftTail rightTail : List (Name × List ExecutableField)) :
     executeField schema resolvers variableValues depth source
@@ -76,7 +76,7 @@ theorem executeSelectionSet_eq_of_collectFields_head_parts
     (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
     (depth : Nat) (parentType : Name)
-    (source : Value ObjectRef)
+    (source : ResolverValue ObjectRef)
     (left right : List Selection)
     (leftGroup rightGroup : Name × List ExecutableField)
     (leftRest rightRest : List (Name × List ExecutableField)) :
@@ -110,7 +110,7 @@ theorem executeField_same_head_eq_of_completeValue
     (schema : Schema)
     (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
-    (depth : Nat) (source : Value ObjectRef)
+    (depth : Nat) (source : ResolverValue ObjectRef)
     (responseName parentType fieldName : Name) (arguments : List Argument)
     (leftSelectionSet rightSelectionSet : List Selection)
     (leftFields rightFields : List ExecutableField) :
@@ -132,28 +132,45 @@ theorem executeField_same_head_eq_of_completeValue
       }
     let resolved :=
       resolvers.resolve parentType fieldName arguments source
-    let childType :=
-      (schema.fieldReturnType? parentType fieldName).getD fieldName
-    completeValue schema resolvers variableValues depth childType
-      (leftField :: leftFields) resolved
-      =
-    completeValue schema resolvers variableValues depth childType
-      (rightField :: rightFields) resolved ->
+    let fieldDefinition? := schema.lookupField parentType fieldName
+    (match fieldDefinition?, resolved with
+    | some fieldDefinition, some value =>
+        completeValue schema resolvers variableValues depth
+          fieldDefinition.outputType (leftField :: leftFields) value
+          =
+        completeValue schema resolvers variableValues depth
+          fieldDefinition.outputType (rightField :: rightFields) value
+    | _, _ => True) ->
       executeField schema resolvers variableValues (depth + 1)
         source responseName (leftField :: leftFields)
       =
       executeField schema resolvers variableValues (depth + 1)
         source responseName (rightField :: rightFields) := by
-  intro leftField rightField resolved childType hcomplete
-  simp [executeField, leftField, rightField, resolved, childType,
-    hcomplete]
+  intro leftField rightField resolved fieldDefinition? hcomplete
+  simp only [executeField, leftField, rightField]
+  cases hlookup : schema.lookupField parentType fieldName with
+  | none =>
+      simp
+  | some fieldDefinition =>
+      cases hresolved :
+          resolvers.resolve parentType fieldName arguments source with
+      | none =>
+          simp
+      | some value =>
+          have hcomplete' :
+              completeValue schema resolvers variableValues depth
+                fieldDefinition.outputType (leftField :: leftFields) value =
+              completeValue schema resolvers variableValues depth
+                fieldDefinition.outputType (rightField :: rightFields) value := by
+            simpa [fieldDefinition?, resolved, hlookup, hresolved] using hcomplete
+          simp [singleFieldResult, leftField, rightField, hcomplete']
 
 theorem executeSelectionSet_field_head_same_group_eq_of_completeValue
     (schema : Schema)
     (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
     (fieldDepth : Nat) (parentType : Name)
-    (source : Value ObjectRef)
+    (source : ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (leftSelectionSet rightSelectionSet left right : List Selection)
     (leftFields rightFields : List ExecutableField)
@@ -180,15 +197,15 @@ theorem executeSelectionSet_field_head_same_group_eq_of_completeValue
     collectFields schema variableValues parentType source right
       =
     (responseName, rightField :: rightFields) :: rightRest ->
-    completeValue schema resolvers variableValues fieldDepth
-      ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-      (leftField :: leftFields)
-      (resolvers.resolve parentType fieldName arguments source)
-      =
-    completeValue schema resolvers variableValues fieldDepth
-      ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-      (rightField :: rightFields)
-      (resolvers.resolve parentType fieldName arguments source) ->
+    (match schema.lookupField parentType fieldName,
+        resolvers.resolve parentType fieldName arguments source with
+    | some fieldDefinition, some value =>
+        completeValue schema resolvers variableValues fieldDepth
+          fieldDefinition.outputType (leftField :: leftFields) value
+          =
+        completeValue schema resolvers variableValues fieldDepth
+          fieldDefinition.outputType (rightField :: rightFields) value
+    | _, _ => True) ->
     executeCollectedFields schema resolvers variableValues
       (fieldDepth + 1) source leftRest
       =

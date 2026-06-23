@@ -4,17 +4,17 @@ namespace GraphQL
 namespace Tests
 namespace Execution
 
-def genericUnitObject : GraphQL.Execution.Value :=
+def genericUnitObject : GraphQL.Execution.ResolverValue :=
   .object "Query"
 
 theorem genericUnitObjectSmoke :
     genericUnitObject =
-      GraphQL.Execution.Value.object "Query" := by
+      GraphQL.Execution.ResolverValue.object "Query" := by
   rfl
 
 mutual
   def responseEqBool :
-      GraphQL.Execution.Response -> GraphQL.Execution.Response -> Bool
+      GraphQL.Execution.ResponseValue -> GraphQL.Execution.ResponseValue -> Bool
     | .null, .null => true
     | .scalar left, .scalar right => left == right
     | .object left, .object right => responseFieldsEqBool left right
@@ -22,15 +22,15 @@ mutual
     | _, _ => false
 
   def responseListEqBool :
-      List GraphQL.Execution.Response -> List GraphQL.Execution.Response -> Bool
+      List GraphQL.Execution.ResponseValue -> List GraphQL.Execution.ResponseValue -> Bool
     | [], [] => true
     | left :: lefts, right :: rights =>
         responseEqBool left right && responseListEqBool lefts rights
     | _, _ => false
 
   def responseFieldsEqBool :
-      List (Name × GraphQL.Execution.Response) ->
-        List (Name × GraphQL.Execution.Response) -> Bool
+      List (Name × GraphQL.Execution.ResponseValue) ->
+        List (Name × GraphQL.Execution.ResponseValue) -> Bool
     | [], [] => true
     | (leftName, leftValue) :: lefts, (rightName, rightValue) :: rights =>
         (leftName == rightName)
@@ -42,10 +42,18 @@ end
 def testStringFieldDefinition (name : Name) : FieldDefinition :=
   { name := name, outputType := .named "String", arguments := [] }
 
+def testNonNullStringFieldDefinition (name : Name) : FieldDefinition :=
+  { name := name, outputType := .nonNull (.named "String"), arguments := [] }
+
 def testObjectFieldDefinition
     (name typeName : Name) (arguments : List InputValueDefinition := []) :
     FieldDefinition :=
   { name := name, outputType := .named typeName, arguments := arguments }
+
+def testNonNullObjectFieldDefinition
+    (name typeName : Name) (arguments : List InputValueDefinition := []) :
+    FieldDefinition :=
+  { name := name, outputType := .nonNull (.named typeName), arguments := arguments }
 
 def testEpisodeArgumentDefinition : InputValueDefinition :=
   { name := "episode", inputType := .named "Episode" }
@@ -80,41 +88,133 @@ def sampleHeroQuery : Operation :=
 
 def sampleResolvers : GraphQL.Execution.Resolvers :=
   { resolve := fun parentType fieldName _arguments _source =>
-      match parentType, fieldName with
-      | "Query", "hero" => .object "Character"
-      | "Character", "name" => .scalar "Leia"
-      | _, _ => .null }
+      some <|
+        match parentType, fieldName with
+        | "Query", "hero" => .object "Character"
+        | "Character", "name" => .scalar "Leia"
+        | _, _ => .null }
 
 theorem executeHeroQuerySmoke :
     responseEqBool
         (GraphQL.Execution.executeQuery sampleSchema sampleResolvers []
           sampleHeroQuery
-          (GraphQL.Execution.Value.object "Query"))
+          (GraphQL.Execution.ResolverValue.object "Query")).data
       (.object [("mainHero", .object [("name", .scalar "Leia")])]) = true := by
+  native_decide
+
+def sampleErrorResolvers : GraphQL.Execution.Resolvers :=
+  { resolve := fun parentType fieldName _arguments _source =>
+      match parentType, fieldName with
+      | "Query", "hero" => some (.object "Character")
+      | "Character", "name" => none
+      | _, _ => some .null }
+
+theorem executeHeroQueryErrorCountSmoke :
+    let response :=
+      GraphQL.Execution.executeQuery sampleSchema sampleErrorResolvers []
+        sampleHeroQuery
+        (GraphQL.Execution.ResolverValue.object "Query")
+    response.errors = 1
+      ∧ responseEqBool response.data
+        (.object [("mainHero", .object [("name", .null)])]) = true := by
+  native_decide
+
+def nestedNonNullSchema : Schema :=
+  { queryType := "Query"
+    types :=
+      [ .object
+          { name := "Query"
+            fields :=
+              [ testObjectFieldDefinition "hero" "Character" ]
+            interfaces := [] }
+      , .object
+          { name := "Character"
+            fields :=
+              [ testNonNullStringFieldDefinition "name" ]
+            interfaces := [] } ] }
+
+def rootNonNullSchema : Schema :=
+  { queryType := "Query"
+    types :=
+      [ .object
+          { name := "Query"
+            fields :=
+              [ testNonNullObjectFieldDefinition "hero" "Character" ]
+            interfaces := [] }
+      , .object
+          { name := "Character"
+            fields :=
+              [ testNonNullStringFieldDefinition "name" ]
+            interfaces := [] } ] }
+
+def nonNullNameErrorResolvers : GraphQL.Execution.Resolvers :=
+  { resolve := fun parentType fieldName _arguments _source =>
+      match parentType, fieldName with
+      | "Query", "hero" => some (.object "Character")
+      | "Character", "name" => none
+      | _, _ => some .null }
+
+def nonNullNameNullResolvers : GraphQL.Execution.Resolvers :=
+  { resolve := fun parentType fieldName _arguments _source =>
+      match parentType, fieldName with
+      | "Query", "hero" => some (.object "Character")
+      | "Character", "name" => some .null
+      | _, _ => some .null }
+
+theorem executeNestedNonNullBubblesToNullableParentSmoke :
+    let response :=
+      GraphQL.Execution.executeQuery nestedNonNullSchema
+        nonNullNameErrorResolvers [] sampleHeroQuery
+        (GraphQL.Execution.ResolverValue.object "Query")
+    response.errors = 1
+      ∧ responseEqBool response.data
+        (.object [("mainHero", .null)]) = true := by
+  native_decide
+
+theorem executeNestedNonNullBubblesToRootSmoke :
+    let response :=
+      GraphQL.Execution.executeQuery rootNonNullSchema
+        nonNullNameErrorResolvers [] sampleHeroQuery
+        (GraphQL.Execution.ResolverValue.object "Query")
+    response.errors = 1
+      ∧ responseEqBool response.data .null = true := by
+  native_decide
+
+theorem executeExplicitNullForNonNullFieldCountsErrorSmoke :
+    let response :=
+      GraphQL.Execution.executeQuery nestedNonNullSchema
+        nonNullNameNullResolvers [] sampleHeroQuery
+        (GraphQL.Execution.ResolverValue.object "Query")
+    response.errors = 1
+      ∧ responseEqBool response.data
+        (.object [("mainHero", .null)]) = true := by
   native_decide
 
 theorem collectSubfieldsMatchesGroupedSelections
     (field : GraphQL.Execution.ExecutableField)
     (fields : List GraphQL.Execution.ExecutableField) :
     GraphQL.Execution.collectSubfields sampleSchema [] "Query"
-        (GraphQL.Execution.Value.object (ObjectRef := PUnit) "Query") (field :: fields)
+        (GraphQL.Execution.ResolverValue.object (ObjectRef := PUnit) "Query") (field :: fields)
       =
         GraphQL.Execution.mergeExecutableGroups
           (GraphQL.Execution.collectFields sampleSchema [] "Query"
-            (GraphQL.Execution.Value.object (ObjectRef := PUnit) "Query") field.selectionSet)
+            (GraphQL.Execution.ResolverValue.object (ObjectRef := PUnit) "Query") field.selectionSet)
           (GraphQL.Execution.collectSubfields sampleSchema [] "Query"
-            (GraphQL.Execution.Value.object (ObjectRef := PUnit) "Query") fields) := by
+            (GraphQL.Execution.ResolverValue.object (ObjectRef := PUnit) "Query") fields) := by
   rfl
 
 theorem executeRootSelectionSetSmoke :
-    responseEqBool
-      (.object
-        (GraphQL.Execution.executeRootSelectionSet sampleSchema sampleResolvers []
-            (GraphQL.Execution.executeQueryDepthBound sampleHeroQuery)
-            "Query"
-            (GraphQL.Execution.Value.object "Query")
-            sampleHeroQuery.selectionSet))
-      (.object [("mainHero", .object [("name", .scalar "Leia")])]) = true := by
+    (match
+      GraphQL.Execution.executeRootSelectionSet sampleSchema sampleResolvers []
+        (GraphQL.Execution.executeQueryDepthBound sampleHeroQuery)
+        "Query"
+        (GraphQL.Execution.ResolverValue.object "Query")
+        sampleHeroQuery.selectionSet
+    with
+    | .ok (fields, _errors) =>
+        responseEqBool (.object fields)
+          (.object [("mainHero", .object [("name", .scalar "Leia")])])
+    | .error _errors => false) = true := by
   native_decide
 
 end Execution

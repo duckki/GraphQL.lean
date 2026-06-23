@@ -15,7 +15,7 @@ variable {ObjectRef : Type}
 theorem collectFields_wrapWithBoolCase_empty
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef) :
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef) :
     ∀ boolCase,
       Execution.collectFields schema variableValues parentType source
           (wrapWithBoolCase boolCase [])
@@ -40,7 +40,7 @@ theorem collectFields_wrapWithBoolCase_empty
 theorem collectFields_completeRootBranch_eq_wrapped
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (boolCase : BoolCase) (selectionSet : List Selection) :
     Execution.collectFields schema variableValues parentType source
         (match selectionSet with
@@ -61,7 +61,7 @@ theorem collectFields_completeNormalizeRootSelectionSet_eq_wrapped
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (variables : List BoolVar)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (selectionSet : List Selection) :
     Execution.collectFields schema variableValues parentType source
         (completeNormalizeRootSelectionSet schema variables parentType
@@ -118,7 +118,7 @@ theorem executeSelectionSet_completeNormalizeRootSelectionSet_runtime
     (variableValues : Execution.VariableValues)
     (operation : Operation)
     (depth : Nat) (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (runtimeCase : BoolCase) (selectionSet : List Selection) :
     runtimeCase ∈ allBoolCases (operationBoolVars operation) ->
     variableValuesAgreeWithCase variableValues runtimeCase

@@ -721,4 +721,17 @@ def isCorrectType (value : ConstInputValue)
 
 end ConstInputValue
 
+namespace TypeRef
+
+-- Boolean counterpart to `Schema.isCompositeType` for a type reference's underlying
+-- named type.
+def isCompositeBool (typeRef : TypeRef) (schema : Schema) : Bool :=
+  match schema.lookupType typeRef.namedType with
+  | some (.object _objectType) => true
+  | some (.interface _interfaceType) => true
+  | some (.union _unionType) => true
+  | _ => false
+
+end TypeRef
+
 end GraphQL

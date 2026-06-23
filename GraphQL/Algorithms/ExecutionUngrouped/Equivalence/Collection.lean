@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.Validation
 import GraphQL.NormalForm.GroundTypeNormalization.Validity.Support.FieldHeads
 import GraphQL.NormalForm.Shared.LookupValidity
 import GraphQL.NormalForm.Shared.SemanticReadiness
+import GraphQL.Execution.Data
 
 namespace GraphQL
 
@@ -217,7 +218,7 @@ theorem collectedExecutableFields_merge_group_duplicate_around_disjoint
 theorem executableFieldSelections_collectedExecutableFields_collectFields_duplicate_around_disjoint
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (first later : ExecutableField) (middle : List Selection) :
     later.responseName = first.responseName ->
     first.responseName ∉
@@ -300,7 +301,7 @@ theorem executableFieldSelections_collectedExecutableFields_collectFields_duplic
 theorem executableFieldSelections_collectedExecutableFields_collectFields_group_duplicate_around_disjoint
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (prefixFields : List ExecutableField)
     (later : ExecutableField) (middle : List Selection) :
     prefixFields ≠ [] ->
@@ -415,7 +416,7 @@ theorem executableFieldSelections_collectedExecutableFields_collectFields_group_
 theorem collectFields_executableFieldSelections_collectedExecutableFields
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField)) :
     PairKeysNodup groups ->
     CollectedGroupsFieldsNonempty groups ->
@@ -481,7 +482,7 @@ theorem collectFields_executableFieldSelections_collectedExecutableFields
 theorem collectFields_executableFieldSelections_collectedExecutableFields_collectFields
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection) :
     GraphQL.Execution.collectFields schema variableValues parentType source
       (executableFieldSelections
@@ -506,7 +507,7 @@ theorem collectFields_executableFieldSelections_collectedExecutableFields_collec
 theorem collectedExecutableFields_collectFields_executableFieldSelections_length
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (fields : List ExecutableField) :
     (collectedExecutableFields
       (GraphQL.Execution.collectFields schema variableValues parentType source
@@ -541,7 +542,7 @@ theorem specExecuteRootSelectionSet_executableFieldSelections_collectedExecutabl
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField)) :
     PairKeysNodup groups ->
     CollectedGroupsFieldsNonempty groups ->
@@ -562,7 +563,7 @@ theorem specExecuteRootSelectionSet_executableFieldSelections_collectedExecutabl
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection) :
     GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
       depth parentType source
@@ -580,7 +581,7 @@ theorem executeRootSelectionSet_eq_spec_of_flattened_collectFields_eq
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (hflat :
       executeRootSelectionSet schema resolvers variableValues depth parentType
@@ -1115,7 +1116,7 @@ mutual
       (variableDefinitions : List VariableDefinition)
       (variableValues : VariableValues)
       (collectParent validParent : Name)
-      (source : Value ObjectIdentity)
+      (source : ResolverValue ObjectIdentity)
       (selection : Selection) :
       Validation.selectionValid schema variableDefinitions validParent
         selection ->
@@ -1237,7 +1238,7 @@ mutual
       (variableDefinitions : List VariableDefinition)
       (variableValues : VariableValues)
       (collectParent validParent : Name)
-      (source : Value ObjectIdentity)
+      (source : ResolverValue ObjectIdentity)
       (selectionSet : List Selection) :
       Validation.selectionSetValid schema variableDefinitions validParent
         selectionSet ->
@@ -3548,7 +3549,7 @@ mutual
       (variableDefinitions : List VariableDefinition)
       (variableValues : VariableValues)
       (collectParent validParent : Name)
-      (source : Value ObjectIdentity)
+      (source : ResolverValue ObjectIdentity)
       (selection : Selection) :
       Validation.selectionValid schema variableDefinitions validParent
         selection ->
@@ -3651,7 +3652,7 @@ mutual
       (variableDefinitions : List VariableDefinition)
       (variableValues : VariableValues)
       (collectParent validParent : Name)
-      (source : Value ObjectIdentity)
+      (source : ResolverValue ObjectIdentity)
       (selectionSet : List Selection) :
       Validation.selectionSetValid schema variableDefinitions validParent
         selectionSet ->
@@ -3858,7 +3859,7 @@ end
 
 def CollectedGroupsResolveStable
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity)
+    (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField)) : Prop :=
   ∀ responseName fields,
     (responseName, fields) ∈ groups ->
@@ -3866,7 +3867,7 @@ def CollectedGroupsResolveStable
 
 theorem CollectedGroupsResolveStable.group
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity)
+    (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (fields : List ExecutableField) :
     CollectedGroupsResolveStable resolvers source groups ->
@@ -3877,7 +3878,7 @@ theorem CollectedGroupsResolveStable.group
 
 theorem CollectedGroupsResolveStable.tail
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity)
+    (source : ResolverValue ObjectIdentity)
     (group : Name × List ExecutableField)
     (groups : List (Name × List ExecutableField)) :
     CollectedGroupsResolveStable resolvers source (group :: groups) ->
@@ -3978,6 +3979,14 @@ structure ExecutionCollectedFieldInvariant
       (GraphQL.Execution.collectFields state.window.schema
         state.window.variableValues state.window.parentType state.window.source
         state.window.selectionSet)
+
+def CollectedGroupsFieldLookupValid
+    (schema : Schema) (parentType : Name)
+    (groups : List (Name × List ExecutableField)) : Prop :=
+  ∀ responseName field fields,
+    (responseName, field :: fields) ∈ groups ->
+      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
+        some fieldDefinition
 
 mutual
   theorem inputValue_structuralEquivalent_refl :
@@ -4332,7 +4341,7 @@ theorem collectFields_fieldCompatible_of_selectionSetValid_scopedCompatible
     (variableDefinitions : List VariableDefinition)
     (variableValues : VariableValues)
     (collectParent validParent : Name)
-    (source : Value ObjectIdentity)
+    (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection) :
     Validation.selectionSetValid schema variableDefinitions validParent
       selectionSet ->
@@ -4358,7 +4367,7 @@ theorem collectFields_fieldCompatible_of_canMerge_runtimeScoped
     (schema : Schema)
     (variableValues : VariableValues)
     (collectParent validParent runtimeType : Name)
-    (source : Value ObjectIdentity)
+    (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection) :
     FieldMerge.fieldsInSetCanMerge schema validParent selectionSet ->
     ExecutableFieldsRuntimeScopedBy schema runtimeType
@@ -4460,7 +4469,7 @@ theorem CollectedGroupsValidationMergeCompatible.fieldCompatible
 
 theorem ExecutableFieldsMergeCompatible.resolveStable
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity) (fields : List ExecutableField) :
+    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField) :
     ExecutableFieldsMergeCompatible fields ->
       ExecutableFieldsResolveStable resolvers source fields := by
   intro hcompatible first later hfirst hlater hresponse
@@ -4470,7 +4479,7 @@ theorem ExecutableFieldsMergeCompatible.resolveStable
 
 theorem ExecutableFieldsSameParentValidationMergeCompatible.resolveStable
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity) (fields : List ExecutableField) :
+    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField) :
     ResolversRespectArgumentEquivalence resolvers source ->
     ExecutableFieldsSameResponseParent fields ->
     ExecutableFieldsSameParentValidationMergeCompatible fields ->
@@ -4485,7 +4494,7 @@ theorem ExecutableFieldsSameParentValidationMergeCompatible.resolveStable
 
 theorem ExecutableFieldsFieldValidationMergeCompatible.resolveStable
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity) (fields : List ExecutableField) :
+    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField) :
     ResolversRespectFieldAndArgumentEquivalence resolvers source ->
     ExecutableFieldsFieldValidationMergeCompatible fields ->
       ExecutableFieldsResolveStable resolvers source fields := by
@@ -4498,7 +4507,7 @@ theorem ExecutableFieldsFieldValidationMergeCompatible.resolveStable
 
 theorem ExecutableFieldsFieldValidationMergeCompatible.resolveStableValid
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity) (fields : List ExecutableField) :
+    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField) :
     ResolversRespectValidFieldAndArgumentEquivalence resolvers source ->
     ExecutableFieldsFieldValidationMergeCompatible fields ->
     ExecutableFieldsArgumentsNodup fields ->
@@ -4513,7 +4522,7 @@ theorem ExecutableFieldsFieldValidationMergeCompatible.resolveStableValid
 
 theorem CollectedGroupsValidationMergeCompatible.resolveStable
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity)
+    (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField)) :
     ResolversRespectArgumentEquivalence resolvers source ->
     CollectedGroupsSameResponseParent groups ->
@@ -4528,7 +4537,7 @@ theorem CollectedGroupsValidationMergeCompatible.resolveStable
 
 theorem CollectedGroupsFieldValidationMergeCompatible.resolveStable
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity)
+    (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField)) :
     ResolversRespectFieldAndArgumentEquivalence resolvers source ->
     CollectedGroupsFieldValidationMergeCompatible groups ->
@@ -4540,7 +4549,7 @@ theorem CollectedGroupsFieldValidationMergeCompatible.resolveStable
 
 theorem CollectedGroupsFieldValidationMergeCompatible.resolveStableValid
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity)
+    (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField)) :
     ResolversRespectValidFieldAndArgumentEquivalence resolvers source ->
     CollectedGroupsFieldValidationMergeCompatible groups ->

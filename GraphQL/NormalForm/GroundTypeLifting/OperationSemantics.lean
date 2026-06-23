@@ -19,7 +19,7 @@ variable {ObjectRef : Type}
 open GroundTypeNormalization
 
 theorem rootSourceAppliesBool_groundLiftOperation
-    (schema : Schema) (operation : Operation) (source : Execution.Value ObjectRef) :
+    (schema : Schema) (operation : Operation) (source : Execution.ResolverValue ObjectRef) :
     Execution.rootSourceAppliesBool schema
         (groundLiftOperation schema operation) source =
       Execution.rootSourceAppliesBool schema operation source := by
@@ -30,9 +30,9 @@ theorem executeQueryAtDepth_groundLiftOperation_eq_of_selectionSet
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (operation : Operation) (depth : Nat)
-    (source : Execution.Value ObjectRef) :
+    (source : Execution.ResolverValue ObjectRef) :
     (∀ runtimeType ref,
-      source = Execution.Value.object runtimeType ref ->
+      source = Execution.ResolverValue.object runtimeType ref ->
       schema.typeIncludesObjectBool operation.rootType runtimeType = true ->
         Execution.executeSelectionSet schema resolvers variableValues depth
           operation.rootType source
@@ -56,7 +56,18 @@ theorem executeQueryAtDepth_groundLiftOperation_eq_of_selectionSet
   · rcases rootSourceAppliesBool_true_object schema operation source hroot with
       ⟨runtimeType, ref, hsource, hinclude⟩
     simp [groundLiftOperation]
-    exact hselection runtimeType ref hsource hinclude
+    exact congrArg
+      (fun (completed : Execution.Result (List (Name × Execution.ResponseValue))) =>
+        match completed with
+        | Except.error errors =>
+            ({ data := Execution.ResponseValue.null, errors := errors } :
+              Execution.Response)
+        | Except.ok (fields, errors) =>
+            ({ data := Execution.ResponseValue.object fields, errors := errors } :
+              Execution.Response))
+      (by
+        simpa [Execution.executeSelectionSet] using
+          hselection runtimeType ref hsource hinclude)
 
 theorem executeOperationAtDepth_groundLiftOperation_eq_of_selectionSet
     (schema : Schema) (store : DataModel.Store)
@@ -101,12 +112,12 @@ theorem executeOperationAtDepth_groundLiftOperation_eq_of_scoped
         (ref : Option DataModel.ObjectRef := none) ->
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues depth execParent
-            (Execution.Value.object runtimeType ref)
+            (Execution.ResolverValue.object runtimeType ref)
             (groundLiftScopedSelectionSet schema scopedSelections)
           =
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues depth execParent
-            (Execution.Value.object runtimeType ref)
+            (Execution.ResolverValue.object runtimeType ref)
             (eraseScopedSelectionSet scopedSelections)) ->
       DataModel.executeOperationAtDepth schema store variableValues
         (groundLiftOperation schema operation) depth
@@ -172,12 +183,12 @@ theorem executeOperationAtDepth_groundLiftOperation_eq_on_store
         scopedSelections hobject hinclude hfree hready hlookup hmerge
         happlies (ref := ref))
 
-theorem groundLiftOperation_operationsEquivalentOnData
+theorem groundLiftOperation_operationsEquivalent
     (schema : Schema) (operation : Operation) :
     SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
     operationDirectiveFree operation ->
-      DataModel.operationsEquivalentOnData schema operation
+      DataModel.operationsEquivalent schema operation
         (groundLiftOperation schema operation) := by
   intro hschema hvalid hfree store variableValues depth hstore
   exact (executeOperationAtDepth_groundLiftOperation_eq_on_store schema store

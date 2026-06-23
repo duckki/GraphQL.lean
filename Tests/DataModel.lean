@@ -21,11 +21,16 @@ abbrev listEdge (sourceId : ObjectId) (field : FieldAccess)
     (index : Nat) (targetId : ObjectId) (targetType : Name) : ObjectEdge :=
   { sourceId, field, index? := some index, targetId, targetType }
 
-notation "field!" name => field name []
+syntax "field!" str : term
+
+macro_rules
+  | `(field! $name:str) => do
+      let term ← `(field $name [])
+      pure term.raw
 
 mutual
   def valueEqBool :
-      Execution.Value ObjectRef -> Execution.Value ObjectRef -> Bool
+      Execution.ResolverValue ObjectRef -> Execution.ResolverValue ObjectRef -> Bool
     | .null, .null => true
     | .scalar left, .scalar right => left == right
     | .object leftType leftRef, .object rightType rightRef =>
@@ -34,17 +39,24 @@ mutual
     | _, _ => false
 
   def valueListEqBool :
-      List (Execution.Value ObjectRef) ->
-        List (Execution.Value ObjectRef) -> Bool
+      List (Execution.ResolverValue ObjectRef) ->
+        List (Execution.ResolverValue ObjectRef) -> Bool
     | [], [] => true
     | left :: lefts, right :: rights =>
         valueEqBool left right && valueListEqBool lefts rights
     | _, _ => false
 end
 
+def optionValueEqBool :
+    Option (Execution.ResolverValue ObjectRef) ->
+      Option (Execution.ResolverValue ObjectRef) -> Bool
+  | none, none => true
+  | some left, some right => valueEqBool left right
+  | _, _ => false
+
 mutual
   def responseEqBool :
-      Execution.Response -> Execution.Response -> Bool
+      Execution.ResponseValue -> Execution.ResponseValue -> Bool
     | .null, .null => true
     | .scalar left, .scalar right => left == right
     | .object left, .object right => responseFieldsEqBool left right
@@ -52,15 +64,15 @@ mutual
     | _, _ => false
 
   def responseListEqBool :
-      List Execution.Response -> List Execution.Response -> Bool
+      List Execution.ResponseValue -> List Execution.ResponseValue -> Bool
     | [], [] => true
     | left :: lefts, right :: rights =>
         responseEqBool left right && responseListEqBool lefts rights
     | _, _ => false
 
   def responseFieldsEqBool :
-      List (Name × Execution.Response) ->
-        List (Name × Execution.Response) -> Bool
+      List (Name × Execution.ResponseValue) ->
+        List (Name × Execution.ResponseValue) -> Bool
     | [], [] => true
     | (leftName, leftValue) :: lefts, (rightName, rightValue) :: rights =>
         (leftName == rightName)
@@ -218,21 +230,21 @@ def pathSensitiveQuery : Operation :=
       ]
     ] }
 
-def pathSensitiveExpectedResponse : Execution.Response :=
+def pathSensitiveExpectedResponse : Execution.ResponseValue :=
   .object [
     ("hero", .object [("name", .scalar "R2-D2")]),
     ("villain", .object [("name", .scalar "Darth Vader")])
   ]
 
-def pathInsensitiveSpecResponse : Execution.Response :=
+def pathInsensitiveSpecResponse : Execution.ResponseValue :=
   .object [
     ("hero", .object [("name", .scalar "R2-D2")]),
     ("villain", .object [("name", .scalar "R2-D2")])
   ]
 
-def pathSensitiveActualResponse : Execution.Response :=
-  executeOperationAtDepth graphSchema pathSensitiveStore []
-    pathSensitiveQuery 6
+def pathSensitiveActualResponse : Execution.ResponseValue :=
+  (executeOperationAtDepth graphSchema pathSensitiveStore []
+    pathSensitiveQuery 6).data
 
 theorem fieldAccessCanonicalizesArgumentOrder :
     FieldAccess.eqBool heroAccessWithArgsA heroAccessWithArgsB = true := by
@@ -328,24 +340,31 @@ theorem specExecutionMatchesPathSensitiveObjects :
   native_decide
 
 theorem resolverBridgeResolvesHero :
-    valueEqBool
+    optionValueEqBool
       ((graphStore.resolvers graphSchema).resolve "Query" "hero" []
         (.object "Query"))
-      (Execution.Value.object "Character" (some (objectRefOfId 1))) = true := by
+      (some (Execution.ResolverValue.object "Character" (some (objectRefOfId 1)))) = true := by
   native_decide
 
 theorem resolverBridgeRejectsMismatchedRef :
-    valueEqBool
+    optionValueEqBool
       ((pathSensitiveStore.resolvers graphSchema).resolve "Character" "name" []
         (.object "Character" (some (objectRefOfId 0))))
-      .null = true := by
+      none = true := by
   native_decide
 
 theorem resolverBridgeRejectsMissingRef :
-    valueEqBool
+    optionValueEqBool
       ((pathSensitiveStore.resolvers graphSchema).resolve "Character" "name" []
         (.object "Character" (some (objectRefOfId 99))))
-      .null = true := by
+      none = true := by
+  native_decide
+
+theorem resolverBridgeRejectsMissingRuntimeType :
+    optionValueEqBool
+      ((graphStore.resolvers graphSchema).resolve "Query" "hero" []
+        (.object "MissingType"))
+      none = true := by
   native_decide
 
 theorem duplicateHeroEdgeRejected :

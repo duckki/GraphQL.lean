@@ -43,7 +43,7 @@ theorem wrapWithBoolCase_false_head
 theorem collectFields_wrapWithBoolCase_nil
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (selectionSet : List Selection) :
     Execution.collectFields schema variableValues parentType source
         (wrapWithBoolCase [] selectionSet)
@@ -55,7 +55,7 @@ theorem collectFields_wrapWithBoolCase_nil
 theorem collectFields_wrapWithBoolCase_cons_allowed
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (varName : BoolVar) (value : Bool) (rest : BoolCase)
     (selectionSet : List Selection) :
     Execution.selectionDirectivesAllowBool variableValues
@@ -73,7 +73,7 @@ theorem collectFields_wrapWithBoolCase_cons_allowed
 theorem collectFields_wrapWithBoolCase_cons_skipped
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (varName : BoolVar) (value : Bool) (rest : BoolCase)
     (selectionSet : List Selection) :
     Execution.selectionDirectivesAllowBool variableValues
@@ -116,7 +116,7 @@ theorem selectionDirectivesAllowBool_boolCaseBit_of_mismatch
 theorem collectFields_wrapWithBoolCase_cons_mismatch
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (varName : BoolVar) (value : Bool) (rest : BoolCase)
     (selectionSet : List Selection) :
     Execution.inputValueBoolean? variableValues (.variable varName)
@@ -135,7 +135,7 @@ theorem collectFields_wrapWithBoolCase_cons_mismatch
 theorem collectFields_wrapWithBoolCase_of_mismatch_pair
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (selectionSet : List Selection) :
     ∀ boolCase : BoolCase,
       (varName : BoolVar) ->
@@ -177,7 +177,7 @@ theorem collectFields_wrapWithBoolCase_of_mismatch_pair
 theorem collectFields_wrapWithBoolCase_of_agrees
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (selectionSet : List Selection) :
     ∀ boolCase : BoolCase,
       (∀ varName value, (varName, value) ∈ boolCase ->
@@ -216,7 +216,7 @@ theorem collectFields_wrapWithBoolCase_of_agrees
 theorem collectFields_wrapWithBoolCase_of_variableValuesAgree
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (variables : List BoolVar) (boolCase : BoolCase)
     (selectionSet : List Selection) :
     (∀ varName value, (varName, value) ∈ boolCase ->
@@ -239,7 +239,7 @@ theorem collectFields_wrapWithBoolCase_of_variableValuesAgree
 theorem collectFields_wrapWithBoolCase_of_mem_allBoolCases
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (variables : List BoolVar) (boolCase : BoolCase)
     (selectionSet : List Selection) :
     variables.Nodup ->

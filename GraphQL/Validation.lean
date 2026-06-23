@@ -452,7 +452,7 @@ def collectFields (schema : Schema) : Name -> List Selection -> List ScopedField
 -- Spec 5.3.2 `FieldsInSetCanMerge`: captures pairwise response-shape,
 -- same-field/argument checks on overlapping parent types, and recursive merged
 -- subselection checks. It is a proposition rather than a recursive executable
--- function, so it does not need a synthetic depth counter.
+-- function, so it does not need a synthetic fuel counter.
 mutual
   inductive FieldsInSetCanMerge (schema : Schema) :
       Name -> List Selection -> Prop where

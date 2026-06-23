@@ -436,9 +436,12 @@ theorem completeValue_possibleTypeFragments_eq_of_child_object_lt
                 (hrecursive depth runtimeType ref
                   (Nat.lt_succ_self depth) hmem)
             simp [Execution.completeValue, hinclude]
-            simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
-              Execution.collectSubfields, completeValueSelectionSetField]
-              using hbranch
+            exact congrArg
+              (Execution.catchBubbleAsNull Execution.ResponseValue.object)
+              (by
+                simpa [Execution.executeSelectionSet,
+                  Execution.executeRootSelectionSet, Execution.collectSubfields,
+                  completeValueSelectionSetField] using hbranch)
           · have hfalse :
                 schema.typeIncludesObjectBool childType runtimeType = false := by
               cases hmatch :
@@ -448,14 +451,6 @@ theorem completeValue_possibleTypeFragments_eq_of_child_object_lt
             simp [Execution.completeValue, hfalse]
       | list values =>
           simp [Execution.completeValue]
-          intro element helement
-          exact completeValue_possibleTypeFragments_eq_of_child_object_lt
-            schema resolvers variableValues hschema depth childType
-            selectionSet element
-            (by
-                intro childDepth runtimeType ref hlt hmem
-                exact hrecursive childDepth runtimeType ref
-                  (Nat.lt_trans hlt (Nat.lt_succ_self depth)) hmem)
 
 
 

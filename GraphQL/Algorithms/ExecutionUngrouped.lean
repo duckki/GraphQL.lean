@@ -4,11 +4,14 @@ import GraphQL.NormalForm
 /-!
 Alternative GraphQL query execution semantics.
 
-This module keeps the spec execution shape, but visits selections directly instead of
-first constructing the complete collected-fields map. Each field visit calls the
-resolver; implementations may cache that call in practice. When a later field visit
-overlaps an existing response key, completion starts from the previous response slice
-and merges newly visited subfields into it.
+This module is a proof-facing implementation of the same query fragment as
+`GraphQL.Execution`. It preserves the spec-facing response shape, resolver error
+counts, and null bubbling, but visits selections directly instead of first constructing
+the complete collected-fields map. Field visits normally call the resolver; when a
+previous visit has already completed the response position to `null`, later overlapping
+visits reuse that null so the same field error is not counted again. When a later field
+visit overlaps an existing response key, completion starts from the previous response
+slice and merges newly visited subfields into it.
 -/
 namespace GraphQL
 
@@ -17,10 +20,10 @@ namespace ExecutionUngrouped
 
 open GraphQL.Execution
 
-instance : Inhabited Response := ⟨.null⟩
+instance : Inhabited ResponseValue := ⟨.null⟩
 
 def lookupResponseField? (responseName : Name) :
-    List (Name × Response) -> Option Response
+    List (Name × ResponseValue) -> Option ResponseValue
   | [] => none
   | (fieldResponseName, response) :: rest =>
       if fieldResponseName == responseName then
@@ -28,12 +31,12 @@ def lookupResponseField? (responseName : Name) :
       else
         lookupResponseField? responseName rest
 
-def responseObjectField? (responseName : Name) : Response -> Option Response
+def responseObjectField? (responseName : Name) : ResponseValue -> Option ResponseValue
   | .object fields => lookupResponseField? responseName fields
   | _ => none
 
 mutual
-  def mergeResponse (existing incoming : Response) : Response :=
+  def mergeResponse (existing incoming : ResponseValue) : ResponseValue :=
     match existing, incoming with
     | .object existingFields, .object incomingFields =>
         .object (mergeResponseFields existingFields incomingFields)
@@ -42,15 +45,15 @@ mutual
     | _, _ => existing
 
   def mergeResponseFields :
-      List (Name × Response) -> List (Name × Response) -> List (Name × Response)
+      List (Name × ResponseValue) -> List (Name × ResponseValue) -> List (Name × ResponseValue)
     | existingFields, [] => existingFields
     | existingFields, (responseName, incoming) :: rest =>
         mergeResponseFields
           (mergeResponseField responseName incoming existingFields)
           rest
 
-  def mergeResponseField (responseName : Name) (incoming : Response) :
-      List (Name × Response) -> List (Name × Response)
+  def mergeResponseField (responseName : Name) (incoming : ResponseValue) :
+      List (Name × ResponseValue) -> List (Name × ResponseValue)
     | [] => [(responseName, incoming)]
     | (fieldResponseName, existing) :: rest =>
         if fieldResponseName == responseName then
@@ -59,7 +62,7 @@ mutual
           (fieldResponseName, existing) ::
             mergeResponseField responseName incoming rest
 
-  def mergeResponseLists : List Response -> List Response -> List Response
+  def mergeResponseLists : List ResponseValue -> List ResponseValue -> List ResponseValue
     | [], _incomingValues => []
     | existingValues, [] => existingValues
     | existing :: existingRest, incoming :: incomingRest =>
@@ -67,8 +70,8 @@ mutual
           mergeResponseLists existingRest incomingRest
 end
 
-def mergeResponseFieldIntoObject (responseName : Name) (incoming : Response) :
-    Response -> Response
+def mergeResponseFieldIntoObject (responseName : Name) (incoming : ResponseValue) :
+    ResponseValue -> ResponseValue
   | .object fields => .object (mergeResponseField responseName incoming fields)
   | response => response
 
@@ -83,157 +86,268 @@ def executableField (parentType responseName fieldName : Name)
     selectionSet := selectionSet
   }
 
-mutual
-  -- Spec 6.3.1 `ExecuteRootSelectionSet`
-  def executeRootSelectionSet {ObjectRef : Type}
-      (schema : Schema) (resolvers : Resolvers ObjectRef)
-      (variableValues : VariableValues)
-      (depth : Nat) (parentType : Name) (source : Value ObjectRef)
-      (selectionSet: List Selection) : List (Name × Response) :=
-    match
-      visitSubfields schema resolvers variableValues depth parentType source
-        selectionSet (.object [])
-    with
-    | .object fields => fields
-    | _ => []
+abbrev VisitStatus : Type :=
+  Result Unit
 
+def visitOk (errors : Nat := 0) : VisitStatus :=
+  .ok ((), errors)
+
+-- Extract the value from the incoming `Result ResponseValue`, returning `.null` for
+-- errors, which is ignored by `mergeResponse`.
+def resultValueOrNull : Result ResponseValue -> ResponseValue
+  | .error _errors => .null
+  | .ok (value, _errors) => value
+
+-- Extract the status from the incoming `Result ResponseValue`.
+def resultStatus {α : Type} : Result α -> VisitStatus
+  | .error errors => .error errors
+  | .ok (_value, errors) => visitOk errors
+
+def combineVisitStatus (left right : VisitStatus) : VisitStatus :=
+  Result.combine (fun _unit _unit => ()) left right
+
+def catchVisitBubbleAsNull (value : ResponseValue)
+    (status : VisitStatus) : Result ResponseValue :=
+  match status with
+  | .error errors => .ok (.null, errors)
+  | .ok (_unit, errors) => .ok (value, errors)
+
+def reusablePreviousValue? (schema : Schema) :
+    TypeRef -> Option ResponseValue -> Option ResponseValue
+  | _fieldType, none =>
+      none
+  | _fieldType, some .null =>
+      some .null
+  | fieldType, some previous =>
+      if fieldType.isCompositeBool schema then
+        none
+      else
+        some previous
+
+def reuseOrCreateObject? : Option ResponseValue -> Option ResponseValue
+  | none => some (.object [])
+  | some previous@(.object _fields) => some previous
+  | some _ => none
+
+def reuseOrCreateList? : Option ResponseValue -> Option (List ResponseValue)
+  | none => some []
+  | some (.list previousValues) => some previousValues
+  | some _ => none
+
+def mergeResponseFieldResult (responseName : Name)
+    (fieldResult : Result ResponseValue) (output : ResponseValue) :
+    ResponseValue × VisitStatus :=
+  (mergeResponseFieldIntoObject responseName (resultValueOrNull fieldResult)
+    output,
+   resultStatus fieldResult)
+
+mutual
   -- Spec 6.3.2 `CollectFields`/`executeCollectedFields`: visitor over a selection list
   -- without constructing a grouped field map.
   def visitSubfields {ObjectRef : Type}
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues)
-      (depth : Nat) (parentType : Name) (source : Value ObjectRef) :
-      List Selection -> Response -> Response
-    | [], output => output
+      (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef) :
+      List Selection -> ResponseValue -> ResponseValue × VisitStatus
+    | [], output => (output, visitOk)
     | selection :: rest, output =>
-        let output' :=
-          visitSelection schema resolvers variableValues depth parentType source
+        let head :=
+          visitSelection schema resolvers variableValues fuel parentType source
             selection output
-        visitSubfields schema resolvers variableValues depth parentType source
-          rest output'
+        let tail :=
+          visitSubfields schema resolvers variableValues fuel parentType source
+            rest head.fst
+        (tail.fst, combineVisitStatus head.snd tail.snd)
 
   -- Spec 6.3.2 `CollectFields`/`executeCollectedFields` selection step: handles built-in
   -- directives and inline fragments while updating an output object directly.
   def visitSelection {ObjectRef : Type}
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues)
-      (depth : Nat) (parentType : Name) (source : Value ObjectRef) :
-      Selection -> Response -> Response
+      (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef) :
+      Selection -> ResponseValue -> ResponseValue × VisitStatus
     | .field responseName fieldName arguments directives selectionSet, output =>
         if selectionDirectivesAllowBool variableValues directives then
-          match depth with
-          | 0 => output
-          | depth' + 1 =>
+          match fuel with
+          | 0 =>
+              (output, outOfFuel)
+          | fuel' + 1 =>
+              let previous? :=
+                responseObjectField? responseName output
               let field :=
                 executableField parentType responseName fieldName arguments
                   selectionSet
-              let response :=
-                executeField schema resolvers variableValues depth' source output
-                  field
-              mergeResponseFieldIntoObject responseName response output
+              let fieldResult :=
+                executeField schema resolvers variableValues fuel' source
+                  previous? field
+              mergeResponseFieldResult responseName fieldResult output
         else
-          output
+          (output, visitOk)
     | .inlineFragment none directives selectionSet, output =>
         if !selectionDirectivesAllowBool variableValues directives then
-          output
+          (output, visitOk)
         else
-          visitSubfields schema resolvers variableValues depth parentType source
+          visitSubfields schema resolvers variableValues fuel parentType source
             selectionSet output
     | .inlineFragment (some typeCondition) directives selectionSet, output =>
         if !selectionDirectivesAllowBool variableValues directives then
-          output
+          (output, visitOk)
         else if !doesFragmentTypeApplyBool schema parentType source typeCondition then
-          output
+          (output, visitOk)
         else
-          visitSubfields schema resolvers variableValues depth parentType source
+          visitSubfields schema resolvers variableValues fuel parentType source
             selectionSet output
 
-  -- Spec 6.4 `ExecuteField`: completes one field-carried subselection slice.
-  -- Note: This direct visitor calls `ResolveFieldValue` on every field visit; an
-  -- implementation can cache that resolver call while preserving the response-merging
-  -- behavior here.
+  -- Spec 6.4 `ExecuteField`: resolves a field unless the declared return type is
+  -- non-composite and a previous response slice can be reused. Schema lookup misses are
+  -- invalid-operation cases and are modeled as counted execution errors. A previous
+  -- `null` is reused after the field definition is found because it may represent an
+  -- already-counted field error or null bubble.
   def executeField {ObjectRef : Type}
       (schema : Schema) (resolvers : Resolvers ObjectRef)
-      (variableValues : VariableValues) (completionDepth : Nat)
-      (source : Value ObjectRef) (output : Response)
-      (field : ExecutableField) : Response :=
-    let childType :=
-      (schema.fieldReturnType? field.parentType field.fieldName).getD
-        field.fieldName
-    let previous := (responseObjectField? field.responseName output).getD .null
-    let resolved :=
-      resolvers.resolve field.parentType field.fieldName field.arguments source
-    completeValue schema resolvers variableValues completionDepth
-      childType field.selectionSet resolved previous
+      (variableValues : VariableValues) (completionFuel : Nat)
+      (source : ResolverValue ObjectRef) (previous? : Option ResponseValue)
+      (field : ExecutableField) : Result ResponseValue :=
+    match schema.lookupField field.parentType field.fieldName with
+    | none => .error 1
+    | some fieldDefinition =>
+        match reusablePreviousValue? schema fieldDefinition.outputType previous? with
+        | some previous => .ok (previous, 0)
+        | none =>
+            match resolvers.resolve field.parentType field.fieldName
+                field.arguments source with
+            | none =>
+                handleFieldError fieldDefinition.outputType
+            | some resolved =>
+                completeValue schema resolvers variableValues completionFuel
+                  fieldDefinition.outputType field.selectionSet resolved previous?
 
-  -- Spec 6.4.3 `CompleteValue`: partial; ignores declared `fieldType` wrappers and result
-  -- coercion/errors, using the runtime value shape instead.
+  -- Spec 6.4.3 `CompleteValue`: partial; mirrors the spec executor's null/list/non-null
+  -- completion while threading an optional previous response slice for ungrouped
+  -- revisits. Scalar/enum result coercion and error metadata remain abstract.
   def completeValue {ObjectRef : Type}
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) :
-      Nat -> Name -> List Selection -> Value ObjectRef -> Response -> Response
-    | 0, _parentType, _selectionSet, value, _previous => shallowResponse value
-    | _depth + 1, _parentType, _selectionSet, .null, _previous => .null
-    | _depth + 1, _parentType, _selectionSet, .scalar value, _previous => .scalar value
-    | depth + 1, parentType, selectionSet, source@(.object runtimeType _ref),
-        previous =>
+      Nat -> TypeRef -> List Selection -> ResolverValue ObjectRef ->
+        Option ResponseValue -> Result ResponseValue
+    | 0, _fieldType, _selectionSet, _value, _previous? =>
+        outOfFuel
+    | _depth, _fieldType, _selectionSet, _value, some .null =>
+        .ok (.null, 0)
+    | _depth, _fieldType, _selectionSet, _value, some (.scalar _previousValue) =>
+        -- Previous scalar values are reusable for valid non-composite return types, so
+        -- reaching completion with one indicates a response-shape mismatch.
+        .error 1
+    | fuel, .nonNull inner, selectionSet, value, previous? =>
+        nonNullCompletion
+          (completeValue schema resolvers variableValues
+            fuel inner selectionSet value previous?)
+    | _depth + 1, _fieldType, _selectionSet, .null, _previous? =>
+        -- The new `.null` value may be a null bubble from a subfield visit.
+        .ok (.null, 0)
+    | _depth + 1, .named typeName, _selectionSet, .scalar value, previous? =>
+        match previous? with
+        | none =>
+            if (TypeRef.named typeName).isCompositeBool schema then
+              .error 1
+            else
+              .ok (.scalar value, 0)
+        | some _ => .error 1
+    | fuel + 1, .named parentType, selectionSet, source@(.object runtimeType _ref),
+        previous? =>
         if schema.typeIncludesObjectBool parentType runtimeType then
-          let output :=
-            match previous with
-            | .object _fields => previous
-            | _ => .object []
-          visitSubfields schema resolvers variableValues depth runtimeType source
-            selectionSet output
+          match reuseOrCreateObject? previous? with
+          | some output =>
+              let visited :=
+                visitSubfields schema resolvers variableValues fuel runtimeType source
+                  selectionSet output
+              catchVisitBubbleAsNull visited.fst visited.snd
+          | none => .error 1
         else
-          .null
-    | depth + 1, parentType, selectionSet, .list values, previous =>
-        let previousValues :=
-          match previous with
-          | .list previousValues => previousValues
-          | _ => []
-        let completed :=
-          values.foldl
-            (fun (state : List Response × List Response) value =>
-              let previous :=
-                match state.snd with
-                | [] => .null
-                | previous :: _rest => previous
-              let remainingPrevious :=
-                match state.snd with
-                | [] => []
-                | _previous :: rest => rest
-              (completeValue schema resolvers variableValues depth parentType
-                selectionSet value previous :: state.fst, remainingPrevious))
-            ([], previousValues)
-        .list completed.fst.reverse
+          .error 1
+    | fuel + 1, .list inner, selectionSet, .list values, previous? =>
+        match reuseOrCreateList? previous? with
+        | some previousValues =>
+            let completed :=
+              completeValueList schema resolvers variableValues fuel inner
+                selectionSet values previousValues
+            catchBubbleAsNull ResponseValue.list completed
+        | none => .error 1
+    | _depth + 1, .named _typeName, _selectionSet, .list _values, _previous? =>
+        .error 1
+    | _depth + 1, .list _inner, _selectionSet, _value, _previous? =>
+        .error 1
+
+  def completeValueList {ObjectRef : Type}
+      (schema : Schema) (resolvers : Resolvers ObjectRef)
+      (variableValues : VariableValues)
+      (fuel : Nat) (itemType : TypeRef)
+      (selectionSet : List Selection) :
+      List (ResolverValue ObjectRef) -> List ResponseValue ->
+        Result (List ResponseValue)
+    | [], _ :: _ => .error 1
+    | [], [] => .ok ([], 0)
+    | value :: values, previousValues =>
+        let previous? := previousValues.head?
+        let remainingPrevious := previousValues.tail
+        let head :=
+          match previous? with
+          | some .null => .ok (.null, 0)
+          | _ =>
+              completeValue schema resolvers variableValues
+                fuel itemType selectionSet value previous?
+        let tail :=
+          completeValueList schema resolvers variableValues fuel itemType
+            selectionSet values remainingPrevious
+        Result.combine List.cons head tail
 end
+
+-- Spec 6.3.1 `ExecuteRootSelectionSet`
+def executeRootSelectionSet {ObjectRef : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectRef)
+    (variableValues : VariableValues)
+    (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef)
+    (selectionSet: List Selection) : Result (List (Name × ResponseValue)) :=
+  let visited :=
+    visitSubfields schema resolvers variableValues fuel parentType source
+      selectionSet (.object [])
+  match visited.snd with
+  | .error errors => .error errors
+  | .ok (_unit, errors) =>
+      match visited.fst with
+      | .object fields => .ok (fields, errors)
+      | _ => .error (errors + 1)
 
 -- Compatibility wrapper of `executeRootSelectionSet` for proof modules using the older
 -- name.
 def executeSelectionSet {ObjectRef : Type}
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
-    (depth : Nat) (parentType : Name) (source : Value ObjectRef) :
-    List Selection -> List (Name × Response) :=
-  executeRootSelectionSet schema resolvers variableValues depth parentType source
+    (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef) :
+    List Selection -> Result (List (Name × ResponseValue)) :=
+  executeRootSelectionSet schema resolvers variableValues fuel parentType source
 
 -- Spec 6.2.1 `ExecuteQuery`
 def executeQueryAtDepth {ObjectRef : Type}
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectRef) : Response :=
+    (fuel : Nat) (source : ResolverValue ObjectRef) : Response :=
   if rootSourceAppliesBool schema operation source then
-    .object (executeRootSelectionSet schema resolvers variableValues
-      depth operation.rootType source operation.selectionSet)
+    let completed :=
+      executeRootSelectionSet schema resolvers variableValues
+        fuel operation.rootType source operation.selectionSet
+    match completed with
+    | .error errors => { data := .null, errors := errors }
+    | .ok (fields, errors) => { data := .object fields, errors := errors }
   else
-    .object []
+    { data := .null, errors := 1 }
 
 -- Spec 6.2.1 `ExecuteQuery`: Default executable query entry point using the local
--- operation-derived depth bound.
+-- operation-derived fuel bound.
 def executeQuery {ObjectRef : Type}
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
-    (source : Value ObjectRef) : Response :=
+    (source : ResolverValue ObjectRef) : Response :=
   executeQueryAtDepth schema resolvers variableValues operation
     (executeQueryDepthBound operation) source
 
@@ -243,14 +357,14 @@ def ungroupedExecutionPreservesSpecExecution
     (schema : Schema) (operation : Operation) : Prop :=
   SchemaWellFormedness.schemaWellFormed schema ->
   Validation.operationDefinitionValid schema operation ->
-    ∀ store variableValues depth,
+    ∀ (store : GraphQL.DataModel.Store) variableValues fuel,
       store.wellTyped schema ->
       NormalForm.operationBoolVarsComplete operation variableValues ->
         executeQueryAtDepth schema (store.resolvers schema) variableValues
-          operation depth store.rootExecutionValue
+          operation fuel store.rootExecutionValue
           =
-        GraphQL.DataModel.executeOperationAtDepth schema store variableValues
-          operation depth
+        GraphQL.Execution.executeQueryAtDepth schema (store.resolvers schema) variableValues
+          operation fuel store.rootExecutionValue
 
 end ExecutionUngrouped
 end Algorithms

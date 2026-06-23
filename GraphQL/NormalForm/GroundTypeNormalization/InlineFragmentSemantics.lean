@@ -16,7 +16,7 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_noOverlap_
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet rest : List Selection) :
       (∃ runtimeType ref,
         source = .object runtimeType ref
@@ -43,7 +43,7 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_noOverlap_
   subst source
   have happly :
       Execution.doesFragmentTypeApplyBool schema parentType
-        (Execution.Value.object runtimeType ref)
+        (Execution.ResolverValue.object runtimeType ref)
         typeCondition = false :=
     doesFragmentTypeApplyBool_false_of_typesOverlapBool_false_of_source
       schema
@@ -53,7 +53,7 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_noOverlap_
   rw [hrest]
   exact (executeSelectionSet_inlineFragment_some_directiveFree_skip schema
     resolvers variableValues depth parentType typeCondition
-    (Execution.Value.object runtimeType ref)
+    (Execution.ResolverValue.object runtimeType ref)
     selectionSet rest happly).symm
 
 theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_none_case
@@ -61,7 +61,7 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_none_case
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet rest : List Selection) :
     Execution.executeSelectionSet schema resolvers variableValues depth
       parentType source
@@ -88,7 +88,7 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_apply_case
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet rest : List Selection) :
     schema.typesOverlapBool parentType typeCondition = true ->
       Execution.doesFragmentTypeApplyBool schema parentType source
@@ -121,7 +121,7 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_overlap_ca
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet rest : List Selection) :
     objectTypeNameBool schema parentType = true ->
       (∃ runtimeType ref,
@@ -149,7 +149,7 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_overlap_ca
   subst source
   exact normalizeSelectionSet_executeSelectionSet_inlineFragment_some_apply_case
     schema resolvers variableValues depth parentType typeCondition
-    (Execution.Value.object runtimeType ref)
+    (Execution.ResolverValue.object runtimeType ref)
     selectionSet rest hoverlap
     (doesFragmentTypeApplyBool_true_of_typesOverlapBool_true_of_object_source
       schema hobject

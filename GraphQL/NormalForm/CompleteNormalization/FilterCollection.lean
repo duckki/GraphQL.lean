@@ -95,7 +95,7 @@ mutual
       (hagrees :
         variableValuesAgreeWithCase variableValues boolCase
           (operationBoolVars operation)) :
-      ∀ parentType (source : Execution.Value ObjectRef) selection,
+      ∀ parentType (source : Execution.ResolverValue ObjectRef) selection,
         (∀ varName, varName ∈ selectionBooleanVariables selection ->
           varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
           Execution.collectFields schema variableValues parentType source
@@ -287,7 +287,7 @@ mutual
       (hagrees :
         variableValuesAgreeWithCase variableValues boolCase
           (operationBoolVars operation)) :
-      ∀ parentType (source : Execution.Value ObjectRef) selectionSet,
+      ∀ parentType (source : Execution.ResolverValue ObjectRef) selectionSet,
         (∀ varName, varName ∈ selectionSetBooleanVariables selectionSet ->
           varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
           Execution.collectFields schema variableValues parentType source

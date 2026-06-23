@@ -17,7 +17,7 @@ theorem normalizeSelectionSet_executeSelectionSet
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema) :
-    ∀ depth parentType (source : Execution.Value ObjectRef) selectionSet,
+    ∀ depth parentType (source : Execution.ResolverValue ObjectRef) selectionSet,
       objectTypeNameBool schema parentType = true ->
       (∃ runtimeType ref,
         source = .object runtimeType ref
@@ -116,16 +116,16 @@ theorem normalizeSelectionSet_executeSelectionSet
           _hmergedLookup hmergedReady hmergedMerge
         have hchildSource :
             ∃ childRuntime childRef,
-              (Execution.Value.object runtimeType ref)
+              (Execution.ResolverValue.object runtimeType ref)
                 =
-                Execution.Value.object childRuntime childRef
+                Execution.ResolverValue.object childRuntime childRef
               ∧ schema.typeIncludesObjectBool runtimeType childRuntime =
                 true :=
           ⟨runtimeType, ref, rfl,
             typeIncludesObjectBool_self_of_objectTypeNameBool schema
               hchildObject⟩
         exact hpossibleIH runtimeType childDepth
-          (Execution.Value.object runtimeType ref) hchildObject
+          (Execution.ResolverValue.object runtimeType ref) hchildObject
           hchildSource hmergedFree hmergedReady hmergedMerge
       · exact htailEq
   | case4 parentType rest directives selectionSet happend =>

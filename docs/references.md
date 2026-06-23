@@ -143,5 +143,6 @@ for the plain GraphQL layer. This project intentionally keeps named fragment
 definitions and fragment spreads out of scope, matching GraphCoQL's query
 language boundary and avoiding a separate fragment-expansion operation layer.
 Other extensions, such as directives, non-null types, variables, input objects,
-and errors, should be staged only after the GraphCoQL-level semantics and
-validation core is coherent.
+and counted execution errors, are intentional departures from GraphCoQL's
+smaller fragment and should stay documented with their Lean-specific proof
+invariants.

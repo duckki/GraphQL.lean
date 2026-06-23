@@ -21,7 +21,7 @@ variable {ObjectRef : Type}
 theorem collectFields_append_left_nil
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (left right : List Selection) :
     Execution.collectFields schema variableValues parentType source left = [] ->
       Execution.collectFields schema variableValues parentType source
@@ -37,7 +37,7 @@ theorem collectFields_append_left_nil
 theorem collectFields_append_right_nil
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (left right : List Selection) :
     Execution.collectFields schema variableValues parentType source right = [] ->
       Execution.collectFields schema variableValues parentType source
@@ -52,7 +52,7 @@ theorem collectFields_append_right_nil
 theorem collectedResponseSelectionSet_collectFields_allFields_topNoDirectives
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (responseName : Name) :
     ∀ selectionSet,
       selectionsAllFields selectionSet ->
@@ -116,7 +116,7 @@ theorem collectedResponseSelectionSet_collectFields_allFields_topNoDirectives
 theorem mergedFieldSelectionSet_field_head_eq_validFieldsWithResponseName_topNoDirectives
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections rest : List Selection)
     (sourceFields : List Execution.ExecutableField)
@@ -165,7 +165,7 @@ theorem mergedFieldSelectionSet_staticCollect_field_head_eq_staticScopedFields
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (variables : List BoolVar)
-    (lookupParent groundType : Name) (source : Execution.Value ObjectRef)
+    (lookupParent groundType : Name) (source : Execution.ResolverValue ObjectRef)
     (boolCase : BoolCase)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
@@ -403,7 +403,7 @@ theorem mergedFieldSelectionSet_staticCollectCompleteScoped_field_head_eq_static
     (variableValues : Execution.VariableValues)
     (variables : List BoolVar)
     (execParent lookupParent groundType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (boolCase : BoolCase)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
@@ -527,7 +527,7 @@ theorem executeSelectionSet_eq_of_collectFields_eq
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (left right : List Selection) :
     Execution.collectFields schema variableValues parentType source left =
       Execution.collectFields schema variableValues parentType source right ->
@@ -544,26 +544,23 @@ theorem executeField_cons_eq_cons_of_completeValue
     (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (source : Execution.Value ObjectRef)
+    (depth : Nat) (source : Execution.ResolverValue ObjectRef)
     (responseName : Name)
     (sourceField normalizedField : Execution.ExecutableField)
     (sourceFields normalizedFields : List Execution.ExecutableField) :
     normalizedField.parentType = sourceField.parentType ->
     normalizedField.fieldName = sourceField.fieldName ->
     normalizedField.arguments = sourceField.arguments ->
-    Execution.completeValue schema resolvers variableValues (depth - 1)
-        ((schema.fieldReturnType? normalizedField.parentType
-          normalizedField.fieldName).getD normalizedField.fieldName)
-        (normalizedField :: normalizedFields)
-        (resolvers.resolve normalizedField.parentType
-          normalizedField.fieldName normalizedField.arguments source)
-      =
-    Execution.completeValue schema resolvers variableValues (depth - 1)
-        ((schema.fieldReturnType? sourceField.parentType
-          sourceField.fieldName).getD sourceField.fieldName)
-        (sourceField :: sourceFields)
-        (resolvers.resolve sourceField.parentType sourceField.fieldName
-          sourceField.arguments source) ->
+    (match schema.lookupField sourceField.parentType sourceField.fieldName,
+        resolvers.resolve sourceField.parentType sourceField.fieldName
+          sourceField.arguments source with
+    | some fieldDefinition, some value =>
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+          fieldDefinition.outputType (normalizedField :: normalizedFields) value
+          =
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+          fieldDefinition.outputType (sourceField :: sourceFields) value
+    | _, _ => True) ->
       Execution.executeField schema resolvers variableValues depth source
           responseName (normalizedField :: normalizedFields)
         =
@@ -574,29 +571,33 @@ theorem executeField_cons_eq_cons_of_completeValue
   | zero =>
       simp [Execution.executeField]
   | succ fieldDepth =>
-      have hcomplete' :
-          Execution.completeValue schema resolvers variableValues fieldDepth
-              ((schema.fieldReturnType? sourceField.parentType
-                sourceField.fieldName).getD sourceField.fieldName)
-              (normalizedField :: normalizedFields)
-              (resolvers.resolve sourceField.parentType sourceField.fieldName
-                sourceField.arguments source)
-            =
-            Execution.completeValue schema resolvers variableValues fieldDepth
-              ((schema.fieldReturnType? sourceField.parentType
-                sourceField.fieldName).getD sourceField.fieldName)
-              (sourceField :: sourceFields)
-              (resolvers.resolve sourceField.parentType sourceField.fieldName
-                sourceField.arguments source) := by
-        simpa [hparent, hfield, harguments] using hcomplete
       simp [Execution.executeField, hparent, hfield, harguments]
-      exact hcomplete'
+      cases hlookup :
+          schema.lookupField sourceField.parentType sourceField.fieldName with
+      | none =>
+          simp []
+      | some fieldDefinition =>
+          cases hresolved :
+              resolvers.resolve sourceField.parentType sourceField.fieldName
+                sourceField.arguments source with
+          | none =>
+              simp []
+          | some value =>
+              have hcomplete' :
+                  Execution.completeValue schema resolvers variableValues
+                      fieldDepth fieldDefinition.outputType
+                      (normalizedField :: normalizedFields) value =
+                    Execution.completeValue schema resolvers variableValues
+                      fieldDepth fieldDefinition.outputType
+                      (sourceField :: sourceFields) value := by
+                simpa [hlookup, hresolved] using hcomplete
+              simp [Execution.singleFieldResult, hcomplete']
 
 theorem executeSelectionSet_field_head_group_eq_of_completeValue
     (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (parentType : Name) (source : Execution.Value ObjectRef)
+    (depth : Nat) (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
     (normalizedSubselections sourceSubselections normalizedRest sourceRest :
@@ -630,15 +631,15 @@ theorem executeSelectionSet_field_head_group_eq_of_completeValue
           sourceSubselections :: sourceRest)
       =
       (responseName, sourceField :: sourceFields) :: sourceTail ->
-    Execution.completeValue schema resolvers variableValues (depth - 1)
-        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        (normalizedField :: normalizedFields)
-        (resolvers.resolve parentType fieldName arguments source)
-      =
-    Execution.completeValue schema resolvers variableValues (depth - 1)
-        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        (sourceField :: sourceFields)
-        (resolvers.resolve parentType fieldName arguments source) ->
+    (match schema.lookupField parentType fieldName,
+        resolvers.resolve parentType fieldName arguments source with
+    | some fieldDefinition, some value =>
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+          fieldDefinition.outputType (normalizedField :: normalizedFields) value
+          =
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+          fieldDefinition.outputType (sourceField :: sourceFields) value
+    | _, _ => True) ->
     Execution.executeCollectedFields schema resolvers variableValues depth source
         normalizedTail
       =

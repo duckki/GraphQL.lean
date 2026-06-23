@@ -1,4 +1,5 @@
 import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.Absorption
+import GraphQL.Execution.ResolverValue
 
 /-!
 Semantic slice/fold view of ungrouped execution.
@@ -19,24 +20,24 @@ def visitSelectionFold
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (depth : Nat) (parentType : Name) (source : Value ObjectIdentity)
-    (selectionSet : List Selection) (output : Response) : Response :=
+    (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (selectionSet : List Selection) (output : ResponseValue) : ResponseValue :=
   selectionSet.foldl
     (fun output selection =>
-      visitSelection schema resolvers variableValues depth parentType source
-        selection output)
+      (visitSelection schema resolvers variableValues depth parentType source
+        selection output).fst)
     output
 
 theorem visitSelectionFold_eq_visitSubfields
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (depth : Nat) (parentType : Name) (source : Value ObjectIdentity) :
-    ∀ (selectionSet : List Selection) (output : Response),
+    (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity) :
+    ∀ (selectionSet : List Selection) (output : ResponseValue),
       visitSelectionFold schema resolvers variableValues depth parentType
         source selectionSet output =
-      visitSubfields schema resolvers variableValues depth parentType source
-        selectionSet output
+      (visitSubfields schema resolvers variableValues depth parentType source
+        selectionSet output).fst
   | [], output => by
       simp [visitSelectionFold, visitSubfields]
   | selection :: rest, output => by
@@ -44,71 +45,806 @@ theorem visitSelectionFold_eq_visitSubfields
         visitSelectionFold_eq_visitSubfields schema resolvers variableValues
           depth parentType source rest
           (visitSelection schema resolvers variableValues depth parentType
-            source selection output)
+            source selection output).fst
+
+def visitFieldSliceResult
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (field : ExecutableField) (output : ResponseValue) :
+    ResponseValue × VisitStatus :=
+  let previous? :=
+    responseObjectField? field.responseName output
+  match selectionDepth with
+  | 0 =>
+      (output, .error 1)
+  | completionDepth + 1 =>
+      let fieldResult :=
+        executeField schema resolvers variableValues completionDepth source
+          previous? field
+      mergeResponseFieldResult field.responseName fieldResult output
 
 def visitFieldSlice
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (selectionDepth : Nat) (source : Value ObjectIdentity)
-    (field : ExecutableField) (output : Response) : Response :=
-  match selectionDepth with
-  | 0 => output
-  | completionDepth + 1 =>
-      mergeResponseFieldIntoObject field.responseName
-        (executeField schema resolvers variableValues completionDepth source
-          output field)
-        output
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (field : ExecutableField) (output : ResponseValue) : ResponseValue :=
+  (visitFieldSliceResult schema resolvers variableValues selectionDepth source
+    field output).fst
+
+def visitFieldSliceFoldResult
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity) :
+    List ExecutableField -> ResponseValue -> ResponseValue × VisitStatus
+  | [], output => (output, visitOk)
+  | field :: rest, output =>
+      let head :=
+        visitFieldSliceResult schema resolvers variableValues selectionDepth
+          source field output
+      let tail :=
+        visitFieldSliceFoldResult schema resolvers variableValues selectionDepth
+          source rest head.fst
+      (tail.fst, combineVisitStatus head.snd tail.snd)
 
 def visitFieldSliceFold
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (selectionDepth : Nat) (source : Value ObjectIdentity)
-    (fields : List ExecutableField) (output : Response) : Response :=
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (fields : List ExecutableField) (output : ResponseValue) : ResponseValue :=
   fields.foldl
     (fun output field =>
       visitFieldSlice schema resolvers variableValues selectionDepth source
         field output)
     output
 
+theorem visitFieldSliceResult_fst_eq_visitFieldSlice
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (field : ExecutableField) (output : ResponseValue) :
+    (visitFieldSliceResult schema resolvers variableValues selectionDepth
+      source field output).fst =
+    visitFieldSlice schema resolvers variableValues selectionDepth source field
+      output := by
+  cases output <;> cases selectionDepth <;>
+    simp [visitFieldSliceResult, visitFieldSlice, mergeResponseFieldResult]
+
+theorem visitFieldSliceFoldResult_fst_eq_visitFieldSliceFold
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity) :
+    ∀ (fields : List ExecutableField) (output : ResponseValue),
+      (visitFieldSliceFoldResult schema resolvers variableValues selectionDepth
+        source fields output).fst =
+      visitFieldSliceFold schema resolvers variableValues selectionDepth source
+        fields output
+  | [], output => by
+      simp [visitFieldSliceFoldResult, visitFieldSliceFold]
+  | field :: rest, output => by
+      simp [visitFieldSliceFoldResult, visitFieldSliceFold,
+        visitFieldSliceResult_fst_eq_visitFieldSlice schema resolvers
+          variableValues selectionDepth source field output,
+        visitFieldSliceFoldResult_fst_eq_visitFieldSliceFold schema resolvers
+          variableValues selectionDepth source rest
+          (visitFieldSlice schema resolvers variableValues selectionDepth
+            source field output)]
+
+theorem visitFieldSliceFoldResult_append
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity) :
+    ∀ (left right : List ExecutableField) (output : ResponseValue),
+      visitFieldSliceFoldResult schema resolvers variableValues selectionDepth
+          source (left ++ right) output =
+        let leftResult :=
+          visitFieldSliceFoldResult schema resolvers variableValues
+            selectionDepth source left output
+        let rightResult :=
+          visitFieldSliceFoldResult schema resolvers variableValues
+            selectionDepth source right leftResult.fst
+        (rightResult.fst, combineVisitStatus leftResult.snd rightResult.snd)
+  | [], _right, _output => by
+      simp [visitFieldSliceFoldResult]
+  | _field :: rest, right, output => by
+      simp [visitFieldSliceFoldResult,
+        visitFieldSliceFoldResult_append schema resolvers variableValues
+          selectionDepth source rest right,
+        combineVisitStatus_assoc]
+
+theorem visitFieldSliceResult_snd_eq_of_responseObjectField_eq
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (field : ExecutableField) (left right : ResponseValue)
+    (hlookup :
+      responseObjectField? field.responseName left =
+      responseObjectField? field.responseName right) :
+    (visitFieldSliceResult schema resolvers variableValues selectionDepth
+      source field left).snd =
+    (visitFieldSliceResult schema resolvers variableValues selectionDepth
+      source field right).snd := by
+  cases selectionDepth with
+  | zero =>
+      simp [visitFieldSliceResult]
+  | succ completionDepth =>
+      cases hright : responseObjectField? field.responseName right with
+      | none =>
+          have hleft :
+              responseObjectField? field.responseName left = none := by
+            simpa [hright] using hlookup
+          simp [visitFieldSliceResult, mergeResponseFieldResult, hleft, hright]
+      | some previous =>
+          have hleft :
+              responseObjectField? field.responseName left = some previous := by
+            simpa [hright] using hlookup
+          cases previous <;>
+            simp [visitFieldSliceResult, mergeResponseFieldResult, hleft,
+              hright]
+
+theorem visitFieldSliceResult_snd_mergeResponseFieldIntoObject_other
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (field : ExecutableField) (responseName : Name)
+    (incoming output : ResponseValue)
+    (hne : field.responseName ≠ responseName) :
+    (visitFieldSliceResult schema resolvers variableValues selectionDepth
+      source field (mergeResponseFieldIntoObject responseName incoming output)).snd =
+    (visitFieldSliceResult schema resolvers variableValues selectionDepth
+      source field output).snd := by
+  cases output with
+  | null =>
+      simp [mergeResponseFieldIntoObject]
+  | scalar value =>
+      simp [mergeResponseFieldIntoObject]
+  | list values =>
+      simp [mergeResponseFieldIntoObject]
+  | object fields =>
+      exact
+        visitFieldSliceResult_snd_eq_of_responseObjectField_eq schema resolvers
+          variableValues selectionDepth source field
+          (mergeResponseFieldIntoObject responseName incoming (.object fields))
+          (.object fields)
+          (responseObjectField?_mergeResponseFieldIntoObject_other
+            field.responseName responseName incoming fields hne)
+
+theorem responseObjectField?_visitFieldSliceResult_object_fst_other
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (field : ExecutableField) (target : Name)
+    (fields : List (Name × ResponseValue))
+    (hne : target ≠ field.responseName) :
+    responseObjectField? target
+        (visitFieldSliceResult schema resolvers variableValues selectionDepth
+          source field (.object fields)).fst =
+      responseObjectField? target (.object fields) := by
+  cases selectionDepth with
+  | zero =>
+      simp [visitFieldSliceResult]
+  | succ completionDepth =>
+      cases hfield :
+          responseObjectField? field.responseName (.object fields) with
+      | none =>
+          simp [visitFieldSliceResult, mergeResponseFieldResult, hfield,
+            responseObjectField?_mergeResponseFieldIntoObject_other target
+              field.responseName _ fields hne]
+      | some previous =>
+          cases previous <;>
+            simp [visitFieldSliceResult, mergeResponseFieldResult, hfield,
+              responseObjectField?_mergeResponseFieldIntoObject_other target
+                field.responseName _ fields hne]
+
+theorem responseObjectField?_visitFieldSliceResult_object_fst_eq_of_lookup_eq
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (field : ExecutableField) (target : Name)
+    (leftFields rightFields : List (Name × ResponseValue))
+    (htarget :
+      responseObjectField? target (.object leftFields) =
+      responseObjectField? target (.object rightFields))
+    (hfield :
+      responseObjectField? field.responseName (.object leftFields) =
+      responseObjectField? field.responseName (.object rightFields)) :
+    responseObjectField? target
+        (visitFieldSliceResult schema resolvers variableValues selectionDepth
+          source field (.object leftFields)).fst =
+      responseObjectField? target
+        (visitFieldSliceResult schema resolvers variableValues selectionDepth
+          source field (.object rightFields)).fst := by
+  by_cases hsame : target = field.responseName
+  · subst target
+    cases selectionDepth with
+    | zero =>
+        simp [visitFieldSliceResult, hfield]
+    | succ completionDepth =>
+        cases hright :
+            responseObjectField? field.responseName (.object rightFields) with
+        | none =>
+            have hleft :
+                responseObjectField? field.responseName (.object leftFields) =
+                  none := by
+              simpa [hright] using hfield
+            simp [visitFieldSliceResult, mergeResponseFieldResult, hleft,
+              hright, responseObjectField?_mergeResponseFieldIntoObject_same]
+        | some previous =>
+            have hleft :
+                responseObjectField? field.responseName (.object leftFields) =
+                  some previous := by
+              simpa [hright] using hfield
+            cases previous <;>
+              simp [visitFieldSliceResult, mergeResponseFieldResult, hleft,
+                hright, responseObjectField?_mergeResponseFieldIntoObject_same]
+  · cases selectionDepth with
+    | zero =>
+        simp [visitFieldSliceResult, htarget]
+    | succ completionDepth =>
+        cases hright :
+            responseObjectField? field.responseName (.object rightFields) with
+        | none =>
+            have hleft :
+                responseObjectField? field.responseName (.object leftFields) =
+                  none := by
+              simpa [hright] using hfield
+            simp [visitFieldSliceResult, mergeResponseFieldResult, hleft,
+              hright,
+              responseObjectField?_mergeResponseFieldIntoObject_other target
+                field.responseName _ leftFields hsame,
+              responseObjectField?_mergeResponseFieldIntoObject_other target
+                field.responseName _ rightFields hsame,
+              htarget]
+        | some previous =>
+            have hleft :
+                responseObjectField? field.responseName (.object leftFields) =
+                  some previous := by
+              simpa [hright] using hfield
+            cases previous <;>
+              simp [visitFieldSliceResult, mergeResponseFieldResult, hleft,
+                hright,
+                responseObjectField?_mergeResponseFieldIntoObject_other target
+                  field.responseName _ leftFields hsame,
+                responseObjectField?_mergeResponseFieldIntoObject_other target
+                  field.responseName _ rightFields hsame,
+                htarget]
+
+theorem visitFieldSliceResult_object_fst
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (field : ExecutableField) (fields : List (Name × ResponseValue)) :
+    ∃ outputFields,
+      (visitFieldSliceResult schema resolvers variableValues selectionDepth
+        source field (.object fields)).fst = .object outputFields := by
+  cases selectionDepth with
+  | zero =>
+      simp [visitFieldSliceResult]
+  | succ completionDepth =>
+      cases hfield :
+        responseObjectField? field.responseName (.object fields) with
+      | none =>
+          simp [visitFieldSliceResult, mergeResponseFieldResult,
+            mergeResponseFieldIntoObject, hfield]
+      | some previous =>
+          cases previous <;>
+            simp [visitFieldSliceResult, mergeResponseFieldResult,
+              mergeResponseFieldIntoObject, hfield]
+
+theorem visitFieldSliceFoldResult_snd_eq_of_object_lookups
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity) :
+    ∀ (fields : List ExecutableField)
+      (leftFields rightFields : List (Name × ResponseValue)),
+      (∀ field, field ∈ fields ->
+        responseObjectField? field.responseName (.object leftFields) =
+        responseObjectField? field.responseName (.object rightFields)) ->
+      (visitFieldSliceFoldResult schema resolvers variableValues selectionDepth
+        source fields (.object leftFields)).snd =
+      (visitFieldSliceFoldResult schema resolvers variableValues selectionDepth
+        source fields (.object rightFields)).snd
+  | [], leftFields, rightFields, _hlookups => by
+      simp [visitFieldSliceFoldResult]
+  | field :: rest, leftFields, rightFields, hlookups => by
+      have hheadLookup :
+          responseObjectField? field.responseName (.object leftFields) =
+          responseObjectField? field.responseName (.object rightFields) :=
+        hlookups field (by simp)
+      have hheadStatus :
+          (visitFieldSliceResult schema resolvers variableValues selectionDepth
+            source field (.object leftFields)).snd =
+          (visitFieldSliceResult schema resolvers variableValues selectionDepth
+            source field (.object rightFields)).snd :=
+        visitFieldSliceResult_snd_eq_of_responseObjectField_eq schema
+          resolvers variableValues selectionDepth source field
+          (.object leftFields) (.object rightFields) hheadLookup
+      rcases
+        visitFieldSliceResult_object_fst schema resolvers variableValues
+          selectionDepth source field leftFields with
+        ⟨leftHeadFields, hleftHead⟩
+      rcases
+        visitFieldSliceResult_object_fst schema resolvers variableValues
+          selectionDepth source field rightFields with
+        ⟨rightHeadFields, hrightHead⟩
+      have htailLookups :
+          ∀ candidate, candidate ∈ rest ->
+            responseObjectField? candidate.responseName
+                (.object leftHeadFields) =
+              responseObjectField? candidate.responseName
+                (.object rightHeadFields) := by
+        intro candidate hcandidate
+        have hcandidateLookup :
+            responseObjectField? candidate.responseName (.object leftFields) =
+            responseObjectField? candidate.responseName (.object rightFields) :=
+          hlookups candidate (by simp [hcandidate])
+        have hpreserve :=
+          responseObjectField?_visitFieldSliceResult_object_fst_eq_of_lookup_eq
+            schema resolvers variableValues selectionDepth source field
+            candidate.responseName leftFields rightFields hcandidateLookup
+            hheadLookup
+        rw [hleftHead, hrightHead] at hpreserve
+        exact hpreserve
+      have htailStatus :
+          (visitFieldSliceFoldResult schema resolvers variableValues
+            selectionDepth source rest (.object leftHeadFields)).snd =
+          (visitFieldSliceFoldResult schema resolvers variableValues
+            selectionDepth source rest (.object rightHeadFields)).snd :=
+        visitFieldSliceFoldResult_snd_eq_of_object_lookups schema resolvers
+          variableValues selectionDepth source rest leftHeadFields
+          rightHeadFields htailLookups
+      simp only [visitFieldSliceFoldResult]
+      rw [hheadStatus, hleftHead, hrightHead, htailStatus]
+
+theorem responseObjectField?_visitFieldSliceFoldResult_object_fst_eq_of_object_lookups
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (target : Name) :
+    ∀ (fields : List ExecutableField)
+      (leftFields rightFields : List (Name × ResponseValue)),
+      responseObjectField? target (.object leftFields) =
+        responseObjectField? target (.object rightFields) ->
+      (∀ field, field ∈ fields ->
+        responseObjectField? field.responseName (.object leftFields) =
+        responseObjectField? field.responseName (.object rightFields)) ->
+      responseObjectField? target
+          (visitFieldSliceFoldResult schema resolvers variableValues
+            selectionDepth source fields (.object leftFields)).fst =
+        responseObjectField? target
+          (visitFieldSliceFoldResult schema resolvers variableValues
+            selectionDepth source fields (.object rightFields)).fst
+  | [], leftFields, rightFields, htarget, _hlookups => by
+      simpa [visitFieldSliceFoldResult] using htarget
+  | field :: rest, leftFields, rightFields, htarget, hlookups => by
+      have hheadLookup :
+          responseObjectField? field.responseName (.object leftFields) =
+          responseObjectField? field.responseName (.object rightFields) :=
+        hlookups field (by simp)
+      rcases
+        visitFieldSliceResult_object_fst schema resolvers variableValues
+          selectionDepth source field leftFields with
+        ⟨leftHeadFields, hleftHead⟩
+      rcases
+        visitFieldSliceResult_object_fst schema resolvers variableValues
+          selectionDepth source field rightFields with
+        ⟨rightHeadFields, hrightHead⟩
+      have htargetAfterHead :
+          responseObjectField? target (.object leftHeadFields) =
+            responseObjectField? target (.object rightHeadFields) := by
+        have hpreserve :=
+          responseObjectField?_visitFieldSliceResult_object_fst_eq_of_lookup_eq
+            schema resolvers variableValues selectionDepth source field target
+            leftFields rightFields htarget hheadLookup
+        rw [hleftHead, hrightHead] at hpreserve
+        exact hpreserve
+      have htailLookups :
+          ∀ candidate, candidate ∈ rest ->
+            responseObjectField? candidate.responseName
+                (.object leftHeadFields) =
+              responseObjectField? candidate.responseName
+                (.object rightHeadFields) := by
+        intro candidate hcandidate
+        have hcandidateLookup :
+            responseObjectField? candidate.responseName (.object leftFields) =
+            responseObjectField? candidate.responseName (.object rightFields) :=
+          hlookups candidate (by simp [hcandidate])
+        have hpreserve :=
+          responseObjectField?_visitFieldSliceResult_object_fst_eq_of_lookup_eq
+            schema resolvers variableValues selectionDepth source field
+            candidate.responseName leftFields rightFields hcandidateLookup
+            hheadLookup
+        rw [hleftHead, hrightHead] at hpreserve
+        exact hpreserve
+      simp only [visitFieldSliceFoldResult]
+      rw [hleftHead, hrightHead]
+      exact
+        responseObjectField?_visitFieldSliceFoldResult_object_fst_eq_of_object_lookups
+          schema resolvers variableValues selectionDepth source target rest
+          leftHeadFields rightHeadFields htargetAfterHead htailLookups
+
+theorem responseObjectField?_visitFieldSliceFoldResult_object_fst_of_not_mem
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (target : Name) :
+    ∀ (fields : List ExecutableField)
+      (outputFields : List (Name × ResponseValue)),
+      target ∉ fields.map (fun field => field.responseName) ->
+      responseObjectField? target
+          (visitFieldSliceFoldResult schema resolvers variableValues
+            selectionDepth source fields (.object outputFields)).fst =
+        responseObjectField? target (.object outputFields)
+  | [], outputFields, _hnot => by
+      simp [visitFieldSliceFoldResult]
+  | field :: rest, outputFields, hnot => by
+      have hfield : target ≠ field.responseName := by
+        intro heq
+        exact hnot (by simp [heq])
+      have hrest :
+          target ∉ rest.map (fun field => field.responseName) := by
+        intro hmem
+        exact hnot (by simp [hmem])
+      rcases
+        visitFieldSliceResult_object_fst schema resolvers variableValues
+          selectionDepth source field outputFields with
+        ⟨headFields, hhead⟩
+      simp only [visitFieldSliceFoldResult]
+      rw [hhead]
+      exact
+        (responseObjectField?_visitFieldSliceFoldResult_object_fst_of_not_mem
+          schema resolvers variableValues selectionDepth source target rest
+          headFields hrest).trans
+          (by
+            rw [← hhead]
+            exact
+              responseObjectField?_visitFieldSliceResult_object_fst_other
+                schema resolvers variableValues selectionDepth source field
+                target outputFields hfield)
+
+theorem visitFieldSliceFoldResult_object_fst
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity) :
+    ∀ (fields : List ExecutableField)
+      (outputFields : List (Name × ResponseValue)),
+      ∃ resultFields,
+        (visitFieldSliceFoldResult schema resolvers variableValues
+          selectionDepth source fields (.object outputFields)).fst =
+          .object resultFields
+  | [], outputFields => by
+      exact ⟨outputFields, by simp [visitFieldSliceFoldResult]⟩
+  | field :: rest, outputFields => by
+      rcases
+        visitFieldSliceResult_object_fst schema resolvers variableValues
+          selectionDepth source field outputFields with
+        ⟨headFields, hhead⟩
+      rcases
+        visitFieldSliceFoldResult_object_fst schema resolvers variableValues
+          selectionDepth source rest headFields with
+        ⟨resultFields, hresult⟩
+      exact ⟨resultFields, by simp [visitFieldSliceFoldResult, hhead, hresult]⟩
+
+theorem visitFieldSliceFoldResult_snd_middle_existing_last_swap
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (middle : List ExecutableField) (later : ExecutableField)
+    (fields : List (Name × ResponseValue))
+    (hnotMiddle :
+      later.responseName ∉ middle.map (fun field => field.responseName)) :
+    (visitFieldSliceFoldResult schema resolvers variableValues selectionDepth
+        source (middle ++ [later]) (.object fields)).snd =
+      (visitFieldSliceFoldResult schema resolvers variableValues selectionDepth
+        source (later :: middle) (.object fields)).snd := by
+  have hmiddleLaterLookup :
+      responseObjectField? later.responseName
+          (visitFieldSliceFoldResult schema resolvers variableValues
+            selectionDepth source middle (.object fields)).fst =
+        responseObjectField? later.responseName (.object fields) :=
+    responseObjectField?_visitFieldSliceFoldResult_object_fst_of_not_mem
+      schema resolvers variableValues selectionDepth source later.responseName
+      middle fields hnotMiddle
+  rcases
+    visitFieldSliceFoldResult_object_fst schema resolvers variableValues
+      selectionDepth source middle fields with
+    ⟨middleFields, hmiddleFields⟩
+  have hmiddleLaterLookupObject :
+      responseObjectField? later.responseName (.object middleFields) =
+        responseObjectField? later.responseName (.object fields) := by
+    simpa [hmiddleFields] using hmiddleLaterLookup
+  have hlaterStatusAfterMiddle :
+      (visitFieldSliceFoldResult schema resolvers variableValues
+        selectionDepth source [later] (.object middleFields)).snd =
+      (visitFieldSliceFoldResult schema resolvers variableValues
+        selectionDepth source [later] (.object fields)).snd := by
+    apply
+      visitFieldSliceFoldResult_snd_eq_of_object_lookups schema resolvers
+        variableValues selectionDepth source [later] middleFields fields
+    intro field hfield
+    simp only [List.mem_singleton] at hfield
+    subst field
+    exact hmiddleLaterLookupObject
+  rcases
+    visitFieldSliceResult_object_fst schema resolvers variableValues
+      selectionDepth source later fields with
+    ⟨laterFields, hlaterFields⟩
+  have hmiddleLookupsAfterLater :
+      ∀ field, field ∈ middle ->
+        responseObjectField? field.responseName (.object laterFields) =
+          responseObjectField? field.responseName (.object fields) := by
+    intro field hfield
+    have hne : field.responseName ≠ later.responseName := by
+      intro heq
+      exact hnotMiddle (List.mem_map.mpr ⟨field, hfield, heq⟩)
+    rw [← hlaterFields]
+    exact
+      responseObjectField?_visitFieldSliceResult_object_fst_other schema
+        resolvers variableValues selectionDepth source later
+        field.responseName fields hne
+  have hmiddleStatusAfterLater :
+      (visitFieldSliceFoldResult schema resolvers variableValues
+        selectionDepth source middle (.object laterFields)).snd =
+      (visitFieldSliceFoldResult schema resolvers variableValues
+        selectionDepth source middle (.object fields)).snd :=
+    visitFieldSliceFoldResult_snd_eq_of_object_lookups schema resolvers
+      variableValues selectionDepth source middle laterFields fields
+      hmiddleLookupsAfterLater
+  rw [visitFieldSliceFoldResult_append schema resolvers variableValues
+    selectionDepth source middle [later] (.object fields)]
+  simp only
+  rw [hmiddleFields]
+  simp only [visitFieldSliceFoldResult]
+  have hlaterStepStatusAfterMiddle :
+      (visitFieldSliceResult schema resolvers variableValues selectionDepth
+        source later (.object middleFields)).snd =
+      (visitFieldSliceResult schema resolvers variableValues selectionDepth
+        source later (.object fields)).snd := by
+    simpa [visitFieldSliceFoldResult] using hlaterStatusAfterMiddle
+  rw [hlaterFields, hlaterStepStatusAfterMiddle,
+    hmiddleStatusAfterLater]
+  simp [combineVisitStatus_comm]
+
+theorem responseObjectField?_visitFieldSliceFoldResult_middle_existing_last_swap
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (middle : List ExecutableField) (later : ExecutableField)
+    (fields : List (Name × ResponseValue)) (target : Name)
+    (hnotMiddle :
+      later.responseName ∉ middle.map (fun field => field.responseName)) :
+    responseObjectField? target
+        (visitFieldSliceFoldResult schema resolvers variableValues
+          selectionDepth source (middle ++ [later]) (.object fields)).fst =
+      responseObjectField? target
+        (visitFieldSliceFoldResult schema resolvers variableValues
+          selectionDepth source (later :: middle) (.object fields)).fst := by
+  have hmiddleLaterLookup :
+      responseObjectField? later.responseName
+          (visitFieldSliceFoldResult schema resolvers variableValues
+            selectionDepth source middle (.object fields)).fst =
+        responseObjectField? later.responseName (.object fields) :=
+    responseObjectField?_visitFieldSliceFoldResult_object_fst_of_not_mem
+      schema resolvers variableValues selectionDepth source later.responseName
+      middle fields hnotMiddle
+  rcases
+    visitFieldSliceFoldResult_object_fst schema resolvers variableValues
+      selectionDepth source middle fields with
+    ⟨middleFields, hmiddleFields⟩
+  have hmiddleLaterLookupObject :
+      responseObjectField? later.responseName (.object middleFields) =
+        responseObjectField? later.responseName (.object fields) := by
+    simpa [hmiddleFields] using hmiddleLaterLookup
+  rcases
+    visitFieldSliceResult_object_fst schema resolvers variableValues
+      selectionDepth source later fields with
+    ⟨laterFields, hlaterFields⟩
+  have hmiddleLookupsAfterLater :
+      ∀ field, field ∈ middle ->
+        responseObjectField? field.responseName (.object laterFields) =
+          responseObjectField? field.responseName (.object fields) := by
+    intro field hfield
+    have hne : field.responseName ≠ later.responseName := by
+      intro heq
+      exact hnotMiddle (List.mem_map.mpr ⟨field, hfield, heq⟩)
+    rw [← hlaterFields]
+    exact
+      responseObjectField?_visitFieldSliceResult_object_fst_other schema
+        resolvers variableValues selectionDepth source later
+        field.responseName fields hne
+  rw [visitFieldSliceFoldResult_append schema resolvers variableValues
+    selectionDepth source middle [later] (.object fields)]
+  simp only
+  rw [hmiddleFields]
+  simp only [visitFieldSliceFoldResult]
+  rw [hlaterFields]
+  by_cases htarget : target = later.responseName
+  · subst target
+    have hleft :
+        responseObjectField? later.responseName
+            (visitFieldSliceResult schema resolvers variableValues
+              selectionDepth source later (.object middleFields)).fst =
+          responseObjectField? later.responseName (.object laterFields) := by
+      have hstep :=
+        responseObjectField?_visitFieldSliceResult_object_fst_eq_of_lookup_eq
+          schema resolvers variableValues selectionDepth source later
+          later.responseName middleFields fields hmiddleLaterLookupObject
+          hmiddleLaterLookupObject
+      rw [hlaterFields] at hstep
+      exact hstep
+    have hright :
+        responseObjectField? later.responseName
+            (visitFieldSliceFoldResult schema resolvers variableValues
+              selectionDepth source middle (.object laterFields)).fst =
+          responseObjectField? later.responseName (.object laterFields) :=
+      responseObjectField?_visitFieldSliceFoldResult_object_fst_of_not_mem
+        schema resolvers variableValues selectionDepth source
+        later.responseName middle laterFields hnotMiddle
+    rw [hleft, hright]
+  · have hleft :
+        responseObjectField? target
+            (visitFieldSliceResult schema resolvers variableValues
+              selectionDepth source later (.object middleFields)).fst =
+          responseObjectField? target (.object middleFields) :=
+      responseObjectField?_visitFieldSliceResult_object_fst_other schema
+        resolvers variableValues selectionDepth source later target
+        middleFields htarget
+    have htargetAfterLater :
+        responseObjectField? target (.object laterFields) =
+          responseObjectField? target (.object fields) := by
+      rw [← hlaterFields]
+      exact
+        responseObjectField?_visitFieldSliceResult_object_fst_other schema
+          resolvers variableValues selectionDepth source later target fields
+          htarget
+    have hright :
+        responseObjectField? target
+            (visitFieldSliceFoldResult schema resolvers variableValues
+              selectionDepth source middle (.object laterFields)).fst =
+          responseObjectField? target
+            (visitFieldSliceFoldResult schema resolvers variableValues
+              selectionDepth source middle (.object fields)).fst :=
+      responseObjectField?_visitFieldSliceFoldResult_object_fst_eq_of_object_lookups
+        schema resolvers variableValues selectionDepth source target middle
+        laterFields fields htargetAfterLater hmiddleLookupsAfterLater
+    rw [hleft, hright]
+    simp [hmiddleFields]
+
+theorem visitFieldSliceFoldResult_snd_middle_existing_last_swap_cons
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (middle : List ExecutableField) (later : ExecutableField)
+    (rest : List ExecutableField)
+    (fields : List (Name × ResponseValue))
+    (hnotMiddle :
+      later.responseName ∉ middle.map (fun field => field.responseName)) :
+    (visitFieldSliceFoldResult schema resolvers variableValues selectionDepth
+        source ((middle ++ [later]) ++ rest) (.object fields)).snd =
+      (visitFieldSliceFoldResult schema resolvers variableValues selectionDepth
+        source ((later :: middle) ++ rest) (.object fields)).snd := by
+  have hprefixStatus :
+      (visitFieldSliceFoldResult schema resolvers variableValues
+        selectionDepth source (middle ++ [later]) (.object fields)).snd =
+      (visitFieldSliceFoldResult schema resolvers variableValues
+        selectionDepth source (later :: middle) (.object fields)).snd :=
+    visitFieldSliceFoldResult_snd_middle_existing_last_swap schema resolvers
+      variableValues selectionDepth source middle later fields hnotMiddle
+  rcases
+    visitFieldSliceFoldResult_object_fst schema resolvers variableValues
+      selectionDepth source (middle ++ [later]) fields with
+    ⟨leftPrefixFields, hleftPrefix⟩
+  rcases
+    visitFieldSliceFoldResult_object_fst schema resolvers variableValues
+      selectionDepth source (later :: middle) fields with
+    ⟨rightPrefixFields, hrightPrefix⟩
+  have hrestLookups :
+      ∀ field, field ∈ rest ->
+        responseObjectField? field.responseName (.object leftPrefixFields) =
+          responseObjectField? field.responseName (.object rightPrefixFields) := by
+    intro field _hfield
+    have hlookup :=
+      responseObjectField?_visitFieldSliceFoldResult_middle_existing_last_swap
+        schema resolvers variableValues selectionDepth source middle later
+        fields field.responseName hnotMiddle
+    rw [hleftPrefix, hrightPrefix] at hlookup
+    exact hlookup
+  have hrestStatus :
+      (visitFieldSliceFoldResult schema resolvers variableValues
+        selectionDepth source rest (.object leftPrefixFields)).snd =
+      (visitFieldSliceFoldResult schema resolvers variableValues
+        selectionDepth source rest (.object rightPrefixFields)).snd :=
+    visitFieldSliceFoldResult_snd_eq_of_object_lookups schema resolvers
+      variableValues selectionDepth source rest leftPrefixFields
+      rightPrefixFields hrestLookups
+  rw [visitFieldSliceFoldResult_append schema resolvers variableValues
+    selectionDepth source (middle ++ [later]) rest (.object fields)]
+  rw [visitFieldSliceFoldResult_append schema resolvers variableValues
+    selectionDepth source (later :: middle) rest (.object fields)]
+  simp only
+  rw [hleftPrefix, hrightPrefix, hprefixStatus, hrestStatus]
+
+theorem visitFieldSliceResult_eq_visitSelection_executableFieldSelection
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (parentType : Name)
+    (source : ResolverValue ObjectIdentity) (field : ExecutableField)
+    (output : ResponseValue) :
+    field.parentType = parentType ->
+      visitFieldSliceResult schema resolvers variableValues selectionDepth
+        source field output =
+      visitSelection schema resolvers variableValues selectionDepth parentType
+        source (executableFieldSelection field) output := by
+  intro hparent
+  rcases field with ⟨fieldParent, responseName, fieldName, arguments, selectionSet⟩
+  subst parentType
+  cases selectionDepth with
+  | zero =>
+      simp [visitFieldSliceResult, visitSelection, executableFieldSelection,
+        selectionDirectivesAllowBool_empty, outOfFuel]
+  | succ completionDepth =>
+      simp [visitFieldSliceResult, visitSelection, executableFieldSelection,
+        executableField, mergeResponseFieldResult, resultValueOrNull,
+        resultStatus, selectionDirectivesAllowBool_empty]
+
 theorem visitFieldSlice_eq_visitSelection_executableFieldSelection
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
     (selectionDepth : Nat) (parentType : Name)
-    (source : Value ObjectIdentity) (field : ExecutableField)
-    (output : Response) :
+    (source : ResolverValue ObjectIdentity) (field : ExecutableField)
+    (output : ResponseValue) :
     field.parentType = parentType ->
       visitFieldSlice schema resolvers variableValues selectionDepth source
         field output =
-      visitSelection schema resolvers variableValues selectionDepth parentType
-        source (executableFieldSelection field) output := by
+      (visitSelection schema resolvers variableValues selectionDepth parentType
+        source (executableFieldSelection field) output).fst := by
   intro hparent
-  cases field with
-  | mk fieldParent responseName fieldName arguments selectionSet =>
-      dsimp at hparent ⊢
-      subst fieldParent
-      cases selectionDepth with
-      | zero =>
-          simp [visitFieldSlice, visitSelection, executableFieldSelection,
-            selectionDirectivesAllowBool_empty]
-      | succ completionDepth =>
-          simp [visitFieldSlice, visitSelection, executableFieldSelection,
-            executableField, selectionDirectivesAllowBool_empty]
+  rcases field with ⟨fieldParent, responseName, fieldName, arguments, selectionSet⟩
+  subst parentType
+  cases selectionDepth with
+  | zero =>
+      simp [visitFieldSlice, visitSelection, executableFieldSelection,
+        selectionDirectivesAllowBool_empty]
+      rfl
+  | succ completionDepth =>
+      simp [visitFieldSlice, visitSelection, executableFieldSelection,
+        executableField, mergeResponseFieldResult, resultValueOrNull, resultStatus,
+        selectionDirectivesAllowBool_empty]
+      rfl
 
 theorem visitFieldSliceFold_eq_visitSubfields_executableFieldSelections
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
     (selectionDepth : Nat) (parentType : Name)
-    (source : Value ObjectIdentity) :
-    ∀ (fields : List ExecutableField) (output : Response),
+    (source : ResolverValue ObjectIdentity) :
+    ∀ (fields : List ExecutableField) (output : ResponseValue),
       (∀ field, field ∈ fields -> field.parentType = parentType) ->
         visitFieldSliceFold schema resolvers variableValues selectionDepth
           source fields output =
-        visitSubfields schema resolvers variableValues selectionDepth parentType
-          source (executableFieldSelections fields) output
+        (visitSubfields schema resolvers variableValues selectionDepth parentType
+          source (executableFieldSelections fields) output).fst
   | [], output, _hparents => by
       simp [visitFieldSliceFold, executableFieldSelections, visitSubfields]
   | field :: rest, output, hparents => by
@@ -122,8 +858,8 @@ theorem visitFieldSliceFold_eq_visitSubfields_executableFieldSelections
       have hstep :
           visitFieldSlice schema resolvers variableValues selectionDepth source
             field output =
-          visitSelection schema resolvers variableValues selectionDepth
-            parentType source (executableFieldSelection field) output :=
+          (visitSelection schema resolvers variableValues selectionDepth
+            parentType source (executableFieldSelection field) output).fst :=
         visitFieldSlice_eq_visitSelection_executableFieldSelection schema
           resolvers variableValues selectionDepth parentType source field output
           hfield
@@ -136,24 +872,69 @@ theorem visitFieldSliceFold_eq_visitSubfields_executableFieldSelections
             schema resolvers variableValues selectionDepth parentType source
             rest
             (visitSelection schema resolvers variableValues selectionDepth
-              parentType source (executableFieldSelection field) output)
+              parentType source (executableFieldSelection field) output).fst
             hrest
+
+theorem visitFieldSliceFoldResult_eq_visitSubfields_executableFieldSelections
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (selectionDepth : Nat) (parentType : Name)
+    (source : ResolverValue ObjectIdentity) :
+    ∀ (fields : List ExecutableField) (output : ResponseValue),
+      (∀ field, field ∈ fields -> field.parentType = parentType) ->
+        visitFieldSliceFoldResult schema resolvers variableValues selectionDepth
+          source fields output =
+        visitSubfields schema resolvers variableValues selectionDepth parentType
+          source (executableFieldSelections fields) output
+  | [], output, _hparents => by
+      simp [visitFieldSliceFoldResult, executableFieldSelections, visitSubfields,
+        visitOk]
+  | field :: rest, output, hparents => by
+      have hfield : field.parentType = parentType :=
+        hparents field (by simp)
+      have hrest :
+          ∀ candidate, candidate ∈ rest ->
+            candidate.parentType = parentType := by
+        intro candidate hcandidate
+        exact hparents candidate (by simp [hcandidate])
+      have hstep :
+          visitFieldSliceResult schema resolvers variableValues selectionDepth
+            source field output =
+          visitSelection schema resolvers variableValues selectionDepth
+            parentType source (executableFieldSelection field) output :=
+        visitFieldSliceResult_eq_visitSelection_executableFieldSelection schema
+          resolvers variableValues selectionDepth parentType source field output
+          hfield
+      simp only [visitFieldSliceFoldResult, executableFieldSelections,
+        List.map_cons, visitSubfields]
+      rw [hstep]
+      have hrec :=
+        visitFieldSliceFoldResult_eq_visitSubfields_executableFieldSelections
+          schema resolvers variableValues selectionDepth parentType source
+          rest
+          (visitSelection schema resolvers variableValues selectionDepth
+            parentType source (executableFieldSelection field) output).fst
+          hrest
+      rw [hrec]
+      simp [executableFieldSelections]
 
 def responseFieldSlice
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
-    (field : ExecutableField) : Response :=
-  executeField schema resolvers variableValues completionDepth source
-    (.object []) field
+  (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
+  (field : ExecutableField) : ResponseValue :=
+  resultValueOrNull
+    (executeField schema resolvers variableValues completionDepth source
+      none field)
 
 def responseObjectSlice
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
-    (field : ExecutableField) : Response :=
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (field : ExecutableField) : ResponseValue :=
   .object
     [(field.responseName,
       responseFieldSlice schema resolvers variableValues completionDepth source
@@ -163,21 +944,22 @@ theorem ResponseMergeReady_responseFieldSlice
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
     (field : ExecutableField) :
     ResponseMergeReady
       (responseFieldSlice schema resolvers variableValues completionDepth source
         field) := by
   simpa [responseFieldSlice] using
-    executeField_response_ready schema resolvers variableValues completionDepth
-      source [] field ResponseMergeReady_empty_object
+    executeField_response_ready_of_previous schema resolvers variableValues
+      completionDepth source none field
+      (by intro previous h; cases h)
 
 def responseObjectSlices
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
-    (fields : List ExecutableField) : List (Name × Response) :=
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (fields : List ExecutableField) : List (Name × ResponseValue) :=
   fields.map
     (fun field =>
       (field.responseName,
@@ -188,7 +970,7 @@ theorem responseObjectSlices_key_mem
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
     (fields : List ExecutableField) (responseName : Name) :
     responseName ∈
         (responseObjectSlices schema resolvers variableValues completionDepth
@@ -200,7 +982,7 @@ theorem responseObjectSlices_pairKeysNodup
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
     (fields : List ExecutableField) :
     (fields.map (fun field => field.responseName)).Nodup ->
       PairKeysNodup
@@ -214,8 +996,8 @@ def mergeResponseSliceFold
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
-    (fields : List ExecutableField) (output : Response) : Response :=
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (fields : List ExecutableField) (output : ResponseValue) : ResponseValue :=
   fields.foldl
     (fun output field =>
       mergeResponse output
@@ -227,13 +1009,13 @@ def VisitSubfieldsPopulates
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (depth : Nat) (parentType : Name) (source : Value ObjectIdentity)
-    (selectionSet : List Selection) (previous : Response) : Prop :=
-  visitSubfields schema resolvers variableValues depth parentType source
-    selectionSet previous =
+    (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (selectionSet : List Selection) (previous : ResponseValue) : Prop :=
+  (visitSubfields schema resolvers variableValues depth parentType source
+    selectionSet previous).fst =
   mergeResponse previous
     (visitSubfields schema resolvers variableValues depth parentType source
-      selectionSet (.object []))
+      selectionSet (.object [])).fst
 
 namespace VisitSubfieldsPopulates
 
@@ -241,8 +1023,8 @@ theorem nil
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (depth : Nat) (parentType : Name) (source : Value ObjectIdentity)
-    (previous : Response) :
+    (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (previous : ResponseValue) :
     VisitSubfieldsPopulates schema resolvers variableValues depth parentType
       source [] previous := by
   simp [VisitSubfieldsPopulates, visitSubfields,
@@ -254,8 +1036,8 @@ def FieldSliceMergeFoldPopulates
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
-    (fields : List ExecutableField) (previous : Response) : Prop :=
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (fields : List ExecutableField) (previous : ResponseValue) : Prop :=
   mergeResponseSliceFold schema resolvers variableValues completionDepth source
     fields previous =
   mergeResponse previous
@@ -268,9 +1050,9 @@ theorem mergeResponseSliceFold_object_append_of_responseNamesNodup
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity) :
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity) :
     ∀ (fields : List ExecutableField)
-      (outputFields : List (Name × Response)),
+      (outputFields : List (Name × ResponseValue)),
       (fields.map (fun field => field.responseName)).Nodup ->
       (∀ field, field ∈ fields ->
         field.responseName ∉ outputFields.map Prod.fst) ->
@@ -335,8 +1117,8 @@ theorem of_responseNamesNodup_object
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
-    (fields : List ExecutableField) (outputFields : List (Name × Response))
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (fields : List ExecutableField) (outputFields : List (Name × ResponseValue))
     (hnodup : (fields.map (fun field => field.responseName)).Nodup)
     (hdisjoint :
       ∀ field, field ∈ fields ->
@@ -392,8 +1174,8 @@ theorem nil
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
-    (previous : Response) :
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (previous : ResponseValue) :
     FieldSliceMergeFoldPopulates schema resolvers variableValues
       completionDepth source [] previous := by
   simp [FieldSliceMergeFoldPopulates, mergeResponseSliceFold,
@@ -403,8 +1185,8 @@ theorem singleton
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
-    (field : ExecutableField) (previous : Response) :
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (field : ExecutableField) (previous : ResponseValue) :
     FieldSliceMergeFoldPopulates schema resolvers variableValues
       completionDepth source [field] previous := by
   simp [FieldSliceMergeFoldPopulates, mergeResponseSliceFold,
@@ -415,9 +1197,9 @@ theorem cons_of_tail_merge
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
     (field : ExecutableField) (rest : List ExecutableField)
-    (previous : Response)
+    (previous : ResponseValue)
     (hmerge :
       mergeResponseSliceFold schema resolvers variableValues completionDepth
         source rest
@@ -441,13 +1223,276 @@ def CompleteValuePopulates
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
     (completionDepth : Nat) (parentType : Name)
-    (selectionSet : List Selection) (value : Value ObjectIdentity)
-    (previous : Response) : Prop :=
-  completeValue schema resolvers variableValues completionDepth parentType
-    selectionSet value previous =
+    (selectionSet : List Selection) (value : ResolverValue ObjectIdentity)
+    (previous : ResponseValue) : Prop :=
+  resultValueOrNull
+    (completeResolvedValue schema resolvers variableValues completionDepth parentType
+      selectionSet value (some previous)) =
   mergeResponse previous
-    (completeValue schema resolvers variableValues completionDepth parentType
-      selectionSet value .null)
+    (resultValueOrNull
+      (completeResolvedValue schema resolvers variableValues completionDepth parentType
+        selectionSet value none))
+
+theorem resultValueOrNull_nonNullCompletion_eq_null
+    (completed : Result ResponseValue)
+    (hnull : resultValueOrNull completed = .null) :
+    resultValueOrNull (nonNullCompletion completed) = .null := by
+  cases completed with
+  | error errors =>
+      rfl
+  | ok completed =>
+      rcases completed with ⟨value, errors⟩
+      cases value <;> simp [resultValueOrNull] at hnull
+      cases errors <;> simp [nonNullCompletion, resultValueOrNull]
+
+theorem resultValueOrNull_nonNullCompletion_eq_scalar
+    (completed : Result ResponseValue) (value : String)
+    (hscalar : resultValueOrNull completed = .scalar value) :
+    resultValueOrNull (nonNullCompletion completed) = .scalar value := by
+  cases completed with
+  | error errors =>
+      simp [resultValueOrNull] at hscalar
+  | ok completed =>
+      rcases completed with ⟨response, errors⟩
+      cases response <;> simp [resultValueOrNull] at hscalar
+      simpa [nonNullCompletion, resultValueOrNull] using hscalar
+
+theorem completeValue_null_resultValueOrNull
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) :
+    ∀ (fieldType : TypeRef) (completionDepth : Nat)
+      (selectionSet : List Selection) (previous? : Option ResponseValue),
+      resultValueOrNull
+        (completeValue schema resolvers variableValues completionDepth
+          fieldType selectionSet (.null : ResolverValue ObjectIdentity)
+          previous?) =
+      .null
+  | .named _typeName, completionDepth, selectionSet, previous? => by
+      cases previous? with
+      | none =>
+          cases completionDepth <;>
+            simp [completeValue, outOfFuel, resultValueOrNull]
+      | some previous =>
+          cases previous <;> cases completionDepth <;>
+            simp [completeValue, outOfFuel, resultValueOrNull]
+  | .list _inner, completionDepth, selectionSet, previous? => by
+      cases previous? with
+      | none =>
+          cases completionDepth <;>
+            simp [completeValue, outOfFuel, resultValueOrNull]
+      | some previous =>
+          cases previous <;> cases completionDepth <;>
+            simp [completeValue, outOfFuel, resultValueOrNull]
+  | .nonNull inner, completionDepth, selectionSet, previous? => by
+      cases previous? with
+      | none =>
+          cases completionDepth with
+          | zero =>
+              simp [completeValue, outOfFuel, resultValueOrNull]
+          | succ depth =>
+              simpa [completeValue] using
+                resultValueOrNull_nonNullCompletion_eq_null
+                (completeValue schema resolvers variableValues (depth + 1)
+                  inner selectionSet (.null : ResolverValue ObjectIdentity)
+                  none)
+                (completeValue_null_resultValueOrNull schema resolvers
+                  variableValues inner (depth + 1) selectionSet none)
+      | some previous =>
+        cases previous with
+        | null =>
+          cases completionDepth with
+          | zero =>
+              simp [completeValue, resultValueOrNull, outOfFuel]
+          | succ depth =>
+              simp [completeValue, resultValueOrNull]
+        | scalar previousValue =>
+          cases completionDepth with
+          | zero =>
+              simp [completeValue, resultValueOrNull, outOfFuel]
+          | succ depth =>
+              simpa [completeValue] using
+                resultValueOrNull_nonNullCompletion_eq_null
+                (completeValue schema resolvers variableValues (depth + 1)
+                  inner selectionSet (.null : ResolverValue ObjectIdentity)
+                  (some (.scalar previousValue)))
+                (completeValue_null_resultValueOrNull schema resolvers
+                  variableValues inner (depth + 1) selectionSet
+                  (some (.scalar previousValue)))
+        | object previousFields =>
+          cases completionDepth with
+          | zero =>
+              simp [completeValue, outOfFuel, resultValueOrNull]
+          | succ depth =>
+              simpa [completeValue] using
+                resultValueOrNull_nonNullCompletion_eq_null
+                (completeValue schema resolvers variableValues (depth + 1)
+                  inner selectionSet (.null : ResolverValue ObjectIdentity)
+                  (some (.object previousFields)))
+                (completeValue_null_resultValueOrNull schema resolvers
+                  variableValues inner (depth + 1) selectionSet
+                  (some (.object previousFields)))
+        | list previousValues =>
+          cases completionDepth with
+          | zero =>
+              simp [completeValue, outOfFuel, resultValueOrNull]
+          | succ depth =>
+              simpa [completeValue] using
+                resultValueOrNull_nonNullCompletion_eq_null
+                (completeValue schema resolvers variableValues (depth + 1)
+                  inner selectionSet (.null : ResolverValue ObjectIdentity)
+                  (some (.list previousValues)))
+                (completeValue_null_resultValueOrNull schema resolvers
+                  variableValues inner (depth + 1) selectionSet
+                  (some (.list previousValues)))
+
+theorem completeValue_scalar_object_empty_resultValueOrNull
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) :
+    ∀ (fieldType : TypeRef) (completionDepth : Nat)
+      (selectionSet : List Selection) (value : String),
+      resultValueOrNull
+        (completeValue schema resolvers variableValues completionDepth
+          fieldType selectionSet (.scalar value : ResolverValue ObjectIdentity)
+          none) =
+        .null ∨
+      resultValueOrNull
+        (completeValue schema resolvers variableValues completionDepth
+          fieldType selectionSet (.scalar value : ResolverValue ObjectIdentity)
+          none) =
+        scalarCompletionAtDepth schema fieldType.namedType completionDepth value
+  | .named _typeName, completionDepth, selectionSet, value => by
+      right
+      cases completionDepth with
+      | zero =>
+          simp [completeValue, outOfFuel, resultValueOrNull,
+            scalarCompletionAtDepth]
+      | succ depth =>
+          cases hcomposite :
+              (TypeRef.named _typeName).isCompositeBool schema <;>
+            simp [completeValue, resultValueOrNull, scalarCompletionAtDepth,
+              TypeRef.namedType, hcomposite]
+  | .list _inner, completionDepth, selectionSet, value => by
+      cases completionDepth with
+      | zero =>
+          right
+          simp [completeValue, outOfFuel, resultValueOrNull,
+            scalarCompletionAtDepth]
+      | succ depth =>
+          left
+          simp [completeValue, resultValueOrNull]
+  | .nonNull inner, completionDepth, selectionSet, value => by
+      cases completionDepth with
+      | zero =>
+          right
+          simp [completeValue, outOfFuel, resultValueOrNull,
+            scalarCompletionAtDepth]
+      | succ depth =>
+          have hinner :=
+            completeValue_scalar_object_empty_resultValueOrNull schema
+              resolvers variableValues inner (depth + 1) selectionSet value
+          rcases hinner with hnull | hscalar
+          · left
+            simpa [completeValue] using
+              resultValueOrNull_nonNullCompletion_eq_null
+                (completeValue schema resolvers variableValues (depth + 1)
+                  inner selectionSet
+                  (.scalar value : ResolverValue ObjectIdentity) none)
+                hnull
+          · cases hcomposite :
+                (TypeRef.named inner.namedType).isCompositeBool schema with
+            | true =>
+              left
+              have hinnerNull :
+                  resultValueOrNull
+                    (completeValue schema resolvers variableValues (depth + 1)
+                      inner selectionSet
+                      (.scalar value : ResolverValue ObjectIdentity) none) =
+                  .null := by
+                simpa [scalarCompletionAtDepth, hcomposite] using hscalar
+              simpa [completeValue] using
+                resultValueOrNull_nonNullCompletion_eq_null
+                  (completeValue schema resolvers variableValues (depth + 1)
+                    inner selectionSet
+                    (.scalar value : ResolverValue ObjectIdentity) none)
+                  hinnerNull
+            | false =>
+              right
+              have hinnerScalar :
+                  resultValueOrNull
+                    (completeValue schema resolvers variableValues (depth + 1)
+                      inner selectionSet
+                      (.scalar value : ResolverValue ObjectIdentity) none) =
+                  .scalar value := by
+                simpa [scalarCompletionAtDepth, hcomposite] using hscalar
+              simpa [completeValue, scalarCompletionAtDepth, TypeRef.namedType,
+                hcomposite] using
+                resultValueOrNull_nonNullCompletion_eq_scalar
+                  (completeValue schema resolvers variableValues (depth + 1)
+                    inner selectionSet
+                    (.scalar value : ResolverValue ObjectIdentity) none)
+                  value hinnerScalar
+
+theorem responseFieldSlice_eq_null_of_resolve_null
+    {ObjectIdentity : Type}
+    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
+    {variableValues : VariableValues}
+    {completionDepth : Nat} {source : ResolverValue ObjectIdentity}
+    {field : ExecutableField}
+    (hresolve :
+      resolvers.resolve field.parentType field.fieldName field.arguments
+        source = some .null) :
+    responseFieldSlice schema resolvers variableValues completionDepth source
+      field = .null := by
+  unfold responseFieldSlice
+  cases hlookup : schema.lookupField field.parentType field.fieldName with
+  | none =>
+      simp [executeField, hlookup, resultValueOrNull]
+  | some fieldDefinition =>
+      have hreuse :
+          reusablePreviousValue? schema fieldDefinition.outputType none =
+        none :=
+        reusablePreviousValue?_none schema fieldDefinition.outputType
+      simp [executeField, hlookup, hresolve, hreuse,
+        completeValue_null_resultValueOrNull]
+
+theorem responseFieldSlice_eq_null_or_scalar_of_resolve_scalar
+    {ObjectIdentity : Type}
+    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
+    {variableValues : VariableValues}
+    {completionDepth : Nat} {source : ResolverValue ObjectIdentity}
+    {field : ExecutableField} {value : String}
+    (hresolve :
+      resolvers.resolve field.parentType field.fieldName field.arguments
+        source = some (.scalar value)) :
+    responseFieldSlice schema resolvers variableValues completionDepth source
+        field = .null ∨
+      responseFieldSlice schema resolvers variableValues completionDepth source
+        field =
+          scalarCompletionAtDepth schema
+            ((schema.fieldReturnType? field.parentType field.fieldName).getD
+              field.fieldName)
+            completionDepth value := by
+  unfold responseFieldSlice
+  cases hlookup : schema.lookupField field.parentType field.fieldName with
+  | none =>
+      left
+      simp [executeField, hlookup, resultValueOrNull]
+  | some fieldDefinition =>
+      have hreuse :
+          reusablePreviousValue? schema fieldDefinition.outputType none =
+        none :=
+        reusablePreviousValue?_none schema fieldDefinition.outputType
+      have hreturn :
+          ((schema.fieldReturnType? field.parentType field.fieldName).getD
+            field.fieldName) =
+          fieldDefinition.outputType.namedType := by
+        simp [Schema.fieldReturnType?, hlookup]
+      simpa [executeField, hlookup, hresolve, hreuse, hreturn] using
+        completeValue_scalar_object_empty_resultValueOrNull schema resolvers
+          variableValues fieldDefinition.outputType completionDepth
+          field.selectionSet value
 
 namespace CompleteValuePopulates
 
@@ -458,23 +1503,23 @@ theorem null
     (completionDepth : Nat) (parentType : Name)
     (selectionSet : List Selection) :
     CompleteValuePopulates schema resolvers variableValues completionDepth
-      parentType selectionSet (.null : Value ObjectIdentity) .null := by
-  cases completionDepth <;>
-    simp [CompleteValuePopulates, completeValue, shallowResponse,
-      mergeResponse]
+      parentType selectionSet (.null : ResolverValue ObjectIdentity) .null := by
+  simp [CompleteValuePopulates, completeResolvedValue,
+    reusablePreviousValue?_null, reusablePreviousValue?_none,
+    resultValueOrNull, mergeResponse]
 
 theorem null_responseFieldSlice
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
-    {completionDepth : Nat} {source : Value ObjectIdentity}
+    {completionDepth : Nat} {source : ResolverValue ObjectIdentity}
     {first later : ExecutableField}
     (hfirstResolve :
       resolvers.resolve first.parentType first.fieldName first.arguments
-        source = .null)
+        source = some .null)
     (hlaterResolve :
       resolvers.resolve later.parentType later.fieldName later.arguments
-        source = .null) :
+        source = some .null) :
     CompleteValuePopulates schema resolvers variableValues completionDepth
       ((schema.fieldReturnType? later.parentType later.fieldName).getD
         later.fieldName)
@@ -482,18 +1527,16 @@ theorem null_responseFieldSlice
       (resolvers.resolve later.parentType later.fieldName later.arguments source)
       (responseFieldSlice schema resolvers variableValues completionDepth source
         first) := by
-  have hfirstSlice :
-      responseFieldSlice schema resolvers variableValues completionDepth source
-          first =
-        .null := by
-    cases completionDepth <;>
-      simp [responseFieldSlice, executeField_empty_output, hfirstResolve,
-        completeValue, shallowResponse]
-  rw [hfirstSlice, hlaterResolve]
-  exact null schema resolvers variableValues completionDepth
-    ((schema.fieldReturnType? later.parentType later.fieldName).getD
-      later.fieldName)
-    later.selectionSet
+  rw [hlaterResolve]
+  rw [responseFieldSlice_eq_null_of_resolve_null (schema := schema)
+    (resolvers := resolvers) (variableValues := variableValues)
+    (completionDepth := completionDepth) (source := source)
+    (field := first) hfirstResolve]
+  simpa using
+    CompleteValuePopulates.null schema resolvers variableValues completionDepth
+      ((schema.fieldReturnType? later.parentType later.fieldName).getD
+        later.fieldName)
+      later.selectionSet
 
 theorem scalar_self
     {ObjectIdentity : Type}
@@ -502,24 +1545,49 @@ theorem scalar_self
     (completionDepth : Nat) (parentType : Name)
     (selectionSet : List Selection) (value : String) :
     CompleteValuePopulates schema resolvers variableValues completionDepth
-      parentType selectionSet (.scalar value : Value ObjectIdentity)
-      (.scalar value) := by
-  cases completionDepth <;>
-    simp [CompleteValuePopulates, completeValue, shallowResponse,
-      mergeResponse]
+      parentType selectionSet (.scalar value : ResolverValue ObjectIdentity)
+      (scalarCompletionAtDepth schema parentType completionDepth value) := by
+  cases completionDepth with
+  | zero =>
+      simp [CompleteValuePopulates, completeResolvedValue,
+        reusablePreviousValue?_null, reusablePreviousValue?_none,
+        completeValue, resultValueOrNull, scalarCompletionAtDepth,
+        mergeResponse]
+  | succ depth =>
+      cases hcomposite :
+          (TypeRef.named parentType).isCompositeBool schema with
+      | true =>
+        simp [CompleteValuePopulates, completeResolvedValue,
+          reusablePreviousValue?_null, reusablePreviousValue?_none,
+          completeValue, resultValueOrNull, scalarCompletionAtDepth,
+          mergeResponse, hcomposite]
+      | false =>
+        simp [CompleteValuePopulates, completeResolvedValue,
+          reusablePreviousValue?_scalar, reusablePreviousValue?_none,
+          completeValue, resultValueOrNull, scalarCompletionAtDepth,
+          mergeResponse, hcomposite]
 
 theorem scalar_responseFieldSlice
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
-    {completionDepth : Nat} {source : Value ObjectIdentity}
+    {completionDepth : Nat} {source : ResolverValue ObjectIdentity}
     {first later : ExecutableField} {value : String}
     (hfirstResolve :
       resolvers.resolve first.parentType first.fieldName first.arguments
-        source = .scalar value)
+        source = some (.scalar value))
     (hlaterResolve :
       resolvers.resolve later.parentType later.fieldName later.arguments
-        source = .scalar value) :
+        source = some (.scalar value))
+    (hcompletion :
+      scalarCompletionAtDepth schema
+          ((schema.fieldReturnType? first.parentType first.fieldName).getD
+            first.fieldName)
+          completionDepth value =
+        scalarCompletionAtDepth schema
+          ((schema.fieldReturnType? later.parentType later.fieldName).getD
+            later.fieldName)
+          completionDepth value) :
     CompleteValuePopulates schema resolvers variableValues completionDepth
       ((schema.fieldReturnType? later.parentType later.fieldName).getD
         later.fieldName)
@@ -527,246 +1595,46 @@ theorem scalar_responseFieldSlice
       (resolvers.resolve later.parentType later.fieldName later.arguments source)
       (responseFieldSlice schema resolvers variableValues completionDepth source
         first) := by
-  have hfirstSlice :
-      responseFieldSlice schema resolvers variableValues completionDepth source
-          first =
-        .scalar value := by
-    simp [responseFieldSlice, executeField_empty_output, hfirstResolve,
-      completeValue_scalar_any_depth_eq_scalar]
-  rw [hfirstSlice, hlaterResolve]
-  exact scalar_self schema resolvers variableValues completionDepth
-    ((schema.fieldReturnType? later.parentType later.fieldName).getD
-      later.fieldName)
-    later.selectionSet value
-
-theorem object_of_visit_merge
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues)
-    (completionDepth : Nat) (parentType runtimeType : Name)
-    (identity : ObjectIdentity)
-    (selectionSet : List Selection) (previousFields : List (Name × Response))
-    (hincludes :
-      schema.typeIncludesObjectBool parentType runtimeType = true)
-    (hvisit :
-      visitSubfields schema resolvers variableValues completionDepth
-        runtimeType (.object runtimeType (some identity)) selectionSet
-        (.object previousFields) =
-      mergeResponse (.object previousFields)
-        (visitSubfields schema resolvers variableValues completionDepth
-          runtimeType (.object runtimeType (some identity)) selectionSet
-          (.object []))) :
-    CompleteValuePopulates schema resolvers variableValues (completionDepth + 1)
-      parentType selectionSet (.object runtimeType (some identity))
-      (.object previousFields) := by
-  simpa [CompleteValuePopulates, completeValue, hincludes] using hvisit
-
-theorem object_of_visit_populates
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues)
-    (completionDepth : Nat) (parentType runtimeType : Name)
-    (identity : ObjectIdentity)
-    (selectionSet : List Selection) (previousFields : List (Name × Response))
-    (hincludes :
-      schema.typeIncludesObjectBool parentType runtimeType = true)
-    (hvisit :
-      VisitSubfieldsPopulates schema resolvers variableValues completionDepth
-        runtimeType (.object runtimeType (some identity)) selectionSet
-        (.object previousFields)) :
-    CompleteValuePopulates schema resolvers variableValues (completionDepth + 1)
-      parentType selectionSet (.object runtimeType (some identity))
-      (.object previousFields) := by
-  exact object_of_visit_merge schema resolvers variableValues completionDepth
-    parentType runtimeType identity selectionSet previousFields hincludes hvisit
-
-theorem object_responseFieldSlice_of_visit_populates
-    {ObjectIdentity : Type}
-    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
-    {variableValues : VariableValues}
-    {completionDepth : Nat} {source : Value ObjectIdentity}
-    {first later : ExecutableField}
-    {runtimeType : Name} {identity : ObjectIdentity}
-    {previousFields : List (Name × Response)}
-    (hfirstSlice :
-      responseFieldSlice schema resolvers variableValues (completionDepth + 1)
-          source first =
-        .object previousFields)
-    (hlaterResolve :
-      resolvers.resolve later.parentType later.fieldName later.arguments
-        source = .object runtimeType (some identity))
-    (hincludes :
-      schema.typeIncludesObjectBool
+  rw [hlaterResolve]
+  rcases responseFieldSlice_eq_null_or_scalar_of_resolve_scalar
+      (schema := schema) (resolvers := resolvers)
+      (variableValues := variableValues)
+      (completionDepth := completionDepth) (source := source)
+      (field := first) hfirstResolve with hslice | hslice
+  · rw [hslice]
+    simp [CompleteValuePopulates, completeResolvedValue,
+      reusablePreviousValue?_null, reusablePreviousValue?_none,
+      resultValueOrNull, mergeResponse]
+  · rw [hslice]
+    rw [hcompletion]
+    simpa using
+      CompleteValuePopulates.scalar_self schema resolvers variableValues
+        completionDepth
         ((schema.fieldReturnType? later.parentType later.fieldName).getD
           later.fieldName)
-        runtimeType = true)
-    (hvisit :
-      VisitSubfieldsPopulates schema resolvers variableValues completionDepth
-        runtimeType (.object runtimeType (some identity)) later.selectionSet
-        (.object previousFields)) :
-    CompleteValuePopulates schema resolvers variableValues (completionDepth + 1)
-      ((schema.fieldReturnType? later.parentType later.fieldName).getD
-        later.fieldName)
-      later.selectionSet
-      (resolvers.resolve later.parentType later.fieldName later.arguments source)
-      (responseFieldSlice schema resolvers variableValues (completionDepth + 1)
-        source first) := by
-  rw [hfirstSlice, hlaterResolve]
-  exact object_of_visit_populates schema resolvers variableValues
-    completionDepth
-    ((schema.fieldReturnType? later.parentType later.fieldName).getD
-      later.fieldName)
-    runtimeType identity later.selectionSet previousFields hincludes hvisit
-
-theorem completeValue_list_fold_previous_fn_eq_map
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (completionDepth : Nat)
-    (parentType : Name) (selectionSet : List Selection)
-    (previous : Value ObjectIdentity -> Response) :
-    ∀ (values : List (Value ObjectIdentity)) (acc : List Response),
-      (List.foldl
-        (fun (state : List Response × List Response)
-            (value : Value ObjectIdentity) =>
-          (completeValue schema resolvers variableValues completionDepth
-              parentType selectionSet value
-              (match state.snd with
-              | [] => .null
-              | previous :: _rest => previous) ::
-            state.fst,
-          match state.snd with
-          | [] => []
-          | _previous :: rest => rest))
-        (acc, values.map previous) values).fst =
-      (values.map
-        (fun value =>
-          completeValue schema resolvers variableValues completionDepth
-            parentType selectionSet value (previous value))).reverse ++ acc
-  | [], acc => by
-      simp
-  | value :: rest, acc => by
-      simp [completeValue_list_fold_previous_fn_eq_map schema resolvers
-        variableValues completionDepth parentType selectionSet previous rest
-        (completeValue schema resolvers variableValues completionDepth
-          parentType selectionSet value (previous value) :: acc),
-        List.append_assoc]
-
-theorem completeValue_list_previous_fn_eq_map
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (completionDepth : Nat)
-    (parentType : Name) (selectionSet : List Selection)
-    (values : List (Value ObjectIdentity))
-    (previous : Value ObjectIdentity -> Response) :
-    completeValue schema resolvers variableValues (completionDepth + 1)
-      parentType selectionSet (.list values) (.list (values.map previous)) =
-    .list
-      (values.map
-        (fun value =>
-          completeValue schema resolvers variableValues completionDepth
-            parentType selectionSet value (previous value))) := by
-  simpa [completeValue] using
-    congrArg List.reverse
-      (completeValue_list_fold_previous_fn_eq_map schema resolvers
-        variableValues completionDepth parentType selectionSet previous values
-        [])
-
-theorem list_of_values
-    {ObjectIdentity : Type}
-    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
-    {variableValues : VariableValues}
-    (completionDepth : Nat) (parentType : Name)
-    (selectionSet : List Selection) (values : List (Value ObjectIdentity))
-    (previous : Value ObjectIdentity -> Response)
-    (hvalues :
-      ∀ value, value ∈ values ->
-        CompleteValuePopulates schema resolvers variableValues completionDepth
-          parentType selectionSet value (previous value)) :
-    CompleteValuePopulates schema resolvers variableValues
-      (completionDepth + 1) parentType selectionSet (.list values)
-      (.list (values.map previous)) := by
-  unfold CompleteValuePopulates
-  rw [completeValue_list_previous_fn_eq_map schema resolvers variableValues
-    completionDepth parentType selectionSet values previous]
-  rw [completeValue_list_empty_previous_eq_map schema resolvers variableValues
-    completionDepth parentType selectionSet values]
-  simp [mergeResponse]
-  exact
-    (mergeResponseLists_map_of_forall values previous
-      (fun value =>
-        completeValue schema resolvers variableValues completionDepth
-          parentType selectionSet value .null)
-      (fun value =>
-        completeValue schema resolvers variableValues completionDepth
-          parentType selectionSet value (previous value))
-      (by
-        intro value hmem
-        exact (hvalues value hmem).symm)).symm
-
-theorem list_responseFieldSlice
-    {ObjectIdentity : Type}
-    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
-    {variableValues : VariableValues}
-    {completionDepth : Nat} {source : Value ObjectIdentity}
-    {first later : ExecutableField} {values : List (Value ObjectIdentity)}
-    (hreturn :
-      ((schema.fieldReturnType? first.parentType first.fieldName).getD
-        first.fieldName) =
-      ((schema.fieldReturnType? later.parentType later.fieldName).getD
-        later.fieldName))
-    (hfirstResolve :
-      resolvers.resolve first.parentType first.fieldName first.arguments
-        source = .list values)
-    (hlaterResolve :
-      resolvers.resolve later.parentType later.fieldName later.arguments
-        source = .list values)
-    (hvalues :
-      ∀ value, value ∈ values ->
-        CompleteValuePopulates schema resolvers variableValues completionDepth
-          ((schema.fieldReturnType? later.parentType later.fieldName).getD
-            later.fieldName)
-          later.selectionSet value
-          (completeValue schema resolvers variableValues completionDepth
-            ((schema.fieldReturnType? later.parentType later.fieldName).getD
-              later.fieldName)
-            first.selectionSet value .null)) :
-    CompleteValuePopulates schema resolvers variableValues
-      (completionDepth + 1)
-      ((schema.fieldReturnType? later.parentType later.fieldName).getD
-        later.fieldName)
-      later.selectionSet
-      (resolvers.resolve later.parentType later.fieldName later.arguments source)
-      (responseFieldSlice schema resolvers variableValues (completionDepth + 1)
-        source first) := by
-  let laterChildType :=
-    ((schema.fieldReturnType? later.parentType later.fieldName).getD
-      later.fieldName)
-  have hfirstSlice :
-      responseFieldSlice schema resolvers variableValues (completionDepth + 1)
-          source first =
-        .list
-          (values.map
-            (fun value =>
-              completeValue schema resolvers variableValues completionDepth
-                laterChildType first.selectionSet value .null)) := by
-    rw [responseFieldSlice, executeField_empty_output, hfirstResolve]
-    rw [hreturn]
-    exact
-      completeValue_list_empty_previous_eq_map schema resolvers variableValues
-        completionDepth laterChildType first.selectionSet values
-  rw [hfirstSlice, hlaterResolve]
-  exact
-    list_of_values completionDepth laterChildType later.selectionSet values
-      (fun value =>
-        completeValue schema resolvers variableValues completionDepth
-          laterChildType first.selectionSet value .null)
-      hvalues
+        later.selectionSet value
 
 end CompleteValuePopulates
 
+theorem mergeResponseField_null_of_lookup_null_slice
+    (responseName : Name) :
+    ∀ (fields : List (Name × ResponseValue)),
+      lookupResponseField? responseName fields = some .null ->
+        mergeResponseField responseName .null fields = fields
+  | [], hlookup => by
+      simp [lookupResponseField?] at hlookup
+  | (fieldResponseName, fieldResponse) :: rest, hlookup => by
+      by_cases hname : fieldResponseName == responseName
+      · simp [lookupResponseField?, hname] at hlookup
+        simp [mergeResponseField, mergeResponse, hname, hlookup]
+      · simp [lookupResponseField?, hname] at hlookup
+        simp [mergeResponseField, hname,
+          mergeResponseField_null_of_lookup_null_slice responseName rest
+            hlookup]
+
 theorem mergeResponseField_eq_of_lookup_absorbs
-    (responseName : Name) (existing incomingSlice incomingFull : Response)
-    (fields : List (Name × Response)) :
+    (responseName : Name) (existing incomingSlice incomingFull : ResponseValue)
+    (fields : List (Name × ResponseValue)) :
     lookupResponseField? responseName fields = some existing ->
     ResponseAbsorbs existing incomingFull ->
     incomingFull = mergeResponse existing incomingSlice ->
@@ -794,11 +1662,12 @@ theorem visitFieldSlice_succ_object_eq_mergeResponseSlice_of_step
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
-    (field : ExecutableField) (fields : List (Name × Response))
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (field : ExecutableField) (fields : List (Name × ResponseValue))
     (hstep :
-      executeField schema resolvers variableValues completionDepth source
-        (.object fields) field =
+      resultValueOrNull
+        (executeField schema resolvers variableValues completionDepth source
+          (responseObjectField? field.responseName (.object fields)) field) =
         match responseObjectField? field.responseName (.object fields) with
         | some existing =>
             mergeResponse existing
@@ -812,59 +1681,100 @@ theorem visitFieldSlice_succ_object_eq_mergeResponseSlice_of_step
         responseObjectField? field.responseName (.object fields) =
           some existing ->
         ResponseAbsorbs existing
-          (executeField schema resolvers variableValues completionDepth source
-            (.object fields) field)) :
+          (resultValueOrNull
+            (executeField schema resolvers variableValues completionDepth source
+              (responseObjectField? field.responseName (.object fields))
+              field))) :
       visitFieldSlice schema resolvers variableValues (completionDepth + 1)
         source field (.object fields) =
       mergeResponse (.object fields)
         (responseObjectSlice schema resolvers variableValues completionDepth
           source field) := by
-  unfold visitFieldSlice responseObjectSlice responseFieldSlice
-  simp only [mergeResponseFieldIntoObject, mergeResponse]
   cases hlookup :
       responseObjectField? field.responseName (.object fields) with
   | none =>
-      simp [hlookup] at hstep
-      rw [hstep]
-      simp [mergeResponseFields, responseFieldSlice]
+      have hstep' :
+          resultValueOrNull
+            (executeField schema resolvers variableValues completionDepth source
+              none field) =
+          responseFieldSlice schema resolvers variableValues completionDepth
+            source field := by
+        simpa [hlookup] using hstep
+      simpa [visitFieldSlice, visitFieldSliceResult, responseObjectSlice,
+        mergeResponse, mergeResponseFields, mergeResponseFieldResult,
+        mergeResponseFieldIntoObject, hlookup] using
+          congrArg
+            (fun incoming =>
+              ResponseValue.object
+                (mergeResponseField field.responseName incoming fields))
+            hstep'
   | some existing =>
-      simp [hlookup] at hstep
-      rw [hstep]
-      have hlookupFields :
+      have hstep' :
+          resultValueOrNull
+            (executeField schema resolvers variableValues completionDepth source
+              (some existing) field) =
+          mergeResponse existing
+            (responseFieldSlice schema resolvers variableValues
+              completionDepth source field) := by
+        simpa [hlookup] using hstep
+      have habsorbs' :
+          ResponseAbsorbs existing
+            (resultValueOrNull
+              (executeField schema resolvers variableValues completionDepth
+                source (some existing) field)) := by
+        simpa [hlookup] using habsorbs existing hlookup
+      have hlookupField :
           lookupResponseField? field.responseName fields = some existing := by
         simpa [responseObjectField?] using hlookup
-      apply congrArg Response.object
-      rw [show
-          mergeResponseFields fields
-            [(field.responseName,
-              executeField schema resolvers variableValues completionDepth
-                source (.object []) field)] =
+      have hmergeEq :
           mergeResponseField field.responseName
-            (executeField schema resolvers variableValues completionDepth source
-              (.object []) field)
-            fields by
-        simp [mergeResponseFields]]
-      exact
+              (resultValueOrNull
+              (executeField schema resolvers variableValues completionDepth
+                  source (some existing) field))
+              fields =
+            mergeResponseField field.responseName
+              (responseFieldSlice schema resolvers variableValues
+                completionDepth source field)
+              fields :=
         mergeResponseField_eq_of_lookup_absorbs field.responseName existing
-          (executeField schema resolvers variableValues completionDepth source
-            (.object []) field)
-          (mergeResponse existing
-            (executeField schema resolvers variableValues completionDepth source
-              (.object []) field))
-          fields hlookupFields
-          (by
-            simpa [hstep] using habsorbs existing hlookup)
-          rfl
+          (responseFieldSlice schema resolvers variableValues completionDepth
+            source field)
+            (resultValueOrNull
+              (executeField schema resolvers variableValues completionDepth source
+                (some existing) field))
+            fields hlookupField habsorbs' hstep'
+      cases existing with
+      | null =>
+          simpa [visitFieldSlice, visitFieldSliceResult, responseObjectSlice,
+            mergeResponse, mergeResponseFields, mergeResponseFieldResult,
+            mergeResponseFieldIntoObject, hlookup] using
+              congrArg ResponseValue.object hmergeEq
+      | scalar value =>
+          simpa [visitFieldSlice, visitFieldSliceResult, responseObjectSlice,
+            mergeResponse, mergeResponseFields, mergeResponseFieldResult,
+            mergeResponseFieldIntoObject, hlookup] using
+              congrArg ResponseValue.object hmergeEq
+      | object objectFields =>
+          simpa [visitFieldSlice, visitFieldSliceResult, responseObjectSlice,
+            mergeResponse, mergeResponseFields, mergeResponseFieldResult,
+            mergeResponseFieldIntoObject, hlookup] using
+              congrArg ResponseValue.object hmergeEq
+      | list values =>
+          simpa [visitFieldSlice, visitFieldSliceResult, responseObjectSlice,
+            mergeResponse, mergeResponseFields, mergeResponseFieldResult,
+            mergeResponseFieldIntoObject, hlookup] using
+              congrArg ResponseValue.object hmergeEq
 
-structure FieldSliceMergeStep
+  structure FieldSliceMergeStep
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
-    (field : ExecutableField) (fields : List (Name × Response)) : Prop where
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (field : ExecutableField) (fields : List (Name × ResponseValue)) : Prop where
   step_eq :
-    executeField schema resolvers variableValues completionDepth source
-      (.object fields) field =
+    resultValueOrNull
+      (executeField schema resolvers variableValues completionDepth source
+        (responseObjectField? field.responseName (.object fields)) field) =
       match responseObjectField? field.responseName (.object fields) with
       | some existing =>
           mergeResponse existing
@@ -878,8 +1788,9 @@ structure FieldSliceMergeStep
       responseObjectField? field.responseName (.object fields) =
         some existing ->
       ResponseAbsorbs existing
-        (executeField schema resolvers variableValues completionDepth source
-          (.object fields) field)
+        (resultValueOrNull
+          (executeField schema resolvers variableValues completionDepth source
+            (responseObjectField? field.responseName (.object fields)) field))
 
 namespace FieldSliceMergeStep
 
@@ -887,97 +1798,51 @@ def of_fresh
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
-    {completionDepth : Nat} {source : Value ObjectIdentity}
-    {field : ExecutableField} {fields : List (Name × Response)}
+    {completionDepth : Nat} {source : ResolverValue ObjectIdentity}
+    {field : ExecutableField} {fields : List (Name × ResponseValue)}
     (hfresh : field.responseName ∉ fields.map Prod.fst) :
     FieldSliceMergeStep schema resolvers variableValues completionDepth source
       field fields := by
   have hlookup :
       responseObjectField? field.responseName (.object fields) = none :=
     responseObjectField?_none_of_not_mem field.responseName fields hfresh
-  refine
-    { step_eq := ?_
-      absorbs := ?_ }
-  · rw [executeField_object_fresh_eq_empty_output schema resolvers
-      variableValues completionDepth source field fields hfresh]
-    simp [hlookup, responseFieldSlice]
-  · intro existing hsome
-    rw [hlookup] at hsome
-    contradiction
+  constructor
+  · simp [hlookup, responseFieldSlice]
+  · intro existing hexisting
+    rw [hlookup] at hexisting
+    cases hexisting
 
 def of_reentry
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
-    {completionDepth : Nat} {source : Value ObjectIdentity}
-    {field : ExecutableField} {fields : List (Name × Response)}
-    {existing : Response}
+    {completionDepth : Nat} {source : ResolverValue ObjectIdentity}
+    {field : ExecutableField} {fields : List (Name × ResponseValue)}
+    {existing : ResponseValue}
     (hlookup :
       responseObjectField? field.responseName (.object fields) =
         some existing)
     (hstep :
-      executeField schema resolvers variableValues completionDepth source
-        (.object fields) field =
+      resultValueOrNull
+        (executeField schema resolvers variableValues completionDepth source
+          (some existing) field) =
       mergeResponse existing
         (responseFieldSlice schema resolvers variableValues completionDepth
           source field))
     (habsorbs :
       ResponseAbsorbs existing
-        (executeField schema resolvers variableValues completionDepth source
-          (.object fields) field)) :
+        (resultValueOrNull
+          (executeField schema resolvers variableValues completionDepth source
+            (some existing) field))) :
     FieldSliceMergeStep schema resolvers variableValues completionDepth source
       field fields := by
-  refine
-    { step_eq := ?_
-      absorbs := ?_ }
-  · simp [hlookup, hstep]
+  constructor
+  · rw [hlookup]
+    exact hstep
   · intro candidate hcandidate
     rw [hlookup] at hcandidate
-    injection hcandidate with hcandidateEq
-    subst candidate
-    exact habsorbs
-
-def of_reentry_populates
-    {ObjectIdentity : Type}
-    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
-    {variableValues : VariableValues}
-    {completionDepth : Nat} {source : Value ObjectIdentity}
-    {field : ExecutableField} {fields : List (Name × Response)}
-    {existing : Response}
-    (hlookup :
-      responseObjectField? field.responseName (.object fields) =
-        some existing)
-    (hpopulate :
-      CompleteValuePopulates schema resolvers variableValues completionDepth
-        ((schema.fieldReturnType? field.parentType field.fieldName).getD
-          field.fieldName)
-        field.selectionSet
-        (resolvers.resolve field.parentType field.fieldName field.arguments
-          source)
-        existing)
-    (hexistingReady : ResponseMergeReady existing) :
-    FieldSliceMergeStep schema resolvers variableValues completionDepth source
-      field fields := by
-  apply FieldSliceMergeStep.of_reentry hlookup
-  · rw [executeField_reentry_of_lookup schema resolvers variableValues
-      completionDepth source field fields existing hlookup]
-    simpa [CompleteValuePopulates, responseFieldSlice, executeField_empty_output]
-      using hpopulate
-  · have hsliceReady :
-        ResponseMergeReady
-          (responseFieldSlice schema resolvers variableValues completionDepth
-            source field) := by
-      exact
-        ResponseMergeReady_responseFieldSlice schema resolvers variableValues
-          completionDepth source field
-    rw [executeField_reentry_of_lookup schema resolvers variableValues
-      completionDepth source field fields existing hlookup]
-    rw [hpopulate]
-    simpa [responseFieldSlice, executeField_empty_output] using
-      ResponseAbsorbs_merge_of_ready existing
-        (responseFieldSlice schema resolvers variableValues completionDepth
-          source field)
-        hexistingReady hsliceReady
+    cases hcandidate
+    simpa [hlookup] using habsorbs
 
 end FieldSliceMergeStep
 
@@ -985,8 +1850,8 @@ def FieldSliceMergeTrace
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity) :
-    List ExecutableField -> Response -> Prop
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity) :
+    List ExecutableField -> ResponseValue -> Prop
   | [], _output => True
   | field :: rest, .object fields =>
       FieldSliceMergeStep schema resolvers variableValues completionDepth
@@ -1005,8 +1870,8 @@ theorem nil
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
-    (output : Response) :
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    (output : ResponseValue) :
     FieldSliceMergeTrace schema resolvers variableValues completionDepth source
       [] output := by
   simp [FieldSliceMergeTrace]
@@ -1015,9 +1880,9 @@ theorem cons_object
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
     (field : ExecutableField) (rest : List ExecutableField)
-    (fields : List (Name × Response))
+    (fields : List (Name × ResponseValue))
     (hstep :
       FieldSliceMergeStep schema resolvers variableValues completionDepth
         source field fields)
@@ -1035,9 +1900,9 @@ theorem cons_fresh_object
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
     (field : ExecutableField) (rest : List ExecutableField)
-    (fields : List (Name × Response))
+    (fields : List (Name × ResponseValue))
     (hfresh : field.responseName ∉ fields.map Prod.fst)
     (hrest :
       FieldSliceMergeTrace schema resolvers variableValues completionDepth
@@ -1050,45 +1915,12 @@ theorem cons_fresh_object
   cons_object schema resolvers variableValues completionDepth source field rest
     fields (FieldSliceMergeStep.of_fresh hfresh) hrest
 
-theorem cons_reentry_populates_object
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
-    (field : ExecutableField) (rest : List ExecutableField)
-    (fields : List (Name × Response)) (existing : Response)
-    (hlookup :
-      responseObjectField? field.responseName (.object fields) =
-        some existing)
-    (hpopulate :
-      CompleteValuePopulates schema resolvers variableValues completionDepth
-        ((schema.fieldReturnType? field.parentType field.fieldName).getD
-          field.fieldName)
-        field.selectionSet
-        (resolvers.resolve field.parentType field.fieldName field.arguments
-          source)
-        existing)
-    (hexistingReady : ResponseMergeReady existing)
-    (hrest :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source rest
-        (mergeResponse (.object fields)
-          (responseObjectSlice schema resolvers variableValues completionDepth
-            source field))) :
-    FieldSliceMergeTrace schema resolvers variableValues completionDepth source
-      (field :: rest) (.object fields) :=
-  cons_object schema resolvers variableValues completionDepth source field rest
-    fields
-    (FieldSliceMergeStep.of_reentry_populates hlookup hpopulate
-      hexistingReady)
-    hrest
-
 theorem of_responseNamesNodup_object
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity) :
-    ∀ (fields : List ExecutableField) (outputFields : List (Name × Response)),
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity) :
+    ∀ (fields : List ExecutableField) (outputFields : List (Name × ResponseValue)),
       (fields.map (fun field => field.responseName)).Nodup ->
       (∀ field, field ∈ fields ->
         field.responseName ∉ outputFields.map Prod.fst) ->
@@ -1149,7 +1981,7 @@ theorem of_responseNamesNodup_empty
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
     (fields : List ExecutableField)
     (hnodup : (fields.map (fun field => field.responseName)).Nodup) :
     FieldSliceMergeTrace schema resolvers variableValues completionDepth source
@@ -1157,96 +1989,14 @@ theorem of_responseNamesNodup_empty
   of_responseNamesNodup_object schema resolvers variableValues completionDepth
     source fields [] hnodup (by intro field _hmem; simp)
 
-theorem two_duplicate_of_first_slice_populates
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
-    (first later : ExecutableField) (existing : Response)
-    (hsameResponse : later.responseName = first.responseName)
-    (hfirstSlice :
-      responseFieldSlice schema resolvers variableValues completionDepth source
-        first = existing)
-    (hpopulate :
-      CompleteValuePopulates schema resolvers variableValues completionDepth
-        ((schema.fieldReturnType? later.parentType later.fieldName).getD
-          later.fieldName)
-        later.selectionSet
-        (resolvers.resolve later.parentType later.fieldName later.arguments
-          source)
-        existing)
-    (hexistingReady : ResponseMergeReady existing) :
-    FieldSliceMergeTrace schema resolvers variableValues completionDepth source
-      [first, later] (.object []) := by
-  apply FieldSliceMergeTrace.cons_fresh_object schema resolvers variableValues
-    completionDepth source first [later] []
-  · simp
-  · have htail :
-        FieldSliceMergeTrace schema resolvers variableValues completionDepth
-          source [later] (.object [(first.responseName, existing)]) := by
-      apply FieldSliceMergeTrace.cons_reentry_populates_object schema
-        resolvers variableValues completionDepth source later []
-        [(first.responseName, existing)] existing
-      · simp [responseObjectField?, lookupResponseField?, hsameResponse]
-      · exact hpopulate
-      · exact hexistingReady
-      · exact FieldSliceMergeTrace.nil schema resolvers variableValues
-          completionDepth source
-          (mergeResponse (.object [(first.responseName, existing)])
-            (responseObjectSlice schema resolvers variableValues completionDepth
-              source later))
-    simpa [responseObjectSlice, hfirstSlice, mergeResponse,
-      mergeResponseFields, mergeResponseField] using htail
-
-theorem two_scalar_duplicate
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
-    (first later : ExecutableField) (value : String)
-    (hsameResponse : later.responseName = first.responseName)
-    (hfirstResolve :
-      resolvers.resolve first.parentType first.fieldName first.arguments
-        source = .scalar value)
-    (hlaterResolve :
-      resolvers.resolve later.parentType later.fieldName later.arguments
-        source = .scalar value) :
-    FieldSliceMergeTrace schema resolvers variableValues completionDepth source
-      [first, later] (.object []) := by
-  apply FieldSliceMergeTrace.cons_fresh_object schema resolvers variableValues
-    completionDepth source first [later] []
-  · simp
-  · have htail :
-        FieldSliceMergeTrace schema resolvers variableValues completionDepth
-          source [later] (.object [(first.responseName, .scalar value)]) := by
-      apply FieldSliceMergeTrace.cons_reentry_populates_object schema
-        resolvers variableValues completionDepth source later [] 
-        [(first.responseName, .scalar value)] (.scalar value)
-      · simp [responseObjectField?, lookupResponseField?, hsameResponse]
-      · simpa [hlaterResolve] using
-          CompleteValuePopulates.scalar_self schema resolvers variableValues
-            completionDepth
-            ((schema.fieldReturnType? later.parentType later.fieldName).getD
-              later.fieldName)
-            later.selectionSet value
-      · exact ResponseMergeReady.scalar value
-      · exact FieldSliceMergeTrace.nil schema resolvers variableValues
-          completionDepth source
-          (mergeResponse (.object [(first.responseName, .scalar value)])
-            (responseObjectSlice schema resolvers variableValues completionDepth
-              source later))
-    simpa [responseObjectSlice, responseFieldSlice, executeField_empty_output,
-      hfirstResolve, completeValue, mergeResponse, mergeResponseFields,
-      mergeResponseField, completeValue_scalar_any_depth_eq_scalar] using htail
-
 end FieldSliceMergeTrace
 
 theorem visitFieldSliceFold_succ_eq_mergeResponseSliceFold_of_trace
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity) :
-    ∀ (fields : List ExecutableField) (output : Response),
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity) :
+    ∀ (fields : List ExecutableField) (output : ResponseValue),
       FieldSliceMergeTrace schema resolvers variableValues completionDepth
         source fields output ->
         visitFieldSliceFold schema resolvers variableValues
@@ -1287,7 +2037,7 @@ theorem visitFieldSliceFold_succ_empty_eq_mergeResponseSliceFold_of_responseName
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
     (fields : List ExecutableField)
     (hnodup : (fields.map (fun field => field.responseName)).Nodup) :
     visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
@@ -1304,20 +2054,20 @@ theorem visitSubfields_executableFieldSelections_succ_empty_eq_mergeResponseSlic
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
     (completionDepth : Nat) (parentType : Name)
-    (source : Value ObjectIdentity)
+    (source : ResolverValue ObjectIdentity)
     (fields : List ExecutableField)
     (hparents :
       ∀ field, field ∈ fields -> field.parentType = parentType)
     (hnodup : (fields.map (fun field => field.responseName)).Nodup) :
-    visitSubfields schema resolvers variableValues (completionDepth + 1)
-      parentType source (executableFieldSelections fields) (.object []) =
+    (visitSubfields schema resolvers variableValues (completionDepth + 1)
+      parentType source (executableFieldSelections fields) (.object [])).fst =
     mergeResponseSliceFold schema resolvers variableValues completionDepth
       source fields (.object []) := by
   have hvisit :
       visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
         source fields (.object []) =
-      visitSubfields schema resolvers variableValues (completionDepth + 1)
-        parentType source (executableFieldSelections fields) (.object []) :=
+      (visitSubfields schema resolvers variableValues (completionDepth + 1)
+        parentType source (executableFieldSelections fields) (.object [])).fst :=
     visitFieldSliceFold_eq_visitSubfields_executableFieldSelections schema
       resolvers variableValues (completionDepth + 1) parentType source fields
       (.object []) hparents
@@ -1330,8 +2080,8 @@ theorem VisitSubfieldsPopulates.of_executableFieldSelections_trace_fold
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
     (completionDepth : Nat) (parentType : Name)
-    (source : Value ObjectIdentity)
-    (fields : List ExecutableField) (previous : Response)
+    (source : ResolverValue ObjectIdentity)
+    (fields : List ExecutableField) (previous : ResponseValue)
     (hparents :
       ∀ field, field ∈ fields -> field.parentType = parentType)
     (htracePrevious :
@@ -1346,49 +2096,29 @@ theorem VisitSubfieldsPopulates.of_executableFieldSelections_trace_fold
     VisitSubfieldsPopulates schema resolvers variableValues
       (completionDepth + 1) parentType source
       (executableFieldSelections fields) previous := by
-  have hpreviousVisit :
-      visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
-        source fields previous =
-      visitSubfields schema resolvers variableValues (completionDepth + 1)
-        parentType source (executableFieldSelections fields) previous :=
-    visitFieldSliceFold_eq_visitSubfields_executableFieldSelections schema
-      resolvers variableValues (completionDepth + 1) parentType source fields
-      previous hparents
-  have hpreviousFold :
-      visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
-        source fields previous =
-      mergeResponseSliceFold schema resolvers variableValues completionDepth
-        source fields previous :=
-    visitFieldSliceFold_succ_eq_mergeResponseSliceFold_of_trace schema
-      resolvers variableValues completionDepth source fields previous
-      htracePrevious
-  have hemptyVisit :
-      visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
-        source fields (.object []) =
-      visitSubfields schema resolvers variableValues (completionDepth + 1)
-        parentType source (executableFieldSelections fields) (.object []) :=
-    visitFieldSliceFold_eq_visitSubfields_executableFieldSelections schema
-      resolvers variableValues (completionDepth + 1) parentType source fields
-      (.object []) hparents
-  have hemptyFold :
-      visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
-        source fields (.object []) =
-      mergeResponseSliceFold schema resolvers variableValues completionDepth
-        source fields (.object []) :=
-    visitFieldSliceFold_succ_eq_mergeResponseSliceFold_of_trace schema
-      resolvers variableValues completionDepth source fields (.object [])
-      htraceEmpty
   unfold VisitSubfieldsPopulates
-  rw [← hpreviousVisit, hpreviousFold, hfold, ← hemptyFold, hemptyVisit]
+  rw [← visitFieldSliceFold_eq_visitSubfields_executableFieldSelections
+      schema resolvers variableValues (completionDepth + 1) parentType source
+      fields previous hparents]
+  rw [← visitFieldSliceFold_eq_visitSubfields_executableFieldSelections
+      schema resolvers variableValues (completionDepth + 1) parentType source
+      fields (.object []) hparents]
+  rw [visitFieldSliceFold_succ_eq_mergeResponseSliceFold_of_trace schema
+    resolvers variableValues completionDepth source fields previous
+    htracePrevious]
+  rw [visitFieldSliceFold_succ_eq_mergeResponseSliceFold_of_trace schema
+    resolvers variableValues completionDepth source fields (.object [])
+    htraceEmpty]
+  exact hfold
 
 theorem VisitSubfieldsPopulates.of_executableFieldSelections_responseNamesNodup_object
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
     (completionDepth : Nat) (parentType : Name)
-    (source : Value ObjectIdentity)
+    (source : ResolverValue ObjectIdentity)
     (fields : List ExecutableField)
-    (previousFields : List (Name × Response))
+    (previousFields : List (Name × ResponseValue))
     (hparents :
       ∀ field, field ∈ fields -> field.parentType = parentType)
     (hnodup : (fields.map (fun field => field.responseName)).Nodup)
@@ -1409,66 +2139,6 @@ theorem VisitSubfieldsPopulates.of_executableFieldSelections_responseNamesNodup_
     (FieldSliceMergeFoldPopulates.of_responseNamesNodup_object schema resolvers
       variableValues completionDepth source fields previousFields hnodup
       hdisjoint)
-
-theorem CompleteValuePopulates.object_executableFieldSelections_responseNamesNodup
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues)
-    (completionDepth : Nat) (parentType runtimeType : Name)
-    (identity : ObjectIdentity)
-    (fields : List ExecutableField)
-    (previousFields : List (Name × Response))
-    (hincludes :
-      schema.typeIncludesObjectBool parentType runtimeType = true)
-    (hparents :
-      ∀ field, field ∈ fields -> field.parentType = runtimeType)
-    (hnodup : (fields.map (fun field => field.responseName)).Nodup)
-    (hdisjoint :
-      ∀ field, field ∈ fields ->
-        field.responseName ∉ previousFields.map Prod.fst) :
-    CompleteValuePopulates schema resolvers variableValues (completionDepth + 2)
-      parentType (executableFieldSelections fields)
-      (.object runtimeType (some identity)) (.object previousFields) :=
-  CompleteValuePopulates.object_of_visit_populates schema resolvers
-    variableValues (completionDepth + 1) parentType runtimeType identity
-    (executableFieldSelections fields) previousFields hincludes
-    (VisitSubfieldsPopulates.of_executableFieldSelections_responseNamesNodup_object
-      schema resolvers variableValues completionDepth runtimeType
-      (.object runtimeType (some identity)) fields previousFields hparents hnodup
-      hdisjoint)
-
-theorem CompleteValuePopulates.object_executableFieldSelections_of_trace_fold
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues)
-    (completionDepth : Nat) (parentType runtimeType : Name)
-    (identity : ObjectIdentity)
-    (fields : List ExecutableField)
-    (previousFields : List (Name × Response))
-    (hincludes :
-      schema.typeIncludesObjectBool parentType runtimeType = true)
-    (hparents :
-      ∀ field, field ∈ fields -> field.parentType = runtimeType)
-    (htracePrevious :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        (.object runtimeType (some identity)) fields (.object previousFields))
-    (htraceEmpty :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        (.object runtimeType (some identity)) fields (.object []))
-    (hfold :
-      FieldSliceMergeFoldPopulates schema resolvers variableValues
-        completionDepth (.object runtimeType (some identity)) fields
-        (.object previousFields)) :
-    CompleteValuePopulates schema resolvers variableValues (completionDepth + 2)
-      parentType (executableFieldSelections fields)
-      (.object runtimeType (some identity)) (.object previousFields) :=
-  CompleteValuePopulates.object_of_visit_populates schema resolvers
-    variableValues (completionDepth + 1) parentType runtimeType identity
-    (executableFieldSelections fields) previousFields hincludes
-    (VisitSubfieldsPopulates.of_executableFieldSelections_trace_fold schema
-      resolvers variableValues completionDepth runtimeType
-      (.object runtimeType (some identity)) fields (.object previousFields)
-      hparents htracePrevious htraceEmpty hfold)
 
 end ExecutionUngrouped
 end Algorithms

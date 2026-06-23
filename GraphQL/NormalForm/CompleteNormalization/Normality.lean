@@ -1,3 +1,4 @@
+import GraphQL.NormalForm.CompleteNormalization.OperationNormality
 import GraphQL.NormalForm.CompleteNormalization.StaticCollection
 import GraphQL.NormalForm.GroundTypeNormalization.Normality
 
@@ -201,7 +202,45 @@ theorem bottomSelectionSetDirectiveFree_singleton
   intro hselection
   simp [bottomSelectionSetDirectiveFree, hselection]
 
-theorem filterSelectionSetBoolCase_bottomDirectiveFree
+theorem selectionDirectiveFree_of_mem
+    {selection : Selection} :
+    ∀ {selectionSet},
+      selectionSetDirectiveFree selectionSet ->
+      selection ∈ selectionSet ->
+        selectionDirectiveFree selection
+  | [], _hfree, hmem => by
+      simp at hmem
+  | head :: rest, hfree, hmem => by
+      simp at hmem
+      rcases hmem with hhead | htail
+      · subst head
+        exact hfree.1
+      · exact selectionDirectiveFree_of_mem hfree.2 htail
+
+theorem caseBodySelectionShape_of_field_directiveFree
+    {selection : Selection} :
+    Selection.isField selection ->
+      selectionDirectiveFree selection ->
+        caseBodySelectionShape selection := by
+  intro hfield hfree
+  cases selection with
+  | field responseName fieldName arguments directives selectionSet =>
+      rcases hfree with ⟨hdirectives, _hselectionSet⟩
+      simpa [caseBodySelectionShape] using hdirectives
+  | inlineFragment typeCondition directives selectionSet =>
+      simp [Selection.isField] at hfield
+
+theorem caseBodySelectionSetShape_of_allFields_directiveFree
+    {selectionSet : List Selection} :
+    selectionsAllFields selectionSet ->
+      selectionSetDirectiveFree selectionSet ->
+        caseBodySelectionSetShape selectionSet := by
+  intro hall hfree selection hmem
+  exact caseBodySelectionShape_of_field_directiveFree
+    (hall selection hmem)
+    (selectionDirectiveFree_of_mem hfree hmem)
+
+theorem staticCollectForGround_bottomDirectiveFree
     (schema : Schema) (variables : List BoolVar)
     (lookupParent groundType : Name) (boolCase : BoolCase)
     (selectionSet : List Selection) :
@@ -209,18 +248,18 @@ theorem filterSelectionSetBoolCase_bottomDirectiveFree
       (staticCollectForGround schema variables lookupParent
         groundType boolCase selectionSet) := by
   apply bottomSelectionSetDirectiveFree_of_allFields_noDirectives
-  · exact filterSelectionSetBoolCase_allFields schema variables
+  · exact staticCollectForGround_allFields schema variables
       lookupParent groundType boolCase selectionSet
   · intro responseName fieldName arguments directives subselections hmem
     rcases
-      filterSelectionSetBoolCase_field_shape schema variables
+      staticCollectForGround_field_shape schema variables
         lookupParent groundType boolCase hmem with
       ⟨matchedResponseName, matchedFieldName, matchedArguments,
         matchedSelectionSet, hshape⟩
     cases hshape
     rfl
 
-theorem filterSelectionSetBoolCase_caseBodyShape
+theorem staticCollectForGround_caseBodyShape
     (schema : Schema) (variables : List BoolVar)
     (lookupParent groundType : Name) (boolCase : BoolCase)
     (selectionSet : List Selection) :
@@ -229,7 +268,7 @@ theorem filterSelectionSetBoolCase_caseBodyShape
         groundType boolCase selectionSet) := by
   intro selection hmem
   rcases
-    filterSelectionSetBoolCase_field_shape schema variables
+    staticCollectForGround_field_shape schema variables
       lookupParent groundType boolCase hmem with
     ⟨matchedResponseName, matchedFieldName, matchedArguments,
       matchedSelectionSet, hshape⟩
@@ -237,40 +276,18 @@ theorem filterSelectionSetBoolCase_caseBodyShape
   simp [caseBodySelectionShape]
 
 theorem normalizeBoolCaseForType_caseBodyShape
-    (schema : Schema) (variables : List BoolVar)
-    (boolCase : BoolCase) (returnType : Name)
+    (schema : Schema) (boolCase : BoolCase) (returnType : Name)
     (selectionSet : List Selection) :
     caseBodySelectionSetShape
       (normalizeBoolCaseForType schema boolCase returnType selectionSet) := by
-  intro selection hmem
-  cases hleaf : leafTypeNameBool schema returnType with
-  | true =>
-      simp [normalizeBoolCaseForType, hleaf] at hmem
-  | false =>
-      cases hobject : objectTypeNameBool schema returnType with
-      | true =>
-          have hbody :=
-            filterSelectionSetBoolCase_caseBodyShape schema
-              variables returnType returnType boolCase selectionSet
-          exact hbody selection (by
-            simpa [normalizeBoolCaseForType, hleaf,
-              hobject] using hmem)
-      | false =>
-          simp [normalizeBoolCaseForType, hleaf,
-            hobject] at hmem
-          rcases hmem with ⟨objectType, _hobjectType, hselection⟩
-          cases hfiltered :
-              staticCollectForGround schema variables objectType
-                objectType boolCase selectionSet with
-          | nil =>
-              simp [hfiltered] at hselection
-          | cons head tail =>
-              simp [hfiltered] at hselection
-              cases hselection
-              simp [caseBodySelectionShape]
-              simpa [hfiltered] using
-                filterSelectionSetBoolCase_bottomDirectiveFree schema
-                  variables objectType objectType boolCase selectionSet
+  apply caseBodySelectionSetShape_of_allFields_directiveFree
+  · simpa [normalizeBoolCaseForType] using
+      GroundTypeNormalization.normalizeSelectionSet_allFields schema
+        returnType (filterSelectionSetBoolCase boolCase selectionSet)
+  · simpa [normalizeBoolCaseForType] using
+      GroundTypeNormalization.normalizeSelectionSet_directiveFree schema
+        returnType (filterSelectionSetBoolCase boolCase selectionSet)
+        (filterSelectionSetBoolCase_directiveFree schema boolCase selectionSet)
 
 def groundBranchShape (_variables : List BoolVar) : Selection -> Prop
   | .inlineFragment (some _typeCondition) [] selectionSet =>
@@ -314,7 +331,7 @@ theorem boolCaseBranchesForGround_layerShape
       apply Or.inl
       simp [boolCaseBranchesForGround, allBoolCases,
         wrapWithBoolCase]
-      exact filterSelectionSetBoolCase_allFields schema [] groundType
+      exact staticCollectForGround_allFields schema [] groundType
         groundType [] selectionSet
   | cons varName rest =>
       apply Or.inr
@@ -346,7 +363,7 @@ theorem boolCaseBranchesForGround_boolCaseWrapperShape
   | nil =>
       intro selection hmem
       have hbottom :=
-        filterSelectionSetBoolCase_caseBodyShape schema []
+        staticCollectForGround_caseBodyShape schema []
           groundType groundType [] selectionSet
       have hselectionBottom :=
         caseBodySelectionSetShape_singleton_of_mem hbottom (by
@@ -366,7 +383,7 @@ theorem boolCaseBranchesForGround_boolCaseWrapperShape
         simp [boolCaseWrapperShape]
         exact boolCaseWrapperShape_wrapWithBoolCase_of_mem
           hcase
-          (filterSelectionSetBoolCase_caseBodyShape schema
+          (staticCollectForGround_caseBodyShape schema
             (varName :: restVariables) groundType groundType
             ((varName, false) :: boolCase) selectionSet)
       · rcases hmem with
@@ -377,7 +394,7 @@ theorem boolCaseBranchesForGround_boolCaseWrapperShape
         simp [boolCaseWrapperShape]
         exact boolCaseWrapperShape_wrapWithBoolCase_of_mem
           hcase
-          (filterSelectionSetBoolCase_caseBodyShape schema
+          (staticCollectForGround_caseBodyShape schema
             (varName :: restVariables) groundType groundType
             ((varName, true) :: boolCase) selectionSet)
 
@@ -413,7 +430,7 @@ theorem normalizeForType_boolCaseWrapperShape
         boolCaseWrapperShape_singleton_of_mem_wrapWithBoolCase_of_mem
           hcase
           (normalizeBoolCaseForType_caseBodyShape
-            schema variables boolCase returnType selectionSet)
+            schema boolCase returnType selectionSet)
           hselection
 
 theorem normalizeForType_completeSelectionSetShape
@@ -455,14 +472,14 @@ theorem completeNormalizeRootSelectionSetShape
   cases hbody :
       normalizeBoolCaseForType schema boolCase parentType selectionSet with
   | nil =>
-      simp [normalizeBoolCaseForType, hbody] at hselection
+      simp [hbody] at hselection
   | cons bodyHead bodyTail =>
       exact Or.inr (Or.inr
         (boolCaseWrapperShape_singleton_of_mem_wrapWithBoolCase_of_mem
           hcase
-          (normalizeBoolCaseForType_caseBodyShape schema variables boolCase
+          (normalizeBoolCaseForType_caseBodyShape schema boolCase
             parentType selectionSet)
-          (by simpa [normalizeBoolCaseForType, hbody] using hselection)))
+          (by simpa [hbody] using hselection)))
 
 theorem completeNormalizeOperation_selectionSetShape
     (schema : Schema) (operation : Operation) :

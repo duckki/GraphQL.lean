@@ -187,7 +187,7 @@ mutual
   theorem collectSelection_executableGroupsSelectionVarsInOperation
       (schema : Schema) (variableValues : Execution.VariableValues)
       (operation : Operation) :
-      ∀ parentType (source : Execution.Value ObjectRef) selection,
+      ∀ parentType (source : Execution.ResolverValue ObjectRef) selection,
         (∀ varName, varName ∈ selectionBooleanVariables selection ->
           varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
           executableGroupsSelectionVarsInOperation operation
@@ -255,7 +255,7 @@ mutual
   theorem collectFields_executableGroupsSelectionVarsInOperation
       (schema : Schema) (variableValues : Execution.VariableValues)
       (operation : Operation) :
-      ∀ parentType (source : Execution.Value ObjectRef) selectionSet,
+      ∀ parentType (source : Execution.ResolverValue ObjectRef) selectionSet,
         (∀ varName, varName ∈ selectionSetBooleanVariables selectionSet ->
           varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
           executableGroupsSelectionVarsInOperation operation
@@ -299,10 +299,10 @@ theorem executeCollectedFields_filterExecutableGroupsBoolCase_of_rec
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (operation : Operation) (boolCase : BoolCase)
-    (depth : Nat) (source : Execution.Value ObjectRef)
+    (depth : Nat) (source : Execution.ResolverValue ObjectRef)
     (groups : List (Name × List Execution.ExecutableField)) :
     (∀ childDepth, childDepth < depth ->
-      ∀ parentType (childSource : Execution.Value ObjectRef)
+      ∀ parentType (childSource : Execution.ResolverValue ObjectRef)
         selectionSet,
         (∀ varName, varName ∈ selectionSetBooleanVariables selectionSet ->
           varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
@@ -339,71 +339,19 @@ theorem executeCollectedFields_filterExecutableGroupsBoolCase_of_rec
       cases fields with
       | nil =>
           simpa [filterExecutableGroupsBoolCase,
-            filterExecutableGroupBoolCase,
-            Execution.executeCollectedFields, Execution.executeField]
-            using htail
+            filterExecutableGroupBoolCase] using
+            GroundTypeNormalization.executeCollectedFields_cons_eq_of_parts
+              schema resolvers variableValues depth source
+              (responseName, []) (responseName, [])
+              (filterExecutableGroupsBoolCase boolCase rest)
+              rest
+              (by simp [Execution.executeField])
+              htail
       | cons field fields =>
           have hfieldsVars :
               executableFieldsSelectionVarsInOperation operation
                 (field :: fields) := by
             exact hgroups (responseName, field :: fields) (by simp)
-          have hcomplete :
-              Execution.completeValue schema resolvers variableValues
-                  (depth - 1)
-                  ((schema.fieldReturnType?
-                    (filterExecutableFieldBoolCase boolCase field).parentType
-                    (filterExecutableFieldBoolCase boolCase field).fieldName).getD
-                    (filterExecutableFieldBoolCase boolCase field).fieldName)
-                  (filterExecutableFieldBoolCase boolCase field
-                    :: fields.map
-                      (filterExecutableFieldBoolCase boolCase))
-                  (resolvers.resolve
-                    (filterExecutableFieldBoolCase boolCase field).parentType
-                    (filterExecutableFieldBoolCase boolCase field).fieldName
-                    (filterExecutableFieldBoolCase boolCase field).arguments
-                    source)
-                =
-              Execution.completeValue schema resolvers variableValues
-                  (depth - 1)
-                  ((schema.fieldReturnType? field.parentType field.fieldName).getD
-                    field.fieldName)
-                  (field :: fields)
-                  (resolvers.resolve field.parentType field.fieldName
-                    field.arguments source) := by
-            have hsame :
-                Execution.completeValue schema resolvers variableValues
-                    (depth - 1)
-                    ((schema.fieldReturnType? field.parentType
-                      field.fieldName).getD field.fieldName)
-                    (filterExecutableFieldBoolCase boolCase field
-                      :: fields.map
-                        (filterExecutableFieldBoolCase boolCase))
-                    (resolvers.resolve field.parentType field.fieldName
-                      field.arguments source)
-                  =
-                Execution.completeValue schema resolvers variableValues
-                    (depth - 1)
-                    ((schema.fieldReturnType? field.parentType
-                      field.fieldName).getD field.fieldName)
-                    (field :: fields)
-                    (resolvers.resolve field.parentType field.fieldName
-                      field.arguments source) := by
-              apply completeValue_eq_of_child_object_lt
-              intro childDepth runtimeType ref hlt
-              have hltDepth : childDepth < depth :=
-                Nat.lt_of_lt_of_le hlt (Nat.sub_le depth 1)
-              simpa [
-                Execution.mergedFieldSelectionSet,
-                filterExecutableFieldBoolCase,
-                filterSelectionSetBoolCase_append,
-                mergedFieldSelectionSet_map_filterExecutableFieldBoolCase]
-                using
-                  hrec childDepth hltDepth runtimeType
-                    (Execution.Value.object runtimeType ref)
-                    (Execution.mergedFieldSelectionSet (field :: fields))
-                    (executableFieldsSelectionVarsInOperation_merged
-                      operation (field :: fields) hfieldsVars)
-            simpa [filterExecutableFieldBoolCase] using hsame
           have hhead :
               Execution.executeField schema resolvers variableValues depth
                   source responseName
@@ -420,7 +368,33 @@ theorem executeCollectedFields_filterExecutableGroupsBoolCase_of_rec
             · exact filterExecutableFieldBoolCase_parentType boolCase field
             · exact filterExecutableFieldBoolCase_fieldName boolCase field
             · exact filterExecutableFieldBoolCase_arguments boolCase field
-            · exact hcomplete
+            · cases hlookup :
+                  schema.lookupField field.parentType field.fieldName with
+              | none =>
+                  simp []
+              | some fieldDefinition =>
+                  cases hresolved :
+                      resolvers.resolve field.parentType field.fieldName
+                        field.arguments source with
+                  | none =>
+                      simp []
+                  | some value =>
+                      simp []
+                      apply completeValue_eq_of_child_object_lt
+                      intro childDepth runtimeType ref hlt
+                      have hltDepth : childDepth < depth :=
+                        Nat.lt_of_lt_of_le hlt (Nat.sub_le depth 1)
+                      simpa [
+                        Execution.mergedFieldSelectionSet,
+                        filterExecutableFieldBoolCase,
+                        filterSelectionSetBoolCase_append,
+                        mergedFieldSelectionSet_map_filterExecutableFieldBoolCase]
+                        using
+                          hrec childDepth hltDepth runtimeType
+                            (Execution.ResolverValue.object runtimeType ref)
+                            (Execution.mergedFieldSelectionSet (field :: fields))
+                            (executableFieldsSelectionVarsInOperation_merged
+                              operation (field :: fields) hfieldsVars)
           simpa [filterExecutableGroupsBoolCase,
             filterExecutableGroupBoolCase,
             Execution.executeCollectedFields] using
@@ -442,7 +416,7 @@ theorem executeSelectionSet_filterSelectionSetBoolCase
     (hagrees :
       variableValuesAgreeWithCase variableValues boolCase
         (operationBoolVars operation)) :
-    ∀ depth parentType (source : Execution.Value ObjectRef)
+    ∀ depth parentType (source : Execution.ResolverValue ObjectRef)
       selectionSet,
       (∀ varName, varName ∈ selectionSetBooleanVariables selectionSet ->
         varName ∈ selectionSetBooleanVariables operation.selectionSet) ->

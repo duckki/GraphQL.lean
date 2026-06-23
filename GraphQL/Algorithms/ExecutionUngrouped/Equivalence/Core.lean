@@ -14,7 +14,8 @@ The final equivalence theorem is intended for valid operations over stable data:
 validation rules rule out invalid alias collisions, and the data model supplies the
 assumption that repeated field visits for the same response key resolve the same source
 data. The algorithm itself remains operationally direct and may call resolvers more
-often than the grouped spec; equivalence is about the public response data.
+often than the grouped spec; equivalence is about the public response envelope, including
+response data and the counted execution errors.
 -/
 namespace GraphQL
 
@@ -28,67 +29,112 @@ structure ExecutionWindow (ObjectIdentity : Type) where
   variableValues : VariableValues
   depth : Nat
   parentType : Name
-  source : Value ObjectIdentity
+  source : ResolverValue ObjectIdentity
   selectionSet : List Selection
 
 namespace ExecutionWindow
 
-def ungroupedResponseFields (window : ExecutionWindow ObjectIdentity) :
-    List (Name × Response) :=
+abbrev visitSubfieldsResult
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (selectionSet : List Selection) (initial : ResponseValue) :
+    Result ResponseValue :=
+  let visited :=
+    visitSubfields schema resolvers variableValues depth parentType source
+      selectionSet initial
+  match visited.snd with
+  | .error errors => .error errors
+  | .ok (_unit, errors) => .ok (visited.fst, errors)
+
+@[simp] theorem visitSubfieldsResult_nil
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (initial : ResponseValue) :
+    visitSubfieldsResult schema resolvers variableValues depth parentType source
+      [] initial = .ok (initial, 0) := by
+  simp [visitSubfieldsResult, visitSubfields, visitOk]
+
+def ungroupedResult (window : ExecutionWindow ObjectIdentity) :
+    Result (List (Name × ResponseValue)) :=
   executeRootSelectionSet window.schema window.resolvers window.variableValues
     window.depth window.parentType window.source window.selectionSet
 
-def specResponseFields (window : ExecutionWindow ObjectIdentity) :
-    List (Name × Response) :=
+def specResult (window : ExecutionWindow ObjectIdentity) :
+    Result (List (Name × ResponseValue)) :=
   GraphQL.Execution.executeRootSelectionSet window.schema window.resolvers
     window.variableValues window.depth window.parentType window.source
     window.selectionSet
 
-def ungroupedResponse (window : ExecutionWindow ObjectIdentity) : Response :=
+def ungroupedResponseFields (window : ExecutionWindow ObjectIdentity) :
+    List (Name × ResponseValue) :=
+  GraphQL.Execution.Result.getD [] window.ungroupedResult
+
+def specResponseFields (window : ExecutionWindow ObjectIdentity) :
+    List (Name × ResponseValue) :=
+  GraphQL.Execution.Result.getD [] window.specResult
+
+def ungroupedResponse (window : ExecutionWindow ObjectIdentity) : ResponseValue :=
   .object window.ungroupedResponseFields
 
-def specResponse (window : ExecutionWindow ObjectIdentity) : Response :=
+def specResponse (window : ExecutionWindow ObjectIdentity) : ResponseValue :=
   .object window.specResponseFields
 
 end ExecutionWindow
 
 structure ExecutionEquivalenceState (ObjectIdentity : Type) where
   window : ExecutionWindow ObjectIdentity
-  initial : Response
+  initial : ResponseValue
 
 namespace ExecutionEquivalenceState
 
-def ungroupedProjection (state : ExecutionEquivalenceState ObjectIdentity) :
-    Response :=
-  visitSubfields state.window.schema state.window.resolvers
+def ungroupedProjectionResult
+    (state : ExecutionEquivalenceState ObjectIdentity) : Result ResponseValue :=
+  ExecutionWindow.visitSubfieldsResult state.window.schema state.window.resolvers
     state.window.variableValues state.window.depth state.window.parentType
     state.window.source state.window.selectionSet state.initial
 
+def specProjectionResult
+    (state : ExecutionEquivalenceState ObjectIdentity) : Result ResponseValue :=
+  match
+    GraphQL.Execution.executeCollectedFields state.window.schema
+      state.window.resolvers state.window.variableValues state.window.depth
+      state.window.source
+      (GraphQL.Execution.collectFields state.window.schema
+        state.window.variableValues state.window.parentType state.window.source
+        state.window.selectionSet)
+  with
+  | .error errors => .error errors
+  | .ok (fields, errors) =>
+      .ok (mergeResponse state.initial (.object fields), errors)
+
+def ungroupedProjection (state : ExecutionEquivalenceState ObjectIdentity) :
+    ResponseValue :=
+  GraphQL.Execution.Result.getD default state.ungroupedProjectionResult
+
 def specProjection (state : ExecutionEquivalenceState ObjectIdentity) :
-    Response :=
-  mergeResponse state.initial
-    (.object
-      (GraphQL.Execution.executeCollectedFields state.window.schema
-        state.window.resolvers state.window.variableValues state.window.depth
-        state.window.source
-        (GraphQL.Execution.collectFields state.window.schema
-          state.window.variableValues state.window.parentType state.window.source
-          state.window.selectionSet)))
+    ResponseValue :=
+  GraphQL.Execution.Result.getD default state.specProjectionResult
 
 end ExecutionEquivalenceState
 
-def ResponseDataEquivalent (left right : Response) : Prop :=
+def ResponseValueEquivalent (left right : ResponseValue) : Prop :=
   left = right
 
-def ResponseAbsorbs (base output : Response) : Prop :=
+def ResponseResultEquivalent {α : Type} (left right : Result α) : Prop :=
+  left = right
+
+def ResponseAbsorbs (base output : ResponseValue) : Prop :=
   mergeResponse base output = output
 
 def ExecutionWindowEquivalent (window : ExecutionWindow ObjectIdentity) : Prop :=
-  ResponseDataEquivalent window.ungroupedResponse window.specResponse
+  ResponseResultEquivalent window.ungroupedResult window.specResult
 
 def ExecutionStateEquivalent
     (state : ExecutionEquivalenceState ObjectIdentity) : Prop :=
-  ResponseDataEquivalent state.ungroupedProjection state.specProjection
+  ResponseResultEquivalent state.ungroupedProjectionResult
+    state.specProjectionResult
 
 def PairKeysNodup {α : Type} (fields : List (Name × α)) : Prop :=
   (fields.map Prod.fst).Nodup
@@ -110,6 +156,22 @@ theorem PairKeysNodup.head_not_mem_tail
   intro hnodup
   unfold PairKeysNodup at hnodup
   exact (List.nodup_cons.mp hnodup).1
+
+theorem PairKeysNodup.append
+    {α : Type} {left right : List (Name × α)} :
+    PairKeysNodup left ->
+    PairKeysNodup right ->
+    (∀ responseName,
+      responseName ∈ left.map Prod.fst ->
+        responseName ∉ right.map Prod.fst) ->
+      PairKeysNodup (left ++ right) := by
+  intro hleft hright hdisjoint
+  unfold PairKeysNodup at hleft hright ⊢
+  rw [List.map_append]
+  exact List.nodup_append.mpr
+    ⟨hleft, hright, by
+      intro leftName hleftMem rightName hrightMem heq
+      exact hdisjoint leftName hleftMem (by simpa [heq] using hrightMem)⟩
 
 theorem executableGroupNamesDisjoint_singleton_tail_of_pairKeysNodup
     {responseName : Name} {fields : List ExecutableField}
@@ -153,23 +215,23 @@ theorem PairKeysNodup_of_executableGroupNamesNodup
           unfold PairKeysNodup
           exact List.nodup_cons.mpr ⟨hnodup.1, ih hnodup.2⟩
 
-inductive ResponseMergeReady : Response -> Prop where
+inductive ResponseMergeReady : ResponseValue -> Prop where
   | null : ResponseMergeReady .null
   | scalar (value : String) : ResponseMergeReady (.scalar value)
-  | object (fields : List (Name × Response)) :
+  | object (fields : List (Name × ResponseValue)) :
       PairKeysNodup fields ->
       (∀ responseName response,
         (responseName, response) ∈ fields ->
           ResponseMergeReady response) ->
         ResponseMergeReady (.object fields)
-  | list (values : List Response) :
+  | list (values : List ResponseValue) :
       (∀ response,
         response ∈ values ->
           ResponseMergeReady response) ->
         ResponseMergeReady (.list values)
 
 def MergeResponseFieldsReadySteps :
-    List (Name × Response) -> List (Name × Response) -> Prop
+    List (Name × ResponseValue) -> List (Name × ResponseValue) -> Prop
   | _existing, [] => True
   | existing, (responseName, incoming)::rest =>
       ResponseMergeReady incoming ∧
@@ -180,8 +242,8 @@ def MergeResponseFieldsReadySteps :
         (mergeResponseField responseName incoming existing) rest
 
 def MergeResponseFieldsAbsorbsFrom
-    (base : List (Name × Response)) :
-    List (Name × Response) -> List (Name × Response) -> Prop
+    (base : List (Name × ResponseValue)) :
+    List (Name × ResponseValue) -> List (Name × ResponseValue) -> Prop
   | current, [] => ResponseAbsorbs (.object base) (.object current)
   | current, (responseName, incoming)::rest =>
       ResponseAbsorbs (.object base)
@@ -574,7 +636,7 @@ theorem ExecutableFieldsRuntimeScopedBy.mono
 
 def ExecutableFieldsResolveStable
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity) (fields : List ExecutableField) : Prop :=
+    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField) : Prop :=
   ∀ first later,
     first ∈ fields ->
     later ∈ fields ->
@@ -584,7 +646,7 @@ def ExecutableFieldsResolveStable
 
 def ResolversRespectArgumentEquivalence
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity) : Prop :=
+    (source : ResolverValue ObjectIdentity) : Prop :=
   ∀ parentType fieldName firstArguments laterArguments,
     Argument.argumentsEquivalent firstArguments laterArguments ->
       resolvers.resolve parentType fieldName firstArguments source =
@@ -592,7 +654,7 @@ def ResolversRespectArgumentEquivalence
 
 def ResolversRespectFieldAndArgumentEquivalence
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity) : Prop :=
+    (source : ResolverValue ObjectIdentity) : Prop :=
   ∀ firstParent laterParent fieldName firstArguments laterArguments,
     Argument.argumentsEquivalent firstArguments laterArguments ->
       resolvers.resolve firstParent fieldName firstArguments source =
@@ -600,7 +662,7 @@ def ResolversRespectFieldAndArgumentEquivalence
 
 def ResolversRespectValidFieldAndArgumentEquivalence
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity) : Prop :=
+    (source : ResolverValue ObjectIdentity) : Prop :=
   ∀ firstParent laterParent fieldName firstArguments laterArguments,
     (firstArguments.map Argument.name).Nodup ->
       (laterArguments.map Argument.name).Nodup ->
@@ -610,7 +672,7 @@ def ResolversRespectValidFieldAndArgumentEquivalence
 
 theorem ExecutableFieldsResolveStable.tail
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity) (field : ExecutableField)
+    (source : ResolverValue ObjectIdentity) (field : ExecutableField)
     (fields : List ExecutableField) :
     ExecutableFieldsResolveStable resolvers source (field :: fields) ->
       ExecutableFieldsResolveStable resolvers source fields := by
@@ -619,7 +681,7 @@ theorem ExecutableFieldsResolveStable.tail
 
 theorem ExecutableFieldsResolveStable.head_eq_later
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity) (field later : ExecutableField)
+    (source : ResolverValue ObjectIdentity) (field later : ExecutableField)
     (fields : List ExecutableField) :
     ExecutableFieldsResolveStable resolvers source (field :: fields) ->
     later ∈ fields ->
@@ -635,12 +697,12 @@ structure ExecutedResponseFieldAt
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (completionDepth : Nat)
-    (source : Value ObjectIdentity) (output : Response)
-    (field : ExecutableField) (response : Response) where
-  previous : Response
-  resolved : Value ObjectIdentity
+    (source : ResolverValue ObjectIdentity) (output : ResponseValue)
+    (field : ExecutableField) (response : ResponseValue) where
+  previous : ResponseValue
+  resolved : ResolverValue ObjectIdentity
   previous_eq :
-    previous = (responseObjectField? field.responseName output).getD .null
+    previous = (responseObjectField? field.responseName output).getD (.object [])
   resolved_eq :
     resolved =
       resolvers.resolve field.parentType field.fieldName field.arguments source
@@ -666,7 +728,7 @@ theorem selectionDirectivesAllowBool_empty
 theorem collectSelection_executableFieldSelection
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (field : ExecutableField) :
     GraphQL.Execution.collectSelection schema variableValues parentType source
       (executableFieldSelection field) =
@@ -677,7 +739,7 @@ theorem collectSelection_executableFieldSelection
 theorem collectSelection_executableFieldSelection_of_parent
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (field : ExecutableField) :
     field.parentType = parentType ->
       GraphQL.Execution.collectSelection schema variableValues parentType source
@@ -693,7 +755,7 @@ theorem collectSelection_executableFieldSelection_of_parent
 theorem collectFields_executableFieldSelections_same_group
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) :
     ∀ fields : List ExecutableField,
       (∀ field, field ∈ fields -> field.responseName = responseName) ->
@@ -747,7 +809,7 @@ theorem specExecuteRootSelectionSet_executableFieldSelections_same_group
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hresponse :
@@ -766,7 +828,7 @@ theorem specExecuteRootSelectionSet_executableFieldSelections_same_group
 
 theorem ResolversRespectFieldAndArgumentEquivalence.to_valid
     {ObjectIdentity : Type} {resolvers : Resolvers ObjectIdentity}
-    {source : Value ObjectIdentity} :
+    {source : ResolverValue ObjectIdentity} :
     ResolversRespectFieldAndArgumentEquivalence resolvers source ->
       ResolversRespectValidFieldAndArgumentEquivalence resolvers source := by
   intro hrespect firstParent laterParent fieldName firstArguments
@@ -776,7 +838,7 @@ theorem ResolversRespectFieldAndArgumentEquivalence.to_valid
 
 def CollectedGroupsMergeCompatible
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : Value ObjectIdentity)
+    (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField)) : Prop :=
   ∀ responseName fields,
     (responseName, fields) ∈ groups ->
@@ -1132,7 +1194,7 @@ mutual
   theorem collectSelection_parent
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
-      (parentType : Name) (source : Value ObjectIdentity)
+      (parentType : Name) (source : ResolverValue ObjectIdentity)
       (selection : Selection) :
       CollectedGroupsParent parentType
         (GraphQL.Execution.collectSelection schema variableValues parentType
@@ -1214,7 +1276,7 @@ mutual
   theorem collectFields_parent
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
-      (parentType : Name) (source : Value ObjectIdentity)
+      (parentType : Name) (source : ResolverValue ObjectIdentity)
       (selectionSet : List Selection) :
       CollectedGroupsParent parentType
         (GraphQL.Execution.collectFields schema variableValues parentType
@@ -1238,7 +1300,7 @@ mutual
   theorem collectSelection_responseName
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
-      (parentType : Name) (source : Value ObjectIdentity)
+      (parentType : Name) (source : ResolverValue ObjectIdentity)
       (selection : Selection) :
       CollectedGroupsResponseName
         (GraphQL.Execution.collectSelection schema variableValues parentType
@@ -1320,7 +1382,7 @@ mutual
   theorem collectFields_responseName
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
-      (parentType : Name) (source : Value ObjectIdentity)
+      (parentType : Name) (source : ResolverValue ObjectIdentity)
       (selectionSet : List Selection) :
       CollectedGroupsResponseName
         (GraphQL.Execution.collectFields schema variableValues parentType
@@ -1345,7 +1407,7 @@ mutual
   theorem collectSelection_fieldsNonempty
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
-      (parentType : Name) (source : Value ObjectIdentity)
+      (parentType : Name) (source : ResolverValue ObjectIdentity)
       (selection : Selection) :
       CollectedGroupsFieldsNonempty
         (GraphQL.Execution.collectSelection schema variableValues parentType
@@ -1419,7 +1481,7 @@ mutual
   theorem collectFields_fieldsNonempty
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
-      (parentType : Name) (source : Value ObjectIdentity)
+      (parentType : Name) (source : ResolverValue ObjectIdentity)
       (selectionSet : List Selection) :
       CollectedGroupsFieldsNonempty
         (GraphQL.Execution.collectFields schema variableValues parentType
@@ -1444,7 +1506,7 @@ end
 theorem collectFields_sameResponseParent
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : Value ObjectIdentity)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection) :
     CollectedGroupsSameResponseParent
       (GraphQL.Execution.collectFields schema variableValues parentType source

@@ -36,7 +36,7 @@ theorem completeNormalizeOperation_selectionSet
   rfl
 
 theorem completeNormalizeOperation_rootSourceAppliesBool
-    (schema : Schema) (operation : Operation) (source : Execution.Value ObjectRef) :
+    (schema : Schema) (operation : Operation) (source : Execution.ResolverValue ObjectRef) :
     Execution.rootSourceAppliesBool schema
         (completeNormalizeOperation schema operation) source =
         Execution.rootSourceAppliesBool schema operation source := by
@@ -48,7 +48,7 @@ theorem completeNormalizationSemanticsPreserved_of_selectionSet
     (SchemaWellFormedness.schemaWellFormed schema ->
       Validation.operationDefinitionValid schema operation ->
       ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
-      variableValues depth (source : Execution.Value ObjectRef),
+      variableValues depth (source : Execution.ResolverValue ObjectRef),
       operationBoolVarsComplete operation variableValues ->
       Execution.rootSourceAppliesBool schema operation source = true ->
         Execution.executeSelectionSet schema resolvers variableValues depth
@@ -83,8 +83,15 @@ theorem completeNormalizationSemanticsPreserved_of_selectionSet
       have hselectionEq :=
         hselection hschema hvalid resolvers variableValues depth source
           hcomplete hroot
-      simp [Execution.executeQueryAtDepth, hroot, hnormalizedRoot]
-      simpa [hnormalizedRootType] using hselectionEq
+      have hrootSelectionEq :
+          Execution.executeRootSelectionSet schema resolvers variableValues
+            depth operation.rootType source operation.selectionSet =
+          Execution.executeRootSelectionSet schema resolvers variableValues
+            depth operation.rootType source
+            (completeNormalizeOperation schema operation).selectionSet := by
+        simpa [Execution.executeSelectionSet] using hselectionEq
+      simp [Execution.executeQueryAtDepth, hroot, hnormalizedRoot,
+        hnormalizedRootType, hrootSelectionEq]
 
 theorem completeNormalizationCorrect_of_semanticsPreserved
     (schema : Schema) (operation : Operation) :
@@ -92,8 +99,9 @@ theorem completeNormalizationCorrect_of_semanticsPreserved
       completeNormalizationCorrect schema operation := by
   intro hpreserved hschema hvalid store variableValues depth _hwellTyped
     hcomplete
-  exact hpreserved hschema hvalid (store.resolvers schema)
-    variableValues depth store.rootExecutionValue hcomplete
+  simpa [DataModel.executeOperationAtDepth] using
+    hpreserved hschema hvalid (store.resolvers schema)
+      variableValues depth store.rootExecutionValue hcomplete
 
 end CompleteNormalization
 

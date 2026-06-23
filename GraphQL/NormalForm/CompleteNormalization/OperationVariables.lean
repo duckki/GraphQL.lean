@@ -235,7 +235,7 @@ theorem collectFields_wrapWithBoolCase_of_nonruntime_case
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (operation : Operation)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (selectionSet : List Selection)
     {runtimeCase candidateCase : BoolCase} :
     runtimeCase ∈

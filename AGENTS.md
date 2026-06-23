@@ -15,7 +15,8 @@ Current explicit skips:
 - custom directives beyond modeled `@skip` and `@include`,
 - coercion, assuming values are already coerced and type-conformant,
 - introspection and meta-fields,
-- execution errors and response `errors` / `extensions`,
+- request errors, detailed execution error maps, response `extensions`, error
+  paths, and error locations,
 - response-shape analysis,
 - minimization,
 - federation.
@@ -29,15 +30,17 @@ operation transformation algorithms.
 `GraphQL.DataModel` is the proof-facing data model. It defines a typed graph
 store with path-independent node ids. Runtime object values are parameterized by
 opaque resolver-owned refs; store-backed execution is the spec executor
-instantiated with data-model refs and resolvers. Store conformance ties
-execution to the graph root, validates field-label arguments, rejects duplicate
-node ids and semantic duplicate property/edge keys, enforces list-index
-discipline, and requires edge target types to be available in the store.
-Store-backed operation equivalence runs over this resolver-instantiated
-execution model.
+instantiated with data-model refs and resolvers. Execution returns a response
+envelope with `data` plus a `Nat` execution-error count, and null bubbling
+through non-null wrappers is modeled with `Execution.Result`. Store conformance
+ties execution to the graph root, validates field-label arguments, rejects
+duplicate node ids and semantic duplicate property/edge keys, enforces
+list-index discipline, and requires edge target types to be available in the
+store. Store-backed operation equivalence runs over full responses from this
+resolver-instantiated execution model.
 
 `NormalForm.groundNormalFormCorrect` uses
-`DataModel.operationsEquivalentOnData`. The ground-type normalizer has no fuel
+`DataModel.operationsEquivalent`. The ground-type normalizer has no fuel
 parameter; it terminates by structural descent on selection-set size while
 merging fields and grounding abstract returns. Public normal-form predicates
 belong in top-level `GraphQL/NormalForm.lean`; proof work belongs under
@@ -55,7 +58,7 @@ The store-resolution bridge in `GraphQL.DataModel.Store` includes
 `fieldReturnType?_some_lookupField`, and
 `scalar_not_conformsToType_of_possibleTypes_nonempty`.
 
-The latest successful checks before cleanup were:
+The latest successful checks were:
 
 ```sh
 lake build

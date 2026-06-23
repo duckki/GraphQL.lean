@@ -17,7 +17,7 @@ theorem executeSelectionSet_inlineFragment_some_directiveFree_skip
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet rest : List Selection) :
     Execution.doesFragmentTypeApplyBool schema parentType source typeCondition =
       false ->
@@ -40,7 +40,7 @@ theorem executeSelectionSet_inlineFragment_none_directiveFree_flatten
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet rest : List Selection) :
     Execution.executeSelectionSet schema resolvers variableValues depth
       parentType source
@@ -56,7 +56,7 @@ theorem executeSelectionSet_inlineFragment_some_directiveFree_apply_flatten
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
-    (source : Execution.Value ObjectRef)
+    (source : Execution.ResolverValue ObjectRef)
     (selectionSet rest : List Selection) :
     Execution.doesFragmentTypeApplyBool schema parentType source typeCondition =
       true ->
@@ -104,7 +104,7 @@ theorem typeIncludesObjectBool_eq_of_objectTypeNameBool_true
       | inputObject inputObjectType => simp [hlookup] at hobject
 
 theorem doesFragmentTypeApplyBool_true_of_typesOverlapBool_true_of_object_source
-    (schema : Schema) {parentType typeCondition : Name} {source : Execution.Value ObjectRef} :
+    (schema : Schema) {parentType typeCondition : Name} {source : Execution.ResolverValue ObjectRef} :
     objectTypeNameBool schema parentType = true ->
       (∃ runtimeType ref,
         source = .object runtimeType ref
@@ -163,7 +163,7 @@ theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false
     contradiction
 
 theorem rootSourceAppliesBool_true_object
-    (schema : Schema) (operation : Operation) (source : Execution.Value ObjectRef) :
+    (schema : Schema) (operation : Operation) (source : Execution.ResolverValue ObjectRef) :
     Execution.rootSourceAppliesBool schema operation source = true ->
       ∃ runtimeType ref,
         source = .object runtimeType ref
@@ -185,7 +185,7 @@ theorem rootSourceAppliesBool_true_object
           Execution.runtimeObjectType?] at hroot
 
 theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false_of_source
-    (schema : Schema) {parentType typeCondition : Name} {source : Execution.Value ObjectRef} :
+    (schema : Schema) {parentType typeCondition : Name} {source : Execution.ResolverValue ObjectRef} :
     (∃ runtimeType ref,
       source = .object runtimeType ref
         ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->

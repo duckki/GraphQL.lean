@@ -1,6 +1,8 @@
 import GraphQL.SchemaWellFormedness.PossibleTypes
 import GraphQL.Validation.SelectionValidity
 import GraphQL.Validation.FieldMerge
+import GraphQL.Execution.Data
+import GraphQL.Execution.ResolverValue
 import GraphQL.Execution.FieldCollection
 import GraphQL.Algorithms.ExecutionUngrouped.DataModel
 import GraphQL.Algorithms.ExecutionUngrouped.Equivalence

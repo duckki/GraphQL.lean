@@ -22,6 +22,9 @@ The current conformance target includes:
 - inline fragments,
 - variables and the built-in executable directives `@skip` and `@include`,
 - possible-object semantics for abstract types,
+- execution field errors as resolver failure counts in the query response
+  envelope,
+- response null bubbling through non-null output wrappers,
 - a formal data model with typed object identities and field facts,
 - ground normal form construction for field merging and abstract-type grounding,
 - correctness statements for ground normal form over store-backed execution.
@@ -40,12 +43,44 @@ These are out of scope for the current conformance pass:
   input-object and variable/input-type compatibility, while assuming values are
   already coerced where scalar semantics would matter,
 - introspection and meta-fields,
-- execution errors, request errors, `errors`, `extensions`, and null bubbling,
+- request errors, detailed execution error maps, `extensions`, error paths,
+  and error locations,
 - serialization details,
 
 The working assumption is that values entering validation/execution are already
 coerced and type-conformant. The proof-facing model should state that assumption
 explicitly instead of trying to recover full coercion behavior.
+
+## Execution Alignment Notes
+
+`GraphQL.Execution` follows the September 2025 execution algorithm names where
+practical:
+
+- `collectFields` / `collectSubfields` model spec 6.3.2 field collection with
+  ordered list-backed response-name groups.
+- `executeRootSelectionSet`, `executeCollectedFields`, `executeField`,
+  `completeValue`, and `completeValueList` model the spec 6.3/6.4 execution
+  ladder at an explicit recursion-fuel bound.
+- `outOfFuel` is the shared polymorphic internal truncation result. It returns
+  `.error 1`, so fuel exhaustion behaves like an execution error at the current
+  response position instead of fabricating partial response data.
+- `Result` carries the spec 6.4.4 null-bubbling control flow. `.error n`
+  means an execution error has bubbled through a non-null response position;
+  `.ok (value, n)` means completion produced data and accumulated `n`
+  execution errors below it.
+- `Response` models the spec 7.1 execution result as `data` plus a `Nat`
+  count standing in for the detailed non-empty `errors` list. The model does
+  not distinguish error paths, locations, messages, or extensions.
+- Resolver failure is modeled as `none` and handled like a field execution
+  error. Schema lookup misses, empty collected field groups, invalid root
+  source values, fuel exhaustion, and runtime/type-shape mismatches are
+  counted errors in this partial executable model; validation and store
+  well-typedness rule out the invalid-operation cases used by semantic proofs.
+- `executeCollectedFields` combines the ordered response field lists with
+  `List.append`, matching the spec's ordered collection behavior directly.
+- Scalar/enum result coercion and abstract `ResolveAbstractType` are abstracted:
+  scalar results are represented as strings, and object runtime type is carried
+  by `ResolverValue.object`.
 
 ## Current Status
 
@@ -64,7 +99,9 @@ The main modules are:
   including recursive input-object validation and spec-style variable-use
   compatibility with the nullable-variable default exception, plus
   same-response-name merge compatibility checks.
-- `GraphQL.Execution`: bounded resolver-based execution.
+- `GraphQL.Execution`: bounded resolver-based execution with compatibility data
+  projection, response null bubbling through non-null output wrappers, and a
+  query response envelope containing data plus a `Nat` execution-error count.
 - `GraphQL.DataModel`: typed graph store with graph-root execution,
   schema-conformant field labels, semantic uniqueness for edge/property keys,
   list-index discipline, store-backed resolvers, and semantic

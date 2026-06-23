@@ -419,16 +419,16 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
                         schema hobject
                     have happly :
                         Execution.doesFragmentTypeApplyBool schema execParent
-                            (Execution.Value.object (ObjectRef := PUnit)
+                            (Execution.ResolverValue.object (ObjectRef := PUnit)
                               groundType) typeCondition =
                           true := by
                       simpa [Execution.doesFragmentTypeApplyBool,
                         Execution.runtimeObjectType?] using hincludes
                     have hsource :
                         ∃ runtimeType ref,
-                          (Execution.Value.object (ObjectRef := PUnit)
+                          (Execution.ResolverValue.object (ObjectRef := PUnit)
                               groundType :
-                              Execution.Value PUnit)
+                              Execution.ResolverValue PUnit)
                             = .object runtimeType ref
                             ∧ schema.typeIncludesObjectBool execParent
                               runtimeType = true :=

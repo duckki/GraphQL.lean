@@ -393,13 +393,13 @@ theorem executeSelectionSet_fieldOutput_scopedMerged_eq_of_runtime_recursive
       ] using congrArg
       (fun groups =>
         Execution.executeCollectedFields schema (store.resolvers schema)
-          variableValues depth (Execution.Value.object runtimeType ref)
+          variableValues depth (Execution.ResolverValue.object runtimeType ref)
           groups)
       hleftCollect
   exact hleftToGround.trans hrecursive
 
 def scopedFieldOutputValuesInclude (schema : Schema)
-    (value : Execution.Value DataModel.ObjectRef)
+    (value : Execution.ResolverValue DataModel.ObjectRef)
     (scopedSelections : List ScopedSelection) : Prop :=
   ∀ scopedSelection, scopedSelection ∈ scopedSelections ->
     ∃ responseName fieldName arguments directives subselections
@@ -524,12 +524,12 @@ theorem completeValue_fieldOutput_scopedMerged_eq_of_valueObjectsInclude_lt
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema) :
     ∀ depth actualType expectedType selectionSet scopedMatches
-        (value : Execution.Value DataModel.ObjectRef),
+        (value : Execution.ResolverValue DataModel.ObjectRef),
       executionValueObjectsInclude schema expectedType value ->
       scopedFieldOutputValuesInclude schema value scopedMatches ->
       (∀ childDepth runtimeType ref,
         childDepth < depth ->
-        schema.typeIncludesObjectBool actualType runtimeType = true ->
+        schema.typeIncludesObjectBool actualType.namedType runtimeType = true ->
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues childDepth runtimeType
             (.object runtimeType ref)
@@ -546,7 +546,7 @@ theorem completeValue_fieldOutput_scopedMerged_eq_of_valueObjectsInclude_lt
                 (eraseScopedSelectionSet scopedMatches))) ->
         Execution.completeValue schema (store.resolvers schema)
           variableValues depth actualType
-          [completeValueSelectionSetField actualType
+          [completeValueSelectionSetField actualType.namedType
             ((if leafTypeNameBool schema expectedType then
               []
             else if objectTypeNameBool schema expectedType then
@@ -562,7 +562,7 @@ theorem completeValue_fieldOutput_scopedMerged_eq_of_valueObjectsInclude_lt
         =
         Execution.completeValue schema (store.resolvers schema)
           variableValues depth actualType
-          [completeValueSelectionSetField actualType
+          [completeValueSelectionSetField actualType.namedType
             (selectionSet
               ++ mergeSelectionSets
                 (eraseScopedSelectionSet scopedMatches))]
@@ -572,109 +572,171 @@ theorem completeValue_fieldOutput_scopedMerged_eq_of_valueObjectsInclude_lt
       simp [Execution.completeValue]
   | depth + 1, actualType, expectedType, selectionSet, scopedMatches, value,
       hheadInclude, hmatchesInclude, hrecursive => by
-        cases value with
-        | null =>
-            simp [Execution.completeValue]
-        | scalar value =>
-            simp [Execution.completeValue]
-        | object runtimeType ref =>
-            by_cases hactual :
-                schema.typeIncludesObjectBool actualType runtimeType = true
-            · have hheadRuntime :
-                  schema.typeIncludesObjectBool expectedType runtimeType = true := by
-                simpa [executionValueObjectsInclude]
-                  using hheadInclude
-              have hmatchesRuntime :
-                  ∀ scopedSelection, scopedSelection ∈ scopedMatches ->
-                    ∃ responseName fieldName arguments directives subselections
-                        fieldDefinition,
-                      scopedSelection.selection =
-                        Selection.field responseName fieldName arguments
-                          directives subselections
-                        ∧ schema.lookupField scopedSelection.liftParent
-                          fieldName = some fieldDefinition
-                        ∧ schema.typeIncludesObjectBool
-                          fieldDefinition.outputType.namedType runtimeType =
-                            true := by
-                intro scopedSelection hscoped
-                rcases hmatchesInclude scopedSelection hscoped with
-                  ⟨responseName, fieldName, arguments, directives,
-                    subselections, fieldDefinition, hselection, hlookup,
-                    hinclude⟩
-                refine ⟨responseName, fieldName, arguments, directives,
-                  subselections, fieldDefinition, hselection, hlookup, ?_⟩
-                simpa [executionValueObjectsInclude]
-                  using hinclude
-              have hruntimeObject :
-                  objectTypeNameBool schema runtimeType = true := by
-                exact objectTypeNameBool_eq_true_of_objectType schema
-                  (SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects
-                    hschema actualType runtimeType
-                    (List.contains_iff_mem.mp hactual))
-              have hselection :=
-                executeSelectionSet_fieldOutput_scopedMerged_eq_of_runtime_recursive
-                  schema store variableValues hschema depth expectedType
-                  runtimeType (ref := ref)
-                  selectionSet scopedMatches
-                  hruntimeObject hheadRuntime hmatchesRuntime
-                  (hrecursive depth runtimeType ref
-                    (Nat.lt_succ_self depth) hactual)
-              simp [Execution.completeValue, hactual]
-              simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
-                Execution.collectSubfields, completeValueSelectionSetField]
-                using hselection
-            · have hactualFalse :
-                  schema.typeIncludesObjectBool actualType runtimeType = false := by
-                cases hmatch :
-                    schema.typeIncludesObjectBool actualType runtimeType
-                · rfl
-                · exact False.elim (hactual hmatch)
-              simp [Execution.completeValue, hactualFalse]
-        | list values =>
-            have hheadElements :
-                ∀ value, value ∈ values ->
-                  executionValueObjectsInclude schema expectedType value := by
-              intro value hvalue
-              have hincludeValues :
-                  ∀ value,
-                    value ∈ values ->
+        induction actualType generalizing value with
+        | named actualType =>
+            cases value with
+            | null =>
+                simp [Execution.completeValue]
+            | scalar value =>
+                simp [Execution.completeValue]
+            | object runtimeType ref =>
+                by_cases hactual :
+                    schema.typeIncludesObjectBool actualType runtimeType = true
+                · have hheadRuntime :
+                      schema.typeIncludesObjectBool expectedType runtimeType = true := by
+                    simpa [executionValueObjectsInclude]
+                      using hheadInclude
+                  have hmatchesRuntime :
+                      ∀ scopedSelection, scopedSelection ∈ scopedMatches ->
+                        ∃ responseName fieldName arguments directives subselections
+                            fieldDefinition,
+                          scopedSelection.selection =
+                            Selection.field responseName fieldName arguments
+                              directives subselections
+                            ∧ schema.lookupField scopedSelection.liftParent
+                              fieldName = some fieldDefinition
+                            ∧ schema.typeIncludesObjectBool
+                              fieldDefinition.outputType.namedType runtimeType =
+                                true := by
+                    intro scopedSelection hscoped
+                    rcases hmatchesInclude scopedSelection hscoped with
+                      ⟨responseName, fieldName, arguments, directives,
+                        subselections, fieldDefinition, hselection, hlookup,
+                        hinclude⟩
+                    refine ⟨responseName, fieldName, arguments, directives,
+                      subselections, fieldDefinition, hselection, hlookup, ?_⟩
+                    simpa [executionValueObjectsInclude]
+                      using hinclude
+                  have hruntimeObject :
+                      objectTypeNameBool schema runtimeType = true := by
+                    exact objectTypeNameBool_eq_true_of_objectType schema
+                      (SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects
+                        hschema actualType runtimeType
+                        (List.contains_iff_mem.mp hactual))
+                  have hselection :=
+                    executeSelectionSet_fieldOutput_scopedMerged_eq_of_runtime_recursive
+                      schema store variableValues hschema depth expectedType
+                      runtimeType (ref := ref)
+                      selectionSet scopedMatches
+                      hruntimeObject hheadRuntime hmatchesRuntime
+                      (hrecursive depth runtimeType ref
+                        (Nat.lt_succ_self depth) hactual)
+                  simp [Execution.completeValue, hactual]
+                  exact congrArg
+                    (Execution.catchBubbleAsNull Execution.ResponseValue.object)
+                    (by
+                      simpa [Execution.executeSelectionSet,
+                        Execution.executeRootSelectionSet,
+                        Execution.collectSubfields,
+                        completeValueSelectionSetField]
+                        using hselection)
+                · have hactualFalse :
+                      schema.typeIncludesObjectBool actualType runtimeType = false := by
+                    cases hmatch :
+                        schema.typeIncludesObjectBool actualType runtimeType
+                    · rfl
+                    · exact False.elim (hactual hmatch)
+                  simp [Execution.completeValue, hactualFalse]
+            | list values =>
+                simp [Execution.completeValue]
+        | list itemType _ih =>
+            cases value with
+            | list values =>
+                have hheadElements :
+                    ∀ value, value ∈ values ->
                       executionValueObjectsInclude schema expectedType value := by
-                simpa [executionValueObjectsInclude]
-                  using hheadInclude
-              exact hincludeValues value
-                hvalue
-            have hmatchesElements :
-                ∀ value, value ∈ values ->
-                  scopedFieldOutputValuesInclude schema value
-                    scopedMatches := by
-              intro value hvalue scopedSelection hscoped
-              rcases hmatchesInclude scopedSelection hscoped with
-                ⟨responseName, fieldName, arguments, directives,
-                  subselections, fieldDefinition, hselection, hlookup,
-                  hinclude⟩
-              refine ⟨responseName, fieldName, arguments, directives,
-                subselections, fieldDefinition, hselection, hlookup, ?_⟩
-              have hincludeElements :
-                  ∀ value,
-                    value ∈ values ->
-                      executionValueObjectsInclude schema
-                        fieldDefinition.outputType.namedType value := by
-                simpa [executionValueObjectsInclude]
-                  using hinclude
-              exact hincludeElements value
-                hvalue
-            simp [Execution.completeValue]
-            intro element helement
-            exact
-              completeValue_fieldOutput_scopedMerged_eq_of_valueObjectsInclude_lt
-                schema store variableValues hschema depth actualType
-                expectedType selectionSet scopedMatches element
-                (hheadElements element helement)
-                (hmatchesElements element helement)
+                  intro value hvalue
+                  have hincludeValues :
+                      ∀ value,
+                        value ∈ values ->
+                          executionValueObjectsInclude schema expectedType value := by
+                    simpa [executionValueObjectsInclude]
+                      using hheadInclude
+                  exact hincludeValues value hvalue
+                have hmatchesElements :
+                    ∀ value, value ∈ values ->
+                      scopedFieldOutputValuesInclude schema value
+                        scopedMatches := by
+                  intro value hvalue scopedSelection hscoped
+                  rcases hmatchesInclude scopedSelection hscoped with
+                    ⟨responseName, fieldName, arguments, directives,
+                      subselections, fieldDefinition, hselection, hlookup,
+                      hinclude⟩
+                  refine ⟨responseName, fieldName, arguments, directives,
+                    subselections, fieldDefinition, hselection, hlookup, ?_⟩
+                  have hincludeElements :
+                      ∀ value,
+                        value ∈ values ->
+                          executionValueObjectsInclude schema
+                            fieldDefinition.outputType.namedType value := by
+                    simpa [executionValueObjectsInclude]
+                      using hinclude
+                  exact hincludeElements value hvalue
+                exact completeValue_list_eq_of_forall schema
+                  (store.resolvers schema) variableValues depth itemType
+                  [completeValueSelectionSetField itemType.namedType
+                    ((if leafTypeNameBool schema expectedType then
+                      []
+                    else if objectTypeNameBool schema expectedType then
+                      groundLiftSelectionSet schema expectedType selectionSet
+                    else
+                      (groundObjectTypesForType schema expectedType).map
+                        (fun objectType =>
+                          Selection.inlineFragment (some objectType) []
+                            (groundLiftSelectionSet schema objectType selectionSet)))
+                      ++ mergeSelectionSets
+                        (groundLiftScopedSelectionSet schema scopedMatches))]
+                  [completeValueSelectionSetField itemType.namedType
+                    (selectionSet
+                      ++ mergeSelectionSets
+                        (eraseScopedSelectionSet scopedMatches))]
+                  values
+                  (by
+                    intro element helement
+                    exact
+                      completeValue_fieldOutput_scopedMerged_eq_of_valueObjectsInclude_lt
+                        schema store variableValues hschema depth itemType
+                        expectedType selectionSet scopedMatches element
+                        (hheadElements element helement)
+                        (hmatchesElements element helement)
+                        (by
+                          intro childDepth runtimeType ref hlt hinclude
+                          exact hrecursive childDepth runtimeType ref
+                            (Nat.lt_trans hlt (Nat.lt_succ_self depth))
+                            hinclude))
+            | null => simp [Execution.completeValue]
+            | scalar value => simp [Execution.completeValue]
+            | object runtimeType ref => simp [Execution.completeValue]
+        | nonNull inner ih =>
+            have hinner :
+                Execution.completeValue schema (store.resolvers schema)
+                    variableValues (depth + 1) inner
+                    [completeValueSelectionSetField inner.namedType
+                      ((if leafTypeNameBool schema expectedType then
+                        []
+                      else if objectTypeNameBool schema expectedType then
+                        groundLiftSelectionSet schema expectedType selectionSet
+                      else
+                        (groundObjectTypesForType schema expectedType).map
+                          (fun objectType =>
+                            Selection.inlineFragment (some objectType) []
+                              (groundLiftSelectionSet schema objectType selectionSet)))
+                        ++ mergeSelectionSets
+                          (groundLiftScopedSelectionSet schema scopedMatches))]
+                    value =
+                  Execution.completeValue schema (store.resolvers schema)
+                    variableValues (depth + 1) inner
+                    [completeValueSelectionSetField inner.namedType
+                      (selectionSet
+                        ++ mergeSelectionSets
+                          (eraseScopedSelectionSet scopedMatches))]
+                    value :=
+              ih value hheadInclude hmatchesInclude
                 (by
                   intro childDepth runtimeType ref hlt hinclude
-                  exact hrecursive childDepth runtimeType ref
-                    (Nat.lt_trans hlt (Nat.lt_succ_self depth)) hinclude)
+                  exact hrecursive childDepth runtimeType ref hlt hinclude)
+            simpa [Execution.completeValue] using congrArg
+              Execution.nonNullCompletion hinner
 
 theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_valueIncludes
     (schema : Schema) (store : DataModel.Store)
@@ -726,7 +788,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_valueInclu
     schema.lookupField execParent fieldName = some execFieldDefinition ->
     schema.lookupField liftParent fieldName = some liftFieldDefinition ->
     Execution.collectFields schema variableValues execParent
-      (Execution.Value.object runtimeType ref)
+      (Execution.ResolverValue.object runtimeType ref)
       (groundLiftScopedSelectionSet schema
         ({ liftParent := liftParent,
            selection :=
@@ -735,7 +797,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_valueInclu
       =
     (responseName, liftedField :: liftedFields) :: liftedRestGroups ->
     Execution.collectFields schema variableValues execParent
-      (Execution.Value.object runtimeType ref)
+      (Execution.ResolverValue.object runtimeType ref)
       (Selection.field responseName fieldName arguments [] subselections
         :: eraseScopedSelectionSet rest)
       =
@@ -803,115 +865,150 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_valueInclu
     sourceFields liftedRestGroups sourceRest execFieldDefinition
     liftFieldDefinition (ref := ref) hobject hinclude hfree hexecLookup hliftLookup
     hliftCollect hsourceCollect
-  · have hsource :
-        ∃ runtimeType' objectRef,
-          Execution.Value.object runtimeType ref
-            = .object runtimeType' objectRef
-            ∧ schema.typeIncludesObjectBool execParent runtimeType' = true :=
-      ⟨runtimeType, ref, rfl, hinclude⟩
-    have hsourceFree :
-        selectionSetDirectiveFree
-          (Selection.field responseName fieldName arguments []
-            subselections :: eraseScopedSelectionSet rest) := by
-      simpa [scopedSelectionSetDirectiveFree, eraseScopedSelectionSet,
-        eraseScopedSelection] using hfree
-    have hliftProjection :=
-      mergedFieldSelectionSet_groundLift_scoped_field_head_eq_validFields
-        schema variableValues execParent liftParent
-        (Execution.Value.object runtimeType ref) responseName fieldName arguments
-        subselections rest liftedFields liftedRestGroups liftFieldDefinition
-        hobject hsource hfree hliftLookup
-        (by simpa [liftedField] using hliftCollect)
-    have hsourceProjection :=
-      mergedFieldSelectionSet_field_head_eq_validFieldsWithResponseName
-        schema variableValues execParent
-        (Execution.Value.object runtimeType ref)
-        responseName fieldName arguments subselections
-        (eraseScopedSelectionSet rest) sourceFields sourceRest hobject hsource
-        hsourceFree
-        (by simpa [sourceField] using hsourceCollect)
-    have hcomplete :=
-      completeValue_fieldOutput_scopedMerged_eq_of_valueObjectsInclude_lt
-        schema store variableValues hschema fieldDepth
-        ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-        liftFieldDefinition.outputType.namedType subselections
-        (scopedSelectionSetValidFieldsWithResponseName schema execParent
-          responseName rest)
-        ((store.resolvers schema).resolve execParent fieldName arguments
-          (.object runtimeType ref))
-        hheadInclude hmatchesInclude hrecursive
-    have hleft :
-        Execution.completeValue schema (store.resolvers schema) variableValues
-          fieldDepth
-          ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-          (liftedField :: liftedFields)
-          ((store.resolvers schema).resolve execParent fieldName arguments
-            (.object runtimeType ref))
-        =
-        Execution.completeValue schema (store.resolvers schema) variableValues
-          fieldDepth
-          ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-          [completeValueSelectionSetField
-            ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-            (liftedSelectionSet
-              ++ mergeSelectionSets
-                (groundLiftScopedSelectionSet schema
-                  (scopedSelectionSetValidFieldsWithResponseName schema
-                    execParent responseName rest)))]
-          ((store.resolvers schema).resolve execParent fieldName arguments
-            (.object runtimeType ref)) := by
-      apply completeValue_eq_of_mergedFieldSelectionSet_eq schema
-        (store.resolvers schema) variableValues fieldDepth
-        ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-        (liftedField :: liftedFields)
-        [completeValueSelectionSetField
-          ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-          (liftedSelectionSet
-            ++ mergeSelectionSets
-              (groundLiftScopedSelectionSet schema
-                (scopedSelectionSetValidFieldsWithResponseName schema
-                  execParent responseName rest)))]
-        ((store.resolvers schema).resolve execParent fieldName arguments
-          (.object runtimeType ref))
-      simpa [Execution.mergedFieldSelectionSet, completeValueSelectionSetField,
-        liftedField, liftedSelectionSet] using hliftProjection
-    have hright :
-        Execution.completeValue schema (store.resolvers schema) variableValues
-          fieldDepth
-          ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-          (sourceField :: sourceFields)
-          ((store.resolvers schema).resolve execParent fieldName arguments
-            (.object runtimeType ref))
-        =
-        Execution.completeValue schema (store.resolvers schema) variableValues
-          fieldDepth
-          ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-          [completeValueSelectionSetField
-            ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-            (subselections
-              ++ mergeSelectionSets
-                (eraseScopedSelectionSet
-                  (scopedSelectionSetValidFieldsWithResponseName schema
-                    execParent responseName rest)))]
-          ((store.resolvers schema).resolve execParent fieldName arguments
-            (.object runtimeType ref)) := by
-      apply completeValue_eq_of_mergedFieldSelectionSet_eq schema
-        (store.resolvers schema) variableValues fieldDepth
-        ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-        (sourceField :: sourceFields)
-        [completeValueSelectionSetField
-          ((schema.fieldReturnType? execParent fieldName).getD fieldName)
-          (subselections
-            ++ mergeSelectionSets
-              (eraseScopedSelectionSet
-                (scopedSelectionSetValidFieldsWithResponseName schema
-                  execParent responseName rest)))]
-        ((store.resolvers schema).resolve execParent fieldName arguments
-          (.object runtimeType ref))
-      simpa [Execution.mergedFieldSelectionSet, completeValueSelectionSetField,
-        sourceField, eraseScopedSelectionSet_validFieldsWithResponseName schema
-          execParent responseName rest] using hsourceProjection
-    exact hleft.trans (hcomplete.trans hright.symm)
+  · rw [hexecLookup]
+    cases hresolved :
+        (store.resolvers schema).resolve execParent fieldName arguments
+          (.object runtimeType ref) with
+    | none =>
+        simp []
+    | some value =>
+        simp []
+        have hsource :
+            ∃ runtimeType' objectRef,
+              Execution.ResolverValue.object runtimeType ref
+                = .object runtimeType' objectRef
+                ∧ schema.typeIncludesObjectBool execParent runtimeType' = true :=
+          ⟨runtimeType, ref, rfl, hinclude⟩
+        have hsourceFree :
+            selectionSetDirectiveFree
+              (Selection.field responseName fieldName arguments []
+                subselections :: eraseScopedSelectionSet rest) := by
+          simpa [scopedSelectionSetDirectiveFree, eraseScopedSelectionSet,
+            eraseScopedSelection] using hfree
+        have hliftProjection :=
+          mergedFieldSelectionSet_groundLift_scoped_field_head_eq_validFields
+            schema variableValues execParent liftParent
+            (Execution.ResolverValue.object runtimeType ref) responseName fieldName arguments
+            subselections rest liftedFields liftedRestGroups liftFieldDefinition
+            hobject hsource hfree hliftLookup
+            (by simpa [liftedField] using hliftCollect)
+        have hsourceProjection :=
+          mergedFieldSelectionSet_field_head_eq_validFieldsWithResponseName
+            schema variableValues execParent
+            (Execution.ResolverValue.object runtimeType ref)
+            responseName fieldName arguments subselections
+            (eraseScopedSelectionSet rest) sourceFields sourceRest hobject hsource
+            hsourceFree
+            (by simpa [sourceField] using hsourceCollect)
+        have hheadValue :
+            executionValueObjectsInclude schema
+              liftFieldDefinition.outputType.namedType value := by
+          simpa [hresolved] using hheadInclude
+        have hmatchesValue :
+            scopedFieldOutputValuesInclude schema value
+              (scopedSelectionSetValidFieldsWithResponseName schema execParent
+                responseName rest) := by
+          simpa [hresolved] using hmatchesInclude
+        have hrecursive' :
+            ∀ childDepth childRuntimeType ref,
+              childDepth < fieldDepth ->
+              schema.typeIncludesObjectBool
+                  execFieldDefinition.outputType.namedType childRuntimeType = true ->
+                Execution.executeSelectionSet schema (store.resolvers schema)
+                  variableValues childDepth childRuntimeType
+                  (.object childRuntimeType ref)
+                  (groundLiftSelectionSet schema childRuntimeType
+                    (subselections
+                      ++ mergeSelectionSets
+                        (eraseScopedSelectionSet
+                          (scopedSelectionSetValidFieldsWithResponseName schema
+                            execParent responseName rest))))
+                =
+                Execution.executeSelectionSet schema (store.resolvers schema)
+                  variableValues childDepth childRuntimeType
+                  (.object childRuntimeType ref)
+                  (subselections
+                    ++ mergeSelectionSets
+                      (eraseScopedSelectionSet
+                        (scopedSelectionSetValidFieldsWithResponseName schema
+                          execParent responseName rest))) := by
+          intro childDepth childRuntimeType ref hlt hincludeChild
+          have hincludeChild' :
+              schema.typeIncludesObjectBool
+                  ((schema.fieldReturnType? execParent fieldName).getD fieldName)
+                  childRuntimeType = true := by
+            simpa [Schema.fieldReturnType?, hexecLookup] using hincludeChild
+          exact hrecursive childDepth childRuntimeType ref hlt hincludeChild'
+        have hcomplete :=
+          completeValue_fieldOutput_scopedMerged_eq_of_valueObjectsInclude_lt
+            schema store variableValues hschema fieldDepth
+            execFieldDefinition.outputType
+            liftFieldDefinition.outputType.namedType subselections
+            (scopedSelectionSetValidFieldsWithResponseName schema execParent
+              responseName rest)
+            value hheadValue hmatchesValue hrecursive'
+        have hleft :
+            Execution.completeValue schema (store.resolvers schema) variableValues
+              fieldDepth execFieldDefinition.outputType
+              (liftedField :: liftedFields) value
+            =
+            Execution.completeValue schema (store.resolvers schema) variableValues
+              fieldDepth execFieldDefinition.outputType
+              [completeValueSelectionSetField
+                execFieldDefinition.outputType.namedType
+                (liftedSelectionSet
+                  ++ mergeSelectionSets
+                    (groundLiftScopedSelectionSet schema
+                      (scopedSelectionSetValidFieldsWithResponseName schema
+                        execParent responseName rest)))]
+              value := by
+          apply completeValue_eq_of_mergedFieldSelectionSet_eq schema
+            (store.resolvers schema) variableValues fieldDepth
+            execFieldDefinition.outputType
+            (liftedField :: liftedFields)
+            [completeValueSelectionSetField
+              execFieldDefinition.outputType.namedType
+              (liftedSelectionSet
+                ++ mergeSelectionSets
+                  (groundLiftScopedSelectionSet schema
+                    (scopedSelectionSetValidFieldsWithResponseName schema
+                      execParent responseName rest)))]
+            value
+          simpa [Execution.mergedFieldSelectionSet,
+            completeValueSelectionSetField, liftedField, liftedSelectionSet]
+            using hliftProjection
+        have hright :
+            Execution.completeValue schema (store.resolvers schema) variableValues
+              fieldDepth execFieldDefinition.outputType
+              (sourceField :: sourceFields) value
+            =
+            Execution.completeValue schema (store.resolvers schema) variableValues
+              fieldDepth execFieldDefinition.outputType
+              [completeValueSelectionSetField
+                execFieldDefinition.outputType.namedType
+                (subselections
+                  ++ mergeSelectionSets
+                    (eraseScopedSelectionSet
+                      (scopedSelectionSetValidFieldsWithResponseName schema
+                        execParent responseName rest)))]
+              value := by
+          apply completeValue_eq_of_mergedFieldSelectionSet_eq schema
+            (store.resolvers schema) variableValues fieldDepth
+            execFieldDefinition.outputType
+            (sourceField :: sourceFields)
+            [completeValueSelectionSetField
+              execFieldDefinition.outputType.namedType
+              (subselections
+                ++ mergeSelectionSets
+                  (eraseScopedSelectionSet
+                    (scopedSelectionSetValidFieldsWithResponseName schema
+                      execParent responseName rest)))]
+            value
+          simpa [Execution.mergedFieldSelectionSet,
+            completeValueSelectionSetField, sourceField,
+            eraseScopedSelectionSet_validFieldsWithResponseName schema
+              execParent responseName rest] using hsourceProjection
+        exact hleft.trans (hcomplete.trans hright.symm)
   · exact htail
 
 end GroundTypeLifting

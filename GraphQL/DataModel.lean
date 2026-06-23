@@ -1,4 +1,4 @@
-import GraphQL.Execution
+import GraphQL.Execution.Data
 import GraphQL.DataModel.ObjectRef
 import GraphQL.Validation
 
@@ -6,8 +6,9 @@ import GraphQL.Validation
 
 This module models the server-side graph accessed through resolvers. Runtime objects are
 typed nodes; scalar facts are node properties, and object relationships are labeled edges.
-The model assumes scalar/input/result coercion, execution errors, null bubbling, and
-serialization are outside the current scoped fragment.
+The model assumes scalar/input/result coercion, detailed execution error payloads, and
+serialization are outside the current scoped fragment. Response execution models
+resolver-error counts and null bubbling through the shared execution envelope.
 -/
 namespace GraphQL
 
@@ -27,7 +28,7 @@ deriving Repr
 
 -- Assumption boundary for the scoped model: result values are already type-conformant.
 def valueConformsToType (schema : Schema) :
-    Execution.Value ObjectRef -> TypeRef -> Prop
+    Execution.ResolverValue ObjectRef -> TypeRef -> Prop
   | .null, .nonNull _inner => False
   | .null, _typeRef => True
   | .scalar _value, .named typeName => schema.isLeafType typeName
@@ -158,7 +159,7 @@ deriving Repr
 
 namespace PropertyValue
 
-def toValue : PropertyValue -> Execution.Value ObjectRef
+def toValue : PropertyValue -> Execution.ResolverValue ObjectRef
   | .null => .null
   | .scalar value => .scalar value
   | .list values => .list (values.map toValue)
@@ -334,7 +335,7 @@ def fieldAccess (fieldName : Name) (arguments : List Argument) : FieldAccess :=
 
 def resolveValueFromNode (store : Store) (schema : Schema)
     (fieldName : Name) (arguments : List Argument)
-    (sourceNode : ObjectNode) : Execution.Value ObjectRef :=
+    (sourceNode : ObjectNode) : Execution.ResolverValue ObjectRef :=
   match schema.lookupField sourceNode.typeName fieldName with
   | none => .null
   | some fieldDefinition =>
@@ -355,7 +356,7 @@ def resolveValueFromNode (store : Store) (schema : Schema)
 
 def resolveValueAtNode (store : Store) (schema : Schema)
     (fieldName : Name) (arguments : List Argument)
-    (sourceId : ObjectId) : Execution.Value ObjectRef :=
+    (sourceId : ObjectId) : Execution.ResolverValue ObjectRef :=
   match store.lookupNode? sourceId with
   | none => .null
   | some sourceNode =>
@@ -363,7 +364,7 @@ def resolveValueAtNode (store : Store) (schema : Schema)
 
 def resolveValue (store : Store) (schema : Schema)
     (fieldName : Name) (arguments : List Argument)
-    (runtimeType : Name) : Execution.Value ObjectRef :=
+    (runtimeType : Name) : Execution.ResolverValue ObjectRef :=
   match store.firstNodeWithType? runtimeType with
   | none => .null
   | some sourceNode =>
@@ -426,12 +427,12 @@ end Store
 
 namespace Store
 
-def rootExecutionValue (store : Store) : Execution.Value ObjectRef :=
+def rootExecutionValue (store : Store) : Execution.ResolverValue ObjectRef :=
   .object store.root.typeName (some (objectRefOfId store.root.id))
 
 def resolve (store : Store) (schema : Schema) (fieldName : Name)
-    (arguments : List Argument) (source : Execution.Value ObjectRef) :
-    Execution.Value ObjectRef :=
+    (arguments : List Argument) (source : Execution.ResolverValue ObjectRef) :
+    Option (Execution.ResolverValue ObjectRef) :=
   match source with
   | .object runtimeType ref? =>
       match ref? with
@@ -441,16 +442,19 @@ def resolve (store : Store) (schema : Schema) (fieldName : Name)
               match store.lookupNode? sourceId with
               | some sourceNode =>
                   if sourceNode.typeName == runtimeType then
-                    store.resolveValueFromNode schema fieldName arguments sourceNode
+                    some (store.resolveValueFromNode schema fieldName arguments sourceNode)
                   else
-                    .null
+                    none
               | none =>
-                  .null
+                  none
           | none =>
-              .null
+              none
       | none =>
-          store.resolveValue schema fieldName arguments runtimeType
-  | _ => .null
+          match store.firstNodeWithType? runtimeType with
+          | none => none
+          | some sourceNode =>
+              some (store.resolveValueFromNode schema fieldName arguments sourceNode)
+  | _ => none
 
 def resolvers (store : Store) (schema : Schema) : Execution.Resolvers ObjectRef :=
   { resolve := fun _parentType fieldName arguments source =>
@@ -465,20 +469,20 @@ def executeOperation (schema : Schema) (store : Store)
   Execution.executeQuery schema (store.resolvers schema) variableValues
     operation store.rootExecutionValue
 
--- Explicit-depth store-backed execution used by semantic equivalence theorems.
+-- Explicit-fuel store-backed execution used by semantic equivalence theorems.
 def executeOperationAtDepth (schema : Schema) (store : Store)
     (variableValues : Execution.VariableValues) (operation : Operation)
-    (depth : Nat) : Execution.Response :=
+    (fuel : Nat) : Execution.Response :=
   Execution.executeQueryAtDepth schema (store.resolvers schema) variableValues
-    operation depth store.rootExecutionValue
+    operation fuel store.rootExecutionValue
 
 -- Spec-related operation equivalence over all well-typed graph stores.
-def operationsEquivalentOnData (schema : Schema)
+def operationsEquivalent (schema : Schema)
     (left right : Operation) : Prop :=
-  ∀ store variableValues depth,
+  ∀ store variableValues fuel,
     store.wellTyped schema ->
-      executeOperationAtDepth schema store variableValues left depth
-        = executeOperationAtDepth schema store variableValues right depth
+      executeOperationAtDepth schema store variableValues left fuel
+        = executeOperationAtDepth schema store variableValues right fuel
 
 end DataModel
 

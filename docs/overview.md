@@ -82,19 +82,23 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
   collection, normal-shape facts, operation variables/wrappers, field and
   inline static-collection execution cases, BoolCase runtime selection,
   child completion, scoped resolver/store bridges, and final root semantics.
-- `GraphQL.Execution`: execution over operation selections as a function
-  parameterized by abstract resolver functions. It collects executable fields by
-  response name, resolves each response name once, passes field arguments to
-  resolvers, and applies `@skip` / `@include` filtering. Runtime object values
-  carry their GraphQL object type plus an optional resolver-owned opaque object
-  reference; final responses do not carry object identity.
+- `GraphQL.Execution`: fuel-bounded query execution over operation selections,
+  parameterized by abstract resolver functions. It
+  collects executable fields by response name, resolves each response name
+  once, passes field arguments to resolvers, applies `@skip` / `@include`
+  filtering, completes values with list/object/non-null null bubbling, and
+  returns a response envelope with data plus a `Nat` execution-error count.
+  Runtime object values carry their GraphQL object type plus an optional
+  resolver-owned opaque object reference; final responses do not carry object
+  identity or detailed error metadata. Internal fuel exhaustion is represented
+  by `Execution.outOfFuel`, a polymorphic `.error 1`.
 - `GraphQL.DataModel`: an extensional graph-backed model for the scoped
   conformance target. It represents typed nodes, node-local scalar properties,
   source-id/field-labeled object edges, unordered GraphQL argument/input-object
   key comparison, graph-root execution, schema-conformant field labels, node-id
   uniqueness, edge/property key uniqueness, list-index discipline, graph
   well-typedness predicates, store-backed resolvers, and data-model equivalence
-  of operations.
+  of full query responses.
 - `GraphQL.DataModel.Store`: store-resolution bridge lemmas connecting
   node/type-keyed store lookup and composite-field resolution to schema facts.
 
@@ -105,8 +109,9 @@ The current flow is:
 1. `GraphQL.Schema` and `GraphQL.Operation` define raw syntax.
 2. `GraphQL.SchemaWellFormedness` and `GraphQL.Validation` state
    well-formedness and operation validity.
-3. `GraphQL.Execution` gives bounded execution over operation selections by
-   collecting fields by response name, then resolving each response name once.
+3. `GraphQL.Execution` gives fuel-bounded execution over operation selections
+   by collecting fields by response name, resolving each response name once,
+   completing values, and accumulating modeled execution-error counts.
 4. `GraphQL.DataModel` describes the typed graph store.
 5. `GraphQL.DataModel` instantiates spec execution with store-backed resolvers
    over that graph while keeping object references abstract to execution.

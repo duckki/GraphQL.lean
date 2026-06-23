@@ -28,7 +28,7 @@ theorem completeNormalizationSemanticsPreserved
       hrootObject
   have hsource :
       ∃ runtimeType ref,
-        source = Execution.Value.object runtimeType ref
+        source = Execution.ResolverValue.object runtimeType ref
           ∧ schema.typeIncludesObjectBool operation.rootType runtimeType =
             true :=
     GroundTypeNormalization.rootSourceAppliesBool_true_object schema

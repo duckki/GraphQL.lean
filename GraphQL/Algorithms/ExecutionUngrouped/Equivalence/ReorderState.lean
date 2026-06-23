@@ -21,7 +21,7 @@ theorem visitFieldSliceFold_succ_single_empty_eq_object
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : Value ObjectIdentity)
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
     (field : ExecutableField) :
     visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
         source [field] (.object []) =
@@ -29,8 +29,9 @@ theorem visitFieldSliceFold_succ_single_empty_eq_object
         [(field.responseName,
           responseFieldSlice schema resolvers variableValues completionDepth
             source field)] := by
-  simp [visitFieldSliceFold, visitFieldSlice, responseFieldSlice,
-    mergeResponseFieldIntoObject, mergeResponseField]
+    simp [visitFieldSliceFold, visitFieldSlice, visitFieldSliceResult,
+      responseFieldSlice, mergeResponseFieldResult, mergeResponseFieldIntoObject,
+      mergeResponseField, responseObjectField?, lookupResponseField?]
 
 namespace ExecutedGroupedSelectionSetState
 
@@ -39,10 +40,10 @@ def of_middle_existing_last_swap_after_prefix
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
     {completionDepth : Nat} {parentType : Name}
-    {source : Value ObjectIdentity}
+    {source : ResolverValue ObjectIdentity}
     {pre middle : List ExecutableField} {later : ExecutableField}
     {rest : List ExecutableField}
-    {fields : List (Name × Response)}
+    {fields : List (Name × ResponseValue)}
     (normalized :
       ExecutedGroupedSelectionSetState schema resolvers variableValues
         (completionDepth + 1) parentType source
@@ -89,10 +90,10 @@ theorem executeRootSelectionSet_eq_spec_of_middle_existing_last_swap_after_prefi
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
     {completionDepth : Nat} {parentType : Name}
-    {source : Value ObjectIdentity}
+    {source : ResolverValue ObjectIdentity}
     {pre middle : List ExecutableField} {later : ExecutableField}
     {rest : List ExecutableField}
-    {fields : List (Name × Response)}
+    {fields : List (Name × ResponseValue)}
     (normalized :
       ExecutedGroupedSelectionSetState schema resolvers variableValues
         (completionDepth + 1) parentType source
@@ -135,7 +136,7 @@ def of_middle_existing_last_swap_after_single_prefix
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
     {completionDepth : Nat} {parentType : Name}
-    {source : Value ObjectIdentity}
+    {source : ResolverValue ObjectIdentity}
     {first later : ExecutableField} {middle rest : List ExecutableField}
     (normalized :
       ExecutedGroupedSelectionSetState schema resolvers variableValues
@@ -185,7 +186,7 @@ theorem executeRootSelectionSet_eq_spec_of_middle_existing_last_swap_after_singl
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
     {completionDepth : Nat} {parentType : Name}
-    {source : Value ObjectIdentity}
+    {source : ResolverValue ObjectIdentity}
     {first later : ExecutableField} {middle rest : List ExecutableField}
     (normalized :
       ExecutedGroupedSelectionSetState schema resolvers variableValues
@@ -240,10 +241,10 @@ def of_middle_existing_last_swap_after_prefix
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
     {completionDepth : Nat} {parentType : Name}
-    {source : Value ObjectIdentity}
+    {source : ResolverValue ObjectIdentity}
     {pre middle : List ExecutableField} {later : ExecutableField}
     {rest : List ExecutableField}
-    {fields : List (Name × Response)}
+    {fields : List (Name × ResponseValue)}
     (normalized :
       RecursiveGroupedSelectionSetState schema resolvers variableValues
         completionDepth parentType source
@@ -290,6 +291,7 @@ def of_middle_existing_last_swap_after_prefix
         groupedFieldsResolveStable := by
           rw [hcollect]
           exact normalized.collected.groupedFieldsResolveStable }
+    lookups := normalized.lookups
     compatible := normalized.compatible
     recursiveAppend := normalized.recursiveAppend }
 
@@ -298,10 +300,10 @@ theorem executeRootSelectionSet_eq_spec_of_middle_existing_last_swap_after_prefi
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
     {completionDepth : Nat} {parentType : Name}
-    {source : Value ObjectIdentity}
+    {source : ResolverValue ObjectIdentity}
     {pre middle : List ExecutableField} {later : ExecutableField}
     {rest : List ExecutableField}
-    {fields : List (Name × Response)}
+    {fields : List (Name × ResponseValue)}
     (normalized :
       RecursiveGroupedSelectionSetState schema resolvers variableValues
         completionDepth parentType source
@@ -344,7 +346,7 @@ def of_middle_existing_last_swap_after_single_prefix
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
     {completionDepth : Nat} {parentType : Name}
-    {source : Value ObjectIdentity}
+    {source : ResolverValue ObjectIdentity}
     {first later : ExecutableField} {middle rest : List ExecutableField}
     (normalized :
       RecursiveGroupedSelectionSetState schema resolvers variableValues
@@ -394,7 +396,7 @@ theorem executeRootSelectionSet_eq_spec_of_middle_existing_last_swap_after_singl
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
     {completionDepth : Nat} {parentType : Name}
-    {source : Value ObjectIdentity}
+    {source : ResolverValue ObjectIdentity}
     {first later : ExecutableField} {middle rest : List ExecutableField}
     (normalized :
       RecursiveGroupedSelectionSetState schema resolvers variableValues
@@ -439,245 +441,6 @@ theorem executeRootSelectionSet_eq_spec_of_middle_existing_last_swap_after_singl
   (of_middle_existing_last_swap_after_single_prefix normalized hsameResponse
     hparents hnotMiddle hleftTrace hrightTrace
     hcollect).executeRootSelectionSet_eq_spec
-
-def of_middle_existing_last_swap_after_single_prefix_fresh_middle
-    {ObjectIdentity : Type}
-    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
-    {variableValues : VariableValues}
-    {completionDepth : Nat} {parentType : Name}
-    {source : Value ObjectIdentity}
-    {first later : ExecutableField} {middle : List ExecutableField}
-    (normalized :
-      RecursiveGroupedSelectionSetState schema resolvers variableValues
-        completionDepth parentType source
-        (executableFieldSelections ([first] ++ [later] ++ middle)))
-    (hsameResponse : later.responseName = first.responseName)
-    (hparents :
-      ∀ field, field ∈ [first] ++ (middle ++ [later]) ->
-        field.parentType = parentType)
-    (hmiddleNodup :
-      (middle.map (fun field => field.responseName)).Nodup)
-    (hnotMiddle :
-      later.responseName ∉ middle.map (fun field => field.responseName))
-    (hpopulate :
-      CompleteValuePopulates schema resolvers variableValues completionDepth
-        ((schema.fieldReturnType? later.parentType later.fieldName).getD
-          later.fieldName)
-        later.selectionSet
-        (resolvers.resolve later.parentType later.fieldName later.arguments
-          source)
-        (responseFieldSlice schema resolvers variableValues completionDepth
-          source first))
-    (hfirstReady :
-      ResponseMergeReady
-        (responseFieldSlice schema resolvers variableValues completionDepth
-          source first))
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections ([first] ++ (middle ++ [later]))) =
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections ([first] ++ [later] ++ middle))) :
-    RecursiveGroupedSelectionSetState schema resolvers variableValues
-      completionDepth parentType source
-      (executableFieldSelections ([first] ++ (middle ++ [later]))) := by
-  let firstSlice :=
-    responseFieldSlice schema resolvers variableValues completionDepth source
-      first
-  have hlookup :
-      responseObjectField? later.responseName
-          (.object [(first.responseName, firstSlice)]) =
-        some firstSlice := by
-    simp [responseObjectField?, lookupResponseField?, hsameResponse]
-  have hfreshOutput :
-      ∀ field, field ∈ middle ->
-        field.responseName ∉ [(first.responseName, firstSlice)].map
-          Prod.fst := by
-    intro field hfield hmem
-    simp only [List.map_cons, List.map_nil, List.mem_singleton] at hmem
-    have hlaterField : later.responseName = field.responseName :=
-      hsameResponse.trans hmem.symm
-    exact hnotMiddle (List.mem_map.mpr ⟨field, hfield, hlaterField.symm⟩)
-  have hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source (middle ++ [later]) (.object [(first.responseName, firstSlice)]) :=
-    FieldSliceMergeTrace.fresh_middle_then_reentry_object schema resolvers
-      variableValues completionDepth source middle later
-      [(first.responseName, firstSlice)] firstSlice hlookup hmiddleNodup
-      hfreshOutput hnotMiddle (by simpa [firstSlice] using hpopulate)
-      (by simpa [firstSlice] using hfirstReady)
-  have hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source (later :: middle) (.object [(first.responseName, firstSlice)]) :=
-    FieldSliceMergeTrace.reentry_then_fresh_middle_object schema resolvers
-      variableValues completionDepth source middle later
-      [(first.responseName, firstSlice)] firstSlice hlookup hmiddleNodup
-      hfreshOutput hnotMiddle (by simpa [firstSlice] using hpopulate)
-      (by simpa [firstSlice] using hfirstReady)
-  have hleftTrace' :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((middle ++ [later]) ++ ([] : List ExecutableField))
-        (.object
-          [(first.responseName,
-            responseFieldSlice schema resolvers variableValues completionDepth
-              source first)]) := by
-    simpa [firstSlice, List.append_assoc] using hleftTrace
-  have hrightTrace' :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((later :: middle) ++ ([] : List ExecutableField))
-        (.object
-          [(first.responseName,
-            responseFieldSlice schema resolvers variableValues completionDepth
-              source first)]) := by
-    simpa [firstSlice, List.append_assoc] using hrightTrace
-  have normalized' :
-      RecursiveGroupedSelectionSetState schema resolvers variableValues
-        completionDepth parentType source
-        (executableFieldSelections
-          ([first] ++ ((later :: middle) ++ ([] : List ExecutableField)))) := by
-    simpa [List.append_assoc] using normalized
-  simpa [firstSlice, List.append_assoc] using
-    of_middle_existing_last_swap_after_single_prefix
-      (schema := schema) (resolvers := resolvers)
-      (variableValues := variableValues) (completionDepth := completionDepth)
-      (parentType := parentType) (source := source) (first := first)
-      (later := later) (middle := middle) (rest := []) normalized'
-      hsameResponse (by simpa [List.append_assoc] using hparents)
-      hnotMiddle hleftTrace' hrightTrace'
-      (by simpa [List.append_assoc] using hcollect)
-
-theorem executeRootSelectionSet_eq_spec_of_middle_existing_last_swap_after_single_prefix_fresh_middle
-    {ObjectIdentity : Type}
-    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
-    {variableValues : VariableValues}
-    {completionDepth : Nat} {parentType : Name}
-    {source : Value ObjectIdentity}
-    {first later : ExecutableField} {middle : List ExecutableField}
-    (normalized :
-      RecursiveGroupedSelectionSetState schema resolvers variableValues
-        completionDepth parentType source
-        (executableFieldSelections ([first] ++ [later] ++ middle)))
-    (hsameResponse : later.responseName = first.responseName)
-    (hparents :
-      ∀ field, field ∈ [first] ++ (middle ++ [later]) ->
-        field.parentType = parentType)
-    (hmiddleNodup :
-      (middle.map (fun field => field.responseName)).Nodup)
-    (hnotMiddle :
-      later.responseName ∉ middle.map (fun field => field.responseName))
-    (hpopulate :
-      CompleteValuePopulates schema resolvers variableValues completionDepth
-        ((schema.fieldReturnType? later.parentType later.fieldName).getD
-          later.fieldName)
-        later.selectionSet
-        (resolvers.resolve later.parentType later.fieldName later.arguments
-          source)
-        (responseFieldSlice schema resolvers variableValues completionDepth
-          source first))
-    (hfirstReady :
-      ResponseMergeReady
-        (responseFieldSlice schema resolvers variableValues completionDepth
-          source first))
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections ([first] ++ (middle ++ [later]))) =
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections ([first] ++ [later] ++ middle))) :
-    executeRootSelectionSet schema resolvers variableValues
-        (completionDepth + 1) parentType source
-        (executableFieldSelections ([first] ++ (middle ++ [later]))) =
-      GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-        (completionDepth + 1) parentType source
-        (executableFieldSelections ([first] ++ (middle ++ [later]))) :=
-  (of_middle_existing_last_swap_after_single_prefix_fresh_middle normalized
-    hsameResponse hparents hmiddleNodup hnotMiddle hpopulate hfirstReady
-    hcollect).executeRootSelectionSet_eq_spec
-
-def of_middle_existing_last_swap_after_single_prefix_fresh_middle_collected
-    {ObjectIdentity : Type}
-    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
-    {variableValues : VariableValues}
-    {completionDepth : Nat} {parentType : Name}
-    {source : Value ObjectIdentity}
-    {first later : ExecutableField} {middle : List ExecutableField}
-    (normalized :
-      RecursiveGroupedSelectionSetState schema resolvers variableValues
-        completionDepth parentType source
-        (executableFieldSelections ([first] ++ [later] ++ middle)))
-    (hsameResponse : later.responseName = first.responseName)
-    (hparents :
-      ∀ field, field ∈ [first] ++ (middle ++ [later]) ->
-        field.parentType = parentType)
-    (hmiddleNodup :
-      (middle.map (fun field => field.responseName)).Nodup)
-    (hnotMiddle :
-      later.responseName ∉ middle.map (fun field => field.responseName))
-    (hpopulate :
-      CompleteValuePopulates schema resolvers variableValues completionDepth
-        ((schema.fieldReturnType? later.parentType later.fieldName).getD
-          later.fieldName)
-        later.selectionSet
-        (resolvers.resolve later.parentType later.fieldName later.arguments
-          source)
-        (responseFieldSlice schema resolvers variableValues completionDepth
-          source first))
-    (hfirstReady :
-      ResponseMergeReady
-        (responseFieldSlice schema resolvers variableValues completionDepth
-          source first)) :
-    RecursiveGroupedSelectionSetState schema resolvers variableValues
-      completionDepth parentType source
-      (executableFieldSelections ([first] ++ (middle ++ [later]))) :=
-  of_middle_existing_last_swap_after_single_prefix_fresh_middle normalized
-    hsameResponse hparents hmiddleNodup hnotMiddle hpopulate hfirstReady
-    (collectFields_executableFieldSelections_single_prefix_duplicate_fresh_middle
-      schema variableValues parentType source first later middle hsameResponse
-      hmiddleNodup
-      (by
-        intro field hfield
-        exact hparents field (by simp [hfield]))
-      hnotMiddle)
-
-theorem executeRootSelectionSet_eq_spec_of_middle_existing_last_swap_after_single_prefix_fresh_middle_collected
-    {ObjectIdentity : Type}
-    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
-    {variableValues : VariableValues}
-    {completionDepth : Nat} {parentType : Name}
-    {source : Value ObjectIdentity}
-    {first later : ExecutableField} {middle : List ExecutableField}
-    (normalized :
-      RecursiveGroupedSelectionSetState schema resolvers variableValues
-        completionDepth parentType source
-        (executableFieldSelections ([first] ++ [later] ++ middle)))
-    (hsameResponse : later.responseName = first.responseName)
-    (hparents :
-      ∀ field, field ∈ [first] ++ (middle ++ [later]) ->
-        field.parentType = parentType)
-    (hmiddleNodup :
-      (middle.map (fun field => field.responseName)).Nodup)
-    (hnotMiddle :
-      later.responseName ∉ middle.map (fun field => field.responseName))
-    (hpopulate :
-      CompleteValuePopulates schema resolvers variableValues completionDepth
-        ((schema.fieldReturnType? later.parentType later.fieldName).getD
-          later.fieldName)
-        later.selectionSet
-        (resolvers.resolve later.parentType later.fieldName later.arguments
-          source)
-        (responseFieldSlice schema resolvers variableValues completionDepth
-          source first))
-    (hfirstReady :
-      ResponseMergeReady
-        (responseFieldSlice schema resolvers variableValues completionDepth
-          source first)) :
-    executeRootSelectionSet schema resolvers variableValues
-        (completionDepth + 1) parentType source
-        (executableFieldSelections ([first] ++ (middle ++ [later]))) =
-      GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-        (completionDepth + 1) parentType source
-        (executableFieldSelections ([first] ++ (middle ++ [later]))) :=
-  (of_middle_existing_last_swap_after_single_prefix_fresh_middle_collected
-    normalized hsameResponse hparents hmiddleNodup hnotMiddle hpopulate
-    hfirstReady).executeRootSelectionSet_eq_spec
 
 end RecursiveGroupedSelectionSetState
 

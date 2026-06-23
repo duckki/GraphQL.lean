@@ -7,46 +7,110 @@ Spec reference: GraphQL September 2025.
   modes.
 - 6.3 Executing Selection Sets: field collection, grouped field execution, and subfield
   merging are represented over selections.
-- 6.4 Executing Fields: resolver invocation and value completion are approximated;
-  argument coercion, result coercion, asynchronous behavior, and error propagation are
-  omitted.
-- 7 Response: response values model data only, without `errors`, `extensions`, or request
-  error results.
+- 6.4 Executing Fields: resolver invocation, value completion, and execution-error
+  null bubbling are modeled for a synchronous query fragment. Argument coercion, result
+  coercion details, asynchronous behavior, and error metadata are omitted. Resolver
+  failure is modeled as `none`, handled as a field error, counted in the response
+  envelope, and propagated through non-null wrappers for the response path.
+- 7 Response: response data is modeled recursively; the query response envelope carries
+  response data plus a `Nat` execution-error count, omitting error details, paths,
+  locations, extensions, and request error results.
 -/
 namespace GraphQL
 
 namespace Execution
 
--- Spec 6.4.3 values before completion: non-spec internal value domain used to stand in
--- for host-language resolver results.
-inductive Value (ObjectRef : Type := PUnit) where
+-- Spec 6.4.2 internal value domain used to stand in for host-language resolver results.
+inductive ResolverValue (ObjectRef : Type := PUnit) where
   | null
   | scalar (value : String)
   | object (typeName : Name) (ref : Option ObjectRef := none)
-  | list (values : List (Value ObjectRef))
+  | list (values : List (ResolverValue ObjectRef))
 deriving Repr
 
--- Spec 7.1.5 `data`: partial; models response data recursively, omitting request error
--- results, execution errors, extensions, response positions, and serialization details.
-inductive Response where
+namespace Option
+
+protected def null {ObjectRef : Type} : Option (ResolverValue ObjectRef) :=
+  some .null
+
+protected def scalar {ObjectRef : Type} (value : String) :
+    Option (ResolverValue ObjectRef) :=
+  some (.scalar value)
+
+protected def object {ObjectRef : Type} (typeName : Name)
+    (ref : Option ObjectRef := none) : Option (ResolverValue ObjectRef) :=
+  some (.object typeName ref)
+
+protected def list {ObjectRef : Type} (values : List (ResolverValue ObjectRef)) :
+    Option (ResolverValue ObjectRef) :=
+  some (.list values)
+
+end Option
+
+-- Spec 7.1.1 response data: partial; models response data recursively, omitting execution
+-- errors, extensions, response positions, and serialization details.
+inductive ResponseValue where
   | null
   | scalar (value : String)
-  | object (fields : List (Name × Response))
-  | list (values : List Response)
+  | object (fields : List (Name × ResponseValue))
+  | list (values : List ResponseValue)
 deriving Repr
 
+instance instInhabitedResponseValue : Inhabited ResponseValue where
+  default := .null
+
+-- Spec 7.1 response envelope: `errors` is an execution-error count rather than the
+-- spec's list of detailed error maps.
+structure Response where
+  data : ResponseValue
+  errors : Nat := 0
+deriving Repr
+
+-- Internal result for spec 6.4.4 null propagation. `Except.error errors` means
+-- that a null/error reached a non-null wrapper and must be handled by the nearest
+-- nullable parent. `Except.ok (value, errors)` carries the completed value plus
+-- any execution errors accumulated below it.
+abbrev Result (α : Type) : Type :=
+  Except Nat (α × Nat)
+
+namespace Result
+
+def getD (default : α) : Result α -> α
+  | .error _errors => default
+  | .ok (value, _errors) => value
+
+def combine {α β γ : Type} (combine : α -> β -> γ) :
+    Result α -> Result β -> Result γ
+  | .ok (left, leftErrors), .ok (right, rightErrors) =>
+      .ok (combine left right, leftErrors + rightErrors)
+  | .error leftErrors, .ok (_right, rightErrors) =>
+      .error (leftErrors + rightErrors)
+  | .ok (_left, leftErrors), .error rightErrors =>
+      .error (leftErrors + rightErrors)
+  | .error leftErrors, .error rightErrors =>
+      .error (leftErrors + rightErrors)
+
+end Result
+
+instance instCoeResult {α : Type} [Inhabited α] : Coe (Result α) α where
+  coe := Result.getD default
+
 -- Spec 6.4.2 `ResolveFieldValue`: partial; one synchronous resolver function stands in
--- for object-type field resolvers and receives uncoerced modeled arguments.
+-- for object-type field resolvers and receives uncoerced modeled arguments. `none`
+-- models a resolver-raised field error without carrying error metadata.
 structure Resolvers (ObjectRef : Type := PUnit) where
   resolve :
     Name -> Name -> List Argument ->
-      Value ObjectRef -> Value ObjectRef
+      ResolverValue ObjectRef -> Option (ResolverValue ObjectRef)
 
 -- Spec 6.1.2 `CoerceVariableValues`: partial; variables are assumed already supplied as
 -- modeled input values without coercion or validation.
 abbrev VariableValues := List (Name × InputValue)
 
 variable {ObjectRef : Type}
+
+instance instCoeNameToTypeRef : Coe Name TypeRef where
+  coe := TypeRef.named
 
 -- Spec 6.1.2 variable value lookup helper for already-coerced modeled variables.
 def lookupVariableValue? (variableValues : VariableValues) (name : Name) : Option InputValue :=
@@ -83,7 +147,7 @@ def selectionDirectivesAllowBool (variableValues : VariableValues)
 
 -- Spec 6.3.2 `DoesFragmentTypeApply` needs a runtime object type when the source value
 -- is object-like.
-def runtimeObjectType? : Value ObjectRef -> Option Name
+def runtimeObjectType? : ResolverValue ObjectRef -> Option Name
   | .object typeName _ref => some typeName
   | _ => none
 
@@ -91,7 +155,7 @@ def runtimeObjectType? : Value ObjectRef -> Option Name
 -- known, but falls back to parent/type overlap for non-object placeholder values.
 def doesFragmentTypeApplyBool
     (schema : Schema) (parentType : Name)
-    (source : Value ObjectRef) (typeCondition : Name) : Bool :=
+    (source : ResolverValue ObjectRef) (typeCondition : Name) : Bool :=
   match runtimeObjectType? source with
   | some objectName => schema.typeIncludesObjectBool typeCondition objectName
   | none => schema.typesOverlapBool parentType typeCondition
@@ -121,34 +185,51 @@ def mergeExecutableGroups (left right : List (Name × List ExecutableField)) :
     List (Name × List ExecutableField) :=
   right.foldl (fun grouped group => addExecutableGroup group grouped) left
 
--- Spec 6.4.3 `CompleteValue`: partial fallback for exhausted execution depth; converts
--- internal values structurally without type-directed coercion or errors.
-def shallowResponse : Value ObjectRef -> Response
-  | .null => .null
-  | .scalar value => .scalar value
-  | .object _typeName _ref => .object []
-  | .list values => .list (values.map shallowResponse)
+-- Fuel exhaustion is an internal truncation of the executable model, so it is modeled
+-- as an execution error at the current response position.
+def outOfFuel {α : Type} : Result α :=
+  .error 1
 
--- Spec 6.3 `ExecuteRootSelectionSet`, 6.3.2 `CollectFields`, 6.3.3
--- `ExecuteCollectedFields`, 6.4 `ExecuteField`, and 6.4.3 `CompleteValue`: partial
--- depth-bounded execution model without coercion or error propagation.
+-- Spec 6.4.4 `HandleFieldError`: the model records only one counted error. Nullable
+-- fields complete as `null`; non-null fields propagate to the nearest nullable parent.
+def handleFieldError (fieldType : TypeRef) : Result ResponseValue :=
+  match fieldType with
+  | .nonNull _inner => .error 1
+  | _ => .ok (.null, 1)
+
+-- Spec 6.4.3 non-null completion: when a non-null field completes to null without an
+-- originating child/resolver error, the non-null field itself contributes one error.
+def nonNullCompletion (completed : Result ResponseValue) : Result ResponseValue :=
+  match completed with
+  | .error errors => .error errors
+  | .ok (.null, errors) =>
+      .error <|
+        match errors with
+        | 0 => 1
+        | errors + 1 => errors + 1
+  | .ok (response, errors) => .ok (response, errors)
+
+def singleFieldResult (responseName : Name)
+    (completed : Result ResponseValue) :
+    Result (List (Name × ResponseValue)) :=
+  match completed with
+  | .error errors => .error errors
+  | .ok (response, errors) => .ok ([(responseName, response)], errors)
+
+def catchBubbleAsNull {α : Type} (wrap : α -> ResponseValue)
+    (completed : Result α) : Result ResponseValue :=
+  match completed with
+  | .error errors => .ok (.null, errors)
+  | .ok (value, errors) => .ok (wrap value, errors)
+
+-- Spec 6.3.2 `CollectFields` and `CollectSubfields`: partial; list-backed ordered
+-- grouping of executable fields by response name.
 mutual
-  -- Spec 6.3.1 `ExecuteRootSelectionSet`: partial; directly returns data
-  -- fields and omits error collection.
-  def executeRootSelectionSet
-      (schema : Schema) (resolvers : Resolvers ObjectRef)
-      (variableValues : VariableValues)
-      (depth : Nat) (parentType : Name) (source : Value ObjectRef) :
-      List Selection -> List (Name × Response)
-    | selectionSet =>
-        executeCollectedFields schema resolvers variableValues depth source
-          (collectFields schema variableValues parentType source selectionSet)
-
   -- Spec 6.3.2 `CollectFields` selection step: partial; handles built-in directives and
   -- inline fragments.
   def collectSelection
       (schema : Schema) (variableValues : VariableValues) :
-      Name -> Value ObjectRef -> Selection ->
+      Name -> ResolverValue ObjectRef -> Selection ->
         List (Name × List ExecutableField)
     | parentType, _source, .field responseName fieldName arguments directives selectionSet =>
         if selectionDirectivesAllowBool variableValues directives then
@@ -179,7 +260,7 @@ mutual
   -- fields by response name.
   def collectFields
       (schema : Schema) (variableValues : VariableValues) :
-      Name -> Value ObjectRef -> List Selection ->
+      Name -> ResolverValue ObjectRef -> List Selection ->
         List (Name × List ExecutableField)
     | _parentType, _source, [] => []
     | parentType, source, selection :: rest =>
@@ -192,109 +273,176 @@ mutual
   -- type.
   def collectSubfields
       (schema : Schema) (variableValues : VariableValues)
-      (objectType : Name) (objectValue : Value ObjectRef) :
+      (objectType : Name) (objectValue : ResolverValue ObjectRef) :
       List ExecutableField -> List (Name × List ExecutableField)
     | [] => []
     | field :: fields =>
         mergeExecutableGroups
           (collectFields schema variableValues objectType objectValue field.selectionSet)
           (collectSubfields schema variableValues objectType objectValue fields)
+end
 
-  -- Spec 6.3.3 `ExecuteCollectedFields`: executes each response-name group in
-  -- stored order, without serial/parallel distinction or errors.
+-- Spec 6.3.3 `ExecuteCollectedFields`, 6.4 `ExecuteField`, and 6.4.3 `CompleteValue`:
+-- partial fuel-bounded execution model with spec-shaped null bubbling through non-null
+-- wrappers. `Except.error` carries a bubbling error count until a nullable parent can
+-- turn it into response `null`.
+mutual
   def executeCollectedFields
       (schema : Schema) (resolvers : Resolvers ObjectRef)
-      (variableValues : VariableValues) (depth : Nat)
-      (source : Value ObjectRef) :
-      List (Name × List ExecutableField) -> List (Name × Response)
-    | [] => []
+      (variableValues : VariableValues) (fuel : Nat)
+      (source : ResolverValue ObjectRef) :
+      List (Name × List ExecutableField) ->
+        Result (List (Name × ResponseValue))
+    | [] => .ok ([], 0)
     | (responseName, fields) :: rest =>
-        executeField schema resolvers variableValues depth source responseName fields
-          ++ executeCollectedFields schema resolvers variableValues depth source rest
+        let head :=
+          executeField schema resolvers variableValues fuel source
+            responseName fields
+        let tail :=
+          executeCollectedFields schema resolvers variableValues
+            fuel source rest
+        Result.combine List.append head tail
 
-  -- Spec 6.4 `ExecuteField`: partial; resolves one grouped response name once and
-  -- completes with merged subselections.
+  -- Spec 6.4 `ExecuteField`: resolves one grouped response name once and completes
+  -- with merged subselections. Empty field groups and schema lookup misses are
+  -- impossible for valid collected fields; this partial model reports them as counted
+  -- execution errors rather than silently dropping the response name.
   def executeField
       (schema : Schema) (resolvers : Resolvers ObjectRef)
-      (variableValues : VariableValues) (depth : Nat)
-      (source : Value ObjectRef)
-      (responseName : Name) : List ExecutableField -> List (Name × Response)
-    | [] => []
+      (variableValues : VariableValues) (fuel : Nat)
+      (source : ResolverValue ObjectRef)
+      (responseName : Name) :
+      List ExecutableField -> Result (List (Name × ResponseValue))
+    | [] => .error 1
     | field :: fields =>
-        match depth with
-        | 0 => []
-        | depth' + 1 =>
-            -- Spec 6.4.2 `ResolveFieldValue`
-            let resolved :=
-              resolvers.resolve field.parentType field.fieldName field.arguments source
-            let childType :=
-              (schema.fieldReturnType? field.parentType field.fieldName).getD field.fieldName
-            [(responseName,
-              completeValue schema resolvers variableValues
-                depth' childType (field :: fields) resolved)]
+        match fuel with
+        | 0 => outOfFuel
+        | fuel' + 1 =>
+            match schema.lookupField field.parentType field.fieldName with
+            | none => .error 1
+            | some fieldDefinition =>
+                match resolvers.resolve field.parentType field.fieldName
+                    field.arguments source with
+                | none =>
+                    singleFieldResult responseName
+                      (handleFieldError fieldDefinition.outputType)
+                | some resolved =>
+                    singleFieldResult responseName
+                      (completeValue schema resolvers variableValues
+                        fuel' fieldDefinition.outputType
+                        (field :: fields) resolved)
 
-  -- Spec 6.4.3 `CompleteValue`: partial; ignores declared `fieldType` wrappers and result
-  -- coercion/errors, using the runtime value shape instead.
+  -- Spec 6.4.3 `CompleteValue`: partial; follows null, list, non-null, and composite
+  -- completion shape. Scalar/enum result coercion is collapsed to string scalar
+  -- acceptance, and abstract type resolution is represented by the runtime object type
+  -- carried by `ResolverValue.object`.
   def completeValue
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) :
-      Nat -> Name -> List ExecutableField -> Value ObjectRef -> Response
-    | 0, _parentType, _fields, value => shallowResponse value
-    | _depth + 1, _parentType, _fields, .null => .null
-    | _depth + 1, _parentType, _fields, .scalar value => .scalar value
-    | depth + 1, parentType, fields, source@(.object runtimeType _ref) =>
-        if schema.typeIncludesObjectBool parentType runtimeType then
-          .object (executeCollectedFields schema resolvers variableValues depth source
-            (collectSubfields schema variableValues runtimeType source fields))
+      Nat -> TypeRef -> List ExecutableField -> ResolverValue ObjectRef ->
+        Result ResponseValue
+    | 0, _fieldType, _fields, _value =>
+        outOfFuel
+    | fuel, .nonNull inner, fields, value =>
+        nonNullCompletion
+          (completeValue schema resolvers variableValues
+            fuel inner fields value)
+    | _depth + 1, _fieldType, _fields, .null =>
+        .ok (.null, 0)
+    | _depth + 1, .named typeName, _fields, .scalar value =>
+        if (TypeRef.named typeName).isCompositeBool schema then
+          .error 1
         else
-          .null
-    | depth + 1, parentType, fields, .list values =>
-        .list (values.map
-          (fun value =>
-            completeValue schema resolvers variableValues
-              depth parentType fields value))
+          .ok (.scalar value, 0)
+    | fuel + 1, .named parentType, fields, source@(.object runtimeType _ref) =>
+        if schema.typeIncludesObjectBool parentType runtimeType then
+          let completed :=
+            executeCollectedFields schema resolvers variableValues fuel source
+              (collectSubfields schema variableValues runtimeType source fields)
+          catchBubbleAsNull ResponseValue.object completed
+        else
+          .error 1
+    | fuel + 1, .list inner, fields, .list values =>
+        let completed :=
+          completeValueList schema resolvers variableValues
+            fuel inner fields values
+        catchBubbleAsNull ResponseValue.list completed
+    | _depth + 1, .named _typeName, _fields, .list _values =>
+        .error 1
+    | _depth + 1, .list _inner, _fields, _value =>
+        .error 1
+
+  def completeValueList
+      (schema : Schema) (resolvers : Resolvers ObjectRef)
+      (variableValues : VariableValues)
+      (fuel : Nat) (itemType : TypeRef)
+      (fields : List ExecutableField) :
+      List (ResolverValue ObjectRef) -> Result (List ResponseValue)
+    | [] => .ok ([], 0)
+    | value :: values =>
+        let head :=
+          completeValue schema resolvers variableValues
+            fuel itemType fields value
+        let tail :=
+          completeValueList schema resolvers variableValues
+            fuel itemType fields values
+        Result.combine List.cons head tail
 end
+
+-- Spec 6.3.1 `ExecuteRootSelectionSet`
+def executeRootSelectionSet
+    (schema : Schema) (resolvers : Resolvers ObjectRef)
+    (variableValues : VariableValues)
+    (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef) :
+    List Selection -> Result (List (Name × ResponseValue))
+  | selectionSet =>
+      executeCollectedFields schema resolvers variableValues
+        fuel source
+        (collectFields schema variableValues parentType source selectionSet)
 
 -- Compatibility wrapper of `executeRootSelectionSet` for proof modules using the older
 -- name.
 def executeSelectionSet
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
-    (depth : Nat) (parentType : Name) (source : Value ObjectRef) :
-    List Selection -> List (Name × Response) :=
-  executeRootSelectionSet schema resolvers variableValues depth parentType source
+    (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef) :
+    List Selection -> Result (List (Name × ResponseValue)) :=
+  executeRootSelectionSet schema resolvers variableValues fuel parentType source
 
--- Local recursion-depth bound for the partial `ExecuteQuery` model.
+-- Local recursion fuel bound for the partial `ExecuteQuery` model.
 def executeQueryDepthBound (operation : Operation) : Nat :=
   operation.size * 3 + 1
 
 -- Spec 6.2.1 root execution expects a runtime object matching the operation root type.
--- The model still accepts arbitrary host values, but non-root sources execute to empty
--- data so equivalence statements are not forced to account for invalid roots.
+-- The model still accepts arbitrary host values, but non-root sources produce a counted
+-- execution error so equivalence statements are not forced to account for invalid roots.
 def rootSourceAppliesBool
     (schema : Schema) (operation : Operation)
-    (source : Value ObjectRef) : Bool :=
+    (source : ResolverValue ObjectRef) : Bool :=
   match runtimeObjectType? source with
   | some objectName => schema.typeIncludesObjectBool operation.rootType objectName
   | none => false
 
--- Spec 6.2.1 `ExecuteQuery` / 6.3.1 `ExecuteRootSelectionSet`: partial; executes a
--- query operation as normal data-only object response at an explicit recursion depth.
+-- Spec 6.2.1 `ExecuteQuery` / 7.1 response envelope at an explicit recursion fuel.
 def executeQueryAtDepth
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
-    (depth : Nat) (source : Value ObjectRef) : Response :=
+    (fuel : Nat) (source : ResolverValue ObjectRef) : Response :=
   if rootSourceAppliesBool schema operation source then
-    .object (executeRootSelectionSet schema resolvers variableValues
-      depth operation.rootType source operation.selectionSet)
+    let completed :=
+      executeRootSelectionSet schema resolvers variableValues
+        fuel operation.rootType source operation.selectionSet
+    match completed with
+    | .error errors => { data := .null, errors := errors }
+    | .ok (fields, errors) => { data := .object fields, errors := errors }
   else
-    .object []
+    { data := .null, errors := 1 }
 
--- Default executable query entry point using the local operation-derived depth bound.
+-- Default executable query entry point using the local operation-derived fuel bound.
 def executeQuery
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
-    (source : Value ObjectRef) : Response :=
+    (source : ResolverValue ObjectRef) : Response :=
   executeQueryAtDepth schema resolvers variableValues operation
     (executeQueryDepthBound operation) source
 

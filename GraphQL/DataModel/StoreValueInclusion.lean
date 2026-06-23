@@ -1,4 +1,5 @@
 import GraphQL.DataModel.Store
+import GraphQL.Execution.ResolverValue
 import GraphQL.SchemaWellFormedness.PossibleTypes
 
 /-!
@@ -11,7 +12,7 @@ namespace DataModel
 namespace Store
 
 def executionValueObjectsInclude (schema : Schema) (parentType : Name) :
-    Execution.Value ObjectRef -> Prop
+    Execution.ResolverValue ObjectRef -> Prop
   | .object runtimeType _ref =>
       schema.typeIncludesObjectBool parentType runtimeType = true
   | .list values =>
@@ -24,7 +25,7 @@ private theorem executionValueObjectsInclude_mono
     (∀ runtimeType,
       schema.typeIncludesObjectBool left runtimeType = true ->
         schema.typeIncludesObjectBool right runtimeType = true) ->
-      ∀ value : Execution.Value ObjectRef,
+      ∀ value : Execution.ResolverValue ObjectRef,
         executionValueObjectsInclude schema left value ->
           executionValueObjectsInclude schema right value
   | hsubtype, .null, _hinclude => by
@@ -92,7 +93,7 @@ private theorem executionValueObjectsInclude_list_map_edges
       schema.typeIncludesObjectBool parentType edge.targetType = true) ->
       executionValueObjectsInclude schema parentType
         (.list (edges.map (fun edge =>
-          Execution.Value.object edge.targetType
+          Execution.ResolverValue.object edge.targetType
             (some (objectRefOfId edge.targetId))))) := by
   intro hedges
   simp [executionValueObjectsInclude]
@@ -460,11 +461,16 @@ theorem resolve_objectsInclude_of_static_lookupField
     schema.lookupField parentType fieldName = some fieldDefinition ->
       executionValueObjectsInclude schema fieldDefinition.outputType.namedType
         (store.resolve schema fieldName arguments
-          (Execution.Value.object (ObjectRef := ObjectRef) runtimeType)) := by
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) runtimeType)) := by
   intro hschema hstore hinclude hlookup
-  exact resolveValue_objectsInclude_of_static_lookupField schema store
-    parentType runtimeType fieldName arguments fieldDefinition hschema hstore
-    hinclude hlookup
+  cases hnode : store.firstNodeWithType? runtimeType with
+  | none =>
+      simp [DataModel.Store.resolve, hnode, executionValueObjectsInclude]
+  | some sourceNode =>
+      simpa [DataModel.Store.resolve, hnode, resolveValue] using
+        resolveValue_objectsInclude_of_static_lookupField schema store
+          parentType runtimeType fieldName arguments fieldDefinition hschema
+          hstore hinclude hlookup
 
 theorem resolve_objectsInclude_of_static_lookupField_ref
     (schema : Schema) (store : DataModel.Store)
@@ -482,10 +488,14 @@ theorem resolve_objectsInclude_of_static_lookupField_ref
   intro hschema hstore hinclude hlookup
   cases ref with
   | none =>
-      simpa [DataModel.Store.resolve] using
-        resolveValue_objectsInclude_of_static_lookupField schema store
-          parentType runtimeType fieldName arguments fieldDefinition hschema
-          hstore hinclude hlookup
+      cases hnode : store.firstNodeWithType? runtimeType with
+      | none =>
+          simp [DataModel.Store.resolve, hnode, executionValueObjectsInclude]
+      | some sourceNode =>
+          simpa [DataModel.Store.resolve, hnode, resolveValue] using
+            resolveValue_objectsInclude_of_static_lookupField schema store
+              parentType runtimeType fieldName arguments fieldDefinition
+              hschema hstore hinclude hlookup
   | some ref =>
       cases href : objectIdOfRef? ref with
       | none =>
@@ -537,7 +547,7 @@ theorem resolvers_parentType_insensitive
     (schema : Schema) (store : DataModel.Store)
     (leftParentType rightParentType fieldName : Name)
     (arguments : List Argument)
-    (source : Execution.Value ObjectRef) :
+    (source : Execution.ResolverValue ObjectRef) :
     (store.resolvers schema).resolve leftParentType fieldName arguments source =
       (store.resolvers schema).resolve rightParentType fieldName arguments
         source := by

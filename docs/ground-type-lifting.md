@@ -139,7 +139,7 @@ The phase 1 store-backed proof establishes the core branch-preservation facts:
 - `completeValue_groundLiftSelectionSet_eq_of_object_child_lt`
 - `groundLiftScopedSelectionSet_executeSelectionSet_on_store`
 - `executeOperationAtDepth_groundLiftOperation_eq_on_store`
-- `groundLiftOperation_operationsEquivalentOnData`
+- `groundLiftOperation_operationsEquivalent`
 
 These lemmas show that possible-type branches that do not match the runtime
 object contribute nothing, that the matching branch preserves completion for

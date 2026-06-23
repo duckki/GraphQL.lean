@@ -50,7 +50,7 @@ The public predicates live in `GraphQL/NormalForm.lean`.
 - `NormalForm.groundTypeNormalFormSemanticsPreservation` says that, assuming a
   well-formed schema, a valid operation, and no directives in the operation, the
   original operation and its normalized operation execute equivalently for all
-  resolver environments, variable values, explicit execution depths, and source
+  resolver environments, variable values, explicit execution fuel values, and source
   values.
 - `NormalForm.groundNormalFormCorrect` says the same transformation is correct
   for the store-backed data model, again under the same public assumptions.
@@ -74,21 +74,24 @@ The directive-free ground-type assumptions are intentionally narrow:
 No resolver-insensitivity assumption, fuel assumption, named-fragment
 assumption, or extra store invariant is added to the public theorem.
 
-## Why Equivalence Quantifies Depth
+## Why Equivalence Quantifies Fuel
 
 Execution remains bounded, but normalization can change the syntax size of an
 operation. If operation equivalence compared the default bounded entry point on
 both sides, the original and normalized operations could use different
-operation-derived depth bounds.
+operation-derived fuel bounds.
 
 To avoid making a false size-preservation claim, the proof compares both
-operations at the same explicit execution depth through
-`Execution.executeQueryAtDepth`. The existing `Execution.executeQuery` entry
-point still exists for executable use and supplies the default
-operation-derived bound.
+operations at the same explicit execution fuel through
+`Execution.executeQueryAtDepth`, so the semantic statement covers both response
+data and the modeled execution-error count. Data-only projections remain in
+`GraphQL/Execution/Data.lean` only as compatibility helpers for older
+proof-facing lemmas. The public executable entry point is
+`Execution.executeQuery`, which returns the response envelope and supplies the
+default operation-derived bound.
 
-This makes the semantic statement stronger and cleaner: for any chosen depth,
-normalization preserves execution at that same depth.
+This makes the semantic statement stronger and cleaner: for any chosen fuel
+value, normalization preserves the full response at that same fuel value.
 
 ## Proof Shape
 
@@ -185,7 +188,7 @@ This proof intentionally does not cover:
 - directive-sensitive normalization,
 - named fragments or fragment spreads,
 - mutation or subscription execution,
-- execution errors, `errors`, or `extensions`,
+- detailed execution error payloads, `extensions`, error paths, or locations,
 - response-shape minimization,
 - broader operation transformation algorithms.
 

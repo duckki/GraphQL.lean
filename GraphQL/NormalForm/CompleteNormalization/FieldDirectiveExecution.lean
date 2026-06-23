@@ -14,7 +14,7 @@ variable {ObjectRef : Type}
 theorem collectFields_field_directives_skipped_eq
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
@@ -35,7 +35,7 @@ theorem executeSelectionSet_field_directives_skipped_eq
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
@@ -56,7 +56,7 @@ theorem executeSelectionSet_field_directives_skipped_eq
 theorem collectFields_field_directives_allowed_exists
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
@@ -96,7 +96,7 @@ theorem collectFields_field_directives_allowed_exists
 theorem collectFields_field_directives_allowed_cons_of_responseName_not_mem
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
@@ -133,7 +133,7 @@ theorem collectFields_field_directives_allowed_exists_of_case
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (operation : Operation)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (boolCase : BoolCase)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
@@ -176,7 +176,7 @@ theorem collectFields_field_directives_allowed_cons_of_case_not_mem
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (operation : Operation)
-    (parentType : Name) (source : Execution.Value ObjectRef)
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (boolCase : BoolCase)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
@@ -223,7 +223,7 @@ theorem collectFields_staticCollectForGround_field_allowed_lookup_none_exists
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (variables : List BoolVar)
-    (lookupParent groundType : Name) (source : Execution.Value ObjectRef)
+    (lookupParent groundType : Name) (source : Execution.ResolverValue ObjectRef)
     (boolCase : BoolCase)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
@@ -262,7 +262,7 @@ theorem collectFields_staticCollectForGround_field_allowed_lookup_some_exists
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (variables : List BoolVar)
-    (lookupParent groundType : Name) (source : Execution.Value ObjectRef)
+    (lookupParent groundType : Name) (source : Execution.ResolverValue ObjectRef)
     (boolCase : BoolCase)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
@@ -303,7 +303,7 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_none_gro
     (variableValues : Execution.VariableValues)
     (variables : List BoolVar)
     (depth : Nat)
-    (lookupParent groundType : Name) (source : Execution.Value ObjectRef)
+    (lookupParent groundType : Name) (source : Execution.ResolverValue ObjectRef)
     (boolCase : BoolCase)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
@@ -413,7 +413,7 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_none_gro
       groundType boolCase rest)
     rest normalizedFields sourceFields normalizedTail sourceTail
     hnormalizedCollect' hsourceCollect
-    hcomplete htail
+    (by simp [hlookup]) htail
 
 theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_group_case
     (schema : Schema)
@@ -421,7 +421,7 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_gro
     (variableValues : Execution.VariableValues)
     (variables : List BoolVar)
     (depth : Nat)
-    (lookupParent groundType : Name) (source : Execution.Value ObjectRef)
+    (lookupParent groundType : Name) (source : Execution.ResolverValue ObjectRef)
     (boolCase : BoolCase)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
@@ -457,29 +457,32 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_gro
         arguments := arguments,
         selectionSet := selectionSet
       } :: sourceFields) :: sourceTail ->
-    Execution.completeValue schema resolvers variableValues (depth - 1)
-        ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
-        ({
-            parentType := lookupParent,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet :=
-              normalizeBoolCaseForType schema boolCase fieldDefinition.outputType.namedType
-                selectionSet
-          } :: normalizedFields)
-        (resolvers.resolve lookupParent fieldName arguments source)
-      =
-    Execution.completeValue schema resolvers variableValues (depth - 1)
-        ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
-        ({
-            parentType := lookupParent,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := selectionSet
-          } :: sourceFields)
-        (resolvers.resolve lookupParent fieldName arguments source) ->
+    (match resolvers.resolve lookupParent fieldName arguments source with
+    | some value =>
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+          fieldDefinition.outputType
+          ({
+              parentType := lookupParent,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet :=
+                normalizeBoolCaseForType schema boolCase
+                  fieldDefinition.outputType.namedType selectionSet
+            } :: normalizedFields)
+          value
+        =
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+          fieldDefinition.outputType
+          ({
+              parentType := lookupParent,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := selectionSet
+            } :: sourceFields)
+          value
+    | none => True) ->
     Execution.executeCollectedFields schema resolvers variableValues depth source
         normalizedTail
       =
@@ -528,7 +531,13 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_gro
       groundType boolCase rest)
     rest normalizedFields sourceFields normalizedTail sourceTail
     hnormalizedCollect' hsourceCollect
-    hcomplete htail
+    (by
+      cases hresolved :
+          resolvers.resolve lookupParent fieldName arguments source with
+      | none =>
+          simp []
+      | some value =>
+          simpa [hlookup, hresolved] using hcomplete) htail
 
 theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_no_duplicate_case
     (schema : Schema)
@@ -536,7 +545,7 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_no_
     (variableValues : Execution.VariableValues)
     (operation : Operation)
     (depth : Nat)
-    (lookupParent groundType : Name) (source : Execution.Value ObjectRef)
+    (lookupParent groundType : Name) (source : Execution.ResolverValue ObjectRef)
     (boolCase : BoolCase)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
@@ -559,28 +568,31 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_no_
     responseName ∉
       (Execution.collectFields schema variableValues lookupParent source
         rest).map Prod.fst ->
-    Execution.completeValue schema resolvers variableValues (depth - 1)
-        ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
-        [{
-          parentType := lookupParent,
-          responseName := responseName,
-          fieldName := fieldName,
-          arguments := arguments,
-          selectionSet := normalizeBoolCaseForType schema boolCase
-            fieldDefinition.outputType.namedType selectionSet
-        }]
-        (resolvers.resolve lookupParent fieldName arguments source)
-      =
-    Execution.completeValue schema resolvers variableValues (depth - 1)
-        ((schema.fieldReturnType? lookupParent fieldName).getD fieldName)
-        [{
-          parentType := lookupParent,
-          responseName := responseName,
-          fieldName := fieldName,
-          arguments := arguments,
-          selectionSet := selectionSet
-        }]
-        (resolvers.resolve lookupParent fieldName arguments source) ->
+    (match resolvers.resolve lookupParent fieldName arguments source with
+    | some value =>
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+          fieldDefinition.outputType
+          [{
+            parentType := lookupParent,
+            responseName := responseName,
+            fieldName := fieldName,
+            arguments := arguments,
+            selectionSet := normalizeBoolCaseForType schema boolCase
+              fieldDefinition.outputType.namedType selectionSet
+          }]
+          value
+        =
+        Execution.completeValue schema resolvers variableValues (depth - 1)
+          fieldDefinition.outputType
+          [{
+            parentType := lookupParent,
+            responseName := responseName,
+            fieldName := fieldName,
+            arguments := arguments,
+            selectionSet := selectionSet
+          }]
+          value
+    | none => True) ->
     Execution.executeSelectionSet schema resolvers variableValues depth
         lookupParent source
         (staticCollectForGround schema
@@ -686,7 +698,7 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_none_no_
     (variableValues : Execution.VariableValues)
     (operation : Operation)
     (depth : Nat)
-    (lookupParent groundType : Name) (source : Execution.Value ObjectRef)
+    (lookupParent groundType : Name) (source : Execution.ResolverValue ObjectRef)
     (boolCase : BoolCase)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)

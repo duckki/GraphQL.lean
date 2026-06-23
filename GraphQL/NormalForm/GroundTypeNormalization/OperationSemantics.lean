@@ -20,8 +20,7 @@ theorem groundNormalFormCorrect_of_semanticsPreserved
     groundTypeNormalFormSemanticsPreserved schema operation ->
       groundNormalFormCorrect schema operation := by
   intro hpreserved
-  unfold groundNormalFormCorrect DataModel.operationsEquivalentOnData
-    DataModel.executeOperationAtDepth
+  unfold groundNormalFormCorrect DataModel.operationsEquivalent
   intro store variableValues depth _hstore
   exact hpreserved (store.resolvers schema)
     variableValues depth store.rootExecutionValue
@@ -60,7 +59,7 @@ theorem normalizeOperation_selectionSet (schema : Schema)
   rfl
 
 theorem rootSourceAppliesBool_normalizeOperation
-    (schema : Schema) (operation : Operation) (source : Execution.Value ObjectRef) :
+    (schema : Schema) (operation : Operation) (source : Execution.ResolverValue ObjectRef) :
     Execution.rootSourceAppliesBool schema (normalizeOperation schema operation)
         source =
       Execution.rootSourceAppliesBool schema operation source := by
@@ -73,7 +72,7 @@ theorem executeQuery_normalizedOperation_of_rootSource_not_apply
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (operation : Operation) (depth : Nat)
-    (source : Execution.Value ObjectRef) :
+    (source : Execution.ResolverValue ObjectRef) :
       Execution.rootSourceAppliesBool schema operation source = false ->
         Execution.executeQueryAtDepth schema resolvers variableValues operation
           depth source
@@ -92,7 +91,7 @@ theorem executeQuery_normalizedOperation_of_rootSource_not_apply
 theorem groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet
     (schema : Schema) (operation : Operation) :
     (∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
-      variableValues depth (source : Execution.Value ObjectRef),
+      variableValues depth (source : Execution.ResolverValue ObjectRef),
       Execution.rootSourceAppliesBool schema operation source = true ->
         Execution.executeSelectionSet schema resolvers variableValues
           depth operation.rootType source operation.selectionSet
@@ -113,7 +112,18 @@ theorem groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet
       rw [rootSourceAppliesBool_normalizeOperation schema operation source]
       exact hroot
     simp [Execution.executeQueryAtDepth, hroot, hnormalizedRoot]
-    exact hselection resolvers variableValues depth source hroot
+    exact congrArg
+      (fun (completed : Execution.Result (List (Name × Execution.ResponseValue))) =>
+        match completed with
+        | Except.error errors =>
+            ({ data := Execution.ResponseValue.null, errors := errors } :
+              Execution.Response)
+        | Except.ok (fields, errors) =>
+            ({ data := Execution.ResponseValue.object fields, errors := errors } :
+              Execution.Response))
+      (by
+        simpa [Execution.executeSelectionSet] using
+          hselection resolvers variableValues depth source hroot)
   · have hrootFalse :
         Execution.rootSourceAppliesBool schema operation source = false := by
       cases hmatch : Execution.rootSourceAppliesBool schema operation source
@@ -125,7 +135,7 @@ theorem groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet
 theorem normalizeOperation_executeQuery
     (schema : Schema) (operation : Operation) :
     (∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
-      variableValues depth (source : Execution.Value ObjectRef),
+      variableValues depth (source : Execution.ResolverValue ObjectRef),
       Execution.rootSourceAppliesBool schema operation source = true ->
         Execution.executeSelectionSet schema resolvers variableValues
           depth operation.rootType source operation.selectionSet
@@ -144,7 +154,7 @@ theorem groundTypeNormalFormSemanticsPreservation_of_selectionSet
         operationDirectiveFree operation ->
           ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
             variableValues depth
-            (source : Execution.Value ObjectRef),
+            (source : Execution.ResolverValue ObjectRef),
             Execution.rootSourceAppliesBool schema operation source = true ->
               Execution.executeSelectionSet schema resolvers variableValues
                 depth operation.rootType source operation.selectionSet
@@ -164,7 +174,7 @@ theorem groundNormalFormCorrect_of_selectionSet
         operationDirectiveFree operation ->
           ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
             variableValues depth
-            (source : Execution.Value ObjectRef),
+            (source : Execution.ResolverValue ObjectRef),
             Execution.rootSourceAppliesBool schema operation source = true ->
               Execution.executeSelectionSet schema resolvers variableValues
                 depth operation.rootType source operation.selectionSet
@@ -197,7 +207,7 @@ theorem groundTypeNormalFormSemanticsPreservation
     objectTypeNameBool_eq_true_of_objectType schema hrootObject
   have hsource :
       ∃ runtimeType ref,
-        source = Execution.Value.object runtimeType ref
+        source = Execution.ResolverValue.object runtimeType ref
           ∧ schema.typeIncludesObjectBool operation.rootType runtimeType =
             true :=
     rootSourceAppliesBool_true_object schema operation source hroot

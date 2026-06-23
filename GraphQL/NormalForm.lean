@@ -507,10 +507,10 @@ def normalizeOperation (schema : Schema)
 def operationsEquivalent (schema : Schema)
     (left right : Operation) : Prop :=
   ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
-    variableValues depth (source : Execution.Value ObjectRef),
-    Execution.executeQueryAtDepth schema resolvers variableValues left depth source
+    variableValues fuel (source : Execution.ResolverValue ObjectRef),
+    Execution.executeQueryAtDepth schema resolvers variableValues left fuel source
       =
-    Execution.executeQueryAtDepth schema resolvers variableValues right depth source
+    Execution.executeQueryAtDepth schema resolvers variableValues right fuel source
 
 def groundTypeNormalFormSemanticsPreserved (schema : Schema)
     (operation : Operation) : Prop :=
@@ -533,10 +533,10 @@ def normalizeOperationNormal (schema : Schema)
   SchemaWellFormedness.schemaWellFormed schema ->
     operationNormal schema (normalizeOperation schema operation)
 
--- Store-backed correctness statement for the ground-type normalizer.
+-- Store-backed response correctness statement for the ground-type normalizer.
 def groundNormalFormCorrect (schema : Schema)
     (operation : Operation) : Prop :=
-  DataModel.operationsEquivalentOnData schema operation
+  DataModel.operationsEquivalent schema operation
     (normalizeOperation schema operation)
 
 
@@ -1003,26 +1003,26 @@ def completeNormalizationSemanticsPreserved
   SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
       ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
-        variableValues depth (source : Execution.Value ObjectRef),
+        variableValues fuel (source : Execution.ResolverValue ObjectRef),
         operationBoolVarsComplete operation variableValues ->
           Execution.executeQueryAtDepth schema resolvers variableValues operation
-            depth source
+            fuel source
             =
           Execution.executeQueryAtDepth schema resolvers variableValues
-            (completeNormalizeOperation schema operation) depth source
+            (completeNormalizeOperation schema operation) fuel source
 
 def completeNormalizationCorrect
     (schema : Schema) (operation : Operation) : Prop :=
   SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
-      ∀ store variableValues depth,
+      ∀ store variableValues fuel,
         store.wellTyped schema ->
           operationBoolVarsComplete operation variableValues ->
             DataModel.executeOperationAtDepth schema store variableValues
-              operation depth
+              operation fuel
               =
             DataModel.executeOperationAtDepth schema store variableValues
-              (completeNormalizeOperation schema operation) depth
+              (completeNormalizeOperation schema operation) fuel
 
 end NormalForm
 

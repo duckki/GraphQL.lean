@@ -209,7 +209,7 @@ def optionOperationEqBool : Option Operation -> Option Operation -> Bool
   | _, _ => false
 
 mutual
-  def responseEqBool : Execution.Response -> Execution.Response -> Bool
+  def responseEqBool : Execution.ResponseValue -> Execution.ResponseValue -> Bool
     | .null, .null => true
     | .scalar left, .scalar right => left == right
     | .object left, .object right => responseFieldsEqBool left right
@@ -217,15 +217,15 @@ mutual
     | _, _ => false
 
   def responseListEqBool :
-      List Execution.Response -> List Execution.Response -> Bool
+      List Execution.ResponseValue -> List Execution.ResponseValue -> Bool
     | [], [] => true
     | left :: lefts, right :: rights =>
         responseEqBool left right && responseListEqBool lefts rights
     | _, _ => false
 
   def responseFieldsEqBool :
-      List (Name × Execution.Response) ->
-        List (Name × Execution.Response) -> Bool
+      List (Name × Execution.ResponseValue) ->
+        List (Name × Execution.ResponseValue) -> Bool
     | [], [] => true
     | (leftName, leftValue) :: lefts, (rightName, rightValue) :: rights =>
         (leftName == rightName)
@@ -241,16 +241,21 @@ syntax "on " str "{" term,* "}" : term
 syntax "query" "{" term,* "}" : term
 
 macro_rules
-  | `(field $name:str) =>
-      `(Selection.field $name $name [] [] [])
-  | `(field $name:str { $selection,* }) =>
-      `(Selection.field $name $name [] [] [$selection,*])
-  | `(spread { $selection,* }) =>
-      `(Selection.inlineFragment none [] [$selection,*])
-  | `(on $typeCondition:str { $selection,* }) =>
-      `(Selection.inlineFragment (some $typeCondition) [] [$selection,*])
-  | `(query { $selection,* }) =>
-      `(operationWith [$selection,*])
+  | `(field $name:str) => do
+      let term ← `(Selection.field $name $name [] [] [])
+      pure term.raw
+  | `(field $name:str { $selection,* }) => do
+      let term ← `(Selection.field $name $name [] [] [$selection,*])
+      pure term.raw
+  | `(spread { $selection,* }) => do
+      let term ← `(Selection.inlineFragment none [] [$selection,*])
+      pure term.raw
+  | `(on $typeCondition:str { $selection,* }) => do
+      let term ← `(Selection.inlineFragment (some $typeCondition) [] [$selection,*])
+      pure term.raw
+  | `(query { $selection,* }) => do
+      let term ← `(operationWith [$selection,*])
+      pure term.raw
 
 def completeNormalizationRootBoolCaseBranchesFor
     (variables : List BoolVar)

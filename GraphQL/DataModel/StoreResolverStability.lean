@@ -190,7 +190,7 @@ theorem resolveValue_eq_of_argumentsEqBool
 
 theorem resolve_eq_of_argumentsEqBool
     (store : Store) (schema : Schema) (fieldName : Name)
-    {left right : List Argument} (source : Execution.Value ObjectRef) :
+    {left right : List Argument} (source : Execution.ResolverValue ObjectRef) :
     FieldAccess.argumentsEqBool left right = true ->
       store.resolve schema fieldName left source =
         store.resolve schema fieldName right source := by
@@ -203,9 +203,13 @@ theorem resolve_eq_of_argumentsEqBool
   | object runtimeType identity =>
       cases identity with
       | none =>
-          simp [resolve,
-            resolveValue_eq_of_argumentsEqBool store schema fieldName
-              runtimeType harguments]
+          cases hnode : store.firstNodeWithType? runtimeType with
+          | none =>
+              simp [resolve, hnode]
+          | some sourceNode =>
+              simp [resolve, hnode,
+                resolveValueFromNode_eq_of_argumentsEqBool store schema
+                  fieldName sourceNode harguments]
       | some ref =>
           cases href : objectIdOfRef? ref with
           | none =>
@@ -231,7 +235,7 @@ theorem resolve_eq_of_argumentsEqBool
 theorem resolvers_eq_of_argumentsEqBool
     (schema : Schema) (store : Store)
     (leftParentType rightParentType fieldName : Name)
-    {left right : List Argument} (source : Execution.Value ObjectRef) :
+    {left right : List Argument} (source : Execution.ResolverValue ObjectRef) :
     FieldAccess.argumentsEqBool left right = true ->
       (store.resolvers schema).resolve leftParentType fieldName left source =
         (store.resolvers schema).resolve rightParentType fieldName right

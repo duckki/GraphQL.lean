@@ -4,12 +4,10 @@ import GraphQL.Validation.FieldMerge
 import GraphQL.Execution.Data
 import GraphQL.Execution.ResolverValue
 import GraphQL.Execution.FieldCollection
-import GraphQL.Algorithms.ExecutionUngrouped.DataModel
+import GraphQL.Algorithms.ExecutionUngrouped.Semantics
 import GraphQL.Algorithms.ExecutionUngrouped.Equivalence
-import GraphQL.DataModel.StoreValueInclusion
 import GraphQL.NormalForm.GroundTypeNormalization.Semantics
 import GraphQL.NormalForm.GroundTypeNormalization.Validity
-import GraphQL.NormalForm.GroundTypeLifting.OperationSemantics
 import GraphQL.NormalForm.CompleteNormalization.OperationNormality
 import GraphQL.NormalForm.CompleteNormalization.Semantics
 import GraphQL.NormalForm.CompleteNormalization.Validity
@@ -22,6 +20,6 @@ Spec reference: GraphQL September 2025.
   every internal proof module. Import implementation modules directly when working on
   localized proof internals.
 - Import order follows the intended reading order for the scoped model: schema and
-  validation support, execution, ungrouped execution semantics, data-model support,
-  then normal-form theorem surfaces.
+  validation support, execution, ungrouped execution semantics, then normal-form theorem
+  surfaces.
 -/

@@ -5,7 +5,6 @@ import GraphQL.NormalForm.GroundTypeNormalization.FieldCollection
 import GraphQL.NormalForm.GroundTypeNormalization.FieldSemantics
 import GraphQL.NormalForm.GroundTypeNormalization.RuntimeFragmentSemantics
 import GraphQL.Execution.FieldCollection
-import GraphQL.DataModel.StoreValueInclusion
 
 /-!
 Shared collect/execute field-group helpers for complete normalization.

@@ -1,6 +1,5 @@
 import GraphQL.NormalForm.GroundTypeNormalization.InlineFragmentSemantics
 import GraphQL.NormalForm.GroundTypeNormalization.Normality
-import GraphQL.DataModel.StoreValueInclusion
 
 /-!
 Abstract return grounding semantics for ground-type normalization.

@@ -22,41 +22,24 @@ Current explicit skips:
 - federation.
 
 The immediate proof goal is to formalize schema, operation validation,
-store-backed execution, and ground normal form enough to support later semantic
-operation transformation algorithms.
+resolver-parametric execution, and ground normal form enough to support later
+semantic operation transformation algorithms.
 
 ## Current Status
 
-`GraphQL.DataModel` is the proof-facing data model. It defines a typed graph
-store with path-independent node ids. Runtime object values are parameterized by
-opaque resolver-owned refs; store-backed execution is the spec executor
-instantiated with data-model refs and resolvers. Execution returns a response
-envelope with `data` plus a `Nat` execution-error count, and null bubbling
-through non-null wrappers is modeled with `Execution.Result`. Store conformance
-ties execution to the graph root, validates field-label arguments, rejects
-duplicate node ids and semantic duplicate property/edge keys, enforces
-list-index discipline, and requires edge target types to be available in the
-store. Store-backed operation equivalence runs over full responses from this
-resolver-instantiated execution model.
+`GraphQL.Execution` is the proof-facing execution model. Runtime object values
+are parameterized by opaque resolver-owned refs, and operation equivalence is
+stated over all resolver environments, variable values, explicit fuel values,
+and source values. Execution returns a response envelope with `data` plus a
+`Nat` execution-error count, and null bubbling through non-null wrappers is
+modeled with `Execution.Result`.
 
-`NormalForm.groundNormalFormCorrect` uses
-`DataModel.operationsEquivalent`. The ground-type normalizer has no fuel
-parameter; it terminates by structural descent on selection-set size while
-merging fields and grounding abstract returns. Public normal-form predicates
-belong in top-level `GraphQL/NormalForm.lean`; proof work belongs under
-`GraphQL/NormalForm/`, with directive-free ground-type proof modules under
+The ground-type normalizer has no fuel parameter; it terminates by structural
+descent on selection-set size while merging fields and grounding abstract
+returns. Public normal-form predicates belong in top-level
+`GraphQL/NormalForm.lean`; proof work belongs under `GraphQL/NormalForm/`,
+with directive-free ground-type proof modules under
 `GraphQL/NormalForm/GroundTypeNormalization/`.
-
-The store-resolution bridge in `GraphQL.DataModel.Store` includes
-`lookupType_name_eq`, `typeIncludesObject_eq_of_lookupObjectType`,
-`ObjectNode.lookupProperty?_some_conformsToLookupField`,
-`Store.lookupNode?_some_mem`, `Store.lookupNode?_some_id`,
-`Store.lookupNode?_some_of_mem_unique`,
-`Store.firstNodeWithType?_some_mem`, `Store.firstNodeWithType?_some_typeName`,
-`Store.resolveValue_ne_scalar_of_compositeLookupField`,
-`possibleTypes_eq_nil_of_isLeafType`,
-`fieldReturnType?_some_lookupField`, and
-`scalar_not_conformsToType_of_possibleTypes_nonempty`.
 
 The latest successful checks were:
 
@@ -74,10 +57,8 @@ lake lint
   directive-free ground-type normal form correctness proof.
 - `docs/overview.md`: module map and architecture overview.
 - `docs/references.md`: GraphCoQL reference notes and proof-strategy context.
-- `GraphQL/DataModel.lean`: typed store model and correctness predicates.
-- `GraphQL/DataModel/Store.lean`: store-resolution well-typedness bridge lemmas.
 - `GraphQL/NormalForm.lean`: ground normal form scaffold.
-- `GraphQL/Execution.lean`: resolver-based execution used by the data model.
+- `GraphQL/Execution.lean`: resolver-parametric execution model.
 - `GraphQL/Validation.lean`: current operation validity assumptions.
 
 ## Development Notes

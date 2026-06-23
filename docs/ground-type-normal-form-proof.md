@@ -40,8 +40,7 @@ This construction is tracked under
 `GraphQL/NormalForm/CompleteNormalization/`. Its maintained proof modules
 establish BoolCase enumeration, directive-BoolCase agreement, wrapper-selection
 facts, operation metadata preservation, output normality, validity preservation,
-resolver-parametric semantic preservation, and the store-backed correctness
-corollary.
+and resolver-parametric semantic preservation.
 
 ## Final Statements
 
@@ -52,18 +51,13 @@ The public predicates live in `GraphQL/NormalForm.lean`.
   original operation and its normalized operation execute equivalently for all
   resolver environments, variable values, explicit execution fuel values, and source
   values.
-- `NormalForm.groundNormalFormCorrect` says the same transformation is correct
-  for the store-backed data model, again under the same public assumptions.
 - `NormalForm.completeNormalizationSemanticsPreserved` is the resolver-parametric
   correctness predicate for directive-aware CompleteNormalization.
-- `NormalForm.completeNormalizationCorrect` is the store-backed data-model
-  corollary for directive-aware CompleteNormalization.
 
 The directive-free ground-type theorem witnesses are in
 `GraphQL/NormalForm/GroundTypeNormalization/OperationSemantics.lean`:
 
 - `GraphQL.NormalForm.GroundTypeNormalization.groundTypeNormalFormSemanticsPreservation`
-- `GraphQL.NormalForm.GroundTypeNormalization.groundNormalFormCorrect`
 
 The directive-free ground-type assumptions are intentionally narrow:
 
@@ -97,7 +91,7 @@ value, normalization preserves the full response at that same fuel value.
 
 The proof follows the same big idea as the GraphCoQL normal-form correctness
 argument: prove preservation for selection sets first, then lift that result to
-operations and finally to store-backed execution.
+operations.
 
 At a high level, the Lean proof has four layers.
 
@@ -176,10 +170,6 @@ small wrapper:
 2. If the root source applies, validation gives root selection-set validity,
    merge validity, and semantic readiness. The selection-set preservation
    theorem applies directly.
-
-The store-backed theorem then instantiates resolver-parametric equivalence with
-`Store.resolvers`. The store model does not need a separate normalization
-argument; it reuses the resolver-level semantic preservation theorem.
 
 ## What This Does Not Prove
 

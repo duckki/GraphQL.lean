@@ -1,4 +1,5 @@
-import GraphQL.DataModel
+import GraphQL.Execution
+import GraphQL.Execution.ResolverValue
 import GraphQL.SchemaWellFormedness
 
 /-! GraphQL operation normal form
@@ -533,13 +534,6 @@ def normalizeOperationNormal (schema : Schema)
   SchemaWellFormedness.schemaWellFormed schema ->
     operationNormal schema (normalizeOperation schema operation)
 
--- Store-backed response correctness statement for the ground-type normalizer.
-def groundNormalFormCorrect (schema : Schema)
-    (operation : Operation) : Prop :=
-  DataModel.operationsEquivalent schema operation
-    (normalizeOperation schema operation)
-
-
 -- Final resolver-parametric correctness statement for the ground-type normalizer.
 -- Operation-level proof wrappers live in
 -- `GraphQL.NormalForm.GroundTypeNormalization.OperationSemantics`.
@@ -1010,19 +1004,6 @@ def completeNormalizationSemanticsPreserved
             =
           Execution.executeQueryAtDepth schema resolvers variableValues
             (completeNormalizeOperation schema operation) fuel source
-
-def completeNormalizationCorrect
-    (schema : Schema) (operation : Operation) : Prop :=
-  SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.operationDefinitionValid schema operation ->
-      ∀ store variableValues fuel,
-        store.wellTyped schema ->
-          operationBoolVarsComplete operation variableValues ->
-            DataModel.executeOperationAtDepth schema store variableValues
-              operation fuel
-              =
-            DataModel.executeOperationAtDepth schema store variableValues
-              (completeNormalizeOperation schema operation) fuel
 
 end NormalForm
 

@@ -93,16 +93,6 @@ theorem completeNormalizationSemanticsPreserved_of_selectionSet
       simp [Execution.executeQueryAtDepth, hroot, hnormalizedRoot,
         hnormalizedRootType, hrootSelectionEq]
 
-theorem completeNormalizationCorrect_of_semanticsPreserved
-    (schema : Schema) (operation : Operation) :
-    completeNormalizationSemanticsPreserved schema operation ->
-      completeNormalizationCorrect schema operation := by
-  intro hpreserved hschema hvalid store variableValues depth _hwellTyped
-    hcomplete
-  simpa [DataModel.executeOperationAtDepth] using
-    hpreserved hschema hvalid (store.resolvers schema)
-      variableValues depth store.rootExecutionValue hcomplete
-
 end CompleteNormalization
 
 end NormalForm

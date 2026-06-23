@@ -116,7 +116,7 @@ does not syntactically follow the execution algorithm step by step. The proof
 obligation is therefore to show that the execution result is unchanged after
 ground lifting.
 
-The phase 1 proof lives in the separate module:
+The phase 1 operation wrapper lives in the separate module:
 
 ```lean
 GraphQL.NormalForm.GroundTypeLifting.OperationSemantics
@@ -129,27 +129,16 @@ completion should replace those helpers with lemmas that show the original
 `@skip` and `@include` checks are evaluated exactly once on the single
 runtime-matching lifted branch.
 
-The phase 1 store-backed proof establishes the core branch-preservation facts:
+This module keeps only the resolver-parametric operation-level wrapper:
 
-- `groundLiftSelectionSet_append`
-- `collectFields_groundLift_possibleTypeFragments_not_mem_eq_nil`
-- `executeSelectionSet_append_groundLift_possibleTypeFragments_not_mem`
-- `executeSelectionSet_groundLift_possibleTypeFragments_runtime_branch`
-- `completeValue_groundLift_possibleTypeFragments_eq_of_child_object_lt`
-- `completeValue_groundLiftSelectionSet_eq_of_object_child_lt`
-- `groundLiftScopedSelectionSet_executeSelectionSet_on_store`
-- `executeOperationAtDepth_groundLiftOperation_eq_on_store`
-- `groundLiftOperation_operationsEquivalent`
+- `rootSourceAppliesBool_groundLiftOperation`
+- `executeQueryAtDepth_groundLiftOperation_eq_of_selectionSet`
 
-These lemmas show that possible-type branches that do not match the runtime
-object contribute nothing, that the matching branch preserves completion for
-abstract child returns, and that the scoped selection-set induction lifts those
-local facts to store-backed operation equivalence. Object child returns are
-covered without introducing a redundant object-type inline fragment.
-
-The remaining boundary is phase 2 simplification and directive-aware execution
-bridges. Phase 1 ground lifting is now proved for directive-free store-backed
-execution.
+The remaining proof boundary is to re-establish selection-set preservation
+directly over resolver-parametric execution, then continue with phase 2
+simplification and directive-aware execution bridges. Object child returns
+should still be covered without introducing a redundant object-type inline
+fragment.
 
 ## Deferred Phase 2
 

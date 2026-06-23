@@ -5,7 +5,7 @@ import GraphQL.NormalForm.Shared.Execution
 Operation-level semantic bridge facts for ground-type normalization.
 
 This module lifts the selection-set semantic preservation theorem to operation-level
-resolver-parametric equivalence and the store-backed data-model corollary.
+resolver-parametric equivalence.
 -/
 namespace GraphQL
 
@@ -14,27 +14,6 @@ namespace NormalForm
 namespace GroundTypeNormalization
 
 variable {ObjectRef : Type}
-
-theorem groundNormalFormCorrect_of_semanticsPreserved
-    (schema : Schema) (operation : Operation) :
-    groundTypeNormalFormSemanticsPreserved schema operation ->
-      groundNormalFormCorrect schema operation := by
-  intro hpreserved
-  unfold groundNormalFormCorrect DataModel.operationsEquivalent
-  intro store variableValues depth _hstore
-  exact hpreserved (store.resolvers schema)
-    variableValues depth store.rootExecutionValue
-
-theorem groundNormalFormCorrect_of_semanticsPreservation
-    (schema : Schema) (operation : Operation) :
-    groundTypeNormalFormSemanticsPreservation schema operation ->
-      SchemaWellFormedness.schemaWellFormed schema ->
-        Validation.operationDefinitionValid schema operation ->
-          operationDirectiveFree operation ->
-            groundNormalFormCorrect schema operation := by
-  intro hpreservation hschema hvalid hfree
-  exact groundNormalFormCorrect_of_semanticsPreserved schema operation
-    (hpreservation hschema hvalid hfree)
 
 theorem normalizeOperation_name (schema : Schema)
     (operation : Operation) :
@@ -167,31 +146,6 @@ theorem groundTypeNormalFormSemanticsPreservation_of_selectionSet
   exact normalizeOperation_executeQuery schema operation
     (hselection hschema hvalid hfree)
 
-theorem groundNormalFormCorrect_of_selectionSet
-    (schema : Schema) (operation : Operation) :
-    (SchemaWellFormedness.schemaWellFormed schema ->
-      Validation.operationDefinitionValid schema operation ->
-        operationDirectiveFree operation ->
-          ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
-            variableValues depth
-            (source : Execution.ResolverValue ObjectRef),
-            Execution.rootSourceAppliesBool schema operation source = true ->
-              Execution.executeSelectionSet schema resolvers variableValues
-                depth operation.rootType source operation.selectionSet
-                =
-              Execution.executeSelectionSet schema resolvers variableValues
-                depth (normalizeOperation schema operation).rootType source
-                (normalizeOperation schema operation).selectionSet) ->
-      SchemaWellFormedness.schemaWellFormed schema ->
-        Validation.operationDefinitionValid schema operation ->
-          operationDirectiveFree operation ->
-            NormalForm.groundNormalFormCorrect schema operation := by
-  intro hselection hschema hvalid hfree
-  exact groundNormalFormCorrect_of_semanticsPreservation schema operation
-    (groundTypeNormalFormSemanticsPreservation_of_selectionSet schema operation
-      hselection)
-    hschema hvalid hfree
-
 theorem groundTypeNormalFormSemanticsPreservation
     (schema : Schema) (operation : Operation) :
     NormalForm.groundTypeNormalFormSemanticsPreservation schema operation := by
@@ -230,17 +184,6 @@ theorem groundTypeNormalFormSemanticsPreservation
       hschema depth operation.rootType source operation.selectionSet hobject
       hsource hfree hready hmerge
   simpa [normalizeOperation] using hpreserved.symm
-
-theorem groundNormalFormCorrect
-    (schema : Schema) (operation : Operation) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-      Validation.operationDefinitionValid schema operation ->
-        operationDirectiveFree operation ->
-          NormalForm.groundNormalFormCorrect schema operation := by
-  intro hschema hvalid hfree
-  exact groundNormalFormCorrect_of_semanticsPreservation schema operation
-    (groundTypeNormalFormSemanticsPreservation schema operation)
-    hschema hvalid hfree
 
 end GroundTypeNormalization
 

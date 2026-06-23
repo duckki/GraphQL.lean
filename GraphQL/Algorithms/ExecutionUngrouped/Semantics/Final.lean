@@ -1195,6 +1195,15 @@ theorem completeNormalizationPreservesUngroupedExecutionSemantics
     schema operation resolvers variableValues depth source hschema hvalid
     hcomplete
 
+theorem ungroupedExecutionPreservesSpecExecution_semanticsPreserved
+    (schema : Schema) (operation : Operation) :
+    ungroupedExecutionPreservesSpecExecution schema operation := by
+  intro hschema hvalid ObjectRef resolvers variableValues depth source
+    hcomplete
+  exact executeQueryAtDepth_completeNormalizeOperation_semanticsPreserved
+    schema operation resolvers variableValues depth source hschema hvalid
+    hcomplete
+
 theorem completeNormalizationPreservesUngroupedExecution_of_source_eq_spec
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)

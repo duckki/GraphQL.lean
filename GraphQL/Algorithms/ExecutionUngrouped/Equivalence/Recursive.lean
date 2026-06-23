@@ -3,7 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.Final
 /-!
 Recursive proof-facing constructors for the ungrouped execution equivalence.
 
-These helpers separate the depth induction from the data-model/validation facts
+These helpers separate the depth induction from the resolver and validation invariants
 that supply collection flatness and collected-field invariants.
 -/
 namespace GraphQL

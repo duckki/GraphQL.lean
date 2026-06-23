@@ -25,9 +25,9 @@ The current conformance target includes:
 - execution field errors as resolver failure counts in the query response
   envelope,
 - response null bubbling through non-null output wrappers,
-- a formal data model with typed object identities and field facts,
 - ground normal form construction for field merging and abstract-type grounding,
-- correctness statements for ground normal form over store-backed execution.
+- resolver-parametric correctness statements for ground and complete
+  normalization.
 
 ## Explicitly Skipped
 
@@ -102,20 +102,6 @@ The main modules are:
 - `GraphQL.Execution`: bounded resolver-based execution with compatibility data
   projection, response null bubbling through non-null output wrappers, and a
   query response envelope containing data plus a `Nat` execution-error count.
-- `GraphQL.DataModel`: typed graph store with graph-root execution,
-  schema-conformant field labels, semantic uniqueness for edge/property keys,
-  list-index discipline, store-backed resolvers, and semantic
-  equivalence/correctness predicates over graph-backed execution.
-- `GraphQL.DataModel.Store`: store-resolution bridge lemmas for connecting
-  type-keyed store lookup and composite-field resolution to schema facts.
-
-`GraphQL.Execution` is parametric over resolver-owned object references.
-`GraphQL.DataModel` instantiates those references with a private wrapper around
-path-independent node ids. Nodes store scalar/null/list leaf facts as
-properties, and edges store source-id/field-labeled composite relationships.
-Store well-typedness enforces object type validity, node-id uniqueness,
-edge/property key uniqueness, target type availability, and list-index
-discipline.
 
 ## Related Documentation
 

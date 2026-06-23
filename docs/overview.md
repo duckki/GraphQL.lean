@@ -18,8 +18,6 @@ flowchart TD
   NormalFormGround["GraphQL.NormalForm.GroundTypeNormalization"]
   CompleteNormalization["GraphQL.NormalForm.CompleteNormalization"]
   Execution["GraphQL.Execution"]
-  DataModel["GraphQL.DataModel"]
-  DataModelStore["GraphQL.DataModel.Store"]
   GraphQLRoot["GraphQL"]
 
   Schema --> SchemaWF
@@ -27,14 +25,10 @@ flowchart TD
   Operation --> Validation
   Operation --> NormalForm
   Operation --> Execution
-  Execution --> DataModel
   SchemaWF --> NormalForm
   Validation --> NormalForm
-  Validation --> DataModel
-  DataModel --> NormalForm
   NormalForm --> NormalFormGround
   NormalForm --> CompleteNormalization
-  DataModel --> DataModelStore
 
   SchemaWF --> GraphQLRoot
   Operation --> GraphQLRoot
@@ -43,8 +37,6 @@ flowchart TD
   NormalFormGround --> GraphQLRoot
   CompleteNormalization --> GraphQLRoot
   Execution --> GraphQLRoot
-  DataModel --> GraphQLRoot
-  DataModelStore --> GraphQLRoot
 ```
 
 ## Modules
@@ -71,8 +63,9 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
   inline-fragment applicability.
 - `GraphQL.NormalForm`: ground-typed normal form and non-redundancy predicates over
   operation selection sets, a normalization pass for field merging and
-  abstract-type grounding, and the public semantic preservation and store-backed
-  correctness predicates for directive-free ground-type normalization.
+  abstract-type grounding, and the public resolver-parametric semantic
+  preservation predicates for directive-free ground-type normalization and
+  directive-aware complete normalization.
 - `GraphQL.NormalForm.GroundTypeNormalization`: proof-facing lemmas for the
   directive-free ground-type normalizer.
 - `GraphQL.NormalForm.CompleteNormalization`: proof-facing lemmas for complete
@@ -81,7 +74,7 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
   modules separate variable/directive facts, BoolCase wrappers, static
   collection, normal-shape facts, operation variables/wrappers, field and
   inline static-collection execution cases, BoolCase runtime selection,
-  child completion, scoped resolver/store bridges, and final root semantics.
+  child completion, scoped resolver bridges, and final root semantics.
 - `GraphQL.Execution`: fuel-bounded query execution over operation selections,
   parameterized by abstract resolver functions. It
   collects executable fields by response name, resolves each response name
@@ -92,16 +85,6 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
   resolver-owned opaque object reference; final responses do not carry object
   identity or detailed error metadata. Internal fuel exhaustion is represented
   by `Execution.outOfFuel`, a polymorphic `.error 1`.
-- `GraphQL.DataModel`: an extensional graph-backed model for the scoped
-  conformance target. It represents typed nodes, node-local scalar properties,
-  source-id/field-labeled object edges, unordered GraphQL argument/input-object
-  key comparison, graph-root execution, schema-conformant field labels, node-id
-  uniqueness, edge/property key uniqueness, list-index discipline, graph
-  well-typedness predicates, store-backed resolvers, and data-model equivalence
-  of full query responses.
-- `GraphQL.DataModel.Store`: store-resolution bridge lemmas connecting
-  node/type-keyed store lookup and composite-field resolution to schema facts.
-
 ## Flow
 
 The current flow is:
@@ -112,14 +95,11 @@ The current flow is:
 3. `GraphQL.Execution` gives fuel-bounded execution over operation selections
    by collecting fields by response name, resolving each response name once,
    completing values, and accumulating modeled execution-error counts.
-4. `GraphQL.DataModel` describes the typed graph store.
-5. `GraphQL.DataModel` instantiates spec execution with store-backed resolvers
-   over that graph while keeping object references abstract to execution.
-6. `GraphQL.NormalForm` provides normalization definitions and public
-   ground-normal-form correctness predicates.
-7. `GraphQL.NormalForm.GroundTypeNormalization` provides proof-facing
+4. `GraphQL.NormalForm` provides normalization definitions and public
+   resolver-parametric correctness predicates.
+5. `GraphQL.NormalForm.GroundTypeNormalization` provides proof-facing
    ground-type lemmas.
-8. `GraphQL.NormalForm.CompleteNormalization` provides proof-facing lemmas for
+6. `GraphQL.NormalForm.CompleteNormalization` provides proof-facing lemmas for
    directive-aware Boolean case branch normalization.
 
 Normalization consumes `GraphQL.Operation` directly. The directive-free

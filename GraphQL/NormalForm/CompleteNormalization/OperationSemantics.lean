@@ -104,12 +104,6 @@ theorem completeNormalizationSemanticsPreserved
         exact hmem)
   exact (hrootSelect.trans (hground.trans hfilter)).symm
 
-theorem completeNormalizationCorrect
-    (schema : Schema) (operation : Operation) :
-    NormalForm.completeNormalizationCorrect schema operation := by
-  exact completeNormalizationCorrect_of_semanticsPreserved schema operation
-    (completeNormalizationSemanticsPreserved schema operation)
-
 end CompleteNormalization
 
 end NormalForm

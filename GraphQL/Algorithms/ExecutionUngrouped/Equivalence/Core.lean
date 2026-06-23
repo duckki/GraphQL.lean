@@ -10,12 +10,12 @@ import GraphQL.Validation.SelectionValidity
 Proof-facing scaffolding for relating direct ungrouped execution to the grouped
 spec execution in `GraphQL.Execution`.
 
-The final equivalence theorem is intended for valid operations over stable data:
-validation rules rule out invalid alias collisions, and the data model supplies the
-assumption that repeated field visits for the same response key resolve the same source
-data. The algorithm itself remains operationally direct and may call resolvers more
-often than the grouped spec; equivalence is about the public response envelope, including
-response data and the counted execution errors.
+The final equivalence theorem is intended for valid operations over stable resolver
+behavior: validation rules rule out invalid alias collisions, and explicit global
+invariants supply the assumption that repeated field visits for the same response key
+resolve the same source data. The algorithm itself remains operationally direct and may
+call resolvers more often than the grouped spec; equivalence is about the public response
+envelope, including response data and the counted execution errors.
 -/
 namespace GraphQL
 

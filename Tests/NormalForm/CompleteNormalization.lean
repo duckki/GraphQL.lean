@@ -1,4 +1,5 @@
 import Tests.NormalForm.GroundTypeNormalization
+import GraphQL.Execution.Data
 import GraphQL.NormalForm.CompleteNormalization.OperationNormality
 
 namespace GraphQL

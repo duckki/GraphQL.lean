@@ -351,20 +351,21 @@ def executeQuery {ObjectRef : Type}
   executeQueryAtDepth schema resolvers variableValues operation
     (executeQueryDepthBound operation) source
 
--- Store-backed correctness statement for ungrouped execution. The theorem witness lives
--- in `GraphQL.Algorithms.ExecutionUngrouped.DataModel`.
+-- Resolver-parametric correctness statement for ungrouped execution after complete
+-- normalization. The theorem witness lives in
+-- `GraphQL.Algorithms.ExecutionUngrouped.Semantics`.
 def ungroupedExecutionPreservesSpecExecution
     (schema : Schema) (operation : Operation) : Prop :=
   SchemaWellFormedness.schemaWellFormed schema ->
   Validation.operationDefinitionValid schema operation ->
-    ∀ (store : GraphQL.DataModel.Store) variableValues fuel,
-      store.wellTyped schema ->
-      NormalForm.operationBoolVarsComplete operation variableValues ->
-        executeQueryAtDepth schema (store.resolvers schema) variableValues
-          operation fuel store.rootExecutionValue
+    ∀ {ObjectRef : Type} (resolvers : Resolvers ObjectRef)
+      variableValues fuel (source : ResolverValue ObjectRef),
+        NormalForm.operationBoolVarsComplete operation variableValues ->
+        executeQueryAtDepth schema resolvers variableValues
+          (NormalForm.completeNormalizeOperation schema operation) fuel source
           =
-        GraphQL.Execution.executeQueryAtDepth schema (store.resolvers schema) variableValues
-          operation fuel store.rootExecutionValue
+        GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+          operation fuel source
 
 end ExecutionUngrouped
 end Algorithms

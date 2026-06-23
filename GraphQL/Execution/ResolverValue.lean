@@ -34,7 +34,7 @@ def resolvedValueOrNull : Option (ResolverValue ObjectRef) -> ResolverValue Obje
   rfl
 
 @[simp] theorem resolvedValueOrNull_option_object
-    (typeName : Name) (ref : Option ObjectRef := none) :
+    (typeName : Name) (ref : ObjectRef) :
     resolvedValueOrNull (Option.object typeName ref) =
       .object typeName ref := by
   rfl

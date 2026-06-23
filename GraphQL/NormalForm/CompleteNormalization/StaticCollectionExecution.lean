@@ -170,6 +170,7 @@ theorem collectFields_staticCollectForGround_inline_some_skipped_case
     (variableValues : Execution.VariableValues)
     (operation : Operation)
     (lookupParent groundType typeCondition : Name)
+    (ref : ObjectRef)
     (boolCase : BoolCase)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
@@ -183,15 +184,15 @@ theorem collectFields_staticCollectForGround_inline_some_skipped_case
       (directivesAllowIn boolCase directives
         && schema.typeIncludesObjectBool typeCondition groundType) = false ->
       Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
           (staticCollectForGround schema
             (operationBoolVars operation) lookupParent
             groundType boolCase rest)
         =
       Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType) rest ->
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref) rest ->
         Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
           (staticCollectForGround schema
             (operationBoolVars operation) lookupParent
             groundType boolCase
@@ -199,7 +200,7 @@ theorem collectFields_staticCollectForGround_inline_some_skipped_case
               selectionSet :: rest))
         =
       Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
           (Selection.inlineFragment (some typeCondition) directives
             selectionSet :: rest) := by
   intro hagrees hsourceVars hskip hrest
@@ -216,7 +217,7 @@ theorem collectFields_staticCollectForGround_inline_some_skipped_case
     (operationBoolVars operation) lookupParent groundType
     typeCondition boolCase directives selectionSet rest hskip]
   rw [collectFields_inlineFragment_some_directives_skipped_eq_object schema
-    variableValues lookupParent groundType typeCondition directives
+    variableValues lookupParent groundType typeCondition ref directives
     selectionSet rest hexecSkip]
   exact hrest
 
@@ -225,6 +226,7 @@ theorem collectFields_staticCollectForGround_inline_some_allowed_case
     (variableValues : Execution.VariableValues)
     (operation : Operation)
     (lookupParent groundType typeCondition : Name)
+    (ref : ObjectRef)
     (boolCase : BoolCase)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
@@ -238,24 +240,24 @@ theorem collectFields_staticCollectForGround_inline_some_allowed_case
       directivesAllowIn boolCase directives = true ->
       schema.typeIncludesObjectBool typeCondition groundType = true ->
       Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
           (staticCollectForGround schema
             (operationBoolVars operation) typeCondition
             groundType boolCase selectionSet)
         =
       Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
           selectionSet ->
       Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
           (staticCollectForGround schema
             (operationBoolVars operation) lookupParent
             groundType boolCase rest)
         =
       Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType) rest ->
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref) rest ->
         Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
           (staticCollectForGround schema
             (operationBoolVars operation) lookupParent
             groundType boolCase
@@ -263,7 +265,7 @@ theorem collectFields_staticCollectForGround_inline_some_allowed_case
               selectionSet :: rest))
         =
       Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
           (Selection.inlineFragment (some typeCondition) directives
             selectionSet :: rest) := by
   intro hagrees hsourceVars hallow hincludes hselection hrest
@@ -283,7 +285,7 @@ theorem collectFields_staticCollectForGround_inline_some_allowed_case
   rw [hselection, hrest]
   rw [collectFields_inlineFragment_some_directives_allowed_flatten_object
     schema variableValues lookupParent groundType typeCondition
-      directives selectionSet rest hexecAllow hincludes]
+      ref directives selectionSet rest hexecAllow hincludes]
   rw [collectFields_append]
 
 theorem executeSelectionSet_staticCollectForGround_field_skipped_case
@@ -589,6 +591,7 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_skipped_case
     (operation : Operation)
     (depth : Nat)
     (lookupParent groundType typeCondition : Name)
+    (ref : ObjectRef)
     (boolCase : BoolCase)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
@@ -602,16 +605,16 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_skipped_case
       (directivesAllowIn boolCase directives
         && schema.typeIncludesObjectBool typeCondition groundType) = false ->
       Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
           (staticCollectForGround schema
             (operationBoolVars operation) lookupParent
             groundType boolCase rest)
         =
       Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType) rest ->
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref) rest ->
         Execution.executeSelectionSet schema resolvers variableValues depth
           lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
         (staticCollectForGround schema
           (operationBoolVars operation) lookupParent
           groundType boolCase
@@ -620,7 +623,7 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_skipped_case
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
           lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
         (Selection.inlineFragment (some typeCondition) directives
           selectionSet :: rest) := by
     intro hagrees hsourceVars hskip hrest
@@ -628,7 +631,7 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_skipped_case
     simpa [] using
       collectFields_staticCollectForGround_inline_some_skipped_case
       schema variableValues operation lookupParent groundType typeCondition
-        boolCase directives selectionSet rest hagrees hsourceVars hskip
+        ref boolCase directives selectionSet rest hagrees hsourceVars hskip
       hrest
 
 theorem executeSelectionSet_staticCollectForGround_inline_some_skipped_execution_case
@@ -638,6 +641,7 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_skipped_execution
     (operation : Operation)
     (depth : Nat)
     (lookupParent groundType typeCondition : Name)
+    (ref : ObjectRef)
     (boolCase : BoolCase)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
@@ -652,17 +656,17 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_skipped_execution
         && schema.typeIncludesObjectBool typeCondition groundType) = false ->
       Execution.executeSelectionSet schema resolvers variableValues depth
           lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
         (staticCollectForGround schema
           (operationBoolVars operation) lookupParent
           groundType boolCase rest)
         =
         Execution.executeSelectionSet schema resolvers variableValues depth
           lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType) rest ->
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref) rest ->
         Execution.executeSelectionSet schema resolvers variableValues depth
           lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
         (staticCollectForGround schema
           (operationBoolVars operation) lookupParent
           groundType boolCase
@@ -671,7 +675,7 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_skipped_execution
         =
         Execution.executeSelectionSet schema resolvers variableValues depth
           lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
         (Selection.inlineFragment (some typeCondition) directives
           selectionSet :: rest) := by
   intro hagrees hsourceVars hskip hrest
@@ -690,7 +694,7 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_skipped_execution
   exact hrest.trans
     (executeSelectionSet_inlineFragment_some_directives_skipped_eq_object
       schema resolvers variableValues depth lookupParent groundType
-      typeCondition directives selectionSet rest hexecSkip).symm
+      typeCondition ref directives selectionSet rest hexecSkip).symm
 
 theorem executeSelectionSet_staticCollectForGround_inline_some_allowed_case
     (schema : Schema)
@@ -699,6 +703,7 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_allowed_case
     (operation : Operation)
     (depth : Nat)
     (lookupParent groundType typeCondition : Name)
+    (ref : ObjectRef)
     (boolCase : BoolCase)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
@@ -712,25 +717,25 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_allowed_case
       directivesAllowIn boolCase directives = true ->
       schema.typeIncludesObjectBool typeCondition groundType = true ->
       Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
           (staticCollectForGround schema
             (operationBoolVars operation) typeCondition
             groundType boolCase selectionSet)
         =
       Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
           selectionSet ->
       Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
           (staticCollectForGround schema
             (operationBoolVars operation) lookupParent
             groundType boolCase rest)
         =
       Execution.collectFields schema variableValues lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType) rest ->
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref) rest ->
         Execution.executeSelectionSet schema resolvers variableValues depth
           lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
         (staticCollectForGround schema
           (operationBoolVars operation) lookupParent
           groundType boolCase
@@ -739,7 +744,7 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_allowed_case
         =
         Execution.executeSelectionSet schema resolvers variableValues depth
           lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
         (Selection.inlineFragment (some typeCondition) directives
           selectionSet :: rest) := by
     intro hagrees hsourceVars hallow hincludes hselection hrest
@@ -747,7 +752,7 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_allowed_case
     simpa [] using
       collectFields_staticCollectForGround_inline_some_allowed_case
       schema variableValues operation lookupParent groundType typeCondition
-        boolCase directives selectionSet rest hagrees hsourceVars
+        ref boolCase directives selectionSet rest hagrees hsourceVars
       hallow hincludes hselection hrest
 
 theorem executeSelectionSet_staticCollectForGround_inline_some_allowed_flatten_case
@@ -757,6 +762,7 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_allowed_flatten_c
     (operation : Operation)
     (depth : Nat)
     (lookupParent groundType typeCondition : Name)
+    (ref : ObjectRef)
     (boolCase : BoolCase)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection) :
@@ -771,7 +777,7 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_allowed_flatten_c
       schema.typeIncludesObjectBool typeCondition groundType = true ->
       Execution.executeSelectionSet schema resolvers variableValues depth
           lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
         (staticCollectForGround schema
             (operationBoolVars operation) typeCondition
             groundType boolCase selectionSet
@@ -781,11 +787,11 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_allowed_flatten_c
         =
         Execution.executeSelectionSet schema resolvers variableValues depth
           lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
           (selectionSet ++ rest) ->
         Execution.executeSelectionSet schema resolvers variableValues depth
           lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
         (staticCollectForGround schema
           (operationBoolVars operation) lookupParent
           groundType boolCase
@@ -794,7 +800,7 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_allowed_flatten_c
         =
         Execution.executeSelectionSet schema resolvers variableValues depth
           lookupParent
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType)
+          (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
         (Selection.inlineFragment (some typeCondition) directives
           selectionSet :: rest) := by
   intro hagrees hsourceVars hallow hincludes hflatten
@@ -813,7 +819,7 @@ theorem executeSelectionSet_staticCollectForGround_inline_some_allowed_flatten_c
   exact hflatten.trans
     (executeSelectionSet_inlineFragment_some_directives_allowed_flatten_object
       schema resolvers variableValues depth lookupParent groundType
-      typeCondition directives selectionSet rest hexecAllow
+      typeCondition ref directives selectionSet rest hexecAllow
       hincludes).symm
 
 

@@ -34,7 +34,7 @@ abbrev RecursiveErrorNeutralFor
         selectionSet ->
     (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
     later ∈ fields ->
-    ∀ childDepth runtimeType (identity : Option ObjectRef),
+    ∀ childDepth runtimeType (identity : ObjectRef),
       childDepth < depth ->
         VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
           runtimeType (.object runtimeType identity) later.selectionSet

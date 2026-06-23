@@ -24,7 +24,7 @@ namespace Execution
 inductive ResolverValue (ObjectRef : Type := PUnit) where
   | null
   | scalar (value : String)
-  | object (typeName : Name) (ref : Option ObjectRef := none)
+  | object (typeName : Name) (ref : ObjectRef)
   | list (values : List (ResolverValue ObjectRef))
 deriving Repr
 
@@ -38,7 +38,7 @@ protected def scalar {ObjectRef : Type} (value : String) :
   some (.scalar value)
 
 protected def object {ObjectRef : Type} (typeName : Name)
-    (ref : Option ObjectRef := none) : Option (ResolverValue ObjectRef) :=
+    (ref : ObjectRef) : Option (ResolverValue ObjectRef) :=
   some (.object typeName ref)
 
 protected def list {ObjectRef : Type} (values : List (ResolverValue ObjectRef)) :

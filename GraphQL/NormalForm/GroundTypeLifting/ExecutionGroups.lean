@@ -702,7 +702,8 @@ theorem completeValue_groundLift_scopedMerged_eq_of_child_lt
     (fieldDepth : Nat) (execParent _liftParent runtimeType : Name)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections : List Selection) (rest : List ScopedSelection)
-    (liftFieldDefinition : FieldDefinition) :
+    (liftFieldDefinition : FieldDefinition)
+    (ref : DataModel.ObjectRef) :
     let liftedSelectionSet :=
       if leafTypeNameBool schema liftFieldDefinition.outputType.namedType then
         []
@@ -750,7 +751,7 @@ theorem completeValue_groundLift_scopedMerged_eq_of_child_lt
                   responseName rest)))]
         ((store.resolvers schema).resolve execParent fieldName arguments
           (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef)
-            runtimeType))
+            runtimeType ref))
       =
       Execution.completeValue schema (store.resolvers schema) variableValues
         fieldDepth
@@ -764,7 +765,7 @@ theorem completeValue_groundLift_scopedMerged_eq_of_child_lt
                   responseName rest)))]
         ((store.resolvers schema).resolve execParent fieldName arguments
           (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef)
-            runtimeType)) := by
+            runtimeType ref)) := by
   intro liftedSelectionSet hrecursive
   apply completeValue_eq_of_child_object_lt_includes schema
     (store.resolvers schema) variableValues fieldDepth
@@ -785,7 +786,7 @@ theorem completeValue_groundLift_scopedMerged_eq_of_child_lt
               responseName rest)))]
         ((store.resolvers schema).resolve execParent fieldName arguments
       (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef)
-        runtimeType))
+        runtimeType ref))
   intro childDepth childRuntimeType ref hlt hinclude
   simpa [Execution.mergedFieldSelectionSet,
     completeValueSelectionSetField] using
@@ -800,7 +801,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_completeVa
     (liftedFields sourceFields : List Execution.ExecutableField)
     (liftedRestGroups sourceRest : List (Name × List Execution.ExecutableField))
     (execFieldDefinition liftFieldDefinition : FieldDefinition)
-    (ref : Option DataModel.ObjectRef := none) :
+    (ref : DataModel.ObjectRef) :
     let liftedSelectionSet :=
       if leafTypeNameBool schema liftFieldDefinition.outputType.namedType then
         []
@@ -955,7 +956,7 @@ theorem executeCollectedFields_groundLift_scoped_fieldHead_tail_eq_of_withoutFie
     (liftedFields sourceFields : List Execution.ExecutableField)
     (liftedRestGroups sourceRest : List (Name × List Execution.ExecutableField))
     (liftFieldDefinition : FieldDefinition)
-    (ref : Option DataModel.ObjectRef := none) :
+    (ref : DataModel.ObjectRef) :
     let liftedSelectionSet :=
       if leafTypeNameBool schema liftFieldDefinition.outputType.namedType then
         []
@@ -1136,7 +1137,8 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_child_lt
     (subselections : List Selection) (rest : List ScopedSelection)
     (liftedFields sourceFields : List Execution.ExecutableField)
     (liftedRestGroups sourceRest : List (Name × List Execution.ExecutableField))
-    (execFieldDefinition liftFieldDefinition : FieldDefinition) :
+    (execFieldDefinition liftFieldDefinition : FieldDefinition)
+    (ref : DataModel.ObjectRef) :
     let liftedSelectionSet :=
       if leafTypeNameBool schema liftFieldDefinition.outputType.namedType then
         []
@@ -1176,7 +1178,8 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_child_lt
     schema.lookupField execParent fieldName = some execFieldDefinition ->
     schema.lookupField liftParent fieldName = some liftFieldDefinition ->
     Execution.collectFields schema variableValues execParent
-      (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+      (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef)
+        runtimeType ref)
       (groundLiftScopedSelectionSet schema
         ({ liftParent := liftParent,
            selection :=
@@ -1185,7 +1188,8 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_child_lt
       =
     (responseName, liftedField :: liftedFields) :: liftedRestGroups ->
     Execution.collectFields schema variableValues execParent
-      (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+      (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef)
+        runtimeType ref)
       (Selection.field responseName fieldName arguments [] subselections
         :: eraseScopedSelectionSet rest)
       =
@@ -1214,17 +1218,19 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_child_lt
                   execParent responseName rest)))) ->
     Execution.executeCollectedFields schema (store.resolvers schema)
       variableValues (fieldDepth + 1)
-      (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+      (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef)
+        runtimeType ref)
       liftedRestGroups
       =
     Execution.executeCollectedFields schema (store.resolvers schema)
       variableValues (fieldDepth + 1)
-      (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef) runtimeType)
+      (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef)
+        runtimeType ref)
       sourceRest ->
       Execution.executeSelectionSet schema (store.resolvers schema)
         variableValues (fieldDepth + 1) execParent
         (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef)
-          runtimeType)
+          runtimeType ref)
         (groundLiftScopedSelectionSet schema
           ({ liftParent := liftParent,
              selection :=
@@ -1235,7 +1241,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_child_lt
       Execution.executeSelectionSet schema (store.resolvers schema)
         variableValues (fieldDepth + 1) execParent
         (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef)
-          runtimeType)
+          runtimeType ref)
         (Selection.field responseName fieldName arguments [] subselections
           :: eraseScopedSelectionSet rest) := by
   intro liftedSelectionSet liftedField sourceField hobject hinclude hfree
@@ -1244,14 +1250,14 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_child_lt
     schema store variableValues fieldDepth execParent liftParent runtimeType
     responseName fieldName arguments subselections rest liftedFields
     sourceFields liftedRestGroups sourceRest execFieldDefinition
-    liftFieldDefinition (ref := (none : Option DataModel.ObjectRef))
+    liftFieldDefinition (ref := ref)
       hobject hinclude hfree hexecLookup hliftLookup
     hliftCollect hsourceCollect
   · rw [hexecLookup]
     cases hresolved :
         (store.resolvers schema).resolve execParent fieldName arguments
           (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef)
-            runtimeType) with
+            runtimeType ref) with
     | none =>
         simp []
     | some value =>
@@ -1261,14 +1267,14 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_child_lt
           execFieldDefinition.outputType
           (liftedField :: liftedFields) (sourceField :: sourceFields) value
         ·
-          intro childDepth childRuntimeType ref hlt hincludeChild
+          intro childDepth childRuntimeType childRef hlt hincludeChild
           have hsource :
-              ∃ runtimeType' ref,
+              ∃ runtimeType' objectRef,
                 Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef)
-                  runtimeType
-                  = .object runtimeType' ref
+                  runtimeType ref
+                  = .object runtimeType' objectRef
                   ∧ schema.typeIncludesObjectBool execParent runtimeType' = true :=
-            ⟨runtimeType, (none : Option DataModel.ObjectRef), rfl, hinclude⟩
+            ⟨runtimeType, ref, rfl, hinclude⟩
           have hsourceFree :
               selectionSetDirectiveFree
                 (Selection.field responseName fieldName arguments []
@@ -1279,7 +1285,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_child_lt
             mergedFieldSelectionSet_groundLift_scoped_field_head_eq_validFields
               schema variableValues execParent liftParent
               (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef)
-                runtimeType) responseName
+                runtimeType ref) responseName
               fieldName arguments
               subselections rest liftedFields liftedRestGroups
               liftFieldDefinition hobject hsource hfree hliftLookup
@@ -1290,7 +1296,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_child_lt
             mergedFieldSelectionSet_field_head_eq_validFieldsWithResponseName
               schema variableValues execParent
               (Execution.ResolverValue.object (ObjectRef := DataModel.ObjectRef)
-                runtimeType)
+                runtimeType ref)
               responseName fieldName arguments subselections
               (eraseScopedSelectionSet rest) sourceFields sourceRest hobject
               hsource hsourceFree
@@ -1305,7 +1311,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_child_lt
             simpa [Schema.fieldReturnType?, hexecLookup] using hincludeChild
           simpa [eraseScopedSelectionSet_validFieldsWithResponseName schema
             execParent responseName rest] using
-            hrecursive childDepth childRuntimeType ref hlt
+            hrecursive childDepth childRuntimeType childRef hlt
               hincludeChild'
   · exact htail
 

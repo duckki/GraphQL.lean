@@ -312,12 +312,12 @@ def completeNormalizationResolvers : Execution.Resolvers :=
   { resolve := fun parentType fieldName _arguments _source =>
       some <|
         match parentType, fieldName with
-        | "Query", "hero" => .object "Human"
-        | "Query", "search" => .object "Human"
+        | "Query", "hero" => .object "Human" ()
+        | "Query", "search" => .object "Human" ()
         | "Human", "id" => .scalar "human-id"
         | "Human", "name" => .scalar "human-name"
         | "Human", "homePlanet" => .scalar "earth"
-        | "Human", "companion" => .object "Droid"
+        | "Human", "companion" => .object "Droid" ()
         | "Droid", "id" => .scalar "droid-id"
         | "Droid", "name" => .scalar "droid-name"
         | "Droid", "primaryFunction" => .scalar "protocol"
@@ -338,10 +338,10 @@ theorem completeNormalizationExecutionSmoke :
       (Execution.executeQueryDataAtDepth groundTypingSchema
         completeNormalizationResolvers completeNormalizationVariableValues
         completeNormalizationDirectiveInputQuery 12
-        (Execution.ResolverValue.object "Query"))
+        (Execution.ResolverValue.object "Query" ()))
       (executeCompleteNormalizedAtDepth
         completeNormalizationDirectiveInputQuery 12
-        (Execution.ResolverValue.object "Query")) = true := by
+        (Execution.ResolverValue.object "Query" ())) = true := by
   native_decide
 
 theorem completeNormalizationNestedExecutionSmoke :
@@ -349,10 +349,10 @@ theorem completeNormalizationNestedExecutionSmoke :
       (Execution.executeQueryDataAtDepth groundTypingSchema
         completeNormalizationResolvers completeNormalizationVariableValues
         completeNormalizationNestedDirectiveInputQuery 16
-        (Execution.ResolverValue.object "Query"))
+        (Execution.ResolverValue.object "Query" ()))
       (executeCompleteNormalizedAtDepth
         completeNormalizationNestedDirectiveInputQuery 16
-        (Execution.ResolverValue.object "Query")) = true := by
+        (Execution.ResolverValue.object "Query" ())) = true := by
   native_decide
 
 theorem completeNormalizationSmokeInputsHaveCompleteNormalTheorem :

@@ -201,34 +201,20 @@ theorem resolve_eq_of_argumentsEqBool
   | scalar value =>
       simp [resolve]
   | object runtimeType identity =>
-      cases identity with
+      cases hnode : store.lookupNode? (objectIdOfRef identity) with
       | none =>
-          cases hnode : store.firstNodeWithType? runtimeType with
-          | none =>
-              simp [resolve, hnode]
-          | some sourceNode =>
-              simp [resolve, hnode,
-                resolveValueFromNode_eq_of_argumentsEqBool store schema
-                  fieldName sourceNode harguments]
-      | some ref =>
-          cases href : objectIdOfRef? ref with
-          | none =>
-              simp [resolve, href]
-          | some sourceId =>
-              cases hnode : store.lookupNode? sourceId with
-              | none =>
-                  simp [resolve, href, hnode]
-              | some sourceNode =>
-                  by_cases htype : (sourceNode.typeName == runtimeType) = true
-                  · simp [resolve, href, hnode, htype,
-                      resolveValueFromNode_eq_of_argumentsEqBool store schema
-                        fieldName sourceNode harguments]
-                  · have htypeFalse :
-                        (sourceNode.typeName == runtimeType) = false := by
-                      cases h : sourceNode.typeName == runtimeType
-                      · rfl
-                      · contradiction
-                    simp [resolve, href, hnode, htypeFalse]
+          simp [resolve, hnode]
+      | some sourceNode =>
+          by_cases htype : (sourceNode.typeName == runtimeType) = true
+          · simp [resolve, hnode, htype,
+              resolveValueFromNode_eq_of_argumentsEqBool store schema
+                fieldName sourceNode harguments]
+          · have htypeFalse :
+                (sourceNode.typeName == runtimeType) = false := by
+              cases h : sourceNode.typeName == runtimeType
+              · rfl
+              · contradiction
+            simp [resolve, hnode, htypeFalse]
   | list values =>
       simp [resolve]
 

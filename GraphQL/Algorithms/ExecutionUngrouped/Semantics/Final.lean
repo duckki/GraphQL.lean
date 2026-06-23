@@ -61,7 +61,7 @@ theorem collectedSelectionSetGroupsSingleton_of_allFields_directiveFree_normal
 
 theorem collectedSelectionSetGroupsSingleton_of_generatedNormalizedFieldChild
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (childType childRuntime : Name) (ref : Option ObjectRef)
+    (childType childRuntime : Name) (ref : ObjectRef)
     (childSelectionSet : List Selection) :
     SchemaWellFormedness.schemaWellFormed schema ->
     schema.typeIncludesObjectBool childType childRuntime = true ->
@@ -180,7 +180,7 @@ theorem executionSelectionSetLookupValid_normalizeSelectionSet
 
 theorem collectedGroupsFieldLookupValid_of_generatedNormalizedFieldChild
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (childType childRuntime : Name) (ref : Option ObjectRef)
+    (childType childRuntime : Name) (ref : ObjectRef)
     (childSelectionSet : List Selection) :
     SchemaWellFormedness.schemaWellFormed schema ->
     schema.typeIncludesObjectBool childType childRuntime = true ->
@@ -263,7 +263,7 @@ theorem executeRootSelectionSet_eq_spec_of_allFieldsNormal
     (selectionSet : List Selection)
     (childReady : Name -> List Selection -> Prop)
     (hchild :
-      ∀ childDepth childType runtimeType (ref : Option ObjectRef) childSelectionSet,
+      ∀ childDepth childType runtimeType (ref : ObjectRef) childSelectionSet,
         childDepth < depth ->
         schema.typeIncludesObjectBool childType runtimeType = true ->
         childReady childType childSelectionSet ->
@@ -339,7 +339,7 @@ theorem executeQueryAtDepth_eq_spec_of_allFieldsNormal
     (depth : Nat) (source : Execution.ResolverValue ObjectRef)
     (childReady : Name -> List Selection -> Prop)
     (hchild :
-      ∀ childDepth childType runtimeType (ref : Option ObjectRef) childSelectionSet,
+      ∀ childDepth childType runtimeType (ref : ObjectRef) childSelectionSet,
         childDepth < depth ->
         schema.typeIncludesObjectBool childType runtimeType = true ->
         childReady childType childSelectionSet ->
@@ -383,7 +383,7 @@ theorem executeQueryAtDepth_eq_spec_of_allFieldsNormal
 
 theorem collectedGroupsFieldValidationMergeCompatible_of_generatedNormalizedFieldChild
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (childType childRuntime : Name) (ref : Option ObjectRef)
+    (childType childRuntime : Name) (ref : ObjectRef)
     (childSelectionSet : List Selection) :
     SchemaWellFormedness.schemaWellFormed schema ->
     schema.typeIncludesObjectBool childType childRuntime = true ->
@@ -420,7 +420,7 @@ theorem executionCollectedFieldInvariant_of_generatedNormalizedFieldChild
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (childType childRuntime : Name)
-    (ref : Option ObjectRef)
+    (ref : ObjectRef)
     (childSelectionSet : List Selection) :
     SchemaWellFormedness.schemaWellFormed schema ->
     schema.typeIncludesObjectBool childType childRuntime = true ->
@@ -474,7 +474,7 @@ def selectionSetLocalFreshPrefixInvariants_of_generatedNormalizedFieldChild
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (childType childRuntime : Name)
-    (ref : Option ObjectRef)
+    (ref : ObjectRef)
     (childSelectionSet : List Selection) :
     SchemaWellFormedness.schemaWellFormed schema ->
     schema.typeIncludesObjectBool childType childRuntime = true ->
@@ -520,7 +520,7 @@ def recursiveGroupedSelectionSetState_of_generatedNormalizedFieldChild
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (childType childRuntime : Name)
-    (ref : Option ObjectRef)
+    (ref : ObjectRef)
     (childSelectionSet : List Selection) :
     SchemaWellFormedness.schemaWellFormed schema ->
     schema.typeIncludesObjectBool childType childRuntime = true ->
@@ -584,7 +584,7 @@ theorem executeRootSelectionSet_eq_spec_of_generatedNormalizedFieldChild
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (childType childRuntime : Name)
-    (ref : Option ObjectRef)
+    (ref : ObjectRef)
     (childSelectionSet : List Selection) :
     SchemaWellFormedness.schemaWellFormed schema ->
     schema.typeIncludesObjectBool childType childRuntime = true ->

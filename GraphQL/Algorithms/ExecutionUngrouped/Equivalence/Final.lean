@@ -695,7 +695,7 @@ def of_positiveRecursiveChildren
       ∀ responseName field fields prefixTail,
         (responseName, field :: fields) ∈ groups ->
         (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        ∀ runtimeType (identity : Option ObjectIdentity),
+        ∀ runtimeType (identity : ObjectIdentity),
           0 < depth ->
           schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD

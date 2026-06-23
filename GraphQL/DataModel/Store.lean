@@ -204,10 +204,10 @@ theorem scalar_not_conformsToType_of_possibleTypes_nonempty (schema : Schema)
         inner hnonempty hconforms
 
 theorem object_conformsToType_typeIncludesObject (schema : Schema)
-    (runtimeType : Name) (parentType : Name) :
+    (runtimeType : Name) (parentType : Name) (ref : ObjectRef) :
     ∀ (typeRef : TypeRef),
       typeRef.namedType = parentType ->
-        valueConformsToType schema (.object runtimeType) typeRef ->
+        valueConformsToType schema (.object runtimeType ref) typeRef ->
           schema.typeIncludesObject parentType runtimeType
   | .named typeName, hnamed, hconforms => by
       simpa [← hnamed] using hconforms
@@ -215,7 +215,7 @@ theorem object_conformsToType_typeIncludesObject (schema : Schema)
       cases hconforms
   | .nonNull inner, hnamed, hconforms => by
       exact object_conformsToType_typeIncludesObject schema runtimeType
-        parentType inner hnamed hconforms
+        parentType ref inner hnamed hconforms
 
 namespace Store
 

@@ -113,7 +113,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
           varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
         directivesAllowIn boolCase directives = true ->
           Execution.executeSelectionSet schema resolvers variableValues depth
-              execParent (.object groundType)
+              execParent (.object groundType ())
               (staticCollectCompleteScopedSelectionSet schema
                 (operationBoolVars operation)
                 groundType boolCase
@@ -124,7 +124,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
                   :: rest))
             =
           Execution.executeSelectionSet schema resolvers variableValues depth
-            execParent (.object groundType)
+            execParent (.object groundType ())
             (eraseCompleteScopedSelectionSet
               ({ lookupParent := lookupParent,
                  selection :=
@@ -147,13 +147,13 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
             (eraseCompleteScopedSelectionSet scopedSelections) ->
           varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
         Execution.executeSelectionSet schema resolvers variableValues depth
-            execParent (.object groundType)
+            execParent (.object groundType ())
             (staticCollectCompleteScopedSelectionSet schema
               (operationBoolVars operation)
               groundType boolCase scopedSelections)
           =
         Execution.executeSelectionSet schema resolvers variableValues depth
-          execParent (.object groundType)
+          execParent (.object groundType ())
           (eraseCompleteScopedSelectionSet scopedSelections)
   | depth, execParent, groundType, boolCase, [], _hobject,
     _hground, _hready, _hlookup, _hmerge, _happlies, _hagrees,
@@ -420,19 +420,19 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
                     have happly :
                         Execution.doesFragmentTypeApplyBool schema execParent
                             (Execution.ResolverValue.object (ObjectRef := PUnit)
-                              groundType) typeCondition =
+                              groundType ()) typeCondition =
                           true := by
                       simpa [Execution.doesFragmentTypeApplyBool,
                         Execution.runtimeObjectType?] using hincludes
                     have hsource :
                         ∃ runtimeType ref,
                           (Execution.ResolverValue.object (ObjectRef := PUnit)
-                              groundType :
+                              groundType () :
                               Execution.ResolverValue PUnit)
                             = .object runtimeType ref
                             ∧ schema.typeIncludesObjectBool execParent
                               runtimeType = true :=
-                      ⟨groundType, (none : Option PUnit), rfl, hground⟩
+                      ⟨groundType, (), rfl, hground⟩
                     have hoverlap :
                         schema.typesOverlapBool execParent typeCondition =
                           true := by

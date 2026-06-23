@@ -308,7 +308,7 @@ theorem visitSubfields_possibleTypeNormalizations_not_mem_eq_self
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat)
-    (runtimeType : Name) (ref : Option ObjectRef)
+    (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       NormalForm.objectTypeNameBool schema objectType = true) ->
@@ -368,7 +368,7 @@ theorem visitSubfields_possibleTypeNormalizations_runtime_branch
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat)
-    (runtimeType : Name) (ref : Option ObjectRef)
+    (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       NormalForm.objectTypeNameBool schema objectType = true) ->
@@ -498,7 +498,7 @@ theorem executeSelectionSet_possibleTypeNormalizations_runtime_normalized_branch
     (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (runtimeType : Name) (ref : Option ObjectRef := none)
+    (depth : Nat) (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       NormalForm.objectTypeNameBool schema objectType = true) ->
@@ -616,7 +616,7 @@ theorem visitSubfields_possibleTypeNormalizations_eq_spec_of_runtime_normalized
     (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (runtimeType : Name) (ref : Option ObjectRef := none)
+    (depth : Nat) (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       NormalForm.objectTypeNameBool schema objectType = true) ->
@@ -661,7 +661,7 @@ theorem visitSubfields_getPossibleTypesNormalizations_eq_spec_of_runtime_normali
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (depth : Nat) (childType runtimeType : Name)
-    (ref : Option ObjectRef := none)
+    (ref : ObjectRef)
     (selectionSet : List Selection) :
     schema.typeIncludesObjectBool childType runtimeType = true ->
     (visitSubfields schema resolvers variableValues depth runtimeType
@@ -711,7 +711,7 @@ theorem visitSubfields_normalizedFieldSubselections_eq_spec_of_runtime
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (depth : Nat) (childType runtimeType : Name)
-    (ref : Option ObjectRef := none)
+    (ref : ObjectRef)
     (selectionSet : List Selection) :
     schema.typeIncludesObjectBool childType runtimeType = true ->
     (visitSubfields schema resolvers variableValues depth runtimeType
@@ -862,7 +862,7 @@ theorem generatedNormalizedFieldChild_selectionSetNormal
 
 theorem collectFields_possibleTypeNormalizations_runtime_branch
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (runtimeType : Name) (ref : Option ObjectRef)
+    (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       NormalForm.objectTypeNameBool schema objectType = true) ->
@@ -1239,7 +1239,7 @@ theorem selectionSetImplementationValidInScope_possibleTypeNormalizations_runtim
 
 theorem freshPrefixSelectionDerivation_possibleTypeNormalizations_runtime
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (runtimeType : Name) (ref : Option ObjectRef)
+    (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       NormalForm.objectTypeNameBool schema objectType = true) ->
@@ -1361,7 +1361,7 @@ theorem freshPrefixSelectionDerivation_possibleTypeNormalizations_runtime
 
 theorem freshPrefixSelectionDerivation_generatedNormalizedFieldChild_runtime
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (childType childRuntime : Name) (ref : Option ObjectRef)
+    (childType childRuntime : Name) (ref : ObjectRef)
     (childSelectionSet : List Selection) :
     SchemaWellFormedness.schemaWellFormed schema ->
     schema.typeIncludesObjectBool childType childRuntime = true ->
@@ -1605,7 +1605,7 @@ theorem normalizeSelectionSet_field_child_generated
 
 theorem generatedNormalizedFieldChild_of_generatedNormalizedFieldChild_collectFields
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (childType childRuntime : Name) (ref : Option ObjectRef)
+    (childType childRuntime : Name) (ref : ObjectRef)
     (childSelectionSet : List Selection) :
     SchemaWellFormedness.schemaWellFormed schema ->
     schema.typeIncludesObjectBool childType childRuntime = true ->
@@ -1729,7 +1729,7 @@ theorem generatedNormalizedFieldChild_of_generatedNormalizedFieldChild_collectFi
 
 theorem collectFields_generatedNormalizedFieldChild_prefix_empty
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (childType childRuntime : Name) (ref : Option ObjectRef)
+    (childType childRuntime : Name) (ref : ObjectRef)
     (childSelectionSet : List Selection) :
     SchemaWellFormedness.schemaWellFormed schema ->
     schema.typeIncludesObjectBool childType childRuntime = true ->
@@ -1842,7 +1842,7 @@ theorem collectFields_fieldNormal_childLocalFacts_object
     (variableDefinitions : List VariableDefinition)
     (variableValues : Execution.VariableValues)
     (parentType runtimeType : Name)
-    (ref : Option ObjectRef)
+    (ref : ObjectRef)
     (selectionSet : List Selection)
     (responseName childRuntime : Name)
     (field : Execution.ExecutableField)
@@ -1931,7 +1931,7 @@ theorem collectFields_generatedNormalizedFieldChild_childLocalFacts
     (schema : Schema)
     (variableDefinitions : List VariableDefinition)
     (variableValues : Execution.VariableValues)
-    (childType childRuntime : Name) (ref : Option ObjectRef)
+    (childType childRuntime : Name) (ref : ObjectRef)
     (childSelectionSet : List Selection)
     (responseName grandchildRuntime : Name)
     (field : Execution.ExecutableField)
@@ -2311,7 +2311,7 @@ theorem collectedFieldGroupLocalAppendInvariant_of_allFieldsNormal
     (selectionSet : List Selection)
     (childReady : Name -> List Selection -> Prop)
     (hchild :
-      ∀ childDepth childType runtimeType (ref : Option ObjectRef) childSelectionSet,
+      ∀ childDepth childType runtimeType (ref : ObjectRef) childSelectionSet,
         childDepth < depth + 1 ->
         schema.typeIncludesObjectBool childType runtimeType = true ->
         childReady childType childSelectionSet ->

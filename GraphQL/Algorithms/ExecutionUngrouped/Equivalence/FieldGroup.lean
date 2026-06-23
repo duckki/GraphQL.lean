@@ -166,7 +166,7 @@ theorem completeValue_object_append_eq_visitSubfields_append_result
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (childDepth : Nat)
-    (parentType runtimeType : Name) (identity : Option ObjectIdentity)
+    (parentType runtimeType : Name) (identity : ObjectIdentity)
     (firstSelectionSet secondSelectionSet : List Selection)
     (hincludes :
       schema.typeIncludesObjectBool parentType runtimeType = true) :
@@ -409,7 +409,7 @@ theorem completeValue_object_append_result_of_absorbs_errorNeutral
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (childDepth : Nat)
-    (parentType runtimeType : Name) (identity : Option ObjectIdentity)
+    (parentType runtimeType : Name) (identity : ObjectIdentity)
     (firstSelectionSet secondSelectionSet : List Selection)
     (hincludes :
       schema.typeIncludesObjectBool parentType runtimeType = true)
@@ -481,7 +481,7 @@ theorem resultStatus_completeValue_object_append_second_of_errorNeutral
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (childDepth : Nat)
-    (parentType runtimeType : Name) (identity : Option ObjectIdentity)
+    (parentType runtimeType : Name) (identity : ObjectIdentity)
     (firstSelectionSet secondSelectionSet : List Selection)
     (hincludes :
       schema.typeIncludesObjectBool parentType runtimeType = true)
@@ -3496,7 +3496,7 @@ theorem ExecutableFieldsMergedRaw_single_of_guarded_child_states
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3533,7 +3533,7 @@ theorem ExecutableFieldsMergedRaw_single_of_contained_child_states
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         ValueContainsObject resolved runtimeType identity ->
         schema.typeIncludesObjectBool

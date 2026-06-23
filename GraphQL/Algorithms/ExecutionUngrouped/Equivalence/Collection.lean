@@ -1307,7 +1307,7 @@ mutual
           (FieldMerge.collectFields schema validParent [selection])
           (collectedExecutableFields
             (GraphQL.Execution.collectSelection schema variableValues
-              collectParent (.object runtimeType (some identity)) selection)) := by
+              collectParent (.object runtimeType identity) selection)) := by
     intro hparentRuntime hvalid field hfield
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
@@ -1385,7 +1385,7 @@ mutual
                 selectionDirectivesAllowBool variableValues directives = true
             · by_cases happly :
                   doesFragmentTypeApplyBool schema collectParent
-                    (.object runtimeType (some identity)) typeCondition = true
+                    (.object runtimeType identity) typeCondition = true
               · have htypeRuntime :
                     ScopedParentRuntimeApplies schema runtimeType typeCondition := by
                   simpa [doesFragmentTypeApplyBool, runtimeObjectType?] using happly
@@ -1401,10 +1401,10 @@ mutual
                     hmatch, hruntime⟩
               · have hfalse :
                     doesFragmentTypeApplyBool schema collectParent
-                      (.object runtimeType (some identity)) typeCondition = false := by
+                      (.object runtimeType identity) typeCondition = false := by
                   cases hmatch :
                       doesFragmentTypeApplyBool schema collectParent
-                        (.object runtimeType (some identity)) typeCondition
+                        (.object runtimeType identity) typeCondition
                   · rfl
                   · contradiction
                 simp [GraphQL.Execution.collectSelection,
@@ -1434,7 +1434,7 @@ mutual
           (FieldMerge.collectFields schema validParent selectionSet)
           (collectedExecutableFields
             (GraphQL.Execution.collectFields schema variableValues collectParent
-              (.object runtimeType (some identity)) selectionSet)) := by
+              (.object runtimeType identity) selectionSet)) := by
     intro hparentRuntime hvalid field hfield
     cases selectionSet with
     | nil =>
@@ -1461,9 +1461,9 @@ mutual
         rcases
             (collectedExecutableFields_mem_mergeExecutableGroups
               (GraphQL.Execution.collectSelection schema variableValues
-                collectParent (.object runtimeType (some identity)) selection)
+                collectParent (.object runtimeType identity) selection)
               (GraphQL.Execution.collectFields schema variableValues collectParent
-                (.object runtimeType (some identity)) rest)
+                (.object runtimeType identity) rest)
               field).mp hfield with hselection | hrest
         · rcases hleft field hselection with
             ⟨scopedField, hscoped, hmatch, hruntime⟩
@@ -1486,7 +1486,7 @@ mutual
       (variableDefinitions : List VariableDefinition)
       (variableValues : VariableValues)
       (collectParent validParent runtimeType : Name)
-      (identity : Option ObjectIdentity)
+      (identity : ObjectIdentity)
       (selection : Selection) :
       ScopedParentRuntimeApplies schema runtimeType validParent ->
       Validation.selectionValid schema variableDefinitions validParent
@@ -1613,7 +1613,7 @@ mutual
       (variableDefinitions : List VariableDefinition)
       (variableValues : VariableValues)
       (collectParent validParent runtimeType : Name)
-      (identity : Option ObjectIdentity)
+      (identity : ObjectIdentity)
       (selectionSet : List Selection) :
       ScopedParentRuntimeApplies schema runtimeType validParent ->
       Validation.selectionSetValid schema variableDefinitions validParent
@@ -1681,7 +1681,7 @@ mutual
           (FieldMerge.collectFields schema scopedParent [selection])
           (collectedExecutableFields
             (GraphQL.Execution.collectSelection schema variableValues
-              collectParent (.object runtimeType (some identity)) selection)) := by
+              collectParent (.object runtimeType identity) selection)) := by
     intro hparentRuntime hlookupValid field hfield
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
@@ -1758,7 +1758,7 @@ mutual
                 selectionDirectivesAllowBool variableValues directives = true
             · by_cases happly :
                   doesFragmentTypeApplyBool schema collectParent
-                    (.object runtimeType (some identity)) typeCondition = true
+                    (.object runtimeType identity) typeCondition = true
               · have htypeRuntime :
                     ScopedParentRuntimeApplies schema runtimeType typeCondition := by
                   simpa [doesFragmentTypeApplyBool, runtimeObjectType?] using happly
@@ -1774,10 +1774,10 @@ mutual
                     hmatch, hruntime⟩
               · have hfalse :
                     doesFragmentTypeApplyBool schema collectParent
-                      (.object runtimeType (some identity)) typeCondition = false := by
+                      (.object runtimeType identity) typeCondition = false := by
                   cases hmatch :
                       doesFragmentTypeApplyBool schema collectParent
-                        (.object runtimeType (some identity)) typeCondition
+                        (.object runtimeType identity) typeCondition
                   · rfl
                   · contradiction
                 simp [GraphQL.Execution.collectSelection,
@@ -1805,7 +1805,7 @@ mutual
           (FieldMerge.collectFields schema scopedParent selectionSet)
           (collectedExecutableFields
             (GraphQL.Execution.collectFields schema variableValues collectParent
-              (.object runtimeType (some identity)) selectionSet)) := by
+              (.object runtimeType identity) selectionSet)) := by
     intro hparentRuntime hlookupValid field hfield
     cases selectionSet with
     | nil =>
@@ -1839,9 +1839,9 @@ mutual
         rcases
             (collectedExecutableFields_mem_mergeExecutableGroups
               (GraphQL.Execution.collectSelection schema variableValues
-                collectParent (.object runtimeType (some identity)) selection)
+                collectParent (.object runtimeType identity) selection)
               (GraphQL.Execution.collectFields schema variableValues collectParent
-                (.object runtimeType (some identity)) rest)
+                (.object runtimeType identity) rest)
               field).mp hfield with hselection | hrest
         · rcases hleft field hselection with
             ⟨scopedField, hscoped, hmatch, hruntime⟩
@@ -1863,7 +1863,7 @@ mutual
       (schema : Schema)
       (variableValues : VariableValues)
       (collectParent scopedParent runtimeType : Name)
-      (identity : Option ObjectIdentity)
+      (identity : ObjectIdentity)
       (selection : Selection) :
       ScopedParentRuntimeApplies schema runtimeType scopedParent ->
       NormalForm.selectionLookupValid schema scopedParent selection ->
@@ -1991,7 +1991,7 @@ mutual
       (schema : Schema)
       (variableValues : VariableValues)
       (collectParent scopedParent runtimeType : Name)
-      (identity : Option ObjectIdentity)
+      (identity : ObjectIdentity)
       (selectionSet : List Selection) :
       ScopedParentRuntimeApplies schema runtimeType scopedParent ->
       NormalForm.selectionSetLookupValid schema scopedParent selectionSet ->
@@ -2066,7 +2066,7 @@ theorem collectFields_group_prefix_runtimeScopedBy_of_selectionSetValid
       selectionSet ->
     (responseName, field :: fields) ∈
       GraphQL.Execution.collectFields schema variableValues collectParent
-        (.object runtimeType (some identity)) selectionSet ->
+        (.object runtimeType identity) selectionSet ->
     (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
       ExecutableFieldsRuntimeScopedBy schema runtimeType
         (FieldMerge.collectFields schema validParent selectionSet)
@@ -2077,7 +2077,7 @@ theorem collectFields_group_prefix_runtimeScopedBy_of_selectionSetValid
         (FieldMerge.collectFields schema validParent selectionSet)
         (collectedExecutableFields
           (GraphQL.Execution.collectFields schema variableValues collectParent
-            (.object runtimeType (some identity)) selectionSet)) :=
+            (.object runtimeType identity) selectionSet)) :=
     collectFields_runtimeScopedBy_of_selectionSetValid schema
       variableDefinitions variableValues collectParent validParent runtimeType
       identity selectionSet hparentRuntime hvalid
@@ -2086,7 +2086,7 @@ theorem collectFields_group_prefix_runtimeScopedBy_of_selectionSetValid
       (FieldMerge.collectFields schema validParent selectionSet)
       (collectedExecutableFields
         (GraphQL.Execution.collectFields schema variableValues collectParent
-          (.object runtimeType (some identity)) selectionSet))
+          (.object runtimeType identity) selectionSet))
       (field :: prefixTail)
   · intro candidate hcandidate
     apply collectedExecutableFields_mem_of_group_mem hgroup
@@ -2102,7 +2102,7 @@ theorem collectFields_group_prefix_runtimeScopedBy_of_selectionSetValid_object
     (variableDefinitions : List VariableDefinition)
     (variableValues : VariableValues)
     (collectParent validParent runtimeType : Name)
-    (identity : Option ObjectIdentity)
+    (identity : ObjectIdentity)
     (selectionSet : List Selection)
     (responseName : Name) (field : ExecutableField)
     (fields prefixTail : List ExecutableField) :
@@ -2152,14 +2152,14 @@ theorem collectFields_group_prefix_responseName
     (fields prefixTail : List ExecutableField) :
     (responseName, field :: fields) ∈
       GraphQL.Execution.collectFields schema variableValues collectParent
-        (.object runtimeType (some identity)) selectionSet ->
+        (.object runtimeType identity) selectionSet ->
     (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
       ∀ candidate, candidate ∈ field :: prefixTail ->
         candidate.responseName = responseName := by
   intro hgroup hprefix candidate hcandidate
   apply
     collectFields_responseName schema variableValues collectParent
-      (.object runtimeType (some identity)) selectionSet responseName
+      (.object runtimeType identity) selectionSet responseName
       (field :: fields) hgroup candidate
   rcases List.mem_cons.mp hcandidate with hhead | htail
   · subst candidate
@@ -2182,7 +2182,7 @@ theorem collectFields_group_prefix_childFieldSemanticsReady_of_selectionSetValid
       selectionSet ->
     (responseName, field :: fields) ∈
       GraphQL.Execution.collectFields schema variableValues collectParent
-        (.object runtimeType (some identity)) selectionSet ->
+        (.object runtimeType identity) selectionSet ->
     (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
     (∀ candidate, candidate ∈ field :: prefixTail ->
       ∀ scopedField,
@@ -2225,7 +2225,7 @@ theorem collectFields_group_prefix_childFieldSemanticsReady_of_selectionSetValid
     (variableDefinitions : List VariableDefinition)
     (variableValues : VariableValues)
     (collectParent validParent runtimeType : Name)
-    (identity : Option ObjectIdentity)
+    (identity : ObjectIdentity)
     (selectionSet : List Selection)
     (responseName childRuntime : Name) (field : ExecutableField)
     (fields prefixTail : List ExecutableField) :
@@ -2278,7 +2278,7 @@ theorem collectFields_group_prefix_mergedFieldSelectionSet_lookupValid_of_select
     (variableDefinitions : List VariableDefinition)
     (variableValues : VariableValues)
     (collectParent validParent runtimeType : Name)
-    (identity : Option ObjectIdentity)
+    (identity : ObjectIdentity)
     (selectionSet : List Selection)
     (responseName childRuntime : Name) (field : ExecutableField)
     (fields prefixTail : List ExecutableField) :
@@ -2317,7 +2317,7 @@ mutual
       (variableDefinitions : List VariableDefinition)
       (variableValues : VariableValues)
       (collectParent validParent runtimeType : Name)
-      (identity : Option ObjectIdentity)
+      (identity : ObjectIdentity)
       (selection : Selection)
       (candidate : ExecutableField) (childRuntime : Name) :
       SchemaWellFormedness.schemaWellFormed schema ->
@@ -2503,7 +2503,7 @@ mutual
       (variableDefinitions : List VariableDefinition)
       (variableValues : VariableValues)
       (collectParent validParent runtimeType : Name)
-      (identity : Option ObjectIdentity)
+      (identity : ObjectIdentity)
       (selectionSet : List Selection)
       (candidate : ExecutableField) (childRuntime : Name) :
       SchemaWellFormedness.schemaWellFormed schema ->
@@ -2580,7 +2580,7 @@ theorem collectFields_group_prefix_mergedFieldSelectionSet_lookupValid_of_select
     (variableDefinitions : List VariableDefinition)
     (variableValues : VariableValues)
     (collectParent validParent runtimeType : Name)
-    (identity : Option ObjectIdentity)
+    (identity : ObjectIdentity)
     (selectionSet : List Selection)
     (responseName childRuntime : Name) (field : ExecutableField)
     (fields prefixTail : List ExecutableField) :
@@ -2629,7 +2629,7 @@ mutual
       (variableDefinitions : List VariableDefinition)
       (variableValues : VariableValues)
       (collectParent validParent runtimeType : Name)
-      (identity : Option ObjectIdentity)
+      (identity : ObjectIdentity)
       (selection : Selection)
       (candidate : ExecutableField) (childRuntime : Name) :
       ScopedParentRuntimeApplies schema runtimeType validParent ->
@@ -2804,7 +2804,7 @@ mutual
       (variableDefinitions : List VariableDefinition)
       (variableValues : VariableValues)
       (collectParent validParent runtimeType : Name)
-      (identity : Option ObjectIdentity)
+      (identity : ObjectIdentity)
       (selectionSet : List Selection)
       (candidate : ExecutableField) (childRuntime : Name) :
       ScopedParentRuntimeApplies schema runtimeType validParent ->
@@ -2896,7 +2896,7 @@ theorem collectFields_group_prefix_mergedFieldSelectionSet_implementationValid_o
     (variableDefinitions : List VariableDefinition)
     (variableValues : VariableValues)
     (collectParent validParent runtimeType : Name)
-    (identity : Option ObjectIdentity)
+    (identity : ObjectIdentity)
     (selectionSet : List Selection)
     (responseName childRuntime : Name) (field : ExecutableField)
     (fields prefixTail : List ExecutableField) :
@@ -2948,16 +2948,16 @@ theorem collectFields_group_fieldParentRuntime
     (fields : List ExecutableField) :
     (responseName, field :: fields) ∈
       GraphQL.Execution.collectFields schema variableValues collectParent
-        (.object runtimeType (some identity)) selectionSet ->
+        (.object runtimeType identity) selectionSet ->
     schema.typeIncludesObjectBool collectParent runtimeType = true ->
       schema.typeIncludesObjectBool field.parentType runtimeType = true := by
   intro hgroup hparentRuntime
   have hparents :
       CollectedGroupsParent collectParent
         (GraphQL.Execution.collectFields schema variableValues collectParent
-          (.object runtimeType (some identity)) selectionSet) :=
+          (.object runtimeType identity) selectionSet) :=
     collectFields_parent schema variableValues collectParent
-      (.object runtimeType (some identity)) selectionSet
+      (.object runtimeType identity) selectionSet
   have hfieldParent : field.parentType = collectParent :=
     hparents responseName (field :: fields) hgroup field (by simp)
   simpa [hfieldParent] using hparentRuntime
@@ -3015,7 +3015,7 @@ theorem collectFields_group_prefix_mergedFieldSelectionSet_canMerge_runtimeScope
     ScopedParentRuntimeApplies schema runtimeType validParent ->
     (responseName, field :: fields) ∈
       GraphQL.Execution.collectFields schema variableValues collectParent
-        (.object runtimeType (some identity)) selectionSet ->
+        (.object runtimeType identity) selectionSet ->
     (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
       ∀ objectType,
         FieldMerge.fieldsInSetCanMerge schema objectType
@@ -3054,7 +3054,7 @@ theorem collectFields_group_prefix_mergedFieldSelectionSet_canMerge_lookupValid
     ScopedParentRuntimeApplies schema runtimeType validParent ->
     (responseName, field :: fields) ∈
       GraphQL.Execution.collectFields schema variableValues collectParent
-        (.object runtimeType (some identity)) selectionSet ->
+        (.object runtimeType identity) selectionSet ->
     (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
       ∀ objectType,
         FieldMerge.fieldsInSetCanMerge schema objectType
@@ -3078,7 +3078,7 @@ theorem collectFields_group_prefix_mergedFieldSelectionSet_canMerge_lookupValid
             (FieldMerge.collectFields schema validParent selectionSet)
             (collectedExecutableFields
               (GraphQL.Execution.collectFields schema variableValues
-                collectParent (.object runtimeType (some identity)) selectionSet)) :=
+                collectParent (.object runtimeType identity) selectionSet)) :=
         collectFields_runtimeScopedBy_of_selectionSetLookupValid schema
           variableValues collectParent validParent runtimeType identity
           selectionSet hparentRuntime hlookupValid
@@ -3087,7 +3087,7 @@ theorem collectFields_group_prefix_mergedFieldSelectionSet_canMerge_lookupValid
           (FieldMerge.collectFields schema validParent selectionSet)
           (collectedExecutableFields
             (GraphQL.Execution.collectFields schema variableValues collectParent
-              (.object runtimeType (some identity)) selectionSet))
+              (.object runtimeType identity) selectionSet))
           (field :: prefixTail)
       · intro executable hexecutable
         apply collectedExecutableFields_mem_of_group_mem hgroup
@@ -3103,7 +3103,7 @@ theorem collectFields_group_prefix_mergedFieldSelectionSet_canMerge_lookupValid_
     (schema : Schema)
     (variableValues : VariableValues)
     (collectParent validParent runtimeType : Name)
-    (identity : Option ObjectIdentity)
+    (identity : ObjectIdentity)
     (selectionSet : List Selection)
     (responseName : Name) (field : ExecutableField)
     (fields prefixTail : List ExecutableField) :
@@ -3167,7 +3167,7 @@ theorem collectFields_group_prefix_outputCompatible_of_concreteParent
     (schema : Schema)
     (variableValues : VariableValues)
     (collectParent validParent runtimeType : Name)
-    (identity : Option ObjectIdentity)
+    (identity : ObjectIdentity)
     (selectionSet : List Selection)
     (responseName : Name) (field : ExecutableField)
     (fields prefixTail : List ExecutableField) :
@@ -3352,7 +3352,7 @@ theorem collectFields_group_prefix_mergedFieldSelectionSet_childLocalFacts_objec
     (variableDefinitions : List VariableDefinition)
     (variableValues : VariableValues)
     (collectParent validParent runtimeType : Name)
-    (identity : Option ObjectIdentity)
+    (identity : ObjectIdentity)
     (selectionSet : List Selection)
     (responseName childRuntime : Name) (field : ExecutableField)
     (fields prefixTail : List ExecutableField) :
@@ -3694,7 +3694,7 @@ mutual
       (variableDefinitions : List VariableDefinition)
       (variableValues : VariableValues)
       (collectParent validParent runtimeType : Name)
-      (identity : Option ObjectIdentity)
+      (identity : ObjectIdentity)
       (selection : Selection) :
       ScopedParentRuntimeApplies schema runtimeType validParent ->
       Validation.selectionImplementationValid schema variableDefinitions
@@ -3820,7 +3820,7 @@ mutual
       (variableDefinitions : List VariableDefinition)
       (variableValues : VariableValues)
       (collectParent validParent runtimeType : Name)
-      (identity : Option ObjectIdentity)
+      (identity : ObjectIdentity)
       (selectionSet : List Selection) :
       ScopedParentRuntimeApplies schema runtimeType validParent ->
       Validation.selectionSetImplementationValidInScope schema
@@ -4280,7 +4280,7 @@ theorem collectFields_group_mergedFieldSelectionSet_canMerge_runtimeScoped
     FieldMerge.fieldsInSetCanMerge schema validParent selectionSet ->
     ScopedParentRuntimeApplies schema runtimeType validParent ->
     GraphQL.Execution.collectFields schema variableValues collectParent
-      (.object runtimeType (some identity)) selectionSet = groups ->
+      (.object runtimeType identity) selectionSet = groups ->
     (responseName, fields) ∈ groups ->
     CollectedGroupsResponseName groups ->
       ∀ objectType,
@@ -4311,11 +4311,11 @@ theorem collectFields_group_mergedFieldSelectionSet_canMerge_of_valid_root_opera
     (runtimeType : Name) (identity : ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (fields : List ExecutableField) :
-    rootSourceAppliesBool schema operation (.object runtimeType (some identity)) =
+    rootSourceAppliesBool schema operation (.object runtimeType identity) =
       true ->
     Validation.operationDefinitionValid schema operation ->
     GraphQL.Execution.collectFields schema variableValues operation.rootType
-      (.object runtimeType (some identity)) operation.selectionSet = groups ->
+      (.object runtimeType identity) operation.selectionSet = groups ->
     (responseName, fields) ∈ groups ->
       ∀ objectType,
         FieldMerge.fieldsInSetCanMerge schema objectType
@@ -4333,7 +4333,7 @@ theorem collectFields_group_mergedFieldSelectionSet_canMerge_of_valid_root_opera
   · exact hgroup
   · rw [← hcollect]
     exact collectFields_responseName schema variableValues operation.rootType
-      (.object runtimeType (some identity)) operation.selectionSet
+      (.object runtimeType identity) operation.selectionSet
 
 theorem collectFields_fieldCompatible_of_selectionSetValid_scopedCompatible
     {ObjectIdentity : Type}
@@ -4399,11 +4399,11 @@ theorem collectFields_fieldCompatible_of_canMerge_lookupValid
     NormalForm.selectionSetLookupValid schema validParent selectionSet ->
       CollectedGroupsFieldValidationMergeCompatible
         (GraphQL.Execution.collectFields schema variableValues collectParent
-          (.object runtimeType (some identity)) selectionSet) := by
+          (.object runtimeType identity) selectionSet) := by
   intro hmerge hparentRuntime hlookupValid
   apply collectFields_fieldCompatible_of_canMerge_runtimeScoped
     schema variableValues collectParent validParent runtimeType
-    (.object runtimeType (some identity)) selectionSet hmerge
+    (.object runtimeType identity) selectionSet hmerge
   exact collectFields_runtimeScopedBy_of_selectionSetLookupValid schema
     variableValues collectParent validParent runtimeType identity selectionSet
     hparentRuntime hlookupValid
@@ -4413,7 +4413,7 @@ theorem collectFields_fieldCompatible_of_canMerge_lookupValid_object
     (schema : Schema)
     (variableValues : VariableValues)
     (collectParent validParent runtimeType : Name)
-    (identity : Option ObjectIdentity)
+    (identity : ObjectIdentity)
     (selectionSet : List Selection) :
     FieldMerge.fieldsInSetCanMerge schema validParent selectionSet ->
     ScopedParentRuntimeApplies schema runtimeType validParent ->

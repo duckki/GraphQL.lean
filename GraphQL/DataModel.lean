@@ -347,12 +347,12 @@ def resolveValueFromNode (store : Store) (schema : Schema)
       else if typeRefIsListLike fieldDefinition.outputType then
         .list ((store.indexedMatchingEdges sourceNode.id field).map
           (fun edge => .object edge.targetType
-            (some (objectRefOfId edge.targetId))))
+            (objectRefOfId edge.targetId)))
       else
         match store.firstMatchingEdge? sourceNode.id field none with
         | none => .null
         | some edge => .object edge.targetType
-            (some (objectRefOfId edge.targetId))
+            (objectRefOfId edge.targetId)
 
 def resolveValueAtNode (store : Store) (schema : Schema)
     (fieldName : Name) (arguments : List Argument)
@@ -428,32 +428,21 @@ end Store
 namespace Store
 
 def rootExecutionValue (store : Store) : Execution.ResolverValue ObjectRef :=
-  .object store.root.typeName (some (objectRefOfId store.root.id))
+  .object store.root.typeName (objectRefOfId store.root.id)
 
 def resolve (store : Store) (schema : Schema) (fieldName : Name)
     (arguments : List Argument) (source : Execution.ResolverValue ObjectRef) :
     Option (Execution.ResolverValue ObjectRef) :=
   match source with
-  | .object runtimeType ref? =>
-      match ref? with
-      | some ref =>
-          match objectIdOfRef? ref with
-          | some sourceId =>
-              match store.lookupNode? sourceId with
-              | some sourceNode =>
-                  if sourceNode.typeName == runtimeType then
-                    some (store.resolveValueFromNode schema fieldName arguments sourceNode)
-                  else
-                    none
-              | none =>
-                  none
-          | none =>
-              none
+  | .object runtimeType ref =>
+      match store.lookupNode? (GraphQL.DataModel.objectIdOfRef ref) with
+      | some sourceNode =>
+          if sourceNode.typeName == runtimeType then
+            some (store.resolveValueFromNode schema fieldName arguments sourceNode)
+          else
+            none
       | none =>
-          match store.firstNodeWithType? runtimeType with
-          | none => none
-          | some sourceNode =>
-              some (store.resolveValueFromNode schema fieldName arguments sourceNode)
+          none
   | _ => none
 
 def resolvers (store : Store) (schema : Schema) : Execution.Resolvers ObjectRef :=

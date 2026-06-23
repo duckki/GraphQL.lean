@@ -67,7 +67,7 @@ theorem executionValidFieldSemanticStateInvariant_store_root
   have hroot :
       rootSourceAppliesBool schema operation
           (Execution.ResolverValue.object store.root.typeName
-            (some (DataModel.objectRefOfId store.root.id))) =
+            (DataModel.objectRefOfId store.root.id)) =
         true := by
     simpa [DataModel.Store.rootExecutionValue] using
       rootSourceAppliesBool_store_rootExecutionValue schema store operation
@@ -79,7 +79,7 @@ theorem executionValidFieldSemanticStateInvariant_store_root
       (Execution.ResponseValue.object []) hroot hvalid
       (store_resolversRespectValidFieldAndArgumentEquivalence schema store
         (Execution.ResolverValue.object store.root.typeName
-          (some (DataModel.objectRefOfId store.root.id))))
+          (DataModel.objectRefOfId store.root.id)))
 
 theorem executionCollectedFieldInvariant_store_root
     (schema : Schema) (store : DataModel.Store)
@@ -200,7 +200,7 @@ def selectionSetLocalInvariants_store_root
 theorem executionValidFieldSemanticStateInvariant_store_object_selectionSet_canMerge
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType runtimeType : Name) (identity : Option DataModel.ObjectRef)
+    (parentType runtimeType : Name) (identity : DataModel.ObjectRef)
     (selectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     ScopedParentRuntimeApplies schema runtimeType parentType ->
@@ -229,7 +229,7 @@ theorem executionValidFieldSemanticStateInvariant_store_object_selectionSet_canM
 theorem executionCollectedFieldInvariant_store_object_selectionSet_canMerge
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType runtimeType : Name) (identity : Option DataModel.ObjectRef)
+    (parentType runtimeType : Name) (identity : DataModel.ObjectRef)
     (selectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     ScopedParentRuntimeApplies schema runtimeType parentType ->
@@ -265,7 +265,7 @@ theorem executionCollectedFieldInvariant_store_object_selectionSet_canMerge
 theorem collectedGroupsFieldValidationMergeCompatible_store_object_selectionSet_canMerge
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType runtimeType : Name) (identity : Option DataModel.ObjectRef)
+    (parentType runtimeType : Name) (identity : DataModel.ObjectRef)
     (selectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     ScopedParentRuntimeApplies schema runtimeType parentType ->
@@ -284,7 +284,7 @@ theorem collectedGroupsFieldValidationMergeCompatible_store_object_selectionSet_
 theorem executionCollectedFieldInvariant_store_object_of_groupedFacts
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType runtimeType : Name) (identity : Option DataModel.ObjectRef)
+    (parentType runtimeType : Name) (identity : DataModel.ObjectRef)
     (selectionSet : List Selection) :
     CollectedGroupsFieldValidationMergeCompatible
       (GraphQL.Execution.collectFields schema variableValues parentType
@@ -318,7 +318,7 @@ theorem executionCollectedFieldInvariant_store_object_of_groupedFacts
 def selectionSetLocalInvariants_store_object_selectionSet_canMerge
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType runtimeType : Name) (identity : Option DataModel.ObjectRef)
+    (parentType runtimeType : Name) (identity : DataModel.ObjectRef)
     (selectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     VisitSubfieldsFlatCollects schema (store.resolvers schema) variableValues
@@ -353,7 +353,7 @@ def selectionSetLocalInvariants_store_object_selectionSet_canMerge
 def selectionSetLocalInvariants_store_object_of_groupedFacts
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType runtimeType : Name) (identity : Option DataModel.ObjectRef)
+    (parentType runtimeType : Name) (identity : DataModel.ObjectRef)
     (selectionSet : List Selection) :
     VisitSubfieldsFlatCollects schema (store.resolvers schema) variableValues
       (depth + 1) parentType (.object runtimeType identity) selectionSet
@@ -387,7 +387,7 @@ def selectionSetLocalInvariants_store_object_of_implementationValid
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
     (collectParent validParent runtimeType : Name)
-    (identity : Option DataModel.ObjectRef)
+    (identity : DataModel.ObjectRef)
     (selectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     VisitSubfieldsFlatCollects schema (store.resolvers schema) variableValues
@@ -423,7 +423,7 @@ def selectionSetLocalInvariants_store_object_of_implementationValid
 def selectionSetLocalFreshPrefixInvariants_store_object_selectionSet_canMerge
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType runtimeType : Name) (identity : Option DataModel.ObjectRef)
+    (parentType runtimeType : Name) (identity : DataModel.ObjectRef)
     (selectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     FreshPrefixSelectionDerivation schema variableValues parentType
@@ -456,7 +456,7 @@ def selectionSetLocalFreshPrefixInvariants_store_object_selectionSet_canMerge
 def recursiveGroupedSelectionSetState_store_object_selectionSet_canMerge_of_flat
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType runtimeType : Name) (identity : Option DataModel.ObjectRef)
+    (parentType runtimeType : Name) (identity : DataModel.ObjectRef)
     (selectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     VisitSubfieldsFlatCollects schema (store.resolvers schema) variableValues
@@ -474,7 +474,7 @@ def recursiveGroupedSelectionSetState_store_object_selectionSet_canMerge_of_flat
         GraphQL.Execution.collectFields schema variableValues parentType
           (.object runtimeType identity) selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childDepth childRuntime (childIdentity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -490,7 +490,7 @@ def recursiveGroupedSelectionSetState_store_object_selectionSet_canMerge_of_flat
         GraphQL.Execution.collectFields schema variableValues parentType
           (.object runtimeType identity) selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childRuntime (childIdentity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -517,7 +517,7 @@ def recursiveGroupedSelectionSetState_store_object_selectionSet_canMerge_of_flat
 def recursiveGroupedSelectionSetState_store_object_of_groupedFacts
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType runtimeType : Name) (identity : Option DataModel.ObjectRef)
+    (parentType runtimeType : Name) (identity : DataModel.ObjectRef)
     (selectionSet : List Selection) :
     VisitSubfieldsFlatCollects schema (store.resolvers schema) variableValues
       (depth + 1) parentType (.object runtimeType identity) selectionSet
@@ -536,7 +536,7 @@ def recursiveGroupedSelectionSetState_store_object_of_groupedFacts
         GraphQL.Execution.collectFields schema variableValues parentType
           (.object runtimeType identity) selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childDepth childRuntime (childIdentity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -552,7 +552,7 @@ def recursiveGroupedSelectionSetState_store_object_of_groupedFacts
         GraphQL.Execution.collectFields schema variableValues parentType
           (.object runtimeType identity) selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childRuntime (childIdentity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -579,7 +579,7 @@ def recursiveGroupedSelectionSetState_store_object_of_implementationValid
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
     (collectParent validParent runtimeType : Name)
-    (identity : Option DataModel.ObjectRef)
+    (identity : DataModel.ObjectRef)
     (selectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     VisitSubfieldsFlatCollects schema (store.resolvers schema) variableValues
@@ -598,7 +598,7 @@ def recursiveGroupedSelectionSetState_store_object_of_implementationValid
         GraphQL.Execution.collectFields schema variableValues collectParent
           (.object runtimeType identity) selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childDepth childRuntime (childIdentity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -614,7 +614,7 @@ def recursiveGroupedSelectionSetState_store_object_of_implementationValid
         GraphQL.Execution.collectFields schema variableValues collectParent
           (.object runtimeType identity) selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childRuntime (childIdentity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -642,7 +642,7 @@ def recursiveGroupedSelectionSetState_store_object_of_implementationValid
 def recursiveGroupedSelectionSetState_store_object_of_implementationValid_freshPrefixDerivation
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType runtimeType : Name) (identity : Option DataModel.ObjectRef)
+    (parentType runtimeType : Name) (identity : DataModel.ObjectRef)
     (selectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     FreshPrefixSelectionDerivation schema variableValues parentType
@@ -660,7 +660,7 @@ def recursiveGroupedSelectionSetState_store_object_of_implementationValid_freshP
         GraphQL.Execution.collectFields schema variableValues parentType
           (.object runtimeType identity) selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childDepth childRuntime (childIdentity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -676,7 +676,7 @@ def recursiveGroupedSelectionSetState_store_object_of_implementationValid_freshP
         GraphQL.Execution.collectFields schema variableValues parentType
           (.object runtimeType identity) selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childRuntime (childIdentity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -713,7 +713,7 @@ def recursiveGroupedSelectionSetState_store_object_of_generatedNormalizedFieldCh
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
     (childType childRuntime : Name)
-    (identity : Option DataModel.ObjectRef)
+    (identity : DataModel.ObjectRef)
     (childSelectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     SchemaWellFormedness.schemaWellFormed schema ->
@@ -730,7 +730,7 @@ def recursiveGroupedSelectionSetState_store_object_of_generatedNormalizedFieldCh
           (.object childRuntime identity) childSelectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
       ∀ grandchildDepth grandchildRuntime
-        (grandchildIdentity : Option DataModel.ObjectRef),
+        (grandchildIdentity : DataModel.ObjectRef),
         grandchildDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -812,7 +812,7 @@ def recursiveGroupedSelectionSetState_store_object_of_generatedNormalizedFieldCh
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
     (childType childRuntime : Name)
-    (identity : Option DataModel.ObjectRef)
+    (identity : DataModel.ObjectRef)
     (childSelectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     SchemaWellFormedness.schemaWellFormed schema ->
@@ -828,7 +828,7 @@ def recursiveGroupedSelectionSetState_store_object_of_generatedNormalizedFieldCh
         GraphQL.Execution.collectFields schema variableValues childRuntime
           (.object childRuntime identity) childSelectionSet ->
       ∀ grandchildDepth grandchildRuntime
-        (grandchildIdentity : Option DataModel.ObjectRef),
+        (grandchildIdentity : DataModel.ObjectRef),
         grandchildDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -864,7 +864,7 @@ def recursiveGroupedSelectionSetState_store_object_of_generatedNormalizedFieldCh
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
     (childType childRuntime : Name)
-    (identity : Option DataModel.ObjectRef)
+    (identity : DataModel.ObjectRef)
     (childSelectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     SchemaWellFormedness.schemaWellFormed schema ->
@@ -920,7 +920,7 @@ def recursiveGroupedSelectionSetState_store_object_of_implementationValid_childL
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
     (collectParent validParent runtimeType : Name)
-    (identity : Option DataModel.ObjectRef)
+    (identity : DataModel.ObjectRef)
     (selectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     SchemaWellFormedness.schemaWellFormed schema ->
@@ -958,7 +958,7 @@ def recursiveGroupedSelectionSetState_store_object_of_implementationValid_childL
         GraphQL.Execution.collectFields schema variableValues collectParent
           (.object runtimeType identity) selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childDepth childRuntime (childIdentity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -985,7 +985,7 @@ def recursiveGroupedSelectionSetState_store_object_of_implementationValid_childL
         GraphQL.Execution.collectFields schema variableValues collectParent
           (.object runtimeType identity) selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childRuntime (childIdentity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -1035,10 +1035,10 @@ inductive StoreSelectionSetRecursiveNormalizationTreeValidationState
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues)
     (variableDefinitions : List VariableDefinition) :
-    Nat -> Name -> Name -> Name -> Option DataModel.ObjectRef ->
+    Nat -> Name -> Name -> Name -> DataModel.ObjectRef ->
       List Selection -> Type where
   | mk {depth : Nat} {collectParent validParent runtimeType : Name}
-      {identity : Option DataModel.ObjectRef} {selectionSet : List Selection}
+      {identity : DataModel.ObjectRef} {selectionSet : List Selection}
       (parentRuntime :
         ScopedParentRuntimeApplies schema runtimeType validParent)
       (parentEq : collectParent = validParent)
@@ -1087,7 +1087,7 @@ inductive StoreSelectionSetRecursiveNormalizationTreeValidationState
             GraphQL.Execution.collectFields schema variableValues collectParent
               (.object runtimeType identity) selectionSet ->
           (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-          ∀ childRuntime (childIdentity : Option DataModel.ObjectRef),
+          ∀ childRuntime (childIdentity : DataModel.ObjectRef),
             0 < depth ->
             schema.typeIncludesObjectBool
               ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -1104,7 +1104,7 @@ inductive StoreSelectionSetRecursiveNormalizationTreeValidationState
               (.object runtimeType identity) selectionSet ->
           (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
           ∀ childDepth childRuntime
-            (childIdentity : Option DataModel.ObjectRef),
+            (childIdentity : DataModel.ObjectRef),
             childDepth + 1 < depth ->
             schema.typeIncludesObjectBool
               ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -1127,7 +1127,7 @@ def mkWithNormalizationChildren
     {variableDefinitions : List VariableDefinition}
     {depth : Nat}
     {collectParent validParent runtimeType : Name}
-    {identity : Option DataModel.ObjectRef}
+    {identity : DataModel.ObjectRef}
     {selectionSet normalizedSelectionSet : List Selection}
     (hparentRuntime :
       ScopedParentRuntimeApplies schema runtimeType validParent)
@@ -1175,7 +1175,7 @@ def mkWithNormalizationChildren
           GraphQL.Execution.collectFields schema variableValues collectParent
             (.object runtimeType identity) selectionSet ->
         (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        ∀ childRuntime (childIdentity : Option DataModel.ObjectRef),
+        ∀ childRuntime (childIdentity : DataModel.ObjectRef),
           0 < depth ->
           schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -1192,7 +1192,7 @@ def mkWithNormalizationChildren
             (.object runtimeType identity) selectionSet ->
         (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
         ∀ childDepth childRuntime
-          (childIdentity : Option DataModel.ObjectRef),
+          (childIdentity : DataModel.ObjectRef),
           childDepth + 1 < depth ->
           schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -1217,7 +1217,7 @@ noncomputable def toGroupedState
     (_hschema : SchemaWellFormedness.schemaWellFormed schema)
     {depth : Nat}
     {collectParent validParent runtimeType : Name}
-    {identity : Option DataModel.ObjectRef}
+    {identity : DataModel.ObjectRef}
     {selectionSet : List Selection}
     (state :
       StoreSelectionSetRecursiveNormalizationTreeValidationState schema store
@@ -1264,7 +1264,7 @@ abbrev StoreRecursiveFlatValidationProvider
     (variableValues : VariableValues)
     (variableDefinitions : List VariableDefinition) : Prop :=
   ∀ (depth : Nat) (collectParent validParent runtimeType : Name)
-    (identity : Option DataModel.ObjectRef) (selectionSet : List Selection),
+    (identity : DataModel.ObjectRef) (selectionSet : List Selection),
     ScopedParentRuntimeApplies schema runtimeType validParent ->
     collectParent = validParent ->
     schema.objectType validParent ->
@@ -1281,7 +1281,7 @@ abbrev StoreRecursiveExecutionLookupProvider
     (_variableValues : VariableValues)
     (variableDefinitions : List VariableDefinition) : Prop :=
   ∀ (_depth : Nat) (collectParent validParent runtimeType : Name)
-    (_identity : Option DataModel.ObjectRef) (selectionSet : List Selection),
+    (_identity : DataModel.ObjectRef) (selectionSet : List Selection),
     ScopedParentRuntimeApplies schema runtimeType validParent ->
     collectParent = validParent ->
     schema.objectType validParent ->
@@ -1296,7 +1296,7 @@ abbrev StoreRecursiveErrorNeutralProvider
     (variableValues : VariableValues)
     (variableDefinitions : List VariableDefinition) : Prop :=
   ∀ (depth : Nat) (collectParent validParent runtimeType : Name)
-    (identity : Option DataModel.ObjectRef) (selectionSet : List Selection),
+    (identity : DataModel.ObjectRef) (selectionSet : List Selection),
     ScopedParentRuntimeApplies schema runtimeType validParent ->
     collectParent = validParent ->
     schema.objectType validParent ->
@@ -1312,7 +1312,7 @@ abbrev StoreRecursiveZeroChildrenSingletonProvider
     (variableValues : VariableValues)
     (variableDefinitions : List VariableDefinition) : Prop :=
   ∀ (depth : Nat) (collectParent validParent runtimeType : Name)
-    (identity : Option DataModel.ObjectRef) (selectionSet : List Selection),
+    (identity : DataModel.ObjectRef) (selectionSet : List Selection),
     ScopedParentRuntimeApplies schema runtimeType validParent ->
     collectParent = validParent ->
     schema.objectType validParent ->
@@ -1325,7 +1325,7 @@ abbrev StoreRecursiveZeroChildrenSingletonProvider
           GraphQL.Execution.collectFields schema variableValues collectParent
             (.object runtimeType identity) selectionSet ->
         (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        ∀ childRuntime (childIdentity : Option DataModel.ObjectRef),
+        ∀ childRuntime (childIdentity : DataModel.ObjectRef),
           0 < depth ->
           schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -1341,7 +1341,7 @@ abbrev StoreRecursiveRawFreshFlatValidationProvider
     (variableValues : VariableValues)
     (variableDefinitions : List VariableDefinition) : Prop :=
   ∀ (depth : Nat) (collectParent validParent runtimeType : Name)
-    (identity : Option DataModel.ObjectRef) (selectionSet : List Selection),
+    (identity : DataModel.ObjectRef) (selectionSet : List Selection),
     ScopedParentRuntimeApplies schema runtimeType validParent ->
     collectParent = validParent ->
     schema.objectType validParent ->
@@ -1462,7 +1462,7 @@ noncomputable def toSelectionSetState
       StoreRecursiveZeroChildrenSingletonProvider schema store variableValues
         variableDefinitions) :
     ∀ (depth : Nat) (collectParent validParent runtimeType : Name)
-      (identity : Option DataModel.ObjectRef) (selectionSet : List Selection),
+      (identity : DataModel.ObjectRef) (selectionSet : List Selection),
       ScopedParentRuntimeApplies schema runtimeType validParent ->
       collectParent = validParent ->
       schema.objectType validParent ->
@@ -1607,7 +1607,7 @@ structure StoreRecursiveNormalizationTreeValidationInvariants
       variableDefinitions
   normalization :
     ∀ (depth : Nat) (collectParent validParent runtimeType : Name)
-      (identity : Option DataModel.ObjectRef) (selectionSet : List Selection),
+      (identity : DataModel.ObjectRef) (selectionSet : List Selection),
       ScopedParentRuntimeApplies schema runtimeType validParent ->
       collectParent = validParent ->
       schema.objectType validParent ->
@@ -1656,7 +1656,7 @@ def ofNormalization
         variableDefinitions)
     (normalization :
       ∀ (depth : Nat) (collectParent validParent runtimeType : Name)
-        (identity : Option DataModel.ObjectRef) (selectionSet : List Selection),
+        (identity : DataModel.ObjectRef) (selectionSet : List Selection),
         ScopedParentRuntimeApplies schema runtimeType validParent ->
         collectParent = validParent ->
         schema.objectType validParent ->
@@ -1784,7 +1784,7 @@ noncomputable def ofInvariants
       StoreRecursiveNormalizationTreeValidationInvariants schema store
         variableValues variableDefinitions)
     (depth : Nat) (collectParent validParent runtimeType : Name)
-    (identity : Option DataModel.ObjectRef) (selectionSet : List Selection)
+    (identity : DataModel.ObjectRef) (selectionSet : List Selection)
     (hparentRuntime :
       ScopedParentRuntimeApplies schema runtimeType validParent)
     (hparentEq : collectParent = validParent)
@@ -1925,7 +1925,7 @@ def recursiveGroupedSelectionSetState_store_object_of_fieldNormal_childLocalFact
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
     (parentType runtimeType : Name)
-    (identity : Option DataModel.ObjectRef)
+    (identity : DataModel.ObjectRef)
     (selectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     SchemaWellFormedness.schemaWellFormed schema ->
@@ -1946,7 +1946,7 @@ def recursiveGroupedSelectionSetState_store_object_of_fieldNormal_childLocalFact
       (responseName, field :: fields) ∈
         GraphQL.Execution.collectFields schema variableValues parentType
           (.object runtimeType identity) selectionSet ->
-      ∀ childDepth childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childDepth childRuntime (childIdentity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -1967,7 +1967,7 @@ def recursiveGroupedSelectionSetState_store_object_of_fieldNormal_childLocalFact
         GraphQL.Execution.collectFields schema variableValues parentType
           (.object runtimeType identity) selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childRuntime (childIdentity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -2065,7 +2065,7 @@ def recursiveGroupedSelectionSetState_store_object_of_fieldNormal_generatedChild
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
     (parentType runtimeType : Name)
-    (identity : Option DataModel.ObjectRef)
+    (identity : DataModel.ObjectRef)
     (selectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     SchemaWellFormedness.schemaWellFormed schema ->
@@ -2092,7 +2092,7 @@ def recursiveGroupedSelectionSetState_store_object_of_fieldNormal_generatedChild
       (responseName, field :: fields) ∈
         GraphQL.Execution.collectFields schema variableValues parentType
           (.object runtimeType identity) selectionSet ->
-      ∀ childDepth childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childDepth childRuntime (childIdentity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -2171,7 +2171,7 @@ def recursiveGroupedSelectionSetState_store_object_of_fieldNormal_generatedChild
 def recursiveGroupedSelectionSetState_store_object_selectionSet_canMerge
     (schema : Schema) (store : DataModel.Store)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType runtimeType : Name) (identity : Option DataModel.ObjectRef)
+    (parentType runtimeType : Name) (identity : DataModel.ObjectRef)
     (selectionSet : List Selection)
     (variableDefinitions : List VariableDefinition) :
     FreshPrefixSelectionDerivation schema variableValues parentType
@@ -2188,7 +2188,7 @@ def recursiveGroupedSelectionSetState_store_object_selectionSet_canMerge
         GraphQL.Execution.collectFields schema variableValues parentType
           (.object runtimeType identity) selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childDepth childRuntime (childIdentity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -2204,7 +2204,7 @@ def recursiveGroupedSelectionSetState_store_object_selectionSet_canMerge
         GraphQL.Execution.collectFields schema variableValues parentType
           (.object runtimeType identity) selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childRuntime (childIdentity : Option DataModel.ObjectRef),
+      ∀ childRuntime (childIdentity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -2293,7 +2293,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_filter_recursiveGr
         Validation.operationDefinitionValid_rootType_eq hvalid
       simpa [hrootType] using hstore.1
     refine
-      ⟨store.root.typeName, some (DataModel.objectRefOfId store.root.id),
+      ⟨store.root.typeName, DataModel.objectRefOfId store.root.id,
         ?_, ?_⟩
     · simp [DataModel.Store.rootExecutionValue]
     · exact typeIncludesObjectBool_eq_true_of_typeIncludesObject schema hinclude
@@ -2395,7 +2395,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_filter_flatValidat
         (variableDefinitions := operation.variableDefinitions) hschema
         flatProvider lookupProvider errorProvider zeroChildrenProvider depth
         operation.rootType operation.rootType store.root.typeName
-      (some (DataModel.objectRefOfId store.root.id))
+      (DataModel.objectRefOfId store.root.id)
       (NormalForm.filterSelectionSetBoolCase runtimeCase
         operation.selectionSet)
       hparentRuntime rfl hrootObject hfilteredLookup
@@ -2472,7 +2472,7 @@ noncomputable def toOperationStateAtDepth
               hschema flatProvider lookupProvider errorProvider
               zeroChildrenProvider depth operation.rootType operation.rootType
               store.root.typeName
-              (some (DataModel.objectRefOfId store.root.id))
+              (DataModel.objectRefOfId store.root.id)
               operation.selectionSet
               (ScopedParentRuntimeApplies.of_rootSourceAppliesBool schema
                 operation store.root.typeName
@@ -2499,7 +2499,7 @@ structure StoreOperationAtDepthNormalizationTreeValidationState
     StoreSelectionSetRecursiveNormalizationTreeValidationState schema store
       variableValues operation.variableDefinitions depth operation.rootType
       operation.rootType store.root.typeName
-      (some (DataModel.objectRefOfId store.root.id))
+      (DataModel.objectRefOfId store.root.id)
       operation.selectionSet
 
 namespace StoreOperationAtDepthNormalizationTreeValidationState
@@ -2551,7 +2551,7 @@ def of_validRootOperation
           GraphQL.Execution.collectFields schema variableValues
             operation.rootType store.rootExecutionValue operation.selectionSet ->
         (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        ∀ childRuntime (childIdentity : Option DataModel.ObjectRef),
+        ∀ childRuntime (childIdentity : DataModel.ObjectRef),
           0 < depth ->
           schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -2568,7 +2568,7 @@ def of_validRootOperation
             operation.rootType store.rootExecutionValue operation.selectionSet ->
         (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
         ∀ childDepth childRuntime
-          (childIdentity : Option DataModel.ObjectRef),
+          (childIdentity : DataModel.ObjectRef),
           childDepth + 1 < depth ->
           schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -2657,7 +2657,7 @@ noncomputable def ofInvariants
     rootState :=
       StoreSelectionSetRecursiveNormalizationTreeValidationState.ofInvariants
         invariants depth operation.rootType operation.rootType
-        store.root.typeName (some (DataModel.objectRefOfId store.root.id))
+        store.root.typeName (DataModel.objectRefOfId store.root.id)
         operation.selectionSet
         (ScopedParentRuntimeApplies.of_rootSourceAppliesBool schema operation
           store.root.typeName (DataModel.objectRefOfId store.root.id)
@@ -3001,7 +3001,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_localFreshPrefixIn
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3016,7 +3016,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_localFreshPrefixIn
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3059,7 +3059,7 @@ theorem executeOperationAtDepth_semanticsPreserved_via_completeNormalization_of_
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3074,7 +3074,7 @@ theorem executeOperationAtDepth_semanticsPreserved_via_completeNormalization_of_
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3115,7 +3115,7 @@ def recursiveGroupedStoreOperationStateAtDepth_of_localFreshPrefixInvariants
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3130,7 +3130,7 @@ def recursiveGroupedStoreOperationStateAtDepth_of_localFreshPrefixInvariants
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3168,7 +3168,7 @@ def recursiveGroupedStoreOperationStateAtDepth_of_storeFreshPrefixDerivation
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3183,7 +3183,7 @@ def recursiveGroupedStoreOperationStateAtDepth_of_storeFreshPrefixDerivation
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3233,7 +3233,7 @@ def recursiveGroupedStoreOperationStateAtDepth_of_freshPlanNormalizes
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3248,7 +3248,7 @@ def recursiveGroupedStoreOperationStateAtDepth_of_freshPlanNormalizes
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3300,7 +3300,7 @@ def recursiveGroupedStoreOperationStateAtDepth_of_freshPlanNormalizationTree
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3315,7 +3315,7 @@ def recursiveGroupedStoreOperationStateAtDepth_of_freshPlanNormalizationTree
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3368,7 +3368,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_freshPrefixDerivat
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3383,7 +3383,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_freshPrefixDerivat
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3442,7 +3442,7 @@ theorem executeOperationAtDepth_semanticsPreserved_via_completeNormalization_of_
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3457,7 +3457,7 @@ theorem executeOperationAtDepth_semanticsPreserved_via_completeNormalization_of_
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3506,7 +3506,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_rootFlat
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3521,7 +3521,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_rootFlat
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3569,7 +3569,7 @@ theorem executeOperationAtDepth_semanticsPreserved_via_completeNormalization_of_
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3584,7 +3584,7 @@ theorem executeOperationAtDepth_semanticsPreserved_via_completeNormalization_of_
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3631,7 +3631,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_storeFreshPrefixDe
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3646,7 +3646,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_storeFreshPrefixDe
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3696,7 +3696,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_freshPlanNormaliza
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3711,7 +3711,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_freshPlanNormaliza
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3756,7 +3756,7 @@ theorem executeOperationAtDepth_semanticsPreserved_via_completeNormalization_of_
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3771,7 +3771,7 @@ theorem executeOperationAtDepth_semanticsPreserved_via_completeNormalization_of_
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3821,7 +3821,7 @@ theorem executeOperationAtDepth_semanticsPreserved_via_completeNormalization_of_
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3836,7 +3836,7 @@ theorem executeOperationAtDepth_semanticsPreserved_via_completeNormalization_of_
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3878,7 +3878,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_uniqueFieldRoot
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3893,7 +3893,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_uniqueFieldRoot
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3939,7 +3939,7 @@ theorem executeOperationAtDepth_semanticsPreserved_via_completeNormalization_of_
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -3954,7 +3954,7 @@ theorem executeOperationAtDepth_semanticsPreserved_via_completeNormalization_of_
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -4000,7 +4000,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_fieldNormalRoot
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -4015,7 +4015,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_fieldNormalRoot
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -4070,7 +4070,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_fieldNormalRoot_si
       (responseName, field :: fields) ∈
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -4084,7 +4084,7 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_fieldNormalRoot_si
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -4204,14 +4204,14 @@ theorem executeOperationAtDepth_completeNormalizeOperation_of_fieldNormalRoot_ge
       (responseName, field :: fields) ∈
         GraphQL.Execution.collectFields schema variableValues operation.rootType
           (.object store.root.typeName
-            (some (DataModel.objectRefOfId store.root.id)))
+            (DataModel.objectRefOfId store.root.id))
           operation.selectionSet := by
     simpa [DataModel.Store.rootExecutionValue] using hgroup
   rcases
       collectFields_fieldNormal_childLocalFacts_object schema
         operation.variableDefinitions variableValues operation.rootType
         store.root.typeName
-        (some (DataModel.objectRefOfId store.root.id))
+        (DataModel.objectRefOfId store.root.id)
         operation.selectionSet responseName runtimeType field fields hschema
         hparentRuntime hrootSelectionValid hrootLookup hrootImplementation
         hrootMerge hall hgroupObject hinclude with
@@ -4342,14 +4342,14 @@ def recursiveGroupedStoreOperationStateAtDepth_of_fieldNormalRoot_generatedChild
         (responseName, field :: fields) ∈
           GraphQL.Execution.collectFields schema variableValues operation.rootType
             (.object store.root.typeName
-              (some (DataModel.objectRefOfId store.root.id)))
+              (DataModel.objectRefOfId store.root.id))
             operation.selectionSet := by
       simpa [DataModel.Store.rootExecutionValue] using hgroup
     rcases
         collectFields_fieldNormal_childLocalFacts_object schema
           operation.variableDefinitions variableValues operation.rootType
           store.root.typeName
-          (some (DataModel.objectRefOfId store.root.id))
+          (DataModel.objectRefOfId store.root.id)
           operation.selectionSet responseName runtimeType field fields hschema
           hparentRuntime hrootSelectionValid hrootLookup hrootImplementation
           hrootMerge hall hgroupObject hinclude with
@@ -4419,7 +4419,7 @@ theorem executeOperationAtDepth_semanticsPreserved_via_completeNormalization_of_
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ childDepth runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ childDepth runtimeType (identity : DataModel.ObjectRef),
         childDepth + 1 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -4434,7 +4434,7 @@ theorem executeOperationAtDepth_semanticsPreserved_via_completeNormalization_of_
         GraphQL.Execution.collectFields schema variableValues
           operation.rootType store.rootExecutionValue operation.selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option DataModel.ObjectRef),
+      ∀ runtimeType (identity : DataModel.ObjectRef),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD

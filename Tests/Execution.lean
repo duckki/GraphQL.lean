@@ -5,12 +5,16 @@ namespace Tests
 namespace Execution
 
 def genericUnitObject : GraphQL.Execution.ResolverValue :=
-  .object "Query"
+  .object "Query" ()
 
 theorem genericUnitObjectSmoke :
     genericUnitObject =
-      GraphQL.Execution.ResolverValue.object "Query" := by
+      GraphQL.Execution.ResolverValue.object "Query" () := by
   rfl
+
+def objectConstructorUsesConcreteRef :
+    PUnit -> GraphQL.Execution.ResolverValue PUnit :=
+  GraphQL.Execution.ResolverValue.object (ObjectRef := PUnit) "Query"
 
 mutual
   def responseEqBool :
@@ -90,7 +94,7 @@ def sampleResolvers : GraphQL.Execution.Resolvers :=
   { resolve := fun parentType fieldName _arguments _source =>
       some <|
         match parentType, fieldName with
-        | "Query", "hero" => .object "Character"
+        | "Query", "hero" => .object "Character" ()
         | "Character", "name" => .scalar "Leia"
         | _, _ => .null }
 
@@ -98,14 +102,14 @@ theorem executeHeroQuerySmoke :
     responseEqBool
         (GraphQL.Execution.executeQuery sampleSchema sampleResolvers []
           sampleHeroQuery
-          (GraphQL.Execution.ResolverValue.object "Query")).data
+          (GraphQL.Execution.ResolverValue.object "Query" ())).data
       (.object [("mainHero", .object [("name", .scalar "Leia")])]) = true := by
   native_decide
 
 def sampleErrorResolvers : GraphQL.Execution.Resolvers :=
   { resolve := fun parentType fieldName _arguments _source =>
       match parentType, fieldName with
-      | "Query", "hero" => some (.object "Character")
+      | "Query", "hero" => some (.object "Character" ())
       | "Character", "name" => none
       | _, _ => some .null }
 
@@ -113,7 +117,7 @@ theorem executeHeroQueryErrorCountSmoke :
     let response :=
       GraphQL.Execution.executeQuery sampleSchema sampleErrorResolvers []
         sampleHeroQuery
-        (GraphQL.Execution.ResolverValue.object "Query")
+        (GraphQL.Execution.ResolverValue.object "Query" ())
     response.errors = 1
       ∧ responseEqBool response.data
         (.object [("mainHero", .object [("name", .null)])]) = true := by
@@ -150,14 +154,14 @@ def rootNonNullSchema : Schema :=
 def nonNullNameErrorResolvers : GraphQL.Execution.Resolvers :=
   { resolve := fun parentType fieldName _arguments _source =>
       match parentType, fieldName with
-      | "Query", "hero" => some (.object "Character")
+      | "Query", "hero" => some (.object "Character" ())
       | "Character", "name" => none
       | _, _ => some .null }
 
 def nonNullNameNullResolvers : GraphQL.Execution.Resolvers :=
   { resolve := fun parentType fieldName _arguments _source =>
       match parentType, fieldName with
-      | "Query", "hero" => some (.object "Character")
+      | "Query", "hero" => some (.object "Character" ())
       | "Character", "name" => some .null
       | _, _ => some .null }
 
@@ -165,7 +169,7 @@ theorem executeNestedNonNullBubblesToNullableParentSmoke :
     let response :=
       GraphQL.Execution.executeQuery nestedNonNullSchema
         nonNullNameErrorResolvers [] sampleHeroQuery
-        (GraphQL.Execution.ResolverValue.object "Query")
+        (GraphQL.Execution.ResolverValue.object "Query" ())
     response.errors = 1
       ∧ responseEqBool response.data
         (.object [("mainHero", .null)]) = true := by
@@ -175,7 +179,7 @@ theorem executeNestedNonNullBubblesToRootSmoke :
     let response :=
       GraphQL.Execution.executeQuery rootNonNullSchema
         nonNullNameErrorResolvers [] sampleHeroQuery
-        (GraphQL.Execution.ResolverValue.object "Query")
+        (GraphQL.Execution.ResolverValue.object "Query" ())
     response.errors = 1
       ∧ responseEqBool response.data .null = true := by
   native_decide
@@ -184,7 +188,7 @@ theorem executeExplicitNullForNonNullFieldCountsErrorSmoke :
     let response :=
       GraphQL.Execution.executeQuery nestedNonNullSchema
         nonNullNameNullResolvers [] sampleHeroQuery
-        (GraphQL.Execution.ResolverValue.object "Query")
+        (GraphQL.Execution.ResolverValue.object "Query" ())
     response.errors = 1
       ∧ responseEqBool response.data
         (.object [("mainHero", .null)]) = true := by
@@ -194,13 +198,13 @@ theorem collectSubfieldsMatchesGroupedSelections
     (field : GraphQL.Execution.ExecutableField)
     (fields : List GraphQL.Execution.ExecutableField) :
     GraphQL.Execution.collectSubfields sampleSchema [] "Query"
-        (GraphQL.Execution.ResolverValue.object (ObjectRef := PUnit) "Query") (field :: fields)
+        (GraphQL.Execution.ResolverValue.object (ObjectRef := PUnit) "Query" ()) (field :: fields)
       =
         GraphQL.Execution.mergeExecutableGroups
           (GraphQL.Execution.collectFields sampleSchema [] "Query"
-            (GraphQL.Execution.ResolverValue.object (ObjectRef := PUnit) "Query") field.selectionSet)
+            (GraphQL.Execution.ResolverValue.object (ObjectRef := PUnit) "Query" ()) field.selectionSet)
           (GraphQL.Execution.collectSubfields sampleSchema [] "Query"
-            (GraphQL.Execution.ResolverValue.object (ObjectRef := PUnit) "Query") fields) := by
+            (GraphQL.Execution.ResolverValue.object (ObjectRef := PUnit) "Query" ()) fields) := by
   rfl
 
 theorem executeRootSelectionSetSmoke :
@@ -208,7 +212,7 @@ theorem executeRootSelectionSetSmoke :
       GraphQL.Execution.executeRootSelectionSet sampleSchema sampleResolvers []
         (GraphQL.Execution.executeQueryDepthBound sampleHeroQuery)
         "Query"
-        (GraphQL.Execution.ResolverValue.object "Query")
+        (GraphQL.Execution.ResolverValue.object "Query" ())
         sampleHeroQuery.selectionSet
     with
     | .ok (fields, _errors) =>

@@ -307,7 +307,7 @@ theorem gapListIndexRejected :
 theorem heroFieldResolvesToObject :
     valueEqBool
       (graphStore.resolveValue graphSchema "hero" [] "Query")
-      (.object "Character" (some (objectRefOfId 1))) = true := by
+      (.object "Character" (objectRefOfId 1)) = true := by
   native_decide
 
 theorem heroNamePropertyResolves :
@@ -319,15 +319,15 @@ theorem heroNamePropertyResolves :
 theorem heroFriendsListResolvesByIndex :
     valueEqBool
       (graphStore.resolveValue graphSchema "friends" [] "Character")
-      (.list [.object "Character" (some (objectRefOfId 3))]) = true := by
+      (.list [.object "Character" (objectRefOfId 3)]) = true := by
   native_decide
 
 theorem outOfOrderListResolvesByIndex :
     valueEqBool
       (outOfOrderListStore.resolveValue graphSchema "friends" [] "Character")
       (.list [
-        .object "Character" (some (objectRefOfId 3)),
-        .object "Character" (some (objectRefOfId 4))
+        .object "Character" (objectRefOfId 3),
+        .object "Character" (objectRefOfId 4)
       ]) = true := by
   native_decide
 
@@ -342,28 +342,28 @@ theorem specExecutionMatchesPathSensitiveObjects :
 theorem resolverBridgeResolvesHero :
     optionValueEqBool
       ((graphStore.resolvers graphSchema).resolve "Query" "hero" []
-        (.object "Query"))
-      (some (Execution.ResolverValue.object "Character" (some (objectRefOfId 1)))) = true := by
+        (.object "Query" (objectRefOfId 0)))
+      (some (Execution.ResolverValue.object "Character" (objectRefOfId 1))) = true := by
   native_decide
 
 theorem resolverBridgeRejectsMismatchedRef :
     optionValueEqBool
       ((pathSensitiveStore.resolvers graphSchema).resolve "Character" "name" []
-        (.object "Character" (some (objectRefOfId 0))))
+        (.object "Character" (objectRefOfId 0)))
       none = true := by
   native_decide
 
 theorem resolverBridgeRejectsMissingRef :
     optionValueEqBool
       ((pathSensitiveStore.resolvers graphSchema).resolve "Character" "name" []
-        (.object "Character" (some (objectRefOfId 99))))
+        (.object "Character" (objectRefOfId 99)))
       none = true := by
   native_decide
 
 theorem resolverBridgeRejectsMissingRuntimeType :
     optionValueEqBool
       ((graphStore.resolvers graphSchema).resolve "Query" "hero" []
-        (.object "MissingType"))
+        (.object "MissingType" (objectRefOfId 0)))
       none = true := by
   native_decide
 

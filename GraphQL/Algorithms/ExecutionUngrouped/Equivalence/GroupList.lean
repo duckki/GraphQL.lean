@@ -11163,7 +11163,7 @@ theorem visitSubfields_absorbs_from_empty_object_prefix
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (childDepth : Nat) (runtimeType : Name) (identity : Option ObjectIdentity)
+    (childDepth : Nat) (runtimeType : Name) (identity : ObjectIdentity)
     (prefixSelectionSet laterSelectionSet : List Selection) :
     ResponseAbsorbs
       (visitSubfields schema resolvers variableValues childDepth runtimeType

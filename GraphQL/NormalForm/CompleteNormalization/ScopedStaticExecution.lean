@@ -31,16 +31,16 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_none_
       varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
     directivesAllowIn boolCase directives = false ->
     Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (staticCollectCompleteScopedSelectionSet schema
           (operationBoolVars operation) groundType
           boolCase rest)
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (eraseCompleteScopedSelectionSet rest) ->
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (staticCollectCompleteScopedSelectionSet schema
           (operationBoolVars operation) groundType
           boolCase
@@ -50,7 +50,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_none_
             :: rest))
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (eraseCompleteScopedSelectionSet
           ({ lookupParent := lookupParent,
              selection :=
@@ -84,7 +84,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_none_
   simp [staticCollectForGround]
   exact hrest.trans
     (executeSelectionSet_inlineFragment_none_directives_skipped_eq schema
-      resolvers variableValues depth execParent (.object groundType)
+      resolvers variableValues depth execParent (.object groundType ())
       directives selectionSet (eraseCompleteScopedSelectionSet rest)
       hexecSkip).symm
 
@@ -112,16 +112,16 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_field_skippe
       varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
     directivesAllowIn boolCase directives = false ->
     Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (staticCollectCompleteScopedSelectionSet schema
           (operationBoolVars operation) groundType
           boolCase rest)
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (eraseCompleteScopedSelectionSet rest) ->
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (staticCollectCompleteScopedSelectionSet schema
           (operationBoolVars operation) groundType
           boolCase
@@ -132,7 +132,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_field_skippe
             :: rest))
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (eraseCompleteScopedSelectionSet
           ({ lookupParent := lookupParent,
              selection :=
@@ -170,7 +170,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_field_skippe
   simp [staticCollectForGround]
   exact hrest.trans
     (executeSelectionSet_field_directives_skipped_eq schema resolvers
-      variableValues depth execParent (.object groundType)
+      variableValues depth execParent (.object groundType ())
       responseName fieldName arguments directives selectionSet
       (eraseCompleteScopedSelectionSet rest) hexecSkip).symm
 
@@ -196,18 +196,18 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_none_
       varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
     directivesAllowIn boolCase directives = true ->
     Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (staticCollectCompleteScopedSelectionSet schema
           (operationBoolVars operation) groundType
           boolCase
           (completeScopedSelectionSet lookupParent selectionSet ++ rest))
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (eraseCompleteScopedSelectionSet
           (completeScopedSelectionSet lookupParent selectionSet ++ rest)) ->
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (staticCollectCompleteScopedSelectionSet schema
           (operationBoolVars operation) groundType
           boolCase
@@ -217,7 +217,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_none_
             :: rest))
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (eraseCompleteScopedSelectionSet
           ({ lookupParent := lookupParent,
              selection :=
@@ -267,14 +267,14 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_none_
   rw [hnormalizedFlatten]
   have hflattenSource :
       Execution.executeSelectionSet schema resolvers variableValues depth
-          execParent (.object groundType)
+          execParent (.object groundType ())
           (staticCollectCompleteScopedSelectionSet schema
             (operationBoolVars operation) groundType
             boolCase
             (completeScopedSelectionSet lookupParent selectionSet ++ rest))
         =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (selectionSet ++ eraseCompleteScopedSelectionSet rest) := by
     simpa [eraseCompleteScopedSelectionSet_append,
       eraseCompleteScopedSelectionSet_completeScopedSelectionSet] using
@@ -283,7 +283,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_none_
     hflattenSource.trans
       (executeSelectionSet_inlineFragment_none_directives_allowed_flatten
         schema resolvers variableValues depth execParent
-        (.object groundType) directives selectionSet
+        (.object groundType ()) directives selectionSet
         (eraseCompleteScopedSelectionSet rest) hexecAllow).symm
 
 theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_skipped_execution_case
@@ -310,16 +310,16 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_
     (directivesAllowIn boolCase directives
       && schema.typeIncludesObjectBool typeCondition groundType) = false ->
     Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (staticCollectCompleteScopedSelectionSet schema
           (operationBoolVars operation) groundType
           boolCase rest)
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (eraseCompleteScopedSelectionSet rest) ->
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (staticCollectCompleteScopedSelectionSet schema
           (operationBoolVars operation) groundType
           boolCase
@@ -330,7 +330,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_
             :: rest))
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (eraseCompleteScopedSelectionSet
           ({ lookupParent := lookupParent,
              selection :=
@@ -368,7 +368,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_
   exact hrest.trans
     (executeSelectionSet_inlineFragment_some_directives_skipped_eq_object
       schema resolvers variableValues depth execParent groundType
-      typeCondition directives selectionSet
+      typeCondition () directives selectionSet
       (eraseCompleteScopedSelectionSet rest) hexecSkip).symm
 
 theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_allowed_flatten_case
@@ -395,18 +395,18 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_
     directivesAllowIn boolCase directives = true ->
     schema.typeIncludesObjectBool typeCondition groundType = true ->
     Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (staticCollectCompleteScopedSelectionSet schema
           (operationBoolVars operation) groundType
           boolCase
           (completeScopedSelectionSet typeCondition selectionSet ++ rest))
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (eraseCompleteScopedSelectionSet
           (completeScopedSelectionSet typeCondition selectionSet ++ rest)) ->
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (staticCollectCompleteScopedSelectionSet schema
           (operationBoolVars operation) groundType
           boolCase
@@ -417,7 +417,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_
             :: rest))
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (eraseCompleteScopedSelectionSet
           ({ lookupParent := lookupParent,
              selection :=
@@ -470,14 +470,14 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_
   rw [hnormalizedFlatten]
   have hflattenSource :
       Execution.executeSelectionSet schema resolvers variableValues depth
-          execParent (.object groundType)
+          execParent (.object groundType ())
           (staticCollectCompleteScopedSelectionSet schema
             (operationBoolVars operation) groundType
             boolCase
             (completeScopedSelectionSet typeCondition selectionSet ++ rest))
         =
       Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType)
+        execParent (.object groundType ())
         (selectionSet ++ eraseCompleteScopedSelectionSet rest) := by
     simpa [eraseCompleteScopedSelectionSet_append,
       eraseCompleteScopedSelectionSet_completeScopedSelectionSet] using
@@ -486,7 +486,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_
     hflattenSource.trans
       (executeSelectionSet_inlineFragment_some_directives_allowed_flatten_object
         schema resolvers variableValues depth execParent groundType
-        typeCondition directives selectionSet
+        typeCondition () directives selectionSet
         (eraseCompleteScopedSelectionSet rest) hexecAllow hincludes).symm
 
 

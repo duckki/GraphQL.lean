@@ -94,7 +94,7 @@ private theorem executionValueObjectsInclude_list_map_edges
       executionValueObjectsInclude schema parentType
         (.list (edges.map (fun edge =>
           Execution.ResolverValue.object edge.targetType
-            (some (objectRefOfId edge.targetId))))) := by
+            (objectRefOfId edge.targetId)))) := by
   intro hedges
   simp [executionValueObjectsInclude]
   intro edge hedge
@@ -453,29 +453,7 @@ private theorem resolveValue_objectsInclude_of_static_lookupField
 theorem resolve_objectsInclude_of_static_lookupField
     (schema : Schema) (store : DataModel.Store)
     (parentType runtimeType : Name)
-    (fieldName : Name) (arguments : List Argument)
-    (fieldDefinition : FieldDefinition) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    store.wellTyped schema ->
-    schema.typeIncludesObjectBool parentType runtimeType = true ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      executionValueObjectsInclude schema fieldDefinition.outputType.namedType
-        (store.resolve schema fieldName arguments
-          (Execution.ResolverValue.object (ObjectRef := ObjectRef) runtimeType)) := by
-  intro hschema hstore hinclude hlookup
-  cases hnode : store.firstNodeWithType? runtimeType with
-  | none =>
-      simp [DataModel.Store.resolve, hnode, executionValueObjectsInclude]
-  | some sourceNode =>
-      simpa [DataModel.Store.resolve, hnode, resolveValue] using
-        resolveValue_objectsInclude_of_static_lookupField schema store
-          parentType runtimeType fieldName arguments fieldDefinition hschema
-          hstore hinclude hlookup
-
-theorem resolve_objectsInclude_of_static_lookupField_ref
-    (schema : Schema) (store : DataModel.Store)
-    (parentType runtimeType : Name)
-    (ref : Option ObjectRef)
+    (ref : ObjectRef)
     (fieldName : Name) (arguments : List Argument)
     (fieldDefinition : FieldDefinition) :
     SchemaWellFormedness.schemaWellFormed schema ->
@@ -486,62 +464,62 @@ theorem resolve_objectsInclude_of_static_lookupField_ref
         (store.resolve schema fieldName arguments
           (.object runtimeType ref)) := by
   intro hschema hstore hinclude hlookup
-  cases ref with
+  cases hnode : store.lookupNode? (objectIdOfRef ref) with
   | none =>
-      cases hnode : store.firstNodeWithType? runtimeType with
-      | none =>
-          simp [DataModel.Store.resolve, hnode, executionValueObjectsInclude]
-      | some sourceNode =>
-          simpa [DataModel.Store.resolve, hnode, resolveValue] using
-            resolveValue_objectsInclude_of_static_lookupField schema store
-              parentType runtimeType fieldName arguments fieldDefinition
-              hschema hstore hinclude hlookup
-  | some ref =>
-      cases href : objectIdOfRef? ref with
-      | none =>
-          simp [objectIdOfRef?] at href
-      | some sourceId =>
-          cases hnode : store.lookupNode? sourceId with
-          | none =>
-              simp [DataModel.Store.resolve, href, hnode,
-                executionValueObjectsInclude]
-          | some sourceNode =>
-              by_cases hmatch : sourceNode.typeName == runtimeType
-              · have hsourceType : sourceNode.typeName = runtimeType :=
-                  beq_iff_eq.mp hmatch
-                have hpossible :
-                    runtimeType ∈ schema.getPossibleTypes parentType :=
-                  List.contains_iff_mem.mp hinclude
-                rcases
-                  SchemaWellFormedness.schemaWellFormed_possibleObject_lookupField_exists
-                    hschema hpossible hlookup with
-                  ⟨implementationDefinition, himplementationLookup⟩
-                have hlookupNode :
-                    schema.lookupField sourceNode.typeName fieldName =
-                      some implementationDefinition := by
-                  simpa [hsourceType] using himplementationLookup
-                have hnodeMem : sourceNode ∈ store.allNodes :=
-                  lookupNode?_some_mem store hnode
-                have himplementation :=
-                  resolveValueFromNode_objectsInclude_of_lookupField schema store
-                    sourceNode fieldName arguments implementationDefinition
-                    hstore hnodeMem hlookupNode
-                have hsubtype :
-                    schema.outputTypeSubtype implementationDefinition.outputType
-                      fieldDefinition.outputType :=
-                  SchemaWellFormedness.schemaWellFormed_possibleObject_lookupField_outputTypeSubtype
-                    hschema hpossible hlookup himplementationLookup
-                have hmono :=
-                  executionValueObjectsInclude_mono schema
-                    (fun objectType hobject =>
-                      GraphQL.typeIncludesObjectBool_of_outputTypeSubtype_namedType
-                        schema hsubtype hobject)
-                    (store.resolveValueFromNode schema fieldName arguments
-                      sourceNode)
-                    himplementation
-                simpa [DataModel.Store.resolve, href, hnode, hmatch] using hmono
-              · simp [DataModel.Store.resolve, href, hnode, hmatch,
-                  executionValueObjectsInclude]
+      simp [DataModel.Store.resolve, hnode, executionValueObjectsInclude]
+  | some sourceNode =>
+      by_cases hmatch : sourceNode.typeName == runtimeType
+      · have hsourceType : sourceNode.typeName = runtimeType :=
+          beq_iff_eq.mp hmatch
+        have hpossible :
+            runtimeType ∈ schema.getPossibleTypes parentType :=
+          List.contains_iff_mem.mp hinclude
+        rcases
+          SchemaWellFormedness.schemaWellFormed_possibleObject_lookupField_exists
+            hschema hpossible hlookup with
+          ⟨implementationDefinition, himplementationLookup⟩
+        have hlookupNode :
+            schema.lookupField sourceNode.typeName fieldName =
+              some implementationDefinition := by
+          simpa [hsourceType] using himplementationLookup
+        have hnodeMem : sourceNode ∈ store.allNodes :=
+          lookupNode?_some_mem store hnode
+        have himplementation :=
+          resolveValueFromNode_objectsInclude_of_lookupField schema store
+            sourceNode fieldName arguments implementationDefinition
+            hstore hnodeMem hlookupNode
+        have hsubtype :
+            schema.outputTypeSubtype implementationDefinition.outputType
+              fieldDefinition.outputType :=
+          SchemaWellFormedness.schemaWellFormed_possibleObject_lookupField_outputTypeSubtype
+            hschema hpossible hlookup himplementationLookup
+        have hmono :=
+          executionValueObjectsInclude_mono schema
+            (fun objectType hobject =>
+              GraphQL.typeIncludesObjectBool_of_outputTypeSubtype_namedType
+                schema hsubtype hobject)
+            (store.resolveValueFromNode schema fieldName arguments
+              sourceNode)
+            himplementation
+        simpa [DataModel.Store.resolve, hnode, hmatch] using hmono
+      · simp [DataModel.Store.resolve, hnode, hmatch,
+          executionValueObjectsInclude]
+
+theorem resolve_objectsInclude_of_static_lookupField_ref
+    (schema : Schema) (store : DataModel.Store)
+    (parentType runtimeType : Name)
+    (ref : ObjectRef)
+    (fieldName : Name) (arguments : List Argument)
+    (fieldDefinition : FieldDefinition) :
+    SchemaWellFormedness.schemaWellFormed schema ->
+    store.wellTyped schema ->
+    schema.typeIncludesObjectBool parentType runtimeType = true ->
+    schema.lookupField parentType fieldName = some fieldDefinition ->
+      executionValueObjectsInclude schema fieldDefinition.outputType.namedType
+        (store.resolve schema fieldName arguments
+          (.object runtimeType ref)) := by
+  exact resolve_objectsInclude_of_static_lookupField schema store parentType
+    runtimeType ref fieldName arguments fieldDefinition
 
 theorem resolvers_parentType_insensitive
     (schema : Schema) (store : DataModel.Store)

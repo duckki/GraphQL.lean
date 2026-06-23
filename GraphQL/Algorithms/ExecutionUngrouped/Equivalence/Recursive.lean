@@ -55,7 +55,7 @@ structure RecursiveSelectionSetGlobalInvariants
         GraphQL.Execution.collectFields schema variableValues parentType source
           selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option ObjectIdentity),
+      ∀ runtimeType (identity : ObjectIdentity),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -125,7 +125,7 @@ structure RecursiveSelectionSetGlobalFreshPrefixInvariants
         GraphQL.Execution.collectFields schema variableValues parentType source
           selectionSet ->
       (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-      ∀ runtimeType (identity : Option ObjectIdentity),
+      ∀ runtimeType (identity : ObjectIdentity),
         0 < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -409,7 +409,7 @@ def of_localInvariants
           GraphQL.Execution.collectFields schema variableValues parentType source
             selectionSet ->
         (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+        ∀ childDepth runtimeType (identity : ObjectIdentity),
           childDepth + 1 < depth ->
           schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -425,7 +425,7 @@ def of_localInvariants
           GraphQL.Execution.collectFields schema variableValues parentType source
             selectionSet ->
         (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        ∀ runtimeType (identity : Option ObjectIdentity),
+        ∀ runtimeType (identity : ObjectIdentity),
           0 < depth ->
           schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -464,7 +464,7 @@ def of_localFreshPrefixInvariants
           GraphQL.Execution.collectFields schema variableValues parentType source
             selectionSet ->
         (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+        ∀ childDepth runtimeType (identity : ObjectIdentity),
           childDepth + 1 < depth ->
           schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -480,7 +480,7 @@ def of_localFreshPrefixInvariants
           GraphQL.Execution.collectFields schema variableValues parentType source
             selectionSet ->
         (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        ∀ runtimeType (identity : Option ObjectIdentity),
+        ∀ runtimeType (identity : ObjectIdentity),
           0 < depth ->
           schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -625,7 +625,7 @@ def of_localInvariants
           GraphQL.Execution.collectFields schema variableValues
             operation.rootType source operation.selectionSet ->
         (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+        ∀ childDepth runtimeType (identity : ObjectIdentity),
           childDepth + 1 < depth ->
           schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -641,7 +641,7 @@ def of_localInvariants
           GraphQL.Execution.collectFields schema variableValues
             operation.rootType source operation.selectionSet ->
         (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        ∀ runtimeType (identity : Option ObjectIdentity),
+        ∀ runtimeType (identity : ObjectIdentity),
           0 < depth ->
           schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -673,7 +673,7 @@ def of_localFreshPrefixInvariants
           GraphQL.Execution.collectFields schema variableValues
             operation.rootType source operation.selectionSet ->
         (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+        ∀ childDepth runtimeType (identity : ObjectIdentity),
           childDepth + 1 < depth ->
           schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -689,7 +689,7 @@ def of_localFreshPrefixInvariants
           GraphQL.Execution.collectFields schema variableValues
             operation.rootType source operation.selectionSet ->
         (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        ∀ runtimeType (identity : Option ObjectIdentity),
+        ∀ runtimeType (identity : ObjectIdentity),
           0 < depth ->
           schema.typeIncludesObjectBool
             ((schema.fieldReturnType? field.parentType field.fieldName).getD

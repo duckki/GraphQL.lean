@@ -9,11 +9,11 @@ namespace ExecutionUngrouped
 open GraphQL.Execution
 
 inductive ValueContainsObject {ObjectIdentity : Type} :
-    ResolverValue ObjectIdentity -> Name -> Option ObjectIdentity -> Prop where
-  | here {runtimeType : Name} {identity : Option ObjectIdentity} :
+    ResolverValue ObjectIdentity -> Name -> ObjectIdentity -> Prop where
+  | here {runtimeType : Name} {identity : ObjectIdentity} :
       ValueContainsObject (.object runtimeType identity) runtimeType identity
   | list {values : List (ResolverValue ObjectIdentity)} {value : ResolverValue ObjectIdentity}
-      {runtimeType : Name} {identity : Option ObjectIdentity} :
+      {runtimeType : Name} {identity : ObjectIdentity} :
       value ∈ values ->
       ValueContainsObject value runtimeType identity ->
         ValueContainsObject (.list values) runtimeType identity
@@ -1315,7 +1315,7 @@ theorem ExecutionValidFieldSemanticStateInvariant.of_valid_object_selectionSet_c
       FieldMerge.fieldsInSetCanMerge schema parentType selectionSet)
     (hresolvers :
       ResolversRespectValidFieldAndArgumentEquivalence resolvers
-        (.object runtimeType (some identity))) :
+        (.object runtimeType identity)) :
     ExecutionValidFieldSemanticStateInvariant
       { window :=
         { schema := schema
@@ -1323,7 +1323,7 @@ theorem ExecutionValidFieldSemanticStateInvariant.of_valid_object_selectionSet_c
           variableValues := variableValues
           depth := depth
           parentType := parentType
-          source := .object runtimeType (some identity)
+          source := .object runtimeType identity
           selectionSet := selectionSet }
         initial := initial } := by
   apply
@@ -1334,7 +1334,7 @@ theorem ExecutionValidFieldSemanticStateInvariant.of_valid_object_selectionSet_c
           variableValues := variableValues
           depth := depth
           parentType := parentType
-          source := .object runtimeType (some identity)
+          source := .object runtimeType identity
           selectionSet := selectionSet }
         initial := initial }
       runtimeType variableDefinitions hselectionSet hmerge
@@ -1347,7 +1347,7 @@ theorem ExecutionValidFieldSemanticStateInvariant.of_valid_object_selectionSet_c
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType runtimeType : Name) (identity : Option ObjectIdentity)
+    (parentType runtimeType : Name) (identity : ObjectIdentity)
     (selectionSet : List Selection) (initial : ResponseValue)
     (variableDefinitions : List VariableDefinition)
     (hparentRuntime :
@@ -1398,7 +1398,7 @@ theorem ExecutionValidFieldSemanticStateInvariant.of_valid_object_operation_canM
     (hvalid : Validation.operationDefinitionValid schema operation)
     (hresolvers :
       ResolversRespectValidFieldAndArgumentEquivalence resolvers
-        (.object runtimeType (some identity))) :
+        (.object runtimeType identity)) :
     ExecutionValidFieldSemanticStateInvariant
       { window :=
         { schema := schema
@@ -1406,7 +1406,7 @@ theorem ExecutionValidFieldSemanticStateInvariant.of_valid_object_operation_canM
           variableValues := variableValues
           depth := depth
           parentType := operation.rootType
-          source := .object runtimeType (some identity)
+          source := .object runtimeType identity
           selectionSet := operation.selectionSet }
         initial := initial } := by
   apply ExecutionValidFieldSemanticStateInvariant.of_valid_object_selectionSet_canMerge
@@ -1424,12 +1424,12 @@ theorem ExecutionValidFieldSemanticStateInvariant.of_valid_root_operation_canMer
     (operation : Operation) (runtimeType : Name)
     (identity : ObjectIdentity) (initial : ResponseValue)
     (hroot :
-      rootSourceAppliesBool schema operation (.object runtimeType (some identity)) =
+      rootSourceAppliesBool schema operation (.object runtimeType identity) =
         true)
     (hvalid : Validation.operationDefinitionValid schema operation)
     (hresolvers :
       ResolversRespectValidFieldAndArgumentEquivalence resolvers
-        (.object runtimeType (some identity))) :
+        (.object runtimeType identity)) :
     ExecutionValidFieldSemanticStateInvariant
       { window :=
         { schema := schema
@@ -1437,7 +1437,7 @@ theorem ExecutionValidFieldSemanticStateInvariant.of_valid_root_operation_canMer
           variableValues := variableValues
           depth := depth
           parentType := operation.rootType
-          source := .object runtimeType (some identity)
+          source := .object runtimeType identity
           selectionSet := operation.selectionSet }
         initial := initial } := by
   exact ExecutionValidFieldSemanticStateInvariant.of_valid_object_operation_canMerge
@@ -1453,12 +1453,12 @@ theorem ExecutionCollectedFieldInvariant.of_valid_root_operation_canMerge
     (operation : Operation) (runtimeType : Name)
     (identity : ObjectIdentity) (initial : ResponseValue)
     (hroot :
-      rootSourceAppliesBool schema operation (.object runtimeType (some identity)) =
+      rootSourceAppliesBool schema operation (.object runtimeType identity) =
         true)
     (hvalid : Validation.operationDefinitionValid schema operation)
     (hresolvers :
       ResolversRespectValidFieldAndArgumentEquivalence resolvers
-        (.object runtimeType (some identity))) :
+        (.object runtimeType identity)) :
     ExecutionCollectedFieldInvariant
       { window :=
         { schema := schema
@@ -1466,7 +1466,7 @@ theorem ExecutionCollectedFieldInvariant.of_valid_root_operation_canMerge
           variableValues := variableValues
           depth := depth
           parentType := operation.rootType
-          source := .object runtimeType (some identity)
+          source := .object runtimeType identity
           selectionSet := operation.selectionSet }
         initial := initial } := by
   apply ExecutionCollectedFieldInvariant.of_validFieldSemantic
@@ -3855,7 +3855,7 @@ theorem completeValue_object_group_eq_spec_of_merged_child_state
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (childDepth : Nat)
-    (parentType runtimeType : Name) (identity : Option ObjectIdentity)
+    (parentType runtimeType : Name) (identity : ObjectIdentity)
     (fields : List ExecutableField)
     (hchild :
       ExecutionStateEquivalent
@@ -3936,7 +3936,7 @@ theorem completeValue_object_group_eq_spec_of_guarded_merged_child_state
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (childDepth : Nat)
-    (parentType runtimeType : Name) (identity : Option ObjectIdentity)
+    (parentType runtimeType : Name) (identity : ObjectIdentity)
     (fields : List ExecutableField)
     (hchild :
       schema.typeIncludesObjectBool parentType runtimeType = true ->
@@ -3971,7 +3971,7 @@ theorem completeValueList_object_group_eq_spec_of_merged_child_states
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (childDepth : Nat)
     (parentType : Name) (fields : List ExecutableField) :
-    ∀ (objects : List (Name × Option ObjectIdentity)),
+    ∀ (objects : List (Name × ObjectIdentity)),
       (∀ object, object ∈ objects ->
         ExecutionStateEquivalent
           { window :=
@@ -4031,7 +4031,7 @@ theorem completeValueList_object_group_eq_spec_of_guarded_merged_child_states
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (childDepth : Nat)
     (parentType : Name) (fields : List ExecutableField) :
-    ∀ (objects : List (Name × Option ObjectIdentity)),
+    ∀ (objects : List (Name × ObjectIdentity)),
       (∀ object, object ∈ objects ->
         schema.typeIncludesObjectBool parentType object.fst = true ->
           ExecutionStateEquivalent
@@ -4095,7 +4095,7 @@ theorem completeValue_object_list_group_eq_spec_of_merged_child_states
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (childDepth : Nat)
     (parentType : Name) (fields : List ExecutableField)
-    (objects : List (Name × Option ObjectIdentity))
+    (objects : List (Name × ObjectIdentity))
     (_hchildren :
       ∀ object, object ∈ objects ->
         ExecutionStateEquivalent
@@ -4127,7 +4127,7 @@ theorem completeValue_object_list_group_eq_spec_of_guarded_merged_child_states
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (childDepth : Nat)
     (parentType : Name) (fields : List ExecutableField)
-    (objects : List (Name × Option ObjectIdentity))
+    (objects : List (Name × ObjectIdentity))
     (_hchildren :
       ∀ object, object ∈ objects ->
         schema.typeIncludesObjectBool parentType object.fst = true ->
@@ -4160,7 +4160,7 @@ theorem completeValue_group_eq_spec_of_merged_child_states
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (fields : List ExecutableField) :
     ∀ (depth : Nat) (parentType : Name) (value : ResolverValue ObjectIdentity),
-      (∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      (∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=
@@ -4206,7 +4206,7 @@ theorem completeValue_group_eq_spec_of_guarded_merged_child_states
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (fields : List ExecutableField) :
     ∀ (depth : Nat) (parentType : Name) (value : ResolverValue ObjectIdentity),
-      (∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      (∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         schema.typeIncludesObjectBool parentType runtimeType = true ->
           ExecutionStateEquivalent
@@ -4255,7 +4255,7 @@ theorem completeValue_group_eq_spec_of_contained_child_states
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (fields : List ExecutableField) :
     ∀ (depth : Nat) (parentType : Name) (value : ResolverValue ObjectIdentity),
-      (∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      (∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         ValueContainsObject value runtimeType identity ->
         schema.typeIncludesObjectBool parentType runtimeType = true ->
@@ -4307,7 +4307,7 @@ theorem completeValue_single_field_eq_spec_of_guarded_child_states
     (variableValues : VariableValues) (field : ExecutableField) :
     ∀ (fieldType : TypeRef) (depth : Nat)
       (value : ResolverValue ObjectIdentity),
-      (∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      (∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         schema.typeIncludesObjectBool fieldType.namedType runtimeType = true ->
           ExecutionStateEquivalent
@@ -4431,7 +4431,7 @@ theorem completeValue_single_field_eq_spec_of_contained_child_states
     (variableValues : VariableValues) (field : ExecutableField) :
     ∀ (fieldType : TypeRef) (depth : Nat)
       (value : ResolverValue ObjectIdentity),
-      (∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      (∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         ValueContainsObject value runtimeType identity ->
         schema.typeIncludesObjectBool fieldType.namedType runtimeType = true ->
@@ -4576,7 +4576,7 @@ theorem executeRootSelectionSet_single_field_succ_eq_spec_of_child_states
     (hresolve :
       resolvers.resolve parentType fieldName arguments source = resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=
@@ -4643,7 +4643,7 @@ theorem executeRootSelectionSet_single_field_succ_eq_spec_of_guarded_child_state
     (hresolve :
       resolvers.resolve parentType fieldName arguments source = resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? parentType fieldName).getD fieldName)
@@ -4714,7 +4714,7 @@ theorem executeRootSelectionSet_single_field_succ_eq_spec_of_contained_child_sta
     (hresolve :
       resolvers.resolve parentType fieldName arguments source = resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         ValueContainsObject resolved runtimeType identity ->
         schema.typeIncludesObjectBool
@@ -4787,7 +4787,7 @@ theorem AppendAllowedFieldState.of_child_states
     (hresolve :
       resolvers.resolve parentType fieldName arguments source = resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=
@@ -4835,7 +4835,7 @@ theorem AppendAllowedFieldState.of_guarded_child_states
     (hresolve :
       resolvers.resolve parentType fieldName arguments source = resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? parentType fieldName).getD fieldName)
@@ -4886,7 +4886,7 @@ theorem AppendAllowedFieldState.of_contained_child_states
     (hresolve :
       resolvers.resolve parentType fieldName arguments source = resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         ValueContainsObject resolved runtimeType identity ->
         schema.typeIncludesObjectBool
@@ -4938,7 +4938,7 @@ theorem AppendSelectionState.field_allowed_of_child_states
     (hresolve :
       resolvers.resolve parentType fieldName arguments source = resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=
@@ -4976,7 +4976,7 @@ theorem AppendSelectionState.field_allowed_of_guarded_child_states
     (hresolve :
       resolvers.resolve parentType fieldName arguments source = resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? parentType fieldName).getD fieldName)
@@ -5017,7 +5017,7 @@ theorem AppendSelectionState.field_allowed_of_contained_child_states
     (hresolve :
       resolvers.resolve parentType fieldName arguments source = resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         ValueContainsObject resolved runtimeType identity ->
         schema.typeIncludesObjectBool
@@ -5059,7 +5059,7 @@ theorem AppendAllowedFieldState.of_child_selectionSet_states
     (hresolve :
       resolvers.resolve parentType fieldName arguments source = resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           AppendSelectionSetState schema resolvers variableValues childDepth
             runtimeType (.object runtimeType identity) [] selectionSet)
@@ -5092,7 +5092,7 @@ theorem AppendSelectionState.field_allowed_of_child_selectionSet_states
     (hresolve :
       resolvers.resolve parentType fieldName arguments source = resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           AppendSelectionSetState schema resolvers variableValues childDepth
             runtimeType (.object runtimeType identity) [] selectionSet)
@@ -5122,7 +5122,7 @@ theorem AppendAllowedFieldState.of_child_prefix_states
     (hresolve :
       resolvers.resolve parentType fieldName arguments source = resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           AppendSelectionSetPrefixState schema resolvers variableValues
             childDepth runtimeType (.object runtimeType identity) []
@@ -5156,7 +5156,7 @@ theorem AppendSelectionState.field_allowed_of_child_prefix_states
     (hresolve :
       resolvers.resolve parentType fieldName arguments source = resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           AppendSelectionSetPrefixState schema resolvers variableValues
             childDepth runtimeType (.object runtimeType identity) []
@@ -5187,7 +5187,7 @@ theorem AppendSelectionState.field_allowed_of_child_prefix_states_fresh
     (hresolve :
       resolvers.resolve parentType fieldName arguments source = resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           AppendSelectionSetPrefixState schema resolvers variableValues
             childDepth runtimeType (.object runtimeType identity) []
@@ -5216,7 +5216,7 @@ theorem executeRootSelectionSet_executableFieldSelections_single_eq_spec_of_chil
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=
@@ -5251,7 +5251,7 @@ theorem executeRootSelectionSet_executableFieldSelections_single_eq_spec_of_guar
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -5290,7 +5290,7 @@ theorem executeRootSelectionSet_executableFieldSelections_single_eq_spec_of_cont
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         ValueContainsObject resolved runtimeType identity ->
         schema.typeIncludesObjectBool
@@ -5330,7 +5330,7 @@ theorem ExecutableFieldsFlatSpecEquivalent_single_of_child_states
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=
@@ -5360,7 +5360,7 @@ theorem ExecutableFieldsFlatSpecEquivalent_single_of_guarded_child_states
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -5394,7 +5394,7 @@ theorem ExecutableFieldsFlatSpecEquivalent_single_of_contained_child_states
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         ValueContainsObject resolved runtimeType identity ->
         schema.typeIncludesObjectBool
@@ -5428,7 +5428,7 @@ theorem ExecutableFieldsFlatSpecEquivalent_collected_single_field_group_of_child
     (hgroup : (responseName, [field]) ∈ groups)
     (hparents : CollectedGroupsParent parentType groups)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=
@@ -5459,7 +5459,7 @@ theorem ExecutableGroupsFlatSpecEquivalent_single_field_group_of_child_states
     (field : ExecutableField)
     (hparent : field.parentType = parentType)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=
@@ -5540,7 +5540,7 @@ theorem executeRootSelectionSet_executableFieldSelections_single_eq_merged_compl
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=
@@ -5609,7 +5609,7 @@ theorem executeRootSelectionSet_executableFieldSelections_single_eq_merged_compl
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         ValueContainsObject resolved runtimeType identity ->
         schema.typeIncludesObjectBool
@@ -5683,7 +5683,7 @@ theorem executeRootSelectionSet_executableFieldSelections_single_eq_merged_compl
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -5756,7 +5756,7 @@ theorem ExecutableFieldsMergedComplete_single_of_child_states
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=
@@ -5789,7 +5789,7 @@ theorem ExecutableFieldsMergedComplete_single_of_guarded_child_states
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         schema.typeIncludesObjectBool
           ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -5826,7 +5826,7 @@ theorem ExecutableFieldsMergedComplete_single_of_contained_child_states
       resolvers.resolve field.parentType field.fieldName field.arguments source =
         resolved)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
         ValueContainsObject resolved runtimeType identity ->
         schema.typeIncludesObjectBool
@@ -6240,7 +6240,7 @@ theorem executeRootSelectionSet_eq_spec_of_exact_single_field_group
         parentType source selectionSet (.object []))
     (hparent : field.parentType = parentType)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=
@@ -6286,7 +6286,7 @@ theorem stateEquivalent_of_exact_single_field_group
         parentType source selectionSet (.object []))
     (hparent : field.parentType = parentType)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=
@@ -6331,7 +6331,7 @@ theorem stateEquivalent_of_collected_single_field_group
       VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
         parentType source selectionSet (.object []))
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=
@@ -6389,7 +6389,7 @@ theorem executeQueryAtDepth_eq_spec_of_exact_single_field_group
         operation.rootType source operation.selectionSet (.object []))
     (hparent : field.parentType = operation.rootType)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=
@@ -6427,7 +6427,7 @@ theorem executeQuery_eq_spec_of_exact_single_field_group
         operation.rootType source operation.selectionSet (.object []))
     (hparent : field.parentType = operation.rootType)
     (hchildren :
-      ∀ childDepth runtimeType (identity : Option ObjectIdentity),
+      ∀ childDepth runtimeType (identity : ObjectIdentity),
         childDepth < depth ->
           ExecutionStateEquivalent
             { window :=

@@ -15,7 +15,7 @@ variable {ObjectRef : Type}
 
 theorem collectFields_possibleTypeFragments_not_mem_eq_nil
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (runtimeType : Name) (ref : Option ObjectRef := none)
+    (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       objectTypeNameBool schema objectType = true) ->
@@ -57,7 +57,7 @@ theorem executeSelectionSet_append_possibleTypeFragments_not_mem
     (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (runtimeType : Name) (ref : Option ObjectRef := none)
+    (depth : Nat) (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name)
     (selectionSet suffix : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
@@ -84,7 +84,7 @@ theorem executeSelectionSet_append_possibleTypeFragments_not_mem
 
 theorem collectFields_possibleTypeNormalizations_not_mem_eq_nil
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (runtimeType : Name) (ref : Option ObjectRef := none)
+    (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       objectTypeNameBool schema objectType = true) ->
@@ -134,7 +134,7 @@ theorem executeSelectionSet_append_possibleTypeNormalizations_not_mem
     (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (depth : Nat) (runtimeType : Name) (ref : Option ObjectRef := none)
+    (depth : Nat) (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name)
     (selectionSet suffix : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
@@ -170,7 +170,7 @@ theorem executeSelectionSet_possibleTypeFragments_runtime_branch
     (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-      (depth : Nat) (runtimeType : Name) (ref : Option ObjectRef := none)
+      (depth : Nat) (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       objectTypeNameBool schema objectType = true) ->
@@ -261,7 +261,7 @@ theorem executeSelectionSet_possibleTypeNormalizations_runtime_branch
     (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-      (depth : Nat) (runtimeType : Name) (ref : Option ObjectRef := none)
+      (depth : Nat) (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       objectTypeNameBool schema objectType = true) ->

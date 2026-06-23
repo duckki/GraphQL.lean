@@ -509,7 +509,7 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_field_on_store
          selection :=
           Selection.field responseName fieldName arguments [] subselections }
         :: rest) ->
-    (ref : Option DataModel.ObjectRef := none) ->
+    (ref : DataModel.ObjectRef) ->
     Execution.executeSelectionSet schema (store.resolvers schema)
       variableValues depth execParent (.object runtimeType ref)
       (groundLiftScopedSelectionSet schema
@@ -787,7 +787,7 @@ theorem groundLiftScopedSelectionSet_executeSelectionSet_on_store
       scopedSelectionSetLookupValid schema scopedSelections ->
       scopedSelectionSetCanMerge schema execParent scopedSelections ->
       scopedSelectionSetRuntimeApplies schema runtimeType scopedSelections ->
-      (ref : Option DataModel.ObjectRef := none) ->
+      (ref : DataModel.ObjectRef) ->
         Execution.executeSelectionSet schema (store.resolvers schema)
           variableValues depth execParent (.object runtimeType ref)
           (groundLiftScopedSelectionSet schema scopedSelections)
@@ -1188,7 +1188,7 @@ theorem groundLiftSelectionSet_executeSelectionSet_on_store_of_scoped
       scopedSelectionSetLookupValid schema scopedSelections ->
       scopedSelectionSetCanMerge schema execParent scopedSelections ->
       scopedSelectionSetRuntimeApplies schema runtimeType scopedSelections ->
-      (ref : Option DataModel.ObjectRef := none) ->
+      (ref : DataModel.ObjectRef) ->
         Execution.executeSelectionSet schema (store.resolvers schema)
           variableValues depth execParent (.object runtimeType ref)
           (groundLiftScopedSelectionSet schema scopedSelections)
@@ -1202,7 +1202,7 @@ theorem groundLiftSelectionSet_executeSelectionSet_on_store_of_scoped
         selectionSetDirectiveFree selectionSet ->
         selectionSetSemanticsReady schema parentType selectionSet ->
         FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-        (ref : Option DataModel.ObjectRef := none) ->
+        (ref : DataModel.ObjectRef) ->
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues depth parentType (.object runtimeType ref)
             (groundLiftSelectionSet schema parentType selectionSet)

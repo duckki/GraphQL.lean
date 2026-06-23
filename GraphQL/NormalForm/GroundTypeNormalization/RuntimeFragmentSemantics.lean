@@ -141,7 +141,7 @@ theorem doesFragmentTypeApplyBool_true_of_typesOverlapBool_true_of_object_source
       | inputObject inputObjectType => simp [hlookup] at hobject
 
 theorem doesFragmentTypeApplyBool_false_of_typesOverlapBool_false
-    (schema : Schema) {parentType typeCondition runtimeType : Name} (ref : Option ObjectRef := none) :
+    (schema : Schema) {parentType typeCondition runtimeType : Name} (ref : ObjectRef) :
     schema.typeIncludesObjectBool parentType runtimeType = true ->
       schema.typesOverlapBool parentType typeCondition = false ->
         Execution.doesFragmentTypeApplyBool schema parentType
@@ -230,7 +230,7 @@ theorem typeIncludesObjectBool_self_of_objectTypeNameBool
       | inputObject inputObjectType => simp [hlookup] at hobject
 
 theorem doesFragmentTypeApplyBool_object_self
-    (schema : Schema) {runtimeType : Name} (ref : Option ObjectRef := none) :
+    (schema : Schema) {runtimeType : Name} (ref : ObjectRef) :
     objectTypeNameBool schema runtimeType = true ->
       Execution.doesFragmentTypeApplyBool schema runtimeType
         (.object runtimeType ref)
@@ -240,7 +240,7 @@ theorem doesFragmentTypeApplyBool_object_self
     typeIncludesObjectBool_self_of_objectTypeNameBool schema hobject]
 
 theorem doesFragmentTypeApplyBool_object_other_false
-    (schema : Schema) {runtimeType objectType : Name} (ref : Option ObjectRef := none) :
+    (schema : Schema) {runtimeType objectType : Name} (ref : ObjectRef) :
     objectTypeNameBool schema objectType = true ->
       objectType ≠ runtimeType ->
         Execution.doesFragmentTypeApplyBool schema runtimeType

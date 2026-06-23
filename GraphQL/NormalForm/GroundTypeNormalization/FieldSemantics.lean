@@ -624,7 +624,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
       subselections
         ++ mergeSelectionSets
           (validFieldsWithResponseName schema parentType responseName rest)
-    ∀ (childDepth : Nat) (runtimeType : Name) (ref : Option ObjectRef),
+    ∀ (childDepth : Nat) (runtimeType : Name) (ref : ObjectRef),
       childDepth < depth ->
         objectTypeNameBool schema runtimeType = true ->
         selectionSetDirectiveFree mergedSubselections ->

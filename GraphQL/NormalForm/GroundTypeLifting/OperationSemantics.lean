@@ -109,7 +109,7 @@ theorem executeOperationAtDepth_groundLiftOperation_eq_of_scoped
       scopedSelectionSetLookupValid schema scopedSelections ->
       scopedSelectionSetCanMerge schema execParent scopedSelections ->
         scopedSelectionSetRuntimeApplies schema runtimeType scopedSelections ->
-        (ref : Option DataModel.ObjectRef := none) ->
+        (ref : DataModel.ObjectRef) ->
           Execution.executeSelectionSet schema (store.resolvers schema)
             variableValues depth execParent
             (Execution.ResolverValue.object runtimeType ref)

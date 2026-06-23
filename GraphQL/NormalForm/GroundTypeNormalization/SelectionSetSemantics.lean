@@ -111,7 +111,7 @@ theorem normalizeSelectionSet_executeSelectionSet
           responseName fieldName arguments subselections rest fieldDefinition
           hobject hsource hfree hready hmerge hlookup
       · dsimp
-        intro (childDepth : Nat) (runtimeType : Name) (ref : Option ObjectRef)
+        intro (childDepth : Nat) (runtimeType : Name) (ref : ObjectRef)
           hlt hchildObject hmergedFree
           _hmergedLookup hmergedReady hmergedMerge
         have hchildSource :

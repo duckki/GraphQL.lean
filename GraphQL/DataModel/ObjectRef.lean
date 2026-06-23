@@ -17,15 +17,11 @@ def objectRefOfId (id : ObjectId) : ObjectRef :=
   ObjectRef.mk id
 
 -- Data-model bridge for resolving references back to store object ids.
-def objectIdOfRef? (ref : ObjectRef) : Option ObjectId :=
-  some ref.id
+def objectIdOfRef (ref : ObjectRef) : ObjectId :=
+  ref.id
 
-@[simp] theorem objectIdOfRef?_objectRefOfId (id : ObjectId) :
-    objectIdOfRef? (objectRefOfId id) = some id := by
-  rfl
-
-@[simp] theorem objectIdOfRef?_none :
-    (Option.none : Option ObjectRef).bind objectIdOfRef? = none := by
+@[simp] theorem objectIdOfRef_objectRefOfId (id : ObjectId) :
+    objectIdOfRef (objectRefOfId id) = id := by
   rfl
 
 end DataModel

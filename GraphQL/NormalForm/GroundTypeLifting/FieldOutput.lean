@@ -43,7 +43,7 @@ theorem possibleTypes_eq_nil_of_leafTypeNameBool
 
 theorem collectFields_groundLift_possibleTypeFragments_not_mem_eq_nil
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (runtimeType : Name) (ref : Option ObjectRef := none)
+    (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       objectTypeNameBool schema objectType = true) ->
@@ -82,7 +82,7 @@ theorem collectFields_groundLift_possibleTypeFragments_not_mem_eq_nil
 
 theorem collectFields_groundLift_possibleTypeFragments_runtime_branch_eq
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (runtimeType : Name) (ref : Option ObjectRef := none)
+    (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes ->
       objectTypeNameBool schema objectType = true) ->
@@ -149,7 +149,7 @@ theorem collectFields_groundLift_possibleTypeFragments_runtime_branch_eq
 theorem collectFields_groundLift_fieldOutput_eq_runtime
     (schema : Schema) (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (expectedType runtimeType : Name) (ref : Option ObjectRef := none)
+    (expectedType runtimeType : Name) (ref : ObjectRef)
     (selectionSet : List Selection) :
     objectTypeNameBool schema runtimeType = true ->
     schema.typeIncludesObjectBool expectedType runtimeType = true ->
@@ -210,7 +210,7 @@ theorem collectFields_groundLift_fieldOutput_eq_runtime
 theorem collectFields_mergeSelectionSets_groundLiftScopedSelectionSet_eq_runtime
     (schema : Schema) (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (runtimeType : Name) (ref : Option ObjectRef := none)
+    (runtimeType : Name) (ref : ObjectRef)
     (scopedSelections : List ScopedSelection) :
     objectTypeNameBool schema runtimeType = true ->
     (∀ scopedSelection, scopedSelection ∈ scopedSelections ->
@@ -291,7 +291,7 @@ theorem executeSelectionSet_fieldOutput_scopedMerged_eq_of_runtime_recursive
     (variableValues : Execution.VariableValues)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (depth : Nat) (expectedType runtimeType : Name)
-    (ref : Option DataModel.ObjectRef := none)
+    (ref : DataModel.ObjectRef)
     (selectionSet : List Selection)
     (scopedMatches : List ScopedSelection) :
     objectTypeNameBool schema runtimeType = true ->
@@ -417,7 +417,7 @@ theorem scopedSelectionSetValidFieldsWithResponseName_valuesInclude_on_store
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (hstore : store.wellTyped schema)
     (execParent runtimeType : Name)
-    (ref : Option DataModel.ObjectRef := none)
+    (ref : DataModel.ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections : List Selection) (rest : List ScopedSelection) :
     objectTypeNameBool schema execParent = true ->
@@ -499,7 +499,7 @@ theorem scopedFieldHead_valueIncludes_on_store
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (hstore : store.wellTyped schema)
     (execParent liftParent runtimeType : Name)
-    (ref : Option DataModel.ObjectRef := none)
+    (ref : DataModel.ObjectRef)
     (fieldName : Name) (arguments : List Argument)
     (liftFieldDefinition : FieldDefinition) :
     schema.typeIncludesObjectBool liftParent runtimeType = true ->
@@ -748,7 +748,7 @@ theorem executeSelectionSet_field_head_groundLift_scoped_sameGroup_of_valueInclu
     (liftedFields sourceFields : List Execution.ExecutableField)
     (liftedRestGroups sourceRest : List (Name × List Execution.ExecutableField))
     (execFieldDefinition liftFieldDefinition : FieldDefinition)
-    (ref : Option DataModel.ObjectRef := none) :
+    (ref : DataModel.ObjectRef) :
     let liftedSelectionSet :=
       if leafTypeNameBool schema liftFieldDefinition.outputType.namedType then
         []

@@ -1069,7 +1069,7 @@ structure ExecutedGroupedOperationState
 
 namespace ExecutedGroupedOperationState
 
-theorem executeQueryAtDepth_eq_spec
+theorem executeQueryWithFuel_eq_spec
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {operation : Operation}
@@ -1077,10 +1077,10 @@ theorem executeQueryAtDepth_eq_spec
     (state :
       ExecutedGroupedOperationState schema resolvers variableValues operation
         depth source) :
-    executeQueryAtDepth schema resolvers variableValues operation depth source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    executeQueryWithFuel schema resolvers variableValues operation depth source =
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation depth source := by
-  apply executeQueryAtDepth_eq_spec_of_root_fields_eq schema resolvers
+  apply executeQueryWithFuel_eq_spec_of_root_fields_eq schema resolvers
     variableValues operation depth source state.root
   exact state.selectionSet.executeRootSelectionSet_eq_spec
 
@@ -1091,12 +1091,12 @@ theorem executeQuery_eq_spec
     {source : ResolverValue ObjectIdentity}
     (state :
       ExecutedGroupedOperationState schema resolvers variableValues operation
-        (GraphQL.Execution.executeQueryDepthBound operation) source) :
+        (GraphQL.Execution.executeQueryFuelBound operation) source) :
     executeQuery schema resolvers variableValues operation source =
     GraphQL.Execution.executeQuery schema resolvers variableValues operation
       source := by
   unfold executeQuery GraphQL.Execution.executeQuery
-  exact state.executeQueryAtDepth_eq_spec
+  exact state.executeQueryWithFuel_eq_spec
 
 end ExecutedGroupedOperationState
 
@@ -1310,7 +1310,7 @@ def ExecutedGroupedOperationState.of_collected_groups_recursiveAppendState
         ExecutedGroupedSelectionSetState.of_collected_groups_recursiveAppendState
           hcollect hflat hcollected hlookups hcompatible happend }
 
-theorem executeQueryAtDepth_eq_spec_of_executedGroups
+theorem executeQueryWithFuel_eq_spec_of_executedGroups
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {operation : Operation}
@@ -1327,14 +1327,14 @@ theorem executeQueryAtDepth_eq_spec_of_executedGroups
       ExecutedFieldGroups schema resolvers variableValues depth
         operation.rootType source groups)
     (hnodup : PairKeysNodup groups) :
-    executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
       source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation (depth + 1) source :=
   (ExecutedGroupedOperationState.of_executedGroups hroot hcollect hflat hgroups
-    hnodup).executeQueryAtDepth_eq_spec
+    hnodup).executeQueryWithFuel_eq_spec
 
-theorem executeQueryAtDepth_eq_spec_of_collected_groups_state_of_invariant
+theorem executeQueryWithFuel_eq_spec_of_collected_groups_state_of_invariant
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {operation : Operation}
@@ -1366,15 +1366,15 @@ theorem executeQueryAtDepth_eq_spec_of_collected_groups_state_of_invariant
         (responseName, field :: fields) ∈ groups ->
           ExecutedFieldAppendPlanState schema resolvers variableValues depth
             field fields [] fields) :
-    executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
       source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation (depth + 1) source :=
     (ExecutedGroupedOperationState.of_collected_groups_state hroot hcollect
       hflat hinvariant hlookups hcompatible
-      hplanStates).executeQueryAtDepth_eq_spec
+      hplanStates).executeQueryWithFuel_eq_spec
 
-theorem executeQueryAtDepth_eq_spec_of_collected_groups_appendInvariant
+theorem executeQueryWithFuel_eq_spec_of_collected_groups_appendInvariant
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {operation : Operation}
@@ -1403,15 +1403,15 @@ theorem executeQueryAtDepth_eq_spec_of_collected_groups_appendInvariant
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
     (happend :
       FieldGroupAppendInvariant schema resolvers variableValues depth) :
-    executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
       source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation (depth + 1) source :=
     (ExecutedGroupedOperationState.of_collected_groups_appendInvariant hroot
       hcollect hflat hcollected hlookups hcompatible
-      happend).executeQueryAtDepth_eq_spec
+      happend).executeQueryWithFuel_eq_spec
 
-theorem executeQueryAtDepth_eq_spec_of_collected_groups_collectedAppendInvariant
+theorem executeQueryWithFuel_eq_spec_of_collected_groups_collectedAppendInvariant
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {operation : Operation}
@@ -1441,15 +1441,15 @@ theorem executeQueryAtDepth_eq_spec_of_collected_groups_collectedAppendInvariant
     (happend :
       CollectedFieldGroupAppendInvariant schema resolvers variableValues depth
         groups) :
-    executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
       source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation (depth + 1) source :=
     (ExecutedGroupedOperationState.of_collected_groups_collectedAppendInvariant
       hroot hcollect hflat hcollected hlookups hcompatible
-      happend).executeQueryAtDepth_eq_spec
+      happend).executeQueryWithFuel_eq_spec
 
-theorem executeQueryAtDepth_eq_spec_of_collected_groups_collectedLocalAppendInvariant
+theorem executeQueryWithFuel_eq_spec_of_collected_groups_collectedLocalAppendInvariant
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {operation : Operation}
@@ -1479,15 +1479,15 @@ theorem executeQueryAtDepth_eq_spec_of_collected_groups_collectedLocalAppendInva
     (happend :
       CollectedFieldGroupLocalAppendInvariant schema resolvers variableValues
         depth groups) :
-    executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
       source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation (depth + 1) source :=
     (ExecutedGroupedOperationState.of_collected_groups_collectedLocalAppendInvariant
       hroot hcollect hflat hcollected hlookups hcompatible
-      happend).executeQueryAtDepth_eq_spec
+      happend).executeQueryWithFuel_eq_spec
 
-theorem executeQueryAtDepth_eq_spec_of_collected_groups_recursiveAppendState
+theorem executeQueryWithFuel_eq_spec_of_collected_groups_recursiveAppendState
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {operation : Operation}
@@ -1517,15 +1517,15 @@ theorem executeQueryAtDepth_eq_spec_of_collected_groups_recursiveAppendState
     (happend :
       CollectedFieldGroupRecursiveAppendState schema resolvers variableValues
         depth groups) :
-    executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
       source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation (depth + 1) source :=
     (ExecutedGroupedOperationState.of_collected_groups_recursiveAppendState
       hroot hcollect hflat hcollected hlookups hcompatible
-      happend).executeQueryAtDepth_eq_spec
+      happend).executeQueryWithFuel_eq_spec
 
-theorem executeQueryAtDepth_eq_spec_of_collected_groups_child_state
+theorem executeQueryWithFuel_eq_spec_of_collected_groups_child_state
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {operation : Operation}
@@ -1580,15 +1580,15 @@ theorem executeQueryAtDepth_eq_spec_of_collected_groups_child_state
                 (GraphQL.Execution.mergedFieldSelectionSet
                   (field :: prefixTail))
                 (.object [])).fst) :
-    executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
       source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation (depth + 1) source :=
-    executeQueryAtDepth_eq_spec_of_collected_groups_collectedLocalAppendInvariant
+    executeQueryWithFuel_eq_spec_of_collected_groups_collectedLocalAppendInvariant
       hroot hcollect hflat hcollected hlookups hcompatible
       (CollectedFieldGroupLocalAppendInvariant.of_child_state hchildren herrors)
 
-theorem executeQueryAtDepth_eq_spec_of_collected_groups_depth_one
+theorem executeQueryWithFuel_eq_spec_of_collected_groups_depth_one
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {operation : Operation}
@@ -1615,10 +1615,10 @@ theorem executeQueryAtDepth_eq_spec_of_collected_groups_depth_one
     (hlookups :
       CollectedGroupsFieldLookupValid schema operation.rootType groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups) :
-    executeQueryAtDepth schema resolvers variableValues operation 1 source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    executeQueryWithFuel schema resolvers variableValues operation 1 source =
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation 1 source :=
-    executeQueryAtDepth_eq_spec_of_collected_groups_collectedAppendInvariant
+    executeQueryWithFuel_eq_spec_of_collected_groups_collectedAppendInvariant
       hroot hcollect hflat hcollected hlookups hcompatible
       (CollectedFieldGroupAppendInvariant.depth_zero schema resolvers
       variableValues groups)
@@ -1629,7 +1629,7 @@ theorem executeQuery_eq_spec_of_executedGroups
     {variableValues : VariableValues} {operation : Operation}
     {depth : Nat} {source : ResolverValue ObjectIdentity}
     {groups : List (Name × List ExecutableField)}
-    (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
+    (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
     (hcollect :
       GraphQL.Execution.collectFields schema variableValues operation.rootType
@@ -1646,7 +1646,7 @@ theorem executeQuery_eq_spec_of_executedGroups
       source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
-  exact executeQueryAtDepth_eq_spec_of_executedGroups hroot hcollect hflat
+  exact executeQueryWithFuel_eq_spec_of_executedGroups hroot hcollect hflat
     hgroups hnodup
 
 theorem executeQuery_eq_spec_of_collected_groups_state_of_invariant
@@ -1655,7 +1655,7 @@ theorem executeQuery_eq_spec_of_collected_groups_state_of_invariant
     {variableValues : VariableValues} {operation : Operation}
     {depth : Nat} {source : ResolverValue ObjectIdentity}
     {groups : List (Name × List ExecutableField)}
-    (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
+    (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
     (hcollect :
       GraphQL.Execution.collectFields schema variableValues operation.rootType
@@ -1688,7 +1688,7 @@ theorem executeQuery_eq_spec_of_collected_groups_state_of_invariant
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
-      executeQueryAtDepth_eq_spec_of_collected_groups_state_of_invariant hroot
+      executeQueryWithFuel_eq_spec_of_collected_groups_state_of_invariant hroot
         hcollect hflat hinvariant hlookups hcompatible hplanStates
 
 theorem executeQuery_eq_spec_of_collected_groups_appendInvariant
@@ -1697,7 +1697,7 @@ theorem executeQuery_eq_spec_of_collected_groups_appendInvariant
     {variableValues : VariableValues} {operation : Operation}
     {depth : Nat} {source : ResolverValue ObjectIdentity}
     {groups : List (Name × List ExecutableField)}
-    (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
+    (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
     (hcollect :
       GraphQL.Execution.collectFields schema variableValues operation.rootType
@@ -1727,7 +1727,7 @@ theorem executeQuery_eq_spec_of_collected_groups_appendInvariant
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
-      executeQueryAtDepth_eq_spec_of_collected_groups_appendInvariant hroot
+      executeQueryWithFuel_eq_spec_of_collected_groups_appendInvariant hroot
         hcollect hflat hcollected hlookups hcompatible happend
 
 theorem executeQuery_eq_spec_of_collected_groups_collectedAppendInvariant
@@ -1736,7 +1736,7 @@ theorem executeQuery_eq_spec_of_collected_groups_collectedAppendInvariant
     {variableValues : VariableValues} {operation : Operation}
     {depth : Nat} {source : ResolverValue ObjectIdentity}
     {groups : List (Name × List ExecutableField)}
-    (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
+    (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
     (hcollect :
       GraphQL.Execution.collectFields schema variableValues operation.rootType
@@ -1767,7 +1767,7 @@ theorem executeQuery_eq_spec_of_collected_groups_collectedAppendInvariant
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
-      executeQueryAtDepth_eq_spec_of_collected_groups_collectedAppendInvariant
+      executeQueryWithFuel_eq_spec_of_collected_groups_collectedAppendInvariant
         hroot hcollect hflat hcollected hlookups hcompatible happend
 
 theorem executeQuery_eq_spec_of_collected_groups_collectedLocalAppendInvariant
@@ -1776,7 +1776,7 @@ theorem executeQuery_eq_spec_of_collected_groups_collectedLocalAppendInvariant
     {variableValues : VariableValues} {operation : Operation}
     {depth : Nat} {source : ResolverValue ObjectIdentity}
     {groups : List (Name × List ExecutableField)}
-    (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
+    (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
     (hcollect :
       GraphQL.Execution.collectFields schema variableValues operation.rootType
@@ -1807,7 +1807,7 @@ theorem executeQuery_eq_spec_of_collected_groups_collectedLocalAppendInvariant
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
-      executeQueryAtDepth_eq_spec_of_collected_groups_collectedLocalAppendInvariant
+      executeQueryWithFuel_eq_spec_of_collected_groups_collectedLocalAppendInvariant
         hroot hcollect hflat hcollected hlookups hcompatible happend
 
 theorem executeQuery_eq_spec_of_collected_groups_recursiveAppendState
@@ -1816,7 +1816,7 @@ theorem executeQuery_eq_spec_of_collected_groups_recursiveAppendState
     {variableValues : VariableValues} {operation : Operation}
     {depth : Nat} {source : ResolverValue ObjectIdentity}
     {groups : List (Name × List ExecutableField)}
-    (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
+    (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
     (hcollect :
       GraphQL.Execution.collectFields schema variableValues operation.rootType
@@ -1847,7 +1847,7 @@ theorem executeQuery_eq_spec_of_collected_groups_recursiveAppendState
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
-      executeQueryAtDepth_eq_spec_of_collected_groups_recursiveAppendState hroot
+      executeQueryWithFuel_eq_spec_of_collected_groups_recursiveAppendState hroot
         hcollect hflat hcollected hlookups hcompatible happend
 
 theorem executeQuery_eq_spec_of_collected_groups_child_state
@@ -1856,7 +1856,7 @@ theorem executeQuery_eq_spec_of_collected_groups_child_state
     {variableValues : VariableValues} {operation : Operation}
     {depth : Nat} {source : ResolverValue ObjectIdentity}
     {groups : List (Name × List ExecutableField)}
-    (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
+    (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
     (hcollect :
       GraphQL.Execution.collectFields schema variableValues operation.rootType
@@ -1912,7 +1912,7 @@ theorem executeQuery_eq_spec_of_collected_groups_child_state
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
-    executeQueryAtDepth_eq_spec_of_collected_groups_child_state hroot hcollect
+    executeQueryWithFuel_eq_spec_of_collected_groups_child_state hroot hcollect
       hflat hcollected hlookups hcompatible hchildren herrors
 
 end ExecutionUngrouped

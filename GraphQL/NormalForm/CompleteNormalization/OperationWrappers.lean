@@ -68,7 +68,7 @@ theorem completeNormalizationSemanticsPreserved_of_selectionSet
             false := by
         simpa [completeNormalizeOperation_rootSourceAppliesBool
           schema operation source] using hroot
-      simp [Execution.executeQueryAtDepth, hroot, hnormalizedRoot]
+      simp [Execution.executeQueryWithFuel, hroot, hnormalizedRoot]
   | true =>
       have hnormalizedRoot :
           Execution.rootSourceAppliesBool schema
@@ -90,7 +90,7 @@ theorem completeNormalizationSemanticsPreserved_of_selectionSet
             depth operation.rootType source
             (completeNormalizeOperation schema operation).selectionSet := by
         simpa [Execution.executeSelectionSet] using hselectionEq
-      simp [Execution.executeQueryAtDepth, hroot, hnormalizedRoot,
+      simp [Execution.executeQueryWithFuel, hroot, hnormalizedRoot,
         hnormalizedRootType, hrootSelectionEq]
 
 end CompleteNormalization

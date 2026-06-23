@@ -210,7 +210,7 @@ theorem collectSubfieldsMatchesGroupedSelections
 theorem executeRootSelectionSetSmoke :
     (match
       GraphQL.Execution.executeRootSelectionSet sampleSchema sampleResolvers []
-        (GraphQL.Execution.executeQueryDepthBound sampleHeroQuery)
+        (GraphQL.Execution.executeQueryFuelBound sampleHeroQuery)
         "Query"
         (GraphQL.Execution.ResolverValue.object "Query" ())
         sampleHeroQuery.selectionSet

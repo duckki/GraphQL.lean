@@ -22,7 +22,7 @@ theorem rootSourceAppliesBool_groundLiftOperation
       Execution.rootSourceAppliesBool schema operation source := by
   rfl
 
-theorem executeQueryAtDepth_groundLiftOperation_eq_of_selectionSet
+theorem executeQueryWithFuel_groundLiftOperation_eq_of_selectionSet
     (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
@@ -38,15 +38,15 @@ theorem executeQueryAtDepth_groundLiftOperation_eq_of_selectionSet
         =
         Execution.executeSelectionSet schema resolvers variableValues depth
           operation.rootType source operation.selectionSet) ->
-      Execution.executeQueryAtDepth schema resolvers variableValues
+      Execution.executeQueryWithFuel schema resolvers variableValues
         (groundLiftOperation schema operation) depth source
       =
-      Execution.executeQueryAtDepth schema resolvers variableValues
+      Execution.executeQueryWithFuel schema resolvers variableValues
         operation depth source := by
   intro hselection
-  rw [Execution.executeQueryAtDepth]
+  rw [Execution.executeQueryWithFuel]
   rw [rootSourceAppliesBool_groundLiftOperation]
-  rw [Execution.executeQueryAtDepth]
+  rw [Execution.executeQueryWithFuel]
   cases hroot :
       Execution.rootSourceAppliesBool schema operation source
   · simp

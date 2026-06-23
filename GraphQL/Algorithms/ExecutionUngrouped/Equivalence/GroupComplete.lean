@@ -518,7 +518,7 @@ theorem executeRootSelectionSet_eq_spec_of_collected_groups_containedAppendInvar
         hnonempty hresponses hparents hcompatible hlookups hstable happend)
       hnodup
 
-theorem executeQueryAtDepth_eq_spec_of_collected_groups_containedAppendInvariant
+theorem executeQueryWithFuel_eq_spec_of_collected_groups_containedAppendInvariant
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {operation : Operation}
@@ -547,11 +547,11 @@ theorem executeQueryAtDepth_eq_spec_of_collected_groups_containedAppendInvariant
     (happend :
       CollectedFieldGroupContainedAppendInvariant schema resolvers
         variableValues depth source groups) :
-    executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
       source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation (depth + 1) source := by
-  apply executeQueryAtDepth_eq_spec_of_root_fields_eq schema resolvers
+  apply executeQueryWithFuel_eq_spec_of_root_fields_eq schema resolvers
     variableValues operation (depth + 1) source hroot
   exact
     executeRootSelectionSet_eq_spec_of_collected_groups_containedAppendInvariant
@@ -563,7 +563,7 @@ theorem executeQuery_eq_spec_of_collected_groups_containedAppendInvariant
     {variableValues : VariableValues} {operation : Operation}
     {depth : Nat} {source : ResolverValue ObjectIdentity}
     {groups : List (Name × List ExecutableField)}
-    (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
+    (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
     (hcollect :
       GraphQL.Execution.collectFields schema variableValues operation.rootType
@@ -593,7 +593,7 @@ theorem executeQuery_eq_spec_of_collected_groups_containedAppendInvariant
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
-    executeQueryAtDepth_eq_spec_of_collected_groups_containedAppendInvariant
+    executeQueryWithFuel_eq_spec_of_collected_groups_containedAppendInvariant
       hroot hcollect hflat hcollected hlookups hcompatible happend
 
 end ExecutionUngrouped

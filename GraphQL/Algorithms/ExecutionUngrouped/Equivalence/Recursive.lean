@@ -579,7 +579,7 @@ def toExecutedGroupedOperationState
   { root := state.root
     selectionSet := state.selectionSet.toExecutedGroupedSelectionSetState }
 
-theorem executeQueryAtDepth_eq_spec
+theorem executeQueryWithFuel_eq_spec
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {operation : Operation}
@@ -587,11 +587,11 @@ theorem executeQueryAtDepth_eq_spec
     (state :
       RecursiveGroupedOperationState schema resolvers variableValues operation
         depth source) :
-    executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
       source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation (depth + 1) source :=
-  state.toExecutedGroupedOperationState.executeQueryAtDepth_eq_spec
+  state.toExecutedGroupedOperationState.executeQueryWithFuel_eq_spec
 
 theorem executeQuery_eq_spec
     {ObjectIdentity : Type}
@@ -602,13 +602,13 @@ theorem executeQuery_eq_spec
       RecursiveGroupedOperationState schema resolvers variableValues operation
         depth source)
     (hdepth :
-      GraphQL.Execution.executeQueryDepthBound operation = depth + 1) :
+      GraphQL.Execution.executeQueryFuelBound operation = depth + 1) :
     executeQuery schema resolvers variableValues operation source =
     GraphQL.Execution.executeQuery schema resolvers variableValues operation
       source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
-  exact state.executeQueryAtDepth_eq_spec
+  exact state.executeQueryWithFuel_eq_spec
 
 def of_localInvariants
     {ObjectIdentity : Type}
@@ -734,7 +734,7 @@ def of_globalFreshPrefixInvariants
 
 end RecursiveGroupedOperationState
 
-theorem executeQueryAtDepth_eq_spec_of_recursiveGroupedOperationState
+theorem executeQueryWithFuel_eq_spec_of_recursiveGroupedOperationState
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {operation : Operation}
@@ -742,11 +742,11 @@ theorem executeQueryAtDepth_eq_spec_of_recursiveGroupedOperationState
     (state :
       RecursiveGroupedOperationState schema resolvers variableValues operation
         depth source) :
-    executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
       source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation (depth + 1) source :=
-  state.executeQueryAtDepth_eq_spec
+  state.executeQueryWithFuel_eq_spec
 
 theorem executeQuery_eq_spec_of_recursiveGroupedOperationState
     {ObjectIdentity : Type}
@@ -757,7 +757,7 @@ theorem executeQuery_eq_spec_of_recursiveGroupedOperationState
       RecursiveGroupedOperationState schema resolvers variableValues operation
         depth source)
     (hdepth :
-      GraphQL.Execution.executeQueryDepthBound operation = depth + 1) :
+      GraphQL.Execution.executeQueryFuelBound operation = depth + 1) :
     executeQuery schema resolvers variableValues operation source =
     GraphQL.Execution.executeQuery schema resolvers variableValues operation
       source :=

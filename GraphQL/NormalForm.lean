@@ -509,9 +509,9 @@ def operationsEquivalent (schema : Schema)
     (left right : Operation) : Prop :=
   ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     variableValues fuel (source : Execution.ResolverValue ObjectRef),
-    Execution.executeQueryAtDepth schema resolvers variableValues left fuel source
+    Execution.executeQueryWithFuel schema resolvers variableValues left fuel source
       =
-    Execution.executeQueryAtDepth schema resolvers variableValues right fuel source
+    Execution.executeQueryWithFuel schema resolvers variableValues right fuel source
 
 def groundTypeNormalFormSemanticsPreserved (schema : Schema)
     (operation : Operation) : Prop :=
@@ -999,10 +999,10 @@ def completeNormalizationSemanticsPreserved
       ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
         variableValues fuel (source : Execution.ResolverValue ObjectRef),
         operationBoolVarsComplete operation variableValues ->
-          Execution.executeQueryAtDepth schema resolvers variableValues operation
+          Execution.executeQueryWithFuel schema resolvers variableValues operation
             fuel source
             =
-          Execution.executeQueryAtDepth schema resolvers variableValues
+          Execution.executeQueryWithFuel schema resolvers variableValues
             (completeNormalizeOperation schema operation) fuel source
 
 end NormalForm

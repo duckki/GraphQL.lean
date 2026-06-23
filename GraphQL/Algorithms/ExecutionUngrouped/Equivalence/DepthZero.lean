@@ -292,15 +292,15 @@ theorem ExecutableGroupsFlatSpecEquivalent_depth_zero
   rw [hlength]
   cases groups <;> simp [depthZeroVisitStatus, visitOk]
 
-theorem executeQueryAtDepth_data_eq_spec_depth_zero
+theorem executeQueryWithFuel_data_eq_spec_depth_zero
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
     (source : ResolverValue ObjectIdentity) :
-    (executeQueryAtDepth schema resolvers variableValues operation 0 source).data =
-      (GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    (executeQueryWithFuel schema resolvers variableValues operation 0 source).data =
+      (GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
         operation 0 source).data := by
-  unfold executeQueryAtDepth GraphQL.Execution.executeQueryAtDepth
+  unfold executeQueryWithFuel GraphQL.Execution.executeQueryWithFuel
   by_cases hsource :
       rootSourceAppliesBool schema operation source = true
   · simp [hsource]

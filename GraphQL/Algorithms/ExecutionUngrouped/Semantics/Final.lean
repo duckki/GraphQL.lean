@@ -332,7 +332,7 @@ theorem executeRootSelectionSet_eq_spec_of_allFieldsNormal
                 hinclude hready hchildNormal hchildFree)
             hall hfree hnormal hchildren)
 
-theorem executeQueryAtDepth_eq_spec_of_allFieldsNormal
+theorem executeQueryWithFuel_eq_spec_of_allFieldsNormal
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
@@ -365,12 +365,12 @@ theorem executeQueryAtDepth_eq_spec_of_allFieldsNormal
           ((schema.fieldReturnType? operation.rootType fieldName).getD
             fieldName)
           childSelectionSet) ->
-      executeQueryAtDepth schema resolvers variableValues operation depth source
+      executeQueryWithFuel schema resolvers variableValues operation depth source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
         depth source := by
   intro hall hfree hnormal hlookup hchildren
-  unfold executeQueryAtDepth Execution.executeQueryAtDepth
+  unfold executeQueryWithFuel Execution.executeQueryWithFuel
   by_cases hsource :
       Execution.rootSourceAppliesBool schema operation source = true
   · simp [hsource]
@@ -655,7 +655,7 @@ theorem executeRootSelectionSet_eq_spec_of_normalizeSelectionSet
       normalizeSelectionSet_field_child_generated schema parentType selectionSet
         responseName fieldName arguments directives childSelectionSet hfree hmem
 
-theorem executeQueryAtDepth_completeNormalizeOperation_eq_of_filter_source_eq_spec
+theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_source_eq_spec
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
@@ -708,9 +708,9 @@ theorem executeQueryAtDepth_completeNormalizeOperation_eq_of_filter_source_eq_sp
         operation.rootType source
         (NormalForm.filterSelectionSetBoolCase runtimeCase
           operation.selectionSet)) ->
-      executeQueryAtDepth schema resolvers variableValues operation depth source
+      executeQueryWithFuel schema resolvers variableValues operation depth source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) depth
         source := by
   intro hschema hcomplete hobject hsource hfree hready hmerge hsourceSpec
@@ -804,12 +804,12 @@ theorem executeQueryAtDepth_completeNormalizeOperation_eq_of_filter_source_eq_sp
       (hfilteredSpec.trans
         (hgroundSpec.symm.trans
           (hnormalizedSpec.symm.trans hcompleteRoot.symm)))
-  unfold executeQueryAtDepth
+  unfold executeQueryWithFuel
   rw [hroot]
   rw [hrootComplete]
   simp [hrootResult, NormalForm.completeNormalizeOperation]
 
-theorem executeQueryAtDepth_completeNormalizeOperation_eq_of_filter_recursiveGroupedStates
+theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_recursiveGroupedStates
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
@@ -857,20 +857,20 @@ theorem executeQueryAtDepth_completeNormalizeOperation_eq_of_filter_recursiveGro
         operation.rootType source
         (NormalForm.filterSelectionSetBoolCase runtimeCase
           operation.selectionSet)) ->
-      executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+      executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
           source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
         source := by
   intro hschema hcomplete hobject hsource hfree hready hmerge hstates
-  apply executeQueryAtDepth_completeNormalizeOperation_eq_of_filter_source_eq_spec
+  apply executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_source_eq_spec
     schema operation resolvers variableValues (depth + 1) source hschema
     hcomplete hobject hsource hfree hready hmerge
   intro runtimeCase hruntime hagrees
   exact (hstates runtimeCase hruntime hagrees).executeRootSelectionSet_eq_spec
 
-theorem executeQueryAtDepth_eq_spec_of_generatedNormalOperation
+theorem executeQueryWithFuel_eq_spec_of_generatedNormalOperation
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
@@ -888,12 +888,12 @@ theorem executeQueryAtDepth_eq_spec_of_generatedNormalOperation
           ((schema.fieldReturnType? operation.rootType fieldName).getD
             fieldName)
           childSelectionSet) ->
-      executeQueryAtDepth schema resolvers variableValues operation depth source
+      executeQueryWithFuel schema resolvers variableValues operation depth source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
         depth source := by
   intro hschema hall hfree hnormal hlookup hchildren
-  apply executeQueryAtDepth_eq_spec_of_allFieldsNormal schema operation resolvers
+  apply executeQueryWithFuel_eq_spec_of_allFieldsNormal schema operation resolvers
     variableValues depth source (generatedNormalizedFieldChild schema)
   · intro childDepth childType runtimeType ref childSelectionSet _hlt
       hinclude hgenerated _hchildNormal _hchildFree
@@ -907,17 +907,17 @@ theorem executeQueryAtDepth_eq_spec_of_generatedNormalOperation
   · exact hlookup
   · exact hchildren
 
-theorem executeQueryAtDepth_normalizeOperation_eq_spec
+theorem executeQueryWithFuel_normalizeOperation_eq_spec
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (source : Execution.ResolverValue ObjectRef) :
     SchemaWellFormedness.schemaWellFormed schema ->
     NormalForm.operationDirectiveFree operation ->
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
           (NormalForm.normalizeOperation schema operation) depth source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues
+      Execution.executeQueryWithFuel schema resolvers variableValues
         (NormalForm.normalizeOperation schema operation) depth source := by
   intro hschema hfree
   have hnormalizedFree :
@@ -925,7 +925,7 @@ theorem executeQueryAtDepth_normalizeOperation_eq_spec
         (NormalForm.normalizeOperation schema operation) :=
     NormalForm.GroundTypeNormalization.normalizeOperation_directiveFree schema
       operation hfree
-  apply executeQueryAtDepth_eq_spec_of_generatedNormalOperation schema
+  apply executeQueryWithFuel_eq_spec_of_generatedNormalOperation schema
     (NormalForm.normalizeOperation schema operation) resolvers variableValues
     depth source hschema
   · simpa [NormalForm.normalizeOperation] using
@@ -947,7 +947,7 @@ theorem executeQueryAtDepth_normalizeOperation_eq_spec
             arguments directives childSelectionSet hfree
             (by simpa [NormalForm.normalizeOperation] using hmem))
 
-theorem executeQueryAtDepth_eq_spec_of_executeRootSelectionSet_eq
+theorem executeQueryWithFuel_eq_spec_of_executeRootSelectionSet_eq
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
@@ -956,11 +956,11 @@ theorem executeQueryAtDepth_eq_spec_of_executeRootSelectionSet_eq
         operation.rootType source operation.selectionSet =
       Execution.executeRootSelectionSet schema resolvers variableValues depth
         operation.rootType source operation.selectionSet ->
-    executeQueryAtDepth schema resolvers variableValues operation depth source =
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+    executeQueryWithFuel schema resolvers variableValues operation depth source =
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
         depth source := by
   intro hroot
-  unfold executeQueryAtDepth Execution.executeQueryAtDepth
+  unfold executeQueryWithFuel Execution.executeQueryWithFuel
   by_cases hsource :
       Execution.rootSourceAppliesBool schema operation source = true
   · simp [hsource]
@@ -968,15 +968,15 @@ theorem executeQueryAtDepth_eq_spec_of_executeRootSelectionSet_eq
     rfl
   · simp [hsource]
 
-theorem executeQueryAtDepth_eq_spec_depth_zero
+theorem executeQueryWithFuel_eq_spec_depth_zero
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (source : Execution.ResolverValue ObjectRef) :
     CollectedSelectionSetGroupsSingleton schema variableValues
       operation.rootType source operation.selectionSet ->
-    executeQueryAtDepth schema resolvers variableValues operation 0 source =
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+    executeQueryWithFuel schema resolvers variableValues operation 0 source =
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
         0 source := by
   intro hsingletons
   by_cases hsource :
@@ -988,8 +988,8 @@ theorem executeQueryAtDepth_eq_spec_depth_zero
             variableValues operation.rootType source operation.selectionSet
             hsingletons } :
         ExecutedGroupedOperationState schema resolvers variableValues operation
-          0 source).executeQueryAtDepth_eq_spec
-  · unfold executeQueryAtDepth Execution.executeQueryAtDepth
+          0 source).executeQueryWithFuel_eq_spec
+  · unfold executeQueryWithFuel Execution.executeQueryWithFuel
     simp [hsource]
 
 theorem executeRootSelectionSet_completeNormalizeOperation_eq_spec_of_runtime_body
@@ -1066,7 +1066,7 @@ theorem executeRootSelectionSet_completeNormalizeOperation_eq_spec_of_runtime_bo
         source runtimeCase operation.selectionSet hruntime hagrees
   exact hungrouped.trans (hbody.trans hspec.symm)
 
-theorem executeQueryAtDepth_completeNormalizeOperation_eq_spec_of_runtime_body
+theorem executeQueryWithFuel_completeNormalizeOperation_eq_spec_of_runtime_body
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
@@ -1088,36 +1088,36 @@ theorem executeQueryAtDepth_completeNormalizeOperation_eq_spec_of_runtime_body
         (NormalForm.normalizeSelectionSet schema operation.rootType
           (NormalForm.filterSelectionSetBoolCase runtimeCase
             operation.selectionSet)) ->
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
           (NormalForm.completeNormalizeOperation schema operation) depth source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues
+      Execution.executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) depth source := by
   intro hruntime hagrees hbody
-  apply executeQueryAtDepth_eq_spec_of_executeRootSelectionSet_eq
+  apply executeQueryWithFuel_eq_spec_of_executeRootSelectionSet_eq
   simpa [NormalForm.completeNormalizeOperation] using
     executeRootSelectionSet_completeNormalizeOperation_eq_spec_of_runtime_body
       schema operation resolvers variableValues depth source runtimeCase
       hruntime hagrees hbody
 
-theorem executeQueryAtDepth_completeNormalizeOperation_eq_spec
+theorem executeQueryWithFuel_completeNormalizeOperation_eq_spec
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (source : Execution.ResolverValue ObjectRef) :
     SchemaWellFormedness.schemaWellFormed schema ->
     NormalForm.operationBoolVarsComplete operation variableValues ->
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
           (NormalForm.completeNormalizeOperation schema operation) depth source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues
+      Execution.executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) depth source := by
   intro hschema hcomplete
   rcases
       NormalForm.CompleteNormalization.operationBoolVarsComplete_caseForVariableValues
         variableValues operation hcomplete with
     ⟨runtimeCase, hruntime, hagrees⟩
-  apply executeQueryAtDepth_completeNormalizeOperation_eq_spec_of_runtime_body
+  apply executeQueryWithFuel_completeNormalizeOperation_eq_spec_of_runtime_body
     schema operation resolvers variableValues depth source runtimeCase hruntime
     hagrees
   apply executeRootSelectionSet_eq_spec_of_normalizeSelectionSet schema resolvers
@@ -1134,16 +1134,16 @@ theorem specExecution_eq_ungroupedExecution_of_completeNormalizeOperation
     (depth : Nat) (source : Execution.ResolverValue ObjectRef) :
     SchemaWellFormedness.schemaWellFormed schema ->
     NormalForm.operationBoolVarsComplete operation variableValues ->
-      Execution.executeQueryAtDepth schema resolvers variableValues
+      Execution.executeQueryWithFuel schema resolvers variableValues
           (NormalForm.completeNormalizeOperation schema operation) depth source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) depth source := by
   intro hschema hcomplete
-  exact (executeQueryAtDepth_completeNormalizeOperation_eq_spec schema
+  exact (executeQueryWithFuel_completeNormalizeOperation_eq_spec schema
     operation resolvers variableValues depth source hschema hcomplete).symm
 
-theorem executeQueryAtDepth_completeNormalizeOperation_semanticsPreserved
+theorem executeQueryWithFuel_completeNormalizeOperation_semanticsPreserved
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
@@ -1151,25 +1151,25 @@ theorem executeQueryAtDepth_completeNormalizeOperation_semanticsPreserved
     SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
     NormalForm.operationBoolVarsComplete operation variableValues ->
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
           (NormalForm.completeNormalizeOperation schema operation) depth source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
         depth source := by
   intro hschema hvalid hcomplete
   have hcompleteUngrouped :
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
           (NormalForm.completeNormalizeOperation schema operation) depth source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues
+      Execution.executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) depth source :=
-    executeQueryAtDepth_completeNormalizeOperation_eq_spec schema operation
+    executeQueryWithFuel_completeNormalizeOperation_eq_spec schema operation
       resolvers variableValues depth source hschema hcomplete
   have hcompleteSpec :
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
           depth source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues
+      Execution.executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) depth source :=
     by
       exact
@@ -1185,13 +1185,13 @@ theorem completeNormalizationPreservesUngroupedExecutionSemantics
     ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
       variableValues depth (source : Execution.ResolverValue ObjectRef),
       NormalForm.operationBoolVarsComplete operation variableValues ->
-        executeQueryAtDepth schema resolvers variableValues
+        executeQueryWithFuel schema resolvers variableValues
             (NormalForm.completeNormalizeOperation schema operation) depth source
           =
-        Execution.executeQueryAtDepth schema resolvers variableValues operation
+        Execution.executeQueryWithFuel schema resolvers variableValues operation
           depth source := by
   intro hschema hvalid ObjectRef resolvers variableValues depth source hcomplete
-  exact executeQueryAtDepth_completeNormalizeOperation_semanticsPreserved
+  exact executeQueryWithFuel_completeNormalizeOperation_semanticsPreserved
     schema operation resolvers variableValues depth source hschema hvalid
     hcomplete
 
@@ -1200,7 +1200,7 @@ theorem ungroupedExecutionPreservesSpecExecution_semanticsPreserved
     ungroupedExecutionPreservesSpecExecution schema operation := by
   intro hschema hvalid ObjectRef resolvers variableValues depth source
     hcomplete
-  exact executeQueryAtDepth_completeNormalizeOperation_semanticsPreserved
+  exact executeQueryWithFuel_completeNormalizeOperation_semanticsPreserved
     schema operation resolvers variableValues depth source hschema hvalid
     hcomplete
 
@@ -1212,21 +1212,21 @@ theorem completeNormalizationPreservesUngroupedExecution_of_source_eq_spec
     SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
     NormalForm.operationBoolVarsComplete operation variableValues ->
-    executeQueryAtDepth schema resolvers variableValues operation depth source =
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+    executeQueryWithFuel schema resolvers variableValues operation depth source =
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
         depth source ->
-      executeQueryAtDepth schema resolvers variableValues operation depth source
+      executeQueryWithFuel schema resolvers variableValues operation depth source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) depth source := by
   intro hschema hvalid hcomplete hsource
   have hnormalized :
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
           (NormalForm.completeNormalizeOperation schema operation) depth source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
         depth source :=
-    executeQueryAtDepth_completeNormalizeOperation_semanticsPreserved
+    executeQueryWithFuel_completeNormalizeOperation_semanticsPreserved
       schema operation resolvers variableValues depth source hschema hvalid
       hcomplete
   exact hsource.trans hnormalized.symm
@@ -1242,16 +1242,16 @@ theorem completeNormalizationPreservesUngroupedExecution_of_executedGroupedOpera
     SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
     NormalForm.operationBoolVarsComplete operation variableValues ->
-      executeQueryAtDepth schema resolvers variableValues operation depth source
+      executeQueryWithFuel schema resolvers variableValues operation depth source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) depth
         source := by
   intro hschema hvalid hcomplete
   apply completeNormalizationPreservesUngroupedExecution_of_source_eq_spec
     schema operation resolvers variableValues depth source hschema hvalid
     hcomplete
-  exact state.executeQueryAtDepth_eq_spec
+  exact state.executeQueryWithFuel_eq_spec
 
 theorem completeNormalizationPreservesUngroupedExecution_of_collected_groups_recursiveAppendState
     (schema : Schema) (operation : Operation)
@@ -1285,10 +1285,10 @@ theorem completeNormalizationPreservesUngroupedExecution_of_collected_groups_rec
     SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
     NormalForm.operationBoolVarsComplete operation variableValues ->
-      executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+      executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
           source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
         source := by
   intro hschema hvalid hcomplete
@@ -1310,10 +1310,10 @@ theorem completeNormalizationPreservesUngroupedExecution_of_recursiveGroupedOper
     SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
     NormalForm.operationBoolVarsComplete operation variableValues ->
-      executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+      executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
           source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
         source := by
   intro hschema hvalid hcomplete
@@ -1322,7 +1322,7 @@ theorem completeNormalizationPreservesUngroupedExecution_of_recursiveGroupedOper
       schema operation resolvers variableValues (depth + 1) source
       state.toExecutedGroupedOperationState hschema hvalid hcomplete
 
-theorem executeQueryAtDepth_semanticsPreserved_via_completeNormalization_of_recursiveGroupedOperationState
+theorem executeQueryWithFuel_semanticsPreserved_via_completeNormalization_of_recursiveGroupedOperationState
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
@@ -1333,30 +1333,30 @@ theorem executeQueryAtDepth_semanticsPreserved_via_completeNormalization_of_recu
     SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
     NormalForm.operationBoolVarsComplete operation variableValues ->
-      executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+      executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
           source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
         (depth + 1) source := by
   intro hschema hvalid hcomplete
   have hpreserved :
-      executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+      executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
           source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
         source :=
     completeNormalizationPreservesUngroupedExecution_of_recursiveGroupedOperationState
       schema operation resolvers variableValues depth source state hschema
       hvalid hcomplete
   have hnormalized :
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
           (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
           source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
         (depth + 1) source :=
-    executeQueryAtDepth_completeNormalizeOperation_semanticsPreserved schema
+    executeQueryWithFuel_completeNormalizeOperation_semanticsPreserved schema
       operation resolvers variableValues (depth + 1) source hschema hvalid
       hcomplete
   exact hpreserved.trans hnormalized
@@ -1372,10 +1372,10 @@ theorem completeNormalizationPreservesUngroupedExecution_of_globalInvariants
     SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
     NormalForm.operationBoolVarsComplete operation variableValues ->
-      executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+      executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
           source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
         source := by
   intro hschema hvalid hcomplete
@@ -1397,10 +1397,10 @@ theorem completeNormalizationPreservesUngroupedExecution_of_globalFreshPrefixInv
     SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
     NormalForm.operationBoolVarsComplete operation variableValues ->
-      executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+      executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
           source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
         source := by
   intro hschema hvalid hcomplete
@@ -1409,7 +1409,7 @@ theorem completeNormalizationPreservesUngroupedExecution_of_globalFreshPrefixInv
       schema operation resolvers variableValues depth source hroot
       invariants.toGlobalInvariants hschema hvalid hcomplete
 
-theorem executeQueryAtDepth_semanticsPreserved_of_globalFreshPrefixInvariants
+theorem executeQueryWithFuel_semanticsPreserved_of_globalFreshPrefixInvariants
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
@@ -1421,30 +1421,30 @@ theorem executeQueryAtDepth_semanticsPreserved_of_globalFreshPrefixInvariants
     SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
     NormalForm.operationBoolVarsComplete operation variableValues ->
-      executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+      executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
           source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
         (depth + 1) source := by
   intro hschema hvalid hcomplete
   have hpreserved :
-      executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+      executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
           source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
         source :=
     completeNormalizationPreservesUngroupedExecution_of_globalFreshPrefixInvariants
       schema operation resolvers variableValues depth source hroot invariants
       hschema hvalid hcomplete
   have hnormalized :
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
           (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
           source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
         (depth + 1) source :=
-    executeQueryAtDepth_completeNormalizeOperation_semanticsPreserved schema
+    executeQueryWithFuel_completeNormalizeOperation_semanticsPreserved schema
       operation resolvers variableValues (depth + 1) source hschema hvalid
       hcomplete
   exact hpreserved.trans hnormalized
@@ -1458,21 +1458,21 @@ theorem completeNormalizationPreservesUngroupedExecution_iff_source_eq_spec
     (hvalid : Validation.operationDefinitionValid schema operation)
     (hcomplete :
       NormalForm.operationBoolVarsComplete operation variableValues) :
-      (executeQueryAtDepth schema resolvers variableValues operation depth source
+      (executeQueryWithFuel schema resolvers variableValues operation depth source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) depth source)
       ↔
-      executeQueryAtDepth schema resolvers variableValues operation depth source =
-        Execution.executeQueryAtDepth schema resolvers variableValues operation
+      executeQueryWithFuel schema resolvers variableValues operation depth source =
+        Execution.executeQueryWithFuel schema resolvers variableValues operation
           depth source := by
   have hnormalized :
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
           (NormalForm.completeNormalizeOperation schema operation) depth source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
         depth source :=
-    executeQueryAtDepth_completeNormalizeOperation_semanticsPreserved
+    executeQueryWithFuel_completeNormalizeOperation_semanticsPreserved
       schema operation resolvers variableValues depth source hschema hvalid
       hcomplete
   constructor
@@ -1488,20 +1488,20 @@ theorem completeNormalizationPreservesUngroupedExecution_iff_semanticsPreserved
       (∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
         variableValues depth (source : Execution.ResolverValue ObjectRef),
         NormalForm.operationBoolVarsComplete operation variableValues ->
-          executeQueryAtDepth schema resolvers variableValues operation
+          executeQueryWithFuel schema resolvers variableValues operation
               depth source
             =
-          executeQueryAtDepth schema resolvers variableValues
+          executeQueryWithFuel schema resolvers variableValues
             (NormalForm.completeNormalizeOperation schema operation) depth
             source)
       ↔
       (∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
         variableValues depth (source : Execution.ResolverValue ObjectRef),
         NormalForm.operationBoolVarsComplete operation variableValues ->
-          executeQueryAtDepth schema resolvers variableValues operation
+          executeQueryWithFuel schema resolvers variableValues operation
               depth source
             =
-          Execution.executeQueryAtDepth schema resolvers variableValues
+          Execution.executeQueryWithFuel schema resolvers variableValues
             operation depth source) := by
   constructor
   · intro hpreserved ObjectRef resolvers variableValues depth source hcomplete
@@ -1524,18 +1524,18 @@ theorem completeNormalizationPreservesUngroupedExecution_of_source_semanticsPres
     (∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
       variableValues depth (source : Execution.ResolverValue ObjectRef),
       NormalForm.operationBoolVarsComplete operation variableValues ->
-        executeQueryAtDepth schema resolvers variableValues operation
+        executeQueryWithFuel schema resolvers variableValues operation
             depth source
           =
-        Execution.executeQueryAtDepth schema resolvers variableValues operation
+        Execution.executeQueryWithFuel schema resolvers variableValues operation
           depth source) ->
       ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
         variableValues depth (source : Execution.ResolverValue ObjectRef),
         NormalForm.operationBoolVarsComplete operation variableValues ->
-          executeQueryAtDepth schema resolvers variableValues operation
+          executeQueryWithFuel schema resolvers variableValues operation
               depth source
             =
-          executeQueryAtDepth schema resolvers variableValues
+          executeQueryWithFuel schema resolvers variableValues
             (NormalForm.completeNormalizeOperation schema operation) depth
             source := by
   intro hschema hvalid hsourceSemantics ObjectRef resolvers variableValues
@@ -1565,16 +1565,16 @@ theorem completeNormalizationPreservesUngroupedExecution_of_generatedNormalOpera
           ((schema.fieldReturnType? operation.rootType fieldName).getD
             fieldName)
           childSelectionSet) ->
-      executeQueryAtDepth schema resolvers variableValues operation depth source
+      executeQueryWithFuel schema resolvers variableValues operation depth source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) depth
         source := by
   intro hschema hvalid hcomplete hall hfree hnormal hlookup hchildren
   apply completeNormalizationPreservesUngroupedExecution_of_source_eq_spec
     schema operation resolvers variableValues depth source hschema hvalid
     hcomplete
-  exact executeQueryAtDepth_eq_spec_of_generatedNormalOperation schema
+  exact executeQueryWithFuel_eq_spec_of_generatedNormalOperation schema
     operation resolvers variableValues depth source hschema hall hfree hnormal
     hlookup hchildren
 
@@ -1587,10 +1587,10 @@ theorem completeNormalizationPreservesUngroupedExecution_of_normalizeOperation
     Validation.operationDefinitionValid schema operation ->
     NormalForm.operationDirectiveFree operation ->
     NormalForm.selectionSetsTypeConditionFeasibleInEveryScope schema ->
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
           (NormalForm.normalizeOperation schema operation) depth source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema
           (NormalForm.normalizeOperation schema operation)) depth source := by
   intro hschema hvalid hfree hfeasibleAll
@@ -1610,7 +1610,7 @@ theorem completeNormalizationPreservesUngroupedExecution_of_normalizeOperation
     (NormalForm.CompleteNormalization.operationBoolVarsComplete_of_operationDirectiveFree
       (NormalForm.normalizeOperation schema operation) variableValues
       hnormalizedFree)
-  exact executeQueryAtDepth_normalizeOperation_eq_spec schema operation
+  exact executeQueryWithFuel_normalizeOperation_eq_spec schema operation
     resolvers variableValues depth source hschema hfree
 
 theorem normalizeThenCompleteUngroupedExecution_semanticsPreserved
@@ -1622,11 +1622,11 @@ theorem normalizeThenCompleteUngroupedExecution_semanticsPreserved
     Validation.operationDefinitionValid schema operation ->
     NormalForm.operationDirectiveFree operation ->
     NormalForm.selectionSetsTypeConditionFeasibleInEveryScope schema ->
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
           (NormalForm.completeNormalizeOperation schema
             (NormalForm.normalizeOperation schema operation)) depth source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
         depth source := by
   intro hschema hvalid hfree hfeasibleAll
   have hnormalizedValid :
@@ -1646,20 +1646,20 @@ theorem normalizeThenCompleteUngroupedExecution_semanticsPreserved
       (NormalForm.normalizeOperation schema operation) variableValues
       hnormalizedFree
   have hcompleteUngrouped :
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
           (NormalForm.completeNormalizeOperation schema
             (NormalForm.normalizeOperation schema operation)) depth source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues
+      Execution.executeQueryWithFuel schema resolvers variableValues
         (NormalForm.normalizeOperation schema operation) depth source :=
-    executeQueryAtDepth_completeNormalizeOperation_semanticsPreserved schema
+    executeQueryWithFuel_completeNormalizeOperation_semanticsPreserved schema
       (NormalForm.normalizeOperation schema operation) resolvers
       variableValues depth source hschema hnormalizedValid hcomplete
   have hgroundSpec :
-      Execution.executeQueryAtDepth schema resolvers variableValues operation
+      Execution.executeQueryWithFuel schema resolvers variableValues operation
           depth source
         =
-      Execution.executeQueryAtDepth schema resolvers variableValues
+      Execution.executeQueryWithFuel schema resolvers variableValues
         (NormalForm.normalizeOperation schema operation) depth source :=
     by
       exact

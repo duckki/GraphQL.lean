@@ -77,7 +77,7 @@ operation-derived fuel bounds.
 
 To avoid making a false size-preservation claim, the proof compares both
 operations at the same explicit execution fuel through
-`Execution.executeQueryAtDepth`, so the semantic statement covers both response
+`Execution.executeQueryWithFuel`, so the semantic statement covers both response
 data and the modeled execution-error count. Data-only projections remain in
 `GraphQL/Execution/Data.lean` only as compatibility helpers for older
 proof-facing lemmas. The public executable entry point is

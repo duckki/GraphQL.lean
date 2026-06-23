@@ -53,10 +53,10 @@ theorem executeQuery_normalizedOperation_of_rootSource_not_apply
     (operation : Operation) (depth : Nat)
     (source : Execution.ResolverValue ObjectRef) :
       Execution.rootSourceAppliesBool schema operation source = false ->
-        Execution.executeQueryAtDepth schema resolvers variableValues operation
+        Execution.executeQueryWithFuel schema resolvers variableValues operation
           depth source
           =
-        Execution.executeQueryAtDepth schema resolvers variableValues
+        Execution.executeQueryWithFuel schema resolvers variableValues
           (normalizeOperation schema operation) depth source := by
   intro hroot
   have hnormalizedRoot :
@@ -65,7 +65,7 @@ theorem executeQuery_normalizedOperation_of_rootSource_not_apply
         false := by
     rw [rootSourceAppliesBool_normalizeOperation schema operation source]
     exact hroot
-  simp [Execution.executeQueryAtDepth, hroot, hnormalizedRoot]
+  simp [Execution.executeQueryWithFuel, hroot, hnormalizedRoot]
 
 theorem groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet
     (schema : Schema) (operation : Operation) :
@@ -90,7 +90,7 @@ theorem groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet
           true := by
       rw [rootSourceAppliesBool_normalizeOperation schema operation source]
       exact hroot
-    simp [Execution.executeQueryAtDepth, hroot, hnormalizedRoot]
+    simp [Execution.executeQueryWithFuel, hroot, hnormalizedRoot]
     exact congrArg
       (fun (completed : Execution.Result (List (Name × Execution.ResponseValue))) =>
         match completed with

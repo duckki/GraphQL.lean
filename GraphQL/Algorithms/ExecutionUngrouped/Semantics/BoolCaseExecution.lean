@@ -2275,7 +2275,7 @@ theorem visitSubfields_completeNormalizeRootSelectionSet_eq_of_filter_normalizat
       selectionSet output hruntime hagrees
   exact hfilter.symm.trans (hnormalized.trans hcomplete.symm)
 
-theorem executeQueryAtDepth_completeNormalizeOperation_eq_of_filter_normalization
+theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_normalization
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
@@ -2299,13 +2299,13 @@ theorem executeQueryAtDepth_completeNormalizeOperation_eq_of_filter_normalizatio
               (NormalForm.filterSelectionSetBoolCase runtimeCase
                 operation.selectionSet))
             (Execution.ResponseValue.object [])) ->
-      executeQueryAtDepth schema resolvers variableValues operation depth source
+      executeQueryWithFuel schema resolvers variableValues operation depth source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) depth source := by
   intro hcomplete hnormalizeBranch
-  rw [executeQueryAtDepth]
-  rw [executeQueryAtDepth]
+  rw [executeQueryWithFuel]
+  rw [executeQueryWithFuel]
   rw [NormalForm.CompleteNormalization.completeNormalizeOperation_rootSourceAppliesBool]
   cases hroot : Execution.rootSourceAppliesBool schema operation source
   · simp
@@ -2334,7 +2334,7 @@ theorem executeQueryAtDepth_completeNormalizeOperation_eq_of_filter_normalizatio
     simp [executeRootSelectionSet, NormalForm.completeNormalizeOperation,
       hvisit]
 
-theorem executeQueryAtDepth_completeNormalizeOperation_eq_of_filter_freshPlanNormalizes
+theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_freshPlanNormalizes
     (schema : Schema) (operation : Operation)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
@@ -2353,14 +2353,14 @@ theorem executeQueryAtDepth_completeNormalizeOperation_eq_of_filter_freshPlanNor
           (NormalForm.normalizeSelectionSet schema operation.rootType
             (NormalForm.filterSelectionSetBoolCase runtimeCase
               operation.selectionSet))) ->
-      executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+      executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
           source
         =
-      executeQueryAtDepth schema resolvers variableValues
+      executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
         source := by
   intro hcomplete hnormalizes
-  apply executeQueryAtDepth_completeNormalizeOperation_eq_of_filter_normalization
+  apply executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_normalization
     schema operation resolvers variableValues (depth + 1) source hcomplete
   intro runtimeCase hruntime hagrees
   let normalizes := hnormalizes runtimeCase hruntime hagrees

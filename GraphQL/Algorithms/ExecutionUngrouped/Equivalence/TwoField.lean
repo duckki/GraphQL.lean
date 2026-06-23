@@ -578,7 +578,7 @@ theorem executeRootSelectionSet_eq_spec_of_collected_two_field_group_invariant_s
       responseName first later hcollect hgroup hexact hdirect hinvariant
       hcompatible hfieldLookup hfirstChildren hobjectSteps herrors hchildren)
 
-theorem executeQueryAtDepth_eq_spec_of_collected_two_field_group_invariant_steps
+theorem executeQueryWithFuel_eq_spec_of_collected_two_field_group_invariant_steps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
@@ -655,11 +655,11 @@ theorem executeQueryAtDepth_eq_spec_of_collected_two_field_group_invariant_steps
                 source := .object runtimeType identity
                 selectionSet := first.selectionSet ++ later.selectionSet }
               initial := .object [] }) :
-    executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
       source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation (depth + 1) source := by
-  apply executeQueryAtDepth_eq_spec_of_state_equivalent schema resolvers
+  apply executeQueryWithFuel_eq_spec_of_state_equivalent schema resolvers
     variableValues operation (depth + 1) source hroot
   exact
     stateEquivalent_of_collected_two_field_group_invariant_steps schema
@@ -675,7 +675,7 @@ theorem executeQuery_eq_spec_of_collected_two_field_group_invariant_steps
     (depth : Nat) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (first later : ExecutableField)
-    (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
+    (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
     (hcollect :
       GraphQL.Execution.collectFields schema variableValues operation.rootType
@@ -752,7 +752,7 @@ theorem executeQuery_eq_spec_of_collected_two_field_group_invariant_steps
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
-    executeQueryAtDepth_eq_spec_of_collected_two_field_group_invariant_steps
+    executeQueryWithFuel_eq_spec_of_collected_two_field_group_invariant_steps
       schema resolvers variableValues operation depth source groups
       responseName first later hroot hcollect hgroup hexact hdirect hinvariant
       hcompatible hfieldLookup hfirstChildren hobjectSteps herrors hchildren
@@ -851,7 +851,7 @@ theorem executeRootSelectionSet_eq_spec_of_collected_two_field_group_invariant
       first later hcollect hgroup hexact hdirect hinvariant hcompatible
       hfieldLookup hfirstChildren hobjects herrors hchildren)
 
-theorem executeQueryAtDepth_eq_spec_of_collected_two_field_group_invariant
+theorem executeQueryWithFuel_eq_spec_of_collected_two_field_group_invariant
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
@@ -928,11 +928,11 @@ theorem executeQueryAtDepth_eq_spec_of_collected_two_field_group_invariant
                 source := .object runtimeType identity
                 selectionSet := first.selectionSet ++ later.selectionSet }
               initial := .object [] }) :
-    executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
       source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation (depth + 1) source := by
-  apply executeQueryAtDepth_eq_spec_of_state_equivalent schema resolvers
+  apply executeQueryWithFuel_eq_spec_of_state_equivalent schema resolvers
     variableValues operation (depth + 1) source hroot
   exact
     stateEquivalent_of_collected_two_field_group_invariant schema resolvers
@@ -947,7 +947,7 @@ theorem executeQuery_eq_spec_of_collected_two_field_group_invariant
     (depth : Nat) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (first later : ExecutableField)
-    (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
+    (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
     (hcollect :
       GraphQL.Execution.collectFields schema variableValues operation.rootType
@@ -1024,7 +1024,7 @@ theorem executeQuery_eq_spec_of_collected_two_field_group_invariant
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
-    executeQueryAtDepth_eq_spec_of_collected_two_field_group_invariant schema
+    executeQueryWithFuel_eq_spec_of_collected_two_field_group_invariant schema
       resolvers variableValues operation depth source groups responseName first
       later hroot hcollect hgroup hexact hdirect hinvariant hcompatible
       hfieldLookup hfirstChildren hobjects herrors hchildren
@@ -1389,7 +1389,7 @@ theorem executeRootSelectionSet_eq_spec_of_collected_two_field_group_appendPlan
         responseName first later hgroup hresponses hparents hcompatible hstable
         hfieldLookup hfirstChildren hobjects herrors hchildren)
 
-theorem executeQueryAtDepth_eq_spec_of_collected_two_field_group_appendPlan
+theorem executeQueryWithFuel_eq_spec_of_collected_two_field_group_appendPlan
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
@@ -1458,11 +1458,11 @@ theorem executeQueryAtDepth_eq_spec_of_collected_two_field_group_appendPlan
                 source := .object runtimeType identity
                 selectionSet := first.selectionSet ++ later.selectionSet }
               initial := .object [] }) :
-    executeQueryAtDepth schema resolvers variableValues operation (depth + 1)
+    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
       source =
-    GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
       operation (depth + 1) source := by
-  apply executeQueryAtDepth_eq_spec_of_root_fields_eq schema resolvers
+  apply executeQueryWithFuel_eq_spec_of_root_fields_eq schema resolvers
     variableValues operation (depth + 1) source hroot
   exact
     executeRootSelectionSet_eq_spec_of_collected_two_field_group_appendPlan
@@ -1478,7 +1478,7 @@ theorem executeQuery_eq_spec_of_collected_two_field_group_appendPlan
     (depth : Nat) (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (first later : ExecutableField)
-    (hdepth : GraphQL.Execution.executeQueryDepthBound operation = depth + 1)
+    (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
     (hcollect :
       GraphQL.Execution.collectFields schema variableValues operation.rootType
@@ -1547,7 +1547,7 @@ theorem executeQuery_eq_spec_of_collected_two_field_group_appendPlan
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
-    executeQueryAtDepth_eq_spec_of_collected_two_field_group_appendPlan schema
+    executeQueryWithFuel_eq_spec_of_collected_two_field_group_appendPlan schema
       resolvers variableValues operation depth source groups responseName first
       later hroot hcollect hgroup hexact hdirect hresponses hparents
       hcompatible hstable hfieldLookup hfirstChildren hobjects herrors

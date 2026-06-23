@@ -57,19 +57,19 @@ def executeSelectionSetData
     source selectionSet
 
 -- Compatibility data projection for proof modules that predate the response envelope.
-def executeQueryDataAtDepth
+def executeQueryDataWithFuel
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
     (fuel : Nat) (source : ResolverValue ObjectRef) : ResponseValue :=
-  (executeQueryAtDepth schema resolvers variableValues operation fuel source).data
+  (executeQueryWithFuel schema resolvers variableValues operation fuel source).data
 
 -- Default compatibility data projection using the local operation-derived fuel bound.
 def executeQueryData
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
     (source : ResolverValue ObjectRef) : ResponseValue :=
-  executeQueryDataAtDepth schema resolvers variableValues operation
-    (executeQueryDepthBound operation) source
+  executeQueryDataWithFuel schema resolvers variableValues operation
+    (executeQueryFuelBound operation) source
 
 end Execution
 

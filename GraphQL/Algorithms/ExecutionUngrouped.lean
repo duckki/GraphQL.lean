@@ -232,9 +232,9 @@ mutual
         Option ResponseValue -> Result ResponseValue
     | 0, _fieldType, _selectionSet, _value, _previous? =>
         outOfFuel
-    | _depth, _fieldType, _selectionSet, _value, some .null =>
+    | _fuel, _fieldType, _selectionSet, _value, some .null =>
         .ok (.null, 0)
-    | _depth, _fieldType, _selectionSet, _value, some (.scalar _previousValue) =>
+    | _fuel, _fieldType, _selectionSet, _value, some (.scalar _previousValue) =>
         -- Previous scalar values are reusable for valid non-composite return types, so
         -- reaching completion with one indicates a response-shape mismatch.
         .error 1
@@ -242,10 +242,10 @@ mutual
         nonNullCompletion
           (completeValue schema resolvers variableValues
             fuel inner selectionSet value previous?)
-    | _depth + 1, _fieldType, _selectionSet, .null, _previous? =>
+    | _fuel + 1, _fieldType, _selectionSet, .null, _previous? =>
         -- The new `.null` value may be a null bubble from a subfield visit.
         .ok (.null, 0)
-    | _depth + 1, .named typeName, _selectionSet, .scalar value, previous? =>
+    | _fuel + 1, .named typeName, _selectionSet, .scalar value, previous? =>
         match previous? with
         | none =>
             if (TypeRef.named typeName).isCompositeBool schema then
@@ -273,9 +273,9 @@ mutual
                 selectionSet values previousValues
             catchBubbleAsNull ResponseValue.list completed
         | none => .error 1
-    | _depth + 1, .named _typeName, _selectionSet, .list _values, _previous? =>
+    | _fuel + 1, .named _typeName, _selectionSet, .list _values, _previous? =>
         .error 1
-    | _depth + 1, .list _inner, _selectionSet, _value, _previous? =>
+    | _fuel + 1, .list _inner, _selectionSet, _value, _previous? =>
         .error 1
 
   def completeValueList {ObjectRef : Type}
@@ -328,7 +328,7 @@ def executeSelectionSet {ObjectRef : Type}
   executeRootSelectionSet schema resolvers variableValues fuel parentType source
 
 -- Spec 6.2.1 `ExecuteQuery`
-def executeQueryAtDepth {ObjectRef : Type}
+def executeQueryWithFuel {ObjectRef : Type}
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
     (fuel : Nat) (source : ResolverValue ObjectRef) : Response :=
@@ -348,8 +348,8 @@ def executeQuery {ObjectRef : Type}
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
     (source : ResolverValue ObjectRef) : Response :=
-  executeQueryAtDepth schema resolvers variableValues operation
-    (executeQueryDepthBound operation) source
+  executeQueryWithFuel schema resolvers variableValues operation
+    (executeQueryFuelBound operation) source
 
 -- Resolver-parametric correctness statement for ungrouped execution after complete
 -- normalization. The theorem witness lives in
@@ -361,10 +361,10 @@ def ungroupedExecutionPreservesSpecExecution
     ∀ {ObjectRef : Type} (resolvers : Resolvers ObjectRef)
       variableValues fuel (source : ResolverValue ObjectRef),
         NormalForm.operationBoolVarsComplete operation variableValues ->
-        executeQueryAtDepth schema resolvers variableValues
+        executeQueryWithFuel schema resolvers variableValues
           (NormalForm.completeNormalizeOperation schema operation) fuel source
           =
-        GraphQL.Execution.executeQueryAtDepth schema resolvers variableValues
+        GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
           operation fuel source
 
 end ExecutionUngrouped

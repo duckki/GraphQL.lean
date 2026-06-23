@@ -327,31 +327,31 @@ def completeNormalizationResolvers : Execution.Resolvers :=
 def completeNormalizationVariableValues : Execution.VariableValues :=
   [("x", .boolean true), ("y", .boolean false)]
 
-def executeCompleteNormalizedAtDepth
-    (operation : Operation) (depth : Nat)
+def executeCompleteNormalizedWithFuel
+    (operation : Operation) (fuel : Nat)
     (source : Execution.ResolverValue) : Execution.ResponseValue :=
-  Execution.executeQueryDataAtDepth groundTypingSchema
+  Execution.executeQueryDataWithFuel groundTypingSchema
     completeNormalizationResolvers completeNormalizationVariableValues
-    (completeNormalizeOperation groundTypingSchema operation) depth source
+    (completeNormalizeOperation groundTypingSchema operation) fuel source
 
 theorem completeNormalizationExecutionSmoke :
     responseEqBool
-      (Execution.executeQueryDataAtDepth groundTypingSchema
+      (Execution.executeQueryDataWithFuel groundTypingSchema
         completeNormalizationResolvers completeNormalizationVariableValues
         completeNormalizationDirectiveInputQuery 12
         (Execution.ResolverValue.object "Query" ()))
-      (executeCompleteNormalizedAtDepth
+      (executeCompleteNormalizedWithFuel
         completeNormalizationDirectiveInputQuery 12
         (Execution.ResolverValue.object "Query" ())) = true := by
   native_decide
 
 theorem completeNormalizationNestedExecutionSmoke :
     responseEqBool
-      (Execution.executeQueryDataAtDepth groundTypingSchema
+      (Execution.executeQueryDataWithFuel groundTypingSchema
         completeNormalizationResolvers completeNormalizationVariableValues
         completeNormalizationNestedDirectiveInputQuery 16
         (Execution.ResolverValue.object "Query" ()))
-      (executeCompleteNormalizedAtDepth
+      (executeCompleteNormalizedWithFuel
         completeNormalizationNestedDirectiveInputQuery 16
         (Execution.ResolverValue.object "Query" ())) = true := by
   native_decide

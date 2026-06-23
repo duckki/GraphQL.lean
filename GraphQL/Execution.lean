@@ -347,9 +347,9 @@ mutual
         nonNullCompletion
           (completeValue schema resolvers variableValues
             fuel inner fields value)
-    | _depth + 1, _fieldType, _fields, .null =>
+    | _fuel + 1, _fieldType, _fields, .null =>
         .ok (.null, 0)
-    | _depth + 1, .named typeName, _fields, .scalar value =>
+    | _fuel + 1, .named typeName, _fields, .scalar value =>
         if (TypeRef.named typeName).isCompositeBool schema then
           .error 1
         else
@@ -367,9 +367,9 @@ mutual
           completeValueList schema resolvers variableValues
             fuel inner fields values
         catchBubbleAsNull ResponseValue.list completed
-    | _depth + 1, .named _typeName, _fields, .list _values =>
+    | _fuel + 1, .named _typeName, _fields, .list _values =>
         .error 1
-    | _depth + 1, .list _inner, _fields, _value =>
+    | _fuel + 1, .list _inner, _fields, _value =>
         .error 1
 
   def completeValueList
@@ -410,7 +410,7 @@ def executeSelectionSet
   executeRootSelectionSet schema resolvers variableValues fuel parentType source
 
 -- Local recursion fuel bound for the partial `ExecuteQuery` model.
-def executeQueryDepthBound (operation : Operation) : Nat :=
+def executeQueryFuelBound (operation : Operation) : Nat :=
   operation.size * 3 + 1
 
 -- Spec 6.2.1 root execution expects a runtime object matching the operation root type.
@@ -424,7 +424,7 @@ def rootSourceAppliesBool
   | none => false
 
 -- Spec 6.2.1 `ExecuteQuery` / 7.1 response envelope at an explicit recursion fuel.
-def executeQueryAtDepth
+def executeQueryWithFuel
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
     (fuel : Nat) (source : ResolverValue ObjectRef) : Response :=
@@ -443,8 +443,8 @@ def executeQuery
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
     (source : ResolverValue ObjectRef) : Response :=
-  executeQueryAtDepth schema resolvers variableValues operation
-    (executeQueryDepthBound operation) source
+  executeQueryWithFuel schema resolvers variableValues operation
+    (executeQueryFuelBound operation) source
 
 end Execution
 

@@ -132,7 +132,7 @@ runtime-matching lifted branch.
 This module keeps only the resolver-parametric operation-level wrapper:
 
 - `rootSourceAppliesBool_groundLiftOperation`
-- `executeQueryAtDepth_groundLiftOperation_eq_of_selectionSet`
+- `executeQueryWithFuel_groundLiftOperation_eq_of_selectionSet`
 
 The remaining proof boundary is to re-establish selection-set preservation
 directly over resolver-parametric execution, then continue with phase 2

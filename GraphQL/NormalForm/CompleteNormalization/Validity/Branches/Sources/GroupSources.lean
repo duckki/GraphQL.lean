@@ -65,40 +65,40 @@ private theorem selectionSet_size_tail_lt_cons_for_completeValidity
     SelectionSet.size rest < SelectionSet.size (selection :: rest) := by
   cases selection <;> simp [SelectionSet.size, Selection.size] <;> omega
 
-private theorem size_withoutFieldsWithResponseName_le_for_completeValidity
+private theorem size_withoutFieldSelectionsWithResponseName_le_for_completeValidity
     (schema : Schema) (responseName : Name) :
     ∀ selectionSet,
       SelectionSet.size
-          (withoutFieldsWithResponseName schema responseName selectionSet)
+          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
         ≤ SelectionSet.size selectionSet
   | [] => by
-      simp [withoutFieldsWithResponseName, SelectionSet.size]
+      simp [withoutFieldSelectionsWithResponseName, SelectionSet.size]
   | selection :: rest => by
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           have hrest :=
-            size_withoutFieldsWithResponseName_le_for_completeValidity
+            size_withoutFieldSelectionsWithResponseName_le_for_completeValidity
               schema responseName rest
           by_cases h : (fieldResponseName == responseName) = true
-          · simp [withoutFieldsWithResponseName, h, SelectionSet.size,
+          · simp [withoutFieldSelectionsWithResponseName, h, SelectionSet.size,
               Selection.size]
             omega
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [withoutFieldsWithResponseName, hfalse, SelectionSet.size,
+            simp [withoutFieldSelectionsWithResponseName, hfalse, SelectionSet.size,
               Selection.size]
             omega
       | inlineFragment typeCondition directives selectionSet =>
           have hselectionSet :=
-            size_withoutFieldsWithResponseName_le_for_completeValidity
+            size_withoutFieldSelectionsWithResponseName_le_for_completeValidity
               schema responseName selectionSet
           have hrest :=
-            size_withoutFieldsWithResponseName_le_for_completeValidity
+            size_withoutFieldSelectionsWithResponseName_le_for_completeValidity
               schema responseName rest
           cases typeCondition <;>
-            simp [withoutFieldsWithResponseName, SelectionSet.size,
+            simp [withoutFieldSelectionsWithResponseName, SelectionSet.size,
               Selection.size]
           all_goals omega
 termination_by selectionSet => SelectionSet.size selectionSet
@@ -107,24 +107,24 @@ decreasing_by
     simp [SelectionSet.size, Selection.size]
     omega
 
-private theorem size_mergeSelectionSets_validFieldsWithResponseName_le_for_completeValidity
+private theorem size_mergeSelectionSets_fieldSelectionsWithResponseNameInScope_le_for_completeValidity
     (schema : Schema) (parentType responseName : Name) :
     ∀ selectionSet,
       SelectionSet.size
           (mergeSelectionSets
-            (validFieldsWithResponseName schema parentType responseName selectionSet))
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName selectionSet))
         ≤ SelectionSet.size selectionSet
   | [] => by
-      simp [validFieldsWithResponseName, mergeSelectionSets,
+      simp [fieldSelectionsWithResponseNameInScope, mergeSelectionSets,
         SelectionSet.size]
   | selection :: rest => by
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           have hrest :=
-            size_mergeSelectionSets_validFieldsWithResponseName_le_for_completeValidity
+            size_mergeSelectionSets_fieldSelectionsWithResponseNameInScope_le_for_completeValidity
               schema parentType responseName rest
           by_cases h : (fieldResponseName == responseName) = true
-          · simp [validFieldsWithResponseName, mergeSelectionSets, h,
+          · simp [fieldSelectionsWithResponseNameInScope, mergeSelectionSets, h,
               selectionSet_size_append_for_completeValidity,
               SelectionSet.size, Selection.size, Selection.subselections]
             omega
@@ -132,19 +132,19 @@ private theorem size_mergeSelectionSets_validFieldsWithResponseName_le_for_compl
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [validFieldsWithResponseName, hfalse, SelectionSet.size,
+            simp [fieldSelectionsWithResponseNameInScope, hfalse, SelectionSet.size,
               Selection.size]
             omega
       | inlineFragment typeCondition directives selectionSet =>
           have hselectionSet :=
-            size_mergeSelectionSets_validFieldsWithResponseName_le_for_completeValidity
+            size_mergeSelectionSets_fieldSelectionsWithResponseNameInScope_le_for_completeValidity
               schema parentType responseName selectionSet
           have hrest :=
-            size_mergeSelectionSets_validFieldsWithResponseName_le_for_completeValidity
+            size_mergeSelectionSets_fieldSelectionsWithResponseNameInScope_le_for_completeValidity
               schema parentType responseName rest
           cases typeCondition with
           | none =>
-              simp [validFieldsWithResponseName,
+              simp [fieldSelectionsWithResponseNameInScope,
                 mergeSelectionSets_append_for_completeValidity,
                 selectionSet_size_append_for_completeValidity,
                 SelectionSet.size, Selection.size]
@@ -152,7 +152,7 @@ private theorem size_mergeSelectionSets_validFieldsWithResponseName_le_for_compl
           | some typeCondition =>
               by_cases h :
                   schema.typesOverlapBool parentType typeCondition = true
-              · simp [validFieldsWithResponseName, h,
+              · simp [fieldSelectionsWithResponseNameInScope, h,
                   mergeSelectionSets_append_for_completeValidity,
                   selectionSet_size_append_for_completeValidity,
                   SelectionSet.size, Selection.size]
@@ -162,7 +162,7 @@ private theorem size_mergeSelectionSets_validFieldsWithResponseName_le_for_compl
                   cases hmatch : schema.typesOverlapBool parentType typeCondition
                   · rfl
                   · contradiction
-                simp [validFieldsWithResponseName, hfalse,
+                simp [fieldSelectionsWithResponseNameInScope, hfalse,
                   SelectionSet.size, Selection.size]
                 omega
 termination_by selectionSet => SelectionSet.size selectionSet
@@ -257,7 +257,7 @@ def normalizedFieldGroupSource_fieldHead
               normalizeSelectionSet schema fieldDefinition.outputType.namedType
                 (subselections ++
                   mergeSelectionSets
-                    (validFieldsWithResponseName schema parentType
+                    (fieldSelectionsWithResponseNameInScope schema parentType
                       responseName rest))
             else
               GroundTypeNormalization.possibleTypeNormalizations schema
@@ -265,7 +265,7 @@ def normalizedFieldGroupSource_fieldHead
                   fieldDefinition.outputType.namedType)
                 (subselections ++
                   mergeSelectionSets
-                    (validFieldsWithResponseName schema parentType
+                    (fieldSelectionsWithResponseNameInScope schema parentType
                       responseName rest))
         } := by
   intro hschema hobject hready htailLookup hlookupValid himplementation
@@ -276,7 +276,7 @@ def normalizedFieldGroupSource_fieldHead
   let headSelection : Selection :=
     Selection.field responseName fieldName arguments [] subselections
   let group : List Selection :=
-    headSelection :: validFieldsWithResponseName schema parentType
+    headSelection :: fieldSelectionsWithResponseNameInScope schema parentType
       responseName rest
   let childSource : List Selection := mergeSelectionSets group
   let sourceField : FieldMerge.ScopedField := {
@@ -298,10 +298,10 @@ def normalizedFieldGroupSource_fieldHead
   · have hmatchingSize :
         SelectionSet.size
             (mergeSelectionSets
-              (validFieldsWithResponseName schema parentType responseName
+              (fieldSelectionsWithResponseNameInScope schema parentType responseName
                 rest))
           ≤ SelectionSet.size rest :=
-      size_mergeSelectionSets_validFieldsWithResponseName_le_for_completeValidity
+      size_mergeSelectionSets_fieldSelectionsWithResponseNameInScope_le_for_completeValidity
         schema parentType responseName rest
     simp [childSource, group, headSelection, mergeSelectionSets,
       Selection.subselections, selectionSet_size_append_for_completeValidity,
@@ -340,8 +340,8 @@ def normalizedFieldGroupSource_fieldHead
       hselectionFree.2
     have hmatchingFree :
         selectionSetDirectiveFree
-          (validFieldsWithResponseName schema parentType responseName rest) :=
-      validFieldsWithResponseName_directiveFree schema parentType
+          (fieldSelectionsWithResponseNameInScope schema parentType responseName rest) :=
+      fieldSelectionsWithResponseNameInScope_directiveFree schema parentType
         responseName rest htailFree
     simpa [childSource, group, headSelection, mergeSelectionSets,
       Selection.subselections] using
@@ -357,7 +357,7 @@ def normalizedFieldGroupSource_fieldHead
         simp [sourceField]
         exact object_typesOverlapBool_self schema hobject
     · rcases
-        validFieldsWithResponseName_mem_field schema parentType
+        fieldSelectionsWithResponseNameInScope_mem_field schema parentType
           responseName rest selection hmatched with
       ⟨matchedFieldName, matchedArguments, matchedDirectives,
         matchedSubselections, hselectionEq⟩
@@ -368,7 +368,7 @@ def normalizedFieldGroupSource_fieldHead
         intro hparentObject
         exact object_typesOverlapBool_self schema hparentObject
       rcases
-        validFieldsWithResponseName_field_mem_collectFields_scoped_lookupValid
+        fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped_lookupValid
           schema parentType parentType responseName rest matchedFieldName
           matchedArguments matchedDirectives matchedSubselections
           hoverlapSelf htailLookup hmatched with
@@ -583,30 +583,30 @@ theorem collectFields_normalizeSelectionSet_mem_groupSource_nonempty
         selectionSetDirectiveFree_tail hfree
       have hfilteredReady :
           selectionSetSemanticsReady schema parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        selectionSetSemanticsReady_withoutFieldsWithResponseName schema
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName schema
           responseName parentType rest htailReady
       have hfilteredLookup :
           selectionSetLookupValid schema parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        selectionSetLookupValid_withoutFieldsWithResponseName schema
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        selectionSetLookupValid_withoutFieldSelectionsWithResponseName schema
           responseName parentType rest htailLookup
       have hfilteredImplementation :
           Validation.selectionSetImplementationValidInScope schema
             variableDefinitions parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        GroundTypeNormalization.selectionSetImplementationValidInScope_withoutFieldsWithResponseName
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        GroundTypeNormalization.selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
           schema responseName variableDefinitions parentType rest
           htailImplementation
       have hfilteredMerge :
           FieldMerge.fieldsInSetCanMerge schema parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        fieldsInSetCanMerge_withoutFieldsWithResponseName schema
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        fieldsInSetCanMerge_withoutFieldSelectionsWithResponseName schema
           responseName parentType rest htailMerge
       have hfilteredFree :
           selectionSetDirectiveFree
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        withoutFieldsWithResponseName_directiveFree schema responseName rest
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        withoutFieldSelectionsWithResponseName_directiveFree schema responseName rest
           htailFree
       rcases hrest normalizedField hobject hfilteredReady hfilteredLookup
           hfilteredImplementation hfilteredMerge hfilteredFree
@@ -619,11 +619,11 @@ theorem collectFields_normalizeSelectionSet_mem_groupSource_nonempty
             (Selection.field responseName fieldName arguments directives
               subselections)
             rest scopedField
-            (fieldMerge_collectFields_withoutFieldsWithResponseName_mem
+            (fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem
               schema responseName parentType rest scopedField hscopedMem))
         (by
           have hfilteredSize :=
-            size_withoutFieldsWithResponseName_le_for_completeValidity
+            size_withoutFieldSelectionsWithResponseName_le_for_completeValidity
               schema responseName rest
           have htailSize :=
             selectionSet_size_tail_lt_cons_for_completeValidity
@@ -672,36 +672,36 @@ theorem collectFields_normalizeSelectionSet_mem_groupSource_nonempty
         selectionSetDirectiveFree_tail hfree
       have hfilteredReady :
           selectionSetSemanticsReady schema parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        selectionSetSemanticsReady_withoutFieldsWithResponseName schema
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName schema
           responseName parentType rest htailReady
       have hfilteredLookup :
           selectionSetLookupValid schema parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        selectionSetLookupValid_withoutFieldsWithResponseName schema
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        selectionSetLookupValid_withoutFieldSelectionsWithResponseName schema
           responseName parentType rest htailLookup
       have hfilteredImplementation :
           Validation.selectionSetImplementationValidInScope schema
             variableDefinitions parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        GroundTypeNormalization.selectionSetImplementationValidInScope_withoutFieldsWithResponseName
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        GroundTypeNormalization.selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
           schema responseName variableDefinitions parentType rest
           htailImplementation
       have hfilteredMerge :
           FieldMerge.fieldsInSetCanMerge schema parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        fieldsInSetCanMerge_withoutFieldsWithResponseName schema
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        fieldsInSetCanMerge_withoutFieldSelectionsWithResponseName schema
           responseName parentType rest htailMerge
       have hfilteredFree :
           selectionSetDirectiveFree
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        withoutFieldsWithResponseName_directiveFree schema responseName rest
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        withoutFieldSelectionsWithResponseName_directiveFree schema responseName rest
           htailFree
       have hfieldMem' :
           candidate = normalizedHead
             ∨ candidate ∈ FieldMerge.collectFields schema parentType
               (normalizeSelectionSet schema parentType
-                (withoutFieldsWithResponseName schema responseName rest)) := by
+                (withoutFieldSelectionsWithResponseName schema responseName rest)) := by
         simpa [normalizeSelectionSet, hlookup, normalizedHead,
           normalizedSubselections, normalizedField, FieldMerge.collectFields]
           using hfieldMem
@@ -718,7 +718,7 @@ theorem collectFields_normalizeSelectionSet_mem_groupSource_nonempty
       · have htailMem :
             candidate ∈ FieldMerge.collectFields schema parentType
               (normalizeSelectionSet schema parentType
-                (withoutFieldsWithResponseName schema responseName rest)) := by
+                (withoutFieldSelectionsWithResponseName schema responseName rest)) := by
           rcases hfieldMem' with hcandidate | htail
           · exact False.elim (hhead hcandidate)
           · exact htail
@@ -733,11 +733,11 @@ theorem collectFields_normalizeSelectionSet_mem_groupSource_nonempty
               (Selection.field responseName fieldName arguments directives
                 subselections)
               rest scopedField
-              (fieldMerge_collectFields_withoutFieldsWithResponseName_mem
+              (fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem
                 schema responseName parentType rest scopedField hscopedMem))
           (by
             have hfilteredSize :=
-              size_withoutFieldsWithResponseName_le_for_completeValidity
+              size_withoutFieldSelectionsWithResponseName_le_for_completeValidity
                 schema responseName rest
             have htailSize :=
               selectionSet_size_tail_lt_cons_for_completeValidity

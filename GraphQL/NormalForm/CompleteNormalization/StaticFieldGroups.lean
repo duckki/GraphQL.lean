@@ -448,29 +448,29 @@ theorem mergedFieldSelectionSet_source_completeScoped_field_head_eq_staticFields
     mergeSelectionSets, Selection.subselections] at hprojection
   simpa using hprojection
 
-theorem collectFields_withoutFieldsWithResponseName_directives
+theorem collectFields_withoutFieldSelectionsWithResponseName_directives
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (responseName : Name) :
     ∀ selectionSet,
       Execution.collectFields schema variableValues parentType source
-          (withoutFieldsWithResponseName schema responseName selectionSet)
+          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
         =
         withoutExecutableGroupsWithResponseName
           responseName
           (Execution.collectFields schema variableValues parentType source
             selectionSet)
   | [] => by
-      simp [Execution.collectFields, withoutFieldsWithResponseName,
+      simp [Execution.collectFields, withoutFieldSelectionsWithResponseName,
         withoutExecutableGroupsWithResponseName]
   | Selection.field fieldResponseName fieldName arguments directives
       selectionSet :: rest => by
       have hrest :=
-        collectFields_withoutFieldsWithResponseName_directives schema
+        collectFields_withoutFieldSelectionsWithResponseName_directives schema
           variableValues parentType source responseName rest
       by_cases hresponse : (fieldResponseName == responseName) = true
-      · rw [withoutFieldsWithResponseName]
+      · rw [withoutFieldSelectionsWithResponseName]
         simp [hresponse]
         cases hallow :
             Execution.selectionDirectivesAllowBool variableValues directives
@@ -508,14 +508,14 @@ theorem collectFields_withoutFieldsWithResponseName_directives
           cases hmatch : fieldResponseName == responseName
           · rfl
           · contradiction
-        rw [withoutFieldsWithResponseName]
+        rw [withoutFieldSelectionsWithResponseName]
         simp [hfalse]
         cases hallow :
             Execution.selectionDirectivesAllowBool variableValues directives
         · rw [collectFields_field_directives_skipped_eq schema variableValues
             parentType source fieldResponseName fieldName arguments
             directives selectionSet
-            (withoutFieldsWithResponseName schema responseName rest) hallow]
+            (withoutFieldSelectionsWithResponseName schema responseName rest) hallow]
           rw [collectFields_field_directives_skipped_eq schema variableValues
             parentType source fieldResponseName fieldName arguments
             directives selectionSet rest hallow]
@@ -549,25 +549,25 @@ theorem collectFields_withoutFieldsWithResponseName_directives
           rw [hrest]
   | Selection.inlineFragment none directives selectionSet :: rest => by
       have hselection :=
-        collectFields_withoutFieldsWithResponseName_directives schema
+        collectFields_withoutFieldSelectionsWithResponseName_directives schema
           variableValues parentType source responseName selectionSet
       have hrest :=
-        collectFields_withoutFieldsWithResponseName_directives schema
+        collectFields_withoutFieldSelectionsWithResponseName_directives schema
           variableValues parentType source responseName rest
-      rw [withoutFieldsWithResponseName]
+      rw [withoutFieldSelectionsWithResponseName]
       cases hallow :
           Execution.selectionDirectivesAllowBool variableValues directives
       · rw [collectFields_inlineFragment_none_directives_skipped_eq schema
           variableValues parentType source directives
-          (withoutFieldsWithResponseName schema responseName selectionSet)
-          (withoutFieldsWithResponseName schema responseName rest) hallow]
+          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+          (withoutFieldSelectionsWithResponseName schema responseName rest) hallow]
         rw [collectFields_inlineFragment_none_directives_skipped_eq schema
           variableValues parentType source directives selectionSet rest hallow]
         exact hrest
       · rw [collectFields_inlineFragment_none_directives_allowed_flatten schema
           variableValues parentType source directives
-          (withoutFieldsWithResponseName schema responseName selectionSet)
-          (withoutFieldsWithResponseName schema responseName rest) hallow]
+          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+          (withoutFieldSelectionsWithResponseName schema responseName rest) hallow]
         rw [collectFields_inlineFragment_none_directives_allowed_flatten schema
           variableValues parentType source directives selectionSet rest hallow]
         rw [collectFields_append]
@@ -577,12 +577,12 @@ theorem collectFields_withoutFieldsWithResponseName_directives
   | Selection.inlineFragment (some typeCondition) directives selectionSet
       :: rest => by
       have hselection :=
-        collectFields_withoutFieldsWithResponseName_directives schema
+        collectFields_withoutFieldSelectionsWithResponseName_directives schema
           variableValues parentType source responseName selectionSet
       have hrest :=
-        collectFields_withoutFieldsWithResponseName_directives schema
+        collectFields_withoutFieldSelectionsWithResponseName_directives schema
           variableValues parentType source responseName rest
-      rw [withoutFieldsWithResponseName]
+      rw [withoutFieldSelectionsWithResponseName]
       cases hallow :
           Execution.selectionDirectivesAllowBool variableValues directives
       · have hskip :
@@ -592,8 +592,8 @@ theorem collectFields_withoutFieldsWithResponseName_directives
           simp [hallow]
         rw [collectFields_inlineFragment_some_directives_skipped_eq schema
           variableValues parentType source typeCondition directives
-          (withoutFieldsWithResponseName schema responseName selectionSet)
-          (withoutFieldsWithResponseName schema responseName rest) hskip]
+          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+          (withoutFieldSelectionsWithResponseName schema responseName rest) hskip]
         rw [collectFields_inlineFragment_some_directives_skipped_eq schema
           variableValues parentType source typeCondition directives selectionSet
           rest hskip]
@@ -608,16 +608,16 @@ theorem collectFields_withoutFieldsWithResponseName_directives
             simp [hallow, happly]
           rw [collectFields_inlineFragment_some_directives_skipped_eq schema
             variableValues parentType source typeCondition directives
-            (withoutFieldsWithResponseName schema responseName selectionSet)
-            (withoutFieldsWithResponseName schema responseName rest) hskip]
+            (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+            (withoutFieldSelectionsWithResponseName schema responseName rest) hskip]
           rw [collectFields_inlineFragment_some_directives_skipped_eq schema
             variableValues parentType source typeCondition directives
             selectionSet rest hskip]
           exact hrest
         · rw [collectFields_inlineFragment_some_directives_allowed_flatten
             schema variableValues parentType source typeCondition directives
-            (withoutFieldsWithResponseName schema responseName selectionSet)
-            (withoutFieldsWithResponseName schema responseName rest) hallow
+            (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+            (withoutFieldSelectionsWithResponseName schema responseName rest) hallow
             happly]
           rw [collectFields_inlineFragment_some_directives_allowed_flatten
             schema variableValues parentType source typeCondition directives
@@ -627,7 +627,7 @@ theorem collectFields_withoutFieldsWithResponseName_directives
           rw [GroundTypeNormalization.withoutExecutableGroupsWithResponseName_mergeExecutableGroups]
           rw [hselection, hrest]
 
-theorem collectFields_withoutFieldsWithResponseName_eq_sourceRest_of_cons_directives
+theorem collectFields_withoutFieldSelectionsWithResponseName_eq_sourceRest_of_cons_directives
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
@@ -639,12 +639,12 @@ theorem collectFields_withoutFieldsWithResponseName_eq_sourceRest_of_cons_direct
     =
     (responseName, fields) :: sourceRest ->
       Execution.collectFields schema variableValues parentType source
-        (withoutFieldsWithResponseName schema responseName selectionSet)
+        (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
       =
       sourceRest := by
   intro hcollect
   have hfilter :=
-    collectFields_withoutFieldsWithResponseName_directives schema
+    collectFields_withoutFieldSelectionsWithResponseName_directives schema
       variableValues parentType source responseName selectionSet
   have hnodup :
       executableGroupNamesNodup
@@ -657,7 +657,7 @@ theorem collectFields_withoutFieldsWithResponseName_eq_sourceRest_of_cons_direct
     (GroundTypeNormalization.withoutExecutableGroupsWithResponseName_cons_self_of_namesNodup
       responseName fields sourceRest hnodup)
 
-theorem collectFields_withoutFieldsWithResponseName_fieldHead_rest_eq_sourceRest_directives
+theorem collectFields_withoutFieldSelectionsWithResponseName_fieldHead_rest_eq_sourceRest_directives
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
@@ -680,18 +680,18 @@ theorem collectFields_withoutFieldsWithResponseName_fieldHead_rest_eq_sourceRest
     =
     (responseName, sourceField :: sourceFields) :: sourceRest ->
       Execution.collectFields schema variableValues parentType source
-        (withoutFieldsWithResponseName schema responseName rest)
+        (withoutFieldSelectionsWithResponseName schema responseName rest)
       =
       sourceRest := by
   intro sourceField hcollect
   have hfilteredAll :=
-    collectFields_withoutFieldsWithResponseName_eq_sourceRest_of_cons_directives
+    collectFields_withoutFieldSelectionsWithResponseName_eq_sourceRest_of_cons_directives
       schema variableValues parentType source responseName
       (sourceField :: sourceFields) sourceRest
       (Selection.field responseName fieldName arguments directives
         subselections :: rest)
       (by simpa [sourceField] using hcollect)
-  simpa [withoutFieldsWithResponseName] using hfilteredAll
+  simpa [withoutFieldSelectionsWithResponseName] using hfilteredAll
 
 theorem executeCollectedFields_staticCollect_fieldHead_filtered_tails_eq
     (schema : Schema)
@@ -731,11 +731,11 @@ theorem executeCollectedFields_staticCollect_fieldHead_filtered_tails_eq
         lookupParent source
         (staticCollectForGround schema variables lookupParent
           groundType boolCase
-          (withoutFieldsWithResponseName schema responseName rest))
+          (withoutFieldSelectionsWithResponseName schema responseName rest))
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
         lookupParent source
-        (withoutFieldsWithResponseName schema responseName rest) ->
+        (withoutFieldSelectionsWithResponseName schema responseName rest) ->
       Execution.executeCollectedFields schema resolvers variableValues depth
           source normalizedTail
         =
@@ -744,7 +744,7 @@ theorem executeCollectedFields_staticCollect_fieldHead_filtered_tails_eq
   intro hsourceField hnormalizedCollect hsourceCollect hfiltered
   have hnormalizedFiltered :
       Execution.collectFields schema variableValues lookupParent source
-          (withoutFieldsWithResponseName schema responseName
+          (withoutFieldSelectionsWithResponseName schema responseName
             (staticCollectForGround schema variables lookupParent
               groundType boolCase
               (Selection.field responseName fieldName arguments directives
@@ -752,7 +752,7 @@ theorem executeCollectedFields_staticCollect_fieldHead_filtered_tails_eq
         =
         normalizedTail := by
     exact
-      collectFields_withoutFieldsWithResponseName_eq_sourceRest_of_cons_directives
+      collectFields_withoutFieldSelectionsWithResponseName_eq_sourceRest_of_cons_directives
         schema variableValues lookupParent source responseName
         (normalizedField :: normalizedFields) normalizedTail
         (staticCollectForGround schema variables lookupParent
@@ -764,19 +764,19 @@ theorem executeCollectedFields_staticCollect_fieldHead_filtered_tails_eq
       Execution.collectFields schema variableValues lookupParent source
           (staticCollectForGround schema variables lookupParent
             groundType boolCase
-            (withoutFieldsWithResponseName schema responseName rest))
+            (withoutFieldSelectionsWithResponseName schema responseName rest))
         =
         normalizedTail := by
     rw [← hnormalizedFiltered]
-    rw [← staticCollectForGround_withoutFieldsWithResponseName]
-    simp [withoutFieldsWithResponseName]
+    rw [← staticCollectForGround_withoutFieldSelectionsWithResponseName]
+    simp [withoutFieldSelectionsWithResponseName]
   have hsourceTail :
       Execution.collectFields schema variableValues lookupParent source
-          (withoutFieldsWithResponseName schema responseName rest)
+          (withoutFieldSelectionsWithResponseName schema responseName rest)
         =
         sourceTail := by
     exact
-      collectFields_withoutFieldsWithResponseName_fieldHead_rest_eq_sourceRest_directives
+      collectFields_withoutFieldSelectionsWithResponseName_fieldHead_rest_eq_sourceRest_directives
         schema variableValues lookupParent source responseName fieldName
         arguments directives selectionSet rest sourceFields sourceTail
         (by simpa [hsourceField] using hsourceCollect)
@@ -861,11 +861,11 @@ theorem executeSelectionSet_filterSelectionSetBoolCase_field_allowed_lookup_some
         (staticCollectForGround schema
           (operationBoolVars operation) lookupParent
           groundType boolCase
-          (withoutFieldsWithResponseName schema responseName rest))
+          (withoutFieldSelectionsWithResponseName schema responseName rest))
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
         lookupParent source
-        (withoutFieldsWithResponseName schema responseName rest) ->
+        (withoutFieldSelectionsWithResponseName schema responseName rest) ->
       Execution.executeSelectionSet schema resolvers variableValues depth
         lookupParent source
         (staticCollectForGround schema
@@ -1040,12 +1040,12 @@ theorem executeSelectionSet_filterSelectionSetBoolCase_field_allowed_lookup_some
         (staticCollectForGround schema
           (operationBoolVars operation) lookupParent
           groundType boolCase
-          (withoutFieldsWithResponseName schema responseName rest))
+          (withoutFieldSelectionsWithResponseName schema responseName rest))
       =
       Execution.executeSelectionSet schema resolvers variableValues depth
         lookupParent
         (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
-        (withoutFieldsWithResponseName schema responseName rest) ->
+        (withoutFieldSelectionsWithResponseName schema responseName rest) ->
       Execution.executeSelectionSet schema resolvers variableValues depth
         lookupParent
         (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)

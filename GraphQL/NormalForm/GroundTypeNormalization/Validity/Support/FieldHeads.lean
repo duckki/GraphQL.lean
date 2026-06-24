@@ -403,7 +403,7 @@ theorem selectionSetLookupValid_of_fieldSelectionSetValid_namedType
   · exact selectionSetLookupValid_of_selectionSetValid selectionSet
       hcomposite.2.2
 
-theorem validFieldsWithResponseName_field_implementationValidInScope
+theorem fieldSelectionsWithResponseNameInScope_field_implementationValidInScope
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType responseName : Name) :
     schema.objectType parentType ->
@@ -413,7 +413,7 @@ theorem validFieldsWithResponseName_field_implementationValidInScope
       ∀ fieldName arguments directives subselections,
         Selection.field responseName fieldName arguments directives
             subselections
-          ∈ validFieldsWithResponseName schema parentType responseName
+          ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
             selectionSet ->
           Validation.selectionImplementationValid schema variableDefinitions
             parentType
@@ -421,7 +421,7 @@ theorem validFieldsWithResponseName_field_implementationValidInScope
               subselections)
   | hobject, [], himplementation, fieldName, arguments, directives,
       subselections, hfield => by
-      simp [validFieldsWithResponseName] at hfield
+      simp [fieldSelectionsWithResponseNameInScope] at hfield
   | hobject, selection :: rest, himplementation, fieldName, arguments,
       directives, subselections, hfield => by
       have hheadImplementation :
@@ -439,7 +439,7 @@ theorem validFieldsWithResponseName_field_implementationValidInScope
           · have hresponse : fieldResponseName = responseName :=
               beq_iff_eq.mp hname
             subst fieldResponseName
-            simp [validFieldsWithResponseName] at hfield
+            simp [fieldSelectionsWithResponseNameInScope] at hfield
             rcases hfield with hhead | htail
             · rcases hhead with
                 ⟨hfieldName, harguments, hdirectives, hsubselections⟩
@@ -449,7 +449,7 @@ theorem validFieldsWithResponseName_field_implementationValidInScope
               subst subselections
               exact hheadImplementation
             · exact
-                validFieldsWithResponseName_field_implementationValidInScope
+                fieldSelectionsWithResponseNameInScope_field_implementationValidInScope
                   schema variableDefinitions parentType responseName hobject
                   rest htailImplementation fieldName arguments directives
                   subselections htail
@@ -457,9 +457,9 @@ theorem validFieldsWithResponseName_field_implementationValidInScope
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [validFieldsWithResponseName, hfalse] at hfield
+            simp [fieldSelectionsWithResponseNameInScope, hfalse] at hfield
             exact
-              validFieldsWithResponseName_field_implementationValidInScope
+              fieldSelectionsWithResponseNameInScope_field_implementationValidInScope
                 schema variableDefinitions parentType responseName hobject
                 rest htailImplementation fieldName arguments directives
                 subselections hfield
@@ -471,15 +471,15 @@ theorem validFieldsWithResponseName_field_implementationValidInScope
                     variableDefinitions parentType selectionSet := by
                 simpa [Validation.selectionImplementationValid] using
                   hheadImplementation
-              simp [validFieldsWithResponseName] at hfield
+              simp [fieldSelectionsWithResponseNameInScope] at hfield
               rcases hfield with hbody | htail
               · exact
-                  validFieldsWithResponseName_field_implementationValidInScope
+                  fieldSelectionsWithResponseNameInScope_field_implementationValidInScope
                     schema variableDefinitions parentType responseName
                     hobject selectionSet hbodyImplementation fieldName
                     arguments directives subselections hbody
               · exact
-                  validFieldsWithResponseName_field_implementationValidInScope
+                  fieldSelectionsWithResponseNameInScope_field_implementationValidInScope
                     schema variableDefinitions parentType responseName
                     hobject rest htailImplementation fieldName arguments
                     directives subselections htail
@@ -505,15 +505,15 @@ theorem validFieldsWithResponseName_field_implementationValidInScope
                     Validation.selectionSetImplementationValidInScope schema
                       variableDefinitions parentType selectionSet :=
                   hfragment.2 parentType hparentPossible
-                simp [validFieldsWithResponseName, hoverlap] at hfield
+                simp [fieldSelectionsWithResponseNameInScope, hoverlap] at hfield
                 rcases hfield with hbody | htail
                 · exact
-                    validFieldsWithResponseName_field_implementationValidInScope
+                    fieldSelectionsWithResponseNameInScope_field_implementationValidInScope
                       schema variableDefinitions parentType responseName
                       hobject selectionSet hbodyImplementation fieldName
                       arguments directives subselections hbody
                 · exact
-                    validFieldsWithResponseName_field_implementationValidInScope
+                    fieldSelectionsWithResponseNameInScope_field_implementationValidInScope
                       schema variableDefinitions parentType responseName
                       hobject rest htailImplementation fieldName arguments
                       directives subselections htail
@@ -524,14 +524,14 @@ theorem validFieldsWithResponseName_field_implementationValidInScope
                       schema.typesOverlapBool parentType typeCondition
                   · rfl
                   · contradiction
-                simp [validFieldsWithResponseName, hfalse] at hfield
+                simp [fieldSelectionsWithResponseNameInScope, hfalse] at hfield
                 exact
-                  validFieldsWithResponseName_field_implementationValidInScope
+                  fieldSelectionsWithResponseNameInScope_field_implementationValidInScope
                     schema variableDefinitions parentType responseName
                     hobject rest htailImplementation fieldName arguments
                     directives subselections hfield
 
-theorem validFieldsWithResponseName_matching_subselections_implementationValid_of_child_object
+theorem fieldSelectionsWithResponseNameInScope_matching_subselections_implementationValid_of_child_object
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType responseName fieldName runtimeType : Name)
     (arguments : List Argument) (subselections rest : List Selection)
@@ -554,7 +554,7 @@ theorem validFieldsWithResponseName_matching_subselections_implementationValid_o
         matchedSubselections,
         Selection.field responseName matchedFieldName matchedArguments
             matchedDirectives matchedSubselections
-          ∈ validFieldsWithResponseName schema parentType responseName rest ->
+          ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest ->
           Validation.selectionSetImplementationValidInScope schema
             variableDefinitions runtimeType matchedSubselections := by
   intro hobject hlookupValid himplementation hmerge hlookup hinclude
@@ -569,13 +569,13 @@ theorem validFieldsWithResponseName_matching_subselections_implementationValid_o
         parentType
         (Selection.field responseName matchedFieldName matchedArguments
           matchedDirectives matchedSubselections) :=
-    validFieldsWithResponseName_field_implementationValidInScope
+    fieldSelectionsWithResponseNameInScope_field_implementationValidInScope
       schema variableDefinitions parentType responseName hobject rest
       htailImplementation matchedFieldName matchedArguments
       matchedDirectives matchedSubselections hmatched
   have hsame :
       matchedFieldName = fieldName :=
-    validFieldsWithResponseName_matching_same_field_of_canMerge_object_lookupValid
+    fieldSelectionsWithResponseNameInScope_matching_same_field_of_canMerge_object_lookupValid
       schema parentType responseName fieldName arguments subselections rest
       hobject hlookupValid hmerge matchedFieldName matchedArguments
       matchedDirectives matchedSubselections hmatched
@@ -596,7 +596,7 @@ theorem validFieldsWithResponseName_matching_subselections_implementationValid_o
   exact hmatchedPossible runtimeType
     (List.contains_iff_mem.mp hinclude)
 
-theorem validFieldsWithResponseName_matching_subselections_lookupValid_of_returnType
+theorem fieldSelectionsWithResponseNameInScope_matching_subselections_lookupValid_of_returnType
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType responseName fieldName : Name)
     (arguments : List Argument) (subselections rest : List Selection)
@@ -617,7 +617,7 @@ theorem validFieldsWithResponseName_matching_subselections_lookupValid_of_return
         matchedSubselections,
         Selection.field responseName matchedFieldName matchedArguments
             matchedDirectives matchedSubselections
-          ∈ validFieldsWithResponseName schema parentType responseName rest ->
+          ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest ->
           selectionSetLookupValid schema
             fieldDefinition.outputType.namedType matchedSubselections := by
   intro hobject hlookupValid himplementation hmerge hlookup
@@ -632,13 +632,13 @@ theorem validFieldsWithResponseName_matching_subselections_lookupValid_of_return
         parentType
         (Selection.field responseName matchedFieldName matchedArguments
           matchedDirectives matchedSubselections) :=
-    validFieldsWithResponseName_field_implementationValidInScope
+    fieldSelectionsWithResponseNameInScope_field_implementationValidInScope
       schema variableDefinitions parentType responseName hobject rest
       htailImplementation matchedFieldName matchedArguments
       matchedDirectives matchedSubselections hmatched
   have hsame :
       matchedFieldName = fieldName :=
-    validFieldsWithResponseName_matching_same_field_of_canMerge_object_lookupValid
+    fieldSelectionsWithResponseNameInScope_matching_same_field_of_canMerge_object_lookupValid
       schema parentType responseName fieldName arguments subselections rest
       hobject hlookupValid hmerge matchedFieldName matchedArguments
       matchedDirectives matchedSubselections hmatched
@@ -677,7 +677,7 @@ theorem selectionSetLookupValid_fieldHead_merged_of_returnType
       selectionSetLookupValid schema fieldDefinition.outputType.namedType
         (subselections ++
           mergeSelectionSets
-            (validFieldsWithResponseName schema parentType responseName
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName
               rest)) := by
   intro hobject hlookupValid himplementation hmerge hlookup
   have hheadImplementation :
@@ -702,12 +702,12 @@ theorem selectionSetLookupValid_fieldHead_merged_of_returnType
   · exact selectionSetLookupValid_of_fieldSelectionSetValid_namedType
       hheadSelectionSet
   · exact
-      validFieldsWithResponseName_matching_field_shape_of_canMerge_object_lookupValid
+      fieldSelectionsWithResponseNameInScope_matching_field_shape_of_canMerge_object_lookupValid
         schema parentType responseName fieldName arguments subselections rest
         hobject hlookupValid hmerge
   · intro matchedArguments matchedDirectives matchedSubselections hmatched
     exact
-      validFieldsWithResponseName_matching_subselections_lookupValid_of_returnType
+      fieldSelectionsWithResponseNameInScope_matching_subselections_lookupValid_of_returnType
         schema variableDefinitions parentType responseName fieldName arguments
         subselections rest fieldDefinition hobject hlookupValid
         himplementation hmerge hlookup fieldName matchedArguments
@@ -736,7 +736,7 @@ theorem selectionSetImplementationValidInScope_fieldHead_merged_of_child_object
         variableDefinitions runtimeType
         (subselections ++
           mergeSelectionSets
-            (validFieldsWithResponseName schema parentType responseName
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName
               rest)) := by
   intro hobject hlookupValid himplementation hmerge hlookup hinclude
   apply selectionSetImplementationValidInScope_append
@@ -750,11 +750,11 @@ theorem selectionSetImplementationValidInScope_fieldHead_merged_of_child_object
       hheadImplementation hlookup
       (Or.inr (List.contains_iff_mem.mp hinclude))
   · apply
-      selectionSetImplementationValidInScope_mergeSelectionSets_validFieldsWithResponseName
+      selectionSetImplementationValidInScope_mergeSelectionSets_fieldSelectionsWithResponseNameInScope
     intro matchedFieldName matchedArguments matchedDirectives
       matchedSubselections hmatched
     exact
-      validFieldsWithResponseName_matching_subselections_implementationValid_of_child_object
+      fieldSelectionsWithResponseNameInScope_matching_subselections_implementationValid_of_child_object
         schema variableDefinitions parentType responseName fieldName
         runtimeType arguments subselections rest fieldDefinition hobject
         hlookupValid himplementation hmerge hlookup hinclude

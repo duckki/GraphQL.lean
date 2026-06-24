@@ -48,25 +48,25 @@ theorem normalizeSelectionSet_normalizedValid
         selectionSetDirectiveFree_tail hfree
       have hfilteredReady :
           selectionSetSemanticsReady schema parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        selectionSetSemanticsReady_withoutFieldsWithResponseName schema
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName schema
           responseName parentType rest htailReady
       have hfilteredImplementation :
           Validation.selectionSetImplementationValidInScope schema
             variableDefinitions parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        selectionSetImplementationValidInScope_withoutFieldsWithResponseName
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
           schema responseName variableDefinitions parentType rest
           htailImplementation
       have hfilteredMerge :
           FieldMerge.fieldsInSetCanMerge schema parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        fieldsInSetCanMerge_withoutFieldsWithResponseName schema
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        fieldsInSetCanMerge_withoutFieldSelectionsWithResponseName schema
           responseName parentType rest htailMerge
       have hfilteredFree :
           selectionSetDirectiveFree
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        withoutFieldsWithResponseName_directiveFree schema responseName rest
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        withoutFieldSelectionsWithResponseName_directiveFree schema responseName rest
           hrestFree
       simpa [normalizeSelectionSet, hlookup] using
         hrest hobject hfilteredReady hfilteredImplementation hfilteredMerge
@@ -108,30 +108,30 @@ theorem normalizeSelectionSet_normalizedValid
           rest hmerge
       have hfilteredReady :
           selectionSetSemanticsReady schema parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        selectionSetSemanticsReady_withoutFieldsWithResponseName schema
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName schema
           responseName parentType rest htailReady
       have hfilteredImplementation :
           Validation.selectionSetImplementationValidInScope schema
             variableDefinitions parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        selectionSetImplementationValidInScope_withoutFieldsWithResponseName
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
           schema responseName variableDefinitions parentType rest
           htailImplementation
       have hfilteredMerge :
           FieldMerge.fieldsInSetCanMerge schema parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        fieldsInSetCanMerge_withoutFieldsWithResponseName schema
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        fieldsInSetCanMerge_withoutFieldSelectionsWithResponseName schema
           responseName parentType rest htailMerge
       have hfilteredFree :
           selectionSetDirectiveFree
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        withoutFieldsWithResponseName_directiveFree schema responseName rest
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        withoutFieldSelectionsWithResponseName_directiveFree schema responseName rest
           hrestFree
       have hnormalizedRest :
           NormalizedSelectionSetValid schema variableDefinitions parentType
             (normalizeSelectionSet schema parentType
-              (withoutFieldsWithResponseName schema responseName rest)) :=
+              (withoutFieldSelectionsWithResponseName schema responseName rest)) :=
         hrest hobject hfilteredReady hfilteredImplementation hfilteredMerge
           hfilteredFree
       have hlookupValid :
@@ -145,7 +145,7 @@ theorem normalizeSelectionSet_normalizedValid
       have hmatchingFree :
           selectionSetDirectiveFree matching := by
         subst matching
-        exact validFieldsWithResponseName_directiveFree schema parentType
+        exact fieldSelectionsWithResponseNameInScope_directiveFree schema parentType
           responseName rest hrestFree
       have hmergedFree :
           selectionSetDirectiveFree mergedSubselections := by
@@ -507,7 +507,7 @@ theorem normalizeSelectionSet_normalizedValid
           Validation.selectionSetImplementationValidInScope schema
             variableDefinitions parentType (normalizedSelection ::
               normalizeSelectionSet schema parentType
-                (withoutFieldsWithResponseName schema responseName rest)) :=
+                (withoutFieldSelectionsWithResponseName schema responseName rest)) :=
         selectionSetImplementationValidInScope_cons
           hnormalizedFieldImplementation
           hnormalizedRest.implementationValid
@@ -515,12 +515,12 @@ theorem normalizeSelectionSet_normalizedValid
           Validation.selectionSetValid schema variableDefinitions parentType
             (normalizedSelection ::
               normalizeSelectionSet schema parentType
-                (withoutFieldsWithResponseName schema responseName rest)) :=
+                (withoutFieldSelectionsWithResponseName schema responseName rest)) :=
         selectionSetValid_of_allFields_implementationValidInScope schema
           variableDefinitions parentType
           (normalizedSelection ::
             normalizeSelectionSet schema parentType
-              (withoutFieldsWithResponseName schema responseName rest))
+              (withoutFieldSelectionsWithResponseName schema responseName rest))
           (by
             intro selection hselection
             simp at hselection
@@ -528,34 +528,34 @@ theorem normalizeSelectionSet_normalizedValid
             · subst selection
               simp [normalizedSelection, normalizedField, Selection.isField]
             · exact normalizeSelectionSet_allFields schema parentType
-                (withoutFieldsWithResponseName schema responseName rest)
+                (withoutFieldSelectionsWithResponseName schema responseName rest)
                 selection htail)
           himplementation
       have hrestFreeResponse :
           selectionSetResponseNameFree schema parentType responseName
             (normalizeSelectionSet schema parentType
-              (withoutFieldsWithResponseName schema responseName rest)) :=
+              (withoutFieldSelectionsWithResponseName schema responseName rest)) :=
         normalizeSelectionSet_responseNameFree schema parentType responseName
-          (withoutFieldsWithResponseName schema responseName rest)
-          (withoutFieldsWithResponseName_responseNameFree schema parentType
+          (withoutFieldSelectionsWithResponseName schema responseName rest)
+          (withoutFieldSelectionsWithResponseName_responseNameFree schema parentType
             responseName rest)
       have hfieldMergePair :
           FieldMerge.fieldsInSetCanMerge schema parentType
               (Selection.field responseName fieldName arguments []
                   normalizedSubselections ::
                 normalizeSelectionSet schema parentType
-                  (withoutFieldsWithResponseName schema responseName rest))
+                  (withoutFieldSelectionsWithResponseName schema responseName rest))
             ∧ ∀ mergeParent,
               FieldMerge.fieldsInSetCanMerge schema mergeParent
               ((Selection.field responseName fieldName arguments []
                     normalizedSubselections ::
                   normalizeSelectionSet schema parentType
-                    (withoutFieldsWithResponseName schema responseName rest))
+                    (withoutFieldSelectionsWithResponseName schema responseName rest))
                 ++
                 (Selection.field responseName fieldName arguments []
                     normalizedSubselections ::
                   normalizeSelectionSet schema parentType
-                    (withoutFieldsWithResponseName schema responseName rest))) := by
+                    (withoutFieldSelectionsWithResponseName schema responseName rest))) := by
         apply fieldsInSetCanMerge_field_cons_of_rest_responseNameFree
         · exact hschema
         · exact hlookup
@@ -569,7 +569,7 @@ theorem normalizeSelectionSet_normalizedValid
         · exact hnormalizedRest.fieldsCanMerge
         · exact hnormalizedRest.fieldsCanMergeSelf
         · exact normalizeSelectionSet_allFields schema parentType
-            (withoutFieldsWithResponseName schema responseName rest)
+            (withoutFieldSelectionsWithResponseName schema responseName rest)
         · exact hrestFreeResponse
       refine ⟨?_, ?_, ?_, ?_⟩
       · simpa [normalizeSelectionSet, hlookup, normalizedSelection,

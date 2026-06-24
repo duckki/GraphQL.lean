@@ -113,16 +113,16 @@ mutual
             htail⟩
 end
 
-theorem selectionsTypeConditionFeasible_withoutFieldsWithResponseName
+theorem selectionsTypeConditionFeasible_withoutFieldSelectionsWithResponseName
     (schema : Schema) (responseName parentType : Name)
     (typeConditions : List Name) :
     ∀ selectionSet,
       selectionsTypeConditionFeasible schema parentType typeConditions
         selectionSet ->
       selectionsTypeConditionFeasible schema parentType typeConditions
-        (withoutFieldsWithResponseName schema responseName selectionSet)
+        (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
   | [], _hfeasible => by
-      simp [withoutFieldsWithResponseName, selectionsTypeConditionFeasible]
+      simp [withoutFieldSelectionsWithResponseName, selectionsTypeConditionFeasible]
   | selection :: rest, hfeasible => by
       have hhead :
           selectionTypeConditionFeasible schema parentType typeConditions
@@ -135,39 +135,39 @@ theorem selectionsTypeConditionFeasible_withoutFieldsWithResponseName
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           by_cases hresponse : (fieldResponseName == responseName) = true
-          · simp [withoutFieldsWithResponseName, hresponse]
-            exact selectionsTypeConditionFeasible_withoutFieldsWithResponseName
+          · simp [withoutFieldSelectionsWithResponseName, hresponse]
+            exact selectionsTypeConditionFeasible_withoutFieldSelectionsWithResponseName
               schema responseName parentType typeConditions rest htail
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [withoutFieldsWithResponseName, hfalse,
+            simp [withoutFieldSelectionsWithResponseName, hfalse,
               selectionsTypeConditionFeasible]
             exact ⟨hhead,
-              selectionsTypeConditionFeasible_withoutFieldsWithResponseName
+              selectionsTypeConditionFeasible_withoutFieldSelectionsWithResponseName
                 schema responseName parentType typeConditions rest htail⟩
       | inlineFragment typeCondition directives selectionSet =>
           cases typeCondition with
           | none =>
-              rw [withoutFieldsWithResponseName]
+              rw [withoutFieldSelectionsWithResponseName]
               simp [selectionsTypeConditionFeasible,
                 selectionTypeConditionFeasible]
               exact ⟨
-                selectionsTypeConditionFeasible_withoutFieldsWithResponseName
+                selectionsTypeConditionFeasible_withoutFieldSelectionsWithResponseName
                   schema responseName parentType typeConditions selectionSet
                   hhead,
-                selectionsTypeConditionFeasible_withoutFieldsWithResponseName
+                selectionsTypeConditionFeasible_withoutFieldSelectionsWithResponseName
                   schema responseName parentType typeConditions rest htail⟩
           | some typeCondition =>
-              rw [withoutFieldsWithResponseName]
+              rw [withoutFieldSelectionsWithResponseName]
               simp [selectionsTypeConditionFeasible,
                 selectionTypeConditionFeasible]
               exact ⟨
-                selectionsTypeConditionFeasible_withoutFieldsWithResponseName
+                selectionsTypeConditionFeasible_withoutFieldSelectionsWithResponseName
                   schema responseName parentType
                   (typeCondition :: typeConditions) selectionSet hhead,
-                selectionsTypeConditionFeasible_withoutFieldsWithResponseName
+                selectionsTypeConditionFeasible_withoutFieldSelectionsWithResponseName
               schema responseName parentType typeConditions rest htail⟩
 
 theorem possibleTypeNormalizations_ne_nil_of_branch_forValidity

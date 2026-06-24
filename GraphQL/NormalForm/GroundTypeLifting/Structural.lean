@@ -156,16 +156,16 @@ mutual
             (selectionSetResponseNameFree_tail hfree))
 end
 
-theorem withoutFieldsWithResponseName_groundLiftSelectionSet
+theorem withoutFieldSelectionsWithResponseName_groundLiftSelectionSet
       (schema : Schema) (responseName parentType : Name) :
       ∀ selectionSet,
-        withoutFieldsWithResponseName schema responseName
+        withoutFieldSelectionsWithResponseName schema responseName
             (groundLiftSelectionSet schema parentType selectionSet)
           =
         groundLiftSelectionSet schema parentType
-          (withoutFieldsWithResponseName schema responseName selectionSet)
+          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
     | [] => by
-        simp [groundLiftSelectionSet, withoutFieldsWithResponseName]
+        simp [groundLiftSelectionSet, withoutFieldSelectionsWithResponseName]
     | selection :: rest => by
         rw [groundLiftSelectionSet]
         cases selection with
@@ -175,9 +175,9 @@ theorem withoutFieldsWithResponseName_groundLiftSelectionSet
                 beq_iff_eq.mp hresponse
               subst fieldResponseName
               cases hlookup : schema.lookupField parentType fieldName <;>
-                simp [groundLiftSelection, withoutFieldsWithResponseName,
+                simp [groundLiftSelection, withoutFieldSelectionsWithResponseName,
                   hlookup,
-                  withoutFieldsWithResponseName_groundLiftSelectionSet schema
+                  withoutFieldSelectionsWithResponseName_groundLiftSelectionSet schema
                     responseName parentType rest]
             · have hfalse : (fieldResponseName == responseName) = false := by
                 cases hmatch : fieldResponseName == responseName
@@ -188,25 +188,25 @@ theorem withoutFieldsWithResponseName_groundLiftSelectionSet
                 subst fieldResponseName
                 simp at hfalse
               cases hlookup : schema.lookupField parentType fieldName <;>
-                simp [groundLiftSelection, withoutFieldsWithResponseName,
+                simp [groundLiftSelection, withoutFieldSelectionsWithResponseName,
                   hlookup, hfalse, groundLiftSelectionSet,
-                  withoutFieldsWithResponseName_groundLiftSelectionSet schema
+                  withoutFieldSelectionsWithResponseName_groundLiftSelectionSet schema
                     responseName parentType rest]
         | inlineFragment typeCondition directives selectionSet =>
             cases typeCondition with
             | none =>
-                simp [groundLiftSelection, withoutFieldsWithResponseName,
+                simp [groundLiftSelection, withoutFieldSelectionsWithResponseName,
                   groundLiftSelectionSet,
-                  withoutFieldsWithResponseName_groundLiftSelectionSet schema
+                  withoutFieldSelectionsWithResponseName_groundLiftSelectionSet schema
                     responseName parentType selectionSet,
-                  withoutFieldsWithResponseName_groundLiftSelectionSet schema
+                  withoutFieldSelectionsWithResponseName_groundLiftSelectionSet schema
                     responseName parentType rest]
             | some typeCondition =>
-                simp [groundLiftSelection, withoutFieldsWithResponseName,
+                simp [groundLiftSelection, withoutFieldSelectionsWithResponseName,
                   groundLiftSelectionSet,
-                  withoutFieldsWithResponseName_groundLiftSelectionSet schema
+                  withoutFieldSelectionsWithResponseName_groundLiftSelectionSet schema
                     responseName typeCondition selectionSet,
-                  withoutFieldsWithResponseName_groundLiftSelectionSet schema
+                  withoutFieldSelectionsWithResponseName_groundLiftSelectionSet schema
                     responseName parentType rest]
 
 theorem groundLiftSelectionSet_append

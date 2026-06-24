@@ -190,8 +190,8 @@ theorem collectFields_normalizeSelectionSet_mem_source
         selectionSetSemanticsReady_tail hready
       have hfilteredReady :
           selectionSetSemanticsReady schema parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        selectionSetSemanticsReady_withoutFieldsWithResponseName schema
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName schema
           responseName parentType rest htailReady
       rcases hrest normalizedField hobject hfilteredReady
           (by simpa [normalizeSelectionSet, hlookup] using hfield) with
@@ -201,7 +201,7 @@ theorem collectFields_normalizeSelectionSet_mem_source
           (Selection.field responseName fieldName arguments directives
             subselections)
           rest sourceField
-          (fieldMerge_collectFields_withoutFieldsWithResponseName_mem schema
+          (fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem schema
             responseName parentType rest sourceField hsourceMem),
         hsource⟩
   | case3 parentType rest responseName fieldName arguments directives
@@ -219,8 +219,8 @@ theorem collectFields_normalizeSelectionSet_mem_source
         selectionSetSemanticsReady_tail hready
       have hfilteredReady :
           selectionSetSemanticsReady schema parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        selectionSetSemanticsReady_withoutFieldsWithResponseName schema
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName schema
           responseName parentType rest htailReady
       simp [normalizeSelectionSet, hlookup, normalizedField,
         FieldMerge.collectFields] at hfieldMem
@@ -249,7 +249,7 @@ theorem collectFields_normalizeSelectionSet_mem_source
             (Selection.field responseName fieldName arguments directives
               subselections)
             rest sourceField
-            (fieldMerge_collectFields_withoutFieldsWithResponseName_mem schema
+            (fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem schema
               responseName parentType rest sourceField hsourceMem),
           hsource⟩
   | case4 parentType rest directives subselections happend =>

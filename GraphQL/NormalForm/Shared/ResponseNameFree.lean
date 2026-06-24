@@ -81,77 +81,77 @@ theorem selectionSetResponseNameFree_append {schema : Schema}
   · exact hleft selection hselection
   · exact hright selection hselection
 
-theorem withoutFieldsWithResponseName_responseNameFree (schema : Schema)
+theorem withoutFieldSelectionsWithResponseName_responseNameFree (schema : Schema)
     (parentType responseName : Name) :
     ∀ selectionSet,
       selectionSetResponseNameFree schema parentType responseName
-        (withoutFieldsWithResponseName schema responseName selectionSet)
+        (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
   | [] => by
-      simpa [withoutFieldsWithResponseName] using
+      simpa [withoutFieldSelectionsWithResponseName] using
         selectionSetResponseNameFree_nil schema parentType responseName
   | selection :: rest => by
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           by_cases hname : (fieldResponseName == responseName) = true
-          · simp [withoutFieldsWithResponseName, hname]
-            exact withoutFieldsWithResponseName_responseNameFree schema
+          · simp [withoutFieldSelectionsWithResponseName, hname]
+            exact withoutFieldSelectionsWithResponseName_responseNameFree schema
               parentType responseName rest
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [withoutFieldsWithResponseName, hfalse]
+            simp [withoutFieldSelectionsWithResponseName, hfalse]
             apply selectionSetResponseNameFree_cons
             · simp [selectionResponseNameFree]
               intro heq
               subst fieldResponseName
               simp at hfalse
-            · exact withoutFieldsWithResponseName_responseNameFree schema
+            · exact withoutFieldSelectionsWithResponseName_responseNameFree schema
                 parentType responseName rest
       | inlineFragment typeCondition directives selectionSet =>
-          simp [withoutFieldsWithResponseName]
+          simp [withoutFieldSelectionsWithResponseName]
           apply selectionSetResponseNameFree_cons
           · cases typeCondition with
             | none =>
                 simpa [selectionResponseNameFree] using
-                  withoutFieldsWithResponseName_responseNameFree schema
+                  withoutFieldSelectionsWithResponseName_responseNameFree schema
                     parentType responseName selectionSet
             | some typeCondition =>
                 simp [selectionResponseNameFree]
                 intro _hoverlap
-                exact withoutFieldsWithResponseName_responseNameFree schema
+                exact withoutFieldSelectionsWithResponseName_responseNameFree schema
                   parentType responseName selectionSet
-          · exact withoutFieldsWithResponseName_responseNameFree schema
+          · exact withoutFieldSelectionsWithResponseName_responseNameFree schema
               parentType responseName rest
 
-theorem withoutFieldsWithResponseName_preserves_responseNameFree
+theorem withoutFieldSelectionsWithResponseName_preserves_responseNameFree
     (schema : Schema) (removedResponseName : Name)
     (parentType responseName : Name) :
     ∀ selectionSet,
       selectionSetResponseNameFree schema parentType responseName selectionSet ->
         selectionSetResponseNameFree schema parentType responseName
-          (withoutFieldsWithResponseName schema removedResponseName selectionSet)
+          (withoutFieldSelectionsWithResponseName schema removedResponseName selectionSet)
   | [], hfree => by
-      simpa [withoutFieldsWithResponseName] using hfree
+      simpa [withoutFieldSelectionsWithResponseName] using hfree
   | selection :: rest, hfree => by
       have hselection := selectionSetResponseNameFree_head hfree
       have hrest := selectionSetResponseNameFree_tail hfree
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           by_cases hname : (fieldResponseName == removedResponseName) = true
-          · simp [withoutFieldsWithResponseName, hname]
-            exact withoutFieldsWithResponseName_preserves_responseNameFree
+          · simp [withoutFieldSelectionsWithResponseName, hname]
+            exact withoutFieldSelectionsWithResponseName_preserves_responseNameFree
               schema removedResponseName parentType responseName rest hrest
           · have hfalse : (fieldResponseName == removedResponseName) = false := by
               cases hmatch : fieldResponseName == removedResponseName
               · rfl
               · contradiction
-            simp [withoutFieldsWithResponseName, hfalse]
+            simp [withoutFieldSelectionsWithResponseName, hfalse]
             exact selectionSetResponseNameFree_cons hselection
-              (withoutFieldsWithResponseName_preserves_responseNameFree
+              (withoutFieldSelectionsWithResponseName_preserves_responseNameFree
                 schema removedResponseName parentType responseName rest hrest)
       | inlineFragment typeCondition directives selectionSet =>
-          simp [withoutFieldsWithResponseName]
+          simp [withoutFieldSelectionsWithResponseName]
           apply selectionSetResponseNameFree_cons
           · cases typeCondition with
             | none =>
@@ -160,7 +160,7 @@ theorem withoutFieldsWithResponseName_preserves_responseNameFree
                       selectionSet := by
                   simpa [selectionResponseNameFree] using hselection
                 simpa [selectionResponseNameFree] using
-                  withoutFieldsWithResponseName_preserves_responseNameFree
+                  withoutFieldSelectionsWithResponseName_preserves_responseNameFree
                     schema removedResponseName parentType responseName
                     selectionSet hselectionSet
             | some typeCondition =>
@@ -171,10 +171,10 @@ theorem withoutFieldsWithResponseName_preserves_responseNameFree
                   simpa [selectionResponseNameFree] using hselection
                 simp [selectionResponseNameFree]
                 intro hoverlap
-                exact withoutFieldsWithResponseName_preserves_responseNameFree
+                exact withoutFieldSelectionsWithResponseName_preserves_responseNameFree
                   schema removedResponseName parentType responseName
                   selectionSet (hselectionSet hoverlap)
-          · exact withoutFieldsWithResponseName_preserves_responseNameFree
+          · exact withoutFieldSelectionsWithResponseName_preserves_responseNameFree
               schema removedResponseName parentType responseName rest hrest
 
 

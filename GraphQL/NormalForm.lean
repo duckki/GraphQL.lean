@@ -46,9 +46,10 @@ private theorem mergeSelectionSets_append
       simp [mergeSelectionSets, ih, List.append_assoc]
 
 mutual
-  -- Spec 6.3.2 field collection helper: finds fields with one response name, descending
+  -- Spec 6.3.2 field collection helper: finds field selections with one response name,
+  -- descending
   -- through inline fragments that can contribute selections in the current type scope.
-  def validFieldsWithResponseName (schema : Schema)
+  def fieldSelectionsWithResponseNameInScope (schema : Schema)
       (parentType responseName : Name) :
       List Selection -> List Selection
     | [] => []
@@ -56,26 +57,26 @@ mutual
         match selection with
         | .field fieldResponseName _fieldName _arguments _directives _selectionSet =>
             let restFields :=
-              validFieldsWithResponseName schema parentType responseName rest
+              fieldSelectionsWithResponseNameInScope schema parentType responseName rest
             if fieldResponseName == responseName then
               selection :: restFields
             else
               restFields
         | .inlineFragment none _directives selectionSet =>
-            validFieldsWithResponseName schema parentType responseName selectionSet
-              ++ validFieldsWithResponseName schema parentType responseName rest
+            fieldSelectionsWithResponseNameInScope schema parentType responseName selectionSet
+              ++ fieldSelectionsWithResponseNameInScope schema parentType responseName rest
         | .inlineFragment (some typeCondition) _directives selectionSet =>
             let restFields :=
-              validFieldsWithResponseName schema parentType responseName rest
+              fieldSelectionsWithResponseNameInScope schema parentType responseName rest
             if schema.typesOverlapBool parentType typeCondition then
-              validFieldsWithResponseName schema parentType responseName selectionSet
+              fieldSelectionsWithResponseNameInScope schema parentType responseName selectionSet
                 ++ restFields
             else
               restFields
 
-  -- Spec 6.3.2 field collection helper: removes fields with one response name recursively
-  -- so later fragment lifting cannot reintroduce a duplicate field group.
-  def withoutFieldsWithResponseName (schema : Schema)
+  -- Spec 6.3.2 field collection helper: removes field selections with one response name
+  -- recursively so later fragment lifting cannot reintroduce a duplicate field group.
+  def withoutFieldSelectionsWithResponseName (schema : Schema)
       (responseName : Name) :
       List Selection -> List Selection
     | [] => []
@@ -83,48 +84,48 @@ mutual
         match selection with
         | .field fieldResponseName _fieldName _arguments _directives _selectionSet =>
             let filteredRest :=
-              withoutFieldsWithResponseName schema responseName rest
+              withoutFieldSelectionsWithResponseName schema responseName rest
             if fieldResponseName == responseName then
               filteredRest
             else
               selection :: filteredRest
         | .inlineFragment typeCondition directives selectionSet =>
             .inlineFragment typeCondition directives
-              (withoutFieldsWithResponseName schema responseName selectionSet)
-              :: withoutFieldsWithResponseName schema responseName rest
+              (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+              :: withoutFieldSelectionsWithResponseName schema responseName rest
 end
 
-private theorem size_withoutFieldsWithResponseName_le (schema : Schema)
+private theorem size_withoutFieldSelectionsWithResponseName_le (schema : Schema)
     (responseName : Name) :
     ∀ selectionSet,
       SelectionSet.size
-          (withoutFieldsWithResponseName schema responseName selectionSet)
+          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
         ≤ SelectionSet.size selectionSet
   | [] => by
-      simp [withoutFieldsWithResponseName, SelectionSet.size]
+      simp [withoutFieldSelectionsWithResponseName, SelectionSet.size]
   | selection :: rest => by
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           have hrest :=
-            size_withoutFieldsWithResponseName_le schema responseName rest
+            size_withoutFieldSelectionsWithResponseName_le schema responseName rest
           by_cases h : (fieldResponseName == responseName) = true
-          · simp [withoutFieldsWithResponseName, h, SelectionSet.size,
+          · simp [withoutFieldSelectionsWithResponseName, h, SelectionSet.size,
               Selection.size]
             omega
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [withoutFieldsWithResponseName, hfalse, SelectionSet.size,
+            simp [withoutFieldSelectionsWithResponseName, hfalse, SelectionSet.size,
               Selection.size]
             omega
       | inlineFragment typeCondition directives selectionSet =>
           have hselectionSet :=
-            size_withoutFieldsWithResponseName_le schema responseName selectionSet
+            size_withoutFieldSelectionsWithResponseName_le schema responseName selectionSet
           have hrest :=
-            size_withoutFieldsWithResponseName_le schema responseName rest
+            size_withoutFieldSelectionsWithResponseName_le schema responseName rest
           cases typeCondition <;>
-            simp [withoutFieldsWithResponseName, SelectionSet.size,
+            simp [withoutFieldSelectionsWithResponseName, SelectionSet.size,
               Selection.size]
           all_goals omega
 termination_by selectionSet => SelectionSet.size selectionSet
@@ -133,24 +134,24 @@ decreasing_by
     simp [SelectionSet.size, Selection.size]
     omega
 
-private theorem size_mergeSelectionSets_validFieldsWithResponseName_le
+private theorem size_mergeSelectionSets_fieldSelectionsWithResponseNameInScope_le
     (schema : Schema) (parentType responseName : Name) :
     ∀ selectionSet,
       SelectionSet.size
           (mergeSelectionSets
-            (validFieldsWithResponseName schema parentType responseName selectionSet))
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName selectionSet))
         ≤ SelectionSet.size selectionSet
   | [] => by
-      simp [validFieldsWithResponseName, mergeSelectionSets,
+      simp [fieldSelectionsWithResponseNameInScope, mergeSelectionSets,
         SelectionSet.size]
   | selection :: rest => by
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           have hrest :=
-            size_mergeSelectionSets_validFieldsWithResponseName_le
+            size_mergeSelectionSets_fieldSelectionsWithResponseNameInScope_le
               schema parentType responseName rest
           by_cases h : (fieldResponseName == responseName) = true
-          · simp [validFieldsWithResponseName, mergeSelectionSets, h,
+          · simp [fieldSelectionsWithResponseNameInScope, mergeSelectionSets, h,
               selectionSet_size_append, SelectionSet.size,
               Selection.size, Selection.subselections]
             omega
@@ -158,25 +159,25 @@ private theorem size_mergeSelectionSets_validFieldsWithResponseName_le
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [validFieldsWithResponseName, hfalse,
+            simp [fieldSelectionsWithResponseNameInScope, hfalse,
               SelectionSet.size, Selection.size]
             omega
       | inlineFragment typeCondition directives selectionSet =>
           have hselectionSet :=
-            size_mergeSelectionSets_validFieldsWithResponseName_le
+            size_mergeSelectionSets_fieldSelectionsWithResponseNameInScope_le
               schema parentType responseName selectionSet
           have hrest :=
-            size_mergeSelectionSets_validFieldsWithResponseName_le
+            size_mergeSelectionSets_fieldSelectionsWithResponseNameInScope_le
               schema parentType responseName rest
           cases typeCondition with
           | none =>
-              simp [validFieldsWithResponseName, mergeSelectionSets_append,
+              simp [fieldSelectionsWithResponseNameInScope, mergeSelectionSets_append,
                 selectionSet_size_append, SelectionSet.size,
                 Selection.size]
               omega
           | some typeCondition =>
               by_cases h : (schema.typesOverlapBool parentType typeCondition) = true
-              · simp [validFieldsWithResponseName, h, mergeSelectionSets_append,
+              · simp [fieldSelectionsWithResponseNameInScope, h, mergeSelectionSets_append,
                   selectionSet_size_append, SelectionSet.size,
                   Selection.size]
                 omega
@@ -185,7 +186,7 @@ private theorem size_mergeSelectionSets_validFieldsWithResponseName_le
                   cases hmatch : schema.typesOverlapBool parentType typeCondition
                   · rfl
                   · contradiction
-                simp [validFieldsWithResponseName, hfalse, SelectionSet.size,
+                simp [fieldSelectionsWithResponseNameInScope, hfalse, SelectionSet.size,
                   Selection.size]
                 omega
 termination_by selectionSet => SelectionSet.size selectionSet
@@ -216,12 +217,12 @@ def normalizeSelectionSet (schema : Schema) (parentType : Name) :
       | .field responseName fieldName arguments directives subselections =>
           let normalizedRest :=
             normalizeSelectionSet schema parentType
-              (withoutFieldsWithResponseName schema responseName rest)
+              (withoutFieldSelectionsWithResponseName schema responseName rest)
           match schema.lookupField parentType fieldName with
           | none => normalizedRest
           | some fieldDefinition =>
               let matching :=
-                validFieldsWithResponseName schema parentType responseName rest
+                fieldSelectionsWithResponseNameInScope schema parentType responseName rest
               let mergedSubselections :=
                 subselections ++ mergeSelectionSets matching
               let returnType := fieldDefinition.outputType.namedType
@@ -252,12 +253,12 @@ decreasing_by
   all_goals
     first
     | exact Nat.lt_of_le_of_lt
-        (size_withoutFieldsWithResponseName_le schema responseName rest)
+        (size_withoutFieldSelectionsWithResponseName_le schema responseName rest)
         (by
           simp [SelectionSet.size, Selection.size]
           omega)
     | (have hmerge :=
-        size_mergeSelectionSets_validFieldsWithResponseName_le
+        size_mergeSelectionSets_fieldSelectionsWithResponseNameInScope_le
           schema parentType responseName rest
        simp [selectionSet_size_append, SelectionSet.size,
          Selection.size]

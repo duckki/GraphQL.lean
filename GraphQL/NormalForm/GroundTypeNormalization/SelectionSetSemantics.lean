@@ -67,7 +67,7 @@ theorem normalizeSelectionSet_executeSelectionSet
       let mergedSubselections :=
         subselections
           ++ mergeSelectionSets
-            (validFieldsWithResponseName schema parentType responseName rest)
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName rest)
       have htailFree :
           selectionSetDirectiveFree rest :=
         selectionSetDirectiveFree_tail hfree
@@ -81,28 +81,28 @@ theorem normalizeSelectionSet_executeSelectionSet
           rest hmerge
       have hfilteredFree :
           selectionSetDirectiveFree
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        withoutFieldsWithResponseName_directiveFree schema responseName rest
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        withoutFieldSelectionsWithResponseName_directiveFree schema responseName rest
           htailFree
       have hfilteredReady :
           selectionSetSemanticsReady schema parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        selectionSetSemanticsReady_withoutFieldsWithResponseName schema
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName schema
           responseName parentType rest htailReady
       have hfilteredMerge :
           FieldMerge.fieldsInSetCanMerge schema parentType
-            (withoutFieldsWithResponseName schema responseName rest) :=
-        fieldsInSetCanMerge_withoutFieldsWithResponseName schema responseName
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+        fieldsInSetCanMerge_withoutFieldSelectionsWithResponseName schema responseName
           parentType rest htailMerge
       have htailEq :
           Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
             (normalizeSelectionSet schema parentType
-              (withoutFieldsWithResponseName schema responseName rest))
+              (withoutFieldSelectionsWithResponseName schema responseName rest))
           =
           Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
-            (withoutFieldsWithResponseName schema responseName rest) :=
+            (withoutFieldSelectionsWithResponseName schema responseName rest) :=
         htailIH depth source hobject hsource hfilteredFree hfilteredReady
           hfilteredMerge
       apply

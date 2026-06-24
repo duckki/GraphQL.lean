@@ -107,7 +107,7 @@ theorem executionSelectionSetLookupValid_normalizeSelectionSet
           ∀ selection,
             selection ∈
                 NormalForm.normalizeSelectionSet schema parentType
-                  (NormalForm.withoutFieldsWithResponseName schema responseName rest) ->
+                  (NormalForm.withoutFieldSelectionsWithResponseName schema responseName rest) ->
               executionSelectionLookupValid schema parentType selection := by
         simpa [executionSelectionSetLookupValid] using hrest
       exact
@@ -129,7 +129,7 @@ theorem executionSelectionSetLookupValid_normalizeSelectionSet
             ∀ selection,
               selection ∈
                   NormalForm.normalizeSelectionSet schema parentType
-                    (NormalForm.withoutFieldsWithResponseName schema responseName rest) ->
+                    (NormalForm.withoutFieldSelectionsWithResponseName schema responseName rest) ->
                 executionSelectionLookupValid schema parentType selection := by
           simpa [executionSelectionSetLookupValid] using hrest
         exact hrestLookup selection htail

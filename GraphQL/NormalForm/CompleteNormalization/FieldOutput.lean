@@ -189,12 +189,12 @@ theorem completeScopedFieldOutputsInclude_staticScopedFieldsWithResponseName_obj
       eraseCompleteScopedSelectionSet_mem_of_mem hmem
     have hvalidField :
         scopedSelection.selection ∈
-          validFieldsWithResponseName schema lookupParent responseName rest :=
-      erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
+          fieldSelectionsWithResponseNameInScope schema lookupParent responseName rest :=
+      erase_staticScopedFieldsWithResponseName_mem_fieldSelectionsWithResponseNameInScope
         schema boolCase lookupParent groundType responseName rest
         scopedSelection.selection hground heraseMem
     rcases
-        validFieldsWithResponseName_mem_field schema lookupParent responseName
+        fieldSelectionsWithResponseNameInScope_mem_field schema lookupParent responseName
           rest scopedSelection.selection hvalidField with
       ⟨validFieldName, validArguments, validDirectives,
         validSubselections, hvalidSelection⟩

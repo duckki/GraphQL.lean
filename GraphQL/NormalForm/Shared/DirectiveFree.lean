@@ -136,92 +136,92 @@ theorem selectionSetDirectiveFree_mergeSelectionSets
           (selectionSetDirectiveFree_head hselections))
         (ih (selectionSetDirectiveFree_tail hselections))
 
-theorem withoutFieldsWithResponseName_directiveFree (schema : Schema)
+theorem withoutFieldSelectionsWithResponseName_directiveFree (schema : Schema)
     (responseName : Name) :
     ∀ selectionSet,
       selectionSetDirectiveFree selectionSet ->
         selectionSetDirectiveFree
-          (withoutFieldsWithResponseName schema responseName selectionSet)
+          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
   | [], _hfree => by
-      simpa [withoutFieldsWithResponseName] using selectionSetDirectiveFree_nil
+      simpa [withoutFieldSelectionsWithResponseName] using selectionSetDirectiveFree_nil
   | selection :: rest, hfree => by
       have hselection := selectionSetDirectiveFree_head hfree
       have hrest := selectionSetDirectiveFree_tail hfree
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           by_cases hname : (fieldResponseName == responseName) = true
-          · simp [withoutFieldsWithResponseName, hname]
-            exact withoutFieldsWithResponseName_directiveFree schema responseName
+          · simp [withoutFieldSelectionsWithResponseName, hname]
+            exact withoutFieldSelectionsWithResponseName_directiveFree schema responseName
               rest hrest
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [withoutFieldsWithResponseName, hfalse]
+            simp [withoutFieldSelectionsWithResponseName, hfalse]
             exact ⟨hselection,
-              withoutFieldsWithResponseName_directiveFree schema responseName
+              withoutFieldSelectionsWithResponseName_directiveFree schema responseName
                 rest hrest⟩
       | inlineFragment typeCondition directives selectionSet =>
           have hdirectives : directives = [] := hselection.1
           subst directives
-          simp [withoutFieldsWithResponseName]
+          simp [withoutFieldSelectionsWithResponseName]
           exact ⟨
             ⟨rfl,
-              withoutFieldsWithResponseName_directiveFree schema responseName
+              withoutFieldSelectionsWithResponseName_directiveFree schema responseName
                 selectionSet hselection.2⟩,
-            withoutFieldsWithResponseName_directiveFree schema responseName
+            withoutFieldSelectionsWithResponseName_directiveFree schema responseName
               rest hrest⟩
 
-theorem validFieldsWithResponseName_directiveFree (schema : Schema)
+theorem fieldSelectionsWithResponseNameInScope_directiveFree (schema : Schema)
     (parentType responseName : Name) :
     ∀ selectionSet,
       selectionSetDirectiveFree selectionSet ->
         selectionSetDirectiveFree
-          (validFieldsWithResponseName schema parentType responseName selectionSet)
+          (fieldSelectionsWithResponseNameInScope schema parentType responseName selectionSet)
   | [], _hfree => by
-      simpa [validFieldsWithResponseName] using selectionSetDirectiveFree_nil
+      simpa [fieldSelectionsWithResponseNameInScope] using selectionSetDirectiveFree_nil
   | selection :: rest, hfree => by
       have hselection := selectionSetDirectiveFree_head hfree
       have hrest := selectionSetDirectiveFree_tail hfree
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           by_cases hname : (fieldResponseName == responseName) = true
-          · simp [validFieldsWithResponseName, hname]
+          · simp [fieldSelectionsWithResponseNameInScope, hname]
             exact ⟨hselection,
-              validFieldsWithResponseName_directiveFree schema parentType
+              fieldSelectionsWithResponseNameInScope_directiveFree schema parentType
                 responseName rest hrest⟩
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [validFieldsWithResponseName, hfalse]
-            exact validFieldsWithResponseName_directiveFree schema parentType
+            simp [fieldSelectionsWithResponseNameInScope, hfalse]
+            exact fieldSelectionsWithResponseNameInScope_directiveFree schema parentType
               responseName rest hrest
       | inlineFragment typeCondition directives selectionSet =>
           cases typeCondition with
           | none =>
-              simp [validFieldsWithResponseName]
+              simp [fieldSelectionsWithResponseNameInScope]
               exact selectionSetDirectiveFree_append
-                (validFieldsWithResponseName_directiveFree schema parentType
+                (fieldSelectionsWithResponseNameInScope_directiveFree schema parentType
                   responseName selectionSet hselection.2)
-                (validFieldsWithResponseName_directiveFree schema parentType
+                (fieldSelectionsWithResponseNameInScope_directiveFree schema parentType
                   responseName rest hrest)
           | some typeCondition =>
               by_cases hoverlap :
                   (schema.typesOverlapBool parentType typeCondition) = true
-              · simp [validFieldsWithResponseName, hoverlap]
+              · simp [fieldSelectionsWithResponseNameInScope, hoverlap]
                 exact selectionSetDirectiveFree_append
-                  (validFieldsWithResponseName_directiveFree schema parentType
+                  (fieldSelectionsWithResponseNameInScope_directiveFree schema parentType
                     responseName selectionSet hselection.2)
-                  (validFieldsWithResponseName_directiveFree schema parentType
+                  (fieldSelectionsWithResponseNameInScope_directiveFree schema parentType
                     responseName rest hrest)
               · have hfalse :
                     schema.typesOverlapBool parentType typeCondition = false := by
                   cases hmatch : schema.typesOverlapBool parentType typeCondition
                   · rfl
                   · contradiction
-                simp [validFieldsWithResponseName, hfalse]
-                exact validFieldsWithResponseName_directiveFree schema parentType
+                simp [fieldSelectionsWithResponseNameInScope, hfalse]
+                exact fieldSelectionsWithResponseNameInScope_directiveFree schema parentType
                   responseName rest hrest
 
 theorem selectionSetDirectiveFree_fieldHead_merged
@@ -234,13 +234,13 @@ theorem selectionSetDirectiveFree_fieldHead_merged
       selectionSetDirectiveFree
         (subselections
           ++ mergeSelectionSets
-            (validFieldsWithResponseName schema parentType responseName
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName
               rest)) := by
   intro hfree
   apply selectionSetDirectiveFree_append
   · exact (selectionSetDirectiveFree_head hfree).2
   · exact selectionSetDirectiveFree_mergeSelectionSets
-      (validFieldsWithResponseName_directiveFree schema parentType
+      (fieldSelectionsWithResponseNameInScope_directiveFree schema parentType
         responseName rest (selectionSetDirectiveFree_tail hfree))
 
 

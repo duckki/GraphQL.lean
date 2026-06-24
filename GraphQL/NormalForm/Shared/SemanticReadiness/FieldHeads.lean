@@ -66,22 +66,22 @@ theorem selectionSetLookupValid_mergeSelectionSets_of_field_subselections
   simpa [Selection.subselections] using
     hfields fieldName arguments directives subselections hselection
 
-theorem selectionSetLookupValid_mergeSelectionSets_validFieldsWithResponseName
+theorem selectionSetLookupValid_mergeSelectionSets_fieldSelectionsWithResponseNameInScope
     {schema : Schema} {parentType responseName childType : Name}
     (selectionSet : List Selection) :
     (∀ fieldName arguments directives subselections,
       Selection.field responseName fieldName arguments directives subselections
-        ∈ validFieldsWithResponseName schema parentType responseName
+        ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
           selectionSet ->
         selectionSetLookupValid schema childType subselections) ->
       selectionSetLookupValid schema childType
         (mergeSelectionSets
-          (validFieldsWithResponseName schema parentType responseName
+          (fieldSelectionsWithResponseNameInScope schema parentType responseName
             selectionSet)) := by
   intro hfields
   apply selectionSetLookupValid_mergeSelectionSets_of_field_subselections
   · intro selection hselection
-    exact validFieldsWithResponseName_mem_field schema parentType responseName
+    exact fieldSelectionsWithResponseNameInScope_mem_field schema parentType responseName
       selectionSet selection hselection
   · intro fieldName arguments directives subselections hselection
     exact hfields fieldName arguments directives subselections hselection
@@ -92,7 +92,7 @@ theorem selectionSetLookupValid_fieldHead_merged_of_matching
     (_arguments : List Argument) (subselections rest : List Selection) :
     selectionSetLookupValid schema childType subselections ->
     (∀ selection,
-      selection ∈ validFieldsWithResponseName schema parentType responseName
+      selection ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
         rest ->
         ∃ matchedArguments matchedDirectives matchedSubselections,
           selection =
@@ -101,12 +101,12 @@ theorem selectionSetLookupValid_fieldHead_merged_of_matching
     (∀ matchedArguments matchedDirectives matchedSubselections,
       Selection.field responseName fieldName matchedArguments matchedDirectives
           matchedSubselections
-        ∈ validFieldsWithResponseName schema parentType responseName rest ->
+        ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest ->
         selectionSetLookupValid schema childType matchedSubselections) ->
       selectionSetLookupValid schema childType
         (subselections
           ++ mergeSelectionSets
-            (validFieldsWithResponseName schema parentType responseName
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName
               rest)) := by
   intro hhead hshape hmatching
   apply selectionSetLookupValid_append hhead
@@ -154,7 +154,7 @@ theorem selectionSetLookupValid_fieldHead_merged_of_child_object
       selectionSetLookupValid schema runtimeType
         (subselections ++
           mergeSelectionSets
-            (validFieldsWithResponseName schema parentType responseName
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName
               rest)) := by
   intro hschema hobject hvalid hmerge hlookup hinclude
   rcases Validation.selectionSetValid_field_head_lookup hvalid with
@@ -187,12 +187,12 @@ theorem selectionSetLookupValid_fieldHead_merged_of_child_object
     responseName fieldName runtimeType arguments subselections rest
   · exact hheadLookupValid
   · exact
-      validFieldsWithResponseName_matching_field_shape_of_canMerge_object_lookupValid
+      fieldSelectionsWithResponseNameInScope_matching_field_shape_of_canMerge_object_lookupValid
         schema parentType responseName fieldName arguments subselections rest
         hobject hlookupValid hmerge
   · intro matchedArguments matchedDirectives matchedSubselections hmatched
     exact
-      validFieldsWithResponseName_matching_subselections_lookupValid_of_child_object
+      fieldSelectionsWithResponseNameInScope_matching_subselections_lookupValid_of_child_object
         schema variableDefinitions parentType responseName fieldName
         runtimeType arguments subselections rest fieldDefinition hschema
         hobject hvalid hmerge hlookup hinclude fieldName matchedArguments
@@ -219,7 +219,7 @@ theorem selectionSetSemanticsReady_fieldHead_merged_of_child_object
       selectionSetSemanticsReady schema runtimeType
         (subselections ++
           mergeSelectionSets
-            (validFieldsWithResponseName schema parentType responseName
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName
               rest)) := by
   intro hobject hready hlookupValid hmerge hlookup hinclude
   have hheadReady :
@@ -238,7 +238,7 @@ theorem selectionSetSemanticsReady_fieldHead_merged_of_child_object
   apply selectionSetSemanticsReady_mergeSelectionSets_of_field_subselections
   · intro selection hselection
     rcases
-      validFieldsWithResponseName_matching_field_shape_of_canMerge_object_lookupValid
+      fieldSelectionsWithResponseNameInScope_matching_field_shape_of_canMerge_object_lookupValid
         schema parentType responseName fieldName arguments subselections rest
         hobject hlookupValid hmerge selection hselection with
       ⟨matchedArguments, matchedDirectives, matchedSubselections, hselectionEq⟩
@@ -248,7 +248,7 @@ theorem selectionSetSemanticsReady_fieldHead_merged_of_child_object
   · intro matchedFieldName matchedArguments matchedDirectives
       matchedSubselections hmatched
     have hmatchedShape :=
-      validFieldsWithResponseName_matching_field_shape_of_canMerge_object_lookupValid
+      fieldSelectionsWithResponseNameInScope_matching_field_shape_of_canMerge_object_lookupValid
         schema parentType responseName fieldName arguments subselections rest
         hobject hlookupValid hmerge
         (Selection.field responseName matchedFieldName matchedArguments
@@ -263,7 +263,7 @@ theorem selectionSetSemanticsReady_fieldHead_merged_of_child_object
     subst shapeDirectives
     subst shapeSubselections
     exact
-      validFieldsWithResponseName_matching_subselections_semanticsReady_of_child_object
+      fieldSelectionsWithResponseNameInScope_matching_subselections_semanticsReady_of_child_object
         schema parentType responseName fieldName runtimeType arguments
         subselections rest fieldDefinition hobject hready hlookupValid
         hmerge hlookup hinclude fieldName matchedArguments

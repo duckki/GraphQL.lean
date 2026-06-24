@@ -9,65 +9,65 @@ namespace GraphQL
 namespace NormalForm
 
 
-theorem validFieldsWithResponseName_mem_field (schema : Schema)
+theorem fieldSelectionsWithResponseNameInScope_mem_field (schema : Schema)
     (parentType responseName : Name) :
     ∀ selectionSet selection,
-      selection ∈ validFieldsWithResponseName schema parentType responseName
+      selection ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
         selectionSet ->
         ∃ fieldName arguments directives subselections,
           selection =
             Selection.field responseName fieldName arguments directives
               subselections
   | [], selection, hselection => by
-      simp [validFieldsWithResponseName] at hselection
+      simp [fieldSelectionsWithResponseNameInScope] at hselection
   | source :: rest, selection, hselection => by
       cases source with
       | field fieldResponseName fieldName arguments directives subselections =>
           by_cases hname : (fieldResponseName == responseName) = true
-          · simp [validFieldsWithResponseName, hname] at hselection
+          · simp [fieldSelectionsWithResponseNameInScope, hname] at hselection
             rcases hselection with hselection | hselection
             · subst selection
               have hresponseName : fieldResponseName = responseName :=
                 beq_iff_eq.mp hname
               subst fieldResponseName
               exact ⟨fieldName, arguments, directives, subselections, rfl⟩
-            · exact validFieldsWithResponseName_mem_field schema parentType
+            · exact fieldSelectionsWithResponseNameInScope_mem_field schema parentType
                 responseName rest selection hselection
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [validFieldsWithResponseName, hfalse] at hselection
-            exact validFieldsWithResponseName_mem_field schema parentType
+            simp [fieldSelectionsWithResponseNameInScope, hfalse] at hselection
+            exact fieldSelectionsWithResponseNameInScope_mem_field schema parentType
               responseName rest selection hselection
       | inlineFragment typeCondition directives subselections =>
           cases typeCondition with
           | none =>
-              simp [validFieldsWithResponseName] at hselection
+              simp [fieldSelectionsWithResponseNameInScope] at hselection
               rcases hselection with hselection | hselection
-              · exact validFieldsWithResponseName_mem_field schema parentType
+              · exact fieldSelectionsWithResponseNameInScope_mem_field schema parentType
                   responseName subselections selection hselection
-              · exact validFieldsWithResponseName_mem_field schema parentType
+              · exact fieldSelectionsWithResponseNameInScope_mem_field schema parentType
                   responseName rest selection hselection
           | some typeCondition =>
               by_cases hoverlap :
                   schema.typesOverlapBool parentType typeCondition = true
-              · simp [validFieldsWithResponseName, hoverlap] at hselection
+              · simp [fieldSelectionsWithResponseNameInScope, hoverlap] at hselection
                 rcases hselection with hselection | hselection
-                · exact validFieldsWithResponseName_mem_field schema parentType
+                · exact fieldSelectionsWithResponseNameInScope_mem_field schema parentType
                     responseName subselections selection hselection
-                · exact validFieldsWithResponseName_mem_field schema parentType
+                · exact fieldSelectionsWithResponseNameInScope_mem_field schema parentType
                     responseName rest selection hselection
               · have hfalse :
                     schema.typesOverlapBool parentType typeCondition = false := by
                   cases hmatch : schema.typesOverlapBool parentType typeCondition
                   · rfl
                   · contradiction
-                simp [validFieldsWithResponseName, hfalse] at hselection
-                exact validFieldsWithResponseName_mem_field schema parentType
+                simp [fieldSelectionsWithResponseNameInScope, hfalse] at hselection
+                exact fieldSelectionsWithResponseNameInScope_mem_field schema parentType
                   responseName rest selection hselection
 
-theorem validFieldsWithResponseName_field_mem_collectFields_scoped
+theorem fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (filterParent collectParent responseName : Name) :
     ∀ selectionSet fieldName arguments directives subselections,
@@ -76,7 +76,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped
       Validation.selectionSetValid schema variableDefinitions collectParent
         selectionSet ->
       Selection.field responseName fieldName arguments directives subselections
-        ∈ validFieldsWithResponseName schema filterParent responseName
+        ∈ fieldSelectionsWithResponseNameInScope schema filterParent responseName
           selectionSet ->
         ∃ scopedField,
           scopedField ∈ FieldMerge.collectFields schema collectParent selectionSet
@@ -88,7 +88,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped
               schema.typesOverlapBool filterParent scopedField.parentType = true)
   | [], fieldName, arguments, directives, subselections, _hoverlapScope,
       _hvalid, hfield => by
-      simp [validFieldsWithResponseName] at hfield
+      simp [fieldSelectionsWithResponseNameInScope] at hfield
   | selection :: rest, fieldName, arguments, directives, subselections,
       hoverlapScope, hvalid, hfield => by
       have hhead :
@@ -104,7 +104,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped
       | field fieldResponseName sourceFieldName sourceArguments
           sourceDirectives sourceSubselections =>
           by_cases hname : (fieldResponseName == responseName) = true
-          · simp [validFieldsWithResponseName, hname] at hfield
+          · simp [fieldSelectionsWithResponseNameInScope, hname] at hfield
             rcases hfield with hfield | hfield
             · rcases hfield with
                 ⟨hresponseEq, hfieldEq, hargumentsEq, hdirectivesEq,
@@ -127,7 +127,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped
               simp [FieldMerge.collectFields, hlookup]
               exact hoverlapScope
             · rcases
-                validFieldsWithResponseName_field_mem_collectFields_scoped
+                fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped
                   schema variableDefinitions filterParent collectParent
                   responseName rest fieldName arguments directives
                   subselections hoverlapScope htail hfield with
@@ -142,9 +142,9 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [validFieldsWithResponseName, hfalse] at hfield
+            simp [fieldSelectionsWithResponseNameInScope, hfalse] at hfield
             rcases
-              validFieldsWithResponseName_field_mem_collectFields_scoped
+              fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped
                 schema variableDefinitions filterParent collectParent
                 responseName rest fieldName arguments directives
                 subselections hoverlapScope htail hfield with
@@ -163,10 +163,10 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped
                     collectParent selectionSet :=
                 Validation.selectionValid_inlineFragment_none_selectionSetValid
                   hhead
-              simp [validFieldsWithResponseName] at hfield
+              simp [fieldSelectionsWithResponseNameInScope] at hfield
               rcases hfield with hfield | hfield
               · rcases
-                  validFieldsWithResponseName_field_mem_collectFields_scoped
+                  fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped
                     schema variableDefinitions filterParent collectParent
                     responseName selectionSet fieldName arguments directives
                     subselections hoverlapScope hselectionSetValid hfield with
@@ -176,7 +176,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped
                   hselectionSet, hscopedOverlap⟩
                 simp [FieldMerge.collectFields, hscoped]
               · rcases
-                  validFieldsWithResponseName_field_mem_collectFields_scoped
+                  fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped
                     schema variableDefinitions filterParent collectParent
                     responseName rest fieldName arguments directives
                     subselections hoverlapScope htail hfield with
@@ -193,10 +193,10 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped
                   hhead
               by_cases hoverlap :
                   schema.typesOverlapBool filterParent typeCondition = true
-              · simp [validFieldsWithResponseName, hoverlap] at hfield
+              · simp [fieldSelectionsWithResponseNameInScope, hoverlap] at hfield
                 rcases hfield with hfield | hfield
                 · rcases
-                    validFieldsWithResponseName_field_mem_collectFields_scoped
+                    fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped
                       schema variableDefinitions filterParent typeCondition
                       responseName selectionSet fieldName arguments directives
                       subselections (fun _hobject => hoverlap)
@@ -207,7 +207,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped
                     hselectionSet, hscopedOverlap⟩
                   simp [FieldMerge.collectFields, hscoped]
                 · rcases
-                    validFieldsWithResponseName_field_mem_collectFields_scoped
+                    fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped
                       schema variableDefinitions filterParent collectParent
                       responseName rest fieldName arguments directives
                       subselections hoverlapScope htail hfield with
@@ -221,9 +221,9 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped
                   cases hmatch : schema.typesOverlapBool filterParent typeCondition
                   · rfl
                   · contradiction
-                simp [validFieldsWithResponseName, hfalse] at hfield
+                simp [fieldSelectionsWithResponseNameInScope, hfalse] at hfield
                 rcases
-                  validFieldsWithResponseName_field_mem_collectFields_scoped
+                  fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped
                     schema variableDefinitions filterParent collectParent
                     responseName rest fieldName arguments directives
                     subselections hoverlapScope htail hfield with
@@ -233,7 +233,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped
                   hselectionSet, hscopedOverlap⟩
                 simp [FieldMerge.collectFields, hscoped]
 
-theorem validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
+theorem fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped_source_object
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (filterParent collectParent responseName : Name) :
     ∀ selectionSet fieldName arguments directives subselections,
@@ -242,7 +242,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
       Validation.selectionSetValid schema variableDefinitions collectParent
         selectionSet ->
       Selection.field responseName fieldName arguments directives subselections
-        ∈ validFieldsWithResponseName schema filterParent responseName
+        ∈ fieldSelectionsWithResponseNameInScope schema filterParent responseName
           selectionSet ->
         ∃ scopedField,
           scopedField ∈ FieldMerge.collectFields schema collectParent selectionSet
@@ -255,7 +255,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
                 filterParent = true)
   | [], fieldName, arguments, directives, subselections, _hsourceScope,
       _hvalid, hfield => by
-      simp [validFieldsWithResponseName] at hfield
+      simp [fieldSelectionsWithResponseNameInScope] at hfield
   | selection :: rest, fieldName, arguments, directives, subselections,
       hsourceScope, hvalid, hfield => by
       have hhead :
@@ -271,7 +271,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
       | field fieldResponseName sourceFieldName sourceArguments
           sourceDirectives sourceSubselections =>
           by_cases hname : (fieldResponseName == responseName) = true
-          · simp [validFieldsWithResponseName, hname] at hfield
+          · simp [fieldSelectionsWithResponseNameInScope, hname] at hfield
             rcases hfield with hfield | hfield
             · rcases hfield with
                 ⟨hresponseEq, hfieldEq, hargumentsEq, hdirectivesEq,
@@ -294,7 +294,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
               · simp [FieldMerge.collectFields, hlookup]
               · exact hsourceScope
             · rcases
-                validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
+                fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped_source_object
                   schema variableDefinitions filterParent collectParent
                   responseName rest fieldName arguments directives
                   subselections hsourceScope htail hfield with
@@ -309,9 +309,9 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [validFieldsWithResponseName, hfalse] at hfield
+            simp [fieldSelectionsWithResponseNameInScope, hfalse] at hfield
             rcases
-              validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
+              fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped_source_object
                 schema variableDefinitions filterParent collectParent
                 responseName rest fieldName arguments directives subselections
                 hsourceScope htail hfield with
@@ -330,10 +330,10 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
                     collectParent selectionSet :=
                 Validation.selectionValid_inlineFragment_none_selectionSetValid
                   hhead
-              simp [validFieldsWithResponseName] at hfield
+              simp [fieldSelectionsWithResponseNameInScope] at hfield
               rcases hfield with hfield | hfield
               · rcases
-                  validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
+                  fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped_source_object
                     schema variableDefinitions filterParent collectParent
                     responseName selectionSet fieldName arguments directives
                     subselections hsourceScope hselectionSetValid hfield with
@@ -343,7 +343,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
                   hselectionSet, hscopedSource⟩
                 simp [FieldMerge.collectFields, hscoped]
               · rcases
-                  validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
+                  fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped_source_object
                     schema variableDefinitions filterParent collectParent
                     responseName rest fieldName arguments directives
                     subselections hsourceScope htail hfield with
@@ -360,7 +360,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
                   hhead
               by_cases hoverlap :
                   schema.typesOverlapBool filterParent typeCondition = true
-              · simp [validFieldsWithResponseName, hoverlap] at hfield
+              · simp [fieldSelectionsWithResponseNameInScope, hoverlap] at hfield
                 have hfragmentSource :
                     schema.objectType filterParent ->
                       schema.typeIncludesObjectBool typeCondition
@@ -370,7 +370,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
                     schema hfilterObject hoverlap
                 rcases hfield with hfield | hfield
                 · rcases
-                    validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
+                    fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped_source_object
                       schema variableDefinitions filterParent typeCondition
                       responseName selectionSet fieldName arguments directives
                       subselections hfragmentSource hselectionSetValid hfield with
@@ -380,7 +380,7 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
                     hselectionSet, hscopedSource⟩
                   simp [FieldMerge.collectFields, hscoped]
                 · rcases
-                    validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
+                    fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped_source_object
                       schema variableDefinitions filterParent collectParent
                       responseName rest fieldName arguments directives
                       subselections hsourceScope htail hfield with
@@ -394,9 +394,9 @@ theorem validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
                   cases hmatch : schema.typesOverlapBool filterParent typeCondition
                   · rfl
                   · contradiction
-                simp [validFieldsWithResponseName, hfalse] at hfield
+                simp [fieldSelectionsWithResponseNameInScope, hfalse] at hfield
                 rcases
-                  validFieldsWithResponseName_field_mem_collectFields_scoped_source_object
+                  fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped_source_object
                     schema variableDefinitions filterParent collectParent
                     responseName rest fieldName arguments directives
                     subselections hsourceScope htail hfield with
@@ -515,24 +515,24 @@ theorem selectionSetValid_mergeSelectionSets_of_field_subselections
   simpa [Selection.subselections] using
     hfields fieldName arguments directives subselections hselection
 
-theorem selectionSetValid_mergeSelectionSets_validFieldsWithResponseName
+theorem selectionSetValid_mergeSelectionSets_fieldSelectionsWithResponseNameInScope
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType responseName childType : Name}
     (selectionSet : List Selection) :
     (∀ fieldName arguments directives subselections,
       Selection.field responseName fieldName arguments directives subselections
-        ∈ validFieldsWithResponseName schema parentType responseName
+        ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
           selectionSet ->
         Validation.selectionSetValid schema variableDefinitions childType
           subselections) ->
       Validation.selectionSetValid schema variableDefinitions childType
         (mergeSelectionSets
-          (validFieldsWithResponseName schema parentType responseName
+          (fieldSelectionsWithResponseNameInScope schema parentType responseName
             selectionSet)) := by
   intro hfields
   apply selectionSetValid_mergeSelectionSets_of_field_subselections
   · intro selection hselection
-    exact validFieldsWithResponseName_mem_field schema parentType responseName
+    exact fieldSelectionsWithResponseNameInScope_mem_field schema parentType responseName
       selectionSet selection hselection
   · intro fieldName arguments directives subselections hselection
     exact hfields fieldName arguments directives subselections hselection
@@ -698,24 +698,24 @@ theorem fieldsInSetCanMerge_append_right
       rightField hright)
     hresponse
 
-theorem fieldMerge_collectFields_withoutFieldsWithResponseName_mem
+theorem fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem
     (schema : Schema) (responseName parentType : Name) :
     ∀ selectionSet scopedField,
       scopedField ∈ FieldMerge.collectFields schema parentType
-        (withoutFieldsWithResponseName schema responseName selectionSet) ->
+        (withoutFieldSelectionsWithResponseName schema responseName selectionSet) ->
         scopedField ∈ FieldMerge.collectFields schema parentType selectionSet
   | [], scopedField, hfield => by
-      simp [withoutFieldsWithResponseName, FieldMerge.collectFields] at hfield
+      simp [withoutFieldSelectionsWithResponseName, FieldMerge.collectFields] at hfield
   | selection :: rest, scopedField, hfield => by
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           by_cases hname : (fieldResponseName == responseName) = true
-          · simp [withoutFieldsWithResponseName, hname] at hfield
+          · simp [withoutFieldSelectionsWithResponseName, hname] at hfield
             exact fieldMerge_collectFields_tail_mem schema parentType
               (Selection.field fieldResponseName fieldName arguments directives
                 selectionSet)
               rest scopedField
-              (fieldMerge_collectFields_withoutFieldsWithResponseName_mem
+              (fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem
                 schema responseName parentType rest scopedField hfield)
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
@@ -723,60 +723,60 @@ theorem fieldMerge_collectFields_withoutFieldsWithResponseName_mem
               · contradiction
             cases hlookup : schema.lookupField parentType fieldName with
             | none =>
-                simp [withoutFieldsWithResponseName, hfalse,
+                simp [withoutFieldSelectionsWithResponseName, hfalse,
                   FieldMerge.collectFields, hlookup] at hfield ⊢
                 exact
-                  fieldMerge_collectFields_withoutFieldsWithResponseName_mem
+                  fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem
                     schema responseName parentType rest scopedField hfield
             | some fieldDefinition =>
-                simp [withoutFieldsWithResponseName, hfalse,
+                simp [withoutFieldSelectionsWithResponseName, hfalse,
                   FieldMerge.collectFields, hlookup] at hfield ⊢
                 rcases hfield with hhead | htail
                 · exact Or.inl hhead
                 · exact Or.inr
-                    (fieldMerge_collectFields_withoutFieldsWithResponseName_mem
+                    (fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem
                       schema responseName parentType rest scopedField htail)
       | inlineFragment typeCondition directives selectionSet =>
           cases typeCondition with
           | none =>
-              simp [withoutFieldsWithResponseName, FieldMerge.collectFields]
+              simp [withoutFieldSelectionsWithResponseName, FieldMerge.collectFields]
                 at hfield ⊢
               rcases hfield with hselection | hrest
               · exact Or.inl
-                  (fieldMerge_collectFields_withoutFieldsWithResponseName_mem
+                  (fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem
                     schema responseName parentType selectionSet scopedField
                     hselection)
               · exact Or.inr
-                  (fieldMerge_collectFields_withoutFieldsWithResponseName_mem
+                  (fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem
                     schema responseName parentType rest scopedField hrest)
           | some typeCondition =>
-              simp [withoutFieldsWithResponseName, FieldMerge.collectFields]
+              simp [withoutFieldSelectionsWithResponseName, FieldMerge.collectFields]
                 at hfield ⊢
               rcases hfield with hselection | hrest
               · exact Or.inl
-                  (fieldMerge_collectFields_withoutFieldsWithResponseName_mem
+                  (fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem
                     schema responseName typeCondition selectionSet scopedField
                     hselection)
               · exact Or.inr
-                  (fieldMerge_collectFields_withoutFieldsWithResponseName_mem
+                  (fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem
                     schema responseName parentType rest scopedField hrest)
 
-theorem fieldsInSetCanMerge_withoutFieldsWithResponseName
+theorem fieldsInSetCanMerge_withoutFieldSelectionsWithResponseName
     (schema : Schema) (responseName parentType : Name)
     (selectionSet : List Selection) :
     FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
       FieldMerge.fieldsInSetCanMerge schema parentType
-        (withoutFieldsWithResponseName schema responseName selectionSet) := by
+        (withoutFieldSelectionsWithResponseName schema responseName selectionSet) := by
   intro hmerge
   unfold FieldMerge.fieldsInSetCanMerge
   refine FieldMerge.FieldsInSetCanMerge.intro parentType
-    (withoutFieldsWithResponseName schema responseName selectionSet) ?_
+    (withoutFieldSelectionsWithResponseName schema responseName selectionSet) ?_
   dsimp
   intro left hleft right hright hresponse
   exact FieldMerge.fieldsInSetCanMerge_pair hmerge
-    (fieldMerge_collectFields_withoutFieldsWithResponseName_mem schema
+    (fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem schema
       responseName parentType selectionSet left hleft)
-    (fieldMerge_collectFields_withoutFieldsWithResponseName_mem schema
+    (fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem schema
       responseName parentType selectionSet right hright)
     hresponse
 
@@ -822,13 +822,13 @@ theorem fieldsInSetCanMerge_fieldHead_merged_of_canMerge_object
       FieldMerge.fieldsInSetCanMerge schema objectType
         (subselections
           ++ mergeSelectionSets
-            (validFieldsWithResponseName schema parentType responseName
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName
               rest)) := by
   intro hobject hvalid hmerge hlookup
   let headSelection : Selection :=
     Selection.field responseName fieldName arguments [] subselections
   let matching :=
-    validFieldsWithResponseName schema parentType responseName rest
+    fieldSelectionsWithResponseNameInScope schema parentType responseName rest
   let group := headSelection :: matching
   let headScoped : FieldMerge.ScopedField :=
     {
@@ -871,13 +871,13 @@ theorem fieldsInSetCanMerge_fieldHead_merged_of_canMerge_object
           simp [headScoped]
           exact object_typesOverlapBool_self schema hobject⟩
     · rcases
-        validFieldsWithResponseName_mem_field schema parentType responseName
+        fieldSelectionsWithResponseNameInScope_mem_field schema parentType responseName
           rest selection hmatched with
         ⟨matchedFieldName, matchedArguments, matchedDirectives,
           matchedSubselections, hselectionEq⟩
       subst selection
       rcases
-        validFieldsWithResponseName_field_mem_collectFields_scoped
+        fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped
           schema variableDefinitions parentType parentType responseName rest
           matchedFieldName matchedArguments matchedDirectives
           matchedSubselections hoverlapSelf htailValid
@@ -934,7 +934,7 @@ theorem fieldsInSetCanMerge_fieldHead_merged_of_canMerge_object
   simpa [group, headSelection, matching, mergeSelectionSets,
     Selection.subselections] using hgroupMerge
 
-theorem validFieldsWithResponseName_matching_same_field_of_canMerge_object
+theorem fieldSelectionsWithResponseNameInScope_matching_same_field_of_canMerge_object
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType responseName fieldName : Name)
     (arguments : List Argument) (subselections rest : List Selection) :
@@ -949,7 +949,7 @@ theorem validFieldsWithResponseName_matching_same_field_of_canMerge_object
         matchedSubselections,
         Selection.field responseName matchedFieldName matchedArguments
             matchedDirectives matchedSubselections
-          ∈ validFieldsWithResponseName schema parentType responseName rest ->
+          ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest ->
           matchedFieldName = fieldName := by
   intro hobject hvalid hmerge matchedFieldName matchedArguments
     matchedDirectives matchedSubselections hmatched
@@ -972,7 +972,7 @@ theorem validFieldsWithResponseName_matching_same_field_of_canMerge_object
       Validation.selectionSetValid schema variableDefinitions parentType rest :=
     Validation.selectionSetValid_tail hvalid
   rcases
-      validFieldsWithResponseName_field_mem_collectFields_scoped schema
+      fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped schema
         variableDefinitions parentType parentType responseName rest
         matchedFieldName matchedArguments matchedDirectives
         matchedSubselections
@@ -1009,7 +1009,7 @@ theorem validFieldsWithResponseName_matching_same_field_of_canMerge_object
     rfl
   exact hmatchedField.symm.trans (hidentity.1.symm.trans hheadField)
 
-theorem validFieldsWithResponseName_matching_field_shape_of_canMerge_object
+theorem fieldSelectionsWithResponseNameInScope_matching_field_shape_of_canMerge_object
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType responseName fieldName : Name)
     (arguments : List Argument) (subselections rest : List Selection) :
@@ -1021,20 +1021,20 @@ theorem validFieldsWithResponseName_matching_field_shape_of_canMerge_object
       (Selection.field responseName fieldName arguments [] subselections
         :: rest) ->
       ∀ selection,
-        selection ∈ validFieldsWithResponseName schema parentType responseName
+        selection ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
           rest ->
           ∃ matchedArguments matchedDirectives matchedSubselections,
             selection =
               Selection.field responseName fieldName matchedArguments
                 matchedDirectives matchedSubselections := by
   intro hobject hvalid hmerge selection hselection
-  rcases validFieldsWithResponseName_mem_field schema parentType responseName
+  rcases fieldSelectionsWithResponseNameInScope_mem_field schema parentType responseName
       rest selection hselection with
     ⟨matchedFieldName, matchedArguments, matchedDirectives,
       matchedSubselections, hselectionEq⟩
   subst selection
   have hsame :=
-    validFieldsWithResponseName_matching_same_field_of_canMerge_object
+    fieldSelectionsWithResponseNameInScope_matching_same_field_of_canMerge_object
       schema variableDefinitions parentType responseName fieldName arguments
       subselections rest hobject hvalid hmerge matchedFieldName
       matchedArguments matchedDirectives matchedSubselections hselection
@@ -1048,7 +1048,7 @@ theorem selectionSetValid_fieldHead_merged_of_matching
     Validation.selectionSetValid schema variableDefinitions childType
       subselections ->
     (∀ selection,
-      selection ∈ validFieldsWithResponseName schema parentType responseName
+      selection ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
         rest ->
         ∃ matchedArguments matchedDirectives matchedSubselections,
           selection =
@@ -1057,13 +1057,13 @@ theorem selectionSetValid_fieldHead_merged_of_matching
     (∀ matchedArguments matchedDirectives matchedSubselections,
       Selection.field responseName fieldName matchedArguments matchedDirectives
           matchedSubselections
-        ∈ validFieldsWithResponseName schema parentType responseName rest ->
+        ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest ->
         Validation.selectionSetValid schema variableDefinitions childType
           matchedSubselections) ->
       Validation.selectionSetValid schema variableDefinitions childType
         (subselections
           ++ mergeSelectionSets
-            (validFieldsWithResponseName schema parentType responseName
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName
               rest)) := by
   intro hhead hshape hmatching
   apply Validation.selectionSetValid_append hhead

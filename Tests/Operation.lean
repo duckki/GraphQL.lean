@@ -15,7 +15,7 @@ theorem fieldsWithAliasResponseNameSmoke :
   rfl
 
 theorem withoutFieldsWithAliasResponseNameSmoke :
-    SelectionSet.withoutFieldsWithResponseName "mainHero"
+    SelectionSet.withoutFieldSelectionsWithResponseName "mainHero"
       sampleHeroQuery.selectionSet = [] := by
   rfl
 

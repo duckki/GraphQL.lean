@@ -84,14 +84,14 @@ theorem selectionSetLookupValid_head
   unfold selectionSetLookupValid at hvalid
   exact hvalid selection (by simp)
 
-theorem selectionSetLookupValid_withoutFieldsWithResponseName_core
+theorem selectionSetLookupValid_withoutFieldSelectionsWithResponseName_core
     (schema : Schema) (responseName : Name) :
     ∀ parentType selectionSet,
       selectionSetLookupValid schema parentType selectionSet ->
         selectionSetLookupValid schema parentType
-          (withoutFieldsWithResponseName schema responseName selectionSet)
+          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
   | _parentType, [], _hvalid => by
-      simp [withoutFieldsWithResponseName, selectionSetLookupValid]
+      simp [withoutFieldSelectionsWithResponseName, selectionSetLookupValid]
   | parentType, selection :: rest, hvalid => by
       have hhead :
           selectionLookupValid schema parentType selection := by
@@ -103,44 +103,44 @@ theorem selectionSetLookupValid_withoutFieldsWithResponseName_core
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           by_cases hname : (fieldResponseName == responseName) = true
-          · simp [withoutFieldsWithResponseName, hname]
+          · simp [withoutFieldSelectionsWithResponseName, hname]
             simpa [selectionSetLookupValid] using
-              selectionSetLookupValid_withoutFieldsWithResponseName_core
+              selectionSetLookupValid_withoutFieldSelectionsWithResponseName_core
                 schema responseName parentType rest htail
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [withoutFieldsWithResponseName, hfalse,
+            simp [withoutFieldSelectionsWithResponseName, hfalse,
               selectionSetLookupValid]
             constructor
             · exact hhead
             · simpa [selectionSetLookupValid] using
-                selectionSetLookupValid_withoutFieldsWithResponseName_core
+                selectionSetLookupValid_withoutFieldSelectionsWithResponseName_core
                   schema responseName parentType rest htail
       | inlineFragment typeCondition directives selectionSet =>
           cases typeCondition with
           | none =>
-              simp [withoutFieldsWithResponseName,
+              simp [withoutFieldSelectionsWithResponseName,
                 selectionSetLookupValid, selectionLookupValid]
               constructor
               · simpa [selectionSetLookupValid] using
-                  selectionSetLookupValid_withoutFieldsWithResponseName_core
+                  selectionSetLookupValid_withoutFieldSelectionsWithResponseName_core
                     schema responseName parentType selectionSet
                     (by simpa [selectionLookupValid] using hhead)
               · simpa [selectionSetLookupValid] using
-                  selectionSetLookupValid_withoutFieldsWithResponseName_core
+                  selectionSetLookupValid_withoutFieldSelectionsWithResponseName_core
                     schema responseName parentType rest htail
           | some typeCondition =>
-              simp [withoutFieldsWithResponseName,
+              simp [withoutFieldSelectionsWithResponseName,
                 selectionSetLookupValid, selectionLookupValid]
               constructor
               · simpa [selectionSetLookupValid] using
-                  selectionSetLookupValid_withoutFieldsWithResponseName_core
+                  selectionSetLookupValid_withoutFieldSelectionsWithResponseName_core
                     schema responseName typeCondition selectionSet
                     (by simpa [selectionLookupValid] using hhead)
               · simpa [selectionSetLookupValid] using
-                  selectionSetLookupValid_withoutFieldsWithResponseName_core
+                  selectionSetLookupValid_withoutFieldSelectionsWithResponseName_core
                     schema responseName parentType rest htail
 
 mutual

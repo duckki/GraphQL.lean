@@ -1105,7 +1105,7 @@ theorem collectFields_field_head_exists
   rw [collectFields_field_noDirectives]
   simpa [sourceField, restGroups] using hmerge
 
-theorem collectFields_withoutFieldsWithResponseName_directiveFree
+theorem collectFields_withoutFieldSelectionsWithResponseName_directiveFree
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
@@ -1117,13 +1117,13 @@ theorem collectFields_withoutFieldsWithResponseName_directiveFree
         ∀ selectionSet,
           selectionSetDirectiveFree selectionSet ->
             Execution.collectFields schema variableValues parentType source
-              (withoutFieldsWithResponseName schema responseName selectionSet)
+              (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
             =
             withoutExecutableGroupsWithResponseName responseName
               (Execution.collectFields schema variableValues parentType
                 source selectionSet)
   | hobject, hsource, [], _hfree => by
-      simp [Execution.collectFields, withoutFieldsWithResponseName,
+      simp [Execution.collectFields, withoutFieldSelectionsWithResponseName,
         withoutExecutableGroupsWithResponseName]
   | hobject, hsource,
       Selection.field fieldResponseName fieldName arguments directives
@@ -1135,7 +1135,7 @@ theorem collectFields_withoutFieldsWithResponseName_directiveFree
         simpa [selectionDirectiveFree] using hheadFree.1
       subst directives
       by_cases hresponse : (fieldResponseName == responseName) = true
-      · rw [withoutFieldsWithResponseName]
+      · rw [withoutFieldSelectionsWithResponseName]
         simp [hresponse]
         rw [collectFields_field_noDirectives]
         rw [withoutExecutableGroupsWithResponseName_mergeExecutableGroups]
@@ -1152,7 +1152,7 @@ theorem collectFields_withoutFieldsWithResponseName_directiveFree
           simp [withoutExecutableGroupsWithResponseName, hresponse]
         rw [hsingleton]
         have hrest :=
-          collectFields_withoutFieldsWithResponseName_directiveFree schema
+          collectFields_withoutFieldSelectionsWithResponseName_directiveFree schema
             variableValues parentType source responseName hobject hsource
             rest htailFree
         rw [hrest]
@@ -1169,7 +1169,7 @@ theorem collectFields_withoutFieldsWithResponseName_directiveFree
           cases hmatch : fieldResponseName == responseName
           · rfl
           · contradiction
-        rw [withoutFieldsWithResponseName]
+        rw [withoutFieldSelectionsWithResponseName]
         simp [hfalse]
         rw [collectFields_field_noDirectives]
         rw [collectFields_field_noDirectives]
@@ -1193,7 +1193,7 @@ theorem collectFields_withoutFieldsWithResponseName_directiveFree
             }])] := by
           simp [withoutExecutableGroupsWithResponseName, hfalse]
         rw [hsingleton]
-        rw [collectFields_withoutFieldsWithResponseName_directiveFree schema
+        rw [collectFields_withoutFieldSelectionsWithResponseName_directiveFree schema
           variableValues parentType source responseName hobject hsource rest
           htailFree]
   | hobject, hsource,
@@ -1206,14 +1206,14 @@ theorem collectFields_withoutFieldsWithResponseName_directiveFree
       have hselectionFree : selectionSetDirectiveFree selectionSet := by
         simpa [selectionDirectiveFree, hdirectives] using hheadFree.2
       subst directives
-      rw [withoutFieldsWithResponseName]
+      rw [withoutFieldSelectionsWithResponseName]
       rw [collectFields_inlineFragment_none_directiveFree]
       rw [collectFields_inlineFragment_none_directiveFree]
       rw [withoutExecutableGroupsWithResponseName_mergeExecutableGroups]
-      rw [collectFields_withoutFieldsWithResponseName_directiveFree schema
+      rw [collectFields_withoutFieldSelectionsWithResponseName_directiveFree schema
         variableValues parentType source responseName hobject hsource
         selectionSet hselectionFree]
-      rw [collectFields_withoutFieldsWithResponseName_directiveFree schema
+      rw [collectFields_withoutFieldSelectionsWithResponseName_directiveFree schema
         variableValues parentType source responseName hobject hsource rest
         htailFree]
   | hobject, hsource,
@@ -1235,7 +1235,7 @@ theorem collectFields_withoutFieldsWithResponseName_directiveFree
           rw [← doesFragmentTypeApplyBool_eq_typesOverlapBool_of_object_parent_source
             schema hobject hsource]
           exact happly
-        simp [withoutFieldsWithResponseName]
+        simp [withoutFieldSelectionsWithResponseName]
         rw [collectFields_inlineFragment_some_directiveFree_skip]
         · rw [collectFields_inlineFragment_some_directiveFree_skip]
           · rw [mergeExecutableGroups_nil_left_of_namesNodup
@@ -1245,11 +1245,11 @@ theorem collectFields_withoutFieldsWithResponseName_directiveFree
                 source rest)]
             rw [mergeExecutableGroups_nil_left_of_namesNodup
               (Execution.collectFields schema variableValues parentType source
-                (withoutFieldsWithResponseName schema responseName rest))
+                (withoutFieldSelectionsWithResponseName schema responseName rest))
               (collectFields_namesNodup schema variableValues parentType
-                source (withoutFieldsWithResponseName schema responseName
+                source (withoutFieldSelectionsWithResponseName schema responseName
                   rest))]
-            exact collectFields_withoutFieldsWithResponseName_directiveFree
+            exact collectFields_withoutFieldSelectionsWithResponseName_directiveFree
               schema variableValues parentType source responseName hobject
               hsource rest htailFree
           · exact happly
@@ -1259,20 +1259,20 @@ theorem collectFields_withoutFieldsWithResponseName_directiveFree
           rw [← doesFragmentTypeApplyBool_eq_typesOverlapBool_of_object_parent_source
             schema hobject hsource]
           exact happly
-        simp [withoutFieldsWithResponseName]
+        simp [withoutFieldSelectionsWithResponseName]
         rw [collectFields_inlineFragment_some_directiveFree_apply]
         · rw [collectFields_inlineFragment_some_directiveFree_apply]
           · rw [withoutExecutableGroupsWithResponseName_mergeExecutableGroups]
-            rw [collectFields_withoutFieldsWithResponseName_directiveFree
+            rw [collectFields_withoutFieldSelectionsWithResponseName_directiveFree
               schema variableValues parentType source responseName hobject
               hsource selectionSet hselectionFree]
-            rw [collectFields_withoutFieldsWithResponseName_directiveFree
+            rw [collectFields_withoutFieldSelectionsWithResponseName_directiveFree
               schema variableValues parentType source responseName hobject
               hsource rest htailFree]
           · exact happly
         · exact happly
 
-theorem collectFields_withoutFieldsWithResponseName_eq_sourceRest_of_cons
+theorem collectFields_withoutFieldSelectionsWithResponseName_eq_sourceRest_of_cons
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
@@ -1289,12 +1289,12 @@ theorem collectFields_withoutFieldsWithResponseName_eq_sourceRest_of_cons
           =
           (responseName, fields) :: sourceRest ->
             Execution.collectFields schema variableValues parentType source
-              (withoutFieldsWithResponseName schema responseName selectionSet)
+              (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
             =
             sourceRest := by
   intro hobject hsource hfree hcollect
   have hfilter :=
-    collectFields_withoutFieldsWithResponseName_directiveFree schema
+    collectFields_withoutFieldSelectionsWithResponseName_directiveFree schema
       variableValues parentType source responseName hobject hsource
       selectionSet hfree
   have hnodup :
@@ -1307,7 +1307,7 @@ theorem collectFields_withoutFieldsWithResponseName_eq_sourceRest_of_cons
     (withoutExecutableGroupsWithResponseName_cons_self_of_namesNodup
       responseName fields sourceRest hnodup)
 
-theorem collectFields_withoutFieldsWithResponseName_fieldHead_rest_eq_sourceRest
+theorem collectFields_withoutFieldSelectionsWithResponseName_fieldHead_rest_eq_sourceRest
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
@@ -1336,7 +1336,7 @@ theorem collectFields_withoutFieldsWithResponseName_fieldHead_rest_eq_sourceRest
           =
           (responseName, sourceField :: sourceFields) :: sourceRest ->
             Execution.collectFields schema variableValues parentType source
-              (withoutFieldsWithResponseName schema responseName rest)
+              (withoutFieldSelectionsWithResponseName schema responseName rest)
             =
             sourceRest := by
   intro sourceField hobject hsource hfree hcollect
@@ -1349,13 +1349,13 @@ theorem collectFields_withoutFieldsWithResponseName_fieldHead_rest_eq_sourceRest
       (responseName, sourceField :: sourceFields) :: sourceRest := by
     simpa [sourceField] using hcollect
   have hfilteredAll :=
-    collectFields_withoutFieldsWithResponseName_eq_sourceRest_of_cons schema
+    collectFields_withoutFieldSelectionsWithResponseName_eq_sourceRest_of_cons schema
       variableValues parentType source responseName
       (sourceField :: sourceFields) sourceRest
       (Selection.field responseName fieldName arguments [] subselections
         :: rest)
       hobject hsource hfree hsourceCollect
-  simpa [withoutFieldsWithResponseName] using hfilteredAll
+  simpa [withoutFieldSelectionsWithResponseName] using hfilteredAll
 
 theorem mergeSelectionSets_append
     (left right : List Selection) :
@@ -1368,7 +1368,7 @@ theorem mergeSelectionSets_append
   | cons selection rest ih =>
       simp [mergeSelectionSets, ih, List.append_assoc]
 
-theorem collectFields_validFieldsWithResponseName_responseSelection
+theorem collectFields_fieldSelectionsWithResponseNameInScope_responseSelection
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
@@ -1383,13 +1383,13 @@ theorem collectFields_validFieldsWithResponseName_responseSelection
               selectionSet)
           =
           mergeSelectionSets
-            (validFieldsWithResponseName schema parentType responseName
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName
               selectionSet) := by
   intro hobject hsource hfree
   induction selectionSet using
-    validFieldsWithResponseName.induct schema parentType responseName with
+    fieldSelectionsWithResponseNameInScope.induct schema parentType responseName with
   | case1 =>
-      simp [Execution.collectFields, validFieldsWithResponseName,
+      simp [Execution.collectFields, fieldSelectionsWithResponseNameInScope,
         collectedResponseSelectionSet, mergeSelectionSets]
   | case2 rest selectionResponseName fieldName arguments directives
       fieldSelectionSet hname hrest =>
@@ -1417,7 +1417,7 @@ theorem collectFields_validFieldsWithResponseName_responseSelection
           Execution.mergedFieldSelectionSet]
       rw [collectFields_field_noDirectives]
       rw [collectedResponseSelectionSet_mergeExecutableGroups]
-      · simp [validFieldsWithResponseName, hname, mergeSelectionSets,
+      · simp [fieldSelectionsWithResponseNameInScope, hname, mergeSelectionSets,
           Selection.subselections, hsingleton, hrestProjection]
       · exact collectFields_namesNodup schema variableValues parentType source
           rest
@@ -1447,7 +1447,7 @@ theorem collectFields_validFieldsWithResponseName_responseSelection
         simp [collectedResponseSelectionSet, hresponseFalse]
       rw [collectFields_field_noDirectives]
       rw [collectedResponseSelectionSet_mergeExecutableGroups]
-      · simp [validFieldsWithResponseName, hname, hsingleton,
+      · simp [fieldSelectionsWithResponseNameInScope, hname, hsingleton,
           hrestProjection]
       · exact collectFields_namesNodup schema variableValues parentType source
           rest
@@ -1463,7 +1463,7 @@ theorem collectFields_validFieldsWithResponseName_responseSelection
       have hrestProjection := hrest hrestFree
       rw [collectFields_inlineFragment_none_directiveFree]
       rw [collectedResponseSelectionSet_mergeExecutableGroups]
-      · simp [validFieldsWithResponseName, mergeSelectionSets_append,
+      · simp [fieldSelectionsWithResponseNameInScope, mergeSelectionSets_append,
           hfragmentProjection, hrestProjection]
       · exact collectFields_namesNodup schema variableValues parentType source
           rest
@@ -1486,7 +1486,7 @@ theorem collectFields_validFieldsWithResponseName_responseSelection
       have hrestProjection := hrest hrestFree
       rw [collectFields_inlineFragment_some_directiveFree_apply]
       · rw [collectedResponseSelectionSet_mergeExecutableGroups]
-        · simp [validFieldsWithResponseName, hoverlap,
+        · simp [fieldSelectionsWithResponseNameInScope, hoverlap,
             mergeSelectionSets_append, hfragmentProjection, hrestProjection]
         · exact collectFields_namesNodup schema variableValues parentType source
             rest
@@ -1513,7 +1513,7 @@ theorem collectFields_validFieldsWithResponseName_responseSelection
           (Execution.collectFields schema variableValues parentType source rest)
           (collectFields_namesNodup schema variableValues parentType source
             rest)]
-        simp [validFieldsWithResponseName, hfalse, hrestProjection]
+        simp [fieldSelectionsWithResponseNameInScope, hfalse, hrestProjection]
       · exact hskip
 
 theorem mergeExecutableGroups_nil_left_collectFields

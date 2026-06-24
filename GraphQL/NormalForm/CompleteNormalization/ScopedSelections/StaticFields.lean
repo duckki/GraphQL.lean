@@ -8,12 +8,12 @@ namespace NormalForm
 namespace CompleteNormalization
 
 set_option linter.unusedSimpArgs false in
-theorem validFieldsWithResponseName_staticCollectForGround_scoped
+theorem fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
     (schema : Schema) (variables : List BoolVar)
     (filterParent lookupParent groundType responseName : Name)
     (boolCase : BoolCase) :
     ∀ selectionSet,
-      validFieldsWithResponseName schema filterParent responseName
+      fieldSelectionsWithResponseNameInScope schema filterParent responseName
           (staticCollectForGround schema variables lookupParent
             groundType boolCase selectionSet)
         =
@@ -22,7 +22,7 @@ theorem validFieldsWithResponseName_staticCollectForGround_scoped
         (staticScopedFieldsWithResponseName schema boolCase lookupParent
           groundType responseName selectionSet)
   | [] => by
-      simp [validFieldsWithResponseName, staticCollectForGround,
+      simp [fieldSelectionsWithResponseNameInScope, staticCollectForGround,
         staticScopedFieldsWithResponseName,
         staticCollectCompleteScopedSelectionSet]
   | selection :: rest => by
@@ -32,7 +32,7 @@ theorem validFieldsWithResponseName_staticCollectForGround_scoped
               directivesAllowIn boolCase directives
           · simp [staticCollectForGround,
               staticScopedFieldsWithResponseName, hallow,
-              validFieldsWithResponseName_staticCollectForGround_scoped
+              fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                 schema variables filterParent lookupParent groundType responseName
                 boolCase rest]
           · cases hresponse : fieldResponseName == responseName
@@ -44,9 +44,9 @@ theorem validFieldsWithResponseName_staticCollectForGround_scoped
                         staticScopedFieldsWithResponseName,
                         staticCollectCompleteScopedSelectionSet,
                         staticCollectCompleteScopedSelection,
-                        validFieldsWithResponseName, hallow, hresponse,
+                        fieldSelectionsWithResponseNameInScope, hallow, hresponse,
                         hlookup,
-                        validFieldsWithResponseName_staticCollectForGround_scoped
+                        fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                           schema variables filterParent lookupParent groundType
                           responseName boolCase rest]
                   | cons child childRest =>
@@ -59,9 +59,9 @@ theorem validFieldsWithResponseName_staticCollectForGround_scoped
                             staticScopedFieldsWithResponseName,
                             staticCollectCompleteScopedSelectionSet,
                             staticCollectCompleteScopedSelection,
-                            validFieldsWithResponseName, hallow, hresponse,
+                            fieldSelectionsWithResponseNameInScope, hallow, hresponse,
                             hlookup, hnormalized,
-                            validFieldsWithResponseName_staticCollectForGround_scoped
+                            fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                               schema variables filterParent lookupParent
                               groundType responseName boolCase rest]
                       | cons normalizedChild normalizedRest =>
@@ -69,9 +69,9 @@ theorem validFieldsWithResponseName_staticCollectForGround_scoped
                             staticScopedFieldsWithResponseName,
                             staticCollectCompleteScopedSelectionSet,
                             staticCollectCompleteScopedSelection,
-                            validFieldsWithResponseName, hallow, hresponse,
+                            fieldSelectionsWithResponseNameInScope, hallow, hresponse,
                             hlookup, hnormalized,
-                            validFieldsWithResponseName_staticCollectForGround_scoped
+                            fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                               schema variables filterParent lookupParent
                               groundType responseName boolCase rest]
                 | some fieldDefinition =>
@@ -83,9 +83,9 @@ theorem validFieldsWithResponseName_staticCollectForGround_scoped
                         staticScopedFieldsWithResponseName,
                         staticCollectCompleteScopedSelectionSet,
                         staticCollectCompleteScopedSelection,
-                        validFieldsWithResponseName, hallow, hresponse,
+                        fieldSelectionsWithResponseNameInScope, hallow, hresponse,
                         hlookup, hnormalized,
-                        validFieldsWithResponseName_staticCollectForGround_scoped
+                        fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                           schema variables filterParent lookupParent
                           groundType responseName boolCase rest]
             · cases hlookup : schema.lookupField lookupParent fieldName with
@@ -96,9 +96,9 @@ theorem validFieldsWithResponseName_staticCollectForGround_scoped
                         staticScopedFieldsWithResponseName,
                         staticCollectCompleteScopedSelectionSet,
                         staticCollectCompleteScopedSelection,
-                        validFieldsWithResponseName, hallow, hresponse,
+                        fieldSelectionsWithResponseNameInScope, hallow, hresponse,
                         hlookup,
-                        validFieldsWithResponseName_staticCollectForGround_scoped
+                        fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                           schema variables filterParent lookupParent groundType
                           responseName boolCase rest]
                   | cons child childRest =>
@@ -111,9 +111,9 @@ theorem validFieldsWithResponseName_staticCollectForGround_scoped
                             staticScopedFieldsWithResponseName,
                             staticCollectCompleteScopedSelectionSet,
                             staticCollectCompleteScopedSelection,
-                            validFieldsWithResponseName, hallow, hresponse,
+                            fieldSelectionsWithResponseNameInScope, hallow, hresponse,
                             hlookup, hnormalized,
-                            validFieldsWithResponseName_staticCollectForGround_scoped
+                            fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                               schema variables filterParent lookupParent
                               groundType responseName boolCase rest]
                       | cons normalizedChild normalizedRest =>
@@ -121,9 +121,9 @@ theorem validFieldsWithResponseName_staticCollectForGround_scoped
                             staticScopedFieldsWithResponseName,
                             staticCollectCompleteScopedSelectionSet,
                             staticCollectCompleteScopedSelection,
-                            validFieldsWithResponseName, hallow, hresponse,
+                            fieldSelectionsWithResponseNameInScope, hallow, hresponse,
                             hlookup, hnormalized,
-                            validFieldsWithResponseName_staticCollectForGround_scoped
+                            fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                               schema variables filterParent lookupParent
                               groundType responseName boolCase rest]
                 | some fieldDefinition =>
@@ -135,9 +135,9 @@ theorem validFieldsWithResponseName_staticCollectForGround_scoped
                         staticScopedFieldsWithResponseName,
                         staticCollectCompleteScopedSelectionSet,
                         staticCollectCompleteScopedSelection,
-                        validFieldsWithResponseName, hallow, hresponse,
+                        fieldSelectionsWithResponseNameInScope, hallow, hresponse,
                         hlookup, hnormalized,
-                        validFieldsWithResponseName_staticCollectForGround_scoped
+                        fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                           schema variables filterParent lookupParent
                           groundType responseName boolCase rest]
       | inlineFragment typeCondition directives selectionSet =>
@@ -147,17 +147,17 @@ theorem validFieldsWithResponseName_staticCollectForGround_scoped
                   directivesAllowIn boolCase directives
               · simp [staticCollectForGround,
                   staticScopedFieldsWithResponseName, hallow,
-                  validFieldsWithResponseName_staticCollectForGround_scoped
+                  fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                     schema variables filterParent lookupParent groundType
                     responseName boolCase rest]
               · simp [staticCollectForGround,
                   staticScopedFieldsWithResponseName, hallow,
-                  validFieldsWithResponseName_append,
+                  fieldSelectionsWithResponseNameInScope_append,
                   staticCollectCompleteScopedSelectionSet_append,
-                  validFieldsWithResponseName_staticCollectForGround_scoped
+                  fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                     schema variables filterParent lookupParent groundType
                     responseName boolCase selectionSet,
-                  validFieldsWithResponseName_staticCollectForGround_scoped
+                  fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                     schema variables filterParent lookupParent groundType
                     responseName boolCase rest]
           | some typeCondition =>
@@ -166,26 +166,26 @@ theorem validFieldsWithResponseName_staticCollectForGround_scoped
                     && schema.typeIncludesObjectBool typeCondition groundType
               · simp [staticCollectForGround,
                   staticScopedFieldsWithResponseName, hbranch,
-                  validFieldsWithResponseName_staticCollectForGround_scoped
+                  fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                     schema variables filterParent lookupParent groundType
                     responseName boolCase rest]
               · simp [staticCollectForGround,
                   staticScopedFieldsWithResponseName, hbranch,
-                  validFieldsWithResponseName_append,
+                  fieldSelectionsWithResponseNameInScope_append,
                   staticCollectCompleteScopedSelectionSet_append,
-                  validFieldsWithResponseName_staticCollectForGround_scoped
+                  fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                     schema variables filterParent typeCondition groundType
                     responseName boolCase selectionSet,
-                  validFieldsWithResponseName_staticCollectForGround_scoped
+                  fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
                     schema variables filterParent lookupParent groundType
                     responseName boolCase rest]
 
-theorem validFieldsWithResponseName_staticCollectCompleteScopedSelectionSet
+theorem fieldSelectionsWithResponseNameInScope_staticCollectCompleteScopedSelectionSet
     (schema : Schema) (variables : List BoolVar)
     (filterParent groundType responseName : Name)
     (boolCase : BoolCase) :
     ∀ scopedSelections,
-      validFieldsWithResponseName schema filterParent responseName
+      fieldSelectionsWithResponseNameInScope schema filterParent responseName
           (staticCollectCompleteScopedSelectionSet schema variables groundType
             boolCase scopedSelections)
         =
@@ -194,28 +194,28 @@ theorem validFieldsWithResponseName_staticCollectCompleteScopedSelectionSet
         (completeScopedSelectionSetStaticFieldsWithResponseName schema
           boolCase groundType responseName scopedSelections)
   | [] => by
-      simp [validFieldsWithResponseName,
+      simp [fieldSelectionsWithResponseNameInScope,
         staticCollectCompleteScopedSelectionSet,
         completeScopedSelectionSetStaticFieldsWithResponseName]
   | scopedSelection :: rest => by
       cases scopedSelection with
       | mk lookupParent selection =>
           have hhead :=
-            validFieldsWithResponseName_staticCollectForGround_scoped
+            fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
               schema variables filterParent lookupParent groundType
               responseName boolCase [selection]
           have hrest :=
-            validFieldsWithResponseName_staticCollectCompleteScopedSelectionSet
+            fieldSelectionsWithResponseNameInScope_staticCollectCompleteScopedSelectionSet
               schema variables filterParent groundType responseName boolCase
               rest
           rw [staticCollectCompleteScopedSelectionSet]
-          rw [validFieldsWithResponseName_append]
+          rw [fieldSelectionsWithResponseNameInScope_append]
           change
-            validFieldsWithResponseName schema filterParent responseName
+            fieldSelectionsWithResponseNameInScope schema filterParent responseName
                 (staticCollectForGround schema variables
                   lookupParent groundType boolCase [selection])
               ++
-            validFieldsWithResponseName schema filterParent responseName
+            fieldSelectionsWithResponseNameInScope schema filterParent responseName
                 (staticCollectCompleteScopedSelectionSet schema variables
                   groundType boolCase rest)
               =
@@ -561,7 +561,7 @@ theorem typesOverlapBool_true_of_common_ground
   exact List.any_eq_true.mpr
     ⟨groundType, List.contains_iff_mem.mp hleft, hright⟩
 
-theorem erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
+theorem erase_staticScopedFieldsWithResponseName_mem_fieldSelectionsWithResponseNameInScope
     (schema : Schema) (boolCase : BoolCase)
     (lookupParent groundType responseName : Name) :
     ∀ selectionSet selection,
@@ -570,7 +570,7 @@ theorem erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
           eraseCompleteScopedSelectionSet
             (staticScopedFieldsWithResponseName schema boolCase lookupParent
               groundType responseName selectionSet) ->
-        selection ∈ validFieldsWithResponseName schema lookupParent
+        selection ∈ fieldSelectionsWithResponseNameInScope schema lookupParent
           responseName selectionSet
   | [], selection, _hincludes, hmem => by
       simp [staticScopedFieldsWithResponseName,
@@ -578,7 +578,7 @@ theorem erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
   | Selection.field fieldResponseName fieldName arguments directives
       selectionSet :: rest, selection, hincludes, hmem => by
       have hrest :=
-        erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
+        erase_staticScopedFieldsWithResponseName_mem_fieldSelectionsWithResponseNameInScope
           schema boolCase lookupParent groundType responseName rest
           selection hincludes
       cases hallow :
@@ -590,7 +590,7 @@ theorem erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
                   lookupParent groundType responseName rest) := by
           simpa [staticScopedFieldsWithResponseName, hallow] using hmem
         cases hresponse : fieldResponseName == responseName <;>
-          simp [validFieldsWithResponseName, hresponse, hrest hrestMem]
+          simp [fieldSelectionsWithResponseNameInScope, hresponse, hrest hrestMem]
       · cases hresponse : fieldResponseName == responseName
         · have hrestMem :
               selection ∈
@@ -599,7 +599,7 @@ theorem erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
                     lookupParent groundType responseName rest) := by
             simpa [staticScopedFieldsWithResponseName, hallow, hresponse]
               using hmem
-          simp [validFieldsWithResponseName, hresponse, hrest hrestMem]
+          simp [fieldSelectionsWithResponseNameInScope, hresponse, hrest hrestMem]
         · have hmem' :
               selection =
                   Selection.field fieldResponseName fieldName arguments
@@ -613,16 +613,16 @@ theorem erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
               using hmem
           rcases hmem' with hhead | htail
           · subst selection
-            simp [validFieldsWithResponseName, hresponse]
-          · simp [validFieldsWithResponseName, hresponse, hrest htail]
+            simp [fieldSelectionsWithResponseNameInScope, hresponse]
+          · simp [fieldSelectionsWithResponseNameInScope, hresponse, hrest htail]
   | Selection.inlineFragment none directives selectionSet :: rest, selection,
       hincludes, hmem => by
       have hselection :=
-        erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
+        erase_staticScopedFieldsWithResponseName_mem_fieldSelectionsWithResponseNameInScope
           schema boolCase lookupParent groundType responseName selectionSet
           selection hincludes
       have hrest :=
-        erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
+        erase_staticScopedFieldsWithResponseName_mem_fieldSelectionsWithResponseNameInScope
           schema boolCase lookupParent groundType responseName rest
           selection hincludes
       cases hallow :
@@ -633,7 +633,7 @@ theorem erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
                 (staticScopedFieldsWithResponseName schema boolCase
                   lookupParent groundType responseName rest) := by
           simpa [staticScopedFieldsWithResponseName, hallow] using hmem
-        simp [validFieldsWithResponseName, hrest hrestMem]
+        simp [fieldSelectionsWithResponseNameInScope, hrest hrestMem]
       · have hmem' :
             selection ∈
                 eraseCompleteScopedSelectionSet
@@ -646,12 +646,12 @@ theorem erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
           simpa [staticScopedFieldsWithResponseName, hallow,
             eraseCompleteScopedSelectionSet_append] using hmem
         rcases hmem' with hchild | htail
-        · simp [validFieldsWithResponseName, hselection hchild]
-        · simp [validFieldsWithResponseName, hrest htail]
+        · simp [fieldSelectionsWithResponseNameInScope, hselection hchild]
+        · simp [fieldSelectionsWithResponseNameInScope, hrest htail]
   | Selection.inlineFragment (some typeCondition) directives selectionSet ::
       rest, selection, hincludes, hmem => by
       have hrest :=
-        erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
+        erase_staticScopedFieldsWithResponseName_mem_fieldSelectionsWithResponseNameInScope
           schema boolCase lookupParent groundType responseName rest
           selection hincludes
       cases hbranch :
@@ -665,7 +665,7 @@ theorem erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
           simpa [staticScopedFieldsWithResponseName, hbranch] using hmem
         cases hoverlap :
             schema.typesOverlapBool lookupParent typeCondition <;>
-          simp [validFieldsWithResponseName, hoverlap, hrest hrestMem]
+          simp [fieldSelectionsWithResponseNameInScope, hoverlap, hrest hrestMem]
       · have hconditionIncludes :
             schema.typeIncludesObjectBool typeCondition groundType = true := by
           cases hallow :
@@ -677,7 +677,7 @@ theorem erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
           typesOverlapBool_true_of_common_ground schema hincludes
             hconditionIncludes
         have hselection :=
-          erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
+          erase_staticScopedFieldsWithResponseName_mem_fieldSelectionsWithResponseNameInScope
             schema boolCase lookupParent groundType responseName
             selectionSet selection hincludes
         have hmem' :
@@ -701,9 +701,9 @@ theorem erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
               eraseCompleteScopedSelectionSet_staticScopedFieldsWithResponseName_lookupParent
                 schema boolCase typeCondition lookupParent groundType
                 responseName selectionSet] using hchild
-          simp [validFieldsWithResponseName, hoverlap,
+          simp [fieldSelectionsWithResponseNameInScope, hoverlap,
             hselection hchildLookup]
-        · simp [validFieldsWithResponseName, hoverlap, hrest htail]
+        · simp [fieldSelectionsWithResponseNameInScope, hoverlap, hrest htail]
 
 theorem staticScopedFieldsWithResponseName_mem_field
     (schema : Schema) (boolCase : BoolCase)

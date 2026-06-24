@@ -239,33 +239,33 @@ theorem eraseCompleteScopedSelectionSet_inlineFragment_some_flatten_size_lt
     eraseCompleteScopedSelectionSet, eraseCompleteScopedSelection,
     completeSelectionSet_size_append, SelectionSet.size, Selection.size]
 
-theorem completeSize_withoutFieldsWithResponseName_le
+theorem completeSize_withoutFieldSelectionsWithResponseName_le
     (schema : Schema) (responseName : Name) :
     ∀ selectionSet,
       SelectionSet.size
-          (withoutFieldsWithResponseName schema responseName selectionSet)
+          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
         ≤ SelectionSet.size selectionSet
   | [] => by
-      simp [withoutFieldsWithResponseName, SelectionSet.size]
+      simp [withoutFieldSelectionsWithResponseName, SelectionSet.size]
   | selection :: rest => by
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           have hrest :=
-            completeSize_withoutFieldsWithResponseName_le schema responseName
+            completeSize_withoutFieldSelectionsWithResponseName_le schema responseName
               rest
           cases hresponse : fieldResponseName == responseName <;>
-            simp [withoutFieldsWithResponseName, hresponse, SelectionSet.size,
+            simp [withoutFieldSelectionsWithResponseName, hresponse, SelectionSet.size,
               Selection.size] <;>
             omega
       | inlineFragment typeCondition directives selectionSet =>
           have hselectionSet :=
-            completeSize_withoutFieldsWithResponseName_le schema responseName
+            completeSize_withoutFieldSelectionsWithResponseName_le schema responseName
               selectionSet
           have hrest :=
-            completeSize_withoutFieldsWithResponseName_le schema responseName
+            completeSize_withoutFieldSelectionsWithResponseName_le schema responseName
               rest
           cases typeCondition <;>
-            simp [withoutFieldsWithResponseName, SelectionSet.size,
+            simp [withoutFieldSelectionsWithResponseName, SelectionSet.size,
               Selection.size] <;>
             omega
 termination_by selectionSet => SelectionSet.size selectionSet
@@ -274,35 +274,35 @@ decreasing_by
     simp [SelectionSet.size, Selection.size]
     omega
 
-theorem validFieldsWithResponseName_append
+theorem fieldSelectionsWithResponseNameInScope_append
     (schema : Schema) (parentType responseName : Name) :
     ∀ left right,
-      validFieldsWithResponseName schema parentType responseName
+      fieldSelectionsWithResponseNameInScope schema parentType responseName
           (left ++ right)
         =
-      validFieldsWithResponseName schema parentType responseName left
-        ++ validFieldsWithResponseName schema parentType responseName right
+      fieldSelectionsWithResponseNameInScope schema parentType responseName left
+        ++ fieldSelectionsWithResponseNameInScope schema parentType responseName right
   | [], right => by
-      simp [validFieldsWithResponseName]
+      simp [fieldSelectionsWithResponseNameInScope]
   | selection :: rest, right => by
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           cases hresponse : fieldResponseName == responseName <;>
-            simp [validFieldsWithResponseName, hresponse,
-              validFieldsWithResponseName_append schema parentType
+            simp [fieldSelectionsWithResponseNameInScope, hresponse,
+              fieldSelectionsWithResponseNameInScope_append schema parentType
                 responseName rest right]
       | inlineFragment typeCondition directives selectionSet =>
           cases typeCondition with
           | none =>
-              simp [validFieldsWithResponseName,
-                validFieldsWithResponseName_append schema parentType
+              simp [fieldSelectionsWithResponseNameInScope,
+                fieldSelectionsWithResponseNameInScope_append schema parentType
                   responseName rest right,
                 List.append_assoc]
           | some typeCondition =>
               cases hoverlap :
                   schema.typesOverlapBool parentType typeCondition <;>
-                simp [validFieldsWithResponseName, hoverlap,
-                  validFieldsWithResponseName_append schema parentType
+                simp [fieldSelectionsWithResponseNameInScope, hoverlap,
+                  fieldSelectionsWithResponseNameInScope_append schema parentType
                     responseName rest right,
                   List.append_assoc]
 
@@ -655,13 +655,13 @@ def completeScopedSelectionSetStaticFieldsWithResponseName
           else
             restFields
 
-def completeScopedSelectionSetWithoutFieldsWithResponseName
+def completeScopedSelectionSetWithoutFieldSelectionsWithResponseName
     (schema : Schema) (responseName : Name) :
     List CompleteScopedSelection -> List CompleteScopedSelection
   | [] => []
   | scopedSelection :: rest =>
       let filteredRest :=
-        completeScopedSelectionSetWithoutFieldsWithResponseName schema
+        completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
           responseName rest
       match scopedSelection.selection with
       | .field fieldResponseName _fieldName _arguments _directives
@@ -674,7 +674,7 @@ def completeScopedSelectionSetWithoutFieldsWithResponseName
           { scopedSelection with
             selection :=
               .inlineFragment typeCondition directives
-                (withoutFieldsWithResponseName schema responseName
+                (withoutFieldSelectionsWithResponseName schema responseName
                   selectionSet) }
             :: filteredRest
 
@@ -733,72 +733,72 @@ theorem completeScopedSelectionSetStaticFieldsWithResponseName_append
                         schema boolCase groundType responseName rest right,
                       List.append_assoc]
 
-theorem completeScopedSelectionSetWithoutFieldsWithResponseName_append
+theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_append
     (schema : Schema) (responseName : Name) :
     ∀ left right,
-      completeScopedSelectionSetWithoutFieldsWithResponseName schema
+      completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
           responseName (left ++ right)
         =
-      completeScopedSelectionSetWithoutFieldsWithResponseName schema
+      completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
           responseName left
         ++
-      completeScopedSelectionSetWithoutFieldsWithResponseName schema
+      completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
           responseName right
   | [], right => by
-      simp [completeScopedSelectionSetWithoutFieldsWithResponseName]
+      simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName]
   | scopedSelection :: rest, right => by
       cases scopedSelection with
       | mk lookupParent selection =>
           cases selection with
           | field fieldResponseName fieldName arguments directives selectionSet =>
               cases hresponse : fieldResponseName == responseName <;>
-                simp [completeScopedSelectionSetWithoutFieldsWithResponseName,
+                simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
                   hresponse,
-                  completeScopedSelectionSetWithoutFieldsWithResponseName_append
+                  completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_append
                     schema responseName rest right]
           | inlineFragment typeCondition directives selectionSet =>
-              simp [completeScopedSelectionSetWithoutFieldsWithResponseName,
-                completeScopedSelectionSetWithoutFieldsWithResponseName_append
+              simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
+                completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_append
                   schema responseName rest right]
 
-theorem eraseCompleteScopedSelectionSet_withoutFieldsWithResponseName
+theorem eraseCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName
     (schema : Schema) (responseName : Name) :
     ∀ scopedSelections,
       eraseCompleteScopedSelectionSet
-          (completeScopedSelectionSetWithoutFieldsWithResponseName schema
+          (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
             responseName scopedSelections)
         =
-      withoutFieldsWithResponseName schema responseName
+      withoutFieldSelectionsWithResponseName schema responseName
         (eraseCompleteScopedSelectionSet scopedSelections)
   | [] => by
-      simp [completeScopedSelectionSetWithoutFieldsWithResponseName,
-        eraseCompleteScopedSelectionSet, withoutFieldsWithResponseName]
+      simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
+        eraseCompleteScopedSelectionSet, withoutFieldSelectionsWithResponseName]
   | scopedSelection :: rest => by
       cases scopedSelection with
       | mk lookupParent selection =>
           cases selection with
           | field fieldResponseName fieldName arguments directives selectionSet =>
               cases hresponse : fieldResponseName == responseName <;>
-                simp [completeScopedSelectionSetWithoutFieldsWithResponseName,
+                simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
                   eraseCompleteScopedSelectionSet,
-                  eraseCompleteScopedSelection, withoutFieldsWithResponseName,
+                  eraseCompleteScopedSelection, withoutFieldSelectionsWithResponseName,
                   hresponse,
-                  eraseCompleteScopedSelectionSet_withoutFieldsWithResponseName
+                  eraseCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName
                     schema responseName rest]
           | inlineFragment typeCondition directives selectionSet =>
-              simp [completeScopedSelectionSetWithoutFieldsWithResponseName,
+              simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
                 eraseCompleteScopedSelectionSet, eraseCompleteScopedSelection,
-                withoutFieldsWithResponseName,
-                eraseCompleteScopedSelectionSet_withoutFieldsWithResponseName
+                withoutFieldSelectionsWithResponseName,
+                eraseCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName
                   schema responseName rest]
 
-theorem eraseCompleteScopedSelectionSet_withoutFieldsWithResponseName_size_lt_field_directives
+theorem eraseCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName_size_lt_field_directives
     (schema : Schema) (lookupParent responseName fieldName : Name)
     (arguments : List Argument) (directives : List DirectiveApplication)
     (selectionSet : List Selection) (rest : List CompleteScopedSelection) :
     SelectionSet.size
         (eraseCompleteScopedSelectionSet
-          (completeScopedSelectionSetWithoutFieldsWithResponseName schema
+          (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
             responseName rest))
       <
     SelectionSet.size
@@ -810,11 +810,11 @@ theorem eraseCompleteScopedSelectionSet_withoutFieldsWithResponseName_size_lt_fi
           :: rest)) := by
   have hle :
       SelectionSet.size
-          (withoutFieldsWithResponseName schema responseName
+          (withoutFieldSelectionsWithResponseName schema responseName
             (eraseCompleteScopedSelectionSet rest))
         ≤
       SelectionSet.size (eraseCompleteScopedSelectionSet rest) :=
-    completeSize_withoutFieldsWithResponseName_le schema responseName
+    completeSize_withoutFieldSelectionsWithResponseName_le schema responseName
       (eraseCompleteScopedSelectionSet rest)
   have htail :
       SelectionSet.size (eraseCompleteScopedSelectionSet rest)
@@ -832,18 +832,18 @@ theorem eraseCompleteScopedSelectionSet_withoutFieldsWithResponseName_size_lt_fi
           Selection.field responseName fieldName arguments directives
             selectionSet }
       rest
-  rw [eraseCompleteScopedSelectionSet_withoutFieldsWithResponseName]
+  rw [eraseCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName]
   exact Nat.lt_of_le_of_lt hle htail
 
-theorem completeScopedSelectionSetWithoutFieldsWithResponseName_lookupValid
+theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_lookupValid
     (schema : Schema) (responseName : Name) :
     ∀ scopedSelections,
       completeScopedSelectionSetLookupValid schema scopedSelections ->
         completeScopedSelectionSetLookupValid schema
-          (completeScopedSelectionSetWithoutFieldsWithResponseName schema
+          (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
             responseName scopedSelections)
   | [], _hvalid => by
-      simp [completeScopedSelectionSetWithoutFieldsWithResponseName,
+      simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
         completeScopedSelectionSetLookupValid]
   | scopedSelection :: rest, hvalid => by
       have hheadValid :
@@ -855,7 +855,7 @@ theorem completeScopedSelectionSetWithoutFieldsWithResponseName_lookupValid
         intro candidate hcandidate
         exact hvalid candidate (by simp [hcandidate])
       have hrest :=
-        completeScopedSelectionSetWithoutFieldsWithResponseName_lookupValid
+        completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_lookupValid
           schema responseName rest htailValid
       cases scopedSelection with
       | mk lookupParent selection =>
@@ -863,17 +863,17 @@ theorem completeScopedSelectionSetWithoutFieldsWithResponseName_lookupValid
           | field fieldResponseName fieldName arguments directives selectionSet =>
               cases hresponse : fieldResponseName == responseName
               · intro candidate hcandidate
-                simp [completeScopedSelectionSetWithoutFieldsWithResponseName,
+                simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
                   hresponse] at hcandidate
                 rcases hcandidate with hcandidate | hcandidate
                 · subst candidate
                   exact hheadValid
                 · exact hrest candidate hcandidate
-              · simpa [completeScopedSelectionSetWithoutFieldsWithResponseName,
+              · simpa [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
                   hresponse] using hrest
           | inlineFragment typeCondition directives selectionSet =>
               intro candidate hcandidate
-              simp [completeScopedSelectionSetWithoutFieldsWithResponseName]
+              simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName]
                 at hcandidate
               rcases hcandidate with hcandidate | hcandidate
               · subst candidate
@@ -884,7 +884,7 @@ theorem completeScopedSelectionSetWithoutFieldsWithResponseName_lookupValid
                           selectionSet := by
                       simpa [selectionLookupValid] using hheadValid
                     simpa [selectionLookupValid] using
-                      selectionSetLookupValid_withoutFieldsWithResponseName
+                      selectionSetLookupValid_withoutFieldSelectionsWithResponseName
                         schema responseName lookupParent selectionSet
                         hbodyValid
                 | some typeCondition =>
@@ -893,49 +893,49 @@ theorem completeScopedSelectionSetWithoutFieldsWithResponseName_lookupValid
                           selectionSet := by
                       simpa [selectionLookupValid] using hheadValid
                     simpa [selectionLookupValid] using
-                      selectionSetLookupValid_withoutFieldsWithResponseName
+                      selectionSetLookupValid_withoutFieldSelectionsWithResponseName
                         schema responseName typeCondition selectionSet
                         hbodyValid
               · exact hrest candidate hcandidate
 
-theorem completeScopedSelectionSetWithoutFieldsWithResponseName_semanticsReady
+theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_semanticsReady
     (schema : Schema) (execParent responseName : Name) :
     ∀ scopedSelections,
       completeScopedSelectionSetSemanticsReady schema execParent
           scopedSelections ->
         completeScopedSelectionSetSemanticsReady schema execParent
-          (completeScopedSelectionSetWithoutFieldsWithResponseName schema
+          (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
             responseName scopedSelections)
   | scopedSelections, hready => by
       simpa [completeScopedSelectionSetSemanticsReady,
-        eraseCompleteScopedSelectionSet_withoutFieldsWithResponseName] using
-        selectionSetSemanticsReady_withoutFieldsWithResponseName schema
+        eraseCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName] using
+        selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName schema
           responseName execParent
           (eraseCompleteScopedSelectionSet scopedSelections) hready
 
-theorem completeScopedSelectionSetWithoutFieldsWithResponseName_canMerge
+theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_canMerge
     (schema : Schema) (execParent responseName : Name) :
     ∀ scopedSelections,
       completeScopedSelectionSetCanMerge schema execParent scopedSelections ->
         completeScopedSelectionSetCanMerge schema execParent
-          (completeScopedSelectionSetWithoutFieldsWithResponseName schema
+          (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
             responseName scopedSelections)
   | scopedSelections, hmerge => by
       simpa [completeScopedSelectionSetCanMerge,
-        eraseCompleteScopedSelectionSet_withoutFieldsWithResponseName] using
-        fieldsInSetCanMerge_withoutFieldsWithResponseName schema responseName
+        eraseCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName] using
+        fieldsInSetCanMerge_withoutFieldSelectionsWithResponseName schema responseName
           execParent (eraseCompleteScopedSelectionSet scopedSelections) hmerge
 
-theorem completeScopedSelectionSetWithoutFieldsWithResponseName_groundApplies
+theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_groundApplies
     (schema : Schema) (groundType responseName : Name) :
     ∀ scopedSelections,
       completeScopedSelectionSetGroundApplies schema groundType
           scopedSelections ->
         completeScopedSelectionSetGroundApplies schema groundType
-          (completeScopedSelectionSetWithoutFieldsWithResponseName schema
+          (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
             responseName scopedSelections)
   | [], _hground => by
-      simp [completeScopedSelectionSetWithoutFieldsWithResponseName,
+      simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
         completeScopedSelectionSetGroundApplies]
   | scopedSelection :: rest, hground => by
       have hheadGround :
@@ -948,7 +948,7 @@ theorem completeScopedSelectionSetWithoutFieldsWithResponseName_groundApplies
         intro candidate hcandidate
         exact hground candidate (by simp [hcandidate])
       have hrest :=
-        completeScopedSelectionSetWithoutFieldsWithResponseName_groundApplies
+        completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_groundApplies
           schema groundType responseName rest htailGround
       cases scopedSelection with
       | mk lookupParent selection =>
@@ -956,17 +956,17 @@ theorem completeScopedSelectionSetWithoutFieldsWithResponseName_groundApplies
           | field fieldResponseName fieldName arguments directives selectionSet =>
               cases hresponse : fieldResponseName == responseName
               · intro candidate hcandidate
-                simp [completeScopedSelectionSetWithoutFieldsWithResponseName,
+                simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
                   hresponse] at hcandidate
                 rcases hcandidate with hcandidate | hcandidate
                 · subst candidate
                   exact hheadGround
                 · exact hrest candidate hcandidate
-              · simpa [completeScopedSelectionSetWithoutFieldsWithResponseName,
+              · simpa [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
                   hresponse] using hrest
           | inlineFragment typeCondition directives selectionSet =>
               intro candidate hcandidate
-              simp [completeScopedSelectionSetWithoutFieldsWithResponseName]
+              simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName]
                 at hcandidate
               rcases hcandidate with hcandidate | hcandidate
               · subst candidate

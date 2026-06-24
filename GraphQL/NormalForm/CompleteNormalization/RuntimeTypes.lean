@@ -131,7 +131,7 @@ theorem fieldMerge_collectFields_staticScoped_merged_mem_fieldHead_merged
       scopedField ∈ FieldMerge.collectFields schema runtimeType
         (selectionSet ++
           mergeSelectionSets
-            (validFieldsWithResponseName schema lookupParent responseName
+            (fieldSelectionsWithResponseNameInScope schema lookupParent responseName
               rest)) := by
   intro hground hfield
   rw [FieldMerge.collectFields_append] at hfield ⊢
@@ -139,7 +139,7 @@ theorem fieldMerge_collectFields_staticScoped_merged_mem_fieldHead_merged
   · exact List.mem_append_left
       (FieldMerge.collectFields schema runtimeType
         (mergeSelectionSets
-          (validFieldsWithResponseName schema lookupParent responseName
+          (fieldSelectionsWithResponseNameInScope schema lookupParent responseName
             rest)))
       hchild
   · rcases
@@ -152,15 +152,15 @@ theorem fieldMerge_collectFields_staticScoped_merged_mem_fieldHead_merged
       ⟨selection, hselection, hselectionField⟩
     have hvalid :
         selection ∈
-          validFieldsWithResponseName schema lookupParent responseName rest :=
-      erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
+          fieldSelectionsWithResponseNameInScope schema lookupParent responseName rest :=
+      erase_staticScopedFieldsWithResponseName_mem_fieldSelectionsWithResponseNameInScope
         schema boolCase lookupParent groundType responseName rest selection
         hground hselection
     exact List.mem_append_right
       (FieldMerge.collectFields schema runtimeType selectionSet)
       (fieldMerge_collectFields_mergeSelectionSets_mem_of_mem schema
         runtimeType
-        (validFieldsWithResponseName schema lookupParent responseName rest)
+        (fieldSelectionsWithResponseNameInScope schema lookupParent responseName rest)
         selection scopedField hvalid hselectionField)
 
 theorem selectionSetLookupValid_field_head_clear_directives
@@ -358,13 +358,13 @@ theorem selectionSetLookupValid_field_staticScoped_merged_object
     · intro selection hselection
       have hvalidSelection :
           selection ∈
-            validFieldsWithResponseName schema lookupParent responseName
+            fieldSelectionsWithResponseNameInScope schema lookupParent responseName
               rest :=
-        erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
+        erase_staticScopedFieldsWithResponseName_mem_fieldSelectionsWithResponseNameInScope
           schema boolCase lookupParent groundType responseName rest
           selection hground hselection
       rcases
-        validFieldsWithResponseName_matching_field_shape_of_canMerge_object_lookupValid
+        fieldSelectionsWithResponseNameInScope_matching_field_shape_of_canMerge_object_lookupValid
           schema lookupParent responseName fieldName arguments selectionSet
           rest hobject hlookupValidNoDirectives hmergeNoDirectives
           selection hvalidSelection with
@@ -377,15 +377,15 @@ theorem selectionSetLookupValid_field_staticScoped_merged_object
       have hvalidMatched :
           Selection.field responseName matchedFieldName matchedArguments
               matchedDirectives matchedSubselections
-            ∈ validFieldsWithResponseName schema lookupParent responseName
+            ∈ fieldSelectionsWithResponseNameInScope schema lookupParent responseName
               rest :=
-        erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
+        erase_staticScopedFieldsWithResponseName_mem_fieldSelectionsWithResponseNameInScope
           schema boolCase lookupParent groundType responseName rest
           (Selection.field responseName matchedFieldName matchedArguments
             matchedDirectives matchedSubselections)
           hground hmatched
       exact
-        validFieldsWithResponseName_matching_subselections_lookupValid_of_child_object
+        fieldSelectionsWithResponseNameInScope_matching_subselections_lookupValid_of_child_object
           schema variableDefinitions lookupParent responseName fieldName
           runtimeType arguments selectionSet rest fieldDefinition hschema
           hobject hvalidNoDirectives hmergeNoDirectives hlookup hinclude
@@ -432,7 +432,7 @@ theorem fieldsInSetCanMerge_field_staticScoped_merged_object
       FieldMerge.fieldsInSetCanMerge schema runtimeType
         (selectionSet ++
           mergeSelectionSets
-            (validFieldsWithResponseName schema lookupParent responseName
+            (fieldSelectionsWithResponseNameInScope schema lookupParent responseName
               rest)) :=
     fieldsInSetCanMerge_fieldHead_merged_of_canMerge_object_lookupValid
       schema lookupParent responseName fieldName runtimeType arguments
@@ -523,13 +523,13 @@ theorem selectionSetSemanticsReady_field_staticScoped_merged_object
     · intro selection hselection
       have hvalid :
           selection ∈
-            validFieldsWithResponseName schema lookupParent responseName
+            fieldSelectionsWithResponseNameInScope schema lookupParent responseName
               rest :=
-        erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
+        erase_staticScopedFieldsWithResponseName_mem_fieldSelectionsWithResponseNameInScope
           schema boolCase lookupParent groundType responseName rest
           selection hground hselection
       rcases
-        validFieldsWithResponseName_matching_field_shape_of_canMerge_object_lookupValid
+        fieldSelectionsWithResponseNameInScope_matching_field_shape_of_canMerge_object_lookupValid
           schema lookupParent responseName fieldName arguments selectionSet
           rest hobject hlookupValidNoDirectives hmergeNoDirectives
           selection hvalid with
@@ -542,15 +542,15 @@ theorem selectionSetSemanticsReady_field_staticScoped_merged_object
       have hvalid :
           Selection.field responseName matchedFieldName matchedArguments
               matchedDirectives matchedSubselections
-            ∈ validFieldsWithResponseName schema lookupParent responseName
+            ∈ fieldSelectionsWithResponseNameInScope schema lookupParent responseName
               rest :=
-        erase_staticScopedFieldsWithResponseName_mem_validFieldsWithResponseName
+        erase_staticScopedFieldsWithResponseName_mem_fieldSelectionsWithResponseNameInScope
           schema boolCase lookupParent groundType responseName rest
           (Selection.field responseName matchedFieldName matchedArguments
             matchedDirectives matchedSubselections)
           hground hmatched
       exact
-        validFieldsWithResponseName_matching_subselections_semanticsReady_of_child_object
+        fieldSelectionsWithResponseNameInScope_matching_subselections_semanticsReady_of_child_object
           schema lookupParent responseName fieldName runtimeType arguments
           selectionSet rest fieldDefinition hobject hreadyNoDirectives
           hlookupValidNoDirectives hmergeNoDirectives hlookup hinclude

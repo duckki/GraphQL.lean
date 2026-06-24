@@ -77,8 +77,8 @@ theorem normalizeSelectionSet_directiveFree (schema : Schema) :
       selectionSetDirectiveFree_tail hfree
     have hfilteredRestFree :
         selectionSetDirectiveFree
-          (withoutFieldsWithResponseName schema responseName rest) :=
-      withoutFieldsWithResponseName_directiveFree schema responseName rest hrestFree
+          (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+      withoutFieldSelectionsWithResponseName_directiveFree schema responseName rest hrestFree
     simpa [normalizeSelectionSet, hlookup] using hrest hfilteredRestFree
   | case3 parentType rest responseName fieldName arguments directives
       selectionSet fieldDefinition hlookup matching mergedSubselections
@@ -100,16 +100,16 @@ theorem normalizeSelectionSet_directiveFree (schema : Schema) :
       hselectionFree.2
     have hfilteredRestFree :
         selectionSetDirectiveFree
-          (withoutFieldsWithResponseName schema responseName rest) :=
-      withoutFieldsWithResponseName_directiveFree schema responseName rest hrestFree
+          (withoutFieldSelectionsWithResponseName schema responseName rest) :=
+      withoutFieldSelectionsWithResponseName_directiveFree schema responseName rest hrestFree
     have hnormalizedRest :
         selectionSetDirectiveFree
           (normalizeSelectionSet schema parentType
-            (withoutFieldsWithResponseName schema responseName rest)) :=
+            (withoutFieldSelectionsWithResponseName schema responseName rest)) :=
       hrest hfilteredRestFree
     have hmatchingFree : selectionSetDirectiveFree matching := by
       subst matching
-      exact validFieldsWithResponseName_directiveFree schema parentType
+      exact fieldSelectionsWithResponseNameInScope_directiveFree schema parentType
         responseName rest hrestFree
     have hmergedSubselectionsFree :
         selectionSetDirectiveFree mergedSubselections := by
@@ -384,7 +384,7 @@ theorem normalizeSelectionSet_responseNameFree (schema : Schema) :
       intro hfree
       have htail := selectionSetResponseNameFree_tail hfree
       have hfiltered :=
-        withoutFieldsWithResponseName_preserves_responseNameFree schema
+        withoutFieldSelectionsWithResponseName_preserves_responseNameFree schema
           fieldResponseName parentType responseName rest htail
       simpa [normalizeSelectionSet, hlookup] using hrest hfiltered
   | case3 parentType rest fieldResponseName fieldName arguments directives
@@ -400,7 +400,7 @@ theorem normalizeSelectionSet_responseNameFree (schema : Schema) :
       have hhead := selectionSetResponseNameFree_head hfree
       have htail := selectionSetResponseNameFree_tail hfree
       have hfiltered :=
-        withoutFieldsWithResponseName_preserves_responseNameFree schema
+        withoutFieldSelectionsWithResponseName_preserves_responseNameFree schema
           fieldResponseName parentType responseName rest htail
       have hnormalizedRest := hrest hfiltered
       have hnormalizedHead :
@@ -481,12 +481,12 @@ theorem normalizeSelectionSet_without_responseName_not_mem
     (selectionSet : List Selection) :
     responseName ∉
       (normalizeSelectionSet schema parentType
-        (withoutFieldsWithResponseName schema responseName selectionSet)).filterMap
+        (withoutFieldSelectionsWithResponseName schema responseName selectionSet)).filterMap
         Selection.responseName? := by
   apply responseName_not_mem_filterMap_of_responseNameFree
   exact normalizeSelectionSet_responseNameFree schema parentType responseName
-    (withoutFieldsWithResponseName schema responseName selectionSet)
-    (withoutFieldsWithResponseName_responseNameFree schema parentType
+    (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+    (withoutFieldSelectionsWithResponseName_responseNameFree schema parentType
       responseName selectionSet)
 
 theorem normalizeSelectionSet_responseNamesNodup (schema : Schema) :

@@ -162,7 +162,7 @@ def fieldsWithResponseName (responseName : Name) (selectionSet : List Selection)
     | none => false)
 
 -- Spec 6.3.2 field collection helper: removes direct fields with one response name.
-def withoutFieldsWithResponseName (responseName : Name) (selectionSet : List Selection) :
+def withoutFieldSelectionsWithResponseName (responseName : Name) (selectionSet : List Selection) :
     List Selection :=
   selectionSet.filter (fun selection =>
     match selection.responseName? with

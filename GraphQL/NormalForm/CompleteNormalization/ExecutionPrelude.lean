@@ -66,12 +66,12 @@ theorem collectedResponseSelectionSet_collectFields_allFields_topNoDirectives
               selectionSet)
           =
         mergeSelectionSets
-          (validFieldsWithResponseName schema parentType responseName
+          (fieldSelectionsWithResponseNameInScope schema parentType responseName
             selectionSet)
   | [], _hall, _hdirectives => by
       simp [Execution.collectFields,
         collectedResponseSelectionSet,
-        validFieldsWithResponseName, mergeSelectionSets]
+        fieldSelectionsWithResponseNameInScope, mergeSelectionSets]
   | selection :: rest, hall, hdirectives => by
       have htailAll : selectionsAllFields rest := by
         intro candidate hcandidate
@@ -104,7 +104,7 @@ theorem collectedResponseSelectionSet_collectFields_allFields_topNoDirectives
           rw [GroundTypeNormalization.collectedResponseSelectionSet_mergeExecutableGroups]
           · cases hresponse : fieldResponseName == responseName <;>
               simp [collectedResponseSelectionSet,
-                validFieldsWithResponseName, hresponse, hrest,
+                fieldSelectionsWithResponseNameInScope, hresponse, hrest,
                 mergeSelectionSets, Selection.subselections,
                 Execution.mergedFieldSelectionSet]
           · exact collectFields_namesNodup schema
@@ -112,7 +112,7 @@ theorem collectedResponseSelectionSet_collectFields_allFields_topNoDirectives
       | inlineFragment typeCondition directives selectionSet =>
           simp [Selection.isField] at hheadField
 
-theorem mergedFieldSelectionSet_field_head_eq_validFieldsWithResponseName_topNoDirectives
+theorem mergedFieldSelectionSet_field_head_eq_fieldSelectionsWithResponseNameInScope_topNoDirectives
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
@@ -147,7 +147,7 @@ theorem mergedFieldSelectionSet_field_head_eq_validFieldsWithResponseName_topNoD
         =
       subselections
         ++ mergeSelectionSets
-          (validFieldsWithResponseName schema parentType responseName rest) := by
+          (fieldSelectionsWithResponseNameInScope schema parentType responseName rest) := by
   intro sourceField hall hdirectives hcollect
   have hprojection :=
     collectedResponseSelectionSet_collectFields_allFields_topNoDirectives
@@ -156,7 +156,7 @@ theorem mergedFieldSelectionSet_field_head_eq_validFieldsWithResponseName_topNoD
         :: rest)
       hall hdirectives
   simp [collectedResponseSelectionSet, hcollect,
-    validFieldsWithResponseName, mergeSelectionSets, Selection.subselections]
+    fieldSelectionsWithResponseNameInScope, mergeSelectionSets, Selection.subselections]
     at hprojection
   simpa [sourceField] using hprojection
 
@@ -266,12 +266,12 @@ theorem mergedFieldSelectionSet_staticCollect_field_head_eq_staticScopedFields
       cases hshape
       rfl
   have hprojection :=
-    mergedFieldSelectionSet_field_head_eq_validFieldsWithResponseName_topNoDirectives
+    mergedFieldSelectionSet_field_head_eq_fieldSelectionsWithResponseNameInScope_topNoDirectives
       schema variableValues lookupParent source responseName fieldName
       arguments normalizedSelectionSet normalizedRest normalizedFields
       normalizedTail hall hdirectives hcollectHead
   simpa [normalizedSelectionSet, normalizedRest, normalizedField,
-    validFieldsWithResponseName_staticCollectForGround_scoped
+    fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
       schema variables lookupParent lookupParent groundType responseName
       boolCase rest] using hprojection
 
@@ -342,60 +342,60 @@ theorem staticCollectCompleteScopedSelectionSet_fields_no_directives
           · exact
               ih htail
 
-theorem staticCollectCompleteScopedSelectionSet_withoutFieldsWithResponseName
+theorem staticCollectCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName
     (schema : Schema) (variables : List BoolVar)
     (groundType : Name) (boolCase : BoolCase)
     (responseName : Name) :
     ∀ scopedSelections,
-      withoutFieldsWithResponseName schema responseName
+      withoutFieldSelectionsWithResponseName schema responseName
           (staticCollectCompleteScopedSelectionSet schema variables groundType
             boolCase scopedSelections)
         =
       staticCollectCompleteScopedSelectionSet schema variables groundType
         boolCase
-        (completeScopedSelectionSetWithoutFieldsWithResponseName schema
+        (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
           responseName scopedSelections)
   | [] => by
       simp [staticCollectCompleteScopedSelectionSet,
-        completeScopedSelectionSetWithoutFieldsWithResponseName,
-        withoutFieldsWithResponseName]
+        completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
+        withoutFieldSelectionsWithResponseName]
   | scopedSelection :: rest => by
       cases scopedSelection with
       | mk lookupParent selection =>
           rw [staticCollectCompleteScopedSelectionSet]
-          rw [withoutFieldsWithResponseName_append]
+          rw [withoutFieldSelectionsWithResponseName_append]
           unfold staticCollectCompleteScopedSelection
           change
-            withoutFieldsWithResponseName schema responseName
+            withoutFieldSelectionsWithResponseName schema responseName
                 (staticCollectForGround schema variables
                   lookupParent groundType boolCase [selection])
               ++
-              withoutFieldsWithResponseName schema responseName
+              withoutFieldSelectionsWithResponseName schema responseName
                 (staticCollectCompleteScopedSelectionSet schema variables
                   groundType boolCase rest)
             =
             staticCollectCompleteScopedSelectionSet schema variables groundType
               boolCase
-              (completeScopedSelectionSetWithoutFieldsWithResponseName schema
+              (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
                 responseName
                 ({ lookupParent := lookupParent, selection := selection }
                   :: rest))
-          rw [← staticCollectForGround_withoutFieldsWithResponseName]
-          rw [staticCollectCompleteScopedSelectionSet_withoutFieldsWithResponseName
+          rw [← staticCollectForGround_withoutFieldSelectionsWithResponseName]
+          rw [staticCollectCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName
             schema variables groundType boolCase responseName rest]
           cases selection with
           | field fieldResponseName fieldName arguments directives selectionSet =>
               cases hresponse : fieldResponseName == responseName <;>
-                simp [completeScopedSelectionSetWithoutFieldsWithResponseName,
+                simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
                   staticCollectCompleteScopedSelectionSet,
                   staticCollectCompleteScopedSelection,
                   staticCollectForGround,
-                  withoutFieldsWithResponseName, hresponse]
+                  withoutFieldSelectionsWithResponseName, hresponse]
           | inlineFragment typeCondition directives selectionSet =>
-              simp [completeScopedSelectionSetWithoutFieldsWithResponseName,
+              simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
                 staticCollectCompleteScopedSelectionSet,
                 staticCollectCompleteScopedSelection,
-                withoutFieldsWithResponseName]
+                withoutFieldSelectionsWithResponseName]
 
 theorem mergedFieldSelectionSet_staticCollectCompleteScoped_field_head_eq_staticFields
     (schema : Schema)
@@ -512,12 +512,12 @@ theorem mergedFieldSelectionSet_staticCollectCompleteScoped_field_head_eq_static
       cases hshape
       rfl
   have hprojection :=
-    mergedFieldSelectionSet_field_head_eq_validFieldsWithResponseName_topNoDirectives
+    mergedFieldSelectionSet_field_head_eq_fieldSelectionsWithResponseNameInScope_topNoDirectives
       schema variableValues execParent source responseName fieldName
       arguments normalizedSelectionSet normalizedRest normalizedFields
       normalizedTail hall hdirectives hcollectHead
   simpa [normalizedSelectionSet, normalizedRest, normalizedField,
-    validFieldsWithResponseName_staticCollectCompleteScopedSelectionSet
+    fieldSelectionsWithResponseNameInScope_staticCollectCompleteScopedSelectionSet
       schema variables execParent groundType responseName boolCase rest]
     using hprojection
 

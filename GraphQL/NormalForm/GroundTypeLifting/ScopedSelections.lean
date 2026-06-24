@@ -444,13 +444,13 @@ theorem scopedSelectionSetRuntimeApplies_append_right
   intro happlies scopedSelection hscoped
   exact happlies scopedSelection (List.mem_append.mpr (Or.inr hscoped))
 
-def scopedValidFieldsWithResponseName
+def scopedFieldSelectionsWithResponseNameInScope
     (schema : Schema) (filterParent responseName liftParent : Name) :
     List Selection -> List ScopedSelection
   | [] => []
   | selection :: rest =>
       let restFields :=
-        scopedValidFieldsWithResponseName schema filterParent responseName
+        scopedFieldSelectionsWithResponseNameInScope schema filterParent responseName
           liftParent rest
       match selection with
       | .field fieldResponseName _fieldName _arguments _directives
@@ -460,30 +460,30 @@ def scopedValidFieldsWithResponseName
           else
             restFields
       | .inlineFragment none _directives selectionSet =>
-          scopedValidFieldsWithResponseName schema filterParent responseName
+          scopedFieldSelectionsWithResponseNameInScope schema filterParent responseName
               liftParent selectionSet
             ++ restFields
       | .inlineFragment (some typeCondition) _directives selectionSet =>
           if schema.typesOverlapBool filterParent typeCondition then
-            scopedValidFieldsWithResponseName schema filterParent responseName
+            scopedFieldSelectionsWithResponseNameInScope schema filterParent responseName
                 typeCondition selectionSet
               ++ restFields
           else
             restFields
 
-theorem scopedValidFieldsWithResponseName_runtimeApplies
+theorem scopedFieldSelectionsWithResponseNameInScope_runtimeApplies
     (schema : Schema) (filterParent responseName liftParent runtimeType : Name)
     (selectionSet : List Selection) :
     objectTypeNameBool schema filterParent = true ->
     schema.typeIncludesObjectBool filterParent runtimeType = true ->
     schema.typeIncludesObjectBool liftParent runtimeType = true ->
       scopedSelectionSetRuntimeApplies schema runtimeType
-        (scopedValidFieldsWithResponseName schema filterParent responseName
+        (scopedFieldSelectionsWithResponseNameInScope schema filterParent responseName
           liftParent selectionSet) :=
   match selectionSet with
   | [] => by
       intro _hfilterObject _hfilterInclude _hliftInclude
-      simp [scopedValidFieldsWithResponseName,
+      simp [scopedFieldSelectionsWithResponseNameInScope,
         scopedSelectionSetRuntimeApplies]
   | selection :: rest => by
       intro hfilterObject hfilterInclude hliftInclude
@@ -498,11 +498,11 @@ theorem scopedValidFieldsWithResponseName_runtimeApplies
           by_cases hresponse :
               (fieldResponseName == responseName) = true
           · intro scopedSelection hscoped
-            simp [scopedValidFieldsWithResponseName, hresponse] at hscoped
+            simp [scopedFieldSelectionsWithResponseNameInScope, hresponse] at hscoped
             rcases hscoped with hhead | htail
             · subst scopedSelection
               exact hliftInclude
-            · exact scopedValidFieldsWithResponseName_runtimeApplies schema
+            · exact scopedFieldSelectionsWithResponseNameInScope_runtimeApplies schema
                 filterParent responseName liftParent filterParent rest
                 hfilterObject
                 (object_typeIncludesObjectBool_self schema hfilterObjectProp)
@@ -512,8 +512,8 @@ theorem scopedValidFieldsWithResponseName_runtimeApplies
               cases hmatch : fieldResponseName == responseName
               · rfl
               · exact False.elim (hresponse hmatch)
-            simpa [scopedValidFieldsWithResponseName, hfalse] using
-              scopedValidFieldsWithResponseName_runtimeApplies schema
+            simpa [scopedFieldSelectionsWithResponseNameInScope, hfalse] using
+              scopedFieldSelectionsWithResponseNameInScope_runtimeApplies schema
                 filterParent responseName liftParent filterParent rest
                 hfilterObject
                 (object_typeIncludesObjectBool_self schema hfilterObjectProp)
@@ -522,20 +522,20 @@ theorem scopedValidFieldsWithResponseName_runtimeApplies
           cases typeCondition with
           | none =>
               have hbody :=
-                scopedValidFieldsWithResponseName_runtimeApplies schema
+                scopedFieldSelectionsWithResponseNameInScope_runtimeApplies schema
                   filterParent responseName liftParent filterParent
                   subselections hfilterObject
                   (object_typeIncludesObjectBool_self schema
                     hfilterObjectProp)
                   hliftInclude
               have hrest :=
-                scopedValidFieldsWithResponseName_runtimeApplies schema
+                scopedFieldSelectionsWithResponseNameInScope_runtimeApplies schema
                   filterParent responseName liftParent filterParent rest
                   hfilterObject
                   (object_typeIncludesObjectBool_self schema
                     hfilterObjectProp)
                   hliftInclude
-              simpa [scopedValidFieldsWithResponseName] using
+              simpa [scopedFieldSelectionsWithResponseNameInScope] using
                 scopedSelectionSetRuntimeApplies_append hbody hrest
           | some typeCondition =>
               by_cases hoverlap :
@@ -546,20 +546,20 @@ theorem scopedValidFieldsWithResponseName_runtimeApplies
                   typeIncludesObjectBool_of_object_typesOverlapBool schema
                     hfilterObjectProp hoverlap
                 have hbody :=
-                  scopedValidFieldsWithResponseName_runtimeApplies schema
+                  scopedFieldSelectionsWithResponseNameInScope_runtimeApplies schema
                     filterParent responseName typeCondition filterParent
                     subselections hfilterObject
                     (object_typeIncludesObjectBool_self schema
                       hfilterObjectProp)
                     htypeInclude
                 have hrest :=
-                  scopedValidFieldsWithResponseName_runtimeApplies schema
+                  scopedFieldSelectionsWithResponseNameInScope_runtimeApplies schema
                     filterParent responseName liftParent filterParent rest
                     hfilterObject
                     (object_typeIncludesObjectBool_self schema
                       hfilterObjectProp)
                     hliftInclude
-                simpa [scopedValidFieldsWithResponseName, hoverlap] using
+                simpa [scopedFieldSelectionsWithResponseNameInScope, hoverlap] using
                   scopedSelectionSetRuntimeApplies_append hbody hrest
               · have hfalse :
                     schema.typesOverlapBool filterParent typeCondition =
@@ -568,23 +568,23 @@ theorem scopedValidFieldsWithResponseName_runtimeApplies
                       schema.typesOverlapBool filterParent typeCondition
                   · rfl
                   · exact False.elim (hoverlap hmatch)
-                simpa [scopedValidFieldsWithResponseName, hfalse] using
-                  scopedValidFieldsWithResponseName_runtimeApplies schema
+                simpa [scopedFieldSelectionsWithResponseNameInScope, hfalse] using
+                  scopedFieldSelectionsWithResponseNameInScope_runtimeApplies schema
                     filterParent responseName liftParent filterParent rest
                     hfilterObject
                     (object_typeIncludesObjectBool_self schema
                       hfilterObjectProp)
                     hliftInclude
 
-theorem scopedValidFieldsWithResponseName_lookupValid
+theorem scopedFieldSelectionsWithResponseNameInScope_lookupValid
     (schema : Schema) (filterParent responseName liftParent : Name) :
     ∀ selectionSet,
       selectionSetLookupValid schema liftParent selectionSet ->
         scopedSelectionSetLookupValid schema
-          (scopedValidFieldsWithResponseName schema filterParent responseName
+          (scopedFieldSelectionsWithResponseNameInScope schema filterParent responseName
             liftParent selectionSet)
   | [], _hvalid => by
-      simp [scopedValidFieldsWithResponseName,
+      simp [scopedFieldSelectionsWithResponseNameInScope,
         scopedSelectionSetLookupValid]
   | selection :: rest, hvalid => by
       have hheadValid :
@@ -594,14 +594,14 @@ theorem scopedValidFieldsWithResponseName_lookupValid
           selectionSetLookupValid schema liftParent rest :=
         selectionSetLookupValid_tail hvalid
       have hrest :=
-        scopedValidFieldsWithResponseName_lookupValid schema filterParent
+        scopedFieldSelectionsWithResponseNameInScope_lookupValid schema filterParent
           responseName liftParent rest htailValid
       cases selection with
       | field fieldResponseName fieldName arguments directives subselections =>
           by_cases hresponse :
               (fieldResponseName == responseName) = true
           · intro scopedSelection hscoped
-            simp [scopedValidFieldsWithResponseName, hresponse] at hscoped
+            simp [scopedFieldSelectionsWithResponseNameInScope, hresponse] at hscoped
             rcases hscoped with hhead | htail
             · subst scopedSelection
               exact hheadValid
@@ -611,7 +611,7 @@ theorem scopedValidFieldsWithResponseName_lookupValid
               cases hmatch : fieldResponseName == responseName
               · rfl
               · exact False.elim (hresponse hmatch)
-            simpa [scopedValidFieldsWithResponseName, hfalse] using hrest
+            simpa [scopedFieldSelectionsWithResponseNameInScope, hfalse] using hrest
       | inlineFragment typeCondition directives subselections =>
           cases typeCondition with
           | none =>
@@ -619,10 +619,10 @@ theorem scopedValidFieldsWithResponseName_lookupValid
                   selectionSetLookupValid schema liftParent subselections := by
                 simpa [selectionLookupValid] using hheadValid
               have hbody :=
-                scopedValidFieldsWithResponseName_lookupValid schema
+                scopedFieldSelectionsWithResponseNameInScope_lookupValid schema
                   filterParent responseName liftParent subselections
                   hbodyValid
-              simpa [scopedValidFieldsWithResponseName] using
+              simpa [scopedFieldSelectionsWithResponseNameInScope] using
                 scopedSelectionSetLookupValid_append hbody hrest
           | some typeCondition =>
               have hbodyValid :
@@ -631,10 +631,10 @@ theorem scopedValidFieldsWithResponseName_lookupValid
               by_cases hoverlap :
                   schema.typesOverlapBool filterParent typeCondition = true
               · have hbody :=
-                  scopedValidFieldsWithResponseName_lookupValid schema
+                  scopedFieldSelectionsWithResponseNameInScope_lookupValid schema
                     filterParent responseName typeCondition subselections
                     hbodyValid
-                simpa [scopedValidFieldsWithResponseName, hoverlap] using
+                simpa [scopedFieldSelectionsWithResponseNameInScope, hoverlap] using
                   scopedSelectionSetLookupValid_append hbody hrest
               · have hfalse :
                     schema.typesOverlapBool filterParent typeCondition =
@@ -643,56 +643,56 @@ theorem scopedValidFieldsWithResponseName_lookupValid
                       schema.typesOverlapBool filterParent typeCondition
                   · rfl
                   · exact False.elim (hoverlap hmatch)
-                simpa [scopedValidFieldsWithResponseName, hfalse] using hrest
+                simpa [scopedFieldSelectionsWithResponseNameInScope, hfalse] using hrest
 
-theorem eraseScopedValidFieldsWithResponseName
+theorem eraseScopedFieldSelectionsWithResponseNameInScope
     (schema : Schema) (filterParent responseName : Name) :
     ∀ liftParent selectionSet,
       eraseScopedSelectionSet
-          (scopedValidFieldsWithResponseName schema filterParent responseName
+          (scopedFieldSelectionsWithResponseNameInScope schema filterParent responseName
             liftParent selectionSet)
         =
-      validFieldsWithResponseName schema filterParent responseName
+      fieldSelectionsWithResponseNameInScope schema filterParent responseName
         selectionSet
   | liftParent, [] => by
-      simp [scopedValidFieldsWithResponseName,
-        eraseScopedSelectionSet, validFieldsWithResponseName]
+      simp [scopedFieldSelectionsWithResponseNameInScope,
+        eraseScopedSelectionSet, fieldSelectionsWithResponseNameInScope]
   | liftParent, selection :: rest => by
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           by_cases hresponse : (fieldResponseName == responseName) = true
-          · simp [scopedValidFieldsWithResponseName,
-              validFieldsWithResponseName, hresponse,
+          · simp [scopedFieldSelectionsWithResponseNameInScope,
+              fieldSelectionsWithResponseNameInScope, hresponse,
               eraseScopedSelectionSet, eraseScopedSelection,
-              eraseScopedValidFieldsWithResponseName schema filterParent
+              eraseScopedFieldSelectionsWithResponseNameInScope schema filterParent
                 responseName liftParent rest]
           · have hfalse :
                 (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · exact False.elim (hresponse hmatch)
-            simp [scopedValidFieldsWithResponseName,
-              validFieldsWithResponseName, hfalse,
-              eraseScopedValidFieldsWithResponseName schema filterParent
+            simp [scopedFieldSelectionsWithResponseNameInScope,
+              fieldSelectionsWithResponseNameInScope, hfalse,
+              eraseScopedFieldSelectionsWithResponseNameInScope schema filterParent
                 responseName liftParent rest]
       | inlineFragment typeCondition directives selectionSet =>
           cases typeCondition with
           | none =>
-              simp [scopedValidFieldsWithResponseName,
-                validFieldsWithResponseName, eraseScopedSelectionSet_append,
-                eraseScopedValidFieldsWithResponseName schema filterParent
+              simp [scopedFieldSelectionsWithResponseNameInScope,
+                fieldSelectionsWithResponseNameInScope, eraseScopedSelectionSet_append,
+                eraseScopedFieldSelectionsWithResponseNameInScope schema filterParent
                   responseName liftParent selectionSet,
-                eraseScopedValidFieldsWithResponseName schema filterParent
+                eraseScopedFieldSelectionsWithResponseNameInScope schema filterParent
                   responseName liftParent rest]
           | some typeCondition =>
               by_cases hoverlap :
                   schema.typesOverlapBool filterParent typeCondition = true
-              · simp [scopedValidFieldsWithResponseName,
-                  validFieldsWithResponseName, hoverlap,
+              · simp [scopedFieldSelectionsWithResponseNameInScope,
+                  fieldSelectionsWithResponseNameInScope, hoverlap,
                   eraseScopedSelectionSet_append,
-                  eraseScopedValidFieldsWithResponseName schema filterParent
+                  eraseScopedFieldSelectionsWithResponseNameInScope schema filterParent
                     responseName typeCondition selectionSet,
-                  eraseScopedValidFieldsWithResponseName schema filterParent
+                  eraseScopedFieldSelectionsWithResponseNameInScope schema filterParent
                     responseName liftParent rest]
               · have hoverlapFalse :
                     schema.typesOverlapBool filterParent typeCondition =
@@ -701,56 +701,56 @@ theorem eraseScopedValidFieldsWithResponseName
                       schema.typesOverlapBool filterParent typeCondition
                   · rfl
                   · exact False.elim (hoverlap hmatch)
-                simp [scopedValidFieldsWithResponseName,
-                  validFieldsWithResponseName, hoverlapFalse,
-                  eraseScopedValidFieldsWithResponseName schema filterParent
+                simp [scopedFieldSelectionsWithResponseNameInScope,
+                  fieldSelectionsWithResponseNameInScope, hoverlapFalse,
+                  eraseScopedFieldSelectionsWithResponseNameInScope schema filterParent
                     responseName liftParent rest]
 
-theorem validFieldsWithResponseName_groundLiftSelectionSet_scoped
+theorem fieldSelectionsWithResponseNameInScope_groundLiftSelectionSet_scoped
     (schema : Schema) (filterParent responseName liftParent : Name) :
     ∀ selectionSet,
-      validFieldsWithResponseName schema filterParent responseName
+      fieldSelectionsWithResponseNameInScope schema filterParent responseName
         (groundLiftSelectionSet schema liftParent selectionSet)
       =
       groundLiftScopedSelectionSet schema
-        (scopedValidFieldsWithResponseName schema filterParent responseName
+        (scopedFieldSelectionsWithResponseNameInScope schema filterParent responseName
           liftParent selectionSet)
   | [] => by
-      simp [groundLiftSelectionSet, validFieldsWithResponseName,
-        scopedValidFieldsWithResponseName, groundLiftScopedSelectionSet]
+      simp [groundLiftSelectionSet, fieldSelectionsWithResponseNameInScope,
+        scopedFieldSelectionsWithResponseNameInScope, groundLiftScopedSelectionSet]
   | selection :: rest => by
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           cases hlookup : schema.lookupField liftParent fieldName <;>
             by_cases hresponse : (fieldResponseName == responseName) = true <;>
               simp [groundLiftSelectionSet, groundLiftSelection, hlookup,
-                validFieldsWithResponseName,
-                scopedValidFieldsWithResponseName, hresponse,
+                fieldSelectionsWithResponseNameInScope,
+                scopedFieldSelectionsWithResponseNameInScope, hresponse,
                 groundLiftScopedSelectionSet, groundLiftScopedSelection,
-                validFieldsWithResponseName_groundLiftSelectionSet_scoped
+                fieldSelectionsWithResponseNameInScope_groundLiftSelectionSet_scoped
                   schema filterParent responseName liftParent rest]
       | inlineFragment typeCondition directives selectionSet =>
           cases typeCondition with
           | none =>
               simp [groundLiftSelectionSet, groundLiftSelection,
-                validFieldsWithResponseName,
-                scopedValidFieldsWithResponseName,
+                fieldSelectionsWithResponseNameInScope,
+                scopedFieldSelectionsWithResponseNameInScope,
                 groundLiftScopedSelectionSet_append,
-                validFieldsWithResponseName_groundLiftSelectionSet_scoped
+                fieldSelectionsWithResponseNameInScope_groundLiftSelectionSet_scoped
                   schema filterParent responseName liftParent selectionSet,
-                validFieldsWithResponseName_groundLiftSelectionSet_scoped
+                fieldSelectionsWithResponseNameInScope_groundLiftSelectionSet_scoped
                   schema filterParent responseName liftParent rest]
           | some typeCondition =>
               by_cases hoverlap :
                   schema.typesOverlapBool filterParent typeCondition = true
               · simp [groundLiftSelectionSet, groundLiftSelection,
-                  validFieldsWithResponseName,
-                  scopedValidFieldsWithResponseName, hoverlap,
+                  fieldSelectionsWithResponseNameInScope,
+                  scopedFieldSelectionsWithResponseNameInScope, hoverlap,
                   groundLiftScopedSelectionSet_append,
-                  validFieldsWithResponseName_groundLiftSelectionSet_scoped
+                  fieldSelectionsWithResponseNameInScope_groundLiftSelectionSet_scoped
                     schema filterParent responseName typeCondition
                     selectionSet,
-                  validFieldsWithResponseName_groundLiftSelectionSet_scoped
+                  fieldSelectionsWithResponseNameInScope_groundLiftSelectionSet_scoped
                     schema filterParent responseName liftParent rest]
               · have hoverlapFalse :
                     schema.typesOverlapBool filterParent typeCondition =
@@ -760,18 +760,18 @@ theorem validFieldsWithResponseName_groundLiftSelectionSet_scoped
                   · rfl
                   · exact False.elim (hoverlap hmatch)
                 simp [groundLiftSelectionSet, groundLiftSelection,
-                  validFieldsWithResponseName,
-                  scopedValidFieldsWithResponseName, hoverlapFalse,
-                  validFieldsWithResponseName_groundLiftSelectionSet_scoped
+                  fieldSelectionsWithResponseNameInScope,
+                  scopedFieldSelectionsWithResponseNameInScope, hoverlapFalse,
+                  fieldSelectionsWithResponseNameInScope_groundLiftSelectionSet_scoped
                     schema filterParent responseName liftParent rest]
 
-def scopedSelectionSetValidFieldsWithResponseName
+def scopedSelectionSetFieldSelectionsWithResponseNameInScope
     (schema : Schema) (filterParent responseName : Name) :
     List ScopedSelection -> List ScopedSelection
   | [] => []
   | scopedSelection :: rest =>
       let restFields :=
-        scopedSelectionSetValidFieldsWithResponseName schema filterParent
+        scopedSelectionSetFieldSelectionsWithResponseNameInScope schema filterParent
           responseName rest
       match scopedSelection.selection with
       | .field fieldResponseName _fieldName _arguments _directives
@@ -781,24 +781,24 @@ def scopedSelectionSetValidFieldsWithResponseName
           else
             restFields
       | .inlineFragment none _directives selectionSet =>
-          scopedValidFieldsWithResponseName schema filterParent responseName
+          scopedFieldSelectionsWithResponseNameInScope schema filterParent responseName
               scopedSelection.liftParent selectionSet
             ++ restFields
       | .inlineFragment (some typeCondition) _directives selectionSet =>
           if schema.typesOverlapBool filterParent typeCondition then
-            scopedValidFieldsWithResponseName schema filterParent responseName
+            scopedFieldSelectionsWithResponseNameInScope schema filterParent responseName
                 typeCondition selectionSet
               ++ restFields
           else
             restFields
 
-def scopedSelectionSetWithoutFieldsWithResponseName
+def scopedSelectionSetWithoutFieldSelectionsWithResponseName
     (schema : Schema) (responseName : Name) :
     List ScopedSelection -> List ScopedSelection
   | [] => []
   | scopedSelection :: rest =>
       let filteredRest :=
-        scopedSelectionSetWithoutFieldsWithResponseName schema responseName
+        scopedSelectionSetWithoutFieldSelectionsWithResponseName schema responseName
           rest
       match scopedSelection.selection with
       | .field fieldResponseName _fieldName _arguments _directives
@@ -811,21 +811,21 @@ def scopedSelectionSetWithoutFieldsWithResponseName
           { scopedSelection with
             selection :=
               .inlineFragment typeCondition directives
-                (withoutFieldsWithResponseName schema responseName
+                (withoutFieldSelectionsWithResponseName schema responseName
                   selectionSet) }
             :: filteredRest
 
-theorem scopedSelectionSetValidFieldsWithResponseName_runtimeApplies
+theorem scopedSelectionSetFieldSelectionsWithResponseNameInScope_runtimeApplies
     (schema : Schema) (filterParent responseName runtimeType : Name) :
     ∀ scopedSelections,
       objectTypeNameBool schema filterParent = true ->
       schema.typeIncludesObjectBool filterParent runtimeType = true ->
       scopedSelectionSetRuntimeApplies schema runtimeType scopedSelections ->
         scopedSelectionSetRuntimeApplies schema runtimeType
-          (scopedSelectionSetValidFieldsWithResponseName schema filterParent
+          (scopedSelectionSetFieldSelectionsWithResponseNameInScope schema filterParent
             responseName scopedSelections)
   | [], _hfilterObject, _hfilterInclude, _happlies => by
-      simp [scopedSelectionSetValidFieldsWithResponseName,
+      simp [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
         scopedSelectionSetRuntimeApplies]
   | scopedSelection :: rest, hfilterObject, hfilterInclude, happlies => by
       have hheadApply :
@@ -836,7 +836,7 @@ theorem scopedSelectionSetValidFieldsWithResponseName_runtimeApplies
           scopedSelectionSetRuntimeApplies schema runtimeType rest :=
         scopedSelectionSetRuntimeApplies_tail happlies
       have hrest :=
-        scopedSelectionSetValidFieldsWithResponseName_runtimeApplies schema
+        scopedSelectionSetFieldSelectionsWithResponseNameInScope_runtimeApplies schema
           filterParent responseName runtimeType rest hfilterObject
           hfilterInclude htailApply
       cases scopedSelection with
@@ -847,7 +847,7 @@ theorem scopedSelectionSetValidFieldsWithResponseName_runtimeApplies
               by_cases hresponse :
                   (fieldResponseName == responseName) = true
               · intro candidate hcandidate
-                simp [scopedSelectionSetValidFieldsWithResponseName,
+                simp [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
                   hresponse] at hcandidate
                 rcases hcandidate with hcandidate | hcandidate
                 · subst candidate
@@ -858,23 +858,23 @@ theorem scopedSelectionSetValidFieldsWithResponseName_runtimeApplies
                   cases hmatch : fieldResponseName == responseName
                   · rfl
                   · exact False.elim (hresponse hmatch)
-                simpa [scopedSelectionSetValidFieldsWithResponseName,
+                simpa [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
                   hfalse] using hrest
           | inlineFragment typeCondition directives subselections =>
               cases typeCondition with
               | none =>
                   have hbody :=
-                    scopedValidFieldsWithResponseName_runtimeApplies schema
+                    scopedFieldSelectionsWithResponseNameInScope_runtimeApplies schema
                       filterParent responseName liftParent runtimeType
                       subselections hfilterObject hfilterInclude hheadApply
-                  simpa [scopedSelectionSetValidFieldsWithResponseName] using
+                  simpa [scopedSelectionSetFieldSelectionsWithResponseNameInScope] using
                     scopedSelectionSetRuntimeApplies_append hbody hrest
               | some typeCondition =>
                   by_cases hoverlap :
                       schema.typesOverlapBool filterParent typeCondition =
                         true
                   · have hbody :=
-                      scopedValidFieldsWithResponseName_runtimeApplies schema
+                      scopedFieldSelectionsWithResponseNameInScope_runtimeApplies schema
                         filterParent responseName typeCondition runtimeType
                         subselections hfilterObject hfilterInclude
                         (by
@@ -889,7 +889,7 @@ theorem scopedSelectionSetValidFieldsWithResponseName_runtimeApplies
                           exact
                             typeIncludesObjectBool_of_object_typesOverlapBool
                               schema hfilterObjectProp hoverlap)
-                    simpa [scopedSelectionSetValidFieldsWithResponseName,
+                    simpa [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
                       hoverlap] using
                       scopedSelectionSetRuntimeApplies_append hbody hrest
                   · have hfalse :
@@ -899,18 +899,18 @@ theorem scopedSelectionSetValidFieldsWithResponseName_runtimeApplies
                           schema.typesOverlapBool filterParent typeCondition
                       · rfl
                       · exact False.elim (hoverlap hmatch)
-                    simpa [scopedSelectionSetValidFieldsWithResponseName,
+                    simpa [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
                       hfalse] using hrest
 
-theorem scopedSelectionSetValidFieldsWithResponseName_lookupValid
+theorem scopedSelectionSetFieldSelectionsWithResponseNameInScope_lookupValid
     (schema : Schema) (filterParent responseName : Name) :
     ∀ scopedSelections,
       scopedSelectionSetLookupValid schema scopedSelections ->
         scopedSelectionSetLookupValid schema
-          (scopedSelectionSetValidFieldsWithResponseName schema filterParent
+          (scopedSelectionSetFieldSelectionsWithResponseNameInScope schema filterParent
             responseName scopedSelections)
   | [], _hvalid => by
-      simp [scopedSelectionSetValidFieldsWithResponseName,
+      simp [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
         scopedSelectionSetLookupValid]
   | scopedSelection :: rest, hvalid => by
       have hheadValid :
@@ -921,7 +921,7 @@ theorem scopedSelectionSetValidFieldsWithResponseName_lookupValid
           scopedSelectionSetLookupValid schema rest :=
         scopedSelectionSetLookupValid_tail hvalid
       have hrest :=
-        scopedSelectionSetValidFieldsWithResponseName_lookupValid schema
+        scopedSelectionSetFieldSelectionsWithResponseNameInScope_lookupValid schema
           filterParent responseName rest htailValid
       cases scopedSelection with
       | mk liftParent selection =>
@@ -931,7 +931,7 @@ theorem scopedSelectionSetValidFieldsWithResponseName_lookupValid
               by_cases hresponse :
                   (fieldResponseName == responseName) = true
               · intro candidate hcandidate
-                simp [scopedSelectionSetValidFieldsWithResponseName,
+                simp [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
                   hresponse] at hcandidate
                 rcases hcandidate with hcandidate | hcandidate
                 · subst candidate
@@ -942,7 +942,7 @@ theorem scopedSelectionSetValidFieldsWithResponseName_lookupValid
                   cases hmatch : fieldResponseName == responseName
                   · rfl
                   · exact False.elim (hresponse hmatch)
-                simpa [scopedSelectionSetValidFieldsWithResponseName,
+                simpa [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
                   hfalse] using hrest
           | inlineFragment typeCondition directives subselections =>
               cases typeCondition with
@@ -952,10 +952,10 @@ theorem scopedSelectionSetValidFieldsWithResponseName_lookupValid
                         subselections := by
                     simpa [selectionLookupValid] using hheadValid
                   have hbody :=
-                    scopedValidFieldsWithResponseName_lookupValid schema
+                    scopedFieldSelectionsWithResponseNameInScope_lookupValid schema
                       filterParent responseName liftParent subselections
                       hbodyValid
-                  simpa [scopedSelectionSetValidFieldsWithResponseName] using
+                  simpa [scopedSelectionSetFieldSelectionsWithResponseNameInScope] using
                     scopedSelectionSetLookupValid_append hbody hrest
               | some typeCondition =>
                   have hbodyValid :
@@ -966,10 +966,10 @@ theorem scopedSelectionSetValidFieldsWithResponseName_lookupValid
                       schema.typesOverlapBool filterParent typeCondition =
                         true
                   · have hbody :=
-                      scopedValidFieldsWithResponseName_lookupValid schema
+                      scopedFieldSelectionsWithResponseNameInScope_lookupValid schema
                         filterParent responseName typeCondition subselections
                         hbodyValid
-                    simpa [scopedSelectionSetValidFieldsWithResponseName,
+                    simpa [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
                       hoverlap] using
                       scopedSelectionSetLookupValid_append hbody hrest
                   · have hfalse :
@@ -979,18 +979,18 @@ theorem scopedSelectionSetValidFieldsWithResponseName_lookupValid
                           schema.typesOverlapBool filterParent typeCondition
                       · rfl
                       · exact False.elim (hoverlap hmatch)
-                    simpa [scopedSelectionSetValidFieldsWithResponseName,
+                    simpa [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
                       hfalse] using hrest
 
-theorem scopedSelectionSetWithoutFieldsWithResponseName_runtimeApplies
+theorem scopedSelectionSetWithoutFieldSelectionsWithResponseName_runtimeApplies
     (schema : Schema) (responseName runtimeType : Name) :
     ∀ scopedSelections,
       scopedSelectionSetRuntimeApplies schema runtimeType scopedSelections ->
         scopedSelectionSetRuntimeApplies schema runtimeType
-          (scopedSelectionSetWithoutFieldsWithResponseName schema responseName
+          (scopedSelectionSetWithoutFieldSelectionsWithResponseName schema responseName
             scopedSelections)
   | [], _happlies => by
-      simp [scopedSelectionSetWithoutFieldsWithResponseName,
+      simp [scopedSelectionSetWithoutFieldSelectionsWithResponseName,
         scopedSelectionSetRuntimeApplies]
   | scopedSelection :: rest, happlies => by
       have hheadApply :
@@ -1001,7 +1001,7 @@ theorem scopedSelectionSetWithoutFieldsWithResponseName_runtimeApplies
           scopedSelectionSetRuntimeApplies schema runtimeType rest :=
         scopedSelectionSetRuntimeApplies_tail happlies
       have hrest :=
-        scopedSelectionSetWithoutFieldsWithResponseName_runtimeApplies schema
+        scopedSelectionSetWithoutFieldSelectionsWithResponseName_runtimeApplies schema
           responseName runtimeType rest htailApply
       cases scopedSelection with
       | mk liftParent selection =>
@@ -1010,7 +1010,7 @@ theorem scopedSelectionSetWithoutFieldsWithResponseName_runtimeApplies
               subselections =>
               by_cases hresponse :
                   (fieldResponseName == responseName) = true
-              · simpa [scopedSelectionSetWithoutFieldsWithResponseName,
+              · simpa [scopedSelectionSetWithoutFieldSelectionsWithResponseName,
                   hresponse] using hrest
               · have hfalse :
                     (fieldResponseName == responseName) = false := by
@@ -1018,7 +1018,7 @@ theorem scopedSelectionSetWithoutFieldsWithResponseName_runtimeApplies
                   · rfl
                   · exact False.elim (hresponse hmatch)
                 intro candidate hcandidate
-                simp [scopedSelectionSetWithoutFieldsWithResponseName,
+                simp [scopedSelectionSetWithoutFieldSelectionsWithResponseName,
                   hfalse] at hcandidate
                 rcases hcandidate with hcandidate | hcandidate
                 · subst candidate
@@ -1026,24 +1026,24 @@ theorem scopedSelectionSetWithoutFieldsWithResponseName_runtimeApplies
                 · exact hrest candidate hcandidate
           | inlineFragment typeCondition directives subselections =>
               intro candidate hcandidate
-              simp [scopedSelectionSetWithoutFieldsWithResponseName] at hcandidate
+              simp [scopedSelectionSetWithoutFieldSelectionsWithResponseName] at hcandidate
               rcases hcandidate with hcandidate | hcandidate
               · subst candidate
                 exact hheadApply
               · exact hrest candidate hcandidate
 
-theorem eraseScopedSelectionSet_validFieldsWithResponseName
+theorem eraseScopedSelectionSet_fieldSelectionsWithResponseNameInScope
     (schema : Schema) (filterParent responseName : Name) :
     ∀ scopedSelections,
       eraseScopedSelectionSet
-          (scopedSelectionSetValidFieldsWithResponseName schema filterParent
+          (scopedSelectionSetFieldSelectionsWithResponseNameInScope schema filterParent
             responseName scopedSelections)
         =
-      validFieldsWithResponseName schema filterParent responseName
+      fieldSelectionsWithResponseNameInScope schema filterParent responseName
         (eraseScopedSelectionSet scopedSelections)
   | [] => by
-      simp [scopedSelectionSetValidFieldsWithResponseName,
-        eraseScopedSelectionSet, validFieldsWithResponseName]
+      simp [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
+        eraseScopedSelectionSet, fieldSelectionsWithResponseNameInScope]
   | scopedSelection :: rest => by
       cases scopedSelection with
       | mk liftParent selection =>
@@ -1052,43 +1052,43 @@ theorem eraseScopedSelectionSet_validFieldsWithResponseName
               selectionSet =>
               by_cases hresponse :
                   (fieldResponseName == responseName) = true
-              · simp [scopedSelectionSetValidFieldsWithResponseName,
-                  validFieldsWithResponseName, hresponse,
+              · simp [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
+                  fieldSelectionsWithResponseNameInScope, hresponse,
                   eraseScopedSelectionSet, eraseScopedSelection,
-                  eraseScopedSelectionSet_validFieldsWithResponseName schema
+                  eraseScopedSelectionSet_fieldSelectionsWithResponseNameInScope schema
                     filterParent responseName rest]
               · have hfalse :
                     (fieldResponseName == responseName) = false := by
                   cases hmatch : fieldResponseName == responseName
                   · rfl
                   · exact False.elim (hresponse hmatch)
-                simp [scopedSelectionSetValidFieldsWithResponseName,
-                  validFieldsWithResponseName, hfalse,
+                simp [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
+                  fieldSelectionsWithResponseNameInScope, hfalse,
                   eraseScopedSelectionSet, eraseScopedSelection,
-                  eraseScopedSelectionSet_validFieldsWithResponseName schema
+                  eraseScopedSelectionSet_fieldSelectionsWithResponseNameInScope schema
                     filterParent responseName rest]
           | inlineFragment typeCondition directives selectionSet =>
               cases typeCondition with
               | none =>
-                  simp [scopedSelectionSetValidFieldsWithResponseName,
-                    validFieldsWithResponseName,
+                  simp [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
+                    fieldSelectionsWithResponseNameInScope,
                     eraseScopedSelectionSet, eraseScopedSelection,
                     eraseScopedSelectionSet_append,
-                    eraseScopedValidFieldsWithResponseName schema
+                    eraseScopedFieldSelectionsWithResponseNameInScope schema
                       filterParent responseName liftParent selectionSet,
-                    eraseScopedSelectionSet_validFieldsWithResponseName schema
+                    eraseScopedSelectionSet_fieldSelectionsWithResponseNameInScope schema
                       filterParent responseName rest]
               | some typeCondition =>
                   by_cases hoverlap :
                       schema.typesOverlapBool filterParent typeCondition =
                         true
-                  · simp [scopedSelectionSetValidFieldsWithResponseName,
-                      validFieldsWithResponseName, hoverlap,
+                  · simp [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
+                      fieldSelectionsWithResponseNameInScope, hoverlap,
                       eraseScopedSelectionSet, eraseScopedSelection,
                       eraseScopedSelectionSet_append,
-                      eraseScopedValidFieldsWithResponseName schema
+                      eraseScopedFieldSelectionsWithResponseNameInScope schema
                         filterParent responseName typeCondition selectionSet,
-                      eraseScopedSelectionSet_validFieldsWithResponseName
+                      eraseScopedSelectionSet_fieldSelectionsWithResponseNameInScope
                         schema filterParent responseName rest]
                   · have hoverlapFalse :
                         schema.typesOverlapBool filterParent typeCondition =
@@ -1097,18 +1097,18 @@ theorem eraseScopedSelectionSet_validFieldsWithResponseName
                           schema.typesOverlapBool filterParent typeCondition
                       · rfl
                       · exact False.elim (hoverlap hmatch)
-                    simp [scopedSelectionSetValidFieldsWithResponseName,
-                      validFieldsWithResponseName, hoverlapFalse,
+                    simp [scopedSelectionSetFieldSelectionsWithResponseNameInScope,
+                      fieldSelectionsWithResponseNameInScope, hoverlapFalse,
                       eraseScopedSelectionSet, eraseScopedSelection,
-                      eraseScopedSelectionSet_validFieldsWithResponseName
+                      eraseScopedSelectionSet_fieldSelectionsWithResponseNameInScope
                       schema filterParent responseName rest]
 
-theorem scopedSelectionSetValidFieldsWithResponseName_mem_field
+theorem scopedSelectionSetFieldSelectionsWithResponseNameInScope_mem_field
     (schema : Schema) (filterParent responseName : Name)
     (scopedSelections : List ScopedSelection)
     (scopedSelection : ScopedSelection) :
     scopedSelection ∈
-        scopedSelectionSetValidFieldsWithResponseName schema filterParent
+        scopedSelectionSetFieldSelectionsWithResponseNameInScope schema filterParent
           responseName scopedSelections ->
       ∃ fieldName arguments directives subselections,
         scopedSelection.selection =
@@ -1118,28 +1118,28 @@ theorem scopedSelectionSetValidFieldsWithResponseName_mem_field
   have hselectionMem :
       scopedSelection.selection ∈
         eraseScopedSelectionSet
-          (scopedSelectionSetValidFieldsWithResponseName schema filterParent
+          (scopedSelectionSetFieldSelectionsWithResponseNameInScope schema filterParent
             responseName scopedSelections) :=
     eraseScopedSelectionSet_mem_selection hscoped
-  rw [eraseScopedSelectionSet_validFieldsWithResponseName schema
+  rw [eraseScopedSelectionSet_fieldSelectionsWithResponseNameInScope schema
     filterParent responseName scopedSelections] at hselectionMem
-  exact validFieldsWithResponseName_mem_field schema filterParent
+  exact fieldSelectionsWithResponseNameInScope_mem_field schema filterParent
     responseName (eraseScopedSelectionSet scopedSelections)
     scopedSelection.selection hselectionMem
 
-theorem validFieldsWithResponseName_groundLiftScopedSelectionSet
+theorem fieldSelectionsWithResponseNameInScope_groundLiftScopedSelectionSet
     (schema : Schema) (filterParent responseName : Name) :
     ∀ scopedSelections,
-      validFieldsWithResponseName schema filterParent responseName
+      fieldSelectionsWithResponseNameInScope schema filterParent responseName
         (groundLiftScopedSelectionSet schema scopedSelections)
       =
       groundLiftScopedSelectionSet schema
-        (scopedSelectionSetValidFieldsWithResponseName schema filterParent
+        (scopedSelectionSetFieldSelectionsWithResponseNameInScope schema filterParent
           responseName scopedSelections)
   | [] => by
       simp [groundLiftScopedSelectionSet,
-        scopedSelectionSetValidFieldsWithResponseName,
-        validFieldsWithResponseName]
+        scopedSelectionSetFieldSelectionsWithResponseNameInScope,
+        fieldSelectionsWithResponseNameInScope]
   | scopedSelection :: rest => by
       cases scopedSelection with
       | mk liftParent selection =>
@@ -1151,21 +1151,21 @@ theorem validFieldsWithResponseName_groundLiftScopedSelectionSet
                     (fieldResponseName == responseName) = true <;>
                   simp [groundLiftScopedSelectionSet, groundLiftScopedSelection,
                     groundLiftSelection,
-                    scopedSelectionSetValidFieldsWithResponseName, hlookup,
-                    validFieldsWithResponseName, hresponse,
-                    validFieldsWithResponseName_groundLiftScopedSelectionSet
+                    scopedSelectionSetFieldSelectionsWithResponseNameInScope, hlookup,
+                    fieldSelectionsWithResponseNameInScope, hresponse,
+                    fieldSelectionsWithResponseNameInScope_groundLiftScopedSelectionSet
                       schema filterParent responseName rest]
           | inlineFragment typeCondition directives selectionSet =>
               cases typeCondition with
               | none =>
                   simp [groundLiftScopedSelectionSet, groundLiftScopedSelection,
-                    groundLiftSelection, validFieldsWithResponseName,
-                    scopedSelectionSetValidFieldsWithResponseName,
+                    groundLiftSelection, fieldSelectionsWithResponseNameInScope,
+                    scopedSelectionSetFieldSelectionsWithResponseNameInScope,
                     groundLiftScopedSelectionSet_append,
-                    validFieldsWithResponseName_groundLiftSelectionSet_scoped
+                    fieldSelectionsWithResponseNameInScope_groundLiftSelectionSet_scoped
                       schema filterParent responseName liftParent
                       selectionSet,
-                    validFieldsWithResponseName_groundLiftScopedSelectionSet
+                    fieldSelectionsWithResponseNameInScope_groundLiftScopedSelectionSet
                       schema filterParent responseName rest]
               | some typeCondition =>
                   by_cases hoverlap :
@@ -1173,13 +1173,13 @@ theorem validFieldsWithResponseName_groundLiftScopedSelectionSet
                         true
                   · simp [groundLiftScopedSelectionSet,
                       groundLiftScopedSelection, groundLiftSelection,
-                      validFieldsWithResponseName,
-                      scopedSelectionSetValidFieldsWithResponseName, hoverlap,
+                      fieldSelectionsWithResponseNameInScope,
+                      scopedSelectionSetFieldSelectionsWithResponseNameInScope, hoverlap,
                       groundLiftScopedSelectionSet_append,
-                      validFieldsWithResponseName_groundLiftSelectionSet_scoped
+                      fieldSelectionsWithResponseNameInScope_groundLiftSelectionSet_scoped
                         schema filterParent responseName typeCondition
                         selectionSet,
-                      validFieldsWithResponseName_groundLiftScopedSelectionSet
+                      fieldSelectionsWithResponseNameInScope_groundLiftScopedSelectionSet
                         schema filterParent responseName rest]
                   · have hoverlapFalse :
                         schema.typesOverlapBool filterParent typeCondition =
@@ -1190,24 +1190,24 @@ theorem validFieldsWithResponseName_groundLiftScopedSelectionSet
                       · exact False.elim (hoverlap hmatch)
                     simp [groundLiftScopedSelectionSet,
                       groundLiftScopedSelection, groundLiftSelection,
-                      validFieldsWithResponseName,
-                      scopedSelectionSetValidFieldsWithResponseName,
+                      fieldSelectionsWithResponseNameInScope,
+                      scopedSelectionSetFieldSelectionsWithResponseNameInScope,
                       hoverlapFalse,
-                      validFieldsWithResponseName_groundLiftScopedSelectionSet
+                      fieldSelectionsWithResponseNameInScope_groundLiftScopedSelectionSet
                         schema filterParent responseName rest]
 
-theorem eraseScopedSelectionSet_withoutFieldsWithResponseName
+theorem eraseScopedSelectionSet_withoutFieldSelectionsWithResponseName
     (schema : Schema) (responseName : Name) :
     ∀ scopedSelections,
       eraseScopedSelectionSet
-          (scopedSelectionSetWithoutFieldsWithResponseName schema responseName
+          (scopedSelectionSetWithoutFieldSelectionsWithResponseName schema responseName
             scopedSelections)
         =
-      withoutFieldsWithResponseName schema responseName
+      withoutFieldSelectionsWithResponseName schema responseName
         (eraseScopedSelectionSet scopedSelections)
   | [] => by
-      simp [scopedSelectionSetWithoutFieldsWithResponseName,
-        eraseScopedSelectionSet, withoutFieldsWithResponseName]
+      simp [scopedSelectionSetWithoutFieldSelectionsWithResponseName,
+        eraseScopedSelectionSet, withoutFieldSelectionsWithResponseName]
   | scopedSelection :: rest => by
       cases scopedSelection with
       | mk liftParent selection =>
@@ -1216,40 +1216,40 @@ theorem eraseScopedSelectionSet_withoutFieldsWithResponseName
               selectionSet =>
               by_cases hresponse :
                   (fieldResponseName == responseName) = true
-              · simp [scopedSelectionSetWithoutFieldsWithResponseName,
-                  withoutFieldsWithResponseName, hresponse,
+              · simp [scopedSelectionSetWithoutFieldSelectionsWithResponseName,
+                  withoutFieldSelectionsWithResponseName, hresponse,
                   eraseScopedSelectionSet, eraseScopedSelection,
-                  eraseScopedSelectionSet_withoutFieldsWithResponseName schema
+                  eraseScopedSelectionSet_withoutFieldSelectionsWithResponseName schema
                     responseName rest]
               · have hfalse :
                     (fieldResponseName == responseName) = false := by
                   cases hmatch : fieldResponseName == responseName
                   · rfl
                   · exact False.elim (hresponse hmatch)
-                simp [scopedSelectionSetWithoutFieldsWithResponseName,
-                  withoutFieldsWithResponseName, hfalse,
+                simp [scopedSelectionSetWithoutFieldSelectionsWithResponseName,
+                  withoutFieldSelectionsWithResponseName, hfalse,
                   eraseScopedSelectionSet, eraseScopedSelection,
-                  eraseScopedSelectionSet_withoutFieldsWithResponseName schema
+                  eraseScopedSelectionSet_withoutFieldSelectionsWithResponseName schema
                     responseName rest]
           | inlineFragment typeCondition directives selectionSet =>
-              simp [scopedSelectionSetWithoutFieldsWithResponseName,
-                withoutFieldsWithResponseName, eraseScopedSelectionSet,
+              simp [scopedSelectionSetWithoutFieldSelectionsWithResponseName,
+                withoutFieldSelectionsWithResponseName, eraseScopedSelectionSet,
                 eraseScopedSelection,
-                eraseScopedSelectionSet_withoutFieldsWithResponseName schema
+                eraseScopedSelectionSet_withoutFieldSelectionsWithResponseName schema
                   responseName rest]
 
-theorem groundLiftScopedSelectionSet_withoutFieldsWithResponseName
+theorem groundLiftScopedSelectionSet_withoutFieldSelectionsWithResponseName
     (schema : Schema) (responseName : Name) :
     ∀ scopedSelections,
       groundLiftScopedSelectionSet schema
-          (scopedSelectionSetWithoutFieldsWithResponseName schema responseName
+          (scopedSelectionSetWithoutFieldSelectionsWithResponseName schema responseName
             scopedSelections)
         =
-      withoutFieldsWithResponseName schema responseName
+      withoutFieldSelectionsWithResponseName schema responseName
         (groundLiftScopedSelectionSet schema scopedSelections)
   | [] => by
-      simp [scopedSelectionSetWithoutFieldsWithResponseName,
-        groundLiftScopedSelectionSet, withoutFieldsWithResponseName]
+      simp [scopedSelectionSetWithoutFieldSelectionsWithResponseName,
+        groundLiftScopedSelectionSet, withoutFieldSelectionsWithResponseName]
   | scopedSelection :: rest => by
       cases scopedSelection with
       | mk liftParent selection =>
@@ -1259,29 +1259,29 @@ theorem groundLiftScopedSelectionSet_withoutFieldsWithResponseName
               cases hlookup : schema.lookupField liftParent fieldName <;>
                 by_cases hresponse :
                     (fieldResponseName == responseName) = true <;>
-                  simp [scopedSelectionSetWithoutFieldsWithResponseName,
+                  simp [scopedSelectionSetWithoutFieldSelectionsWithResponseName,
                     groundLiftScopedSelectionSet, groundLiftScopedSelection,
-                    groundLiftSelection, withoutFieldsWithResponseName,
+                    groundLiftSelection, withoutFieldSelectionsWithResponseName,
                     hlookup, hresponse,
-                    groundLiftScopedSelectionSet_withoutFieldsWithResponseName
+                    groundLiftScopedSelectionSet_withoutFieldSelectionsWithResponseName
                       schema responseName rest]
           | inlineFragment typeCondition directives selectionSet =>
               cases typeCondition with
               | none =>
-                  simp [scopedSelectionSetWithoutFieldsWithResponseName,
+                  simp [scopedSelectionSetWithoutFieldSelectionsWithResponseName,
                     groundLiftScopedSelectionSet, groundLiftScopedSelection,
-                    groundLiftSelection, withoutFieldsWithResponseName,
-                    withoutFieldsWithResponseName_groundLiftSelectionSet schema
+                    groundLiftSelection, withoutFieldSelectionsWithResponseName,
+                    withoutFieldSelectionsWithResponseName_groundLiftSelectionSet schema
                       responseName liftParent selectionSet,
-                    groundLiftScopedSelectionSet_withoutFieldsWithResponseName
+                    groundLiftScopedSelectionSet_withoutFieldSelectionsWithResponseName
                       schema responseName rest]
               | some typeCondition =>
-                  simp [scopedSelectionSetWithoutFieldsWithResponseName,
+                  simp [scopedSelectionSetWithoutFieldSelectionsWithResponseName,
                     groundLiftScopedSelectionSet, groundLiftScopedSelection,
-                    groundLiftSelection, withoutFieldsWithResponseName,
-                    withoutFieldsWithResponseName_groundLiftSelectionSet schema
+                    groundLiftSelection, withoutFieldSelectionsWithResponseName,
+                    withoutFieldSelectionsWithResponseName_groundLiftSelectionSet schema
                       responseName typeCondition selectionSet,
-                    groundLiftScopedSelectionSet_withoutFieldsWithResponseName
+                    groundLiftScopedSelectionSet_withoutFieldSelectionsWithResponseName
                       schema responseName rest]
 
 theorem groundLiftScopedSelectionSet_directiveFree
@@ -1310,71 +1310,71 @@ theorem groundLiftScopedSelectionSet_directiveFree
             groundLiftScopedSelectionSet_directiveFree schema rest
               htailFree⟩
 
-theorem scopedSelectionSetValidFieldsWithResponseName_directiveFree
+theorem scopedSelectionSetFieldSelectionsWithResponseNameInScope_directiveFree
     (schema : Schema) (filterParent responseName : Name)
     (scopedSelections : List ScopedSelection) :
     scopedSelectionSetDirectiveFree scopedSelections ->
       scopedSelectionSetDirectiveFree
-        (scopedSelectionSetValidFieldsWithResponseName schema filterParent
+        (scopedSelectionSetFieldSelectionsWithResponseNameInScope schema filterParent
           responseName scopedSelections) := by
   intro hfree
   have hvalid :
       selectionSetDirectiveFree
-        (validFieldsWithResponseName schema filterParent responseName
+        (fieldSelectionsWithResponseNameInScope schema filterParent responseName
           (eraseScopedSelectionSet scopedSelections)) :=
-    validFieldsWithResponseName_directiveFree schema filterParent
+    fieldSelectionsWithResponseNameInScope_directiveFree schema filterParent
       responseName (eraseScopedSelectionSet scopedSelections) hfree
   simpa [scopedSelectionSetDirectiveFree,
-    eraseScopedSelectionSet_validFieldsWithResponseName schema filterParent
+    eraseScopedSelectionSet_fieldSelectionsWithResponseNameInScope schema filterParent
       responseName scopedSelections] using hvalid
 
-theorem scopedSelectionSetWithoutFieldsWithResponseName_directiveFree
+theorem scopedSelectionSetWithoutFieldSelectionsWithResponseName_directiveFree
     (schema : Schema) (responseName : Name)
     (scopedSelections : List ScopedSelection) :
     scopedSelectionSetDirectiveFree scopedSelections ->
       scopedSelectionSetDirectiveFree
-        (scopedSelectionSetWithoutFieldsWithResponseName schema responseName
+        (scopedSelectionSetWithoutFieldSelectionsWithResponseName schema responseName
           scopedSelections) := by
   intro hfree
   have hfiltered :
       selectionSetDirectiveFree
-        (withoutFieldsWithResponseName schema responseName
+        (withoutFieldSelectionsWithResponseName schema responseName
           (eraseScopedSelectionSet scopedSelections)) :=
-    withoutFieldsWithResponseName_directiveFree schema responseName
+    withoutFieldSelectionsWithResponseName_directiveFree schema responseName
       (eraseScopedSelectionSet scopedSelections) hfree
   simpa [scopedSelectionSetDirectiveFree,
-    eraseScopedSelectionSet_withoutFieldsWithResponseName schema responseName
+    eraseScopedSelectionSet_withoutFieldSelectionsWithResponseName schema responseName
       scopedSelections] using hfiltered
 
-theorem scopedSelectionSetWithoutFieldsWithResponseName_semanticsReady
+theorem scopedSelectionSetWithoutFieldSelectionsWithResponseName_semanticsReady
     (schema : Schema) (execParent responseName : Name)
     (scopedSelections : List ScopedSelection) :
     scopedSelectionSetSemanticsReady schema execParent scopedSelections ->
       scopedSelectionSetSemanticsReady schema execParent
-        (scopedSelectionSetWithoutFieldsWithResponseName schema responseName
+        (scopedSelectionSetWithoutFieldSelectionsWithResponseName schema responseName
           scopedSelections) := by
   intro hready
   have hfiltered :
       selectionSetSemanticsReady schema execParent
-        (withoutFieldsWithResponseName schema responseName
+        (withoutFieldSelectionsWithResponseName schema responseName
           (eraseScopedSelectionSet scopedSelections)) :=
-    selectionSetSemanticsReady_withoutFieldsWithResponseName schema
+    selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName schema
       responseName execParent (eraseScopedSelectionSet scopedSelections)
       hready
   simpa [scopedSelectionSetSemanticsReady,
-    eraseScopedSelectionSet_withoutFieldsWithResponseName schema responseName
+    eraseScopedSelectionSet_withoutFieldSelectionsWithResponseName schema responseName
       scopedSelections] using hfiltered
 
-theorem scopedSelectionSetWithoutFieldsWithResponseName_lookupValid
+theorem scopedSelectionSetWithoutFieldSelectionsWithResponseName_lookupValid
     (schema : Schema) (responseName : Name) :
     ∀ scopedSelections,
       scopedSelectionSetLookupValid schema scopedSelections ->
         scopedSelectionSetLookupValid schema
-          (scopedSelectionSetWithoutFieldsWithResponseName schema responseName
+          (scopedSelectionSetWithoutFieldSelectionsWithResponseName schema responseName
             scopedSelections)
   | [], _hvalid => by
       simp [scopedSelectionSetLookupValid,
-        scopedSelectionSetWithoutFieldsWithResponseName]
+        scopedSelectionSetWithoutFieldSelectionsWithResponseName]
   | scopedSelection :: rest, hvalid => by
       have hheadValid :
           selectionLookupValid schema scopedSelection.liftParent
@@ -1390,10 +1390,10 @@ theorem scopedSelectionSetWithoutFieldsWithResponseName_lookupValid
               selectionSet =>
               by_cases hresponse :
                   (fieldResponseName == responseName) = true
-              · simp [scopedSelectionSetWithoutFieldsWithResponseName,
+              · simp [scopedSelectionSetWithoutFieldSelectionsWithResponseName,
                   hresponse]
                 exact
-                  scopedSelectionSetWithoutFieldsWithResponseName_lookupValid
+                  scopedSelectionSetWithoutFieldSelectionsWithResponseName_lookupValid
                     schema responseName rest htailValid
               · have hfalse :
                     (fieldResponseName == responseName) = false := by
@@ -1401,51 +1401,51 @@ theorem scopedSelectionSetWithoutFieldsWithResponseName_lookupValid
                   · rfl
                   · exact False.elim (hresponse hmatch)
                 intro candidate hcandidate
-                simp [scopedSelectionSetWithoutFieldsWithResponseName,
+                simp [scopedSelectionSetWithoutFieldSelectionsWithResponseName,
                   hfalse] at hcandidate
                 rcases hcandidate with hcandidate | hcandidate
                 · subst candidate
                   simpa [selectionLookupValid] using hheadValid
                 · exact
-                    scopedSelectionSetWithoutFieldsWithResponseName_lookupValid
+                    scopedSelectionSetWithoutFieldSelectionsWithResponseName_lookupValid
                       schema responseName rest htailValid candidate
                       hcandidate
           | inlineFragment typeCondition directives selectionSet =>
               intro candidate hcandidate
-              simp [scopedSelectionSetWithoutFieldsWithResponseName] at hcandidate
+              simp [scopedSelectionSetWithoutFieldSelectionsWithResponseName] at hcandidate
               rcases hcandidate with hcandidate | hcandidate
               · subst candidate
                 cases typeCondition with
                 | none =>
                     simpa [selectionLookupValid] using
-                      selectionSetLookupValid_withoutFieldsWithResponseName
+                      selectionSetLookupValid_withoutFieldSelectionsWithResponseName
                         schema responseName liftParent selectionSet
                         (by simpa [selectionLookupValid] using hheadValid)
                 | some typeCondition =>
                     simpa [selectionLookupValid] using
-                      selectionSetLookupValid_withoutFieldsWithResponseName
+                      selectionSetLookupValid_withoutFieldSelectionsWithResponseName
                         schema responseName typeCondition selectionSet
                         (by simpa [selectionLookupValid] using hheadValid)
               · exact
-                  scopedSelectionSetWithoutFieldsWithResponseName_lookupValid
+                  scopedSelectionSetWithoutFieldSelectionsWithResponseName_lookupValid
                     schema responseName rest htailValid candidate hcandidate
 
-theorem scopedSelectionSetWithoutFieldsWithResponseName_canMerge
+theorem scopedSelectionSetWithoutFieldSelectionsWithResponseName_canMerge
     (schema : Schema) (execParent responseName : Name)
     (scopedSelections : List ScopedSelection) :
     scopedSelectionSetCanMerge schema execParent scopedSelections ->
       scopedSelectionSetCanMerge schema execParent
-        (scopedSelectionSetWithoutFieldsWithResponseName schema responseName
+        (scopedSelectionSetWithoutFieldSelectionsWithResponseName schema responseName
           scopedSelections) := by
   intro hmerge
   have hfiltered :
       FieldMerge.fieldsInSetCanMerge schema execParent
-        (withoutFieldsWithResponseName schema responseName
+        (withoutFieldSelectionsWithResponseName schema responseName
           (eraseScopedSelectionSet scopedSelections)) :=
-    fieldsInSetCanMerge_withoutFieldsWithResponseName schema responseName
+    fieldsInSetCanMerge_withoutFieldSelectionsWithResponseName schema responseName
       execParent (eraseScopedSelectionSet scopedSelections) hmerge
   simpa [scopedSelectionSetCanMerge,
-    eraseScopedSelectionSet_withoutFieldsWithResponseName schema responseName
+    eraseScopedSelectionSet_withoutFieldSelectionsWithResponseName schema responseName
       scopedSelections] using hfiltered
 
 theorem scopedFieldHead_lookupPair_of_semanticsReady_lookupValid

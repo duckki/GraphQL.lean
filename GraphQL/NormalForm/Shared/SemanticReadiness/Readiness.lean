@@ -171,14 +171,14 @@ theorem selectionSetSemanticsReady_mergeSelectionSets_of_field_subselections
   simpa [Selection.subselections] using
     hfields fieldName arguments directives subselections hselection
 
-theorem selectionSetSemanticsReady_withoutFieldsWithResponseName
+theorem selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName
     (schema : Schema) (responseName : Name) :
     ∀ parentType selectionSet,
       selectionSetSemanticsReady schema parentType selectionSet ->
         selectionSetSemanticsReady schema parentType
-          (withoutFieldsWithResponseName schema responseName selectionSet)
+          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
   | _parentType, [], _hready => by
-      simp [withoutFieldsWithResponseName, selectionSetSemanticsReady]
+      simp [withoutFieldSelectionsWithResponseName, selectionSetSemanticsReady]
   | parentType, selection :: rest, hready => by
       have hhead :
           selectionSemanticsReady schema parentType selection := by
@@ -190,36 +190,36 @@ theorem selectionSetSemanticsReady_withoutFieldsWithResponseName
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           by_cases hname : (fieldResponseName == responseName) = true
-          · simp [withoutFieldsWithResponseName, hname]
+          · simp [withoutFieldSelectionsWithResponseName, hname]
             simpa [selectionSetSemanticsReady] using
-              selectionSetSemanticsReady_withoutFieldsWithResponseName
+              selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName
                 schema responseName parentType rest htail
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [withoutFieldsWithResponseName, hfalse,
+            simp [withoutFieldSelectionsWithResponseName, hfalse,
               selectionSetSemanticsReady]
             constructor
             · exact hhead
             · simpa [selectionSetSemanticsReady] using
-                selectionSetSemanticsReady_withoutFieldsWithResponseName
+                selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName
                   schema responseName parentType rest htail
       | inlineFragment typeCondition directives selectionSet =>
           cases typeCondition with
           | none =>
-              simp [withoutFieldsWithResponseName,
+              simp [withoutFieldSelectionsWithResponseName,
                 selectionSetSemanticsReady, selectionSemanticsReady]
               constructor
               · simpa [selectionSetSemanticsReady] using
-                  selectionSetSemanticsReady_withoutFieldsWithResponseName
+                  selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName
                     schema responseName parentType selectionSet
                     (by simpa [selectionSemanticsReady] using hhead)
               · simpa [selectionSetSemanticsReady] using
-                  selectionSetSemanticsReady_withoutFieldsWithResponseName
+                  selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName
                     schema responseName parentType rest htail
             | some typeCondition =>
-                simp [withoutFieldsWithResponseName,
+                simp [withoutFieldSelectionsWithResponseName,
                   selectionSetSemanticsReady, selectionSemanticsReady]
                 constructor
                 · constructor
@@ -232,7 +232,7 @@ theorem selectionSetSemanticsReady_withoutFieldsWithResponseName
                               selectionSet) := by
                       simpa [selectionSemanticsReady] using hhead
                     exact
-                      selectionSetLookupValid_withoutFieldsWithResponseName_core
+                      selectionSetLookupValid_withoutFieldSelectionsWithResponseName_core
                         schema responseName typeCondition selectionSet
                         hheadPair.1
                   · intro hoverlap
@@ -245,19 +245,19 @@ theorem selectionSetSemanticsReady_withoutFieldsWithResponseName
                               selectionSet) := by
                       simpa [selectionSemanticsReady] using hhead
                     simpa [selectionSetSemanticsReady] using
-                      selectionSetSemanticsReady_withoutFieldsWithResponseName
+                      selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName
                         schema responseName parentType selectionSet
                         (hheadPair.2 hoverlap)
                 · simpa [selectionSetSemanticsReady] using
-                    selectionSetSemanticsReady_withoutFieldsWithResponseName
+                    selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName
                       schema responseName parentType rest htail
 
-theorem validFieldsWithResponseName_field_semanticsReady
+theorem fieldSelectionsWithResponseNameInScope_field_semanticsReady
     (schema : Schema) (parentType responseName : Name) :
     ∀ selectionSet fieldName arguments directives subselections,
       selectionSetSemanticsReady schema parentType selectionSet ->
       Selection.field responseName fieldName arguments directives subselections
-        ∈ validFieldsWithResponseName schema parentType responseName
+        ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
           selectionSet ->
         ∃ fieldDefinition,
           schema.lookupField parentType fieldName = some fieldDefinition
@@ -266,7 +266,7 @@ theorem validFieldsWithResponseName_field_semanticsReady
                 fieldDefinition.outputType.namedType runtimeType = true ->
                 selectionSetSemanticsReady schema runtimeType subselections
   | [], fieldName, arguments, directives, subselections, _hready, hfield => by
-      simp [validFieldsWithResponseName] at hfield
+      simp [fieldSelectionsWithResponseNameInScope] at hfield
   | selection :: rest, fieldName, arguments, directives, subselections,
       hready, hfield => by
       have hhead :
@@ -280,7 +280,7 @@ theorem validFieldsWithResponseName_field_semanticsReady
       | field fieldResponseName sourceFieldName sourceArguments
           sourceDirectives sourceSubselections =>
           by_cases hname : (fieldResponseName == responseName) = true
-          · simp [validFieldsWithResponseName, hname] at hfield
+          · simp [fieldSelectionsWithResponseNameInScope, hname] at hfield
             rcases hfield with hfield | hfield
             · rcases hfield with
                 ⟨hresponseEq, hfieldEq, hargumentsEq, hdirectivesEq,
@@ -292,16 +292,16 @@ theorem validFieldsWithResponseName_field_semanticsReady
               subst sourceSubselections
               simpa [selectionSemanticsReady] using hhead
             · exact
-                validFieldsWithResponseName_field_semanticsReady schema
+                fieldSelectionsWithResponseNameInScope_field_semanticsReady schema
                   parentType responseName rest fieldName arguments directives
                   subselections htail hfield
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [validFieldsWithResponseName, hfalse] at hfield
+            simp [fieldSelectionsWithResponseNameInScope, hfalse] at hfield
             exact
-              validFieldsWithResponseName_field_semanticsReady schema
+              fieldSelectionsWithResponseNameInScope_field_semanticsReady schema
                 parentType responseName rest fieldName arguments directives
                 subselections htail hfield
       | inlineFragment typeCondition fragmentDirectives selectionSet =>
@@ -310,14 +310,14 @@ theorem validFieldsWithResponseName_field_semanticsReady
               have hbody :
                   selectionSetSemanticsReady schema parentType selectionSet := by
                 simpa [selectionSemanticsReady] using hhead
-              simp [validFieldsWithResponseName] at hfield
+              simp [fieldSelectionsWithResponseNameInScope] at hfield
               rcases hfield with hfield | hfield
               · exact
-                  validFieldsWithResponseName_field_semanticsReady schema
+                  fieldSelectionsWithResponseNameInScope_field_semanticsReady schema
                     parentType responseName selectionSet fieldName arguments
                     directives subselections hbody hfield
               · exact
-                  validFieldsWithResponseName_field_semanticsReady schema
+                  fieldSelectionsWithResponseNameInScope_field_semanticsReady schema
                     parentType responseName rest fieldName arguments directives
                     subselections htail hfield
           | some typeCondition =>
@@ -334,14 +334,14 @@ theorem validFieldsWithResponseName_field_semanticsReady
                           selectionSet) := by
                     simpa [selectionSemanticsReady] using hhead
                   exact hheadPair.2 hoverlap
-                simp [validFieldsWithResponseName, hoverlap] at hfield
+                simp [fieldSelectionsWithResponseNameInScope, hoverlap] at hfield
                 rcases hfield with hfield | hfield
                 · exact
-                    validFieldsWithResponseName_field_semanticsReady schema
+                    fieldSelectionsWithResponseNameInScope_field_semanticsReady schema
                       parentType responseName selectionSet fieldName
                       arguments directives subselections hbody hfield
                 · exact
-                    validFieldsWithResponseName_field_semanticsReady schema
+                    fieldSelectionsWithResponseNameInScope_field_semanticsReady schema
                       parentType responseName rest fieldName arguments
                       directives subselections htail hfield
               · have hfalse :
@@ -349,9 +349,9 @@ theorem validFieldsWithResponseName_field_semanticsReady
                   cases hmatch : schema.typesOverlapBool parentType typeCondition
                   · rfl
                   · contradiction
-                simp [validFieldsWithResponseName, hfalse] at hfield
+                simp [fieldSelectionsWithResponseNameInScope, hfalse] at hfield
                 exact
-                  validFieldsWithResponseName_field_semanticsReady schema
+                  fieldSelectionsWithResponseNameInScope_field_semanticsReady schema
                     parentType responseName rest fieldName arguments directives
                     subselections htail hfield
 

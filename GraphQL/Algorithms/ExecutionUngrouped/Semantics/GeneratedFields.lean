@@ -1495,9 +1495,9 @@ theorem normalizeSelectionSet_field_child_generated
         targetDirectives childSelectionSet hfree hmem
       have hrestFree :
           NormalForm.selectionSetDirectiveFree
-            (NormalForm.withoutFieldsWithResponseName schema responseName
+            (NormalForm.withoutFieldSelectionsWithResponseName schema responseName
               rest) :=
-        NormalForm.withoutFieldsWithResponseName_directiveFree schema
+        NormalForm.withoutFieldSelectionsWithResponseName_directiveFree schema
           responseName rest (NormalForm.selectionSetDirectiveFree_tail hfree)
       exact hrest targetResponseName targetFieldName targetArguments
         targetDirectives childSelectionSet hrestFree
@@ -1518,9 +1518,9 @@ theorem normalizeSelectionSet_field_child_generated
       subst directives
       have hrestFree :
           NormalForm.selectionSetDirectiveFree
-            (NormalForm.withoutFieldsWithResponseName schema responseName
+            (NormalForm.withoutFieldSelectionsWithResponseName schema responseName
               rest) :=
-        NormalForm.withoutFieldsWithResponseName_directiveFree schema
+        NormalForm.withoutFieldSelectionsWithResponseName_directiveFree schema
           responseName rest (NormalForm.selectionSetDirectiveFree_tail hfree)
       have hmergedFree :
           NormalForm.selectionSetDirectiveFree mergedSubselections := by

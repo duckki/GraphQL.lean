@@ -315,16 +315,16 @@ theorem selectionSetImplementationValidInScope_append_right
   | cons selection rest ih =>
       exact ih (selectionSetImplementationValidInScope_tail hvalid)
 
-theorem selectionSetImplementationValidInScope_withoutFieldsWithResponseName
+theorem selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
     (schema : Schema) (responseName : Name) :
     ∀ variableDefinitions parentType selectionSet,
       Validation.selectionSetImplementationValidInScope schema
         variableDefinitions parentType selectionSet ->
         Validation.selectionSetImplementationValidInScope schema
           variableDefinitions parentType
-          (withoutFieldsWithResponseName schema responseName selectionSet)
+          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
   | _variableDefinitions, _parentType, [], _hvalid => by
-      simp [withoutFieldsWithResponseName,
+      simp [withoutFieldSelectionsWithResponseName,
         Validation.selectionSetImplementationValidInScope]
   | variableDefinitions, parentType, selection :: rest, hvalid => by
       have hhead :=
@@ -334,27 +334,27 @@ theorem selectionSetImplementationValidInScope_withoutFieldsWithResponseName
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           by_cases hname : (fieldResponseName == responseName) = true
-          · simp [withoutFieldsWithResponseName, hname]
+          · simp [withoutFieldSelectionsWithResponseName, hname]
             exact
-              selectionSetImplementationValidInScope_withoutFieldsWithResponseName
+              selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
                 schema responseName variableDefinitions parentType rest htail
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
-            simp [withoutFieldsWithResponseName, hfalse,
+            simp [withoutFieldSelectionsWithResponseName, hfalse,
               Validation.selectionSetImplementationValidInScope]
             exact ⟨hhead,
-              selectionSetImplementationValidInScope_withoutFieldsWithResponseName
+              selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
                 schema responseName variableDefinitions parentType rest htail⟩
       | inlineFragment typeCondition directives selectionSet =>
-          simp [withoutFieldsWithResponseName,
+          simp [withoutFieldSelectionsWithResponseName,
             Validation.selectionSetImplementationValidInScope]
           constructor
           · cases typeCondition with
             | none =>
                 simpa [Validation.selectionImplementationValid] using
-                  selectionSetImplementationValidInScope_withoutFieldsWithResponseName
+                  selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
                     schema responseName variableDefinitions parentType
                     selectionSet hhead
             | some typeCondition =>
@@ -370,15 +370,15 @@ theorem selectionSetImplementationValidInScope_withoutFieldsWithResponseName
                   simpa [Validation.selectionImplementationValid] using
                     hhead hoverlap
                 exact ⟨
-                  selectionSetImplementationValidInScope_withoutFieldsWithResponseName
+                  selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
                     schema responseName variableDefinitions typeCondition
                     selectionSet hfragment.1,
                   fun objectType hobjectType =>
-                    selectionSetImplementationValidInScope_withoutFieldsWithResponseName
+                    selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
                       schema responseName variableDefinitions objectType
                       selectionSet (hfragment.2 objectType hobjectType)⟩
           · exact
-              selectionSetImplementationValidInScope_withoutFieldsWithResponseName
+              selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
                 schema responseName variableDefinitions parentType rest htail
 
 theorem selectionSetImplementationValidInScope_mergeSelectionSets_of_subselections
@@ -428,25 +428,25 @@ theorem selectionSetImplementationValidInScope_mergeSelectionSets_of_field_subse
   simpa [Selection.subselections] using
     hfields fieldName arguments directives subselections hselection
 
-theorem selectionSetImplementationValidInScope_mergeSelectionSets_validFieldsWithResponseName
+theorem selectionSetImplementationValidInScope_mergeSelectionSets_fieldSelectionsWithResponseNameInScope
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType responseName childType : Name}
     (selectionSet : List Selection) :
     (∀ fieldName arguments directives subselections,
       Selection.field responseName fieldName arguments directives subselections
-        ∈ validFieldsWithResponseName schema parentType responseName
+        ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
           selectionSet ->
         Validation.selectionSetImplementationValidInScope schema
           variableDefinitions childType subselections) ->
       Validation.selectionSetImplementationValidInScope schema
         variableDefinitions childType
         (mergeSelectionSets
-          (validFieldsWithResponseName schema parentType responseName
+          (fieldSelectionsWithResponseNameInScope schema parentType responseName
             selectionSet)) := by
   intro hfields
   apply selectionSetImplementationValidInScope_mergeSelectionSets_of_field_subselections
   · intro selection hselection
-    exact validFieldsWithResponseName_mem_field schema parentType responseName
+    exact fieldSelectionsWithResponseNameInScope_mem_field schema parentType responseName
       selectionSet selection hselection
   · intro fieldName arguments directives subselections hselection
     exact hfields fieldName arguments directives subselections hselection

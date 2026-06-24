@@ -307,10 +307,6 @@ def operationsEquivalent (schema : Schema)
       =
     Execution.executeQueryWithFuel schema resolvers variableValues right fuel source
 
-def groundTypeNormalFormSemanticsPreserved (schema : Schema)
-    (operation : Operation) : Prop :=
-  operationsEquivalent schema operation (normalizeOperation schema operation)
-
 -- Final resolver-parametric correctness statement for the ground-type normalizer.
 -- Operation-level proof wrappers live in
 -- `GraphQL.NormalForm.GroundTypeNormalization.OperationSemantics`.
@@ -319,7 +315,7 @@ def groundTypeNormalFormSemanticsPreservation (schema : Schema)
   SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
       operationDirectiveFree operation ->
-        groundTypeNormalFormSemanticsPreserved schema operation
+        operationsEquivalent schema operation (normalizeOperation schema operation)
 
 -----------------------------------------------------------------------------------------
 -- Ground Type Normal Predicate
@@ -829,18 +825,12 @@ export CompleteNormalization
 -- Complete Normalization Semantics Preservation
 -----------------------------------------------------------------------------------------
 
-def variableValuesCompleteForBoolVars
-    (variableValues : Execution.VariableValues)
-    (variables : List BoolVar) : Prop :=
-  ∀ varName, varName ∈ variables ->
+def operationBoolVarsComplete
+    (operation : Operation) (variableValues : Execution.VariableValues) : Prop :=
+  ∀ varName, varName ∈ operationBoolVars operation ->
     ∃ value,
       Execution.inputValueBoolean? variableValues (.variable varName) =
         some value
-
-def operationBoolVarsComplete
-    (operation : Operation) (variableValues : Execution.VariableValues) : Prop :=
-  variableValuesCompleteForBoolVars variableValues
-    (operationBoolVars operation)
 
 def completeNormalizationSemanticsPreserved
     (schema : Schema) (operation : Operation) : Prop :=
@@ -876,12 +866,6 @@ def completeNormalBoolCasesEquivalent (left right : BoolCase) : Prop :=
   ∀ varName value,
     (varName, value) ∈ left ↔ (varName, value) ∈ right
 
--- A Boolean stem directive is one include/skip bit over a variable.
-def completeNormalConditionDirective
-    (directive : DirectiveApplication) (varName : BoolVar)
-    (value : Bool) : Prop :=
-  directive = directiveForBit varName value
-
 -- A Boolean case stem is a chain of anonymous inline fragments, one singleton
 -- skip/include directive per variable, ending in the branch body.
 def completeNormalBooleanStem :
@@ -889,11 +873,11 @@ def completeNormalBooleanStem :
   | [], _selection, _body => False
   | [(varName, value)],
       .inlineFragment none [directive] body, branchBody =>
-        completeNormalConditionDirective directive varName value
+        directive = directiveForBit varName value
           ∧ body = branchBody
   | (varName, value) :: rest,
       .inlineFragment none [directive] [child], branchBody =>
-        completeNormalConditionDirective directive varName value
+        directive = directiveForBit varName value
           ∧ completeNormalBooleanStem rest child branchBody
   | _, _, _ => False
 
@@ -936,8 +920,7 @@ end CompleteNormalization
 
 export CompleteNormalization
   (completeNormalBoolCase completeNormalBoolCasesEquivalent
-    completeNormalConditionDirective completeNormalBooleanStem
-    completeNormalSelectionSet completeNormalOperation)
+    completeNormalBooleanStem completeNormalSelectionSet completeNormalOperation)
 
 def completeNormalizeOperationNormal
     (schema : Schema) (operation : Operation) : Prop :=

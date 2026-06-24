@@ -78,9 +78,9 @@ theorem groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet
         Execution.executeSelectionSet schema resolvers variableValues
           depth (normalizeOperation schema operation).rootType source
           (normalizeOperation schema operation).selectionSet) ->
-      groundTypeNormalFormSemanticsPreserved schema operation := by
+      operationsEquivalent schema operation (normalizeOperation schema operation) := by
   intro hselection
-  unfold groundTypeNormalFormSemanticsPreserved operationsEquivalent
+  unfold operationsEquivalent
   intro ObjectRef resolvers variableValues depth source
   by_cases hroot :
       Execution.rootSourceAppliesBool schema operation source = true
@@ -122,7 +122,7 @@ theorem normalizeOperation_executeQuery
         Execution.executeSelectionSet schema resolvers variableValues
           depth (normalizeOperation schema operation).rootType source
           (normalizeOperation schema operation).selectionSet) ->
-      groundTypeNormalFormSemanticsPreserved schema operation := by
+      operationsEquivalent schema operation (normalizeOperation schema operation) := by
   exact groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet schema
     operation
 

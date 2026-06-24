@@ -238,14 +238,12 @@ theorem completeNormalBooleanStem_wrapWithBoolCase :
   | [(varName, value)], selectionSet, selection, _hne, hwrap => by
       simp [wrapWithBoolCase] at hwrap
       subst selection
-      simp [completeNormalBooleanStem,
-        completeNormalConditionDirective]
+      simp [completeNormalBooleanStem]
   | (varName, value) :: (nextVar, nextValue) :: rest, selectionSet,
       selection, _hne, hwrap => by
       simp [wrapWithBoolCase] at hwrap
       subst selection
-      simp [completeNormalBooleanStem,
-        completeNormalConditionDirective]
+      simp [completeNormalBooleanStem]
       exact completeNormalBooleanStem_wrapWithBoolCase
         ((nextVar, nextValue) :: rest) selectionSet
         (Selection.inlineFragment none [directiveForBit nextVar nextValue]

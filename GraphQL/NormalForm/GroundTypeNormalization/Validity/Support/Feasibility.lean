@@ -7,6 +7,13 @@ namespace GraphQL
 
 namespace NormalForm
 
+-- Operation-level wrapper for the source-operation assumption needed by
+-- ground-normalization validity preservation.
+def operationSelectionSetsTypeConditionFeasible (schema : Schema)
+    (operation : Operation) : Prop :=
+  selectionSetTypeConditionFeasible schema operation.rootType [operation.rootType]
+    operation.selectionSet
+
 namespace GroundTypeNormalization
 
 theorem selectionsTypeConditionFeasible_tail

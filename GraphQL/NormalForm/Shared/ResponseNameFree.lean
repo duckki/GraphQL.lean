@@ -7,6 +7,25 @@ namespace GraphQL
 
 namespace NormalForm
 
+mutual
+  -- Helper predicate: one selection cannot contribute a field with the given response
+  -- name in the current type scope.
+  def selectionResponseNameFree (schema : Schema)
+      (parentType responseName : Name) : Selection -> Prop
+    | .field selectionResponseName _fieldName _arguments _directives _selectionSet =>
+        selectionResponseName ≠ responseName
+    | .inlineFragment none _directives selectionSet =>
+        selectionSetResponseNameFree schema parentType responseName selectionSet
+    | .inlineFragment (some typeCondition) _directives selectionSet =>
+        schema.typesOverlapBool parentType typeCondition = true ->
+          selectionSetResponseNameFree schema parentType responseName selectionSet
+
+  def selectionSetResponseNameFree (schema : Schema)
+      (parentType responseName : Name)
+      (selectionSet : List Selection) : Prop :=
+    ∀ selection, selection ∈ selectionSet ->
+      selectionResponseNameFree schema parentType responseName selection
+end
 
 theorem selectionSetResponseNameFree_nil (schema : Schema)
     (parentType responseName : Name) :

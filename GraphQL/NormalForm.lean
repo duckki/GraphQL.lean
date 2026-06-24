@@ -474,14 +474,6 @@ mutual
           ∧ selectionsTypeConditionFeasible schema parentType typeConditions rest
 end
 
-def selectionSetTypeConditionFeasible (schema : Schema)
-    (parentType : Name) (typeConditions : List Name)
-    (selectionSet : List Selection) : Prop :=
-  selectionSetContainsTypeConditionFeasibleField schema typeConditions
-    selectionSet
-    ∧ selectionsTypeConditionFeasible schema parentType typeConditions
-      selectionSet
-
 -- Strong proof-facing form used by validity preservation: whenever the normalizer is
 -- asked to process a nonempty selection set in a concrete scope, that selection set has a
 -- feasible field in that scope. This is intentionally stronger than the operation-level
@@ -489,8 +481,10 @@ def selectionSetTypeConditionFeasible (schema : Schema)
 def selectionSetsTypeConditionFeasibleInEveryScope (schema : Schema) : Prop :=
   ∀ parentType selectionSet,
     selectionSet ≠ [] ->
-      selectionSetTypeConditionFeasible schema parentType [parentType]
+      selectionSetContainsTypeConditionFeasibleField schema [parentType]
         selectionSet
+        ∧ selectionsTypeConditionFeasible schema parentType [parentType]
+          selectionSet
 
 -- Public validity-preservation statement for the ground-type normalizer.
 def normalizeOperationValid (schema : Schema)

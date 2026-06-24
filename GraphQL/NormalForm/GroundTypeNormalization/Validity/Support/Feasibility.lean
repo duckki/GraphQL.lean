@@ -11,8 +11,10 @@ namespace NormalForm
 -- ground-normalization validity preservation.
 def operationSelectionSetsTypeConditionFeasible (schema : Schema)
     (operation : Operation) : Prop :=
-  selectionSetTypeConditionFeasible schema operation.rootType [operation.rootType]
+  selectionSetContainsTypeConditionFeasibleField schema [operation.rootType]
     operation.selectionSet
+    ∧ selectionsTypeConditionFeasible schema operation.rootType
+      [operation.rootType] operation.selectionSet
 
 namespace GroundTypeNormalization
 

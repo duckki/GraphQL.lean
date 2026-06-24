@@ -1,4 +1,4 @@
-import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.FieldGroup
+import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.FieldGroup.CollectedState
 
 namespace GraphQL
 

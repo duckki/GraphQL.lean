@@ -1,5 +1,7 @@
 import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.Final
+import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.AppendSelection.Validity
 import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupComplete
+import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupList.NormalizationTree
 import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.Recursive
 import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.Reorder
 import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.ReorderState

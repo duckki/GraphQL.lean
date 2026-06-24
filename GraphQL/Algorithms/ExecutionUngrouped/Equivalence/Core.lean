@@ -125,6 +125,653 @@ def ResponseValueEquivalent (left right : ResponseValue) : Prop :=
 def ResponseResultEquivalent {α : Type} (left right : Result α) : Prop :=
   left = right
 
+def resultErrorCount {α : Type} : Result α -> Nat
+  | .error errors => errors
+  | .ok (_value, errors) => errors
+
+theorem resultErrorCount_combine
+    {α β γ : Type} (combine : α -> β -> γ)
+    (left : Result α) (right : Result β) :
+    resultErrorCount (GraphQL.Execution.Result.combine combine left right) =
+      resultErrorCount left + resultErrorCount right := by
+  cases left <;> cases right <;> simp [resultErrorCount,
+    GraphQL.Execution.Result.combine]
+
+def ErrorPresenceEquivalent (ungrouped spec : Nat) : Prop :=
+  (spec = 0 -> ungrouped = 0) ∧ (0 < spec -> 0 < ungrouped)
+
+theorem ErrorPresenceEquivalent.refl (errors : Nat) :
+    ErrorPresenceEquivalent errors errors :=
+  ⟨fun hzero => hzero, fun hpositive => hpositive⟩
+
+theorem ErrorPresenceEquivalent.of_pos
+    {ungrouped spec : Nat} (hUngrouped : 0 < ungrouped)
+    (hSpec : 0 < spec) :
+    ErrorPresenceEquivalent ungrouped spec := by
+  constructor
+  · intro hzero
+    omega
+  · intro _hpositive
+    exact hUngrouped
+
+theorem ErrorPresenceEquivalent.trans
+    {left middle right : Nat} :
+    ErrorPresenceEquivalent left middle ->
+    ErrorPresenceEquivalent middle right ->
+      ErrorPresenceEquivalent left right := by
+  intro hleft hmiddle
+  exact
+    ⟨fun hrightZero => hleft.1 (hmiddle.1 hrightZero),
+      fun hrightPositive => hleft.2 (hmiddle.2 hrightPositive)⟩
+
+theorem ErrorPresenceEquivalent.symm
+    {left right : Nat} :
+    ErrorPresenceEquivalent left right ->
+      ErrorPresenceEquivalent right left := by
+  intro h
+  constructor
+  · intro hleftZero
+    by_cases hrightZero : right = 0
+    · exact hrightZero
+    · have hrightPositive : 0 < right := Nat.pos_of_ne_zero hrightZero
+      have hleftPositive : 0 < left := h.2 hrightPositive
+      omega
+  · intro hleftPositive
+    by_cases hrightZero : right = 0
+    · have hleftZero : left = 0 := h.1 hrightZero
+      omega
+    · exact Nat.pos_of_ne_zero hrightZero
+
+theorem ErrorPresenceEquivalent.add
+    {ungroupedLeft specLeft ungroupedRight specRight : Nat}
+    (hleft : ErrorPresenceEquivalent ungroupedLeft specLeft)
+    (hright : ErrorPresenceEquivalent ungroupedRight specRight) :
+    ErrorPresenceEquivalent
+      (ungroupedLeft + ungroupedRight) (specLeft + specRight) := by
+  constructor
+  · intro hzero
+    have hspecLeft : specLeft = 0 := by omega
+    have hspecRight : specRight = 0 := by omega
+    have hungroupedLeft : ungroupedLeft = 0 := hleft.1 hspecLeft
+    have hungroupedRight : ungroupedRight = 0 := hright.1 hspecRight
+    omega
+  · intro hpositive
+    by_cases hspecLeft : specLeft = 0
+    · have hspecRightPositive : 0 < specRight := by omega
+      have hungroupedRightPositive : 0 < ungroupedRight :=
+        hright.2 hspecRightPositive
+      omega
+    · have hspecLeftPositive : 0 < specLeft := Nat.pos_of_ne_zero hspecLeft
+      have hungroupedLeftPositive : 0 < ungroupedLeft :=
+        hleft.2 hspecLeftPositive
+      omega
+
+theorem ErrorPresenceEquivalent.drop_right_of_left_pos
+    {left right spec : Nat} (hleft : 0 < left)
+    (hcombined : ErrorPresenceEquivalent (left + right) spec) :
+    ErrorPresenceEquivalent left spec := by
+  constructor
+  · intro hspecZero
+    have hsumZero := hcombined.1 hspecZero
+    omega
+  · intro _hspecPositive
+    exact hleft
+
+theorem ErrorPresenceEquivalent.add_reassociate
+    {headLeft headRight tailLeft tailRight headSpec tailSpec : Nat}
+    (hhead :
+      ErrorPresenceEquivalent (headLeft + headRight) headSpec)
+    (htail :
+      ErrorPresenceEquivalent (tailLeft + tailRight) tailSpec) :
+    ErrorPresenceEquivalent
+      (headLeft + tailLeft + (headRight + tailRight))
+      (headSpec + tailSpec) := by
+  have hcombined := ErrorPresenceEquivalent.add hhead htail
+  constructor
+  · intro hzero
+    have hleftZero := hcombined.1 hzero
+    omega
+  · intro hpositive
+    have hleftPositive := hcombined.2 hpositive
+    omega
+
+def ResultDataAndErrorPresenceEquivalent {α : Type} [Inhabited α]
+    (ungrouped spec : Result α) : Prop :=
+  GraphQL.Execution.Result.getD default ungrouped =
+      GraphQL.Execution.Result.getD default spec
+    ∧ (resultErrorCount spec = 0 -> resultErrorCount ungrouped = 0)
+    ∧ (0 < resultErrorCount spec -> 0 < resultErrorCount ungrouped)
+
+theorem ResultDataAndErrorPresenceEquivalent.of_eq
+    {α : Type} [Inhabited α] {ungrouped spec : Result α}
+    (h : ungrouped = spec) :
+    ResultDataAndErrorPresenceEquivalent ungrouped spec := by
+  subst ungrouped
+  exact ⟨rfl, fun hzero => hzero, fun hpositive => hpositive⟩
+
+theorem ResultDataAndErrorPresenceEquivalent.trans
+    {α : Type} [Inhabited α] {left middle right : Result α} :
+    ResultDataAndErrorPresenceEquivalent left middle ->
+    ResultDataAndErrorPresenceEquivalent middle right ->
+      ResultDataAndErrorPresenceEquivalent left right := by
+  intro hleft hmiddle
+  rcases hleft with ⟨hleftData, hleftZero, hleftPositive⟩
+  rcases hmiddle with ⟨hmiddleData, hmiddleZero, hmiddlePositive⟩
+  exact
+    ⟨hleftData.trans hmiddleData,
+      fun hrightZero => hleftZero (hmiddleZero hrightZero),
+      fun hrightPositive => hleftPositive (hmiddlePositive hrightPositive)⟩
+
+theorem ResultDataAndErrorPresenceEquivalent.errorPresence
+    {α : Type} [Inhabited α] {ungrouped spec : Result α} :
+    ResultDataAndErrorPresenceEquivalent ungrouped spec ->
+      ErrorPresenceEquivalent (resultErrorCount ungrouped)
+        (resultErrorCount spec) := by
+  intro h
+  exact ⟨h.2.1, h.2.2⟩
+
+def ResponseValueResultAlignedEquivalent
+    (ungrouped spec : Result ResponseValue) : Prop :=
+  match ungrouped, spec with
+  | .error ungroupedErrors, .error specErrors =>
+      ErrorPresenceEquivalent ungroupedErrors specErrors
+  | .ok (ungroupedValue, ungroupedErrors), .ok (specValue, specErrors) =>
+      ungroupedValue = specValue
+        ∧ ErrorPresenceEquivalent ungroupedErrors specErrors
+  | _, _ => False
+
+theorem ResponseValueResultAlignedEquivalent.of_eq
+    {ungrouped spec : Result ResponseValue} (h : ungrouped = spec) :
+    ResponseValueResultAlignedEquivalent ungrouped spec := by
+  subst ungrouped
+  cases spec with
+  | error errors =>
+      exact ErrorPresenceEquivalent.refl errors
+  | ok result =>
+      rcases result with ⟨value, errors⟩
+      exact ⟨rfl, ErrorPresenceEquivalent.refl errors⟩
+
+theorem ResponseValueResultAlignedEquivalent.trans
+    {left middle right : Result ResponseValue} :
+    ResponseValueResultAlignedEquivalent left middle ->
+    ResponseValueResultAlignedEquivalent middle right ->
+      ResponseValueResultAlignedEquivalent left right := by
+  intro hleft hmiddle
+  cases left <;> cases middle <;> cases right <;>
+    simp [ResponseValueResultAlignedEquivalent] at hleft hmiddle ⊢
+  · exact ErrorPresenceEquivalent.trans hleft hmiddle
+  · rcases hleft with ⟨hleftValue, hleftErrors⟩
+    rcases hmiddle with ⟨hmiddleValue, hmiddleErrors⟩
+    exact
+      ⟨hleftValue.trans hmiddleValue,
+        ErrorPresenceEquivalent.trans hleftErrors hmiddleErrors⟩
+
+theorem ResponseValueResultAlignedEquivalent.symm
+    {left right : Result ResponseValue} :
+    ResponseValueResultAlignedEquivalent left right ->
+      ResponseValueResultAlignedEquivalent right left := by
+  intro h
+  cases left <;> cases right <;>
+    simp [ResponseValueResultAlignedEquivalent] at h ⊢
+  · exact ErrorPresenceEquivalent.symm h
+  · rcases h with ⟨hvalue, herrors⟩
+    exact ⟨hvalue.symm, ErrorPresenceEquivalent.symm herrors⟩
+
+theorem ResponseValueResultAlignedEquivalent.resultValueOrNull_eq
+    {left right : Result ResponseValue} :
+    ResponseValueResultAlignedEquivalent left right ->
+      resultValueOrNull left = resultValueOrNull right := by
+  intro h
+  cases left <;> cases right <;>
+    simp [ResponseValueResultAlignedEquivalent, resultValueOrNull] at h ⊢
+  rcases h with ⟨hvalue, _herrors⟩
+  exact hvalue
+
+theorem ResponseValueResultAlignedEquivalent.nonNullCompletion_aligned
+    {ungrouped spec : Result ResponseValue}
+    (h : ResponseValueResultAlignedEquivalent ungrouped spec) :
+    ResponseValueResultAlignedEquivalent
+      (nonNullCompletion ungrouped) (nonNullCompletion spec) := by
+  cases ungrouped <;> cases spec <;>
+    simp [ResponseValueResultAlignedEquivalent, nonNullCompletion,
+      ErrorPresenceEquivalent] at h ⊢
+  · exact h
+  · rcases h with ⟨hvalue, herrors⟩
+    rename_i ungroupedResult specResult
+    rcases ungroupedResult with ⟨value, ungroupedErrors⟩
+    rcases specResult with ⟨specValue, specErrors⟩
+    simp at hvalue herrors
+    subst specValue
+    cases value <;> cases ungroupedErrors <;> cases specErrors <;>
+      simp at herrors ⊢
+    all_goals omega
+
+theorem ResponseValueResultAlignedEquivalent.nonNull_merge_inner
+    {left right wrappedRight : Result ResponseValue}
+    (hleftErrorPositive :
+      ∀ errors, left = .error errors -> 0 < errors)
+    (hrightErrorPositive :
+      ∀ errors, right = .error errors -> 0 < errors)
+    (hwrappedNull :
+      resultValueOrNull left = .null -> wrappedRight = .ok (.null, 0))
+    (hwrappedNonNull :
+      resultValueOrNull left ≠ .null ->
+        wrappedRight = GraphQL.Execution.nonNullCompletion right) :
+    ResponseValueResultAlignedEquivalent
+      (GraphQL.Execution.Result.combine mergeResponse
+        (GraphQL.Execution.nonNullCompletion left) wrappedRight)
+      (GraphQL.Execution.nonNullCompletion
+        (GraphQL.Execution.Result.combine mergeResponse left right)) := by
+  cases left with
+  | error leftErrors =>
+      have hleftPositive : 0 < leftErrors :=
+        hleftErrorPositive leftErrors rfl
+      have hwrapped : wrappedRight = .ok (.null, 0) :=
+        hwrappedNull rfl
+      subst wrappedRight
+      cases right with
+      | error rightErrors =>
+          simp [GraphQL.Execution.Result.combine, nonNullCompletion,
+            ResponseValueResultAlignedEquivalent, ErrorPresenceEquivalent]
+          exact ⟨fun hleftZero _hrightZero => hleftZero,
+            fun _hpositive => hleftPositive⟩
+      | ok rightResult =>
+          rcases rightResult with ⟨rightValue, rightErrors⟩
+          simp [GraphQL.Execution.Result.combine, nonNullCompletion,
+            ResponseValueResultAlignedEquivalent, ErrorPresenceEquivalent]
+          omega
+  | ok leftResult =>
+      rcases leftResult with ⟨leftValue, leftErrors⟩
+      cases leftValue with
+      | null =>
+          have hwrapped : wrappedRight = .ok (.null, 0) :=
+            hwrappedNull rfl
+          subst wrappedRight
+          cases leftErrors with
+          | zero =>
+              cases right with
+              | error rightErrors =>
+                  have hrightPositive : 0 < rightErrors :=
+                    hrightErrorPositive rightErrors rfl
+                  simp [GraphQL.Execution.Result.combine, nonNullCompletion,
+                    ResponseValueResultAlignedEquivalent,
+                    ErrorPresenceEquivalent]
+                  omega
+              | ok rightResult =>
+                  rcases rightResult with ⟨rightValue, rightErrors⟩
+                  cases rightValue <;> cases rightErrors <;>
+                    simp [GraphQL.Execution.Result.combine,
+                      nonNullCompletion,
+                      ResponseValueResultAlignedEquivalent,
+                      ErrorPresenceEquivalent, mergeResponse]
+          | succ leftErrors =>
+              cases right with
+              | error rightErrors =>
+                  simp [GraphQL.Execution.Result.combine, nonNullCompletion,
+                    ResponseValueResultAlignedEquivalent,
+                    ErrorPresenceEquivalent]
+              | ok rightResult =>
+                  rcases rightResult with ⟨rightValue, rightErrors⟩
+                  cases rightValue <;> cases rightErrors <;>
+                    simp [GraphQL.Execution.Result.combine,
+                      nonNullCompletion,
+                      ResponseValueResultAlignedEquivalent,
+                      ErrorPresenceEquivalent, mergeResponse] <;>
+                    try omega
+      | scalar leftScalar =>
+          have hwrapped : wrappedRight = nonNullCompletion right :=
+            hwrappedNonNull (by simp [resultValueOrNull])
+          subst wrappedRight
+          cases right with
+          | error rightErrors =>
+              simp [GraphQL.Execution.Result.combine, nonNullCompletion,
+                ResponseValueResultAlignedEquivalent, ErrorPresenceEquivalent]
+          | ok rightResult =>
+              rcases rightResult with ⟨rightValue, rightErrors⟩
+              cases rightValue <;> cases rightErrors <;> cases leftErrors <;>
+                simp [GraphQL.Execution.Result.combine, nonNullCompletion,
+                  ResponseValueResultAlignedEquivalent,
+                  ErrorPresenceEquivalent, mergeResponse] <;>
+                try omega
+      | object leftFields =>
+          have hwrapped : wrappedRight = nonNullCompletion right :=
+            hwrappedNonNull (by simp [resultValueOrNull])
+          subst wrappedRight
+          cases right with
+          | error rightErrors =>
+              simp [GraphQL.Execution.Result.combine, nonNullCompletion,
+                ResponseValueResultAlignedEquivalent, ErrorPresenceEquivalent]
+          | ok rightResult =>
+              rcases rightResult with ⟨rightValue, rightErrors⟩
+              cases rightValue <;> cases rightErrors <;> cases leftErrors <;>
+                simp [GraphQL.Execution.Result.combine, nonNullCompletion,
+                  ResponseValueResultAlignedEquivalent,
+                  ErrorPresenceEquivalent, mergeResponse] <;>
+                try omega
+      | list leftValues =>
+          have hwrapped : wrappedRight = nonNullCompletion right :=
+            hwrappedNonNull (by simp [resultValueOrNull])
+          subst wrappedRight
+          cases right with
+          | error rightErrors =>
+              simp [GraphQL.Execution.Result.combine, nonNullCompletion,
+                ResponseValueResultAlignedEquivalent, ErrorPresenceEquivalent]
+          | ok rightResult =>
+              rcases rightResult with ⟨rightValue, rightErrors⟩
+              cases rightValue <;> cases rightErrors <;> cases leftErrors <;>
+                simp [GraphQL.Execution.Result.combine, nonNullCompletion,
+                  ResponseValueResultAlignedEquivalent,
+                  ErrorPresenceEquivalent, mergeResponse] <;>
+                try omega
+
+theorem ResponseValueResultAlignedEquivalent.combine_mergeResponse
+    {ungroupedLeft specLeft ungroupedRight specRight : Result ResponseValue}
+    (hleft :
+      ResponseValueResultAlignedEquivalent ungroupedLeft specLeft)
+    (hright :
+      ResponseValueResultAlignedEquivalent ungroupedRight specRight) :
+    ResponseValueResultAlignedEquivalent
+      (GraphQL.Execution.Result.combine mergeResponse ungroupedLeft
+        ungroupedRight)
+      (GraphQL.Execution.Result.combine mergeResponse specLeft specRight) := by
+  cases ungroupedLeft <;> cases specLeft <;>
+    cases ungroupedRight <;> cases specRight <;>
+    simp [ResponseValueResultAlignedEquivalent,
+      GraphQL.Execution.Result.combine] at hleft hright ⊢
+  · exact ErrorPresenceEquivalent.add hleft hright
+  · exact ErrorPresenceEquivalent.add hleft hright.2
+  · exact ErrorPresenceEquivalent.add hleft.2 hright
+  · rcases hleft with ⟨hleftValue, hleftErrors⟩
+    rcases hright with ⟨hrightValue, hrightErrors⟩
+    rw [hleftValue, hrightValue]
+    exact ⟨rfl, ErrorPresenceEquivalent.add hleftErrors hrightErrors⟩
+
+def ListResponseResultAlignedEquivalent
+    (ungrouped spec : Result (List ResponseValue)) : Prop :=
+  match ungrouped, spec with
+  | .error ungroupedErrors, .error specErrors =>
+      ErrorPresenceEquivalent ungroupedErrors specErrors
+  | .ok (ungroupedValues, ungroupedErrors), .ok (specValues, specErrors) =>
+      ungroupedValues = specValues
+        ∧ ErrorPresenceEquivalent ungroupedErrors specErrors
+  | _, _ => False
+
+theorem ListResponseResultAlignedEquivalent.of_eq
+    {ungrouped spec : Result (List ResponseValue)} (h : ungrouped = spec) :
+    ListResponseResultAlignedEquivalent ungrouped spec := by
+  subst ungrouped
+  cases spec with
+  | error errors =>
+      exact ErrorPresenceEquivalent.refl errors
+  | ok result =>
+      rcases result with ⟨values, errors⟩
+      exact ⟨rfl, ErrorPresenceEquivalent.refl errors⟩
+
+theorem ListResponseResultAlignedEquivalent.combine_cons
+    {ungroupedHead specHead : Result ResponseValue}
+    {ungroupedTail specTail : Result (List ResponseValue)}
+    (hhead :
+      ResponseValueResultAlignedEquivalent ungroupedHead specHead)
+    (htail :
+      ListResponseResultAlignedEquivalent ungroupedTail specTail) :
+    ListResponseResultAlignedEquivalent
+      (GraphQL.Execution.Result.combine List.cons ungroupedHead
+        ungroupedTail)
+      (GraphQL.Execution.Result.combine List.cons specHead specTail) := by
+  cases ungroupedHead <;> cases specHead <;>
+    cases ungroupedTail <;> cases specTail <;>
+    simp [ResponseValueResultAlignedEquivalent,
+      ListResponseResultAlignedEquivalent,
+      GraphQL.Execution.Result.combine] at hhead htail ⊢
+  · exact ErrorPresenceEquivalent.add hhead htail
+  · exact ErrorPresenceEquivalent.add hhead htail.2
+  · exact ErrorPresenceEquivalent.add hhead.2 htail
+  · rcases hhead with ⟨hheadValue, hheadErrors⟩
+    rcases htail with ⟨htailValue, htailErrors⟩
+    rw [hheadValue, htailValue]
+    exact ⟨⟨rfl, rfl⟩, ErrorPresenceEquivalent.add hheadErrors htailErrors⟩
+
+theorem ListResponseResultAlignedEquivalent.catchBubbleAsNull
+    {ungrouped spec : Result (List ResponseValue)}
+    (h : ListResponseResultAlignedEquivalent ungrouped spec) :
+    ResponseValueResultAlignedEquivalent
+      (catchBubbleAsNull ResponseValue.list ungrouped)
+      (catchBubbleAsNull ResponseValue.list spec) := by
+  cases ungrouped <;> cases spec <;>
+    simp [ListResponseResultAlignedEquivalent,
+      ResponseValueResultAlignedEquivalent,
+      GraphQL.Execution.catchBubbleAsNull] at h ⊢
+  · exact h
+  · exact h
+
+theorem ListResponseResultAlignedEquivalent.catchBubbleAsNull_mergeResponse
+    {base right spec : Result (List ResponseValue)}
+    (hrightBaseError :
+      ∀ errors, base = .error errors -> right = .ok ([], 0))
+    (h :
+      ListResponseResultAlignedEquivalent
+        (GraphQL.Execution.Result.combine mergeResponseLists base right)
+        spec) :
+    ResponseValueResultAlignedEquivalent
+      (GraphQL.Execution.Result.combine mergeResponse
+        (GraphQL.Execution.catchBubbleAsNull ResponseValue.list base)
+        (match base with
+        | .error _errors => .ok (.null, 0)
+        | .ok _result =>
+            GraphQL.Execution.catchBubbleAsNull ResponseValue.list right))
+      (GraphQL.Execution.catchBubbleAsNull ResponseValue.list spec) := by
+  cases base with
+  | error baseErrors =>
+      have hright : right = .ok ([], 0) :=
+        hrightBaseError baseErrors rfl
+      subst right
+      cases spec <;>
+        simp [ListResponseResultAlignedEquivalent,
+          ResponseValueResultAlignedEquivalent,
+          GraphQL.Execution.Result.combine,
+          GraphQL.Execution.catchBubbleAsNull, mergeResponse,
+          ErrorPresenceEquivalent] at h ⊢
+      exact h
+  | ok baseResult =>
+      cases right <;> cases spec <;>
+      simp [ListResponseResultAlignedEquivalent,
+        ResponseValueResultAlignedEquivalent,
+        GraphQL.Execution.Result.combine,
+        GraphQL.Execution.catchBubbleAsNull, mergeResponse,
+        ErrorPresenceEquivalent] at h ⊢
+      all_goals
+        first
+        | exact h
+        | exact h.2
+        | (
+            rcases h with ⟨hvalues, herrors⟩
+            exact ⟨by simp [hvalues], herrors⟩)
+
+theorem ListResponseResultAlignedEquivalent.zip_cons
+    {headPrefix headRight headSpec : Result ResponseValue}
+    {tailPrefix tailRight tailSpec : Result (List ResponseValue)}
+    (hhead :
+      ResponseValueResultAlignedEquivalent
+        (GraphQL.Execution.Result.combine mergeResponse headPrefix headRight)
+        headSpec)
+    (htail :
+      ListResponseResultAlignedEquivalent
+        (GraphQL.Execution.Result.combine mergeResponseLists tailPrefix
+          tailRight)
+        tailSpec) :
+    ListResponseResultAlignedEquivalent
+      (GraphQL.Execution.Result.combine mergeResponseLists
+        (GraphQL.Execution.Result.combine List.cons headPrefix tailPrefix)
+        (GraphQL.Execution.Result.combine List.cons headRight tailRight))
+      (GraphQL.Execution.Result.combine List.cons headSpec tailSpec) := by
+  cases headPrefix <;> cases headRight <;> cases headSpec <;>
+    cases tailPrefix <;> cases tailRight <;> cases tailSpec <;>
+    simp [ResponseValueResultAlignedEquivalent,
+      ListResponseResultAlignedEquivalent,
+      GraphQL.Execution.Result.combine, mergeResponseLists] at hhead htail ⊢
+  all_goals
+    try exact ErrorPresenceEquivalent.add_reassociate hhead htail
+    try exact ErrorPresenceEquivalent.add_reassociate hhead htail.2
+    try exact ErrorPresenceEquivalent.add_reassociate hhead.2 htail
+    try
+      rcases hhead with ⟨hheadValue, hheadErrors⟩
+      rcases htail with ⟨htailValue, htailErrors⟩
+      exact
+        ⟨⟨hheadValue, htailValue⟩,
+          ErrorPresenceEquivalent.add_reassociate hheadErrors htailErrors⟩
+
+def rootSelectionResultData (result : Result (List (Name × ResponseValue))) :
+    ResponseValue :=
+  match result with
+  | .error _errors => .null
+  | .ok (fields, _errors) => .object fields
+
+def responseOfRootSelectionResult
+    (result : Result (List (Name × ResponseValue))) :
+    GraphQL.Execution.Response :=
+  { data := rootSelectionResultData result
+    errors := resultErrorCount result }
+
+def RootSelectionResultDataAndErrorPresenceEquivalent
+    (ungrouped spec : Result (List (Name × ResponseValue))) : Prop :=
+  rootSelectionResultData ungrouped = rootSelectionResultData spec
+    ∧ ErrorPresenceEquivalent (resultErrorCount ungrouped)
+      (resultErrorCount spec)
+
+def RootSelectionResultAlignedEquivalent
+    (ungrouped spec : Result (List (Name × ResponseValue))) : Prop :=
+  match ungrouped, spec with
+  | .error ungroupedErrors, .error specErrors =>
+      ErrorPresenceEquivalent ungroupedErrors specErrors
+  | .ok (ungroupedFields, ungroupedErrors), .ok (specFields, specErrors) =>
+      ungroupedFields = specFields
+        ∧ ErrorPresenceEquivalent ungroupedErrors specErrors
+  | _, _ => False
+
+theorem ResponseValueResultAlignedEquivalent.singleFieldResult
+    {ungrouped spec : Result ResponseValue} (responseName : Name) :
+    ResponseValueResultAlignedEquivalent ungrouped spec ->
+      RootSelectionResultAlignedEquivalent
+        (GraphQL.Execution.singleFieldResult responseName ungrouped)
+        (GraphQL.Execution.singleFieldResult responseName spec) := by
+  intro h
+  cases ungrouped <;> cases spec <;>
+    simp [ResponseValueResultAlignedEquivalent,
+      RootSelectionResultAlignedEquivalent,
+      GraphQL.Execution.singleFieldResult] at h ⊢
+  · exact h
+  · rcases h with ⟨hvalue, herrors⟩
+    exact ⟨by simp [hvalue], herrors⟩
+
+theorem RootSelectionResultDataAndErrorPresenceEquivalent.of_eq
+    {ungrouped spec : Result (List (Name × ResponseValue))}
+    (h : ungrouped = spec) :
+    RootSelectionResultDataAndErrorPresenceEquivalent ungrouped spec := by
+  subst ungrouped
+  exact ⟨rfl, ErrorPresenceEquivalent.refl _⟩
+
+theorem RootSelectionResultAlignedEquivalent.of_eq
+    {ungrouped spec : Result (List (Name × ResponseValue))}
+    (h : ungrouped = spec) :
+    RootSelectionResultAlignedEquivalent ungrouped spec := by
+  subst ungrouped
+  cases spec with
+  | error errors =>
+      exact ErrorPresenceEquivalent.refl errors
+  | ok result =>
+      rcases result with ⟨fields, errors⟩
+      exact ⟨rfl, ErrorPresenceEquivalent.refl errors⟩
+
+theorem RootSelectionResultAlignedEquivalent.to_dataAndErrorPresence
+    {ungrouped spec : Result (List (Name × ResponseValue))} :
+    RootSelectionResultAlignedEquivalent ungrouped spec ->
+      RootSelectionResultDataAndErrorPresenceEquivalent ungrouped spec := by
+  intro h
+  cases ungrouped <;> cases spec <;>
+    simp [RootSelectionResultAlignedEquivalent,
+      RootSelectionResultDataAndErrorPresenceEquivalent,
+      rootSelectionResultData, resultErrorCount] at h ⊢
+  · exact h
+  · exact h
+
+theorem RootSelectionResultAlignedEquivalent.trans
+    {left middle right : Result (List (Name × ResponseValue))} :
+    RootSelectionResultAlignedEquivalent left middle ->
+    RootSelectionResultAlignedEquivalent middle right ->
+      RootSelectionResultAlignedEquivalent left right := by
+  intro hleft hmiddle
+  cases left <;> cases middle <;> cases right <;>
+    simp [RootSelectionResultAlignedEquivalent] at hleft hmiddle ⊢
+  · exact ErrorPresenceEquivalent.trans hleft hmiddle
+  · rcases hleft with ⟨hleftFields, hleftErrors⟩
+    rcases hmiddle with ⟨hmiddleFields, hmiddleErrors⟩
+    exact
+      ⟨hleftFields.trans hmiddleFields,
+        ErrorPresenceEquivalent.trans hleftErrors hmiddleErrors⟩
+
+theorem RootSelectionResultAlignedEquivalent.combine_append
+    {ungroupedLeft specLeft ungroupedRight specRight :
+      Result (List (Name × ResponseValue))} :
+    RootSelectionResultAlignedEquivalent ungroupedLeft specLeft ->
+    RootSelectionResultAlignedEquivalent ungroupedRight specRight ->
+      RootSelectionResultAlignedEquivalent
+        (GraphQL.Execution.Result.combine List.append ungroupedLeft
+          ungroupedRight)
+        (GraphQL.Execution.Result.combine List.append specLeft specRight) := by
+  intro hleft hright
+  cases ungroupedLeft <;> cases specLeft <;>
+    cases ungroupedRight <;> cases specRight <;>
+    simp [RootSelectionResultAlignedEquivalent,
+      GraphQL.Execution.Result.combine] at hleft hright ⊢
+  · exact ErrorPresenceEquivalent.add hleft hright
+  · rcases hright with ⟨hrightFields, hrightErrors⟩
+    exact ErrorPresenceEquivalent.add hleft hrightErrors
+  · rcases hleft with ⟨hleftFields, hleftErrors⟩
+    exact ErrorPresenceEquivalent.add hleftErrors hright
+  · rcases hleft with ⟨hleftFields, hleftErrors⟩
+    rcases hright with ⟨hrightFields, hrightErrors⟩
+    exact ⟨by simp [hleftFields, hrightFields],
+      ErrorPresenceEquivalent.add hleftErrors hrightErrors⟩
+
+theorem RootSelectionResultDataAndErrorPresenceEquivalent.trans
+    {left middle right : Result (List (Name × ResponseValue))} :
+    RootSelectionResultDataAndErrorPresenceEquivalent left middle ->
+    RootSelectionResultDataAndErrorPresenceEquivalent middle right ->
+      RootSelectionResultDataAndErrorPresenceEquivalent left right := by
+  intro hleft hmiddle
+  exact
+    ⟨hleft.1.trans hmiddle.1,
+      ErrorPresenceEquivalent.trans hleft.2 hmiddle.2⟩
+
+theorem responseDataAndErrorPresenceEquivalent_of_rootSelectionResult
+    {ungrouped spec : Result (List (Name × ResponseValue))} :
+    RootSelectionResultDataAndErrorPresenceEquivalent ungrouped spec ->
+      responseDataAndErrorPresenceEquivalent
+        (responseOfRootSelectionResult ungrouped)
+        (responseOfRootSelectionResult spec) := by
+  intro h
+  exact ⟨h.1, h.2.1, h.2.2⟩
+
+theorem responseDataAndErrorPresenceEquivalent_of_eq
+    {ungrouped spec : GraphQL.Execution.Response}
+    (h : ungrouped = spec) :
+    responseDataAndErrorPresenceEquivalent ungrouped spec := by
+  subst ungrouped
+  exact ⟨rfl, fun hzero => hzero, fun hpositive => hpositive⟩
+
+theorem responseDataAndErrorPresenceEquivalent_trans
+    {left middle right : GraphQL.Execution.Response} :
+    responseDataAndErrorPresenceEquivalent left middle ->
+    responseDataAndErrorPresenceEquivalent middle right ->
+      responseDataAndErrorPresenceEquivalent left right := by
+  intro hleft hmiddle
+  rcases hleft with ⟨hleftData, hleftZero, hleftPositive⟩
+  rcases hmiddle with ⟨hmiddleData, hmiddleZero, hmiddlePositive⟩
+  exact
+    ⟨hleftData.trans hmiddleData,
+      fun hrightZero => hleftZero (hmiddleZero hrightZero),
+      fun hrightPositive => hleftPositive (hmiddlePositive hrightPositive)⟩
+
 def ResponseAbsorbs (base output : ResponseValue) : Prop :=
   mergeResponse base output = output
 
@@ -669,6 +1316,14 @@ def ResolversRespectValidFieldAndArgumentEquivalence
         Argument.argumentsEquivalent firstArguments laterArguments ->
           resolvers.resolve firstParent fieldName firstArguments source =
           resolvers.resolve laterParent fieldName laterArguments source
+
+theorem Resolvers.respectArgumentEquivalence
+    {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
+    (source : ResolverValue ObjectIdentity) :
+    ResolversRespectArgumentEquivalence resolvers source := by
+  intro parentType fieldName firstArguments laterArguments hequivalent
+  exact resolvers.resolve_argumentsEquivalent parentType fieldName
+    firstArguments laterArguments source hequivalent
 
 theorem ExecutableFieldsResolveStable.tail
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)

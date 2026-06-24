@@ -1,4 +1,4 @@
-import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupList
+import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupList.AppendInvariant
 
 /-!
 Group-list proof helpers that carry final merged-complete evidence per group.

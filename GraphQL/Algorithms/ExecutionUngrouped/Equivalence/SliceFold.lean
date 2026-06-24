@@ -58,7 +58,11 @@ def visitFieldSliceResult
     responseObjectField? field.responseName output
   match selectionDepth with
   | 0 =>
-      (output, .error 1)
+      let fieldResult :=
+        match previous? with
+        | some previous => .ok (previous, 0)
+        | none => outOfFuel
+      mergeResponseFieldResult field.responseName fieldResult output
   | completionDepth + 1 =>
       let fieldResult :=
         executeField schema resolvers variableValues completionDepth source
@@ -174,7 +178,19 @@ theorem visitFieldSliceResult_snd_eq_of_responseObjectField_eq
       source field right).snd := by
   cases selectionDepth with
   | zero =>
-      simp [visitFieldSliceResult]
+      cases hright : responseObjectField? field.responseName right with
+      | none =>
+          have hleft :
+              responseObjectField? field.responseName left = none := by
+            simpa [hright] using hlookup
+          simp [visitFieldSliceResult, mergeResponseFieldResult, hleft,
+            hright, outOfFuel]
+      | some previous =>
+          have hleft :
+              responseObjectField? field.responseName left =
+                some previous := by
+            simpa [hright] using hlookup
+          simp [visitFieldSliceResult, mergeResponseFieldResult, hleft, hright]
   | succ completionDepth =>
       cases hright : responseObjectField? field.responseName right with
       | none =>
@@ -232,7 +248,17 @@ theorem responseObjectField?_visitFieldSliceResult_object_fst_other
       responseObjectField? target (.object fields) := by
   cases selectionDepth with
   | zero =>
-      simp [visitFieldSliceResult]
+      cases hfield :
+          responseObjectField? field.responseName (.object fields) with
+      | none =>
+          simp [visitFieldSliceResult, mergeResponseFieldResult, hfield,
+            outOfFuel,
+            responseObjectField?_mergeResponseFieldIntoObject_other target
+              field.responseName _ fields hne]
+      | some previous =>
+          simp [visitFieldSliceResult, mergeResponseFieldResult, hfield,
+            responseObjectField?_mergeResponseFieldIntoObject_other target
+              field.responseName _ fields hne]
   | succ completionDepth =>
       cases hfield :
           responseObjectField? field.responseName (.object fields) with
@@ -269,7 +295,23 @@ theorem responseObjectField?_visitFieldSliceResult_object_fst_eq_of_lookup_eq
   · subst target
     cases selectionDepth with
     | zero =>
-        simp [visitFieldSliceResult, hfield]
+        cases hright :
+            responseObjectField? field.responseName (.object rightFields) with
+        | none =>
+            have hleft :
+                responseObjectField? field.responseName (.object leftFields) =
+                  none := by
+              simpa [hright] using hfield
+            simp [visitFieldSliceResult, mergeResponseFieldResult, hleft,
+              hright, outOfFuel,
+              responseObjectField?_mergeResponseFieldIntoObject_same]
+        | some previous =>
+            have hleft :
+                responseObjectField? field.responseName (.object leftFields) =
+                  some previous := by
+              simpa [hright] using hfield
+            simp [visitFieldSliceResult, mergeResponseFieldResult, hleft,
+              hright, responseObjectField?_mergeResponseFieldIntoObject_same]
     | succ completionDepth =>
         cases hright :
             responseObjectField? field.responseName (.object rightFields) with
@@ -290,7 +332,32 @@ theorem responseObjectField?_visitFieldSliceResult_object_fst_eq_of_lookup_eq
                 hright, responseObjectField?_mergeResponseFieldIntoObject_same]
   · cases selectionDepth with
     | zero =>
-        simp [visitFieldSliceResult, htarget]
+        cases hright :
+            responseObjectField? field.responseName (.object rightFields) with
+        | none =>
+            have hleft :
+                responseObjectField? field.responseName (.object leftFields) =
+                  none := by
+              simpa [hright] using hfield
+            simp [visitFieldSliceResult, mergeResponseFieldResult, hleft,
+              hright, outOfFuel,
+              responseObjectField?_mergeResponseFieldIntoObject_other target
+                field.responseName _ leftFields hsame,
+              responseObjectField?_mergeResponseFieldIntoObject_other target
+                field.responseName _ rightFields hsame,
+              htarget]
+        | some previous =>
+            have hleft :
+                responseObjectField? field.responseName (.object leftFields) =
+                  some previous := by
+              simpa [hright] using hfield
+            simp [visitFieldSliceResult, mergeResponseFieldResult, hleft,
+              hright,
+              responseObjectField?_mergeResponseFieldIntoObject_other target
+                field.responseName _ leftFields hsame,
+              responseObjectField?_mergeResponseFieldIntoObject_other target
+                field.responseName _ rightFields hsame,
+              htarget]
     | succ completionDepth =>
         cases hright :
             responseObjectField? field.responseName (.object rightFields) with
@@ -331,7 +398,14 @@ theorem visitFieldSliceResult_object_fst
         source field (.object fields)).fst = .object outputFields := by
   cases selectionDepth with
   | zero =>
-      simp [visitFieldSliceResult]
+      cases hfield :
+        responseObjectField? field.responseName (.object fields) with
+      | none =>
+          simp [visitFieldSliceResult, mergeResponseFieldResult,
+            mergeResponseFieldIntoObject, hfield, outOfFuel]
+      | some previous =>
+          simp [visitFieldSliceResult, mergeResponseFieldResult,
+            mergeResponseFieldIntoObject, hfield]
   | succ completionDepth =>
       cases hfield :
         responseObjectField? field.responseName (.object fields) with
@@ -802,6 +876,7 @@ theorem visitFieldSliceResult_eq_visitSelection_executableFieldSelection
   | zero =>
       simp [visitFieldSliceResult, visitSelection, executableFieldSelection,
         selectionDirectivesAllowBool_empty, outOfFuel]
+      rfl
   | succ completionDepth =>
       simp [visitFieldSliceResult, visitSelection, executableFieldSelection,
         executableField, mergeResponseFieldResult, resultValueOrNull,

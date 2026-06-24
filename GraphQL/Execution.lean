@@ -102,6 +102,11 @@ structure Resolvers (ObjectRef : Type := PUnit) where
   resolve :
     Name -> Name -> List Argument ->
       ResolverValue ObjectRef -> Option (ResolverValue ObjectRef)
+  resolve_argumentsEquivalent :
+    ∀ parentType fieldName firstArguments laterArguments source,
+      Argument.argumentsEquivalent firstArguments laterArguments ->
+        resolve parentType fieldName firstArguments source =
+        resolve parentType fieldName laterArguments source
 
 -- Spec 6.1.2 `CoerceVariableValues`: partial; variables are assumed already supplied as
 -- modeled input values without coercion or validation.

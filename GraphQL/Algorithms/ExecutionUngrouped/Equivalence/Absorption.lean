@@ -433,7 +433,20 @@ mutual
               selectionDirectivesAllowBool variableValues directives
           · cases depth with
             | zero =>
-                simpa [visitSelection, hallowed] using hnodup
+                cases hprevious :
+                    responseObjectField? responseName (.object fields) with
+                | none =>
+                    simpa [visitSelection, hallowed, hprevious,
+                      mergeResponseFieldResult, mergeResponseFieldIntoObject,
+                      resultValueOrNull, outOfFuel] using
+                      mergeResponseField_pairKeysNodup responseName .null
+                        fields hnodup
+                | some previous =>
+                    simpa [visitSelection, hallowed, hprevious,
+                      mergeResponseFieldResult, mergeResponseFieldIntoObject,
+                      resultValueOrNull] using
+                      mergeResponseField_pairKeysNodup responseName previous
+                        fields hnodup
             | succ depth' =>
                 simpa [visitSelection, hallowed, mergeResponseFieldResult,
                   mergeResponseFieldIntoObject] using
@@ -599,7 +612,34 @@ mutual
             selectionDirectivesAllowBool variableValues directives
         · cases depth with
           | zero =>
-              simpa [visitSelection, hallowed] using hfieldsReady
+              cases hprevious :
+                  responseObjectField? responseName (.object fields) with
+              | none =>
+                  have hmergedReady :
+                      ResponseMergeReady
+                        (.object (mergeResponseField responseName .null fields)) :=
+                    mergeResponseField_object_ready_of_ready responseName .null
+                      fields hfieldsReady ResponseMergeReady.null
+                  simpa [visitSelection, hallowed, hprevious,
+                    mergeResponseFieldResult, mergeResponseFieldIntoObject,
+                    resultValueOrNull, outOfFuel] using hmergedReady
+              | some previous =>
+                  have hpreviousMem :
+                      (responseName, previous) ∈ fields := by
+                    exact lookupResponseField?_some_mem responseName previous
+                      fields (by simpa [responseObjectField?] using hprevious)
+                  have hpreviousReady :
+                      ResponseMergeReady previous :=
+                    ResponseMergeReady_object_field fields responseName
+                      previous hfieldsReady hpreviousMem
+                  have hmergedReady :
+                      ResponseMergeReady
+                        (.object (mergeResponseField responseName previous fields)) :=
+                    mergeResponseField_object_ready_of_ready responseName previous
+                      fields hfieldsReady hpreviousReady
+                  simpa [visitSelection, hallowed, hprevious,
+                    mergeResponseFieldResult, mergeResponseFieldIntoObject,
+                    resultValueOrNull] using hmergedReady
           | succ depth' =>
               have hpreviousReady :
                   ∀ previous,

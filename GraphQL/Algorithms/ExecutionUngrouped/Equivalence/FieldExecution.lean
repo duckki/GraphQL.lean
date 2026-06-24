@@ -257,6 +257,109 @@ theorem completeResolvedValue_previous_scalar
   unfold completeResolvedValue
   rw [reusablePreviousValue?_scalar schema value fieldType hcomposite]
 
+theorem completeResolvedValue_nonNull_eq_nonNullCompletion_of_previous_ne_null
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (inner : TypeRef) (selectionSet : List Selection)
+    (resolved : ResolverValue ObjectIdentity)
+    (previous? : Option ResponseValue)
+    (hprevious : previous? ≠ some .null) :
+    completeResolvedValue schema resolvers variableValues depth (.nonNull inner)
+        selectionSet resolved previous? =
+      nonNullCompletion
+        (completeResolvedValue schema resolvers variableValues depth inner
+          selectionSet resolved previous?) := by
+  cases previous? with
+  | none =>
+      simp [completeResolvedValue, reusablePreviousValue?]
+  | some previous =>
+      cases previous with
+      | null =>
+          exact False.elim (hprevious rfl)
+      | scalar value =>
+          by_cases hcomposite : inner.isCompositeBool schema = true
+          · have houterComposite :
+                (TypeRef.nonNull inner).isCompositeBool schema = true := by
+              simpa [TypeRef.isCompositeBool, TypeRef.namedType] using
+                hcomposite
+            simp [completeResolvedValue, reusablePreviousValue?,
+              houterComposite]
+          · have hinnerNonComposite :
+                inner.isCompositeBool schema = false := by
+              cases h : inner.isCompositeBool schema <;>
+                simp [h] at hcomposite ⊢
+            have houterNonComposite :
+                (TypeRef.nonNull inner).isCompositeBool schema = false := by
+              simpa [TypeRef.isCompositeBool, TypeRef.namedType] using
+                hinnerNonComposite
+            have hinnerCompleted :
+                completeResolvedValue schema resolvers variableValues depth inner
+                  selectionSet resolved (some (.scalar value)) =
+                .ok (.scalar value, 0) :=
+              completeResolvedValue_previous_scalar schema resolvers
+                variableValues depth inner selectionSet resolved value
+                hinnerNonComposite
+            simp [completeResolvedValue, reusablePreviousValue?,
+              houterNonComposite, hinnerCompleted, nonNullCompletion]
+      | object fields =>
+          by_cases hcomposite : inner.isCompositeBool schema = true
+          · have houterComposite :
+                (TypeRef.nonNull inner).isCompositeBool schema = true := by
+              simpa [TypeRef.isCompositeBool, TypeRef.namedType] using
+                hcomposite
+            simp [completeResolvedValue, reusablePreviousValue?,
+              houterComposite]
+          · have hinnerNonComposite :
+                inner.isCompositeBool schema = false := by
+              cases h : inner.isCompositeBool schema <;>
+                simp [h] at hcomposite ⊢
+            have houterNonComposite :
+                (TypeRef.nonNull inner).isCompositeBool schema = false := by
+              simpa [TypeRef.isCompositeBool, TypeRef.namedType] using
+                hinnerNonComposite
+            have hinnerReuse :
+                reusablePreviousValue? schema inner
+                    (some (.object fields)) =
+                  some (.object fields) := by
+              simp [reusablePreviousValue?, hinnerNonComposite]
+            have hinnerCompleted :
+                completeResolvedValue schema resolvers variableValues depth inner
+                  selectionSet resolved (some (.object fields)) =
+                .ok (.object fields, 0) := by
+              unfold completeResolvedValue
+              rw [hinnerReuse]
+            simp [completeResolvedValue, reusablePreviousValue?,
+              houterNonComposite, hinnerCompleted, nonNullCompletion]
+      | list values =>
+          by_cases hcomposite : inner.isCompositeBool schema = true
+          · have houterComposite :
+                (TypeRef.nonNull inner).isCompositeBool schema = true := by
+              simpa [TypeRef.isCompositeBool, TypeRef.namedType] using
+                hcomposite
+            simp [completeResolvedValue, reusablePreviousValue?,
+              houterComposite]
+          · have hinnerNonComposite :
+                inner.isCompositeBool schema = false := by
+              cases h : inner.isCompositeBool schema <;>
+                simp [h] at hcomposite ⊢
+            have houterNonComposite :
+                (TypeRef.nonNull inner).isCompositeBool schema = false := by
+              simpa [TypeRef.isCompositeBool, TypeRef.namedType] using
+                hinnerNonComposite
+            have hinnerReuse :
+                reusablePreviousValue? schema inner (some (.list values)) =
+                  some (.list values) := by
+              simp [reusablePreviousValue?, hinnerNonComposite]
+            have hinnerCompleted :
+                completeResolvedValue schema resolvers variableValues depth inner
+                  selectionSet resolved (some (.list values)) =
+                .ok (.list values, 0) := by
+              unfold completeResolvedValue
+              rw [hinnerReuse]
+            simp [completeResolvedValue, reusablePreviousValue?,
+              houterNonComposite, hinnerCompleted, nonNullCompletion]
+
 theorem completeResolvedValue_nonNull_ok_of_inner_ok
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
@@ -797,7 +900,8 @@ theorem completeValue_duplicate_scalar_merge_eq_spec
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat) (parentType : Name)
     (firstSelectionSet secondSelectionSet : List Selection)
-    (fields : List ExecutableField) (value : String) :
+    (fields : List ExecutableField) (value : String)
+    (hspecNull : scalarCompletionAtDepth schema parentType depth value = .null) :
     let first :=
           resultValueOrNull
         (completeValue schema resolvers variableValues depth parentType
@@ -810,12 +914,18 @@ theorem completeValue_duplicate_scalar_merge_eq_spec
           (some first))) =
     GraphQL.Execution.completeValueData schema resolvers variableValues depth
       parentType fields (.scalar value : ResolverValue ObjectIdentity) := by
-  cases depth <;>
-    by_cases hcomposite :
-        (TypeRef.named parentType).isCompositeBool schema = true <;>
+  cases depth with
+  | zero =>
       simp [completeValue_scalar_any_depth_eq_scalar,
         spec_completeValue_scalar_any_depth_eq_scalar, scalarCompletionAtDepth,
-        mergeResponse, hcomposite]
+        mergeResponse]
+  | succ depth =>
+      by_cases hcomposite :
+          (TypeRef.named parentType).isCompositeBool schema = true <;>
+        simp [scalarCompletionAtDepth, hcomposite] at hspecNull <;>
+        simp [completeValue_scalar_any_depth_eq_scalar,
+          spec_completeValue_scalar_any_depth_eq_scalar, scalarCompletionAtDepth,
+          mergeResponse, hcomposite]
 
 theorem completeValue_duplicate_null_merge_eq_spec
     {ObjectIdentity : Type}
@@ -1099,9 +1209,15 @@ theorem visitSelection_field_depth_zero
     (hallowed : selectionDirectivesAllowBool variableValues directives = true) :
     visitSelection schema resolvers variableValues 0 parentType source
       (.field responseName fieldName arguments directives selectionSet) output =
-    (output, .error 1) := by
+    let previous? := responseObjectField? responseName output
+    let fieldResult :=
+      match previous? with
+      | some previous => .ok (previous, 0)
+      | none => outOfFuel
+    mergeResponseFieldResult responseName fieldResult output := by
   unfold visitSelection
   simp [hallowed, outOfFuel]
+  rfl
 
 theorem visitSelection_field_allowed_succ
     {ObjectIdentity : Type}
@@ -1825,7 +1941,61 @@ theorem visitSelection_field_depth_zero_absorbs_of_ready
   rw [visitSelection_field_depth_zero schema resolvers variableValues
     parentType source responseName fieldName arguments directives selectionSet
     output hallowed]
-  exact ResponseAbsorbs_refl_of_ready output hready
+  cases output with
+  | null =>
+      simpa [responseObjectField?, mergeResponseFieldResult,
+        mergeResponseFieldIntoObject, outOfFuel] using
+        ResponseAbsorbs_refl_of_ready .null hready
+  | scalar value =>
+      simpa [responseObjectField?, mergeResponseFieldResult,
+        mergeResponseFieldIntoObject, outOfFuel] using
+        ResponseAbsorbs_refl_of_ready (.scalar value) hready
+  | list values =>
+      simpa [responseObjectField?, mergeResponseFieldResult,
+        mergeResponseFieldIntoObject, outOfFuel] using
+        ResponseAbsorbs_refl_of_ready (.list values) hready
+  | object fields =>
+      cases hprevious :
+          responseObjectField? responseName (.object fields) with
+      | none =>
+          have hfield :
+              ResponseAbsorbs (.object fields)
+                (.object (mergeResponseField responseName .null fields)) := by
+            apply mergeResponseField_object_absorbs responseName .null fields
+            · exact hready
+            · intro existing hmem
+              have hkey : responseName ∈ fields.map Prod.fst := by
+                exact List.mem_map.mpr ⟨(responseName, existing), hmem, rfl⟩
+              have hlookupNone :
+                  lookupResponseField? responseName fields = none := by
+                simpa [responseObjectField?] using hprevious
+              rcases lookupResponseField?_some_of_mem responseName fields hkey
+                with ⟨found, hlookup⟩
+              rw [hlookupNone] at hlookup
+              contradiction
+          simpa [hprevious, mergeResponseFieldResult,
+            mergeResponseFieldIntoObject, outOfFuel] using hfield
+      | some previous =>
+          have hpreviousMem :
+              (responseName, previous) ∈ fields := by
+            exact lookupResponseField?_some_mem responseName previous fields
+              (by simpa [responseObjectField?] using hprevious)
+          have hpreviousReady :
+              ResponseMergeReady previous :=
+            ResponseMergeReady_object_field fields responseName previous
+              hready hpreviousMem
+          have hfield :
+              ResponseAbsorbs (.object fields)
+                (.object (mergeResponseField responseName previous fields)) := by
+            exact mergeResponseField_object_absorbs responseName previous fields
+              hready (by
+                intro existing hmem
+                exact ResponseAbsorbs_merge_of_ready existing previous
+                  (ResponseMergeReady_object_field fields responseName existing
+                    hready hmem)
+                  hpreviousReady)
+          simpa [hprevious, mergeResponseFieldResult,
+            mergeResponseFieldIntoObject, outOfFuel] using hfield
 
 theorem visitSelection_inline_none_blocked_absorbs_of_ready
     {ObjectIdentity : Type}
@@ -2364,7 +2534,31 @@ mutual
               simp [GraphQL.Execution.collectSelection, hallowed, heq]
             cases depth with
             | zero =>
-                simp [visitSelection, hallowed, responseObjectField?]
+                cases output with
+                | null =>
+                    simp [visitSelection, hallowed, mergeResponseFieldResult,
+                      mergeResponseFieldIntoObject, responseObjectField?]
+                | scalar value =>
+                    simp [visitSelection, hallowed, mergeResponseFieldResult,
+                      mergeResponseFieldIntoObject, responseObjectField?]
+                | list values =>
+                    simp [visitSelection, hallowed, mergeResponseFieldResult,
+                      mergeResponseFieldIntoObject, responseObjectField?]
+                | object fields =>
+                    cases hprevious :
+                        lookupResponseField? fieldResponseName fields with
+                    | none =>
+                        simpa [visitSelection, hallowed, mergeResponseFieldResult,
+                          mergeResponseFieldIntoObject, responseObjectField?,
+                          hprevious] using
+                          responseObjectField?_mergeResponseFieldIntoObject_other
+                            responseName fieldResponseName .null fields hne
+                    | some previous =>
+                        simpa [visitSelection, hallowed, mergeResponseFieldResult,
+                          mergeResponseFieldIntoObject, responseObjectField?,
+                          hprevious] using
+                          responseObjectField?_mergeResponseFieldIntoObject_other
+                            responseName fieldResponseName previous fields hne
             | succ depth' =>
                 cases output with
                 | null =>
@@ -2608,8 +2802,18 @@ mutual
               selectionDirectivesAllowBool variableValues directives
           · cases depth with
             | zero =>
-                refine ⟨fields, ?_⟩
-                simp [visitSelection, hallowed]
+                cases hprevious :
+                    responseObjectField? responseName (.object fields) with
+                | none =>
+                    refine ⟨mergeResponseField responseName .null fields, ?_⟩
+                    simp [visitSelection, hallowed, hprevious,
+                      mergeResponseFieldResult, mergeResponseFieldIntoObject,
+                      resultValueOrNull, outOfFuel]
+                | some previous =>
+                    refine ⟨mergeResponseField responseName previous fields, ?_⟩
+                    simp [visitSelection, hallowed, hprevious,
+                      mergeResponseFieldResult, mergeResponseFieldIntoObject,
+                      resultValueOrNull]
             | succ depth' =>
                 cases hprevious :
                     responseObjectField? responseName (.object fields) with
@@ -2827,6 +3031,53 @@ def ExecutableGroupsFlatSpecEquivalent
   ExecutableFieldsFlatSpecEquivalent schema resolvers variableValues depth
     parentType source (collectedExecutableFields groups)
 
+def ExecutableFieldsFlatSpecAlignedEquivalent
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (fields : List ExecutableField) : Prop :=
+  RootSelectionResultAlignedEquivalent
+    (executeRootSelectionSet schema resolvers variableValues depth parentType
+      source (executableFieldSelections fields))
+    (GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+      depth parentType source (executableFieldSelections fields))
+
+def ExecutableGroupsFlatSpecAlignedEquivalent
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (groups : List (Name × List ExecutableField)) : Prop :=
+  ExecutableFieldsFlatSpecAlignedEquivalent schema resolvers variableValues depth
+    parentType source (collectedExecutableFields groups)
+
+theorem ExecutableFieldsFlatSpecAlignedEquivalent.of_exact
+    {ObjectIdentity : Type}
+    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
+    {variableValues : VariableValues} {depth : Nat}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    {fields : List ExecutableField} :
+    ExecutableFieldsFlatSpecEquivalent schema resolvers variableValues depth
+      parentType source fields ->
+    ExecutableFieldsFlatSpecAlignedEquivalent schema resolvers variableValues
+      depth parentType source fields := by
+  intro hexact
+  exact RootSelectionResultAlignedEquivalent.of_eq hexact
+
+theorem ExecutableGroupsFlatSpecAlignedEquivalent.of_exact
+    {ObjectIdentity : Type}
+    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
+    {variableValues : VariableValues} {depth : Nat}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    {groups : List (Name × List ExecutableField)} :
+    ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues depth
+      parentType source groups ->
+    ExecutableGroupsFlatSpecAlignedEquivalent schema resolvers variableValues
+      depth parentType source groups := by
+  intro hexact
+  exact ExecutableFieldsFlatSpecAlignedEquivalent.of_exact hexact
+
 def ExecutableFieldsMergedComplete
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
@@ -2934,6 +3185,61 @@ theorem executeRootSelectionSet_eq_spec_of_flatCollects_and_flatSpecEquivalent
     schema resolvers variableValues depth parentType source selectionSet
     hdirect hflatSpec
 
+theorem executeRootSelectionSet_aligned_of_flatCollects_and_flatSpecAligned
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (selectionSet : List Selection)
+    (hdirect :
+      VisitSubfieldsFlatCollects schema resolvers variableValues depth
+        parentType source selectionSet (.object []))
+    (hflatSpec :
+      ExecutableFieldsFlatSpecAlignedEquivalent schema resolvers variableValues
+        depth parentType source
+        (collectedExecutableFields
+          (GraphQL.Execution.collectFields schema variableValues parentType
+            source selectionSet))) :
+    RootSelectionResultAlignedEquivalent
+      (executeRootSelectionSet schema resolvers variableValues depth parentType
+        source selectionSet)
+      (GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+        depth parentType source selectionSet) := by
+  let flatSelectionSet :=
+    executableFieldSelections
+      (collectedExecutableFields
+        (GraphQL.Execution.collectFields schema variableValues parentType
+          source selectionSet))
+  have hdirectRoot :
+      executeRootSelectionSet schema resolvers variableValues depth parentType
+        source selectionSet =
+      executeRootSelectionSet schema resolvers variableValues depth parentType
+        source flatSelectionSet := by
+    unfold VisitSubfieldsFlatCollects at hdirect
+    unfold executeRootSelectionSet
+    rw [hdirect]
+  have hflatSpec' :
+      RootSelectionResultAlignedEquivalent
+        (executeRootSelectionSet schema resolvers variableValues depth
+          parentType source flatSelectionSet)
+        (GraphQL.Execution.executeRootSelectionSet schema resolvers
+          variableValues depth parentType source flatSelectionSet) := by
+    simpa [ExecutableFieldsFlatSpecAlignedEquivalent, flatSelectionSet] using
+      hflatSpec
+  have hspecFlat :
+      GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+        depth parentType source flatSelectionSet =
+      GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+        depth parentType source selectionSet := by
+    simpa [flatSelectionSet] using
+      specExecuteRootSelectionSet_executableFieldSelections_collectedExecutableFields_collectFields
+        schema resolvers variableValues depth parentType source selectionSet
+  exact
+    RootSelectionResultAlignedEquivalent.trans
+      (RootSelectionResultAlignedEquivalent.of_eq hdirectRoot)
+      (RootSelectionResultAlignedEquivalent.trans hflatSpec'
+        (RootSelectionResultAlignedEquivalent.of_eq hspecFlat))
+
 theorem executeRootSelectionSet_eq_spec_of_flatCollects_and_groupFlatSpecEquivalent
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
@@ -2956,6 +3262,31 @@ theorem executeRootSelectionSet_eq_spec_of_flatCollects_and_groupFlatSpecEquival
   exact executeRootSelectionSet_eq_spec_of_flatCollects_and_flatSpecEquivalent
     schema resolvers variableValues depth parentType source selectionSet
     hdirect hgroups
+
+theorem executeRootSelectionSet_aligned_of_flatCollects_and_groupFlatSpecAligned
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (selectionSet : List Selection)
+    (hdirect :
+      VisitSubfieldsFlatCollects schema resolvers variableValues depth
+        parentType source selectionSet (.object []))
+    (hgroups :
+      ExecutableGroupsFlatSpecAlignedEquivalent schema resolvers variableValues
+        depth parentType source
+        (GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet)) :
+    RootSelectionResultAlignedEquivalent
+      (executeRootSelectionSet schema resolvers variableValues depth parentType
+        source selectionSet)
+      (GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+        depth parentType source selectionSet) := by
+  unfold ExecutableGroupsFlatSpecAlignedEquivalent at hgroups
+  exact
+    executeRootSelectionSet_aligned_of_flatCollects_and_flatSpecAligned
+      schema resolvers variableValues depth parentType source selectionSet
+      hdirect hgroups
 
 theorem ExecutableFieldsFlatSpecEquivalent_nil
     {ObjectIdentity : Type}

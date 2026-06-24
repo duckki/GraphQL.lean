@@ -322,7 +322,10 @@ def completeNormalizationResolvers : Execution.Resolvers :=
         | "Droid", "id" => .scalar "droid-id"
         | "Droid", "name" => .scalar "droid-name"
         | "Droid", "primaryFunction" => .scalar "protocol"
-        | _, _ => .null }
+        | _, _ => .null
+    resolve_argumentsEquivalent := by
+      intros
+      rfl }
 
 def completeNormalizationVariableValues : Execution.VariableValues :=
   [("x", .boolean true), ("y", .boolean false)]

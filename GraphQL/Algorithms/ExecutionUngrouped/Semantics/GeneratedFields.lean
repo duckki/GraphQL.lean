@@ -1,4 +1,5 @@
 import GraphQL.Algorithms.ExecutionUngrouped.Semantics.BoolCaseExecution
+import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.Collection.GroupPrefix
 
 /-!
 Generated-field and field-normality lemmas for ungrouped execution.
@@ -2401,4 +2402,3 @@ theorem collectedFieldGroupLocalAppendInvariant_of_allFieldsNormal
       ⟨_hfieldMem, hfields, _hprefixTail⟩
     subst fields
     simp at hlater
-

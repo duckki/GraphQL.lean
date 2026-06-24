@@ -98,6 +98,42 @@ The top-level `GraphQL/NormalForm.lean` file should keep only the normal-form
 definitions, predicates, normalizer functions, and public correctness
 propositions.
 
+## Layered Proof Modules
+
+For large proof areas, split modules by logical proof layer rather than by line
+count. The base file should hold the core local predicates, low-level response
+or collection facts, and the first theorem layer that directly proves facts
+about those predicates.
+
+Use submodules for named proof roles:
+
+- `Validity.lean`: validation assumptions transported into proof-facing
+  invariants.
+- `.../State.lean`: state witness records and constructors.
+- `.../Executable.lean`: executable-field or executable-group wrappers around
+  lower-level semantic facts.
+- `.../FlatSpec.lean`: conversion from execution witnesses into flat-spec
+  equivalence predicates.
+- `.../Query.lean`: root-selection, `executeQueryWithFuel`, and `executeQuery`
+  wrapper theorems.
+
+Prefer explicit imports at these layer boundaries. Do not rely on long
+transitive imports when a module directly mentions a proof layer's declarations.
+
+The ungrouped execution equivalence modules under
+`GraphQL/Algorithms/ExecutionUngrouped/Equivalence/` follow this pattern:
+
+- `AppendSelection.lean` keeps response/key and one-step append execution facts,
+  while `AppendSelection/Validity.lean` and `AppendSelection/State.lean` hold
+  validation and append-state witnesses.
+- `AppendSelection/SingleFieldGroup.lean` keeps complete-value child-state
+  lemmas, while `SingleFieldGroup/Executable.lean` and
+  `SingleFieldGroup/Query.lean` lift them to executable-group and query
+  wrappers.
+- `FieldGroup/AppendSteps.lean` keeps append-step and append-plan machinery,
+  while `AppendSteps/FlatSpec.lean` and `AppendSteps/Query.lean` perform the
+  flat-spec and query lifts.
+
 ## Refactor Rule
 
 When moving a theorem, preserve its declaration name unless there is a specific

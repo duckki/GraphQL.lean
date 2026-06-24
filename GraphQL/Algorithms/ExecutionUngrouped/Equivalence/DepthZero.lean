@@ -3,10 +3,10 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.Absorption
 /-!
 Depth-zero facts for ungrouped execution.
 
-At zero completion depth, field visits do not write sentinel `null` values into the
-response object. They preserve the current output and only contribute an execution
-error count. The proofs in this file therefore reduce depth-zero behavior to counting
-the executable field occurrences that `CollectFields` exposes.
+At zero completion depth, fresh response names write sentinel `null` values into the
+response object and contribute one execution error. Later visits to the same response
+name see the sentinel and contribute no new error. The proofs in this file therefore
+separate status counting from intermediate response-object shape.
 -/
 namespace GraphQL
 
@@ -28,6 +28,98 @@ theorem combineVisitStatus_depthZeroVisitStatus
     simp [depthZeroVisitStatus, visitOk, combineVisitStatus,
       GraphQL.Execution.Result.combine,
       Nat.add_comm, Nat.add_left_comm]
+
+def zeroDepthResponseNameResult
+    (responseName : Name) (fields : List (Name × ResponseValue)) :
+    ResponseValue × VisitStatus :=
+  let fieldResult : GraphQL.Execution.Result ResponseValue :=
+    match responseObjectField? responseName (.object fields) with
+    | some previous => .ok (previous, 0)
+    | none => GraphQL.Execution.outOfFuel
+  mergeResponseFieldResult responseName fieldResult (.object fields)
+
+def zeroDepthExecutableFieldsResult :
+    List ExecutableField -> List (Name × ResponseValue) ->
+      ResponseValue × VisitStatus
+  | [], fields => (.object fields, visitOk)
+  | field :: rest, fields =>
+      let head := zeroDepthResponseNameResult field.responseName fields
+      let tailFields :=
+        match head.fst with
+        | .object fields => fields
+        | _ => []
+      let tail := zeroDepthExecutableFieldsResult rest tailFields
+      (tail.fst, combineVisitStatus head.snd tail.snd)
+
+theorem zeroDepthResponseNameResult_eq_visitSelection_executableField
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (field : ExecutableField) (fields : List (Name × ResponseValue)) :
+    visitSelection schema resolvers variableValues 0 parentType source
+        (executableFieldSelection field) (.object fields) =
+      zeroDepthResponseNameResult field.responseName fields := by
+  cases hprevious :
+      responseObjectField? field.responseName (.object fields) with
+  | none =>
+      cases field
+      simp [visitSelection, executableFieldSelection,
+        selectionDirectivesAllowBool_empty, zeroDepthResponseNameResult,
+        hprevious, mergeResponseFieldResult, GraphQL.Execution.outOfFuel,
+        resultValueOrNull, resultStatus]
+  | some previous =>
+      cases field
+      simp [visitSelection, executableFieldSelection,
+        selectionDirectivesAllowBool_empty, zeroDepthResponseNameResult,
+        hprevious, mergeResponseFieldResult, resultValueOrNull, resultStatus]
+
+theorem visitSubfields_executableFieldSelections_depth_zero_eq_zeroDepthExecutableFieldsResult
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (parentType : Name) (source : ResolverValue ObjectIdentity) :
+    ∀ (fields : List ExecutableField) (outputFields : List (Name × ResponseValue)),
+      visitSubfields schema resolvers variableValues 0 parentType source
+          (executableFieldSelections fields) (.object outputFields) =
+        zeroDepthExecutableFieldsResult fields outputFields
+  | [], outputFields => by
+      simp [visitSubfields, executableFieldSelections,
+        zeroDepthExecutableFieldsResult]
+  | field :: rest, outputFields => by
+      rw [show
+          executableFieldSelections (field :: rest) =
+            executableFieldSelection field :: executableFieldSelections rest by
+        simp [executableFieldSelections]]
+      rw [visitSubfields]
+      rw [zeroDepthResponseNameResult_eq_visitSelection_executableField
+        schema resolvers variableValues parentType source field outputFields]
+      cases hprevious :
+          responseObjectField? field.responseName (.object outputFields) with
+      | none =>
+          simp [zeroDepthExecutableFieldsResult, zeroDepthResponseNameResult,
+            hprevious, mergeResponseFieldResult, GraphQL.Execution.outOfFuel,
+            resultValueOrNull, resultStatus]
+          have htail :=
+            visitSubfields_executableFieldSelections_depth_zero_eq_zeroDepthExecutableFieldsResult
+              schema resolvers variableValues parentType source rest
+              (mergeResponseField field.responseName .null outputFields)
+          simp [mergeResponseFieldIntoObject] at htail ⊢
+          constructor
+          · exact congrArg Prod.fst htail
+          · rw [congrArg Prod.snd htail]
+      | some previous =>
+          simp [zeroDepthExecutableFieldsResult, zeroDepthResponseNameResult,
+            hprevious, mergeResponseFieldResult, resultValueOrNull,
+            resultStatus]
+          have htail :=
+            visitSubfields_executableFieldSelections_depth_zero_eq_zeroDepthExecutableFieldsResult
+              schema resolvers variableValues parentType source rest
+              (mergeResponseField field.responseName previous outputFields)
+          simp [mergeResponseFieldIntoObject] at htail ⊢
+          constructor
+          · exact congrArg Prod.fst htail
+          · rw [congrArg Prod.snd htail]
 
 theorem collectedExecutableFields_length_eq_groups_length_of_singletons :
     ∀ groups : List (Name × List ExecutableField),
@@ -138,121 +230,156 @@ theorem executeCollectedFields_depth_zero_nonempty
               rw [hrest]
               simp [Nat.add_comm, Nat.add_left_comm]
 
-mutual
-  theorem visitSelection_depth_zero_count
-      {ObjectIdentity : Type}
-      (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-      (variableValues : VariableValues)
-      (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ (selection : Selection) (output : ResponseValue),
-        visitSelection schema resolvers variableValues 0 parentType source
-          selection output =
-        (output,
-          depthZeroVisitStatus
-            (collectedExecutableFields
-              (GraphQL.Execution.collectSelection schema variableValues
-                parentType source selection)).length)
-    := by
-      intro selection output
-      cases selection with
-      | field responseName fieldName arguments directives selectionSet =>
-          cases hdirectives :
-              selectionDirectivesAllowBool variableValues directives <;>
-              simp [visitSelection, GraphQL.Execution.collectSelection,
-                hdirectives, depthZeroVisitStatus, collectedExecutableFields,
-                visitOk, outOfFuel]
-      | inlineFragment typeCondition directives selectionSet =>
-          cases hdirectives :
-              selectionDirectivesAllowBool variableValues directives
-          · cases typeCondition <;>
-              simp [visitSelection, GraphQL.Execution.collectSelection,
-                hdirectives, collectedExecutableFields, depthZeroVisitStatus,
-                visitOk]
-          · cases typeCondition with
-            | none =>
-                simpa [visitSelection, GraphQL.Execution.collectSelection,
-                  hdirectives] using
-                  visitSubfields_depth_zero_count schema resolvers variableValues
-                    parentType source selectionSet output
-            | some typeCondition =>
-                cases happly :
-                    doesFragmentTypeApplyBool schema parentType source
-                      typeCondition
-                · simp [visitSelection, GraphQL.Execution.collectSelection,
-                    hdirectives, happly, collectedExecutableFields,
-                    depthZeroVisitStatus, visitOk]
-                · simpa [visitSelection, GraphQL.Execution.collectSelection,
-                    hdirectives, happly] using
-                    visitSubfields_depth_zero_count schema resolvers
-                      variableValues parentType source selectionSet output
+theorem visitSubfields_executableFieldSelections_depth_zero_status_fresh
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (parentType : Name) (source : ResolverValue ObjectIdentity) :
+    ∀ (fields : List ExecutableField)
+      (outputFields : List (Name × ResponseValue)),
+      (fields.map (fun field => field.responseName)).Nodup ->
+      (∀ field, field ∈ fields ->
+        field.responseName ∉ outputFields.map Prod.fst) ->
+    (visitSubfields schema resolvers variableValues 0 parentType source
+      (executableFieldSelections fields) (.object outputFields)).snd =
+    depthZeroVisitStatus fields.length
+  | [], outputFields, _hnodup, _hfresh => by
+      simp [visitSubfields, executableFieldSelections, depthZeroVisitStatus,
+        visitOk]
+  | field :: rest, outputFields, hnodup, hfresh => by
+      have hfieldFresh :
+          field.responseName ∉ outputFields.map Prod.fst :=
+        hfresh field (by simp)
+      have hlookup :
+          responseObjectField? field.responseName (.object outputFields) =
+            none :=
+        responseObjectField?_none_of_not_mem field.responseName outputFields
+          hfieldFresh
+      have hrestNodup :
+          (rest.map (fun field => field.responseName)).Nodup := by
+        simpa using (List.nodup_cons.mp hnodup).2
+      have hrestFresh :
+          ∀ restField, restField ∈ rest ->
+            restField.responseName ∉
+              (mergeResponseField field.responseName .null outputFields).map
+                Prod.fst := by
+        intro restField hrestField hmem
+        have hrestNameNe :
+            restField.responseName ≠ field.responseName := by
+          intro heq
+          exact (List.nodup_cons.mp hnodup).1
+            (List.mem_map.mpr ⟨restField, hrestField, heq⟩)
+        rcases
+          mergeResponseField_key_mem field.responseName
+            restField.responseName .null outputFields hmem
+        with hinserted | hold
+        · exact hrestNameNe hinserted
+        · exact hfresh restField (by simp [hrestField]) hold
+      have htail :=
+        visitSubfields_executableFieldSelections_depth_zero_status_fresh
+          schema resolvers variableValues parentType source rest
+          (mergeResponseField field.responseName .null outputFields)
+          hrestNodup hrestFresh
+      simp [visitSubfields, visitSelection, executableFieldSelections,
+        executableFieldSelection, selectionDirectivesAllowBool_empty,
+        mergeResponseFieldResult, mergeResponseFieldIntoObject, hlookup,
+        outOfFuel, resultValueOrNull, resultStatus]
+      have htail' :
+          (visitSubfields schema resolvers variableValues 0 parentType source
+            (List.map executableFieldSelection rest)
+            (.object (mergeResponseField field.responseName .null outputFields))).snd =
+          depthZeroVisitStatus rest.length := by
+        simpa [executableFieldSelections] using htail
+      rw [htail']
+      cases rest <;>
+        simp [depthZeroVisitStatus, visitOk, combineVisitStatus,
+          GraphQL.Execution.Result.combine]
+      omega
 
-  theorem visitSubfields_depth_zero_count
-      {ObjectIdentity : Type}
-      (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-      (variableValues : VariableValues)
-      (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ (selectionSet : List Selection) (output : ResponseValue),
-        visitSubfields schema resolvers variableValues 0 parentType source
-          selectionSet output =
-        (output,
-          depthZeroVisitStatus
-            (collectedExecutableFields
-              (GraphQL.Execution.collectFields schema variableValues
-                parentType source selectionSet)).length)
-    := by
-      intro selectionSet output
-      cases selectionSet with
+theorem collectedExecutableFields_responseName_key_mem
+    (groups : List (Name × List ExecutableField))
+    (hresponses : CollectedGroupsResponseName groups)
+    (responseName : Name) :
+    responseName ∈
+        (collectedExecutableFields groups).map
+          (fun field => field.responseName) ->
+      responseName ∈ groups.map Prod.fst := by
+  induction groups with
+  | nil =>
+      intro hmem
+      simp [collectedExecutableFields] at hmem
+  | cons group rest ih =>
+      rcases group with ⟨groupResponseName, fields⟩
+      intro hmem
+      simp [collectedExecutableFields] at hmem
+      rcases hmem with hfield | hrest
+      · rcases hfield with ⟨field, hfieldMem, hfieldResponse⟩
+        have hresponse :
+            field.responseName = groupResponseName :=
+          hresponses groupResponseName fields (by simp) field hfieldMem
+        simp [hresponse] at hfieldResponse
+        simp [hfieldResponse]
+      · have hrestResponses : CollectedGroupsResponseName rest :=
+          CollectedGroupsResponseName_tail hresponses
+        have hkey :
+            responseName ∈ rest.map Prod.fst :=
+          ih hrestResponses (by simpa [List.mem_map] using hrest)
+        simp [hkey]
+
+theorem collectedExecutableFields_responseNames_nodup_of_singletons
+    (groups : List (Name × List ExecutableField))
+    (hnodup : PairKeysNodup groups)
+    (hresponses : CollectedGroupsResponseName groups)
+    (hsingletons :
+      ∀ responseName fields,
+        (responseName, fields) ∈ groups -> fields.length = 1) :
+    (collectedExecutableFields groups).map
+      (fun field => field.responseName) |>.Nodup := by
+  induction groups with
+  | nil =>
+      simp [collectedExecutableFields]
+  | cons group rest ih =>
+      rcases group with ⟨responseName, fields⟩
+      have hfieldsLength : fields.length = 1 :=
+        hsingletons responseName fields (by simp)
+      cases fields with
       | nil =>
-          simp [visitSubfields, GraphQL.Execution.collectFields,
-            collectedExecutableFields, depthZeroVisitStatus, visitOk]
-      | cons selection rest =>
-          have hhead :=
-            visitSelection_depth_zero_count schema resolvers variableValues
-              parentType source selection output
-          have htail :=
-            visitSubfields_depth_zero_count schema resolvers variableValues
-              parentType source rest output
-          simp [visitSubfields, GraphQL.Execution.collectFields, hhead, htail,
-            collectedExecutableFields_mergeExecutableGroups_length,
-            combineVisitStatus_depthZeroVisitStatus, Nat.add_comm]
-end
-
-theorem visitSubfields_executableFieldSelections_depth_zero
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues)
-    (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (fields : List ExecutableField) (outputFields : List (Name × ResponseValue)) :
-    visitSubfields schema resolvers variableValues 0 parentType source
-      (executableFieldSelections fields) (.object outputFields) =
-    (.object outputFields, depthZeroVisitStatus fields.length) := by
-  have hcount :=
-    visitSubfields_depth_zero_count schema resolvers variableValues parentType
-      source (executableFieldSelections fields) (.object outputFields)
-  simpa [collectedExecutableFields_collectFields_executableFieldSelections_length]
-    using hcount
-
-theorem VisitSubfieldsFlatCollects_depth_zero
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues)
-    (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection)
-    (outputFields : List (Name × ResponseValue)) :
-      VisitSubfieldsFlatCollects schema resolvers variableValues 0 parentType
-        source selectionSet (.object outputFields) := by
-  unfold VisitSubfieldsFlatCollects
-  let fields :=
-    collectedExecutableFields
-      (GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet)
-  have hleft :=
-    visitSubfields_depth_zero_count schema resolvers variableValues parentType
-      source selectionSet (.object outputFields)
-  have hright :=
-    visitSubfields_executableFieldSelections_depth_zero schema resolvers
-      variableValues parentType source fields outputFields
-  rw [hleft, hright]
+          simp at hfieldsLength
+      | cons field tail =>
+          cases tail with
+          | nil =>
+              have hfieldResponse :
+                  field.responseName = responseName :=
+                hresponses responseName [field] (by simp) field (by simp)
+              have hrestNodup : PairKeysNodup rest :=
+                PairKeysNodup.tail hnodup
+              have hrestResponses : CollectedGroupsResponseName rest :=
+                CollectedGroupsResponseName_tail hresponses
+              have hrestSingletons :
+                  ∀ restResponseName restFields,
+                    (restResponseName, restFields) ∈ rest ->
+                      restFields.length = 1 := by
+                intro restResponseName restFields hmem
+                exact hsingletons restResponseName restFields (by simp [hmem])
+              have htailNodup :=
+                ih hrestNodup hrestResponses hrestSingletons
+              have hnot :
+                  field.responseName ∉
+                    (collectedExecutableFields rest).map
+                      (fun field => field.responseName) := by
+                intro hmem
+                have hkey :
+                    field.responseName ∈ rest.map Prod.fst :=
+                  collectedExecutableFields_responseName_key_mem rest
+                    hrestResponses field.responseName hmem
+                have hheadNot :
+                    responseName ∉ rest.map Prod.fst :=
+                  PairKeysNodup.head_not_mem_tail hnodup
+                exact hheadNot (by simpa [hfieldResponse] using hkey)
+              simpa [collectedExecutableFields, hfieldResponse] using
+                List.nodup_cons.mpr ⟨hnot, htailNodup⟩
+          | cons second tailTail =>
+              simp at hfieldsLength
 
 theorem ExecutableGroupsFlatSpecEquivalent_depth_zero
     {ObjectIdentity : Type}
@@ -271,9 +398,6 @@ theorem ExecutableGroupsFlatSpecEquivalent_depth_zero
       parentType source groups := by
   unfold ExecutableGroupsFlatSpecEquivalent
   unfold ExecutableFieldsFlatSpecEquivalent
-  have hvisit :=
-    visitSubfields_executableFieldSelections_depth_zero schema resolvers
-      variableValues parentType source (collectedExecutableFields groups) []
   have hspec :=
     specExecuteRootSelectionSet_executableFieldSelections_collectedExecutableFields
       schema resolvers variableValues 0 parentType source groups hnodup
@@ -285,72 +409,30 @@ theorem ExecutableGroupsFlatSpecEquivalent_depth_zero
       (collectedExecutableFields groups).length = groups.length :=
     collectedExecutableFields_length_eq_groups_length_of_singletons groups
       hsingletons
-  unfold executeRootSelectionSet
-  rw [hvisit]
-  rw [hspec]
-  rw [hcollected]
-  rw [hlength]
-  cases groups <;> simp [depthZeroVisitStatus, visitOk]
-
-theorem executeQueryWithFuel_data_eq_spec_depth_zero
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (operation : Operation)
-    (source : ResolverValue ObjectIdentity) :
-    (executeQueryWithFuel schema resolvers variableValues operation 0 source).data =
-      (GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
-        operation 0 source).data := by
-  unfold executeQueryWithFuel GraphQL.Execution.executeQueryWithFuel
-  by_cases hsource :
-      rootSourceAppliesBool schema operation source = true
-  · simp [hsource]
-    have hvisit :
-        visitSubfields schema resolvers variableValues 0 operation.rootType
-            source operation.selectionSet (.object []) =
-          (.object [],
-            depthZeroVisitStatus
-              (collectedExecutableFields
-                (GraphQL.Execution.collectFields schema variableValues
-                  operation.rootType source operation.selectionSet)).length) := by
-      simpa using
-        visitSubfields_depth_zero_count schema resolvers variableValues
-          operation.rootType source operation.selectionSet (.object [])
-    unfold executeRootSelectionSet GraphQL.Execution.executeRootSelectionSet
-    rw [hvisit]
-    cases hgroups :
-        GraphQL.Execution.collectFields schema variableValues operation.rootType
-          source operation.selectionSet with
-    | nil =>
-        have hspec :
-            GraphQL.Execution.executeCollectedFields schema resolvers
-                variableValues 0 source [] =
-              .ok ([], 0) := by
-          simp [GraphQL.Execution.executeCollectedFields]
-        simp [hgroups, hspec, collectedExecutableFields, depthZeroVisitStatus,
-          visitOk]
-    | cons group rest =>
-        rcases group with ⟨responseName, fields⟩
-        have hnonempty :
-            CollectedGroupsFieldsNonempty ((responseName, fields) :: rest) := by
-          simpa [hgroups] using
-            collectFields_fieldsNonempty schema variableValues operation.rootType
-              source operation.selectionSet
-        have hspec :
-            GraphQL.Execution.executeCollectedFields schema resolvers
-                variableValues 0 source ((responseName, fields) :: rest) =
-              .error (((responseName, fields) :: rest).length) := by
-          simpa using
-            executeCollectedFields_depth_zero_nonempty schema resolvers
-              variableValues source ((responseName, fields) :: rest)
-              hnonempty
-        have hfields : fields ≠ [] := hnonempty responseName fields (by simp)
-        cases fields with
-        | nil =>
-            exact False.elim (hfields rfl)
-        | cons _field _fields =>
-            simp [hgroups, hspec, collectedExecutableFields,
-              depthZeroVisitStatus]
-  · simp [hsource]
+  cases groups with
+  | nil =>
+      simp [executeRootSelectionSet, GraphQL.Execution.executeRootSelectionSet,
+        executableFieldSelections, collectedExecutableFields,
+        GraphQL.Execution.collectFields, GraphQL.Execution.executeCollectedFields,
+        visitSubfields, visitOk]
+  | cons group rest =>
+      have hflatNodup :
+          ((collectedExecutableFields (group :: rest)).map
+            (fun field => field.responseName)).Nodup :=
+        collectedExecutableFields_responseNames_nodup_of_singletons
+          (group :: rest) hnodup hresponses hsingletons
+      have hvisitStatus :=
+        visitSubfields_executableFieldSelections_depth_zero_status_fresh
+          schema resolvers variableValues parentType source
+          (collectedExecutableFields (group :: rest)) [] hflatNodup
+          (by
+            intro field hmem
+            simp)
+      unfold executeRootSelectionSet
+      rw [hspec]
+      rw [hcollected]
+      rw [hlength] at hvisitStatus
+      simp [hvisitStatus, depthZeroVisitStatus]
 
 end ExecutionUngrouped
 end Algorithms

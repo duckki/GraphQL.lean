@@ -1,4 +1,5 @@
-import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupList
+import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupList.AppendInvariant
+import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupList.DepthZero
 
 /-!
 Final proof-boundary statements for ungrouped execution equivalence.
@@ -40,6 +41,23 @@ structure ExecutedGroupedSelectionSetState
   flatSpec :
     ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues depth
       parentType source groups
+
+structure ExecutedGroupedSelectionSetAlignedState
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (selectionSet : List Selection) : Type where
+  groups : List (Name × List ExecutableField)
+  collect_eq :
+    GraphQL.Execution.collectFields schema variableValues parentType source
+      selectionSet = groups
+  flatCollects :
+    VisitSubfieldsFlatCollects schema resolvers variableValues depth parentType
+      source selectionSet (.object [])
+  flatSpec :
+    ExecutableGroupsFlatSpecAlignedEquivalent schema resolvers variableValues
+      depth parentType source groups
 
 namespace ExecutedGroupedSelectionSetState
 
@@ -127,15 +145,12 @@ theorem stateEquivalent
     variableValues depth parentType source selectionSet
     state.executeRootSelectionSet_eq_spec
 
-def depth_zero
+def depth_zero_general
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection)
-    (hsingletons :
-      CollectedSelectionSetGroupsSingleton schema variableValues parentType
-        source selectionSet) :
+    (selectionSet : List Selection) :
     ExecutedGroupedSelectionSetState schema resolvers variableValues 0
       parentType source selectionSet :=
   { groups :=
@@ -144,9 +159,9 @@ def depth_zero
     collect_eq := rfl
     flatCollects :=
       VisitSubfieldsFlatCollects_depth_zero schema resolvers variableValues
-        parentType source selectionSet []
+        parentType source selectionSet [] ResponseMergeReady_empty_object
     flatSpec :=
-      ExecutableGroupsFlatSpecEquivalent_depth_zero schema resolvers
+      ExecutableGroupsFlatSpecEquivalent_depth_zero_general schema resolvers
         variableValues parentType source
         (GraphQL.Execution.collectFields schema variableValues parentType source
           selectionSet)
@@ -160,8 +175,21 @@ def depth_zero
         (collectFields_responseName schema variableValues parentType source
           selectionSet)
         (collectFields_parent schema variableValues parentType source
-            selectionSet)
-        hsingletons }
+            selectionSet) }
+
+def depth_zero
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    (selectionSet : List Selection)
+    (_hsingletons :
+      CollectedSelectionSetGroupsSingleton schema variableValues parentType
+        source selectionSet) :
+    ExecutedGroupedSelectionSetState schema resolvers variableValues 0
+      parentType source selectionSet :=
+  depth_zero_general schema resolvers variableValues parentType source
+    selectionSet
 
 def of_empty_collect
     {ObjectIdentity : Type}
@@ -418,6 +446,112 @@ def of_collected_groups_collectedLocalAppendInvariant
 
 end ExecutedGroupedSelectionSetState
 
+namespace ExecutedGroupedSelectionSetAlignedState
+
+theorem executeRootSelectionSet_aligned
+    {ObjectIdentity : Type}
+    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
+    {variableValues : VariableValues} {depth : Nat}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    {selectionSet : List Selection}
+    (state :
+      ExecutedGroupedSelectionSetAlignedState schema resolvers variableValues
+        depth parentType source selectionSet) :
+    RootSelectionResultAlignedEquivalent
+      (executeRootSelectionSet schema resolvers variableValues depth parentType
+        source selectionSet)
+      (GraphQL.Execution.executeRootSelectionSet schema resolvers
+        variableValues depth parentType source selectionSet) := by
+  apply executeRootSelectionSet_aligned_of_flatCollects_and_groupFlatSpecAligned
+    schema resolvers variableValues depth parentType source selectionSet
+    state.flatCollects
+  rw [state.collect_eq]
+  exact state.flatSpec
+
+theorem executeRootSelectionSet_responseEquivalent
+    {ObjectIdentity : Type}
+    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
+    {variableValues : VariableValues} {depth : Nat}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    {selectionSet : List Selection}
+    (state :
+      ExecutedGroupedSelectionSetAlignedState schema resolvers variableValues
+        depth parentType source selectionSet) :
+    RootSelectionResultDataAndErrorPresenceEquivalent
+      (executeRootSelectionSet schema resolvers variableValues depth parentType
+        source selectionSet)
+      (GraphQL.Execution.executeRootSelectionSet schema resolvers
+        variableValues depth parentType source selectionSet) :=
+  RootSelectionResultAlignedEquivalent.to_dataAndErrorPresence
+    state.executeRootSelectionSet_aligned
+
+def of_group_flat_spec
+    {ObjectIdentity : Type}
+    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
+    {variableValues : VariableValues} {depth : Nat}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    {selectionSet : List Selection}
+    {groups : List (Name × List ExecutableField)}
+    (hcollect :
+      GraphQL.Execution.collectFields schema variableValues parentType source
+        selectionSet = groups)
+    (hflat :
+      VisitSubfieldsFlatCollects schema resolvers variableValues depth parentType
+        source selectionSet (.object []))
+    (hgroups :
+      ExecutableGroupsFlatSpecAlignedEquivalent schema resolvers variableValues
+        depth parentType source groups) :
+    ExecutedGroupedSelectionSetAlignedState schema resolvers variableValues depth
+      parentType source selectionSet :=
+  { groups := groups
+    collect_eq := hcollect
+    flatCollects := hflat
+    flatSpec := hgroups }
+
+def of_exact
+    {ObjectIdentity : Type}
+    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
+    {variableValues : VariableValues} {depth : Nat}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    {selectionSet : List Selection}
+    (state :
+      ExecutedGroupedSelectionSetState schema resolvers variableValues depth
+        parentType source selectionSet) :
+    ExecutedGroupedSelectionSetAlignedState schema resolvers variableValues
+      depth parentType source selectionSet :=
+  { groups := state.groups
+    collect_eq := state.collect_eq
+    flatCollects := state.flatCollects
+    flatSpec :=
+      ExecutableGroupsFlatSpecAlignedEquivalent.of_exact state.flatSpec }
+
+def of_executedGroups
+    {ObjectIdentity : Type}
+    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
+    {variableValues : VariableValues} {depth : Nat}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    {selectionSet : List Selection}
+    {groups : List (Name × List ExecutableField)}
+    (hcollect :
+      GraphQL.Execution.collectFields schema variableValues parentType source
+        selectionSet = groups)
+    (hflat :
+      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+        parentType source selectionSet (.object []))
+    (hgroups :
+      ExecutedFieldGroups schema resolvers variableValues depth parentType
+        source groups)
+    (hnodup : PairKeysNodup groups) :
+    ExecutedGroupedSelectionSetAlignedState schema resolvers variableValues
+      (depth + 1) parentType source selectionSet :=
+  { groups := groups
+    collect_eq := hcollect
+    flatCollects := hflat
+    flatSpec :=
+      ExecutedFieldGroups.groupFlatSpecAlignedEquivalent hgroups hnodup }
+
+end ExecutedGroupedSelectionSetAlignedState
+
 structure CollectedFieldGroupRecursiveAppendState
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
@@ -489,6 +623,258 @@ def localAppendInvariant
     errorNeutral := state.errorNeutral }
 
 end CollectedFieldGroupRecursiveAppendState
+
+structure CollectedFieldGroupRecursiveAlignedAppendState
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (completionDepth : Nat)
+    (source : ResolverValue ObjectIdentity)
+    (groups : List (Name × List ExecutableField)) : Type where
+  prefixChildren :
+    ∀ responseName field fields prefixTail,
+      (responseName, field :: fields) ∈ groups ->
+      (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
+      ∀ childDepth runtimeType identity,
+        childDepth < completionDepth + 1 ->
+        ValueContainsObject
+          (resolvers.resolve field.parentType field.fieldName field.arguments
+            source)
+          runtimeType identity ->
+        schema.typeIncludesObjectBool
+          ((schema.fieldReturnType? field.parentType field.fieldName).getD
+            field.fieldName)
+          runtimeType = true ->
+          ExecutedGroupedSelectionSetAlignedState schema resolvers variableValues
+            childDepth runtimeType (.object runtimeType identity)
+            (GraphQL.Execution.mergedFieldSelectionSet (field :: prefixTail))
+  absorbs :
+    ∀ responseName field fields prefixTail later,
+      (responseName, field :: fields) ∈ groups ->
+      (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
+      later ∈ fields ->
+      ∀ childDepth runtimeType identity,
+        childDepth < completionDepth + 1 ->
+        ValueContainsObject
+          (resolvers.resolve field.parentType field.fieldName field.arguments
+            source)
+          runtimeType identity ->
+          ResponseAbsorbs
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet
+                (field :: prefixTail))
+              (.object [])).fst
+            (visitSubfields schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity) later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity)
+                (GraphQL.Execution.mergedFieldSelectionSet
+                  (field :: prefixTail))
+                (.object [])).fst).fst
+
+namespace CollectedFieldGroupRecursiveAlignedAppendState
+
+def alignedAppendSteps_from_prefix
+    {ObjectIdentity : Type}
+    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
+    {variableValues : VariableValues} {completionDepth : Nat}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    {groups : List (Name × List ExecutableField)}
+    (state :
+      CollectedFieldGroupRecursiveAlignedAppendState schema resolvers
+        variableValues completionDepth source groups)
+    (hresponses : CollectedGroupsResponseName groups)
+    (hparents : CollectedGroupsParent parentType groups)
+    (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hstable : CollectedGroupsResolveStable resolvers source groups)
+    (responseName : Name) (field : ExecutableField)
+    (fields prefixTail remaining : List ExecutableField)
+    (hgroup : (responseName, field :: fields) ∈ groups)
+    (hprefix : ∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields)
+    (hremaining : ∀ candidate, candidate ∈ remaining -> candidate ∈ fields) :
+    ExecutableFieldsMergedAlignedAppendSteps schema resolvers variableValues
+      (completionDepth + 1) parentType source responseName field
+      (resolvers.resolve field.parentType field.fieldName field.arguments source)
+      prefixTail remaining := by
+  cases remaining with
+  | nil =>
+      simp [ExecutableFieldsMergedAlignedAppendSteps]
+  | cons later rest =>
+      have hlater : later ∈ fields := hremaining later (by simp)
+      have hgroupResponses :
+          ExecutableFieldsResponseName responseName (field :: fields) :=
+        hresponses responseName (field :: fields) hgroup
+      have hgroupParents :
+          ExecutableFieldsParent parentType (field :: fields) :=
+        hparents responseName (field :: fields) hgroup
+      have hgroupCompatible :
+          ExecutableFieldsFieldValidationMergeCompatible (field :: fields) :=
+        hcompatible responseName (field :: fields) hgroup
+      have hgroupStable :
+          ExecutableFieldsResolveStable resolvers source (field :: fields) :=
+        hstable responseName (field :: fields) hgroup
+      have hfieldResponse : field.responseName = responseName :=
+        hgroupResponses field (by simp)
+      have hlaterResponse : later.responseName = responseName :=
+        hgroupResponses later (List.mem_cons_of_mem field hlater)
+      have hlaterParent : later.parentType = parentType :=
+        hgroupParents later (List.mem_cons_of_mem field hlater)
+      have hsameResponse : field.responseName = later.responseName := by
+        rw [hfieldResponse, hlaterResponse]
+      have hfieldName : later.fieldName = field.fieldName :=
+        (hgroupCompatible field later (by simp)
+          (List.mem_cons_of_mem field hlater) hsameResponse).1.symm
+      have hresolveLater :
+          resolvers.resolve later.parentType later.fieldName later.arguments
+              source =
+          resolvers.resolve field.parentType field.fieldName field.arguments
+              source :=
+        (hgroupStable field later (by simp)
+          (List.mem_cons_of_mem field hlater) hsameResponse).symm
+      have hprefixNext :
+          ∀ candidate, candidate ∈ prefixTail ++ [later] ->
+            candidate ∈ fields := by
+        intro candidate hcandidate
+        rcases List.mem_append.mp hcandidate with hprefixMem | hlaterMem
+        · exact hprefix candidate hprefixMem
+        · rcases List.mem_singleton.mp hlaterMem
+          exact hlater
+      have hremainingRest :
+          ∀ candidate, candidate ∈ rest -> candidate ∈ fields := by
+        intro candidate hcandidate
+        exact hremaining candidate (by simp [hcandidate])
+      simp [ExecutableFieldsMergedAlignedAppendSteps]
+      exact
+        ⟨hlaterResponse, hlaterParent, hfieldName, hresolveLater,
+          (by
+            intro childDepth runtimeType identity hlt hcontains hincludes
+            exact
+              (state.prefixChildren responseName field fields prefixTail hgroup
+                hprefix childDepth runtimeType identity hlt hcontains
+                hincludes).executeRootSelectionSet_aligned),
+          (by
+            intro childDepth runtimeType identity hlt hcontains
+            exact state.absorbs responseName field fields prefixTail later hgroup
+              hprefix hlater childDepth runtimeType identity hlt hcontains),
+          (by
+            intro childDepth runtimeType identity hlt hcontains hincludes
+            exact
+              (state.prefixChildren responseName field fields
+                (prefixTail ++ [later]) hgroup hprefixNext childDepth
+                runtimeType identity hlt hcontains
+                hincludes).executeRootSelectionSet_aligned),
+          alignedAppendSteps_from_prefix state hresponses hparents hcompatible
+            hstable responseName field fields (prefixTail ++ [later]) rest
+            hgroup hprefixNext hremainingRest⟩
+
+def alignedAppendSteps
+    {ObjectIdentity : Type}
+    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
+    {variableValues : VariableValues} {completionDepth : Nat}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    {groups : List (Name × List ExecutableField)}
+    (state :
+      CollectedFieldGroupRecursiveAlignedAppendState schema resolvers
+        variableValues completionDepth source groups)
+    (hresponses : CollectedGroupsResponseName groups)
+    (hparents : CollectedGroupsParent parentType groups)
+    (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hstable : CollectedGroupsResolveStable resolvers source groups)
+    (responseName : Name) (field : ExecutableField)
+    (fields : List ExecutableField)
+    (hgroup : (responseName, field :: fields) ∈ groups) :
+    ExecutableFieldsMergedAlignedAppendSteps schema resolvers variableValues
+      (completionDepth + 1) parentType source responseName field
+      (resolvers.resolve field.parentType field.fieldName field.arguments source)
+      [] fields :=
+  alignedAppendSteps_from_prefix state hresponses hparents hcompatible hstable
+    responseName field fields [] fields hgroup
+    (by intro candidate hmem; simp at hmem)
+    (by intro candidate hmem; exact hmem)
+
+end CollectedFieldGroupRecursiveAlignedAppendState
+
+def ExecutedGroupedSelectionSetAlignedState.of_collected_groups_recursiveAlignedAppendState
+    {ObjectIdentity : Type}
+    {schema : Schema} {resolvers : Resolvers ObjectIdentity}
+    {variableValues : VariableValues} {completionDepth : Nat}
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    {selectionSet : List Selection}
+    {groups : List (Name × List ExecutableField)}
+    (hcollect :
+      GraphQL.Execution.collectFields schema variableValues parentType source
+        selectionSet = groups)
+    (hflat :
+      VisitSubfieldsFlatCollects schema resolvers variableValues
+        (completionDepth + 2) parentType source selectionSet (.object []))
+    (hcollected :
+      ExecutionCollectedFieldInvariant
+        { window :=
+          { schema := schema
+            resolvers := resolvers
+            variableValues := variableValues
+            depth := completionDepth + 1
+            parentType := parentType
+            source := source
+            selectionSet := selectionSet }
+          initial := .object [] })
+    (hlookups :
+      CollectedGroupsFieldLookupValid schema parentType groups)
+    (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (happend :
+      CollectedFieldGroupRecursiveAlignedAppendState schema resolvers
+        variableValues completionDepth source groups) :
+    ExecutedGroupedSelectionSetAlignedState schema resolvers variableValues
+      (completionDepth + 2) parentType source selectionSet := by
+  let state :
+      ExecutionEquivalenceState ObjectIdentity :=
+    { window :=
+      { schema := schema
+        resolvers := resolvers
+        variableValues := variableValues
+        depth := completionDepth + 1
+        parentType := parentType
+        source := source
+        selectionSet := selectionSet }
+      initial := .object [] }
+  have hresponses : CollectedGroupsResponseName groups :=
+    ExecutionCollectedFieldInvariant.responseName_of_collect_eq state groups
+      hcollect
+  have hparents : CollectedGroupsParent parentType groups :=
+    ExecutionCollectedFieldInvariant.parent_of_collect_eq state groups hcollect
+  have hstable : CollectedGroupsResolveStable resolvers source groups :=
+    ExecutionCollectedFieldInvariant.resolveStable_of_collect_eq state groups
+      hcollected hcollect
+  have hnodup : PairKeysNodup groups :=
+    ExecutionCollectedFieldInvariant.pairKeysNodup_of_collect_eq state groups
+      hcollected hcollect
+  have hnonempty : CollectedGroupsFieldsNonempty groups := by
+    rw [← hcollect]
+    exact collectFields_fieldsNonempty schema variableValues parentType source
+      selectionSet
+  refine
+    ExecutedGroupedSelectionSetAlignedState.of_group_flat_spec
+      hcollect hflat ?_
+  exact
+    ExecutableGroupsFlatSpecAlignedEquivalent_of_alignedAppendSteps_positive
+      schema resolvers variableValues completionDepth parentType source groups
+      hnonempty hresponses hparents hlookups
+      (by
+        intro responseName field fields hgroup childDepth runtimeType identity hlt
+          hcontains hincludes
+        have hchild :=
+          happend.prefixChildren responseName field fields [] hgroup
+            (by intro candidate hmem; simp at hmem) childDepth runtimeType
+            identity hlt hcontains hincludes
+        simpa [GraphQL.Execution.mergedFieldSelectionSet] using
+          hchild.executeRootSelectionSet_aligned)
+      (by
+        intro responseName field fields hgroup
+        exact
+          CollectedFieldGroupRecursiveAlignedAppendState.alignedAppendSteps
+            happend hresponses hparents hcompatible hstable responseName field
+            fields hgroup)
+      hnodup
 
 def ExecutedGroupedSelectionSetState.of_collected_groups_recursiveAppendState
     {ObjectIdentity : Type}

@@ -96,7 +96,10 @@ def sampleResolvers : GraphQL.Execution.Resolvers :=
         match parentType, fieldName with
         | "Query", "hero" => .object "Character" ()
         | "Character", "name" => .scalar "Leia"
-        | _, _ => .null }
+        | _, _ => .null
+    resolve_argumentsEquivalent := by
+      intros
+      rfl }
 
 theorem executeHeroQuerySmoke :
     responseEqBool
@@ -111,7 +114,10 @@ def sampleErrorResolvers : GraphQL.Execution.Resolvers :=
       match parentType, fieldName with
       | "Query", "hero" => some (.object "Character" ())
       | "Character", "name" => none
-      | _, _ => some .null }
+      | _, _ => some .null
+    resolve_argumentsEquivalent := by
+      intros
+      rfl }
 
 theorem executeHeroQueryErrorCountSmoke :
     let response :=
@@ -156,14 +162,20 @@ def nonNullNameErrorResolvers : GraphQL.Execution.Resolvers :=
       match parentType, fieldName with
       | "Query", "hero" => some (.object "Character" ())
       | "Character", "name" => none
-      | _, _ => some .null }
+      | _, _ => some .null
+    resolve_argumentsEquivalent := by
+      intros
+      rfl }
 
 def nonNullNameNullResolvers : GraphQL.Execution.Resolvers :=
   { resolve := fun parentType fieldName _arguments _source =>
       match parentType, fieldName with
       | "Query", "hero" => some (.object "Character" ())
       | "Character", "name" => some .null
-      | _, _ => some .null }
+      | _, _ => some .null
+    resolve_argumentsEquivalent := by
+      intros
+      rfl }
 
 theorem executeNestedNonNullBubblesToNullableParentSmoke :
     let response :=

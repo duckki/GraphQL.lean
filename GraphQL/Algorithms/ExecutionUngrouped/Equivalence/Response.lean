@@ -1,4 +1,4 @@
-import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.Collection
+import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.Collection.StateInvariant
 
 namespace GraphQL
 
@@ -796,6 +796,8 @@ theorem mergeResponseFields_cons_left_exists
 mutual
   inductive ResponseAbsorptionShape : ResponseValue -> ResponseValue -> Prop where
     | null : ResponseAbsorptionShape .null .null
+    | toNull (base : ResponseValue) :
+        ResponseAbsorptionShape base .null
     | scalar (value : String) :
         ResponseAbsorptionShape (.scalar value) (.scalar value)
     | object {base output : List (Name × ResponseValue)} :
@@ -839,6 +841,8 @@ mutual
           ResponseMergeReady output
     | .null, .null, ResponseAbsorptionShape.null =>
         ResponseMergeReady.null
+    | _base, .null, ResponseAbsorptionShape.toNull _ =>
+        ResponseMergeReady.null
     | .scalar value, .scalar _, ResponseAbsorptionShape.scalar _ =>
         ResponseMergeReady.scalar value
     | .object _base, .object _output,
@@ -869,28 +873,28 @@ mutual
 end
 
 mutual
-  theorem ResponseAbsorptionShape.trans :
-      ∀ {base middle output : ResponseValue},
-        ResponseAbsorptionShape base middle ->
-        ResponseAbsorptionShape middle output ->
-          ResponseAbsorptionShape base output
-    | .null, .null, .null, ResponseAbsorptionShape.null,
-        ResponseAbsorptionShape.null =>
-        ResponseAbsorptionShape.null
-    | .scalar value, .scalar _, .scalar _,
-        ResponseAbsorptionShape.scalar _,
-        ResponseAbsorptionShape.scalar _ =>
-        ResponseAbsorptionShape.scalar value
-    | .object _base, .object _middle, .object _output,
-        ResponseAbsorptionShape.object hbaseMiddle,
-        ResponseAbsorptionShape.object hmiddleOutput =>
-        ResponseAbsorptionShape.object
-          (ResponseFieldsAbsorptionShape.trans hbaseMiddle hmiddleOutput)
-    | .list _base, .list _middle, .list _output,
-        ResponseAbsorptionShape.list hbaseMiddle,
-        ResponseAbsorptionShape.list hmiddleOutput =>
-        ResponseAbsorptionShape.list
-          (ResponseListAbsorptionShape.trans hbaseMiddle hmiddleOutput)
+  theorem ResponseAbsorptionShape.trans
+      {base middle output : ResponseValue}
+      (hbaseMiddle : ResponseAbsorptionShape base middle)
+      (hmiddleOutput : ResponseAbsorptionShape middle output) :
+      ResponseAbsorptionShape base output := by
+    cases hmiddleOutput with
+    | null =>
+        exact ResponseAbsorptionShape.toNull base
+    | toNull _middle =>
+        exact ResponseAbsorptionShape.toNull base
+    | scalar _value =>
+        exact hbaseMiddle
+    | object hmiddleOutput =>
+        cases hbaseMiddle with
+        | object hbaseMiddle =>
+            exact ResponseAbsorptionShape.object
+              (ResponseFieldsAbsorptionShape.trans hbaseMiddle hmiddleOutput)
+    | list hmiddleOutput =>
+        cases hbaseMiddle with
+        | list hbaseMiddle =>
+            exact ResponseAbsorptionShape.list
+              (ResponseListAbsorptionShape.trans hbaseMiddle hmiddleOutput)
 
   theorem ResponseFieldsAbsorptionShape.trans :
       ∀ {base middle output : List (Name × ResponseValue)},
@@ -940,6 +944,8 @@ mutual
           ResponseAbsorbs base output
     | .null, .null, ResponseAbsorptionShape.null => by
         simp [ResponseAbsorbs, mergeResponse]
+    | base, .null, ResponseAbsorptionShape.toNull _ => by
+        cases base <;> simp [ResponseAbsorbs, mergeResponse]
     | .scalar _value, .scalar _,
         ResponseAbsorptionShape.scalar _ => by
         simp [ResponseAbsorbs, mergeResponse]
@@ -1013,8 +1019,8 @@ mutual
         simp [ResponseAbsorbs, mergeResponse] at habsorbs
     | .null, .list _values, _hbaseReady, _houtputReady, habsorbs => by
         simp [ResponseAbsorbs, mergeResponse] at habsorbs
-    | .scalar _baseValue, .null, _hbaseReady, _houtputReady, habsorbs => by
-        simp [ResponseAbsorbs, mergeResponse] at habsorbs
+    | .scalar _baseValue, .null, _hbaseReady, _houtputReady, _habsorbs =>
+        ResponseAbsorptionShape.toNull _
     | .scalar baseValue, .scalar outputValue, _hbaseReady, _houtputReady,
         habsorbs => by
         simp [ResponseAbsorbs, mergeResponse] at habsorbs
@@ -1026,8 +1032,8 @@ mutual
     | .scalar _baseValue, .list _values, _hbaseReady, _houtputReady,
         habsorbs => by
         simp [ResponseAbsorbs, mergeResponse] at habsorbs
-    | .object _baseFields, .null, _hbaseReady, _houtputReady, habsorbs => by
-        simp [ResponseAbsorbs, mergeResponse] at habsorbs
+    | .object _baseFields, .null, _hbaseReady, _houtputReady, _habsorbs =>
+        ResponseAbsorptionShape.toNull _
     | .object _baseFields, .scalar _value, _hbaseReady, _houtputReady,
         habsorbs => by
         simp [ResponseAbsorbs, mergeResponse] at habsorbs
@@ -1040,8 +1046,8 @@ mutual
     | .object _baseFields, .list _values, _hbaseReady, _houtputReady,
         habsorbs => by
         simp [ResponseAbsorbs, mergeResponse] at habsorbs
-    | .list _baseValues, .null, _hbaseReady, _houtputReady, habsorbs => by
-        simp [ResponseAbsorbs, mergeResponse] at habsorbs
+    | .list _baseValues, .null, _hbaseReady, _houtputReady, _habsorbs =>
+        ResponseAbsorptionShape.toNull _
     | .list _baseValues, .scalar _value, _hbaseReady, _houtputReady,
         habsorbs => by
         simp [ResponseAbsorbs, mergeResponse] at habsorbs
@@ -1217,16 +1223,22 @@ mutual
           hexisting hincoming
     | .null, _, hexisting, _hincoming => by
         simpa [mergeResponse] using hexisting
-    | .scalar value, _, hexisting, _hincoming => by
+    | .scalar _value, .null, _hexisting, _hincoming => by
+        simpa [mergeResponse] using ResponseMergeReady.null
+    | .scalar value, .scalar _incoming, hexisting, _hincoming => by
         simpa [mergeResponse] using hexisting
-    | .object fields, .null, hexisting, _hincoming => by
+    | .scalar value, .object _incoming, hexisting, _hincoming => by
         simpa [mergeResponse] using hexisting
+    | .scalar value, .list _incoming, hexisting, _hincoming => by
+        simpa [mergeResponse] using hexisting
+    | .object _fields, .null, _hexisting, _hincoming => by
+        simpa [mergeResponse] using ResponseMergeReady.null
     | .object fields, .scalar value, hexisting, _hincoming => by
         simpa [mergeResponse] using hexisting
     | .object fields, .list values, hexisting, _hincoming => by
         simpa [mergeResponse] using hexisting
-    | .list values, .null, hexisting, _hincoming => by
-        simpa [mergeResponse] using hexisting
+    | .list _values, .null, _hexisting, _hincoming => by
+        simpa [mergeResponse] using ResponseMergeReady.null
     | .list values, .scalar value, hexisting, _hincoming => by
         simpa [mergeResponse] using hexisting
     | .list values, .object fields, hexisting, _hincoming => by
@@ -1451,21 +1463,27 @@ mutual
     | .null, _, hexisting, _hincoming => by
         simpa [mergeResponse] using
           ResponseAbsorbs_refl_of_ready .null hexisting
-    | .scalar value, _, hexisting, _hincoming => by
+    | .scalar _value, .null, _hexisting, _hincoming => by
+        simp [ResponseAbsorbs, mergeResponse]
+    | .scalar value, .scalar _incoming, hexisting, _hincoming => by
         simpa [mergeResponse] using
           ResponseAbsorbs_refl_of_ready (.scalar value) hexisting
-    | .object fields, .null, hexisting, _hincoming => by
+    | .scalar value, .object _incoming, hexisting, _hincoming => by
         simpa [mergeResponse] using
-          ResponseAbsorbs_refl_of_ready (.object fields) hexisting
+          ResponseAbsorbs_refl_of_ready (.scalar value) hexisting
+    | .scalar value, .list _incoming, hexisting, _hincoming => by
+        simpa [mergeResponse] using
+          ResponseAbsorbs_refl_of_ready (.scalar value) hexisting
+    | .object _fields, .null, _hexisting, _hincoming => by
+        simp [ResponseAbsorbs, mergeResponse]
     | .object fields, .scalar value, hexisting, _hincoming => by
         simpa [mergeResponse] using
           ResponseAbsorbs_refl_of_ready (.object fields) hexisting
     | .object fields, .list values, hexisting, _hincoming => by
         simpa [mergeResponse] using
           ResponseAbsorbs_refl_of_ready (.object fields) hexisting
-    | .list values, .null, hexisting, _hincoming => by
-        simpa [mergeResponse] using
-          ResponseAbsorbs_refl_of_ready (.list values) hexisting
+    | .list _values, .null, _hexisting, _hincoming => by
+        simp [ResponseAbsorbs, mergeResponse]
     | .list values, .scalar value, hexisting, _hincoming => by
         simpa [mergeResponse] using
           ResponseAbsorbs_refl_of_ready (.list values) hexisting

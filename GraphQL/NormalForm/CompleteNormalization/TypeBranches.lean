@@ -1,4 +1,4 @@
-import GraphQL.NormalForm
+import GraphQL.NormalForm.Shared.RuntimeTypes
 
 /-!
 Proof-facing import boundary for per-type Boolean branch wrappers.

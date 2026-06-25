@@ -1,3 +1,2 @@
 import Tests.NormalForm.GroundTypeNormalization
-import Tests.NormalForm.GroundTypeLifting
 import Tests.NormalForm.CompleteNormalization

@@ -4,7 +4,7 @@ This document records the current plain GraphQL scope and proof plan. The
 canonical spec target is the GraphQL September 2025 Edition.
 
 The immediate priority is spec conformance for a query-only executable fragment
-large enough to state semantic execution and ground-normal-form correctness.
+large enough to state validation and resolver-parametric execution semantics.
 
 ## Goals
 
@@ -18,16 +18,14 @@ The current conformance target includes:
   object/interface implementation compatibility,
 - field selection validation, argument name validation, required argument
   presence, variable-use compatibility at input locations, leaf and composite
-  selection shape, inline-fragment applicability, and field merge compatibility,
+  selection shape, non-empty operation and composite selection sets,
+  inline-fragment applicability, and field merge compatibility,
 - inline fragments,
 - variables and the built-in executable directives `@skip` and `@include`,
 - possible-object semantics for abstract types,
 - execution field errors as resolver failure counts in the query response
   envelope,
-- response null bubbling through non-null output wrappers,
-- ground normal form construction for field merging and abstract-type grounding,
-- resolver-parametric correctness statements for ground and complete
-  normalization.
+- response null bubbling through non-null output wrappers.
 
 ## Explicitly Skipped
 
@@ -98,7 +96,8 @@ The main modules are:
 - `GraphQL.Validation`: operation validity predicates for the current fragment,
   including recursive input-object validation and spec-style variable-use
   compatibility with the nullable-variable default exception, plus
-  same-response-name merge compatibility checks.
+  required non-empty root/composite selection sets and same-response-name merge
+  compatibility checks.
 - `GraphQL.Execution`: bounded resolver-based execution with compatibility data
   projection, response null bubbling through non-null output wrappers, and a
   query response envelope containing data plus a `Nat` execution-error count.
@@ -107,4 +106,7 @@ The main modules are:
 
 - `docs/overview.md`: project structure and module dependency map.
 - `docs/references.md`: GraphCoQL notes and proof strategy references.
+- `docs/normal-form.md`: project-specific normal forms and their correctness
+  properties.
+- `docs/algorithms.md`: verified project algorithms outside the GraphQL spec.
 - `README.md`: build, lint, and entry-point information.

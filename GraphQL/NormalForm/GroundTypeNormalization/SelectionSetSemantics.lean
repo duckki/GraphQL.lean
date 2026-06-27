@@ -110,6 +110,7 @@ theorem normalizeSelectionSet_executeSelectionSet
           schema resolvers variableValues hschema depth parentType source
           responseName fieldName arguments subselections rest fieldDefinition
           hobject hsource hfree hready hmerge hlookup
+      · simp [normalizedFieldWithRest, normalizedField]
       · dsimp
         intro (childDepth : Nat) (runtimeType : Name) (ref : ObjectRef)
           hlt hchildObject hmergedFree
@@ -179,7 +180,7 @@ theorem normalizeSelectionSet_executeSelectionSet
         schema resolvers variableValues depth parentType source selectionSet
         rest happendEq
   | case5 parentType rest typeCondition directives selectionSet hoverlap
-      hrest happend =>
+      _hrest happend =>
       intro depth source hobject hsource hfree hready hmerge
       have hheadFree :
           selectionDirectiveFree

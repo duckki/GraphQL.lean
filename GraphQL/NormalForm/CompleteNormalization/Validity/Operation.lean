@@ -7,14 +7,14 @@ namespace NormalForm
 
 namespace CompleteNormalization
 
-theorem selectionSetImplementationValidInScope_of_rootObjectPossible
+theorem selectionSetValidInPossibleTypes_of_rootObjectPossible
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     {rootType objectType : Name} {selectionSet : List Selection} :
     schema.objectType rootType ->
     objectType ∈ schema.getPossibleTypes rootType ->
-    Validation.selectionSetImplementationValidInScope schema
+    Validation.selectionSetValidInPossibleTypes schema
       variableDefinitions rootType selectionSet ->
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions objectType selectionSet := by
   intro hrootObject hpossible himplementation
   have hinclude :
@@ -35,6 +35,25 @@ theorem completeNormalizeRootSelectionSet_eq_flatten
           | selection :: rest =>
               wrapWithBoolCase boolCase (selection :: rest))) := by
   rfl
+
+theorem flatten_map_ne_nil_of_mem_ne_nil
+    {α β : Type} {items : List α} {f : α -> List β} {item : α} :
+    item ∈ items ->
+    f item ≠ [] ->
+      List.flatten (items.map f) ≠ [] := by
+  intro hmem hitem
+  intro hflatten
+  cases hbranch : f item with
+  | nil =>
+      exact hitem hbranch
+  | cons selection rest =>
+      have hselection :
+          selection ∈ List.flatten (items.map f) := by
+        rw [List.mem_flatten]
+        exact ⟨f item, List.mem_map.mpr ⟨item, hmem, rfl⟩,
+          by simp [hbranch]⟩
+      rw [hflatten] at hselection
+      cases hselection
 
 theorem operation_root_object_of_valid
     {schema : Schema} {operation : Operation} :
@@ -66,14 +85,12 @@ theorem operation_selectionSetSemanticsReady_of_valid
 theorem completeNormalizeRootSelectionSet_selectionSetValid
     (schema : Schema) (operation : Operation)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (hfeasibleAll :
-      selectionSetsTypeConditionFeasibleInEveryScope schema)
-    (hfilteredCases :
+    (hboolFeasibleCases :
       ∀ boolCase, boolCase ∈ allBoolCases (operationBoolVars operation) ->
-        Validation.selectionSetImplementationValidInScope schema
-          operation.variableDefinitions operation.rootType
-          (filterSelectionSetBoolCase boolCase operation.selectionSet))
-    (hoperation : Validation.operationDefinitionValid schema operation) :
+        selectionSetBoolTypeConditionFeasible schema operation.rootType
+          [operation.rootType] boolCase .allFields operation.selectionSet)
+    (hoperation : Validation.operationDefinitionValid schema operation)
+    (hfields : operationFieldsValidInPossibleTypes schema operation) :
     Validation.selectionSetValid schema operation.variableDefinitions
       operation.rootType
       (completeNormalizeRootSelectionSet schema (operationBoolVars operation)
@@ -85,10 +102,9 @@ theorem completeNormalizeRootSelectionSet_selectionSetValid
         operation.selectionSet :=
     operation_selectionSetSemanticsReady_of_valid hschema hoperation
   have himplementation :
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         operation.variableDefinitions operation.rootType operation.selectionSet :=
-    (Validation.operationDefinitionValid_selectionSetImplementationValid
-      hoperation).1
+    by simpa [operationFieldsValidInPossibleTypes] using hfields
   have hmerge :
       FieldMerge.fieldsInSetCanMerge schema operation.rootType
         operation.selectionSet :=
@@ -96,24 +112,19 @@ theorem completeNormalizeRootSelectionSet_selectionSetValid
   rw [completeNormalizeRootSelectionSet_eq_flatten schema
     (operationBoolVars operation) operation.rootType operation.selectionSet]
   exact completeNormalizeBranches_selectionSetValid schema operation hschema
-    hfeasibleAll hoperation hrootObject hready himplementation hmerge
+    hoperation hrootObject hready himplementation hmerge
     (allBoolCases (operationBoolVars operation))
     (by intro boolCase hcase; exact hcase)
-    hfilteredCases
+    hboolFeasibleCases
 
-theorem completeNormalizeRootSelectionSet_selectionSetImplementationValid
+theorem completeNormalizeRootSelectionSet_selectionSetValid_of_boolTypeFeasible
     (schema : Schema) (operation : Operation)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (hfeasibleAll :
-      selectionSetsTypeConditionFeasibleInEveryScope schema)
-    (hfilteredCases :
-      ∀ boolCase, boolCase ∈ allBoolCases (operationBoolVars operation) ->
-        Validation.selectionSetImplementationValidInScope schema
-          operation.variableDefinitions operation.rootType
-          (filterSelectionSetBoolCase boolCase operation.selectionSet))
-    (hoperation : Validation.operationDefinitionValid schema operation) :
-    Validation.selectionSetImplementationValid schema
-      operation.variableDefinitions operation.rootType
+    (hboolFeasible : operationBoolTypeConditionFeasible schema operation)
+    (hoperation : Validation.operationDefinitionValid schema operation)
+    (hfields : operationFieldsValidInPossibleTypes schema operation) :
+    Validation.selectionSetValid schema operation.variableDefinitions
+      operation.rootType
       (completeNormalizeRootSelectionSet schema (operationBoolVars operation)
         operation.rootType operation.selectionSet) := by
   have hrootObject : schema.objectType operation.rootType :=
@@ -123,48 +134,66 @@ theorem completeNormalizeRootSelectionSet_selectionSetImplementationValid
         operation.selectionSet :=
     operation_selectionSetSemanticsReady_of_valid hschema hoperation
   have himplementation :
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         operation.variableDefinitions operation.rootType operation.selectionSet :=
-    (Validation.operationDefinitionValid_selectionSetImplementationValid
-      hoperation).1
+    by simpa [operationFieldsValidInPossibleTypes] using hfields
   have hmerge :
       FieldMerge.fieldsInSetCanMerge schema operation.rootType
         operation.selectionSet :=
     Validation.operationDefinitionValid_fieldsInSetCanMerge hoperation
-  have hrootImplementation :
-      Validation.selectionSetImplementationValidInScope schema
-        operation.variableDefinitions operation.rootType
-        (completeNormalizeRootSelectionSet schema (operationBoolVars operation)
-          operation.rootType operation.selectionSet) := by
-    rw [completeNormalizeRootSelectionSet_eq_flatten schema
-      (operationBoolVars operation) operation.rootType operation.selectionSet]
-    exact completeNormalizeBranches_implementationValidInScope schema
-      operation hschema hfeasibleAll hrootObject hready himplementation hmerge
-      (allBoolCases (operationBoolVars operation))
-      hfilteredCases
-  exact ⟨hrootImplementation,
-    by
-      intro objectType hpossible
-      exact selectionSetImplementationValidInScope_of_rootObjectPossible
-        schema operation.variableDefinitions hrootObject hpossible
-        hrootImplementation⟩
+  rw [completeNormalizeRootSelectionSet_eq_flatten schema
+    (operationBoolVars operation) operation.rootType operation.selectionSet]
+  exact completeNormalizeBranches_selectionSetValid schema operation hschema
+    hoperation hrootObject hready himplementation hmerge
+    (allBoolCases (operationBoolVars operation))
+    (by intro boolCase hcase; exact hcase)
+    (fun boolCase hcase => hboolFeasible.2 boolCase hcase)
 
-theorem completeFilteredBoolCasesImplementationValid_of_compositeChildrenSurvive
+theorem completeNormalizeRootSelectionSet_ne_nil_of_boolTypeFeasible
     (schema : Schema) (operation : Operation) :
+    SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
-    completeBoolCasesCompositeChildrenSurvive operation ->
-      ∀ boolCase, boolCase ∈ allBoolCases (operationBoolVars operation) ->
-        Validation.selectionSetImplementationValidInScope schema
-          operation.variableDefinitions operation.rootType
-          (filterSelectionSetBoolCase boolCase operation.selectionSet) := by
-  intro hoperation hboolCases boolCase hcase
-  exact
-    selectionSetImplementationValidInScope_filterSelectionSetBoolCase_of_survive
-      schema operation.variableDefinitions boolCase operation.rootType
-      operation.selectionSet
-      ((Validation.operationDefinitionValid_selectionSetImplementationValid
-        hoperation).1)
-      (hboolCases boolCase hcase)
+    operationBoolTypeConditionFeasible schema operation ->
+      completeNormalizeRootSelectionSet schema
+        (operationBoolVars operation) operation.rootType
+        operation.selectionSet ≠ [] := by
+  intro hschema hoperation hboolFeasible
+  rcases hboolFeasible.1 with ⟨boolCase, hcase, hcontainsBool⟩
+  have hrootObject : schema.objectType operation.rootType :=
+    operation_root_object_of_valid hschema hoperation
+  have hready :
+      selectionSetSemanticsReady schema operation.rootType
+        operation.selectionSet :=
+    operation_selectionSetSemanticsReady_of_valid hschema hoperation
+  have hfilteredReady :
+      selectionSetSemanticsReady schema operation.rootType
+        (filterSelectionSetBoolCase boolCase operation.selectionSet) :=
+    filterSelectionSetBoolCase_selectionSetSemanticsReady schema boolCase
+      operation.rootType operation.selectionSet hready
+  have hfilteredContains :
+      selectionSetContainsTypeConditionFeasibleField schema
+        [operation.rootType]
+        (filterSelectionSetBoolCase boolCase operation.selectionSet) :=
+    selectionSetContainsTypeConditionFeasibleField_filterSelectionSetBoolCase
+      schema boolCase operation.rootType [operation.rootType]
+      operation.selectionSet hcontainsBool
+  have hnormalizedNonempty :
+      normalizeSelectionSet schema operation.rootType
+        (filterSelectionSetBoolCase boolCase operation.selectionSet) ≠ [] :=
+    GroundTypeNormalization.normalizeSelectionSet_ne_nil_of_contains schema
+      operation.rootType
+      (filterSelectionSetBoolCase boolCase operation.selectionSet)
+      hrootObject hfilteredReady hfilteredContains
+  rw [completeNormalizeRootSelectionSet_eq_flatten schema
+    (operationBoolVars operation) operation.rootType operation.selectionSet]
+  apply flatten_map_ne_nil_of_mem_ne_nil hcase
+  cases hnormalized :
+      normalizeSelectionSet schema operation.rootType
+        (filterSelectionSetBoolCase boolCase operation.selectionSet) with
+  | nil =>
+      exact False.elim (hnormalizedNonempty hnormalized)
+  | cons selection rest =>
+      exact wrapWithBoolCase_ne_nil boolCase (selection :: rest) (by simp)
 
 theorem completeFilteredBoolCasesFieldsCanMerge
     (schema : Schema) (operation : Operation) :
@@ -185,73 +214,18 @@ theorem completeFilteredBoolCasesFieldsCanMerge
     (GroundTypeNormalization.fieldsInSetCanMerge_self schema
       operation.rootType operation.selectionSet hsourceMerge)
 
-theorem completeNormalizedBoolCaseBranchSelfFieldsCanMerge
+/-
+Operation-level branch-merge bridge used by `completeNormalizeOperation_valid`.
+The public BoolCase/type-condition feasibility assumption supplies both the
+branch-specific feasible children and the root nonemptiness witness; no separate
+complete-BoolCase survival predicate is needed.
+-/
+theorem completeNormalizedBoolCaseBranchesFieldsCanMerge_of_boolTypeFeasible
     (schema : Schema) (operation : Operation) :
     SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
-    selectionSetsTypeConditionFeasibleInEveryScope schema ->
-    completeBoolCasesCompositeChildrenSurvive operation ->
-      ∀ boolCase, boolCase ∈ allBoolCases (operationBoolVars operation) ->
-        FieldMerge.fieldsInSetCanMerge schema operation.rootType
-          (normalizeSelectionSet schema operation.rootType
-              (filterSelectionSetBoolCase boolCase operation.selectionSet)
-            ++
-            normalizeSelectionSet schema operation.rootType
-              (filterSelectionSetBoolCase boolCase operation.selectionSet)) := by
-  intro hschema hoperation hfeasibleAll hsurvive boolCase hcase
-  have hrootObject : schema.objectType operation.rootType :=
-    operation_root_object_of_valid hschema hoperation
-  have hready :
-      selectionSetSemanticsReady schema operation.rootType
-        operation.selectionSet :=
-    operation_selectionSetSemanticsReady_of_valid hschema hoperation
-  have hfilteredReady :
-      selectionSetSemanticsReady schema operation.rootType
-        (filterSelectionSetBoolCase boolCase operation.selectionSet) :=
-    filterSelectionSetBoolCase_selectionSetSemanticsReady schema boolCase
-      operation.rootType operation.selectionSet hready
-  have hfilteredImplementation :
-      Validation.selectionSetImplementationValidInScope schema
-        operation.variableDefinitions operation.rootType
-        (filterSelectionSetBoolCase boolCase operation.selectionSet) :=
-    completeFilteredBoolCasesImplementationValid_of_compositeChildrenSurvive
-      schema operation hoperation hsurvive boolCase hcase
-  have hfilteredMerge :
-      FieldMerge.fieldsInSetCanMerge schema operation.rootType
-        (filterSelectionSetBoolCase boolCase operation.selectionSet) :=
-    fieldsInSetCanMerge_filterSelectionSetBoolCase schema boolCase
-      (Validation.operationDefinitionValid_fieldsInSetCanMerge hoperation)
-  have hbranchValid :
-      GroundTypeNormalization.NormalizedSelectionSetValid schema
-        operation.variableDefinitions operation.rootType
-        (normalizeSelectionSet schema operation.rootType
-          (filterSelectionSetBoolCase boolCase operation.selectionSet)) :=
-    GroundTypeNormalization.normalizeSelectionSet_normalizedValid schema
-      operation.variableDefinitions hschema hfeasibleAll operation.rootType
-      (filterSelectionSetBoolCase boolCase operation.selectionSet)
-      hrootObject hfilteredReady hfilteredImplementation hfilteredMerge
-      (filterSelectionSetBoolCase_directiveFree schema boolCase
-        operation.selectionSet)
-  exact hbranchValid.fieldsCanMergeSelf operation.rootType
-
-theorem completeNormalizedBoolCaseBranchesFieldsCanMerge_of_crossFields
-    (schema : Schema) (operation : Operation) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.operationDefinitionValid schema operation ->
-    selectionSetsTypeConditionFeasibleInEveryScope schema ->
-    completeBoolCasesCompositeChildrenSurvive operation ->
-    (∀ leftCase, leftCase ∈ allBoolCases (operationBoolVars operation) ->
-      ∀ rightCase, rightCase ∈ allBoolCases (operationBoolVars operation) ->
-        ∀ leftField,
-          leftField ∈ FieldMerge.collectFields schema operation.rootType
-            (normalizeSelectionSet schema operation.rootType
-              (filterSelectionSetBoolCase leftCase operation.selectionSet)) ->
-          ∀ rightField,
-            rightField ∈ FieldMerge.collectFields schema operation.rootType
-              (normalizeSelectionSet schema operation.rootType
-                (filterSelectionSetBoolCase rightCase operation.selectionSet)) ->
-            leftField.responseName = rightField.responseName ->
-              FieldMerge.fieldsForNameCanMerge schema leftField rightField) ->
+    operationFieldsValidInPossibleTypes schema operation ->
+    operationBoolTypeConditionFeasible schema operation ->
       ∀ leftCase, leftCase ∈ allBoolCases (operationBoolVars operation) ->
         ∀ rightCase, rightCase ∈ allBoolCases (operationBoolVars operation) ->
           FieldMerge.fieldsInSetCanMerge schema operation.rootType
@@ -260,69 +234,7 @@ theorem completeNormalizedBoolCaseBranchesFieldsCanMerge_of_crossFields
               ++
               normalizeSelectionSet schema operation.rootType
                 (filterSelectionSetBoolCase rightCase operation.selectionSet)) := by
-  intro hschema hoperation hfeasibleAll hsurvive hcross
-    leftCase hleftCase rightCase hrightCase
-  have hrootObject : schema.objectType operation.rootType :=
-    operation_root_object_of_valid hschema hoperation
-  have hready :
-      selectionSetSemanticsReady schema operation.rootType
-        operation.selectionSet :=
-    operation_selectionSetSemanticsReady_of_valid hschema hoperation
-  have hmerge :
-      FieldMerge.fieldsInSetCanMerge schema operation.rootType
-        operation.selectionSet :=
-    Validation.operationDefinitionValid_fieldsInSetCanMerge hoperation
-  have hleftImplementation :
-      Validation.selectionSetImplementationValidInScope schema
-        operation.variableDefinitions operation.rootType
-        (filterSelectionSetBoolCase leftCase operation.selectionSet) :=
-    completeFilteredBoolCasesImplementationValid_of_compositeChildrenSurvive
-      schema operation hoperation hsurvive leftCase hleftCase
-  have hrightImplementation :
-      Validation.selectionSetImplementationValidInScope schema
-        operation.variableDefinitions operation.rootType
-        (filterSelectionSetBoolCase rightCase operation.selectionSet) :=
-    completeFilteredBoolCasesImplementationValid_of_compositeChildrenSurvive
-      schema operation hoperation hsurvive rightCase hrightCase
-  have hleftValid :
-      GroundTypeNormalization.NormalizedSelectionSetValid schema
-        operation.variableDefinitions operation.rootType
-        (normalizeSelectionSet schema operation.rootType
-          (filterSelectionSetBoolCase leftCase operation.selectionSet)) :=
-    normalizeSelectionSet_filterSelectionSetBoolCase_normalizedValid
-      schema operation.variableDefinitions hschema hfeasibleAll
-      operation.rootType operation.selectionSet leftCase hrootObject hready
-      hleftImplementation hmerge
-  have hrightValid :
-      GroundTypeNormalization.NormalizedSelectionSetValid schema
-        operation.variableDefinitions operation.rootType
-        (normalizeSelectionSet schema operation.rootType
-          (filterSelectionSetBoolCase rightCase operation.selectionSet)) :=
-    normalizeSelectionSet_filterSelectionSetBoolCase_normalizedValid
-      schema operation.variableDefinitions hschema hfeasibleAll
-      operation.rootType operation.selectionSet rightCase hrootObject hready
-      hrightImplementation hmerge
-  exact GroundTypeNormalization.normalizedSelectionSetsPairFieldsCanMerge
-    hleftValid hrightValid
-    (fun leftField hleftField rightField hrightField hresponse =>
-      hcross leftCase hleftCase rightCase hrightCase
-        leftField hleftField rightField hrightField hresponse)
-
-theorem completeNormalizedBoolCaseBranchesFieldsCanMerge
-    (schema : Schema) (operation : Operation) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.operationDefinitionValid schema operation ->
-    selectionSetsTypeConditionFeasibleInEveryScope schema ->
-    completeBoolCasesCompositeChildrenSurvive operation ->
-      ∀ leftCase, leftCase ∈ allBoolCases (operationBoolVars operation) ->
-        ∀ rightCase, rightCase ∈ allBoolCases (operationBoolVars operation) ->
-          FieldMerge.fieldsInSetCanMerge schema operation.rootType
-            (normalizeSelectionSet schema operation.rootType
-                (filterSelectionSetBoolCase leftCase operation.selectionSet)
-              ++
-              normalizeSelectionSet schema operation.rootType
-                (filterSelectionSetBoolCase rightCase operation.selectionSet)) := by
-  intro hschema hoperation hfeasibleAll hsurvive leftCase hleftCase
+  intro hschema hoperation hfields hboolFeasible leftCase hleftCase
     rightCase hrightCase
   have hrootObject : schema.objectType operation.rootType :=
     operation_root_object_of_valid hschema hoperation
@@ -330,6 +242,10 @@ theorem completeNormalizedBoolCaseBranchesFieldsCanMerge
       selectionSetSemanticsReady schema operation.rootType
         operation.selectionSet :=
     operation_selectionSetSemanticsReady_of_valid hschema hoperation
+  have himplementation :
+      Validation.selectionSetValidInPossibleTypes schema
+        operation.variableDefinitions operation.rootType operation.selectionSet :=
+    by simpa [operationFieldsValidInPossibleTypes] using hfields
   have hleftReady :
       selectionSetSemanticsReady schema operation.rootType
         (filterSelectionSetBoolCase leftCase operation.selectionSet) :=
@@ -340,18 +256,6 @@ theorem completeNormalizedBoolCaseBranchesFieldsCanMerge
         (filterSelectionSetBoolCase rightCase operation.selectionSet) :=
     filterSelectionSetBoolCase_selectionSetSemanticsReady schema rightCase
       operation.rootType operation.selectionSet hready
-  have hleftImplementation :
-      Validation.selectionSetImplementationValidInScope schema
-        operation.variableDefinitions operation.rootType
-        (filterSelectionSetBoolCase leftCase operation.selectionSet) :=
-    completeFilteredBoolCasesImplementationValid_of_compositeChildrenSurvive
-      schema operation hoperation hsurvive leftCase hleftCase
-  have hrightImplementation :
-      Validation.selectionSetImplementationValidInScope schema
-        operation.variableDefinitions operation.rootType
-        (filterSelectionSetBoolCase rightCase operation.selectionSet) :=
-    completeFilteredBoolCasesImplementationValid_of_compositeChildrenSurvive
-      schema operation hoperation hsurvive rightCase hrightCase
   have hsourceMerge :
       FieldMerge.fieldsInSetCanMerge schema operation.rootType
         operation.selectionSet :=
@@ -373,35 +277,113 @@ theorem completeNormalizedBoolCaseBranchesFieldsCanMerge
             operation.selectionSet) :=
     completeFilteredBoolCasesFieldsCanMerge schema operation hoperation
       leftCase hleftCase rightCase hrightCase
+  have hleftBoolFeasible :
+      selectionSetBoolTypeConditionFeasible schema operation.rootType
+        [operation.rootType] leftCase .allFields operation.selectionSet :=
+    hboolFeasible.2 leftCase hleftCase
+  have hrightBoolFeasible :
+      selectionSetBoolTypeConditionFeasible schema operation.rootType
+        [operation.rootType] rightCase .allFields operation.selectionSet :=
+    hboolFeasible.2 rightCase hrightCase
+  have hleftSource :
+      selectionSetFilteredCurrentSourceValid schema operation.variableDefinitions
+        operation.rootType
+        (filterSelectionSetBoolCase leftCase operation.selectionSet) :=
+    selectionSetFilteredCurrentSourceValid_filterSelectionSetBoolCase
+      schema operation.variableDefinitions hschema leftCase operation.rootType
+      hrootObject operation.selectionSet himplementation
+  have hrightSource :
+      selectionSetFilteredCurrentSourceValid schema operation.variableDefinitions
+        operation.rootType
+        (filterSelectionSetBoolCase rightCase operation.selectionSet) :=
+    selectionSetFilteredCurrentSourceValid_filterSelectionSetBoolCase
+      schema operation.variableDefinitions hschema rightCase operation.rootType
+      hrootObject operation.selectionSet himplementation
+  have hleftReturnLookup :
+      selectionSetFilteredReturnLookupValid schema operation.rootType
+        (filterSelectionSetBoolCase leftCase operation.selectionSet) :=
+    selectionSetFilteredReturnLookupValid_filterSelectionSetBoolCase
+      schema operation.variableDefinitions hschema leftCase operation.rootType
+      hrootObject operation.selectionSet himplementation
+  have hrightReturnLookup :
+      selectionSetFilteredReturnLookupValid schema operation.rootType
+        (filterSelectionSetBoolCase rightCase operation.selectionSet) :=
+    selectionSetFilteredReturnLookupValid_filterSelectionSetBoolCase
+      schema operation.variableDefinitions hschema rightCase operation.rootType
+      hrootObject operation.selectionSet himplementation
+  have hleftFeasible :
+      selectionSetTypeConditionFeasible schema operation.rootType
+        [operation.rootType] .allFields
+        (filterSelectionSetBoolCase leftCase operation.selectionSet) :=
+    selectionSetTypeConditionFeasible_filterSelectionSetBoolCase schema
+      leftCase operation.rootType [operation.rootType] operation.selectionSet
+      hleftBoolFeasible
+  have hrightFeasible :
+      selectionSetTypeConditionFeasible schema operation.rootType
+        [operation.rootType] .allFields
+        (filterSelectionSetBoolCase rightCase operation.selectionSet) :=
+    selectionSetTypeConditionFeasible_filterSelectionSetBoolCase schema
+      rightCase operation.rootType [operation.rootType] operation.selectionSet
+      hrightBoolFeasible
+  have hleftNonempty :
+      selectionSetFilteredCompositeChildrenNonempty schema operation.rootType
+        [operation.rootType]
+        (filterSelectionSetBoolCase leftCase operation.selectionSet) :=
+    selectionSetFilteredCompositeChildrenNonempty_filterSelectionSetBoolCase
+      schema operation.variableDefinitions hschema leftCase operation.rootType
+      [operation.rootType] hrootObject operation.selectionSet himplementation
+      hleftBoolFeasible
+  have hrightNonempty :
+      selectionSetFilteredCompositeChildrenNonempty schema operation.rootType
+        [operation.rootType]
+        (filterSelectionSetBoolCase rightCase operation.selectionSet) :=
+    selectionSetFilteredCompositeChildrenNonempty_filterSelectionSetBoolCase
+      schema operation.variableDefinitions hschema rightCase operation.rootType
+      [operation.rootType] hrootObject operation.selectionSet himplementation
+      hrightBoolFeasible
   exact
-    normalizeSelectionSets_fieldsInSetCanMerge_anyParent schema
-      operation.variableDefinitions hschema hfeasibleAll operation.rootType
+    normalizeSelectionSets_fieldsInSetCanMerge_filteredCurrentSource_anyParent schema
+      operation.variableDefinitions hschema operation.rootType
       (filterSelectionSetBoolCase leftCase operation.selectionSet)
       (filterSelectionSetBoolCase rightCase operation.selectionSet)
-      hrootObject hleftReady hrightReady hleftImplementation
-      hrightImplementation hleftMerge hrightMerge hpairMerge
+      hrootObject hleftReady hrightReady hleftSource hrightSource
+      hleftReturnLookup hrightReturnLookup hleftMerge hrightMerge hpairMerge
       (filterSelectionSetBoolCase_directiveFree schema leftCase
         operation.selectionSet)
       (filterSelectionSetBoolCase_directiveFree schema rightCase
         operation.selectionSet)
+      hleftFeasible hrightFeasible hleftNonempty hrightNonempty
       operation.rootType
 
-theorem completeNormalizeOperation_valid_of_filteredCases_and_merge
+theorem completeNormalizeOperation_valid
     (schema : Schema) (operation : Operation) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.operationDefinitionValid schema operation ->
-    selectionSetsTypeConditionFeasibleInEveryScope schema ->
-    (∀ boolCase, boolCase ∈ allBoolCases (operationBoolVars operation) ->
-      Validation.selectionSetImplementationValidInScope schema
-        operation.variableDefinitions operation.rootType
-        (filterSelectionSetBoolCase boolCase operation.selectionSet)) ->
-    FieldMerge.fieldsInSetCanMerge schema operation.rootType
-      (completeNormalizeRootSelectionSet schema
+    NormalForm.completeNormalizeOperationValid schema operation := by
+  intro hschema hoperation hfields hboolFeasible
+  have hnormalizedNonempty :
+      completeNormalizeRootSelectionSet schema
         (operationBoolVars operation) operation.rootType
-        operation.selectionSet) ->
-      Validation.operationDefinitionValid schema
-        (completeNormalizeOperation schema operation) := by
-  intro hschema hoperation hfeasibleAll hfilteredCases hnormalizedMerge
+        operation.selectionSet ≠ [] :=
+    completeNormalizeRootSelectionSet_ne_nil_of_boolTypeFeasible schema
+      operation hschema hoperation hboolFeasible
+  have hbranchPairs :
+      ∀ leftCase, leftCase ∈ allBoolCases (operationBoolVars operation) ->
+        ∀ rightCase, rightCase ∈ allBoolCases (operationBoolVars operation) ->
+          FieldMerge.fieldsInSetCanMerge schema operation.rootType
+            (normalizeSelectionSet schema operation.rootType
+                (filterSelectionSetBoolCase leftCase operation.selectionSet)
+              ++
+              normalizeSelectionSet schema operation.rootType
+                (filterSelectionSetBoolCase rightCase operation.selectionSet)) :=
+    completeNormalizedBoolCaseBranchesFieldsCanMerge_of_boolTypeFeasible
+      schema operation hschema hoperation hfields hboolFeasible
+  have hnormalizedMerge :
+      FieldMerge.fieldsInSetCanMerge schema operation.rootType
+        (completeNormalizeRootSelectionSet schema
+          (operationBoolVars operation) operation.rootType
+          operation.selectionSet) :=
+    completeNormalizeRootSelectionSet_fieldsInSetCanMerge_of_branchPairs
+      schema (operationBoolVars operation) operation.rootType
+      operation.selectionSet hbranchPairs
   exact ⟨
     by simp [completeNormalizeOperation,
       Validation.operationDefinitionValid_rootType_eq hoperation],
@@ -414,126 +396,13 @@ theorem completeNormalizeOperation_valid_of_filteredCases_and_merge
         (Validation.operationDefinitionValid_variableDefinitionsValid
           (operation := operation) hoperation),
     by
-      simpa [completeNormalizeOperation] using
-        completeNormalizeRootSelectionSet_selectionSetValid
-          schema operation hschema hfeasibleAll hfilteredCases hoperation,
+      simpa [completeNormalizeOperation] using hnormalizedNonempty,
     by
       simpa [completeNormalizeOperation] using
-        completeNormalizeRootSelectionSet_selectionSetImplementationValid
-          schema operation hschema hfeasibleAll hfilteredCases hoperation,
+        completeNormalizeRootSelectionSet_selectionSetValid_of_boolTypeFeasible
+          schema operation hschema hboolFeasible hoperation hfields,
     by
       simpa [completeNormalizeOperation] using hnormalizedMerge⟩
-
-theorem completeNormalizeOperation_valid_of_filteredCases_and_branchPairs
-    (schema : Schema) (operation : Operation) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.operationDefinitionValid schema operation ->
-    selectionSetsTypeConditionFeasibleInEveryScope schema ->
-    (∀ boolCase, boolCase ∈ allBoolCases (operationBoolVars operation) ->
-      Validation.selectionSetImplementationValidInScope schema
-        operation.variableDefinitions operation.rootType
-        (filterSelectionSetBoolCase boolCase operation.selectionSet)) ->
-    (∀ leftCase, leftCase ∈ allBoolCases (operationBoolVars operation) ->
-      ∀ rightCase, rightCase ∈ allBoolCases (operationBoolVars operation) ->
-        FieldMerge.fieldsInSetCanMerge schema operation.rootType
-          (normalizeSelectionSet schema operation.rootType
-              (filterSelectionSetBoolCase leftCase operation.selectionSet)
-            ++
-            normalizeSelectionSet schema operation.rootType
-              (filterSelectionSetBoolCase rightCase operation.selectionSet))) ->
-      Validation.operationDefinitionValid schema
-        (completeNormalizeOperation schema operation) := by
-  intro hschema hoperation hfeasibleAll hfilteredCases hbranchPairs
-  apply completeNormalizeOperation_valid_of_filteredCases_and_merge
-      schema operation hschema hoperation hfeasibleAll hfilteredCases
-  exact completeNormalizeRootSelectionSet_fieldsInSetCanMerge_of_branchPairs
-    schema (operationBoolVars operation) operation.rootType
-    operation.selectionSet hbranchPairs
-
-theorem completeNormalizeOperation_valid_of_branchPairs
-    (schema : Schema) (operation : Operation) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.operationDefinitionValid schema operation ->
-    selectionSetsTypeConditionFeasibleInEveryScope schema ->
-    completeBoolCasesCompositeChildrenSurvive operation ->
-    (∀ leftCase, leftCase ∈ allBoolCases (operationBoolVars operation) ->
-      ∀ rightCase, rightCase ∈ allBoolCases (operationBoolVars operation) ->
-        FieldMerge.fieldsInSetCanMerge schema operation.rootType
-          (normalizeSelectionSet schema operation.rootType
-              (filterSelectionSetBoolCase leftCase operation.selectionSet)
-            ++
-            normalizeSelectionSet schema operation.rootType
-              (filterSelectionSetBoolCase rightCase operation.selectionSet))) ->
-      Validation.operationDefinitionValid schema
-        (completeNormalizeOperation schema operation) := by
-  intro hschema hoperation hfeasibleAll hsurvive hbranchPairs
-  exact completeNormalizeOperation_valid_of_filteredCases_and_branchPairs
-    schema operation hschema hoperation hfeasibleAll
-    (completeFilteredBoolCasesImplementationValid_of_compositeChildrenSurvive
-      schema operation hoperation hsurvive)
-    hbranchPairs
-
-theorem completeNormalizeOperation_valid_of_crossFields
-    (schema : Schema) (operation : Operation) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.operationDefinitionValid schema operation ->
-    selectionSetsTypeConditionFeasibleInEveryScope schema ->
-    completeBoolCasesCompositeChildrenSurvive operation ->
-    (∀ leftCase, leftCase ∈ allBoolCases (operationBoolVars operation) ->
-      ∀ rightCase, rightCase ∈ allBoolCases (operationBoolVars operation) ->
-        ∀ leftField,
-          leftField ∈ FieldMerge.collectFields schema operation.rootType
-            (normalizeSelectionSet schema operation.rootType
-              (filterSelectionSetBoolCase leftCase operation.selectionSet)) ->
-          ∀ rightField,
-            rightField ∈ FieldMerge.collectFields schema operation.rootType
-              (normalizeSelectionSet schema operation.rootType
-                (filterSelectionSetBoolCase rightCase operation.selectionSet)) ->
-            leftField.responseName = rightField.responseName ->
-              FieldMerge.fieldsForNameCanMerge schema leftField rightField) ->
-      Validation.operationDefinitionValid schema
-        (completeNormalizeOperation schema operation) := by
-  intro hschema hoperation hfeasibleAll hsurvive hcross
-  apply completeNormalizeOperation_valid_of_branchPairs
-      schema operation hschema hoperation hfeasibleAll hsurvive
-  exact completeNormalizedBoolCaseBranchesFieldsCanMerge_of_crossFields
-    schema operation hschema hoperation hfeasibleAll hsurvive hcross
-
-theorem completeNormalizeOperation_valid_of_distinctBranchPairs
-    (schema : Schema) (operation : Operation) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.operationDefinitionValid schema operation ->
-    selectionSetsTypeConditionFeasibleInEveryScope schema ->
-    completeBoolCasesCompositeChildrenSurvive operation ->
-    (∀ leftCase, leftCase ∈ allBoolCases (operationBoolVars operation) ->
-      ∀ rightCase, rightCase ∈ allBoolCases (operationBoolVars operation) ->
-        leftCase ≠ rightCase ->
-          FieldMerge.fieldsInSetCanMerge schema operation.rootType
-            (normalizeSelectionSet schema operation.rootType
-                (filterSelectionSetBoolCase leftCase operation.selectionSet)
-              ++
-              normalizeSelectionSet schema operation.rootType
-                (filterSelectionSetBoolCase rightCase operation.selectionSet))) ->
-      Validation.operationDefinitionValid schema
-        (completeNormalizeOperation schema operation) := by
-  intro hschema hoperation hfeasibleAll hsurvive hdistinctPairs
-  apply completeNormalizeOperation_valid_of_branchPairs
-      schema operation hschema hoperation hfeasibleAll hsurvive
-  intro leftCase hleftCase rightCase hrightCase
-  by_cases hsame : leftCase = rightCase
-  · subst rightCase
-    exact completeNormalizedBoolCaseBranchSelfFieldsCanMerge schema operation
-      hschema hoperation hfeasibleAll hsurvive leftCase hleftCase
-  · exact hdistinctPairs leftCase hleftCase rightCase hrightCase hsame
-
-theorem completeNormalizeOperation_valid
-    (schema : Schema) (operation : Operation) :
-    completeNormalizeOperationValid schema operation := by
-  intro hschema hoperation hfeasibleAll hsurvive
-  apply completeNormalizeOperation_valid_of_branchPairs
-      schema operation hschema hoperation hfeasibleAll hsurvive
-  exact completeNormalizedBoolCaseBranchesFieldsCanMerge schema operation
-    hschema hoperation hfeasibleAll hsurvive
 
 end CompleteNormalization
 

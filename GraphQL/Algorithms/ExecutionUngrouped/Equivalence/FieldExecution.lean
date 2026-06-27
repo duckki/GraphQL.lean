@@ -579,8 +579,7 @@ theorem executeField_empty_output
         | none => handleFieldError fieldDefinition.outputType
         | some resolved =>
             completeValue schema resolvers variableValues depth
-              fieldDefinition.outputType field.selectionSet resolved
-              none := by
+              fieldDefinition.outputType field.selectionSet resolved none := by
   unfold executeField
   cases hlookup :
       schema.lookupField field.parentType field.fieldName with

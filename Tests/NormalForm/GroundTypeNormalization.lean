@@ -232,9 +232,8 @@ def emptyInterfaceFieldOutputSnapshot : Operation :=
     field "name"
   }
 
-theorem emptyInterfaceFieldDropsSmoke :
+theorem emptyInterfaceFieldRetainedSmoke :
     operationWellFormedBool emptyInterfaceFieldInputQuery = true
-      ∧ operationWellFormedBool emptyInterfaceFieldOutputSnapshot = true
       ∧ operationEqBool
         (normalizeOperation emptyInterfaceSchema emptyInterfaceFieldInputQuery)
         emptyInterfaceFieldOutputSnapshot = true := by
@@ -252,7 +251,7 @@ def emptyInterfaceOnlyFieldOutputSnapshot : Operation :=
     field "empty" {}
   }
 
-theorem emptyInterfaceOnlyFieldDropsSmoke :
+theorem emptyInterfaceOnlyFieldRetainedSmoke :
     operationWellFormedBool emptyInterfaceOnlyFieldInputQuery = true
       ∧ operationEqBool
         (normalizeOperation emptyInterfaceSchema

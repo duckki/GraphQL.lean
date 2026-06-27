@@ -130,23 +130,24 @@ theorem executeField_same_head_eq_of_completeValue
         arguments := arguments,
         selectionSet := rightSelectionSet
       }
-    let resolved :=
-      resolvers.resolve parentType fieldName arguments source
     let fieldDefinition? := schema.lookupField parentType fieldName
-    (match fieldDefinition?, resolved with
-    | some fieldDefinition, some value =>
-        completeValue schema resolvers variableValues depth
-          fieldDefinition.outputType (leftField :: leftFields) value
-          =
-        completeValue schema resolvers variableValues depth
-          fieldDefinition.outputType (rightField :: rightFields) value
-    | _, _ => True) ->
+    (match fieldDefinition? with
+    | some fieldDefinition =>
+        match resolvers.resolve parentType fieldName arguments source with
+        | some value =>
+            completeValue schema resolvers variableValues depth
+              fieldDefinition.outputType (leftField :: leftFields) value
+              =
+            completeValue schema resolvers variableValues depth
+              fieldDefinition.outputType (rightField :: rightFields) value
+        | none => True
+    | none => True) ->
       executeField schema resolvers variableValues (depth + 1)
         source responseName (leftField :: leftFields)
       =
       executeField schema resolvers variableValues (depth + 1)
         source responseName (rightField :: rightFields) := by
-  intro leftField rightField resolved fieldDefinition? hcomplete
+  intro leftField rightField fieldDefinition? hcomplete
   simp only [executeField, leftField, rightField]
   cases hlookup : schema.lookupField parentType fieldName with
   | none =>
@@ -162,7 +163,7 @@ theorem executeField_same_head_eq_of_completeValue
                 fieldDefinition.outputType (leftField :: leftFields) value =
               completeValue schema resolvers variableValues depth
                 fieldDefinition.outputType (rightField :: rightFields) value := by
-            simpa [fieldDefinition?, resolved, hlookup, hresolved] using hcomplete
+            simpa [fieldDefinition?, hlookup, hresolved] using hcomplete
           simp [singleFieldResult, leftField, rightField, hcomplete']
 
 theorem executeSelectionSet_field_head_same_group_eq_of_completeValue
@@ -197,15 +198,17 @@ theorem executeSelectionSet_field_head_same_group_eq_of_completeValue
     collectFields schema variableValues parentType source right
       =
     (responseName, rightField :: rightFields) :: rightRest ->
-    (match schema.lookupField parentType fieldName,
-        resolvers.resolve parentType fieldName arguments source with
-    | some fieldDefinition, some value =>
-        completeValue schema resolvers variableValues fieldDepth
-          fieldDefinition.outputType (leftField :: leftFields) value
-          =
-        completeValue schema resolvers variableValues fieldDepth
-          fieldDefinition.outputType (rightField :: rightFields) value
-    | _, _ => True) ->
+    (match schema.lookupField parentType fieldName with
+    | some fieldDefinition =>
+        match resolvers.resolve parentType fieldName arguments source with
+        | some value =>
+            completeValue schema resolvers variableValues fieldDepth
+              fieldDefinition.outputType (leftField :: leftFields) value
+              =
+            completeValue schema resolvers variableValues fieldDepth
+              fieldDefinition.outputType (rightField :: rightFields) value
+        | none => True
+    | none => True) ->
     executeCollectedFields schema resolvers variableValues
       (fieldDepth + 1) source leftRest
       =

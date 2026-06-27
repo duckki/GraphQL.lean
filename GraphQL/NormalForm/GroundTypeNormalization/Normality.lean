@@ -10,16 +10,6 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
-theorem normalizedField_eq
-    (schema : Schema) (returnType responseName fieldName : Name)
-    (arguments : List Argument) (directives : List DirectiveApplication)
-    (normalizedSubselections : List Selection) :
-    normalizedField schema returnType responseName fieldName arguments
-      directives normalizedSubselections =
-        Selection.field responseName fieldName arguments directives
-          normalizedSubselections := by
-  rfl
-
 def possibleTypeNormalizations (schema : Schema)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     List Selection :=
@@ -29,6 +19,92 @@ def possibleTypeNormalizations (schema : Schema)
     | selection :: rest =>
         some (Selection.inlineFragment (some objectType) []
           (selection :: rest)))
+
+abbrev normalizedFieldWithRest
+    (schema : Schema) (returnType responseName fieldName : Name)
+    (arguments : List Argument) (directives : List DirectiveApplication)
+    (normalizedSubselections normalizedRest : List Selection) : List Selection :=
+  normalizedField schema returnType responseName fieldName arguments directives
+    normalizedSubselections :: normalizedRest
+
+theorem selectionSetDirectiveFree_normalizedFieldWithRest
+    (schema : Schema) (returnType responseName fieldName : Name)
+    (arguments : List Argument) (directives : List DirectiveApplication)
+    (normalizedSubselections normalizedRest : List Selection) :
+    selectionDirectiveFree
+        (Selection.field responseName fieldName arguments directives
+          normalizedSubselections) ->
+      selectionSetDirectiveFree normalizedRest ->
+        selectionSetDirectiveFree
+          (normalizedFieldWithRest schema returnType responseName fieldName
+            arguments directives normalizedSubselections normalizedRest) := by
+  intro hfield hrest
+  simpa [normalizedFieldWithRest, normalizedField] using And.intro hfield hrest
+
+theorem selectionsAllFields_normalizedFieldWithRest
+    (schema : Schema) (returnType responseName fieldName : Name)
+    (arguments : List Argument) (directives : List DirectiveApplication)
+    (normalizedSubselections normalizedRest : List Selection) :
+    selectionsAllFields normalizedRest ->
+      selectionsAllFields
+        (normalizedFieldWithRest schema returnType responseName fieldName
+          arguments directives normalizedSubselections normalizedRest) := by
+  intro hrest selection hmem
+  simp [normalizedFieldWithRest, normalizedField] at hmem
+  cases hmem with
+  | inl hhead =>
+      subst selection
+      simp [Selection.isField]
+  | inr htail =>
+      exact hrest selection htail
+
+theorem selectionSetGroundTyped_normalizedFieldWithRest
+    (schema : Schema) (returnType responseName fieldName : Name)
+    (arguments : List Argument) (directives : List DirectiveApplication)
+    (normalizedSubselections normalizedRest : List Selection) :
+    selectionSetGroundTyped schema normalizedSubselections ->
+      (selectionsAllFields normalizedSubselections
+        ∨ selectionsAllInlineFragments normalizedSubselections) ->
+      selectionSetGroundTyped schema normalizedRest ->
+      selectionsAllFields normalizedRest ->
+        selectionSetGroundTyped schema
+          (normalizedFieldWithRest schema returnType responseName fieldName
+            arguments directives normalizedSubselections normalizedRest) := by
+  intro hsub hshape hrest hrestFields
+  have hrestGround := hrest
+  unfold selectionSetGroundTyped at hrestGround
+  unfold selectionSetGroundTyped
+  constructor
+  · exact Or.inl
+      (selectionsAllFields_normalizedFieldWithRest schema returnType
+        responseName fieldName arguments directives normalizedSubselections
+        normalizedRest hrestFields)
+  · intro selection hmem
+    simp [normalizedFieldWithRest, normalizedField] at hmem
+    cases hmem with
+    | inl hhead =>
+        subst selection
+        unfold selectionGroundTyped
+        exact ⟨hshape, hsub⟩
+    | inr htail =>
+        exact hrestGround.2 selection htail
+
+theorem selectionSetResponseNameFree_normalizedFieldWithRest
+    (schema : Schema) (parentType returnType responseName fieldResponseName
+      fieldName : Name)
+    (arguments : List Argument) (directives : List DirectiveApplication)
+    (normalizedSubselections normalizedRest : List Selection) :
+    selectionResponseNameFree schema parentType responseName
+        (Selection.field fieldResponseName fieldName arguments directives
+          normalizedSubselections) ->
+      selectionSetResponseNameFree schema parentType responseName
+        normalizedRest ->
+        selectionSetResponseNameFree schema parentType responseName
+          (normalizedFieldWithRest schema returnType fieldResponseName fieldName
+            arguments directives normalizedSubselections normalizedRest) := by
+  intro hfield hrest
+  simpa [normalizedFieldWithRest, normalizedField] using
+    selectionSetResponseNameFree_cons hfield hrest
 
 theorem selectionSetDirectiveFree_possibleTypeNormalizations
     (schema : Schema)
@@ -132,17 +208,21 @@ theorem normalizeSelectionSet_directiveFree (schema : Schema) :
           · rfl
           · contradiction
         simp [hfalse]
-        exact selectionSetDirectiveFree_possibleTypeNormalizations schema
-          (schema.getPossibleTypes returnType)
+        exact selectionSetDirectiveFree_possibleTypeNormalizations
+          schema (schema.getPossibleTypes returnType)
           (fun objectType _hobjectType =>
             hpossible objectType hmergedSubselectionsFree)
     have hnormalizedField :
         selectionDirectiveFree
-          (normalizedField schema returnType responseName fieldName
-            arguments [] normalizedSubselections) := by
+          (Selection.field responseName fieldName arguments []
+            normalizedSubselections) := by
       exact ⟨rfl, hnormalizedSubselections⟩
-    simp [normalizeSelectionSet, hlookup]
-    exact ⟨hnormalizedField, hnormalizedRest⟩
+    simpa [normalizeSelectionSet, hlookup] using
+      selectionSetDirectiveFree_normalizedFieldWithRest schema returnType
+        responseName fieldName arguments [] normalizedSubselections
+        (normalizeSelectionSet schema parentType
+          (withoutFieldSelectionsWithResponseName schema responseName rest))
+        hnormalizedField hnormalizedRest
   | case4 parentType rest directives selectionSet happend =>
     intro hfree
     have hselectionFree :=
@@ -154,7 +234,7 @@ theorem normalizeSelectionSet_directiveFree (schema : Schema) :
       selectionSetDirectiveFree_append hselectionFree.2 hrestFree
     simpa [normalizeSelectionSet] using happend happendFree
   | case5 parentType rest typeCondition directives selectionSet hoverlap
-      hrest happend =>
+      _hrest happend =>
     intro hfree
     have hselectionFree :=
       selectionSetDirectiveFree_head hfree
@@ -199,19 +279,22 @@ theorem normalizeSelectionSet_allFields (schema : Schema) :
   | case3 parentType rest responseName fieldName arguments directives
       selectionSet fieldDefinition hlookup matching mergedSubselections
       returnType hrest hmerged hpossible =>
-      simp [normalizeSelectionSet, hlookup]
-      intro selection hmem
-      simp at hmem
-      cases hmem with
-      | inl hhead =>
-          subst selection
-          simp [normalizedField, Selection.isField]
-      | inr htail =>
-          exact hrest selection htail
+      let normalizedSubselections :=
+        if objectTypeNameBool schema returnType then
+          normalizeSelectionSet schema returnType mergedSubselections
+        else
+          possibleTypeNormalizations schema
+            (schema.getPossibleTypes returnType) mergedSubselections
+      simpa [normalizeSelectionSet, hlookup] using
+        selectionsAllFields_normalizedFieldWithRest schema returnType
+          responseName fieldName arguments directives normalizedSubselections
+          (normalizeSelectionSet schema parentType
+            (withoutFieldSelectionsWithResponseName schema responseName rest))
+          hrest
   | case4 parentType rest directives selectionSet happend =>
       simpa [normalizeSelectionSet] using happend
   | case5 parentType rest typeCondition directives selectionSet hoverlap
-      hrest happend =>
+      _hrest happend =>
       simpa [normalizeSelectionSet, hoverlap] using happend
   | case6 parentType rest typeCondition directives selectionSet hoverlap
       hrest =>
@@ -273,7 +356,7 @@ theorem possibleTypeNormalizations_groundTyped
             simpa [hnormalized] using
               normalizeSelectionSet_allFields schema objectType selectionSet,
           by
-            simpa [hnormalized] using
+        simpa [hnormalized] using
               hnormalize objectType hobjectType⟩
 
 theorem normalizeSelectionSet_groundTyped (schema : Schema)
@@ -334,31 +417,21 @@ theorem normalizeSelectionSet_groundTyped (schema : Schema)
           simp [hfalse]
           exact Or.inr
             (possibleTypeNormalizations_allInlineFragments schema
-              (schema.getPossibleTypes returnType) mergedSubselections)
+              (schema.getPossibleTypes returnType)
+              mergedSubselections)
       unfold selectionSetGroundTyped
-      constructor
-      · exact Or.inl (normalizeSelectionSet_allFields schema parentType
-          (Selection.field responseName fieldName arguments directives
-            selectionSet :: rest))
-      · intro selection hmem
-        simp [normalizeSelectionSet, hlookup, normalizedField] at hmem
-        cases hmem with
-        | inl hhead =>
-            subst selection
-            unfold selectionGroundTyped
-            change
-              (selectionsAllFields normalizedSubselections
-                  ∨ selectionsAllInlineFragments normalizedSubselections)
-                ∧ selectionSetGroundTyped schema normalizedSubselections
-            exact ⟨hsubselectionsShape, hsubselectionsGround⟩
-        | inr htail =>
-            have hrestGround := hrest
-            unfold selectionSetGroundTyped at hrestGround
-            exact hrestGround.2 selection htail
+      simpa [selectionSetGroundTyped, normalizeSelectionSet, hlookup] using
+        selectionSetGroundTyped_normalizedFieldWithRest schema returnType
+          responseName fieldName arguments directives normalizedSubselections
+          (normalizeSelectionSet schema parentType
+            (withoutFieldSelectionsWithResponseName schema responseName rest))
+          hsubselectionsGround hsubselectionsShape hrest
+          (normalizeSelectionSet_allFields schema parentType
+            (withoutFieldSelectionsWithResponseName schema responseName rest))
   | case4 parentType rest directives selectionSet happend =>
       simpa [normalizeSelectionSet] using happend
   | case5 parentType rest typeCondition directives selectionSet hoverlap
-      hrest happend =>
+      _hrest happend =>
       simpa [normalizeSelectionSet, hoverlap] using happend
   | case6 parentType rest typeCondition directives selectionSet hoverlap
       hrest =>
@@ -405,11 +478,16 @@ theorem normalizeSelectionSet_responseNameFree (schema : Schema) :
       have hnormalizedRest := hrest hfiltered
       have hnormalizedHead :
           selectionResponseNameFree schema parentType responseName
-            (normalizedField schema returnType fieldResponseName fieldName
-              arguments directives normalizedSubselections) := by
-        simpa [selectionResponseNameFree, normalizedField] using hhead
-      simp [normalizeSelectionSet, hlookup]
-      exact selectionSetResponseNameFree_cons hnormalizedHead hnormalizedRest
+            (Selection.field fieldResponseName fieldName arguments directives
+              normalizedSubselections) := by
+        simpa [selectionResponseNameFree] using hhead
+      simpa [normalizeSelectionSet, hlookup] using
+        selectionSetResponseNameFree_normalizedFieldWithRest schema parentType
+          returnType responseName fieldResponseName fieldName arguments
+          directives normalizedSubselections
+          (normalizeSelectionSet schema parentType
+            (withoutFieldSelectionsWithResponseName schema fieldResponseName rest))
+          hnormalizedHead hnormalizedRest
   | case4 parentType rest directives selectionSet happend =>
       intro hfree
       have hhead := selectionSetResponseNameFree_head hfree
@@ -424,7 +502,7 @@ theorem normalizeSelectionSet_responseNameFree (schema : Schema) :
         exact selectionSetResponseNameFree_append hsubselections htail
       simpa [normalizeSelectionSet] using happend happendFree
   | case5 parentType rest typeCondition directives selectionSet hoverlap
-      hrest happend =>
+      _hrest happend =>
       intro hfree
       have hhead := selectionSetResponseNameFree_head hfree
       have htail := selectionSetResponseNameFree_tail hfree
@@ -489,6 +567,20 @@ theorem normalizeSelectionSet_without_responseName_not_mem
     (withoutFieldSelectionsWithResponseName_responseNameFree schema parentType
       responseName selectionSet)
 
+theorem responseNamesNodup_normalizedFieldWithRest
+    (schema : Schema) (returnType responseName fieldName : Name)
+    (arguments : List Argument) (directives : List DirectiveApplication)
+    (normalizedSubselections normalizedRest : List Selection) :
+    responseName ∉ normalizedRest.filterMap Selection.responseName? ->
+      responseNamesNodup normalizedRest ->
+        responseNamesNodup
+          (normalizedFieldWithRest schema returnType responseName fieldName
+            arguments directives normalizedSubselections normalizedRest) := by
+  intro hnotMem hnodup
+  unfold responseNamesNodup at hnodup ⊢
+  simpa [normalizedFieldWithRest, normalizedField, Selection.responseName?] using
+    List.nodup_cons.mpr ⟨hnotMem, hnodup⟩
+
 theorem normalizeSelectionSet_responseNamesNodup (schema : Schema) :
     ∀ parentType selectionSet,
       responseNamesNodup (normalizeSelectionSet schema parentType selectionSet) := by
@@ -512,18 +604,16 @@ theorem normalizeSelectionSet_responseNamesNodup (schema : Schema) :
         normalizeSelectionSet_without_responseName_not_mem schema parentType
           responseName rest
       have htailNodup := hrest
-      simp [normalizeSelectionSet, hlookup]
-      unfold responseNamesNodup at htailNodup ⊢
-      simp [normalizedField, Selection.responseName?]
-      constructor
-      · intro name hname hresponse
-        exact htailNoResponseName
-          (List.mem_filterMap.mpr ⟨name, hname, hresponse⟩)
-      · exact htailNodup
+      simpa [normalizeSelectionSet, hlookup] using
+        responseNamesNodup_normalizedFieldWithRest schema returnType
+          responseName fieldName arguments directives normalizedSubselections
+          (normalizeSelectionSet schema parentType
+            (withoutFieldSelectionsWithResponseName schema responseName rest))
+          htailNoResponseName htailNodup
   | case4 parentType rest directives selectionSet happend =>
       simpa [normalizeSelectionSet] using happend
   | case5 parentType rest typeCondition directives selectionSet hoverlap
-      hrest happend =>
+      _hrest happend =>
       simpa [normalizeSelectionSet, hoverlap] using happend
   | case6 parentType rest typeCondition directives selectionSet hoverlap
       hrest =>
@@ -560,6 +650,40 @@ theorem selectionSetNonRedundant_selection {selectionSet : List Selection}
   intro hnonRedundant hselection
   unfold selectionSetNonRedundant at hnonRedundant
   exact hnonRedundant.2.2 selection hselection
+
+theorem selectionSetNonRedundant_normalizedFieldWithRest
+    (schema : Schema) (returnType responseName fieldName : Name)
+    (arguments : List Argument) (directives : List DirectiveApplication)
+    (normalizedSubselections normalizedRest : List Selection) :
+    responseName ∉ normalizedRest.filterMap Selection.responseName? ->
+      selectionsAllFields normalizedRest ->
+      selectionSetNonRedundant normalizedSubselections ->
+      selectionSetNonRedundant normalizedRest ->
+        selectionSetNonRedundant
+          (normalizedFieldWithRest schema returnType responseName fieldName
+            arguments directives normalizedSubselections normalizedRest) := by
+  intro hnotMem hrestFields hsub hrest
+  have hrestNonRedundant := hrest
+  unfold selectionSetNonRedundant at hrestNonRedundant
+  unfold selectionSetNonRedundant
+  constructor
+  · exact responseNamesNodup_normalizedFieldWithRest schema returnType
+      responseName fieldName arguments directives normalizedSubselections
+      normalizedRest hnotMem hrestNonRedundant.1
+  · constructor
+    · exact inlineFragmentTypeConditionsNodup_of_selectionsAllFields
+        (selectionsAllFields_normalizedFieldWithRest schema returnType
+          responseName fieldName arguments directives normalizedSubselections
+          normalizedRest hrestFields)
+    · intro selection hselection
+      simp [normalizedFieldWithRest, normalizedField] at hselection
+      cases hselection with
+      | inl hhead =>
+          subst selection
+          unfold selectionNonRedundant
+          exact hsub
+      | inr htail =>
+          exact selectionSetNonRedundant_selection hrest htail
 
 theorem possibleTypeNormalizations_responseNamesNodup
     (schema : Schema) (possibleTypes : List Name)
@@ -705,30 +829,22 @@ theorem normalizeSelectionSet_nonRedundant (schema : Schema)
             (schema.getPossibleTypes returnType) mergedSubselections
             (hpossibleTypesNodup returnType)
             (fun objectType hobjectType => hpossible objectType)
-      unfold selectionSetNonRedundant
-      constructor
-      · exact normalizeSelectionSet_responseNamesNodup schema parentType
-          (Selection.field responseName fieldName arguments directives
-            selectionSet :: rest)
-      · constructor
-        · exact inlineFragmentTypeConditionsNodup_of_selectionsAllFields
-            (normalizeSelectionSet_allFields schema parentType
-              (Selection.field responseName fieldName arguments directives
-                selectionSet :: rest))
-        · intro selection hselection
-          simp [normalizeSelectionSet, hlookup, normalizedField] at hselection
-          cases hselection with
-          | inl hhead =>
-              subst selection
-              unfold selectionNonRedundant
-              change selectionSetNonRedundant normalizedSubselections
-              exact hsubselectionsNonRedundant
-          | inr htail =>
-              exact selectionSetNonRedundant_selection hrest htail
+      have htailNoResponseName :=
+        normalizeSelectionSet_without_responseName_not_mem schema parentType
+          responseName rest
+      simpa [normalizeSelectionSet, hlookup] using
+        selectionSetNonRedundant_normalizedFieldWithRest schema returnType
+          responseName fieldName arguments directives normalizedSubselections
+          (normalizeSelectionSet schema parentType
+            (withoutFieldSelectionsWithResponseName schema responseName rest))
+          htailNoResponseName
+          (normalizeSelectionSet_allFields schema parentType
+            (withoutFieldSelectionsWithResponseName schema responseName rest))
+          hsubselectionsNonRedundant hrest
   | case4 parentType rest directives selectionSet happend =>
       simpa [normalizeSelectionSet] using happend
   | case5 parentType rest typeCondition directives selectionSet hoverlap
-      hrest happend =>
+      _hrest happend =>
       simpa [normalizeSelectionSet, hoverlap] using happend
   | case6 parentType rest typeCondition directives selectionSet hoverlap
       hrest =>

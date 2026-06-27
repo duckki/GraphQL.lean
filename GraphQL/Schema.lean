@@ -125,6 +125,12 @@ def staticBoolean? : InputValue -> Option Bool
   | .boolean value => some value
   | _ => none
 
+-- Spec 2.10 input value helper: recognizes an explicit `null` literal after variable
+-- substitution.
+def isNull : InputValue -> Bool
+  | .null => true
+  | _ => false
+
 end InputValue
 
 -- Spec 2.10 `Value Const`: default values must be constant and therefore exclude
@@ -190,6 +196,12 @@ def namedType : TypeRef -> Name
   | .named name => name
   | .list inner => inner.namedType
   | .nonNull inner => inner.namedType
+
+-- Spec 2.12 type reference helper: only the outer wrapper is relevant for required
+-- argument checks.
+def isNonNull : TypeRef -> Bool
+  | .nonNull _inner => true
+  | _ => false
 
 end TypeRef
 

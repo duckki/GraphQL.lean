@@ -287,8 +287,6 @@ theorem normalizedDistinctBranchesPairwiseMerge_of_groupSources
 theorem possibleTypeNormalizations_fieldsInSetCanMerge_pair_of_groupSources
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (hfeasibleAll :
-      selectionSetsTypeConditionFeasibleInEveryScope schema)
     (parentType mergeParent returnType : Name)
     {leftSet rightSet : List Selection}
     {leftField rightField : FieldMerge.ScopedField}
@@ -325,7 +323,7 @@ theorem possibleTypeNormalizations_fieldsInSetCanMerge_pair_of_groupSources
     · subst rightType
       have hleftValid :=
         normalizedFieldGroup_childBranchNormalizedValid schema
-          variableDefinitions hschema hfeasibleAll parentType hleftGroup
+          variableDefinitions hschema parentType hleftGroup
           hobject hleftMerge leftType (by simpa [← hleftReturn] using hleftType)
       exact
         GroundTypeNormalization.normalizedBranchFieldsCanMerge_of_normalizedValid
@@ -345,7 +343,7 @@ theorem possibleTypeNormalizations_fieldsInSetCanMerge_pair_of_groupSources
     · subst rightType
       have hrightValid :=
         normalizedFieldGroup_childBranchNormalizedValid schema
-          variableDefinitions hschema hfeasibleAll parentType hrightGroup
+          variableDefinitions hschema parentType hrightGroup
           hobject hrightMerge leftType
           (by simpa [← hrightReturn] using hleftType)
       exact
@@ -450,8 +448,6 @@ theorem normalizedFieldGroupSources_childPairs_of_sameReturn
 theorem normalizedFieldGroupSources_childPairs_of_sameReturn_and_branches
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (hfeasibleAll :
-      selectionSetsTypeConditionFeasibleInEveryScope schema)
     (parentType returnType : Name)
     {leftSet rightSet : List Selection}
     {leftField rightField : FieldMerge.ScopedField}
@@ -511,7 +507,7 @@ theorem normalizedFieldGroupSources_childPairs_of_sameReturn_and_branches
   · intro habstractReturn mergeParent
     exact
       possibleTypeNormalizations_fieldsInSetCanMerge_pair_of_groupSources
-        schema variableDefinitions hschema hfeasibleAll parentType
+        schema variableDefinitions hschema parentType
         mergeParent returnType hleftGroup hrightGroup hobject hleftMerge
         hrightMerge hsourcePair hresponse hleftReturn hrightReturn
         (habstractBranches habstractReturn)
@@ -519,16 +515,14 @@ theorem normalizedFieldGroupSources_childPairs_of_sameReturn_and_branches
 
 theorem normalizeSelectionSets_fieldsInSetCanMerge_anyParent
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (hfeasibleAll :
-      selectionSetsTypeConditionFeasibleInEveryScope schema) :
+    (hschema : SchemaWellFormedness.schemaWellFormed schema) :
     ∀ parentType leftSet rightSet,
       schema.objectType parentType ->
       selectionSetSemanticsReady schema parentType leftSet ->
       selectionSetSemanticsReady schema parentType rightSet ->
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions parentType leftSet ->
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions parentType rightSet ->
       FieldMerge.fieldsInSetCanMerge schema parentType leftSet ->
       FieldMerge.fieldsInSetCanMerge schema parentType rightSet ->
@@ -536,27 +530,41 @@ theorem normalizeSelectionSets_fieldsInSetCanMerge_anyParent
         (leftSet ++ rightSet) ->
       selectionSetDirectiveFree leftSet ->
       selectionSetDirectiveFree rightSet ->
+      selectionSetTypeConditionFeasible schema parentType [parentType]
+        .allFields leftSet ->
+      selectionSetTypeConditionFeasible schema parentType [parentType]
+        .allFields rightSet ->
         ∀ mergeParent,
           FieldMerge.fieldsInSetCanMerge schema mergeParent
             (normalizeSelectionSet schema parentType leftSet
               ++ normalizeSelectionSet schema parentType rightSet) := by
   intro parentType leftSet rightSet hobject hleftReady hrightReady
     hleftImplementation hrightImplementation hleftMerge hrightMerge
-    hsourcePair hleftFree hrightFree mergeParent
+    hsourcePair hleftFree hrightFree hleftFeasible hrightFeasible
+    mergeParent
+  have hstack :
+      GroundTypeNormalization.objectSatisfiesTypeConditionStack schema
+        parentType [parentType] :=
+    GroundTypeNormalization.objectSatisfiesTypeConditionStack_singleton_of_object_forValidity
+      schema hobject
   have hleftValid :
       GroundTypeNormalization.NormalizedSelectionSetValid schema
         variableDefinitions parentType
         (normalizeSelectionSet schema parentType leftSet) :=
-    GroundTypeNormalization.normalizeSelectionSet_normalizedValid schema
-      variableDefinitions hschema hfeasibleAll parentType leftSet hobject
+    GroundTypeNormalization.normalizeSelectionSet_normalizedValid_of_typeConditionFeasible
+      schema variableDefinitions hschema parentType leftSet [parentType]
+      hobject hstack
       hleftReady hleftImplementation hleftMerge hleftFree
+      hleftFeasible
   have hrightValid :
       GroundTypeNormalization.NormalizedSelectionSetValid schema
         variableDefinitions parentType
         (normalizeSelectionSet schema parentType rightSet) :=
-    GroundTypeNormalization.normalizeSelectionSet_normalizedValid schema
-      variableDefinitions hschema hfeasibleAll parentType rightSet hobject
+    GroundTypeNormalization.normalizeSelectionSet_normalizedValid_of_typeConditionFeasible
+      schema variableDefinitions hschema parentType rightSet [parentType]
+      hobject hstack
       hrightReady hrightImplementation hrightMerge hrightFree
+      hrightFeasible
   apply fieldsInSetCanMerge_append_of_pairwise
       schema mergeParent
       (normalizeSelectionSet schema parentType leftSet)
@@ -565,10 +573,11 @@ theorem normalizeSelectionSets_fieldsInSetCanMerge_anyParent
   · exact normalizedSelectionSetFieldsCanMerge_anyParent hrightValid
   · intro leftField hleftField rightField hrightField hresponse
     apply normalizedFields_fieldsForNameCanMerge_of_childPairs_anyParent
-        schema variableDefinitions hschema hfeasibleAll parentType
+        schema variableDefinitions hschema parentType
         mergeParent leftSet rightSet leftField rightField hobject
         hleftReady hrightReady hleftImplementation hrightImplementation
         hleftMerge hrightMerge hsourcePair hleftFree hrightFree
+        hleftFeasible hrightFeasible
         hleftField hrightField hresponse
     intro leftParentField hleftParentField rightParentField
       hrightParentField hparentResponse leftGroup rightGroup hparents
@@ -601,16 +610,28 @@ theorem normalizeSelectionSets_fieldsInSetCanMerge_anyParent
         rightGroup.childReady returnType
           (by simpa [← hrightReturn] using hreturnPossible)
       have hleftChildImplementation :
-          Validation.selectionSetImplementationValidInScope schema
+          Validation.selectionSetValidInPossibleTypes schema
             variableDefinitions returnType leftGroup.childSource :=
         leftGroup.childImplementation returnType
           (by
             dsimp [returnType] at hreturnPossible
             exact hreturnPossible)
       have hrightChildImplementation :
-          Validation.selectionSetImplementationValidInScope schema
+          Validation.selectionSetValidInPossibleTypes schema
             variableDefinitions returnType rightGroup.childSource :=
         rightGroup.childImplementation returnType
+          (by simpa [← hrightReturn] using hreturnPossible)
+      have hleftChildFeasible :
+          selectionSetTypeConditionFeasible schema returnType [returnType]
+            .allFields leftGroup.childSource :=
+        leftGroup.childFeasible returnType
+          (by
+            dsimp [returnType] at hreturnPossible
+            exact hreturnPossible)
+      have hrightChildFeasible :
+          selectionSetTypeConditionFeasible schema returnType [returnType]
+            .allFields rightGroup.childSource :=
+        rightGroup.childFeasible returnType
           (by simpa [← hrightReturn] using hreturnPossible)
       have hchildSourcePair :
           FieldMerge.fieldsInSetCanMerge schema returnType
@@ -630,12 +651,13 @@ theorem normalizeSelectionSets_fieldsInSetCanMerge_anyParent
           leftGroup.childSource rightGroup.childSource hchildSourcePair
       have hrecursive :=
         normalizeSelectionSets_fieldsInSetCanMerge_anyParent schema
-          variableDefinitions hschema hfeasibleAll returnType
+          variableDefinitions hschema returnType
           leftGroup.childSource rightGroup.childSource hreturnObjectProp
           hleftChildReady hrightChildReady hleftChildImplementation
           hrightChildImplementation hleftChildMerge hrightChildMerge
           hchildSourcePair leftGroup.childDirectiveFree
-          rightGroup.childDirectiveFree childMergeParent
+          rightGroup.childDirectiveFree hleftChildFeasible
+          hrightChildFeasible childMergeParent
       simpa [returnType, hreturnObject, hrightReturn] using hrecursive
     · have hreturnObjectFalse :
           objectTypeNameBool schema returnType = false := by
@@ -644,7 +666,7 @@ theorem normalizeSelectionSets_fieldsInSetCanMerge_anyParent
         · exact False.elim (hreturnObject hmatch)
       have habstract :=
         possibleTypeNormalizations_fieldsInSetCanMerge_pair_of_groupSources
-          schema variableDefinitions hschema hfeasibleAll parentType
+          schema variableDefinitions hschema parentType
           childMergeParent returnType leftGroup rightGroup hobject
           hleftMerge hrightMerge hsourcePair hparentResponse rfl
           hrightReturn
@@ -672,16 +694,28 @@ theorem normalizeSelectionSets_fieldsInSetCanMerge_anyParent
           rightGroup.childReady objectType
             (by simpa [← hrightReturn] using hpossible)
         have hleftChildImplementation :
-            Validation.selectionSetImplementationValidInScope schema
+            Validation.selectionSetValidInPossibleTypes schema
               variableDefinitions objectType leftGroup.childSource :=
           leftGroup.childImplementation objectType
             (by
               dsimp [returnType] at hpossible
               exact hpossible)
         have hrightChildImplementation :
-            Validation.selectionSetImplementationValidInScope schema
+            Validation.selectionSetValidInPossibleTypes schema
               variableDefinitions objectType rightGroup.childSource :=
           rightGroup.childImplementation objectType
+            (by simpa [← hrightReturn] using hpossible)
+        have hleftChildFeasible :
+            selectionSetTypeConditionFeasible schema objectType [objectType]
+              .allFields leftGroup.childSource :=
+          leftGroup.childFeasible objectType
+            (by
+              dsimp [returnType] at hpossible
+              exact hpossible)
+        have hrightChildFeasible :
+            selectionSetTypeConditionFeasible schema objectType [objectType]
+              .allFields rightGroup.childSource :=
+          rightGroup.childFeasible objectType
             (by simpa [← hrightReturn] using hpossible)
         have hchildSourcePair :
             FieldMerge.fieldsInSetCanMerge schema objectType
@@ -701,12 +735,13 @@ theorem normalizeSelectionSets_fieldsInSetCanMerge_anyParent
             leftGroup.childSource rightGroup.childSource hchildSourcePair
         exact
           normalizeSelectionSets_fieldsInSetCanMerge_anyParent schema
-            variableDefinitions hschema hfeasibleAll objectType
+            variableDefinitions hschema objectType
             leftGroup.childSource rightGroup.childSource hobjectType
             hleftChildReady hrightChildReady hleftChildImplementation
             hrightChildImplementation hleftChildMerge hrightChildMerge
             hchildSourcePair leftGroup.childDirectiveFree
-            rightGroup.childDirectiveFree objectType
+            rightGroup.childDirectiveFree hleftChildFeasible
+            hrightChildFeasible objectType
       simpa [returnType, hreturnObjectFalse, hrightReturn] using
         habstract hsamePairs
 termination_by _parentType leftSet rightSet =>

@@ -1051,35 +1051,35 @@ theorem selectionSetLookupValid_mergedFieldSelectionSet
       simpa [GraphQL.Execution.mergedFieldSelectionSet] using
         NormalForm.selectionSetLookupValid_append hfield hrest
 
-theorem selectionSetImplementationValidInScope_mergedFieldSelectionSet
+theorem selectionSetValidInPossibleTypes_mergedFieldSelectionSet
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType : Name) :
     ∀ fields : List ExecutableField,
       (∀ field, field ∈ fields ->
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions parentType field.selectionSet) ->
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions parentType
           (GraphQL.Execution.mergedFieldSelectionSet fields)
   | [], _hvalid => by
       simp [GraphQL.Execution.mergedFieldSelectionSet,
-        Validation.selectionSetImplementationValidInScope]
+        Validation.selectionSetValidInPossibleTypes]
   | field :: rest, hvalid => by
       have hfield :
-          Validation.selectionSetImplementationValidInScope schema
+          Validation.selectionSetValidInPossibleTypes schema
             variableDefinitions parentType field.selectionSet :=
         hvalid field (by simp)
       have hrest :
-          Validation.selectionSetImplementationValidInScope schema
+          Validation.selectionSetValidInPossibleTypes schema
             variableDefinitions parentType
             (GraphQL.Execution.mergedFieldSelectionSet rest) :=
-        selectionSetImplementationValidInScope_mergedFieldSelectionSet schema
+        selectionSetValidInPossibleTypes_mergedFieldSelectionSet schema
           variableDefinitions parentType rest
           (by
             intro candidate hcandidate
             exact hvalid candidate (by simp [hcandidate]))
       have happend :
-          Validation.selectionSetImplementationValidInScope schema
+          Validation.selectionSetValidInPossibleTypes schema
             variableDefinitions parentType
             (field.selectionSet ++
               GraphQL.Execution.mergedFieldSelectionSet rest) := by
@@ -1091,19 +1091,19 @@ theorem selectionSetImplementationValidInScope_mergedFieldSelectionSet
         | cons selection tail ih =>
             intro hfield
             change
-              Validation.selectionImplementationValid schema variableDefinitions
+              Validation.selectionValidInPossibleTypes schema variableDefinitions
                   parentType selection
-                ∧ Validation.selectionSetImplementationValidInScope schema
+                ∧ Validation.selectionSetValidInPossibleTypes schema
                   variableDefinitions parentType tail at hfield
             change
-              Validation.selectionImplementationValid schema variableDefinitions
+              Validation.selectionValidInPossibleTypes schema variableDefinitions
                   parentType selection
-                ∧ Validation.selectionSetImplementationValidInScope schema
+                ∧ Validation.selectionSetValidInPossibleTypes schema
                   variableDefinitions parentType
                   (tail ++ GraphQL.Execution.mergedFieldSelectionSet rest)
             exact ⟨hfield.1, ih hfield.2⟩
       change
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions parentType
           (field.selectionSet ++
             GraphQL.Execution.mergedFieldSelectionSet rest)

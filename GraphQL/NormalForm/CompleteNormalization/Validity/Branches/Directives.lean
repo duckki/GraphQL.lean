@@ -264,27 +264,35 @@ theorem wrapWithBoolCase_selectionSetValid
         hchildNonempty,
         hchildValid⟩
 
-theorem wrapWithBoolCase_selectionSetImplementationValidInScope
+theorem wrapWithBoolCase_selectionSetValidInPossibleTypes
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (parentType : Name) :
+    (parentType : Name) (hparentObject : schema.objectType parentType) :
     ∀ boolCase selectionSet,
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions parentType selectionSet ->
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions parentType
           (wrapWithBoolCase boolCase selectionSet)
   | [], selectionSet, himplementation => by
       simpa [wrapWithBoolCase] using himplementation
   | (_varName, _value) :: rest, selectionSet, himplementation => by
       have hchild :
-          Validation.selectionSetImplementationValidInScope schema
+          Validation.selectionSetValidInPossibleTypes schema
             variableDefinitions parentType
             (wrapWithBoolCase rest selectionSet) :=
-        wrapWithBoolCase_selectionSetImplementationValidInScope schema
-          variableDefinitions parentType rest selectionSet himplementation
-      simpa [wrapWithBoolCase,
-        Validation.selectionSetImplementationValidInScope,
-        Validation.selectionImplementationValid] using hchild
+        wrapWithBoolCase_selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType hparentObject rest selectionSet
+          himplementation
+      simp [wrapWithBoolCase,
+        Validation.selectionSetValidInPossibleTypes,
+        Validation.selectionValidInPossibleTypes]
+      intro objectType hpossible
+      have hinclude :
+          schema.typeIncludesObjectBool parentType objectType = true :=
+        List.contains_iff_mem.mpr hpossible
+      have hobjectEq : objectType = parentType :=
+        object_typeIncludesObjectBool_eq_self schema hparentObject hinclude
+      simpa [hobjectEq] using hchild
 
 theorem collectFields_wrapWithBoolCase
     (schema : Schema) (parentType : Name) :

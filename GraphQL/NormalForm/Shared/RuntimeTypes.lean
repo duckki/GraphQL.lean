@@ -9,13 +9,6 @@ namespace GraphQL
 
 namespace NormalForm
 
-def leafTypeNameBool (schema : Schema) (typeName : Name) : Bool :=
-  match schema.lookupType typeName with
-  | some (.builtinScalar _) => true
-  | some (.customScalar _) => true
-  | some (.enum _) => true
-  | _ => false
-
 -- Returns the object branches that can execute for an already-unwrapped composite return
 -- type.
 def groundObjectTypesForType (schema : Schema) (returnType : Name) :

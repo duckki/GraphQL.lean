@@ -291,7 +291,7 @@ mutual
 end
 
 mutual
-  theorem collectSelection_argumentsNodup_of_selectionImplementationValid_object
+  theorem collectSelection_argumentsNodup_of_selectionValidInPossibleTypes_object
       {ObjectIdentity : Type}
       (schema : Schema)
       (variableDefinitions : List VariableDefinition)
@@ -299,20 +299,21 @@ mutual
       (collectParent validParent runtimeType : Name)
       (identity : ObjectIdentity)
       (selection : Selection) :
+      SchemaWellFormedness.schemaWellFormed schema ->
       ScopedParentRuntimeApplies schema runtimeType validParent ->
-      Validation.selectionImplementationValid schema variableDefinitions
+      Validation.selectionValidInPossibleTypes schema variableDefinitions
         validParent selection ->
         CollectedGroupsArgumentsNodup
           (GraphQL.Execution.collectSelection schema variableValues
             collectParent (.object runtimeType identity) selection) := by
-    intro hparentRuntime hvalid
+    intro hschema hparentRuntime hvalid
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
         have hselectionValid :
             Validation.selectionValid schema variableDefinitions validParent
               (Selection.field responseName fieldName arguments directives
                 selectionSet) := by
-          simpa [Validation.selectionImplementationValid] using hvalid.1
+          simpa [Validation.selectionValidInPossibleTypes] using hvalid.1
         rcases Validation.selectionValid_field_lookup hselectionValid with
           ⟨_fieldDefinition, _hlookup, harguments, _hselectionSet⟩
         by_cases hallows :
@@ -347,17 +348,29 @@ mutual
         cases typeCondition with
         | none =>
             have hbody :
-                Validation.selectionSetImplementationValidInScope schema
-                  variableDefinitions validParent selectionSet := by
-              simpa [Validation.selectionImplementationValid] using hvalid
+                Validation.selectionSetValidInPossibleTypes schema
+                  variableDefinitions runtimeType selectionSet := by
+              have hchildren :
+                  ∀ objectType,
+                    objectType ∈ schema.getPossibleTypes validParent ->
+                      Validation.selectionSetValidInPossibleTypes schema
+                        variableDefinitions objectType selectionSet := by
+                simpa [Validation.selectionValidInPossibleTypes] using hvalid
+              exact hchildren runtimeType (List.contains_iff_mem.mp hparentRuntime)
+            have hruntimeSelf :
+                ScopedParentRuntimeApplies schema runtimeType runtimeType :=
+              ScopedParentRuntimeApplies.of_typeIncludesObjectBool schema
+                runtimeType runtimeType
+                (ScopedParentRuntimeApplies.runtimeSelf schema hschema
+                  hparentRuntime)
             by_cases hallows :
                 selectionDirectivesAllowBool variableValues directives = true
             · simp [GraphQL.Execution.collectSelection, hallows]
               exact
-                collectFields_argumentsNodup_of_selectionSetImplementationValidInScope_object
+                collectFields_argumentsNodup_of_selectionSetValidInPossibleTypes_object
                   schema variableDefinitions variableValues collectParent
-                  validParent runtimeType identity selectionSet hparentRuntime
-                  hbody
+                  runtimeType runtimeType identity selectionSet hschema
+                  hruntimeSelf hbody
             · have hfalse :
                   selectionDirectivesAllowBool variableValues directives =
                     false := by
@@ -386,16 +399,29 @@ mutual
                     ⟨runtimeType, List.contains_iff_mem.mp hparentRuntime,
                       hcondition⟩
                 have hbody :
-                    Validation.selectionSetImplementationValidInScope schema
-                      variableDefinitions typeCondition selectionSet := by
-                  exact (hvalid hoverlap).1
+                    Validation.selectionSetValidInPossibleTypes schema
+                      variableDefinitions runtimeType selectionSet := by
+                  have hchildren :
+                      ∀ objectType,
+                        objectType ∈ schema.getPossibleTypes typeCondition ->
+                          Validation.selectionSetValidInPossibleTypes schema
+                            variableDefinitions objectType selectionSet := by
+                    simpa [Validation.selectionValidInPossibleTypes] using
+                      hvalid hoverlap
+                  exact hchildren runtimeType
+                    (List.contains_iff_mem.mp hcondition)
+                have hruntimeSelf :
+                    ScopedParentRuntimeApplies schema runtimeType runtimeType :=
+                  ScopedParentRuntimeApplies.of_typeIncludesObjectBool schema
+                    runtimeType runtimeType
+                    (ScopedParentRuntimeApplies.runtimeSelf schema hschema
+                      hparentRuntime)
                 simp [GraphQL.Execution.collectSelection, hallows, happly]
                 exact
-                  collectFields_argumentsNodup_of_selectionSetImplementationValidInScope_object
+                  collectFields_argumentsNodup_of_selectionSetValidInPossibleTypes_object
                     schema variableDefinitions variableValues collectParent
-                    typeCondition runtimeType identity selectionSet
-                    (ScopedParentRuntimeApplies.of_typeIncludesObjectBool
-                      schema runtimeType typeCondition hcondition)
+                    runtimeType runtimeType identity selectionSet hschema
+                    hruntimeSelf
                     hbody
               · have hfalse :
                     doesFragmentTypeApplyBool schema collectParent
@@ -417,7 +443,7 @@ mutual
               simp [GraphQL.Execution.collectSelection, hfalse,
                 CollectedGroupsArgumentsNodup_nil]
 
-  theorem collectFields_argumentsNodup_of_selectionSetImplementationValidInScope_object
+  theorem collectFields_argumentsNodup_of_selectionSetValidInPossibleTypes_object
       {ObjectIdentity : Type}
       (schema : Schema)
       (variableDefinitions : List VariableDefinition)
@@ -425,26 +451,27 @@ mutual
       (collectParent validParent runtimeType : Name)
       (identity : ObjectIdentity)
       (selectionSet : List Selection) :
+      SchemaWellFormedness.schemaWellFormed schema ->
       ScopedParentRuntimeApplies schema runtimeType validParent ->
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions validParent selectionSet ->
         CollectedGroupsArgumentsNodup
           (GraphQL.Execution.collectFields schema variableValues collectParent
             (.object runtimeType identity) selectionSet) := by
-    intro hparentRuntime himplementation
+    intro hschema hparentRuntime himplementation
     cases selectionSet with
     | nil =>
         simp [GraphQL.Execution.collectFields, CollectedGroupsArgumentsNodup_nil]
     | cons selection rest =>
         have hhead :
-            Validation.selectionImplementationValid schema variableDefinitions
+            Validation.selectionValidInPossibleTypes schema variableDefinitions
               validParent selection := by
-          simpa [Validation.selectionSetImplementationValidInScope] using
+          simpa [Validation.selectionSetValidInPossibleTypes] using
             himplementation.1
         have htail :
-            Validation.selectionSetImplementationValidInScope schema
+            Validation.selectionSetValidInPossibleTypes schema
               variableDefinitions validParent rest := by
-          simpa [Validation.selectionSetImplementationValidInScope] using
+          simpa [Validation.selectionSetValidInPossibleTypes] using
             himplementation.2
         simp [GraphQL.Execution.collectFields]
         exact CollectedGroupsArgumentsNodup_mergeExecutableGroups
@@ -452,12 +479,12 @@ mutual
             collectParent (.object runtimeType identity) selection)
           (GraphQL.Execution.collectFields schema variableValues collectParent
             (.object runtimeType identity) rest)
-          (collectSelection_argumentsNodup_of_selectionImplementationValid_object
+          (collectSelection_argumentsNodup_of_selectionValidInPossibleTypes_object
             schema variableDefinitions variableValues collectParent validParent
-            runtimeType identity selection hparentRuntime hhead)
-          (collectFields_argumentsNodup_of_selectionSetImplementationValidInScope_object
+            runtimeType identity selection hschema hparentRuntime hhead)
+          (collectFields_argumentsNodup_of_selectionSetValidInPossibleTypes_object
             schema variableDefinitions variableValues collectParent validParent
-            runtimeType identity rest hparentRuntime htail)
+            runtimeType identity rest hschema hparentRuntime htail)
 end
 
 def CollectedGroupsResolveStable

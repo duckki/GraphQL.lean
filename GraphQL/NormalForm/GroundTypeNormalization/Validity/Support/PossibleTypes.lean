@@ -45,7 +45,7 @@ theorem normalizedSelectionSetValid_nil
     NormalizedSelectionSetValid schema variableDefinitions parentType [] := by
   refine ⟨?_, ?_, ?_, ?_⟩
   · simp [Validation.selectionSetValid]
-  · exact selectionSetImplementationValidInScope_nil schema variableDefinitions
+  · exact selectionSetValidInPossibleTypes_nil schema variableDefinitions
       parentType
   · exact fieldsInSetCanMerge_nil schema parentType
   · intro mergeParent
@@ -128,7 +128,7 @@ theorem possibleTypeNormalizations_selectionSetValid
           · exact htailValid candidate
               (by simpa [possibleTypeNormalizations] using hcandidate)
 
-theorem possibleTypeNormalizations_implementationValidInScope
+theorem possibleTypeNormalizations_validInPossibleTypes
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType : Name) :
     ∀ possibleTypes selectionSet,
@@ -137,18 +137,18 @@ theorem possibleTypeNormalizations_implementationValidInScope
       (∀ objectType, objectType ∈ possibleTypes ->
         NormalizedSelectionSetValid schema variableDefinitions objectType
           (normalizeSelectionSet schema objectType selectionSet)) ->
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions parentType
           (possibleTypeNormalizations schema possibleTypes selectionSet)
   | [], selectionSet, _hobjects, _hbranches => by
       simp [possibleTypeNormalizations,
-        Validation.selectionSetImplementationValidInScope]
+        Validation.selectionSetValidInPossibleTypes]
   | objectType :: rest, selectionSet, hobjects, hbranches => by
       cases hnormalized :
           normalizeSelectionSet schema objectType selectionSet with
       | nil =>
           simp [possibleTypeNormalizations, hnormalized]
-          exact possibleTypeNormalizations_implementationValidInScope schema
+          exact possibleTypeNormalizations_validInPossibleTypes schema
             variableDefinitions parentType rest selectionSet
             (fun candidate hcandidate =>
               hobjects candidate (List.mem_cons_of_mem objectType hcandidate))
@@ -162,10 +162,10 @@ theorem possibleTypeNormalizations_implementationValidInScope
             simpa [hnormalized] using
               hbranches objectType (by simp)
           have htail :
-              Validation.selectionSetImplementationValidInScope schema
+              Validation.selectionSetValidInPossibleTypes schema
                 variableDefinitions parentType
                 (possibleTypeNormalizations schema rest selectionSet) :=
-            possibleTypeNormalizations_implementationValidInScope schema
+            possibleTypeNormalizations_validInPossibleTypes schema
               variableDefinitions parentType rest selectionSet
               (fun candidate hcandidate =>
                 hobjects candidate
@@ -174,17 +174,15 @@ theorem possibleTypeNormalizations_implementationValidInScope
                 hbranches candidate
                   (List.mem_cons_of_mem objectType hcandidate))
           simp [possibleTypeNormalizations, hnormalized,
-            Validation.selectionSetImplementationValidInScope,
-            Validation.selectionImplementationValid]
+            Validation.selectionSetValidInPossibleTypes,
+            Validation.selectionValidInPossibleTypes]
           exact ⟨
-            (fun _hoverlap =>
-              ⟨hbranch.implementationValid,
-                fun childType hchildType => by
-                  have hchildEq : childType = objectType :=
-                    object_typeIncludesObjectBool_eq_self schema
-                      (hobjects objectType (by simp))
-                      (List.contains_iff_mem.mpr hchildType)
-                  simpa [hchildEq] using hbranch.implementationValid⟩),
+            (fun _hoverlap childType hchildType => by
+              have hchildEq : childType = objectType :=
+                object_typeIncludesObjectBool_eq_self schema
+                  (hobjects objectType (by simp))
+                  (List.contains_iff_mem.mpr hchildType)
+              simpa [hchildEq] using hbranch.validInPossibleTypes),
             htail⟩
 
 theorem collectFields_possibleTypeNormalizations_mem
@@ -387,7 +385,7 @@ theorem possibleTypeNormalizations_normalizedValid
   · exact possibleTypeNormalizations_selectionSetValid schema
       variableDefinitions returnType possibleTypeNames selectionSet
       hobjects hpossible hbranches
-  · exact possibleTypeNormalizations_implementationValidInScope schema
+  · exact possibleTypeNormalizations_validInPossibleTypes schema
       variableDefinitions returnType possibleTypeNames selectionSet
       hobjects hbranches
   · exact possibleTypeNormalizations_fieldsInSetCanMerge schema returnType
@@ -474,13 +472,13 @@ theorem fieldSelectionSetValid_normalized_of_source
         ⟨hsourceComposite.1, hnormalizedNonempty hsourceComposite.1,
           hnormalizedValid⟩
 
-theorem normalizedField_selectionImplementationValid
+theorem normalizedField_selectionValidInPossibleTypes
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType responseName fieldName : Name}
     {arguments : List Argument}
     {sourceSubselections normalizedSubselections : List Selection}
     {fieldDefinition : FieldDefinition} :
-    Validation.selectionImplementationValid schema variableDefinitions
+    Validation.selectionValidInPossibleTypes schema variableDefinitions
       parentType
       (Selection.field responseName fieldName arguments [] sourceSubselections) ->
     schema.lookupField parentType fieldName = some fieldDefinition ->
@@ -488,16 +486,16 @@ theorem normalizedField_selectionImplementationValid
       fieldDefinition.outputType.namedType normalizedSubselections ->
     (schema.isCompositeType fieldDefinition.outputType.namedType ->
       normalizedSubselections ≠ []) ->
-    Validation.selectionSetImplementationValidInScope schema variableDefinitions
+    Validation.selectionSetValidInPossibleTypes schema variableDefinitions
       fieldDefinition.outputType.namedType normalizedSubselections ->
     (∀ objectType,
       objectType ∈ schema.getPossibleTypes
           fieldDefinition.outputType.namedType ->
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions objectType normalizedSubselections) ->
     (leafTypeNameBool schema fieldDefinition.outputType.namedType = true ->
       normalizedSubselections = []) ->
-      Validation.selectionImplementationValid schema variableDefinitions
+      Validation.selectionValidInPossibleTypes schema variableDefinitions
         parentType
         (Selection.field responseName fieldName arguments []
           normalizedSubselections) := by
@@ -507,7 +505,7 @@ theorem normalizedField_selectionImplementationValid
       Validation.selectionValid schema variableDefinitions parentType
         (Selection.field responseName fieldName arguments []
           sourceSubselections) := by
-    simpa [Validation.selectionImplementationValid, hlookup] using
+    simpa [Validation.selectionValidInPossibleTypes, hlookup] using
       hsourceImplementation.1
   rcases Validation.selectionValid_field_lookup hsourceSelection with
     ⟨sourceDefinition, hsourceLookup, harguments, hsourceChild⟩
@@ -516,13 +514,13 @@ theorem normalizedField_selectionImplementationValid
     cases hsourceLookup
     rfl
   subst sourceDefinition
-  simp [Validation.selectionImplementationValid, hlookup]
+  simp [Validation.selectionValidInPossibleTypes, hlookup]
   constructor
   · simp [Validation.selectionValid, Validation.directivesValid, hlookup]
     exact ⟨harguments,
       fieldSelectionSetValid_normalized_of_source
         hsourceChild hnormalizedValid hnormalizedNonempty hnilIfLeaf⟩
-  · exact ⟨hnormalizedImplementation, hnormalizedPossible⟩
+  · exact hnormalizedPossible
 
 
 end GroundTypeNormalization

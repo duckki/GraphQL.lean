@@ -15,8 +15,8 @@ structure NormalizedSelectionSetValid
   selectionSetValid :
     Validation.selectionSetValid schema variableDefinitions parentType
       selectionSet
-  implementationValid :
-    Validation.selectionSetImplementationValidInScope schema variableDefinitions
+  validInPossibleTypes :
+    Validation.selectionSetValidInPossibleTypes schema variableDefinitions
       parentType selectionSet
   fieldsCanMerge :
     FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
@@ -222,10 +222,44 @@ theorem collectFields_normalizeSelectionSet_mem_source
             (withoutFieldSelectionsWithResponseName schema responseName rest) :=
         selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName schema
           responseName parentType rest htailReady
-      simp [normalizeSelectionSet, hlookup, normalizedField,
-        FieldMerge.collectFields] at hfieldMem
-      rcases hfieldMem with hhead | htail
-      · subst normalizedSelection
+      have htailSource
+          (htail :
+            normalizedSelection ∈
+              FieldMerge.collectFields schema parentType
+                (normalizeSelectionSet schema parentType
+                  (withoutFieldSelectionsWithResponseName schema responseName rest))) :
+          ∃ sourceField,
+            sourceField ∈
+                FieldMerge.collectFields schema parentType
+                  (Selection.field responseName fieldName arguments directives
+                    subselections :: rest)
+              ∧ NormalizedFieldSource schema sourceField normalizedSelection := by
+        rcases hrest normalizedSelection hobject hfilteredReady htail with
+          ⟨sourceField, hsourceMem, hsource⟩
+        exact ⟨sourceField,
+          fieldMerge_collectFields_tail_mem schema parentType
+            (Selection.field responseName fieldName arguments directives
+              subselections)
+            rest sourceField
+            (fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem schema
+              responseName parentType rest sourceField hsourceMem),
+          hsource⟩
+      have hheadSource
+          (hhead :
+            normalizedSelection =
+              { parentType := parentType
+                responseName := responseName
+                fieldName := fieldName
+                arguments := arguments
+                outputType := fieldDefinition.outputType
+                selectionSet := normalizedSubselections }) :
+          ∃ sourceField,
+            sourceField ∈
+                FieldMerge.collectFields schema parentType
+                  (Selection.field responseName fieldName arguments directives
+                    subselections :: rest)
+              ∧ NormalizedFieldSource schema sourceField normalizedSelection := by
+        subst normalizedSelection
         let sourceField : FieldMerge.ScopedField := {
           parentType := parentType,
           responseName := responseName,
@@ -242,16 +276,21 @@ theorem collectFields_normalizeSelectionSet_mem_source
               fieldDefinition.outputType
               (SchemaWellFormedness.schemaWellFormed_lookupField_outputType
                 hschema hlookup)⟩
-      · rcases hrest normalizedSelection hobject hfilteredReady htail with
-          ⟨sourceField, hsourceMem, hsource⟩
-        exact ⟨sourceField,
-          fieldMerge_collectFields_tail_mem schema parentType
-            (Selection.field responseName fieldName arguments directives
-              subselections)
-            rest sourceField
-            (fieldMerge_collectFields_withoutFieldSelectionsWithResponseName_mem schema
-              responseName parentType rest sourceField hsourceMem),
-          hsource⟩
+      have hfieldMem' :
+          normalizedSelection ∈
+            FieldMerge.collectFields schema parentType
+              (normalizedFieldWithRest schema returnType responseName fieldName
+                arguments directives normalizedSubselections
+                (normalizeSelectionSet schema parentType
+                  (withoutFieldSelectionsWithResponseName schema responseName
+                    rest))) := by
+        simpa [normalizeSelectionSet, hlookup, normalizedSubselections] using
+          hfieldMem
+      unfold normalizedFieldWithRest at hfieldMem'
+      simp [normalizedField, hlookup, FieldMerge.collectFields] at hfieldMem'
+      rcases hfieldMem' with hhead | htail
+      · exact hheadSource hhead
+      · exact htailSource htail
   | case4 parentType rest directives subselections happend =>
       intro normalizedField hobject hready hfieldMem
       have hheadReady :
@@ -277,7 +316,7 @@ theorem collectFields_normalizeSelectionSet_mem_source
           using hsourceMem,
         hsource⟩
   | case5 parentType rest typeCondition directives subselections hoverlap
-      hrest happend =>
+      _hrest happend =>
       intro normalizedField hobject hready hfieldMem
       have hheadReady :
           selectionSemanticsReady schema parentType
@@ -327,11 +366,16 @@ theorem collectFields_normalizeSelectionSet_mem_source
               hobject hoverlap)
         rcases
           fieldMerge_collectFields_objectParent_possibleParent schema
-            parentType typeCondition subselections objectSource hschema
-            hobject hpossible hbodyParentLookup hbodyTypeLookup hbodyMem with
+            parentType typeCondition
+            subselections
+            objectSource hschema hobject hpossible
+            hbodyParentLookup
+            hbodyTypeLookup
+            hbodyMem with
           ⟨abstractSource, habstractMem, hsame, hshape, hparent⟩
         exact ⟨abstractSource, by
-          simp [FieldMerge.collectFields, habstractMem],
+          simp [FieldMerge.collectFields]
+          exact Or.inl habstractMem,
           normalizedFieldSource_of_scopedFieldSameSelection
             hsame hshape hparent hsource⟩
       · exact ⟨objectSource,

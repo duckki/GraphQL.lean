@@ -66,44 +66,34 @@ def missingImplementationArgumentQuery : Operation :=
           .field "value" "value" [] [] []
         ] ] }
 
-theorem interfaceImplementationArgumentsRejected :
-    ¬ GraphQL.Validation.operationDefinitionValid
+theorem interfaceImplementationArgumentsRejectedByPossibleTypesAssumption :
+    ¬ GraphQL.NormalForm.operationFieldsValidInPossibleTypes
       interfaceImplementationArgumentSchema
       missingImplementationArgumentQuery := by
-  intro hvalid
-  have himplementation :
-      GraphQL.Validation.selectionSetImplementationValid
-        interfaceImplementationArgumentSchema []
-        missingImplementationArgumentQuery.rootType
-        missingImplementationArgumentQuery.selectionSet :=
-    GraphQL.Validation.operationDefinitionValid_selectionSetImplementationValid
-      hvalid
+  intro hfields
   have hrootScope :
-      GraphQL.Validation.selectionSetImplementationValidInScope
+      GraphQL.Validation.selectionSetValidInPossibleTypes
         interfaceImplementationArgumentSchema [] "Query"
         [ .field "node" "node" [] [] [
             .field "value" "value" [] [] []
           ] ] := by
-    simpa [GraphQL.Validation.selectionSetImplementationValid,
-      missingImplementationArgumentQuery] using himplementation.1
+    simpa [GraphQL.NormalForm.operationFieldsValidInPossibleTypes,
+      missingImplementationArgumentQuery] using hfields
   have hnodeImpl :
-      GraphQL.Validation.selectionImplementationValid
+      GraphQL.Validation.selectionValidInPossibleTypes
         interfaceImplementationArgumentSchema [] "Query"
         (.field "node" "node" [] [] [
           .field "value" "value" [] [] []
         ]) := by
-    simpa [GraphQL.Validation.selectionSetImplementationValidInScope]
+    simpa [GraphQL.Validation.selectionSetValidInPossibleTypes]
       using hrootScope.1
   have hnodeBranches :
-      GraphQL.Validation.selectionSetImplementationValidInScope
-        interfaceImplementationArgumentSchema [] "Node"
-        [ .field "value" "value" [] [] [] ]
-        ∧ ∀ objectType,
-          objectType ∈ interfaceImplementationArgumentSchema.getPossibleTypes "Node" ->
-            GraphQL.Validation.selectionSetImplementationValidInScope
-              interfaceImplementationArgumentSchema [] objectType
-              [ .field "value" "value" [] [] [] ] := by
-    simpa [GraphQL.Validation.selectionImplementationValid,
+      ∀ objectType,
+        objectType ∈ interfaceImplementationArgumentSchema.getPossibleTypes "Node" ->
+          GraphQL.Validation.selectionSetValidInPossibleTypes
+            interfaceImplementationArgumentSchema [] objectType
+            [ .field "value" "value" [] [] [] ] := by
+    simpa [GraphQL.Validation.selectionValidInPossibleTypes,
       GraphQL.Validation.selectionValid,
       GraphQL.Validation.fieldSelectionSetValid,
       GraphQL.Validation.argumentsValid,
@@ -114,21 +104,21 @@ theorem interfaceImplementationArgumentsRejected :
       "Human" ∈ interfaceImplementationArgumentSchema.getPossibleTypes "Node" := by
     native_decide
   have hhumanValueScope :
-      GraphQL.Validation.selectionSetImplementationValidInScope
+      GraphQL.Validation.selectionSetValidInPossibleTypes
         interfaceImplementationArgumentSchema [] "Human"
         [ .field "value" "value" [] [] [] ] :=
-    hnodeBranches.2 "Human" hhumanMem
+    hnodeBranches "Human" hhumanMem
   have hhumanValueImpl :
-      GraphQL.Validation.selectionImplementationValid
+      GraphQL.Validation.selectionValidInPossibleTypes
         interfaceImplementationArgumentSchema [] "Human"
         (.field "value" "value" [] [] []) := by
-    simpa [GraphQL.Validation.selectionSetImplementationValidInScope]
+    simpa [GraphQL.Validation.selectionSetValidInPossibleTypes]
       using hhumanValueScope.1
   have hhumanValueValid :
       GraphQL.Validation.selectionValid
         interfaceImplementationArgumentSchema [] "Human"
         (.field "value" "value" [] [] []) := by
-    simpa [GraphQL.Validation.selectionImplementationValid,
+    simpa [GraphQL.Validation.selectionValidInPossibleTypes,
       interfaceImplementationArgumentSchema] using hhumanValueImpl.1
   have hhumanValueData :
       GraphQL.Validation.directivesValid

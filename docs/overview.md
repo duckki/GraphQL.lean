@@ -18,6 +18,7 @@ flowchart TD
   NormalFormGround["GraphQL.NormalForm.GroundTypeNormalization"]
   CompleteNormalization["GraphQL.NormalForm.CompleteNormalization"]
   Execution["GraphQL.Execution"]
+  Algorithms["GraphQL.Algorithms.ExecutionUngrouped"]
   GraphQLRoot["GraphQL"]
 
   Schema --> SchemaWF
@@ -29,10 +30,13 @@ flowchart TD
   Validation --> NormalForm
   NormalForm --> NormalFormGround
   NormalForm --> CompleteNormalization
+  Execution --> Algorithms
+  NormalForm --> Algorithms
 
   SchemaWF --> GraphQLRoot
   Operation --> GraphQLRoot
   Validation --> GraphQLRoot
+  Algorithms --> GraphQLRoot
   NormalForm --> GraphQLRoot
   NormalFormGround --> GraphQLRoot
   CompleteNormalization --> GraphQLRoot
@@ -65,7 +69,11 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
   operation selection sets, a normalization pass for field merging and
   abstract-type grounding, and the public resolver-parametric semantic
   preservation predicates for directive-free ground-type normalization and
-  directive-aware complete normalization.
+  directive-aware complete normalization. Its validity-preservation predicates
+  also expose operation-specific assumptions for possible-type validity and
+  type-condition feasibility after grounding. The complete-normalization
+  validity predicate combines Boolean directive filtering with the
+  type-condition feasibility obligation in a BoolCase-indexed assumption.
 - `GraphQL.NormalForm.GroundTypeNormalization`: proof-facing lemmas for the
   directive-free ground-type normalizer.
 - `GraphQL.NormalForm.CompleteNormalization`: proof-facing lemmas for complete
@@ -74,7 +82,8 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
   modules separate variable/directive facts, BoolCase wrappers, static
   collection, normal-shape facts, operation variables/wrappers, field and
   inline static-collection execution cases, BoolCase runtime selection,
-  child completion, scoped resolver bridges, and final root semantics.
+  child completion, scoped resolver bridges, validity preservation for
+  Boolean-filtered ground branches, and final root semantics.
 - `GraphQL.Execution`: fuel-bounded query execution over operation selections,
   parameterized by abstract resolver functions. It
   collects executable fields by response name, resolves each response name
@@ -85,6 +94,11 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
   resolver-owned opaque object reference; final responses do not carry object
   identity or detailed error metadata. Internal fuel exhaustion is represented
   by `Execution.outOfFuel`, a polymorphic `.error 1`.
+- `GraphQL.Algorithms.ExecutionUngrouped`: alternative proof-facing execution
+  algorithm that visits selections directly and merges response slices as it
+  goes. Its public theorem preserves response data and error presence against
+  `GraphQL.Execution`, but not exact execution-error counts.
+
 ## Flow
 
 The current flow is:
@@ -95,29 +109,36 @@ The current flow is:
 3. `GraphQL.Execution` gives fuel-bounded execution over operation selections
    by collecting fields by response name, resolving each response name once,
    completing values, and accumulating modeled execution-error counts.
-4. `GraphQL.NormalForm` provides normalization definitions and public
-   resolver-parametric correctness predicates.
-5. `GraphQL.NormalForm.GroundTypeNormalization` provides proof-facing
+4. `GraphQL.NormalForm` provides project-specific normalization definitions and
+   public resolver-parametric correctness predicates.
+5. `GraphQL.Algorithms.ExecutionUngrouped` provides a verified alternative
+   execution algorithm over the same operation syntax.
+6. `GraphQL.NormalForm.GroundTypeNormalization` provides proof-facing
    ground-type lemmas.
-6. `GraphQL.NormalForm.CompleteNormalization` provides proof-facing lemmas for
+7. `GraphQL.NormalForm.CompleteNormalization` provides proof-facing lemmas for
    directive-aware Boolean case branch normalization.
 
-Normalization consumes `GraphQL.Operation` directly. The directive-free
+Normal forms consume `GraphQL.Operation` directly. The directive-free
 `normalizeOperation` proof path assumes source operations have no modeled
-directives.
+directives. These normal forms are project proof artifacts, not GraphQL spec
+features.
 
 Complete normalization is the directive-aware path: it enumerates modeled
 Boolean directive variables once at the operation root, creates one
-unconditional inline-fragment case branch per complete case, and
-statically collects directive-free fields for each ground type under the
-selected case. Nested field child normalization receives that case
-as proof context and does not introduce another directive-only BoolCase DNF.
+unconditional inline-fragment case branch per complete case, and statically
+collects directive-free fields for each ground type under the selected case.
+Nested field child normalization receives that case as proof context and does
+not introduce another directive-only BoolCase DNF.
+
+Ungrouped execution is a verified algorithmic alternative to `GraphQL.Execution`.
+It is documented separately because it is an implementation strategy, not part
+of the spec-facing execution definition.
 
 Raw syntax remains permissive. Validation supplies the invariants that later
 semantic proofs should rely on.
 
-The completed ground-type normal form correctness proof is summarized in
-`docs/ground-type-normal-form-proof.md`.
+The normal-form correctness proofs are summarized in `docs/normal-form.md`.
+Verified project algorithms are summarized in `docs/algorithms.md`.
 
 Lean module organization rules are documented in
 `docs/lean-organization.md`.

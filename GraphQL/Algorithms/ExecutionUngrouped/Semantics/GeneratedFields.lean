@@ -1137,17 +1137,17 @@ theorem fieldsInSetCanMerge_possibleTypeNormalizations_runtime_branch
     fieldMerge_collectFields_possibleTypeNormalizations_runtime_branch_mem
       schema runtimeType possibleTypes selectionSet scopedField hmem hscoped
 
-theorem selectionSetImplementationValidInScope_possibleTypeNormalizations_runtime_branch
+theorem selectionSetValidInPossibleTypes_possibleTypeNormalizations_runtime_branch
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (runtimeType : Name)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     (∀ objectType, objectType ∈ possibleTypes -> schema.objectType objectType) ->
     runtimeType ∈ possibleTypes ->
-    Validation.selectionSetImplementationValidInScope schema
+    Validation.selectionSetValidInPossibleTypes schema
       variableDefinitions runtimeType
       (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
         possibleTypes selectionSet) ->
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions runtimeType
         (NormalForm.normalizeSelectionSet schema runtimeType selectionSet) := by
   intro hobjects hmem
@@ -1165,11 +1165,9 @@ theorem selectionSetImplementationValidInScope_possibleTypeNormalizations_runtim
       | nil =>
           rcases List.mem_cons.mp hmem with hhead | htail
           · subst objectType
-            simpa [hnormalized] using
-              NormalForm.GroundTypeNormalization.selectionSetImplementationValidInScope_nil
-                schema variableDefinitions runtimeType
+            simp [hnormalized, Validation.selectionSetValidInPossibleTypes]
           · have htailImplementation :
-                Validation.selectionSetImplementationValidInScope schema
+                Validation.selectionSetValidInPossibleTypes schema
                   variableDefinitions runtimeType
                   (NormalForm.GroundTypeNormalization.possibleTypeNormalizations
                     schema rest selectionSet) := by
@@ -1180,21 +1178,21 @@ theorem selectionSetImplementationValidInScope_possibleTypeNormalizations_runtim
           rcases List.mem_cons.mp hmem with hhead | htail
           · subst objectType
             have hparts :
-                Validation.selectionImplementationValid schema
+                Validation.selectionValidInPossibleTypes schema
                     variableDefinitions runtimeType
                     (Selection.inlineFragment (some runtimeType) []
                       (selection :: normalizedRest))
                   ∧
-                  Validation.selectionSetImplementationValidInScope schema
+                  Validation.selectionSetValidInPossibleTypes schema
                     variableDefinitions runtimeType
                     (NormalForm.GroundTypeNormalization.possibleTypeNormalizations
                       schema rest selectionSet) := by
               simpa [NormalForm.GroundTypeNormalization.possibleTypeNormalizations,
                 hnormalized,
-                Validation.selectionSetImplementationValidInScope] using
+                Validation.selectionSetValidInPossibleTypes] using
                 himplementation
             have hheadImplementation :
-                Validation.selectionImplementationValid schema
+                Validation.selectionValidInPossibleTypes schema
                   variableDefinitions runtimeType
                   (Selection.inlineFragment (some runtimeType) []
                     (selection :: normalizedRest)) :=
@@ -1204,36 +1202,37 @@ theorem selectionSetImplementationValidInScope_possibleTypeNormalizations_runtim
               NormalForm.object_typesOverlapBool_self schema
                 (hobjects runtimeType (by simp))
             have hbranch :
-                Validation.selectionSetImplementationValidInScope schema
-                    variableDefinitions runtimeType
-                    (selection :: normalizedRest)
-                  ∧
-                  (∀ objectType,
-                    objectType ∈ schema.getPossibleTypes runtimeType ->
-                      Validation.selectionSetImplementationValidInScope schema
-                        variableDefinitions objectType
-                        (selection :: normalizedRest)) := by
-              simpa [Validation.selectionImplementationValid] using
+                ∀ objectType,
+                  objectType ∈ schema.getPossibleTypes runtimeType ->
+                    Validation.selectionSetValidInPossibleTypes schema
+                      variableDefinitions objectType
+                      (selection :: normalizedRest) := by
+              simpa [Validation.selectionValidInPossibleTypes] using
                 hheadImplementation hoverlap
-            simpa [hnormalized] using hbranch.1
+            have hruntimePossible :
+                runtimeType ∈ schema.getPossibleTypes runtimeType :=
+              List.contains_iff_mem.mp
+                (NormalForm.object_typeIncludesObjectBool_self schema
+                  (hobjects runtimeType (by simp)))
+            simpa [hnormalized] using hbranch runtimeType hruntimePossible
           · have htailImplementation :
-                Validation.selectionSetImplementationValidInScope schema
+                Validation.selectionSetValidInPossibleTypes schema
                   variableDefinitions runtimeType
                   (NormalForm.GroundTypeNormalization.possibleTypeNormalizations
                     schema rest selectionSet) := by
               have hparts :
-                  Validation.selectionImplementationValid schema
+                  Validation.selectionValidInPossibleTypes schema
                       variableDefinitions runtimeType
                       (Selection.inlineFragment (some objectType) []
                         (selection :: normalizedRest))
                     ∧
-                    Validation.selectionSetImplementationValidInScope schema
+                    Validation.selectionSetValidInPossibleTypes schema
                       variableDefinitions runtimeType
                       (NormalForm.GroundTypeNormalization.possibleTypeNormalizations
                         schema rest selectionSet) := by
                 simpa [NormalForm.GroundTypeNormalization.possibleTypeNormalizations,
                   hnormalized,
-                  Validation.selectionSetImplementationValidInScope] using
+                  Validation.selectionSetValidInPossibleTypes] using
                   himplementation
               exact hparts.2
             exact ih hrestObjects htail htailImplementation
@@ -1853,7 +1852,7 @@ theorem collectFields_fieldNormal_childLocalFacts_object
     Validation.selectionSetValid schema variableDefinitions parentType
       selectionSet ->
     NormalForm.selectionSetLookupValid schema parentType selectionSet ->
-    Validation.selectionSetImplementationValidInScope schema variableDefinitions
+    Validation.selectionSetValidInPossibleTypes schema variableDefinitions
       parentType selectionSet ->
     FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
     NormalForm.selectionsAllFields selectionSet ->
@@ -1866,7 +1865,7 @@ theorem collectFields_fieldNormal_childLocalFacts_object
       childRuntime = true ->
       NormalForm.selectionSetLookupValid schema childRuntime field.selectionSet
         ∧
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions childRuntime field.selectionSet
         ∧
         (∀ objectType,
@@ -1913,7 +1912,7 @@ theorem collectFields_fieldNormal_childLocalFacts_object
         schema variableDefinitions variableValues parentType parentType
         runtimeType ref selectionSet responseName childRuntime field fields
         ([] : List Execution.ExecutableField) hschema hparentRuntime hvalid
-        hlookupValid himplementation hmerge hgroup
+        hlookupValid himplementation hmerge hall hgroup
         (by
           intro candidate hcandidate
           cases hcandidate)
@@ -1941,7 +1940,7 @@ theorem collectFields_generatedNormalizedFieldChild_childLocalFacts
     schema.typeIncludesObjectBool childType childRuntime = true ->
     generatedNormalizedFieldChild schema childType childSelectionSet ->
     NormalForm.selectionSetLookupValid schema childRuntime childSelectionSet ->
-    Validation.selectionSetImplementationValidInScope schema variableDefinitions
+    Validation.selectionSetValidInPossibleTypes schema variableDefinitions
       childRuntime childSelectionSet ->
     (∀ objectType,
       FieldMerge.fieldsInSetCanMerge schema objectType childSelectionSet) ->
@@ -1955,7 +1954,7 @@ theorem collectFields_generatedNormalizedFieldChild_childLocalFacts
       NormalForm.selectionSetLookupValid schema grandchildRuntime
           field.selectionSet
         ∧
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions grandchildRuntime field.selectionSet
         ∧
         (∀ objectType,
@@ -1988,7 +1987,7 @@ theorem collectFields_generatedNormalizedFieldChild_childLocalFacts
     have hvalid :
         Validation.selectionSetValid schema variableDefinitions childType
           childSelectionSet :=
-      NormalForm.GroundTypeNormalization.selectionSetValid_of_allFields_implementationValidInScope
+      NormalForm.GroundTypeNormalization.selectionSetValid_of_allFields_validInPossibleTypes
         schema variableDefinitions childType childSelectionSet hall
         himplementation
     exact
@@ -2069,17 +2068,17 @@ theorem collectFields_generatedNormalizedFieldChild_childLocalFacts
         schema childRuntime (schema.getPossibleTypes childType)
         sourceSelectionSet hpossibleMem hlookupPossible
     have himplementationPossible :
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions childRuntime
           (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
             (schema.getPossibleTypes childType) sourceSelectionSet) := by
       simpa [hchildEq] using himplementation
     have himplementationBranch :
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions childRuntime
           (NormalForm.normalizeSelectionSet schema childRuntime
             sourceSelectionSet) :=
-      selectionSetImplementationValidInScope_possibleTypeNormalizations_runtime_branch
+      selectionSetValidInPossibleTypes_possibleTypeNormalizations_runtime_branch
         schema variableDefinitions childRuntime
         (schema.getPossibleTypes childType) sourceSelectionSet hobjectTypes
         hpossibleMem himplementationPossible
@@ -2105,7 +2104,7 @@ theorem collectFields_generatedNormalizedFieldChild_childLocalFacts
         Validation.selectionSetValid schema variableDefinitions childRuntime
           (NormalForm.normalizeSelectionSet schema childRuntime
             sourceSelectionSet) :=
-      NormalForm.GroundTypeNormalization.selectionSetValid_of_allFields_implementationValidInScope
+      NormalForm.GroundTypeNormalization.selectionSetValid_of_allFields_validInPossibleTypes
         schema variableDefinitions childRuntime
         (NormalForm.normalizeSelectionSet schema childRuntime
           sourceSelectionSet) hall himplementationBranch

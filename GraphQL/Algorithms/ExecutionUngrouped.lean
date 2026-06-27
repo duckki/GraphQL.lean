@@ -5,13 +5,12 @@ import GraphQL.NormalForm
 Alternative GraphQL query execution semantics.
 
 This module is a proof-facing implementation of the same query fragment as
-`GraphQL.Execution`. It preserves the spec-facing response shape, resolver error
-counts, and null bubbling, but visits selections directly instead of first constructing
-the complete collected-fields map. Field visits normally call the resolver; when a
-previous visit has already completed the response position to `null`, later overlapping
-visits reuse that null so the same field error is not counted again. When a later field
-visit overlaps an existing response key, completion starts from the previous response
-slice and merges newly visited subfields into it.
+`GraphQL.Execution`. It preserves response data and error presence, but not exact
+error counts, while visiting selections directly instead of first constructing the
+complete collected-fields map. Field visits normally call the resolver. Later visits
+to the same response key reuse the previous value: composite values are revisited
+through their subselections, while a previous `null` short-circuits sibling
+subselections and may therefore count fewer subfield errors than collected execution.
 -/
 namespace GraphQL
 

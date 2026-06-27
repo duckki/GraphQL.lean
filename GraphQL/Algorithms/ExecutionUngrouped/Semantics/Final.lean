@@ -1922,20 +1922,38 @@ theorem completeNormalizationPreservesUngroupedExecution_of_normalizeOperation
     (depth : Nat) (source : Execution.ResolverValue ObjectRef) :
     SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
+    NormalForm.operationFieldsValidInPossibleTypes schema operation ->
     NormalForm.operationDirectiveFree operation ->
-    NormalForm.selectionSetsTypeConditionFeasibleInEveryScope schema ->
+    NormalForm.selectionSetsTypeConditionFeasibleInEveryNormalizerScope schema ->
       executeQueryWithFuel schema resolvers variableValues
           (NormalForm.normalizeOperation schema operation) depth source
         =
       executeQueryWithFuel schema resolvers variableValues
         (NormalForm.completeNormalizeOperation schema
           (NormalForm.normalizeOperation schema operation)) depth source := by
-  intro hschema hvalid hfree hfeasibleAll
+  intro hschema hvalid hfields hfree hfeasibleAll
+  have hrootObject : schema.objectType operation.rootType := by
+    have hrootEq := Validation.operationDefinitionValid_rootType_eq hvalid
+    rw [hrootEq]
+    exact hschema.2.1
+  have hready :
+      NormalForm.selectionSetSemanticsReady schema operation.rootType
+        operation.selectionSet :=
+    NormalForm.selectionSetSemanticsReady_of_selectionSetValid_object schema
+      operation.variableDefinitions operation.rootType hschema hrootObject
+      operation.selectionSet
+      (Validation.operationDefinitionValid_selectionSetValid hvalid)
+  have hnormalizedNonempty :
+      NormalForm.normalizeSelectionSet schema operation.rootType
+        operation.selectionSet ≠ [] :=
+    NormalForm.GroundTypeNormalization.normalizeSelectionSet_ne_nil_of_everyNormalizerScope
+      schema hfeasibleAll operation.rootType operation.selectionSet hrootObject
+      hready (Validation.operationDefinitionValid_selectionSet_nonempty hvalid)
   have hnormalizedValid :
       Validation.operationDefinitionValid schema
         (NormalForm.normalizeOperation schema operation) :=
-    NormalForm.GroundTypeNormalization.normalizeOperation_valid schema
-      operation hschema hvalid hfree hfeasibleAll
+    NormalForm.GroundTypeNormalization.normalizeOperation_valid_of_operationFieldsValid schema
+      operation hschema hvalid hfields hfree hfeasibleAll hnormalizedNonempty
   have hnormalizedFree :
       NormalForm.operationDirectiveFree
         (NormalForm.normalizeOperation schema operation) :=
@@ -1957,20 +1975,38 @@ theorem normalizeThenCompleteUngroupedExecution_semanticsPreserved
     (depth : Nat) (source : Execution.ResolverValue ObjectRef) :
     SchemaWellFormedness.schemaWellFormed schema ->
     Validation.operationDefinitionValid schema operation ->
+    NormalForm.operationFieldsValidInPossibleTypes schema operation ->
     NormalForm.operationDirectiveFree operation ->
-    NormalForm.selectionSetsTypeConditionFeasibleInEveryScope schema ->
+    NormalForm.selectionSetsTypeConditionFeasibleInEveryNormalizerScope schema ->
       executeQueryWithFuel schema resolvers variableValues
           (NormalForm.completeNormalizeOperation schema
             (NormalForm.normalizeOperation schema operation)) depth source
         =
       Execution.executeQueryWithFuel schema resolvers variableValues operation
         depth source := by
-  intro hschema hvalid hfree hfeasibleAll
+  intro hschema hvalid hfields hfree hfeasibleAll
+  have hrootObject : schema.objectType operation.rootType := by
+    have hrootEq := Validation.operationDefinitionValid_rootType_eq hvalid
+    rw [hrootEq]
+    exact hschema.2.1
+  have hready :
+      NormalForm.selectionSetSemanticsReady schema operation.rootType
+        operation.selectionSet :=
+    NormalForm.selectionSetSemanticsReady_of_selectionSetValid_object schema
+      operation.variableDefinitions operation.rootType hschema hrootObject
+      operation.selectionSet
+      (Validation.operationDefinitionValid_selectionSetValid hvalid)
+  have hnormalizedNonempty :
+      NormalForm.normalizeSelectionSet schema operation.rootType
+        operation.selectionSet ≠ [] :=
+    NormalForm.GroundTypeNormalization.normalizeSelectionSet_ne_nil_of_everyNormalizerScope
+      schema hfeasibleAll operation.rootType operation.selectionSet hrootObject
+      hready (Validation.operationDefinitionValid_selectionSet_nonempty hvalid)
   have hnormalizedValid :
       Validation.operationDefinitionValid schema
         (NormalForm.normalizeOperation schema operation) :=
-    NormalForm.GroundTypeNormalization.normalizeOperation_valid schema
-      operation hschema hvalid hfree hfeasibleAll
+    NormalForm.GroundTypeNormalization.normalizeOperation_valid_of_operationFieldsValid schema
+      operation hschema hvalid hfields hfree hfeasibleAll hnormalizedNonempty
   have hnormalizedFree :
       NormalForm.operationDirectiveFree
         (NormalForm.normalizeOperation schema operation) :=

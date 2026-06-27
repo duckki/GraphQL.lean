@@ -1,11 +1,86 @@
-import GraphQL.Validation
+import GraphQL.NormalForm
 
 /-!
 Projection and structural facts for selection validity.
+
+The possible-types validity predicates are defined in `GraphQL.NormalForm`,
+because they are normalizer validity assumptions rather than spec validation
+rules. The aliases below keep existing validation-facing proof scripts readable
+without moving those predicates back into `GraphQL.Validation`.
 -/
 namespace GraphQL
 
 namespace Validation
+
+abbrev selectionValidInPossibleTypes :=
+  NormalForm.selectionValidInPossibleTypes
+
+abbrev selectionSetValidInPossibleTypes :=
+  NormalForm.selectionSetValidInPossibleTypes
+
+@[simp] theorem selectionValidInPossibleTypes_field
+    (schema : Schema) (variableDefinitions : List VariableDefinition)
+    (parentType responseName fieldName : Name) (arguments : List Argument)
+    (directives : List DirectiveApplication) (selectionSet : List Selection) :
+    selectionValidInPossibleTypes schema variableDefinitions parentType
+      (.field responseName fieldName arguments directives selectionSet)
+      =
+        (selectionValid schema variableDefinitions parentType
+          (.field responseName fieldName arguments directives selectionSet)
+          ∧ match schema.lookupField parentType fieldName with
+            | none => False
+            | some fieldDefinition =>
+                ∀ objectType,
+                  objectType ∈
+                      schema.getPossibleTypes fieldDefinition.outputType.namedType ->
+                    selectionSetValidInPossibleTypes schema
+                      variableDefinitions objectType selectionSet) := by
+  rfl
+
+@[simp] theorem selectionValidInPossibleTypes_inlineFragment_none
+    (schema : Schema) (variableDefinitions : List VariableDefinition)
+    (parentType : Name) (directives : List DirectiveApplication)
+    (selectionSet : List Selection) :
+    selectionValidInPossibleTypes schema variableDefinitions parentType
+      (.inlineFragment none directives selectionSet)
+      =
+        (∀ objectType, objectType ∈ schema.getPossibleTypes parentType ->
+          selectionSetValidInPossibleTypes schema variableDefinitions
+            objectType selectionSet) := by
+  rfl
+
+@[simp] theorem selectionValidInPossibleTypes_inlineFragment_some
+    (schema : Schema) (variableDefinitions : List VariableDefinition)
+    (parentType typeCondition : Name)
+    (directives : List DirectiveApplication) (selectionSet : List Selection) :
+    selectionValidInPossibleTypes schema variableDefinitions parentType
+      (.inlineFragment (some typeCondition) directives selectionSet)
+      =
+        (schema.typesOverlapBool parentType typeCondition = true ->
+          ∀ objectType, objectType ∈ schema.getPossibleTypes typeCondition ->
+            selectionSetValidInPossibleTypes schema variableDefinitions
+              objectType selectionSet) := by
+  rfl
+
+@[simp] theorem selectionSetValidInPossibleTypes_nil
+    (schema : Schema) (variableDefinitions : List VariableDefinition)
+    (parentType : Name) :
+    selectionSetValidInPossibleTypes schema variableDefinitions
+      parentType [] = True := by
+  rfl
+
+@[simp] theorem selectionSetValidInPossibleTypes_cons
+    (schema : Schema) (variableDefinitions : List VariableDefinition)
+    (parentType : Name) (selection : Selection)
+    (selectionSet : List Selection) :
+    selectionSetValidInPossibleTypes schema variableDefinitions
+      parentType (selection :: selectionSet)
+      =
+        (selectionValidInPossibleTypes schema variableDefinitions parentType
+          selection
+          ∧ selectionSetValidInPossibleTypes schema variableDefinitions
+            parentType selectionSet) := by
+  rfl
 
 theorem selectionValid_field_directivesValid
     {schema : Schema} {variableDefinitions : List VariableDefinition}
@@ -206,6 +281,13 @@ theorem operationDefinitionValid_selectionSetValid
       selectionSetValid schema operation.variableDefinitions operation.rootType
         operation.selectionSet := by
   intro hvalid
+  exact hvalid.2.2.2.2.1
+
+theorem operationDefinitionValid_selectionSet_nonempty
+    {schema : Schema} {operation : Operation} :
+    operationDefinitionValid schema operation ->
+      operation.selectionSet ≠ [] := by
+  intro hvalid
   exact hvalid.2.2.2.1
 
 theorem operationDefinitionValid_fieldsInSetCanMerge
@@ -215,14 +297,6 @@ theorem operationDefinitionValid_fieldsInSetCanMerge
         operation.selectionSet := by
   intro hvalid
   exact hvalid.2.2.2.2.2
-
-theorem operationDefinitionValid_selectionSetImplementationValid
-    {schema : Schema} {operation : Operation} :
-    operationDefinitionValid schema operation ->
-      selectionSetImplementationValid schema operation.variableDefinitions
-        operation.rootType operation.selectionSet := by
-  intro hvalid
-  exact hvalid.2.2.2.2.1
 
 end Validation
 

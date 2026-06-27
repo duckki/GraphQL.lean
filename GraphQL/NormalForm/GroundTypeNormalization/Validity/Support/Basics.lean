@@ -221,57 +221,57 @@ theorem possibleTypes_ne_nil_right_of_typesOverlap
   rw [hnil] at hright
   cases hright
 
-theorem selectionSetImplementationValidInScope_nil
+theorem selectionSetValidInPossibleTypes_nil
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType : Name) :
-    Validation.selectionSetImplementationValidInScope schema
+    Validation.selectionSetValidInPossibleTypes schema
       variableDefinitions parentType [] := by
-  simp [Validation.selectionSetImplementationValidInScope]
+  simp [Validation.selectionSetValidInPossibleTypes]
 
-theorem selectionSetImplementationValidInScope_cons
+theorem selectionSetValidInPossibleTypes_cons
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {selection : Selection}
     {selectionSet : List Selection} :
-    Validation.selectionImplementationValid schema variableDefinitions
+    Validation.selectionValidInPossibleTypes schema variableDefinitions
       parentType selection ->
-    Validation.selectionSetImplementationValidInScope schema variableDefinitions
+    Validation.selectionSetValidInPossibleTypes schema variableDefinitions
       parentType selectionSet ->
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions parentType (selection :: selectionSet) := by
   intro hselection hselectionSet
-  simp [Validation.selectionSetImplementationValidInScope, hselection,
+  simp [Validation.selectionSetValidInPossibleTypes, hselection,
     hselectionSet]
 
-theorem selectionSetImplementationValidInScope_head
+theorem selectionSetValidInPossibleTypes_head
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {selection : Selection}
     {selectionSet : List Selection} :
-    Validation.selectionSetImplementationValidInScope schema
+    Validation.selectionSetValidInPossibleTypes schema
       variableDefinitions parentType (selection :: selectionSet) ->
-      Validation.selectionImplementationValid schema variableDefinitions
+      Validation.selectionValidInPossibleTypes schema variableDefinitions
         parentType selection := by
   intro hvalid
-  simpa [Validation.selectionSetImplementationValidInScope] using hvalid.1
+  simpa [Validation.selectionSetValidInPossibleTypes] using hvalid.1
 
-theorem selectionSetImplementationValidInScope_tail
+theorem selectionSetValidInPossibleTypes_tail
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {selection : Selection}
     {selectionSet : List Selection} :
-    Validation.selectionSetImplementationValidInScope schema
+    Validation.selectionSetValidInPossibleTypes schema
       variableDefinitions parentType (selection :: selectionSet) ->
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions parentType selectionSet := by
   intro hvalid
-  simpa [Validation.selectionSetImplementationValidInScope] using hvalid.2
+  simpa [Validation.selectionSetValidInPossibleTypes] using hvalid.2
 
-theorem selectionSetImplementationValidInScope_append
+theorem selectionSetValidInPossibleTypes_append
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {left right : List Selection} :
-    Validation.selectionSetImplementationValidInScope schema
+    Validation.selectionSetValidInPossibleTypes schema
       variableDefinitions parentType left ->
-    Validation.selectionSetImplementationValidInScope schema
+    Validation.selectionSetValidInPossibleTypes schema
       variableDefinitions parentType right ->
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions parentType (left ++ right) := by
   intro hleft hright
   induction left with
@@ -279,131 +279,129 @@ theorem selectionSetImplementationValidInScope_append
       simpa using hright
   | cons selection rest ih =>
       have hhead :=
-        selectionSetImplementationValidInScope_head hleft
+        selectionSetValidInPossibleTypes_head hleft
       have htail :=
-        selectionSetImplementationValidInScope_tail hleft
-      simp [Validation.selectionSetImplementationValidInScope]
+        selectionSetValidInPossibleTypes_tail hleft
+      simp [Validation.selectionSetValidInPossibleTypes]
       exact ⟨hhead, ih htail⟩
 
-theorem selectionSetImplementationValidInScope_append_left
+theorem selectionSetValidInPossibleTypes_append_left
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {left right : List Selection} :
-    Validation.selectionSetImplementationValidInScope schema
+    Validation.selectionSetValidInPossibleTypes schema
       variableDefinitions parentType (left ++ right) ->
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions parentType left := by
   intro hvalid
   induction left with
   | nil =>
-      exact selectionSetImplementationValidInScope_nil schema
+      exact selectionSetValidInPossibleTypes_nil schema
         variableDefinitions parentType
   | cons selection rest ih =>
-      simp [Validation.selectionSetImplementationValidInScope] at hvalid ⊢
+      simp [Validation.selectionSetValidInPossibleTypes] at hvalid ⊢
       exact ⟨hvalid.1, ih hvalid.2⟩
 
-theorem selectionSetImplementationValidInScope_append_right
+theorem selectionSetValidInPossibleTypes_append_right
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {left right : List Selection} :
-    Validation.selectionSetImplementationValidInScope schema
+    Validation.selectionSetValidInPossibleTypes schema
       variableDefinitions parentType (left ++ right) ->
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions parentType right := by
   intro hvalid
   induction left with
   | nil =>
       simpa using hvalid
   | cons selection rest ih =>
-      exact ih (selectionSetImplementationValidInScope_tail hvalid)
+      exact ih (selectionSetValidInPossibleTypes_tail hvalid)
 
-theorem selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
+theorem selectionSetValidInPossibleTypes_withoutFieldSelectionsWithResponseName
     (schema : Schema) (responseName : Name) :
     ∀ variableDefinitions parentType selectionSet,
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions parentType selectionSet ->
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions parentType
           (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
   | _variableDefinitions, _parentType, [], _hvalid => by
       simp [withoutFieldSelectionsWithResponseName,
-        Validation.selectionSetImplementationValidInScope]
+        Validation.selectionSetValidInPossibleTypes]
   | variableDefinitions, parentType, selection :: rest, hvalid => by
       have hhead :=
-        selectionSetImplementationValidInScope_head hvalid
+        selectionSetValidInPossibleTypes_head hvalid
       have htail :=
-        selectionSetImplementationValidInScope_tail hvalid
+        selectionSetValidInPossibleTypes_tail hvalid
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
           by_cases hname : (fieldResponseName == responseName) = true
           · simp [withoutFieldSelectionsWithResponseName, hname]
             exact
-              selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
+              selectionSetValidInPossibleTypes_withoutFieldSelectionsWithResponseName
                 schema responseName variableDefinitions parentType rest htail
           · have hfalse : (fieldResponseName == responseName) = false := by
               cases hmatch : fieldResponseName == responseName
               · rfl
               · contradiction
             simp [withoutFieldSelectionsWithResponseName, hfalse,
-              Validation.selectionSetImplementationValidInScope]
+              Validation.selectionSetValidInPossibleTypes]
             exact ⟨hhead,
-              selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
+              selectionSetValidInPossibleTypes_withoutFieldSelectionsWithResponseName
                 schema responseName variableDefinitions parentType rest htail⟩
       | inlineFragment typeCondition directives selectionSet =>
           simp [withoutFieldSelectionsWithResponseName,
-            Validation.selectionSetImplementationValidInScope]
+            Validation.selectionSetValidInPossibleTypes]
           constructor
           · cases typeCondition with
             | none =>
-                simpa [Validation.selectionImplementationValid] using
-                  selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
-                    schema responseName variableDefinitions parentType
-                    selectionSet hhead
+                intro objectType hobjectType
+                have hbody :
+                    Validation.selectionSetValidInPossibleTypes schema
+                      variableDefinitions objectType selectionSet := by
+                  simpa [Validation.selectionValidInPossibleTypes] using
+                    hhead objectType hobjectType
+                exact
+                  selectionSetValidInPossibleTypes_withoutFieldSelectionsWithResponseName
+                    schema responseName variableDefinitions objectType
+                    selectionSet hbody
             | some typeCondition =>
                 intro hoverlap
-                have hfragment :
-                    Validation.selectionSetImplementationValidInScope schema
-                      variableDefinitions typeCondition selectionSet
-                    ∧ ∀ objectType,
-                      objectType ∈ schema.getPossibleTypes typeCondition ->
-                        Validation.selectionSetImplementationValidInScope
-                          schema variableDefinitions objectType
-                          selectionSet := by
-                  simpa [Validation.selectionImplementationValid] using
-                    hhead hoverlap
-                exact ⟨
-                  selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
-                    schema responseName variableDefinitions typeCondition
-                    selectionSet hfragment.1,
-                  fun objectType hobjectType =>
-                    selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
-                      schema responseName variableDefinitions objectType
-                      selectionSet (hfragment.2 objectType hobjectType)⟩
+                intro objectType hobjectType
+                have hbody :
+                    Validation.selectionSetValidInPossibleTypes schema
+                      variableDefinitions objectType selectionSet := by
+                  simpa [Validation.selectionValidInPossibleTypes] using
+                    hhead hoverlap objectType hobjectType
+                exact
+                  selectionSetValidInPossibleTypes_withoutFieldSelectionsWithResponseName
+                    schema responseName variableDefinitions objectType
+                    selectionSet hbody
           · exact
-              selectionSetImplementationValidInScope_withoutFieldSelectionsWithResponseName
+              selectionSetValidInPossibleTypes_withoutFieldSelectionsWithResponseName
                 schema responseName variableDefinitions parentType rest htail
 
-theorem selectionSetImplementationValidInScope_mergeSelectionSets_of_subselections
+theorem selectionSetValidInPossibleTypes_mergeSelectionSets_of_subselections
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} :
     ∀ selections,
       (∀ selection, selection ∈ selections ->
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions parentType selection.subselections) ->
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions parentType (mergeSelectionSets selections)
   | [], _hvalid => by
       simp [mergeSelectionSets,
-        Validation.selectionSetImplementationValidInScope]
+        Validation.selectionSetValidInPossibleTypes]
   | selection :: rest, hvalid => by
       simp [mergeSelectionSets]
-      apply selectionSetImplementationValidInScope_append
+      apply selectionSetValidInPossibleTypes_append
       · exact hvalid selection (by simp)
       · exact
-          selectionSetImplementationValidInScope_mergeSelectionSets_of_subselections
+          selectionSetValidInPossibleTypes_mergeSelectionSets_of_subselections
             rest (by
               intro candidate hcandidate
               exact hvalid candidate (by simp [hcandidate]))
 
-theorem selectionSetImplementationValidInScope_mergeSelectionSets_of_field_subselections
+theorem selectionSetValidInPossibleTypes_mergeSelectionSets_of_field_subselections
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType responseName : Name}
     (selections : List Selection) :
@@ -415,12 +413,12 @@ theorem selectionSetImplementationValidInScope_mergeSelectionSets_of_field_subse
     (∀ fieldName arguments directives subselections,
       Selection.field responseName fieldName arguments directives
           subselections ∈ selections ->
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions parentType subselections) ->
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions parentType (mergeSelectionSets selections) := by
   intro hshape hfields
-  apply selectionSetImplementationValidInScope_mergeSelectionSets_of_subselections
+  apply selectionSetValidInPossibleTypes_mergeSelectionSets_of_subselections
   intro selection hselection
   rcases hshape selection hselection with
     ⟨fieldName, arguments, directives, subselections, hselectionShape⟩
@@ -428,7 +426,7 @@ theorem selectionSetImplementationValidInScope_mergeSelectionSets_of_field_subse
   simpa [Selection.subselections] using
     hfields fieldName arguments directives subselections hselection
 
-theorem selectionSetImplementationValidInScope_mergeSelectionSets_fieldSelectionsWithResponseNameInScope
+theorem selectionSetValidInPossibleTypes_mergeSelectionSets_fieldSelectionsWithResponseNameInScope
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType responseName childType : Name}
     (selectionSet : List Selection) :
@@ -436,27 +434,27 @@ theorem selectionSetImplementationValidInScope_mergeSelectionSets_fieldSelection
       Selection.field responseName fieldName arguments directives subselections
         ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
           selectionSet ->
-        Validation.selectionSetImplementationValidInScope schema
+        Validation.selectionSetValidInPossibleTypes schema
           variableDefinitions childType subselections) ->
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions childType
         (mergeSelectionSets
           (fieldSelectionsWithResponseNameInScope schema parentType responseName
             selectionSet)) := by
   intro hfields
-  apply selectionSetImplementationValidInScope_mergeSelectionSets_of_field_subselections
+  apply selectionSetValidInPossibleTypes_mergeSelectionSets_of_field_subselections
   · intro selection hselection
     exact fieldSelectionsWithResponseNameInScope_mem_field schema parentType responseName
       selectionSet selection hselection
   · intro fieldName arguments directives subselections hselection
     exact hfields fieldName arguments directives subselections hselection
 
-theorem selectionSetValid_of_allFields_implementationValidInScope
+theorem selectionSetValid_of_allFields_validInPossibleTypes
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType : Name) :
     ∀ selectionSet,
       selectionsAllFields selectionSet ->
-      Validation.selectionSetImplementationValidInScope schema
+      Validation.selectionSetValidInPossibleTypes schema
         variableDefinitions parentType selectionSet ->
         Validation.selectionSetValid schema variableDefinitions parentType
           selectionSet
@@ -470,27 +468,27 @@ theorem selectionSetValid_of_allFields_implementationValidInScope
         exact hallFields candidate
           (List.mem_cons_of_mem selection hcandidate)
       have hheadImplementation :
-          Validation.selectionImplementationValid schema variableDefinitions
+          Validation.selectionValidInPossibleTypes schema variableDefinitions
             parentType selection :=
-        selectionSetImplementationValidInScope_head himplementation
+        selectionSetValidInPossibleTypes_head himplementation
       have htailImplementation :
-          Validation.selectionSetImplementationValidInScope schema
+          Validation.selectionSetValidInPossibleTypes schema
             variableDefinitions parentType rest :=
-        selectionSetImplementationValidInScope_tail himplementation
+        selectionSetValidInPossibleTypes_tail himplementation
       cases selection with
       | field responseName fieldName arguments directives selectionSet =>
           have hheadValid :
               Validation.selectionValid schema variableDefinitions parentType
                 (Selection.field responseName fieldName arguments directives
                   selectionSet) := by
-            simpa [Validation.selectionImplementationValid] using
+            simpa [Validation.selectionValidInPossibleTypes] using
               hheadImplementation.1
           have htailValid :
               ∀ candidate, candidate ∈ rest ->
                 Validation.selectionValid schema variableDefinitions
                   parentType candidate := by
             simpa [Validation.selectionSetValid] using
-              selectionSetValid_of_allFields_implementationValidInScope
+              selectionSetValid_of_allFields_validInPossibleTypes
                 schema variableDefinitions parentType rest htailAllFields
                 htailImplementation
           simp [Validation.selectionSetValid]

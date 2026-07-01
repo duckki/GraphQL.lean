@@ -4,3 +4,4 @@ import Tests.Operation
 import Tests.NormalForm
 import Tests.Execution
 import Tests.ExecutionUngrouped
+import Tests.Conformance

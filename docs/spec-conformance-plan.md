@@ -102,6 +102,26 @@ The main modules are:
   projection, response null bubbling through non-null output wrappers, and a
   query response envelope containing data plus a `Nat` execution-error count.
 
+Conformance testing now includes a first graphql-js execution projection under
+`conformance/graphql-js/`. The fixtures intentionally compare only the behavior
+represented by `GraphQL.Execution`: ordered response data and execution-error
+count. The graphql-js oracle script projects `errors.length` and drops messages,
+paths, locations, extensions, async scheduling details, and resolver info
+metadata. Generated Lean tests live under `Tests/Conformance/Execution/` and
+are regenerated with:
+
+```sh
+node scripts/gen-graphql-js-conformance.mjs
+lake build Tests.Conformance.Execution
+```
+
+When a local graphql-js package or checkout is available, the same fixtures can
+be checked against graphql-js with:
+
+```sh
+GRAPHQL_JS_MODULE=graphql node scripts/graphql-js-oracle.mjs --check
+```
+
 ## Related Documentation
 
 - `docs/overview.md`: project structure and module dependency map.
@@ -110,3 +130,4 @@ The main modules are:
   properties.
 - `docs/algorithms.md`: verified project algorithms outside the GraphQL spec.
 - `README.md`: build, lint, and entry-point information.
+- `conformance/graphql-js/README.md`: graphql-js fixture and oracle workflow.

@@ -553,11 +553,11 @@ theorem completeNormalBoolCase_of_variable_mem_iff
 
 theorem completeNormalSelectionSet_of_variable_mem_iff
     {schema : Schema} {leftVariables rightVariables : List BoolVar}
-    {selectionSet : List Selection} :
-    completeNormalSelectionSet schema leftVariables selectionSet ->
+    {parentType : Name} {selectionSet : List Selection} :
+    completeNormalSelectionSet schema leftVariables parentType selectionSet ->
     rightVariables.Nodup ->
     (∀ varName, varName ∈ rightVariables ↔ varName ∈ leftVariables) ->
-      completeNormalSelectionSet schema rightVariables selectionSet := by
+      completeNormalSelectionSet schema rightVariables parentType selectionSet := by
   intro hnormal hrightNodup hmemIff
   unfold completeNormalSelectionSet at hnormal ⊢
   rcases hnormal with ⟨hleftNodup, hshape⟩
@@ -617,13 +617,14 @@ theorem completeNormalSelectionSet_of_variable_mem_iff
               hleftBodyFree hrightBodyFree hequiv
 
 theorem selectionSetBooleanVariables_mem_of_completeNormalBranches
-    {schema : Schema} {variables : List BoolVar} {varName : BoolVar} :
+    {schema : Schema} {parentType : Name}
+    {variables : List BoolVar} {varName : BoolVar} :
     ∀ {selectionSet : List Selection},
       (∀ selection, selection ∈ selectionSet ->
         ∃ boolCase body,
           completeNormalBoolCase variables boolCase
             ∧ completeNormalBooleanStem boolCase selection body
-            ∧ selectionSetNormal schema body
+            ∧ selectionSetNormal schema parentType body
             ∧ selectionSetDirectiveFree body) ->
       varName ∈ selectionSetBooleanVariables selectionSet ->
         varName ∈ variables
@@ -650,13 +651,14 @@ theorem selectionSetBooleanVariables_mem_of_completeNormalBranches
             hrest
 
 theorem selectionSetBooleanVariables_mem_of_variable_completeNormalBranches
-    {schema : Schema} {variables : List BoolVar} {varName : BoolVar}
+    {schema : Schema} {parentType : Name}
+    {variables : List BoolVar} {varName : BoolVar}
     {selection : Selection} {rest : List Selection} :
     (∀ candidate, candidate ∈ selection :: rest ->
       ∃ boolCase body,
         completeNormalBoolCase variables boolCase
           ∧ completeNormalBooleanStem boolCase candidate body
-          ∧ selectionSetNormal schema body
+          ∧ selectionSetNormal schema parentType body
           ∧ selectionSetDirectiveFree body) ->
     varName ∈ variables ->
       varName ∈ selectionSetBooleanVariables (selection :: rest) := by
@@ -671,8 +673,8 @@ theorem selectionSetBooleanVariables_mem_of_variable_completeNormalBranches
 
 theorem operationBoolVars_mem_iff_of_completeNormalSelectionSet_cons
     {schema : Schema} {varName : BoolVar} {variables : List BoolVar}
-    {selectionSet : List Selection} :
-    completeNormalSelectionSet schema (varName :: variables) selectionSet ->
+    {parentType : Name} {selectionSet : List Selection} :
+    completeNormalSelectionSet schema (varName :: variables) parentType selectionSet ->
     selectionSet ≠ [] ->
       ∀ candidate,
         candidate ∈ dedupBoolVars
@@ -756,10 +758,11 @@ theorem wrapWithBoolCase_boolCase_injective_of_directiveFree :
 theorem completeNormalizeRootSelectionSet_normal_nil
     (schema : Schema)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (parentType : Name) (selectionSet normalizedSelectionSet : List Selection) :
+    (parentType : Name) (selectionSet normalizedSelectionSet : List Selection)
+    (hparentObject : objectTypeNameBool schema parentType = true) :
     completeNormalizeRootSelectionSet schema [] parentType selectionSet =
       normalizedSelectionSet ->
-        completeNormalSelectionSet schema [] normalizedSelectionSet := by
+        completeNormalSelectionSet schema [] parentType normalizedSelectionSet := by
   intro hnormalized
   unfold completeNormalizeRootSelectionSet at hnormalized
   simp [allBoolCases, wrapWithBoolCase] at hnormalized
@@ -770,7 +773,7 @@ theorem completeNormalizeRootSelectionSet_normal_nil
       simp [hbody] at hnormalized
       subst normalizedSelectionSet
       simp [completeNormalSelectionSet, selectionSetNormal,
-        selectionSetGroundTyped, selectionsAllFields,
+        selectionSetGroundTyped, selectionsAllFields, hparentObject,
         selectionSetNonRedundant, responseNamesNodup,
         inlineFragmentTypeConditionsNodup, selectionSetDirectiveFree]
   | cons selection rest =>
@@ -780,7 +783,7 @@ theorem completeNormalizeRootSelectionSet_normal_nil
       · simpa [hbody] using
         GroundTypeNormalization.normalizeSelectionSet_normal schema hschema
           parentType
-          (filterSelectionSetBoolCase [] selectionSet)
+          (filterSelectionSetBoolCase [] selectionSet) hparentObject
       · simpa [hbody] using
           GroundTypeNormalization.normalizeSelectionSet_directiveFree schema
             parentType
@@ -962,12 +965,13 @@ theorem completeNormalizeRootSelectionSet_normal_cons
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (varName : BoolVar) (variables : List BoolVar)
     (hvariablesNodup : (varName :: variables).Nodup)
-    (parentType : Name) (selectionSet normalizedSelectionSet : List Selection) :
+    (parentType : Name) (selectionSet normalizedSelectionSet : List Selection)
+    (hparentObject : objectTypeNameBool schema parentType = true) :
     completeNormalizeRootSelectionSet schema (varName :: variables)
         parentType selectionSet =
       normalizedSelectionSet ->
         completeNormalSelectionSet schema (varName :: variables)
-          normalizedSelectionSet := by
+          parentType normalizedSelectionSet := by
   intro hnormalized
   unfold completeNormalizeRootSelectionSet at hnormalized
   change
@@ -1041,7 +1045,7 @@ theorem completeNormalizeRootSelectionSet_normal_cons
                 GroundTypeNormalization.normalizeSelectionSet_normal schema
                   hschema parentType
                   (filterSelectionSetBoolCase boolCase
-                    selectionSet)
+                    selectionSet) hparentObject
             · simpa [hbody] using
                 normalize_filterSelectionSetBoolCase_directiveFree schema parentType boolCase selectionSet
       · intro left right leftCase rightCase leftBody rightBody
@@ -1138,7 +1142,17 @@ theorem completeNormalizeRootSelectionSet_normal_cons
 theorem completeNormalizeOperation_normal
     (schema : Schema) (operation : Operation) :
     completeNormalizeOperationNormal schema operation := by
-  intro hschema _hvalid
+  intro hschema hvalid
+  have hrootEq :
+      operation.rootType = schema.queryType :=
+    Validation.operationDefinitionValid_rootType_eq hvalid
+  have hrootObject :
+      schema.objectType operation.rootType := by
+    simpa [hrootEq] using hschema.2.1
+  have hrootObjectBool :
+      objectTypeNameBool schema operation.rootType = true :=
+    GroundTypeNormalization.objectTypeNameBool_eq_true_of_objectType_forNormality
+      schema hrootObject
   unfold completeNormalizeOperation
   cases hvariables : operationBoolVars operation with
   | nil =>
@@ -1147,9 +1161,11 @@ theorem completeNormalizeOperation_normal
         completeNormalizeRootSelectionSet schema [] operation.rootType
           operation.selectionSet
       have hrootNormal :
-          completeNormalSelectionSet schema [] normalizedSelectionSet :=
+          completeNormalSelectionSet schema [] operation.rootType
+            normalizedSelectionSet :=
         completeNormalizeRootSelectionSet_normal_nil schema hschema
-          operation.rootType operation.selectionSet normalizedSelectionSet rfl
+          operation.rootType operation.selectionSet normalizedSelectionSet
+          hrootObjectBool rfl
       have hnormalizedFree :
           selectionSetDirectiveFree normalizedSelectionSet := by
         unfold completeNormalSelectionSet at hrootNormal
@@ -1176,14 +1192,14 @@ theorem completeNormalizeOperation_normal
           operation.rootType operation.selectionSet
       have hrootNormal :
           completeNormalSelectionSet schema (varName :: variables)
-            normalizedSelectionSet :=
+            operation.rootType normalizedSelectionSet :=
         completeNormalizeRootSelectionSet_normal_cons schema hschema
           varName variables hsourceVarsNodup operation.rootType
-          operation.selectionSet normalizedSelectionSet rfl
+          operation.selectionSet normalizedSelectionSet hrootObjectBool rfl
       by_cases hnormalizedEmpty : normalizedSelectionSet = []
       · unfold completeNormalOperation operationBoolVars
         simp [completeNormalSelectionSet, selectionSetNormal,
-          selectionSetGroundTyped, selectionsAllFields,
+          selectionSetGroundTyped, selectionsAllFields, hrootObjectBool,
           selectionSetNonRedundant, responseNamesNodup,
           inlineFragmentTypeConditionsNodup, selectionSetBooleanVariables,
           selectionSetDirectiveFree, dedupBoolVars,

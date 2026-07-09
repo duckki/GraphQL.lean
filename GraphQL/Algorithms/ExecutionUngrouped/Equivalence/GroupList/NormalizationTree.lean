@@ -400,7 +400,7 @@ theorem of_allFields_directiveFree_normal
     (selectionSet : List Selection) :
     NormalForm.selectionsAllFields selectionSet ->
     NormalForm.selectionSetDirectiveFree selectionSet ->
-    NormalForm.selectionSetNormal schema selectionSet ->
+    NormalForm.selectionSetNormal schema parentType selectionSet ->
       SelectionSetFreshPlanNormalizationTree schema resolvers variableValues
         completionDepth parentType source selectionSet selectionSet := by
   intro hall hfree hnormal

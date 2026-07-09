@@ -54,48 +54,50 @@ theorem selectionSetNonRedundant_tail
         (List.mem_cons_of_mem _ hselection)⟩
 
 theorem selectionSetGroundTyped_tail
-    {schema : Schema} {selection : Selection}
+    {schema : Schema} {parentType : Name} {selection : Selection}
     {selectionSet : List Selection} :
-    NormalForm.selectionSetGroundTyped schema (selection :: selectionSet) ->
-      NormalForm.selectionSetGroundTyped schema selectionSet := by
+    NormalForm.selectionSetGroundTyped schema parentType
+      (selection :: selectionSet) ->
+      NormalForm.selectionSetGroundTyped schema parentType selectionSet := by
   intro hground
   unfold NormalForm.selectionSetGroundTyped at hground ⊢
   constructor
-  · cases hground.1 with
-    | inl hfields =>
-        exact Or.inl (fun candidate hcandidate =>
-          hfields candidate (List.mem_cons_of_mem _ hcandidate))
-    | inr hfragments =>
-        exact Or.inr (fun candidate hcandidate =>
-          hfragments candidate (List.mem_cons_of_mem _ hcandidate))
+  · cases hobject : NormalForm.objectTypeNameBool schema parentType <;>
+      simp [hobject] at hground ⊢
+    all_goals
+      intro candidate hcandidate
+      exact hground.1 candidate (List.mem_cons_of_mem _ hcandidate)
   · intro candidate hcandidate
     exact hground.2 candidate (List.mem_cons_of_mem _ hcandidate)
 
 theorem selectionSetNormal_tail
-    {schema : Schema} {selection : Selection}
+    {schema : Schema} {parentType : Name} {selection : Selection}
     {selectionSet : List Selection} :
-    NormalForm.selectionSetNormal schema (selection :: selectionSet) ->
-      NormalForm.selectionSetNormal schema selectionSet := by
+    NormalForm.selectionSetNormal schema parentType
+      (selection :: selectionSet) ->
+      NormalForm.selectionSetNormal schema parentType selectionSet := by
   intro hnormal
   exact ⟨selectionSetGroundTyped_tail hnormal.1,
     selectionSetNonRedundant_tail hnormal.2⟩
 
 theorem selectionSetNormal_field_child
-    {schema : Schema}
+    {schema : Schema} {parentType : Name}
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
     {selectionSet rest : List Selection} :
-    NormalForm.selectionSetNormal schema
+    NormalForm.selectionSetNormal schema parentType
         (Selection.field responseName fieldName arguments directives
           selectionSet :: rest) ->
-      NormalForm.selectionSetNormal schema selectionSet := by
+      NormalForm.selectionSetNormal schema
+        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
+        selectionSet := by
   intro hnormal
   unfold NormalForm.selectionSetNormal at hnormal
   rcases hnormal with ⟨hground, hnonRedundant⟩
   unfold NormalForm.selectionSetGroundTyped at hground
   unfold NormalForm.selectionSetNonRedundant at hnonRedundant
   have hselectionGround :
-      NormalForm.selectionGroundTyped schema
+      NormalForm.selectionGroundTyped schema parentType
         (Selection.field responseName fieldName arguments directives
           selectionSet) := by
     exact hground.2 _ (by simp)
@@ -106,38 +108,35 @@ theorem selectionSetNormal_field_child
     exact hnonRedundant.2.2 _ (by simp)
   unfold NormalForm.selectionGroundTyped at hselectionGround
   unfold NormalForm.selectionNonRedundant at hselectionNonRedundant
-  exact ⟨hselectionGround.2, hselectionNonRedundant⟩
+  rcases hselectionGround with ⟨returnType, hreturn, hchildGround⟩
+  simpa [hreturn] using
+    (⟨hchildGround, hselectionNonRedundant⟩ :
+      NormalForm.selectionSetNormal schema returnType selectionSet)
 
 theorem selectionSetNormal_inline_child
-    {schema : Schema}
-    {typeCondition : Option Name} {directives : List DirectiveApplication}
+    {schema : Schema} {parentType typeCondition : Name}
+    {directives : List DirectiveApplication}
     {selectionSet rest : List Selection} :
-    NormalForm.selectionSetNormal schema
-        (Selection.inlineFragment typeCondition directives selectionSet ::
+    NormalForm.selectionSetNormal schema parentType
+        (Selection.inlineFragment (some typeCondition) directives selectionSet ::
           rest) ->
-      NormalForm.selectionSetNormal schema selectionSet := by
+      NormalForm.selectionSetNormal schema typeCondition selectionSet := by
   intro hnormal
   unfold NormalForm.selectionSetNormal at hnormal
   rcases hnormal with ⟨hground, hnonRedundant⟩
   unfold NormalForm.selectionSetGroundTyped at hground
   unfold NormalForm.selectionSetNonRedundant at hnonRedundant
   have hselectionGround :
-      NormalForm.selectionGroundTyped schema
-        (Selection.inlineFragment typeCondition directives selectionSet) := by
+      NormalForm.selectionGroundTyped schema parentType
+        (Selection.inlineFragment (some typeCondition) directives selectionSet) := by
     exact hground.2 _ (by simp)
   have hselectionNonRedundant :
       NormalForm.selectionNonRedundant
-        (Selection.inlineFragment typeCondition directives selectionSet) := by
+        (Selection.inlineFragment (some typeCondition) directives selectionSet) := by
     exact hnonRedundant.2.2 _ (by simp)
-  cases typeCondition with
-  | none =>
-      unfold NormalForm.selectionGroundTyped at hselectionGround
-      unfold NormalForm.selectionNonRedundant at hselectionNonRedundant
-      exact ⟨hselectionGround.2, hselectionNonRedundant⟩
-  | some typeCondition =>
-      unfold NormalForm.selectionGroundTyped at hselectionGround
-      unfold NormalForm.selectionNonRedundant at hselectionNonRedundant
-      exact ⟨hselectionGround.2.2, hselectionNonRedundant⟩
+  unfold NormalForm.selectionGroundTyped at hselectionGround
+  unfold NormalForm.selectionNonRedundant at hselectionNonRedundant
+  exact ⟨hselectionGround.2, hselectionNonRedundant⟩
 
 theorem selectionSetResponseNameFree_of_allFields_responseNamesNodup
     (schema : Schema) (parentType responseName : Name) :
@@ -810,7 +809,7 @@ theorem generatedNormalizedFieldChild_selectionSetNormal
     (childSelectionSet : List Selection) :
     SchemaWellFormedness.schemaWellFormed schema ->
     generatedNormalizedFieldChild schema childType childSelectionSet ->
-      NormalForm.selectionSetNormal schema childSelectionSet := by
+      NormalForm.selectionSetNormal schema childType childSelectionSet := by
   intro hschema hgenerated
   rcases hgenerated with ⟨sourceSelectionSet, _hsourceFree, hchild⟩
   by_cases hobject : NormalForm.objectTypeNameBool schema childType = true
@@ -822,6 +821,7 @@ theorem generatedNormalizedFieldChild_selectionSetNormal
     simpa [hchildEq] using
       NormalForm.GroundTypeNormalization.normalizeSelectionSet_normal
         schema hschema childType sourceSelectionSet
+        hobject
   · have hfalse :
         NormalForm.objectTypeNameBool schema childType = false := by
       cases hmatch : NormalForm.objectTypeNameBool schema childType
@@ -833,17 +833,22 @@ theorem generatedNormalizedFieldChild_selectionSetNormal
             (schema.getPossibleTypes childType) sourceSelectionSet := by
       simpa [hfalse] using hchild
     have hground :
-        NormalForm.selectionSetGroundTyped schema
+        NormalForm.selectionSetGroundTyped schema childType
           (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
             (schema.getPossibleTypes childType) sourceSelectionSet) :=
       NormalForm.GroundTypeNormalization.possibleTypeNormalizations_groundTyped
-        schema (schema.getPossibleTypes childType) sourceSelectionSet
+        schema childType (schema.getPossibleTypes childType) sourceSelectionSet
+        hfalse
         (fun objectType hobjectType =>
           SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects
             hschema childType objectType hobjectType)
-        (fun objectType _hobjectType =>
+        (fun objectType hobjectType =>
           NormalForm.GroundTypeNormalization.normalizeSelectionSet_groundTyped
-            schema hschema objectType sourceSelectionSet)
+            schema hschema objectType sourceSelectionSet
+            (NormalForm.GroundTypeNormalization.objectTypeNameBool_eq_true_of_objectType_forNormality
+              schema
+              (SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects
+                hschema childType objectType hobjectType)))
     have hnonRedundant :
         NormalForm.selectionSetNonRedundant
           (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
@@ -852,12 +857,16 @@ theorem generatedNormalizedFieldChild_selectionSetNormal
         schema (schema.getPossibleTypes childType) sourceSelectionSet
         (SchemaWellFormedness.schemaWellFormed_possibleTypesNodup hschema
           childType)
-        (fun objectType _hobjectType =>
+        (fun objectType hobjectType =>
           (NormalForm.GroundTypeNormalization.normalizeSelectionSet_normal
-            schema hschema objectType sourceSelectionSet).2)
+            schema hschema objectType sourceSelectionSet
+            (NormalForm.GroundTypeNormalization.objectTypeNameBool_eq_true_of_objectType_forNormality
+              schema
+              (SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects
+                hschema childType objectType hobjectType))).2)
     simpa [hchildEq] using
       (⟨hground, hnonRedundant⟩ :
-        NormalForm.selectionSetNormal schema
+        NormalForm.selectionSetNormal schema childType
           (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
             (schema.getPossibleTypes childType) sourceSelectionSet))
 
@@ -2176,18 +2185,20 @@ theorem selectionSetDirectiveFree_field_child_of_mem
   simpa [NormalForm.selectionDirectiveFree] using hselectionFree.2
 
 theorem selectionSetNormal_field_child_of_mem
-    {schema : Schema}
+    {schema : Schema} {parentType : Name}
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection} :
-    NormalForm.selectionSetNormal schema selectionSet ->
+    NormalForm.selectionSetNormal schema parentType selectionSet ->
     Selection.field responseName fieldName arguments directives
         childSelectionSet ∈ selectionSet ->
-      NormalForm.selectionSetNormal schema childSelectionSet := by
+      NormalForm.selectionSetNormal schema
+        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
+        childSelectionSet := by
   intro hnormal hmem
   rcases hnormal with ⟨hground, hnonRedundant⟩
   have hselectionGround :
-      NormalForm.selectionGroundTyped schema
+      NormalForm.selectionGroundTyped schema parentType
         (Selection.field responseName fieldName arguments directives
           childSelectionSet) :=
     by
@@ -2202,11 +2213,14 @@ theorem selectionSetNormal_field_child_of_mem
       exact hnonRedundant.2.2 _ hmem
   unfold NormalForm.selectionGroundTyped at hselectionGround
   unfold NormalForm.selectionNonRedundant at hselectionNonRedundant
-  exact ⟨hselectionGround.2, hselectionNonRedundant⟩
+  rcases hselectionGround with ⟨returnType, hreturn, hchildGround⟩
+  simpa [hreturn] using
+    (⟨hchildGround, hselectionNonRedundant⟩ :
+      NormalForm.selectionSetNormal schema returnType childSelectionSet)
 
 theorem allFieldsNormal_responseNamesNodup
-    {schema : Schema} {selectionSet : List Selection} :
-    NormalForm.selectionSetNormal schema selectionSet ->
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
+    NormalForm.selectionSetNormal schema parentType selectionSet ->
       NormalForm.responseNamesNodup selectionSet := by
   intro hnormal
   rcases hnormal with ⟨_hground, hnonRedundant⟩
@@ -2219,7 +2233,7 @@ theorem collectedGroupsFieldValidationMergeCompatible_of_allFieldsNormal
     (selectionSet : List Selection) :
     NormalForm.selectionsAllFields selectionSet ->
     NormalForm.selectionSetDirectiveFree selectionSet ->
-    NormalForm.selectionSetNormal schema selectionSet ->
+    NormalForm.selectionSetNormal schema parentType selectionSet ->
       CollectedGroupsFieldValidationMergeCompatible
         (GraphQL.Execution.collectFields schema variableValues parentType source
           selectionSet) := by
@@ -2258,7 +2272,7 @@ theorem executionCollectedFieldInvariant_of_allFieldsNormal
     (selectionSet : List Selection) :
     NormalForm.selectionsAllFields selectionSet ->
     NormalForm.selectionSetDirectiveFree selectionSet ->
-    NormalForm.selectionSetNormal schema selectionSet ->
+    NormalForm.selectionSetNormal schema parentType selectionSet ->
       ExecutionCollectedFieldInvariant
         { window :=
           { schema := schema
@@ -2315,7 +2329,7 @@ theorem collectedFieldGroupLocalAppendInvariant_of_allFieldsNormal
         childDepth < depth + 1 ->
         schema.typeIncludesObjectBool childType runtimeType = true ->
         childReady childType childSelectionSet ->
-        NormalForm.selectionSetNormal schema childSelectionSet ->
+        NormalForm.selectionSetNormal schema childType childSelectionSet ->
         NormalForm.selectionSetDirectiveFree childSelectionSet ->
             executeRootSelectionSet schema resolvers variableValues childDepth
                 runtimeType (Execution.ResolverValue.object runtimeType ref)
@@ -2327,7 +2341,7 @@ theorem collectedFieldGroupLocalAppendInvariant_of_allFieldsNormal
                 childSelectionSet) :
     NormalForm.selectionsAllFields selectionSet ->
     NormalForm.selectionSetDirectiveFree selectionSet ->
-    NormalForm.selectionSetNormal schema selectionSet ->
+    NormalForm.selectionSetNormal schema parentType selectionSet ->
     (∀ responseName fieldName arguments directives childSelectionSet,
       Selection.field responseName fieldName arguments directives
         childSelectionSet ∈ selectionSet ->
@@ -2377,7 +2391,10 @@ theorem collectedFieldGroupLocalAppendInvariant_of_allFieldsNormal
         hchildren selectionResponseName selectionFieldName selectionArguments
           selectionDirectives childSelectionSet hselectionMem
       have hnormalChild :
-          NormalForm.selectionSetNormal schema childSelectionSet :=
+          NormalForm.selectionSetNormal schema
+            ((schema.fieldReturnType? parentType selectionFieldName).getD
+              selectionFieldName)
+            childSelectionSet :=
         selectionSetNormal_field_child_of_mem hnormal hselectionMem
       have hfreeChild :
           NormalForm.selectionSetDirectiveFree childSelectionSet :=

@@ -343,24 +343,29 @@ def selectionsAllInlineFragments (selectionSet : List Selection) : Prop :=
     Selection.isInlineFragment selection
 
 -- Spec-inspired `GetPossibleTypes` grounding: non-spec predicate for object-grounded
--- selections.
+-- selections. Object scopes are field-only; abstract scopes are lists of object-grounded
+-- inline fragments.
 mutual
-  def selectionGroundTyped (schema : Schema) : Selection -> Prop
-    | .field _responseName _fieldName _arguments _directives selectionSet =>
-        (selectionsAllFields selectionSet ∨ selectionsAllInlineFragments selectionSet)
-          ∧ selectionSetGroundTyped schema selectionSet
+  def selectionGroundTyped (schema : Schema) (parentType : Name) :
+      Selection -> Prop
+    | .field _responseName fieldName _arguments _directives selectionSet =>
+        ∃ returnType,
+          schema.fieldReturnType? parentType fieldName = some returnType
+            ∧ selectionSetGroundTyped schema returnType selectionSet
     | .inlineFragment (some typeCondition) _directives selectionSet =>
         schema.objectType typeCondition
-          ∧ selectionsAllFields selectionSet
-          ∧ selectionSetGroundTyped schema selectionSet
-    | .inlineFragment none _directives selectionSet =>
-        selectionsAllFields selectionSet
-          ∧ selectionSetGroundTyped schema selectionSet
+          ∧ selectionSetGroundTyped schema typeCondition selectionSet
+    | .inlineFragment none _directives _selectionSet =>
+        False
 
   def selectionSetGroundTyped (schema : Schema)
-      (selectionSet : List Selection) : Prop :=
-    (selectionsAllFields selectionSet ∨ selectionsAllInlineFragments selectionSet)
-      ∧ ∀ selection, selection ∈ selectionSet -> selectionGroundTyped schema selection
+      (parentType : Name) (selectionSet : List Selection) : Prop :=
+    (if objectTypeNameBool schema parentType then
+        selectionsAllFields selectionSet
+      else
+        selectionsAllInlineFragments selectionSet)
+      ∧ ∀ selection, selection ∈ selectionSet ->
+        selectionGroundTyped schema parentType selection
 end
 
 -- Spec-inspired non-redundancy helper: response names are unique at one
@@ -393,22 +398,24 @@ mutual
       ∧ ∀ selection, selection ∈ selectionSet -> selectionNonRedundant selection
 end
 
--- Spec-inspired normal-form invariant: combines object grounding with this project's
--- response-name/type-condition non-redundancy predicate.
+-- Spec-inspired normal-form invariant: combines type-aware object grounding with this
+-- project's response-name/type-condition non-redundancy predicate.
 def selectionSetNormal (schema : Schema)
-    (selectionSet : List Selection) : Prop :=
-  selectionSetGroundTyped schema selectionSet ∧ selectionSetNonRedundant selectionSet
+    (parentType : Name) (selectionSet : List Selection) : Prop :=
+  selectionSetGroundTyped schema parentType selectionSet
+    ∧ selectionSetNonRedundant selectionSet
 
--- Spec-inspired operation normality: non-spec wrapper over the root selection set.
+-- Spec-inspired operation normality.
 def operationNormal (schema : Schema)
     (operation : Operation) : Prop :=
-  selectionSetNormal schema operation.selectionSet
+  selectionSetNormal schema operation.rootType operation.selectionSet
 
 -- Public normality statement for the ground-type normalizer. The theorem witness is
 -- `GraphQL.NormalForm.GroundTypeNormalization.normalizeOperation_normal`.
 def normalizeOperationNormal (schema : Schema)
     (operation : Operation) : Prop :=
   SchemaWellFormedness.schemaWellFormed schema ->
+    Validation.operationDefinitionValid schema operation ->
     operationNormal schema (normalizeOperation schema operation)
 
 -----------------------------------------------------------------------------------------
@@ -874,11 +881,11 @@ def completeNormalBooleanStem :
 -- order is irrelevant; stem variable order is irrelevant; empty cases are omitted;
 -- repeated branch selections are rejected.
 def completeNormalSelectionSet
-    (schema : Schema) (variables : List BoolVar)
+    (schema : Schema) (variables : List BoolVar) (parentType : Name)
     (selectionSet : List Selection) : Prop :=
   variables.Nodup
     ∧ match variables with
-      | [] => selectionSetNormal schema selectionSet
+      | [] => selectionSetNormal schema parentType selectionSet
           ∧ selectionSetDirectiveFree selectionSet
       | _ :: _ =>
           selectionSet.Nodup
@@ -886,7 +893,7 @@ def completeNormalSelectionSet
             ∃ boolCase body,
               completeNormalBoolCase variables boolCase
                 ∧ completeNormalBooleanStem boolCase selection body
-                ∧ selectionSetNormal schema body
+                ∧ selectionSetNormal schema parentType body
                 ∧ selectionSetDirectiveFree body)
           ∧ (∀ left right leftCase rightCase leftBody rightBody,
             left ∈ selectionSet ->
@@ -903,7 +910,7 @@ def completeNormalSelectionSet
 def completeNormalOperation
     (schema : Schema) (operation : Operation) : Prop :=
   completeNormalSelectionSet schema
-    (operationBoolVars operation) operation.selectionSet
+    (operationBoolVars operation) operation.rootType operation.selectionSet
 
 end CompleteNormalization
 

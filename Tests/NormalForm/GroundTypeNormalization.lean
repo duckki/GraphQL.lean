@@ -260,7 +260,28 @@ theorem emptyInterfaceOnlyFieldRetainedSmoke :
   native_decide
 
 theorem normalizedSmokeInputsAreNormal
-    (hschema : SchemaWellFormedness.schemaWellFormed groundTypingSchema) :
+    (hschema : SchemaWellFormedness.schemaWellFormed groundTypingSchema)
+    (hobjectValid :
+      Validation.operationDefinitionValid groundTypingSchema
+        objectFieldInputQuery)
+    (habstractValid :
+      Validation.operationDefinitionValid groundTypingSchema
+        abstractFieldInputQuery)
+    (hduplicateValid :
+      Validation.operationDefinitionValid groundTypingSchema
+        duplicateFieldInputQuery)
+    (haliasedValid :
+      Validation.operationDefinitionValid groundTypingSchema
+        aliasedDuplicateFieldInputQuery)
+    (huntypedValid :
+      Validation.operationDefinitionValid groundTypingSchema
+        untypedInlineFragmentInputQuery)
+    (hnonOverlappingValid :
+      Validation.operationDefinitionValid groundTypingSchema
+        nonOverlappingInlineFragmentInputQuery)
+    (hemptyBranchValid :
+      Validation.operationDefinitionValid groundTypingSchema
+        abstractFieldEmptyGroundBranchInputQuery) :
     operationNormal groundTypingSchema
         (normalizeOperation groundTypingSchema objectFieldInputQuery)
       ∧ operationNormal groundTypingSchema
@@ -278,16 +299,20 @@ theorem normalizedSmokeInputsAreNormal
         (normalizeOperation groundTypingSchema
           abstractFieldEmptyGroundBranchInputQuery) := by
   exact ⟨
-    normalizeOperation_normal groundTypingSchema objectFieldInputQuery hschema,
-    normalizeOperation_normal groundTypingSchema abstractFieldInputQuery hschema,
-    normalizeOperation_normal groundTypingSchema duplicateFieldInputQuery hschema,
-    normalizeOperation_normal groundTypingSchema aliasedDuplicateFieldInputQuery hschema,
+    normalizeOperation_normal groundTypingSchema objectFieldInputQuery
+      hschema hobjectValid,
+    normalizeOperation_normal groundTypingSchema abstractFieldInputQuery
+      hschema habstractValid,
+    normalizeOperation_normal groundTypingSchema duplicateFieldInputQuery
+      hschema hduplicateValid,
+    normalizeOperation_normal groundTypingSchema aliasedDuplicateFieldInputQuery
+      hschema haliasedValid,
     normalizeOperation_normal groundTypingSchema untypedInlineFragmentInputQuery
-      hschema,
+      hschema huntypedValid,
     normalizeOperation_normal groundTypingSchema
-      nonOverlappingInlineFragmentInputQuery hschema,
+      nonOverlappingInlineFragmentInputQuery hschema hnonOverlappingValid,
     normalizeOperation_normal groundTypingSchema
-      abstractFieldEmptyGroundBranchInputQuery hschema⟩
+      abstractFieldEmptyGroundBranchInputQuery hschema hemptyBranchValid⟩
 
 end NormalForm
 end Tests

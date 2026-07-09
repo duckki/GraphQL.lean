@@ -10,6 +10,14 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
+theorem objectTypeNameBool_eq_true_of_objectType_forNormality
+    (schema : Schema) {typeName : Name} :
+    schema.objectType typeName ->
+      objectTypeNameBool schema typeName = true := by
+  intro hobject
+  rcases hobject with ⟨objectType, hlookup⟩
+  simp [objectTypeNameBool, hlookup]
+
 def possibleTypeNormalizations (schema : Schema)
     (possibleTypes : List Name) (selectionSet : List Selection) :
     List Selection :=
@@ -59,35 +67,32 @@ theorem selectionsAllFields_normalizedFieldWithRest
       exact hrest selection htail
 
 theorem selectionSetGroundTyped_normalizedFieldWithRest
-    (schema : Schema) (returnType responseName fieldName : Name)
+    (schema : Schema) (parentType returnType responseName fieldName : Name)
     (arguments : List Argument) (directives : List DirectiveApplication)
     (normalizedSubselections normalizedRest : List Selection) :
-    selectionSetGroundTyped schema normalizedSubselections ->
-      (selectionsAllFields normalizedSubselections
-        ∨ selectionsAllInlineFragments normalizedSubselections) ->
-      selectionSetGroundTyped schema normalizedRest ->
+    objectTypeNameBool schema parentType = true ->
+      schema.fieldReturnType? parentType fieldName = some returnType ->
+      selectionSetGroundTyped schema returnType normalizedSubselections ->
+      selectionSetGroundTyped schema parentType normalizedRest ->
       selectionsAllFields normalizedRest ->
-        selectionSetGroundTyped schema
+        selectionSetGroundTyped schema parentType
           (normalizedFieldWithRest schema returnType responseName fieldName
             arguments directives normalizedSubselections normalizedRest) := by
-  intro hsub hshape hrest hrestFields
+  intro hparentObject hreturn hsub hrest hrestFields
   have hrestGround := hrest
   unfold selectionSetGroundTyped at hrestGround
   unfold selectionSetGroundTyped
+  simp [hparentObject]
   constructor
-  · exact Or.inl
-      (selectionsAllFields_normalizedFieldWithRest schema returnType
+  · exact
+      selectionsAllFields_normalizedFieldWithRest schema returnType
         responseName fieldName arguments directives normalizedSubselections
-        normalizedRest hrestFields)
-  · intro selection hmem
-    simp [normalizedFieldWithRest, normalizedField] at hmem
-    cases hmem with
-    | inl hhead =>
-        subst selection
-        unfold selectionGroundTyped
-        exact ⟨hshape, hsub⟩
-    | inr htail =>
-        exact hrestGround.2 selection htail
+        normalizedRest hrestFields
+  · constructor
+    · unfold selectionGroundTyped
+      exact ⟨returnType, hreturn, hsub⟩
+    · intro selection htail
+      exact hrestGround.2 selection htail
 
 theorem selectionSetResponseNameFree_normalizedFieldWithRest
     (schema : Schema) (parentType returnType responseName fieldResponseName
@@ -324,20 +329,23 @@ theorem possibleTypeNormalizations_allInlineFragments
 
 theorem possibleTypeNormalizations_groundTyped
     (schema : Schema)
+    (parentType : Name)
     (possibleTypes : List Name) (selectionSet : List Selection)
+    (hparentAbstract : objectTypeNameBool schema parentType = false)
     (hpossible :
       ∀ objectType, objectType ∈ possibleTypes -> schema.objectType objectType)
     (hnormalize :
       ∀ objectType, objectType ∈ possibleTypes ->
-        selectionSetGroundTyped schema
+        selectionSetGroundTyped schema objectType
           (normalizeSelectionSet schema objectType selectionSet)) :
-    selectionSetGroundTyped schema
+    selectionSetGroundTyped schema parentType
       (possibleTypeNormalizations schema possibleTypes selectionSet) := by
   unfold selectionSetGroundTyped
+  simp [hparentAbstract]
   constructor
-  · exact Or.inr
-      (possibleTypeNormalizations_allInlineFragments schema possibleTypes
-        selectionSet)
+  · exact
+      possibleTypeNormalizations_allInlineFragments schema possibleTypes
+        selectionSet
   · intro selection hmem
     unfold possibleTypeNormalizations at hmem
     rw [List.mem_filterMap] at hmem
@@ -354,27 +362,26 @@ theorem possibleTypeNormalizations_groundTyped
           hpossible objectType hobjectType,
           by
             simpa [hnormalized] using
-              normalizeSelectionSet_allFields schema objectType selectionSet,
-          by
-        simpa [hnormalized] using
               hnormalize objectType hobjectType⟩
 
 theorem normalizeSelectionSet_groundTyped (schema : Schema)
     (hschema : SchemaWellFormedness.schemaWellFormed schema) :
     ∀ parentType selectionSet,
-      selectionSetGroundTyped schema
+      objectTypeNameBool schema parentType = true ->
+      selectionSetGroundTyped schema parentType
         (normalizeSelectionSet schema parentType selectionSet) := by
-  intro parentType selectionSet
+  intro parentType selectionSet hparentObject
   induction parentType, selectionSet using normalizeSelectionSet.induct schema with
   | case1 parentType =>
       unfold selectionSetGroundTyped
+      simp [hparentObject]
       constructor
-      · exact Or.inl (normalizeSelectionSet_allFields schema parentType [])
+      · exact normalizeSelectionSet_allFields schema parentType []
       · intro selection hmem
         simp [normalizeSelectionSet] at hmem
   | case2 parentType rest responseName fieldName arguments directives
       selectionSet hlookup hrest =>
-      simpa [normalizeSelectionSet, hlookup] using hrest
+      simpa [normalizeSelectionSet, hlookup] using hrest hparentObject
   | case3 parentType rest responseName fieldName arguments directives
       selectionSet fieldDefinition hlookup matching mergedSubselections
       returnType hrest hmerged hpossible =>
@@ -385,61 +392,52 @@ theorem normalizeSelectionSet_groundTyped (schema : Schema)
           possibleTypeNormalizations schema
             (schema.getPossibleTypes returnType) mergedSubselections
       have hsubselectionsGround :
-          selectionSetGroundTyped schema normalizedSubselections := by
+          selectionSetGroundTyped schema returnType normalizedSubselections := by
         unfold normalizedSubselections
         by_cases hobject : objectTypeNameBool schema returnType = true
         · simp [hobject]
-          exact hmerged
+          exact hmerged hobject
         · have hfalse : objectTypeNameBool schema returnType = false := by
             cases hmatch : objectTypeNameBool schema returnType
             · rfl
             · contradiction
           simp [hfalse]
           exact possibleTypeNormalizations_groundTyped schema
+            returnType
             (schema.getPossibleTypes returnType) mergedSubselections
+            hfalse
             (fun objectType hobjectType =>
               SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects
                 hschema returnType objectType hobjectType)
-            (fun objectType hobjectType => hpossible objectType)
-      have hsubselectionsShape :
-          selectionsAllFields normalizedSubselections
-            ∨ selectionsAllInlineFragments normalizedSubselections := by
-        unfold normalizedSubselections
-        by_cases hobject : objectTypeNameBool schema returnType = true
-        · simp [hobject]
-          exact Or.inl
-            (normalizeSelectionSet_allFields schema returnType
-              mergedSubselections)
-        · have hfalse : objectTypeNameBool schema returnType = false := by
-            cases hmatch : objectTypeNameBool schema returnType
-            · rfl
-            · contradiction
-          simp [hfalse]
-          exact Or.inr
-            (possibleTypeNormalizations_allInlineFragments schema
-              (schema.getPossibleTypes returnType)
-              mergedSubselections)
+            (fun objectType hobjectType =>
+              hpossible objectType
+                (objectTypeNameBool_eq_true_of_objectType_forNormality schema
+                  (SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects
+                    hschema returnType objectType hobjectType)))
+      have hreturn :
+          schema.fieldReturnType? parentType fieldName = some returnType := by
+        simp [Schema.fieldReturnType?, hlookup, returnType]
       unfold selectionSetGroundTyped
       simpa [selectionSetGroundTyped, normalizeSelectionSet, hlookup] using
-        selectionSetGroundTyped_normalizedFieldWithRest schema returnType
+        selectionSetGroundTyped_normalizedFieldWithRest schema parentType returnType
           responseName fieldName arguments directives normalizedSubselections
           (normalizeSelectionSet schema parentType
             (withoutFieldSelectionsWithResponseName schema responseName rest))
-          hsubselectionsGround hsubselectionsShape hrest
+          hparentObject hreturn hsubselectionsGround (hrest hparentObject)
           (normalizeSelectionSet_allFields schema parentType
             (withoutFieldSelectionsWithResponseName schema responseName rest))
   | case4 parentType rest directives selectionSet happend =>
-      simpa [normalizeSelectionSet] using happend
+      simpa [normalizeSelectionSet] using happend hparentObject
   | case5 parentType rest typeCondition directives selectionSet hoverlap
       _hrest happend =>
-      simpa [normalizeSelectionSet, hoverlap] using happend
+      simpa [normalizeSelectionSet, hoverlap] using happend hparentObject
   | case6 parentType rest typeCondition directives selectionSet hoverlap
       hrest =>
       have hfalse : schema.typesOverlapBool parentType typeCondition = false := by
         cases hmatch : schema.typesOverlapBool parentType typeCondition
         · rfl
         · contradiction
-      simpa [normalizeSelectionSet, hfalse] using hrest
+      simpa [normalizeSelectionSet, hfalse] using hrest hparentObject
 
 theorem normalizeSelectionSet_responseNameFree (schema : Schema) :
     ∀ parentType responseName selectionSet,
@@ -856,11 +854,13 @@ theorem normalizeSelectionSet_nonRedundant (schema : Schema)
 
 theorem normalizeSelectionSet_normal (schema : Schema)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (parentType : Name) (selectionSet : List Selection) :
-    selectionSetNormal schema
+    (parentType : Name) (selectionSet : List Selection)
+    (hparentObject : objectTypeNameBool schema parentType = true) :
+    selectionSetNormal schema parentType
       (normalizeSelectionSet schema parentType selectionSet) := by
   exact ⟨
-    normalizeSelectionSet_groundTyped schema hschema parentType selectionSet,
+    normalizeSelectionSet_groundTyped schema hschema parentType selectionSet
+      hparentObject,
     normalizeSelectionSet_nonRedundant schema
       (SchemaWellFormedness.schemaWellFormed_possibleTypesNodup hschema)
       parentType selectionSet⟩
@@ -868,10 +868,19 @@ theorem normalizeSelectionSet_normal (schema : Schema)
 theorem normalizeOperation_normal (schema : Schema)
     (operation : Operation) :
     normalizeOperationNormal schema operation := by
-  intro hschema
+  intro hschema hvalid
+  have hrootEq :
+      operation.rootType = schema.queryType :=
+    Validation.operationDefinitionValid_rootType_eq hvalid
+  have hrootObject :
+      schema.objectType operation.rootType := by
+    simpa [hrootEq] using hschema.2.1
+  have hrootObjectBool :
+      objectTypeNameBool schema operation.rootType = true :=
+    objectTypeNameBool_eq_true_of_objectType_forNormality schema hrootObject
   simpa [normalizeOperation, operationNormal] using
     normalizeSelectionSet_normal schema hschema operation.rootType
-      operation.selectionSet
+      operation.selectionSet hrootObjectBool
 
 
 

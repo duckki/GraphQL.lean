@@ -1889,7 +1889,7 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_of_allFields_directiveFree_norma
     (selectionSet : List Selection) :
     NormalForm.selectionsAllFields selectionSet ->
     NormalForm.selectionSetDirectiveFree selectionSet ->
-    NormalForm.selectionSetNormal schema selectionSet ->
+    NormalForm.selectionSetNormal schema parentType selectionSet ->
       VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
         (completionDepth + 1) parentType source selectionSet := by
   intro hall hfree hnormal

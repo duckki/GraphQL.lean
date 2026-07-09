@@ -1,5 +1,4 @@
 import GraphQL.Execution
-import GraphQL.Execution.ResolverValue
 import GraphQL.SchemaWellFormedness
 import GraphQL.Validation
 

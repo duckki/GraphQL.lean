@@ -83,7 +83,8 @@ The plain GraphQL layer is organized under the top-level `GraphQL` library root.
   collection, normal-shape facts, operation variables/wrappers, field and
   inline static-collection execution cases, BoolCase runtime selection,
   child completion, scoped resolver bridges, validity preservation for
-  Boolean-filtered ground branches, and final root semantics.
+  Boolean-filtered ground branches, final root semantics, and uniqueness up to
+  branch, stem, and sibling reordering.
 - `GraphQL.Execution`: fuel-bounded query execution over operation selections,
   parameterized by abstract resolver functions. It
   collects executable fields by response name, resolves each response name
@@ -138,6 +139,8 @@ Raw syntax remains permissive. Validation supplies the invariants that later
 semantic proofs should rely on.
 
 The normal-form correctness proofs are summarized in `docs/normal-form.md`.
+The ground and complete uniqueness arguments are detailed in
+`docs/normal-form-uniqueness.md`.
 Verified project algorithms are summarized in `docs/algorithms.md`.
 
 Lean module organization rules are documented in

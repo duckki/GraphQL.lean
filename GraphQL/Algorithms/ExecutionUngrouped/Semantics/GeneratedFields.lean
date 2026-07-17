@@ -843,6 +843,8 @@ theorem generatedNormalizedFieldChild_selectionSetNormal
           SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects
             hschema childType objectType hobjectType)
         (fun objectType hobjectType =>
+          List.contains_iff_mem.mpr hobjectType)
+        (fun objectType hobjectType =>
           NormalForm.GroundTypeNormalization.normalizeSelectionSet_groundTyped
             schema hschema objectType sourceSelectionSet
             (NormalForm.GroundTypeNormalization.objectTypeNameBool_eq_true_of_objectType_forNormality

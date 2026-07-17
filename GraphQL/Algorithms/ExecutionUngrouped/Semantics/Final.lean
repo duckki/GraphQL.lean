@@ -378,7 +378,6 @@ theorem executeQueryWithFuel_eq_spec_of_allFieldsNormal
       executeRootSelectionSet_eq_spec_of_allFieldsNormal schema resolvers
           variableValues depth operation.rootType source operation.selectionSet
           childReady hchild hall hfree hnormal hlookup hchildren]
-    rfl
   · simp [hsource]
 
 theorem collectedGroupsFieldValidationMergeCompatible_of_generatedNormalizedFieldChild
@@ -967,7 +966,6 @@ theorem executeQueryWithFuel_eq_spec_of_executeRootSelectionSet_eq
       Execution.rootSourceAppliesBool schema operation source = true
   · simp [hsource]
     rw [hroot]
-    rfl
   · simp [hsource]
 
 theorem executeQueryWithFuel_eq_spec_depth_zero
@@ -1255,7 +1253,8 @@ theorem executeQueryWithFuel_responseEquivalent_of_rootSelectionResult
       Execution.executeRootSelectionSet schema resolvers variableValues depth
         operation.rootType source operation.selectionSet <;>
     simp [hroot, hleft, hright, responseDataAndErrorPresenceEquivalent,
-      rootSelectionResultData, resultErrorCount] at hdata hzero hpositive ⊢
+      Execution.selectionSetResultToResponse, rootSelectionResultData,
+      resultErrorCount] at hdata hzero hpositive ⊢
   · exact ⟨hzero, hpositive⟩
   · exact ⟨hdata, hzero, hpositive⟩
 
@@ -1288,7 +1287,8 @@ theorem executeQueryWithFuel_responseEquivalent_of_ungroupedRootSelectionResult
       executeRootSelectionSet schema resolvers variableValues depth
         rightOperation.rootType source rightOperation.selectionSet <;>
     simp [hleftRoot, hrightRoot, hleft, hright,
-      responseDataAndErrorPresenceEquivalent, rootSelectionResultData,
+      responseDataAndErrorPresenceEquivalent,
+      Execution.selectionSetResultToResponse, rootSelectionResultData,
       resultErrorCount] at hdata hzero hpositive ⊢
   · exact ⟨hzero, hpositive⟩
   · exact ⟨hdata, hzero, hpositive⟩

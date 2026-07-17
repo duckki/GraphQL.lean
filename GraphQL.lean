@@ -11,6 +11,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Validity
 import GraphQL.NormalForm.CompleteNormalization.OperationNormality
 import GraphQL.NormalForm.CompleteNormalization.Semantics
 import GraphQL.NormalForm.CompleteNormalization.Validity
+import GraphQL.NormalForm.CompleteNormalization.Uniqueness
 
 /-!
 Spec reference: GraphQL September 2025.

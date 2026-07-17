@@ -44,8 +44,8 @@ ground-type normal form.
 
 ## Proved Properties
 
-Each normalizer has three public property families: normality,
-semantics-preservation, and validity preservation.
+Each normalizer has four public property families: normality, semantics preservation,
+validity preservation, and uniqueness up to reordering.
 
 ### Normality
 
@@ -63,8 +63,8 @@ Normality says the output has the intended syntactic shape.
 ### Semantics Preservation
 
 Semantics preservation says the original and normalized operations execute to
-the same response for every resolver environment, variable assignment, explicit
-fuel value, and source value.
+the same response for every resolver environment, explicit fuel value, source value,
+and variable assignment in the theorem's stated runtime domain.
 
 - `NormalForm.groundTypeNormalFormSemanticsPreservation` is witnessed by
   `GraphQL.NormalForm.GroundTypeNormalization.groundTypeNormalFormSemanticsPreservation`.
@@ -199,6 +199,45 @@ operation-local theorem assumption corresponding to that style of fix.
 These assumptions are deliberately outside `GraphQL.Validation`: they are not spec
 validation requirements. They are theorem-specific preconditions for asking a stronger
 question, namely whether a normalized operation is itself a valid GraphQL operation.
+
+### Uniqueness Up To Reordering
+
+Uniqueness says valid normal operations with the same resolver-parametric semantics
+have the same syntax modulo order that execution does not observe.
+
+- `NormalForm.normalOperationsEqualUpToReorderingSemanticallyEquivalent` is witnessed
+  by `normal_operations_equalUpToReordering_semanticallyEquivalent` in
+  `GraphQL.NormalForm.GroundTypeNormalization`.
+  It lifts selection-set reordering soundness to operation execution.
+- `NormalForm.normalizeOperationsEqualUpToReorderingSemanticallyEquivalent` is
+  witnessed by `normalizeOperations_equalUpToReordering_semanticallyEquivalent` in
+  `GraphQL.NormalForm.GroundTypeNormalization`.
+  It lifts normalized-operation reordering equality back to source-operation semantics.
+- `NormalForm.normalOperationsSemanticallyEquivalentEqualUpToReordering` is witnessed
+  by `normal_operations_semanticallyEquivalent_equalUpToReordering` in
+  `GraphQL.NormalForm.GroundTypeNormalization`.
+  It compares directive-free ground-normal siblings up to reordering.
+- `NormalForm.normalizeOperationUniqueUpToReordering` is witnessed by
+  `GraphQL.NormalForm.GroundTypeNormalization.normalizeOperation_uniqueUpToReordering`.
+- `NormalForm.completeNormalOperationsSemanticallyEquivalentEqualUpToReordering` is
+  witnessed by `complete_normal_operations_semanticallyEquivalent_equalUpToReordering`
+  in `GraphQL.NormalForm.CompleteNormalization`.
+  It additionally ignores complete Boolean branch order and minterm stem order.
+- `NormalForm.completeNormalizeOperationsEqualUpToReorderingSemanticallyEquivalent`
+  is witnessed by
+  `completeNormalizeOperations_equalUpToReordering_semanticallyEquivalent` in
+  `GraphQL.NormalForm.CompleteNormalization`.
+  Its semantic conclusion is restricted to complete Boolean environments, with
+  source Boolean-support equivalence stated explicitly because normalized equality
+  only compares normalized support.
+- `NormalForm.completeNormalizeOperationUniqueUpToReordering` is witnessed by
+  `GraphQL.NormalForm.CompleteNormalization.completeNormalizeOperation_uniqueUpToReordering`.
+  It uses the same possible-type and Boolean/type-condition feasibility assumptions as
+  complete-normalization validity, and compares operations with equivalent Boolean
+  variable support.
+
+The ground and complete proofs are summarized in
+`docs/normal-form-uniqueness.md`.
 
 ## Proof Shape
 

@@ -334,6 +334,9 @@ theorem possibleTypeNormalizations_groundTyped
     (hparentAbstract : objectTypeNameBool schema parentType = false)
     (hpossible :
       ∀ objectType, objectType ∈ possibleTypes -> schema.objectType objectType)
+    (_hincludes :
+      ∀ objectType, objectType ∈ possibleTypes ->
+        schema.typeIncludesObjectBool parentType objectType = true)
     (hnormalize :
       ∀ objectType, objectType ∈ possibleTypes ->
         selectionSetGroundTyped schema objectType
@@ -409,6 +412,8 @@ theorem normalizeSelectionSet_groundTyped (schema : Schema)
             (fun objectType hobjectType =>
               SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects
                 hschema returnType objectType hobjectType)
+            (fun objectType hobjectType =>
+              List.contains_iff_mem.mpr hobjectType)
             (fun objectType hobjectType =>
               hpossible objectType
                 (objectTypeNameBool_eq_true_of_objectType_forNormality schema

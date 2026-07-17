@@ -8,6 +8,17 @@ namespace GraphQL
 
 namespace Execution
 
+-- Proof-only selection-set execution through the same response envelope as query
+-- execution. This supports compositional semantic statements below an operation root.
+def executeSelectionSetAsResponse
+    (schema : Schema) (resolvers : Resolvers ObjectRef)
+    (variableValues : VariableValues)
+    (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef)
+    (selectionSet : List Selection) : Response :=
+  selectionSetResultToResponse
+    (executeSelectionSet schema resolvers variableValues fuel parentType source
+      selectionSet)
+
 -- Proof-only projection of the child selections contributed by a grouped field list.
 -- Runtime execution uses `collectSubfields`; normal-form proofs use this syntactic
 -- view when relating field groups back to validation-time selection sets.

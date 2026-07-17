@@ -414,6 +414,12 @@ def executeSelectionSet
     List Selection -> Result (List (Name × ResponseValue)) :=
   executeRootSelectionSet schema resolvers variableValues fuel parentType source
 
+-- Convert the internal selection-set completion result into a response envelope.
+def selectionSetResultToResponse :
+    Result (List (Name × ResponseValue)) -> Response
+  | .error errors => { data := .null, errors := errors }
+  | .ok (fields, errors) => { data := .object fields, errors := errors }
+
 -- Local recursion fuel bound for the partial `ExecuteQuery` model.
 def executeQueryFuelBound (operation : Operation) : Nat :=
   operation.size * 3 + 1
@@ -434,12 +440,9 @@ def executeQueryWithFuel
     (variableValues : VariableValues) (operation : Operation)
     (fuel : Nat) (source : ResolverValue ObjectRef) : Response :=
   if rootSourceAppliesBool schema operation source then
-    let completed :=
-      executeRootSelectionSet schema resolvers variableValues
-        fuel operation.rootType source operation.selectionSet
-    match completed with
-    | .error errors => { data := .null, errors := errors }
-    | .ok (fields, errors) => { data := .object fields, errors := errors }
+    selectionSetResultToResponse
+      (executeRootSelectionSet schema resolvers variableValues
+        fuel operation.rootType source operation.selectionSet)
   else
     { data := .null, errors := 1 }
 
@@ -450,6 +453,59 @@ def executeQuery
     (source : ResolverValue ObjectRef) : Response :=
   executeQueryWithFuel schema resolvers variableValues operation
     (executeQueryFuelBound operation) source
+
+-----------------------------------------------------------------------------------------
+-- Semantic Equivalence of Responses
+-----------------------------------------------------------------------------------------
+namespace ResponseValue
+
+def insertObjectFieldSorted
+    (field : Name × ResponseValue) :
+    List (Name × ResponseValue) -> List (Name × ResponseValue)
+  | [] => [field]
+  | candidate :: rest =>
+      if field.1 <= candidate.1 then
+        field :: candidate :: rest
+      else
+        candidate :: insertObjectFieldSorted field rest
+
+def sortObjectFieldsByName :
+    List (Name × ResponseValue) -> List (Name × ResponseValue)
+  | [] => []
+  | field :: rest =>
+      insertObjectFieldSorted field (sortObjectFieldsByName rest)
+
+mutual
+  def canonical : ResponseValue -> ResponseValue
+    | .null => .null
+    | .scalar value => .scalar value
+    | .list values => .list (canonicalList values)
+    | .object fields =>
+        .object (sortObjectFieldsByName (canonicalObjectFields fields))
+
+  def canonicalList : List ResponseValue -> List ResponseValue
+    | [] => []
+    | value :: rest =>
+        canonical value :: canonicalList rest
+
+  def canonicalObjectFields :
+      List (Name × ResponseValue) -> List (Name × ResponseValue)
+    | [] => []
+    | (name, value) :: rest =>
+        (name, canonical value) :: canonicalObjectFields rest
+end
+
+def semanticEquivalent (left right : ResponseValue) : Prop :=
+  canonical left = canonical right
+
+end ResponseValue
+namespace Response
+
+def semanticEquivalent (left right : Response) : Prop :=
+  ResponseValue.semanticEquivalent left.data right.data
+    ∧ left.errors = right.errors
+
+end Response
 
 end Execution
 

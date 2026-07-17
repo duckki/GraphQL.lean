@@ -580,7 +580,6 @@ theorem executeQueryWithFuel_eq_spec_of_root_fields_eq
       depth source := by
   rw [executeQueryWithFuel, GraphQL.Execution.executeQueryWithFuel, hroot,
     hfields]
-  rfl
 
 theorem executeQueryWithFuel_eq_spec_of_root_false
     {ObjectIdentity : Type}

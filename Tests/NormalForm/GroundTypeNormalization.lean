@@ -1,5 +1,6 @@
 import Tests.NormalForm.Common
 import GraphQL.NormalForm.GroundTypeNormalization.Normality
+import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness
 
 namespace GraphQL
 namespace Tests
@@ -7,6 +8,18 @@ namespace NormalForm
 
 open GraphQL.NormalForm
 open GraphQL.NormalForm.GroundTypeNormalization
+
+#check normalSelectionSetsEqualUpToReorderingSemanticallyEquivalent
+#check selectionSetsSemanticallyEquivalent_of_equalUpToReordering
+#check normalOperationsEqualUpToReorderingSemanticallyEquivalent
+#check normal_operations_equalUpToReordering_semanticallyEquivalent
+#check normalizeOperationsEqualUpToReorderingSemanticallyEquivalent
+#check normalizeOperations_equalUpToReordering_semanticallyEquivalent
+#check selectionSetsDataEquivalent_of_equalUpToReordering
+#check normalOperationsSemanticallyEquivalentEqualUpToReordering
+#check normal_operations_semanticallyEquivalent_equalUpToReordering
+#check normalizeOperationUniqueUpToReordering
+#check normalizeOperation_uniqueUpToReordering
 
 /-! Ground-typed normalization smoke tests use `*InputQuery` and `*OutputSnapshot` pairs. -/
 

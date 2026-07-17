@@ -1,6 +1,7 @@
 import Tests.NormalForm.GroundTypeNormalization
 import GraphQL.Execution.Data
 import GraphQL.NormalForm.CompleteNormalization.OperationNormality
+import GraphQL.NormalForm.CompleteNormalization.Uniqueness
 
 namespace GraphQL
 namespace Tests
@@ -377,6 +378,23 @@ theorem completeNormalizationSmokeInputsHaveCompleteNormalTheorem :
       groundTypingSchema completeNormalizationAbstractInputQuery,
     CompleteNormalization.completeNormalizeOperation_normal
       groundTypingSchema completeNormalizationNestedDirectiveInputQuery⟩
+
+#check
+  completeNormalOperationsEqualUpToReorderingSemanticallyEquivalent
+#check
+  CompleteNormalization.complete_normal_operations_equalUpToReordering_semanticallyEquivalent
+#check operationsSemanticallyEquivalentForCompleteBoolVars
+#check
+  completeNormalizeOperationsEqualUpToReorderingSemanticallyEquivalent
+#check
+  CompleteNormalization.completeNormalizeOperations_equalUpToReordering_semanticallyEquivalent
+#check
+  completeNormalOperationsSemanticallyEquivalentEqualUpToReordering
+#check
+  CompleteNormalization.complete_normal_operations_semanticallyEquivalent_equalUpToReordering
+#check completeNormalizeOperationUniqueUpToReordering
+#check
+  CompleteNormalization.completeNormalizeOperation_uniqueUpToReordering
 
 end NormalForm
 end Tests

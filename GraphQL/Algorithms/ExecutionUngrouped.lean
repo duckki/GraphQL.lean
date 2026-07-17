@@ -342,12 +342,9 @@ def executeQueryWithFuel {ObjectRef : Type}
     (variableValues : VariableValues) (operation : Operation)
     (fuel : Nat) (source : ResolverValue ObjectRef) : Response :=
   if rootSourceAppliesBool schema operation source then
-    let completed :=
-      executeRootSelectionSet schema resolvers variableValues
-        fuel operation.rootType source operation.selectionSet
-    match completed with
-    | .error errors => { data := .null, errors := errors }
-    | .ok (fields, errors) => { data := .object fields, errors := errors }
+    Execution.selectionSetResultToResponse
+      (executeRootSelectionSet schema resolvers variableValues
+        fuel operation.rootType source operation.selectionSet)
   else
     { data := .null, errors := 1 }
 

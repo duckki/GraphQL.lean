@@ -567,6 +567,135 @@ def normalizeOperationValid (schema : Schema)
           (normalizeOperation schema operation)
 
 -----------------------------------------------------------------------------------------
+-- Ground Type Normalization Uniqueness
+--
+-- Let ≈ and ≡ be defined over two operations φ and ψ as follows:
+-- * φ ≈ ψ: Semantic equivalence of φ and ψ  up to reordering of response fields
+-- * φ ≡ ψ: Syntactic equivalence of φ and ψ up to reordering of selections/arguments
+--
+-- Then, the following holds for the normalization operation N:
+--   N(φ) ≡ N(ψ) ↔ φ ≈ ψ
+-- * The `<-` direction of the implication has some extra assumptions about the input
+--   query to ensure the normalized operations are validity preserving.
+-----------------------------------------------------------------------------------------
+
+-- Operation semantic equivalence (`≈`): a relaxed version of `operationsEquivalent`,
+-- where fields can be reordered in the response values.
+def operationsSemanticallyEquivalent (schema : Schema)
+    (left right : Operation) : Prop :=
+  ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
+    variableValues fuel (source : Execution.ResolverValue ObjectRef),
+    Execution.Response.semanticEquivalent
+      (Execution.executeQueryWithFuel schema resolvers variableValues left fuel source)
+      (Execution.executeQueryWithFuel schema resolvers variableValues right fuel source)
+
+mutual
+  inductive SelectionEqualUpToReordering :
+      Selection -> Selection -> Prop where
+    | field
+        (responseName fieldName : Name)
+        {leftArguments rightArguments : List Argument}
+        (directives : List DirectiveApplication)
+        {leftSelectionSet rightSelectionSet : List Selection} :
+        Argument.argumentsEquivalent leftArguments rightArguments ->
+        SelectionSetEqualUpToReordering
+          leftSelectionSet rightSelectionSet ->
+        SelectionEqualUpToReordering
+          (.field responseName fieldName leftArguments directives leftSelectionSet)
+          (.field responseName fieldName rightArguments directives rightSelectionSet)
+    | inlineFragment
+        (typeCondition : Option Name)
+        (directives : List DirectiveApplication)
+        {leftSelectionSet rightSelectionSet : List Selection} :
+        SelectionSetEqualUpToReordering
+          leftSelectionSet rightSelectionSet ->
+        SelectionEqualUpToReordering
+          (.inlineFragment typeCondition directives leftSelectionSet)
+          (.inlineFragment typeCondition directives rightSelectionSet)
+
+  inductive SelectionSetEqualUpToReordering :
+      List Selection -> List Selection -> Prop where
+    | paired
+        {left right : List Selection}
+        (pairs : List (Selection × Selection)) :
+        (pairs.map Prod.fst).Perm left ->
+        (pairs.map Prod.snd).Perm right ->
+        (∀ pair, pair ∈ pairs ->
+          SelectionEqualUpToReordering pair.1 pair.2) ->
+        SelectionSetEqualUpToReordering left right
+end
+
+-- Operation syntactic equality (`≡`) up to reordering.
+def operationsEqualUpToReordering
+    (left right : Operation) : Prop :=
+  left.rootType = right.rootType
+    ∧ SelectionSetEqualUpToReordering left.selectionSet right.selectionSet
+
+-- States: Two syntactically equal normal operations are semantically equivalent.
+-- The theorem witness is
+-- `GroundTypeNormalization.normal_operations_equalUpToReordering_semanticallyEquivalent`
+-- in `GraphQL.NormalForm.GroundTypeNormalization.Uniqueness`.
+def normalOperationsEqualUpToReorderingSemanticallyEquivalent
+    (schema : Schema) (left right : Operation) : Prop :=
+  operationDirectiveFree left
+  -> operationDirectiveFree right
+  -> operationNormal schema left
+  -> operationNormal schema right
+  -> operationsEqualUpToReordering left right
+  -> operationsSemanticallyEquivalent schema left right
+
+-- States: N(φ) ≡ N(ψ) → φ ≈ ψ
+-- The theorem witness is
+-- `GroundTypeNormalization.normalizeOperations_equalUpToReordering_semanticallyEquivalent`
+-- in `GraphQL.NormalForm.GroundTypeNormalization.Uniqueness`.
+def normalizeOperationsEqualUpToReorderingSemanticallyEquivalent
+    (schema : Schema) (left right : Operation) : Prop :=
+  SchemaWellFormedness.schemaWellFormed schema
+  -> Validation.operationDefinitionValid schema left
+  -> Validation.operationDefinitionValid schema right
+  -> operationDirectiveFree left
+  -> operationDirectiveFree right
+  -> operationsEqualUpToReordering
+      (normalizeOperation schema left)
+      (normalizeOperation schema right)
+  -> operationsSemanticallyEquivalent schema left right
+
+-- States: Two semantically equivalent normal operations are syntactically equal.
+-- The theorem witness is
+-- `GroundTypeNormalization.normal_operations_semanticallyEquivalent_equalUpToReordering`
+-- in `GraphQL.NormalForm.GroundTypeNormalization.Uniqueness`.
+def normalOperationsSemanticallyEquivalentEqualUpToReordering
+    (schema : Schema) (left right : Operation) : Prop :=
+  SchemaWellFormedness.schemaWellFormed schema
+  -> Validation.operationDefinitionValid schema left
+  -> Validation.operationDefinitionValid schema right
+  -> operationDirectiveFree left
+  -> operationDirectiveFree right
+  -> operationNormal schema left
+  -> operationNormal schema right
+  -> operationsSemanticallyEquivalent schema left right
+  -> operationsEqualUpToReordering left right
+
+-- States: φ ≈ ψ → N(φ) ≡ N(ψ)
+-- The theorem witness is
+-- `GroundTypeNormalization.normalizeOperation_uniqueUpToReordering` in
+-- `GraphQL.NormalForm.GroundTypeNormalization.Uniqueness`.
+def normalizeOperationUniqueUpToReordering
+    (schema : Schema) (left right : Operation) : Prop :=
+  SchemaWellFormedness.schemaWellFormed schema
+  -> Validation.operationDefinitionValid schema left
+  -> Validation.operationDefinitionValid schema right
+  -> operationDirectiveFree left
+  -> operationDirectiveFree right
+  -> operationFieldsValidInPossibleTypes schema left
+  -> operationFieldsValidInPossibleTypes schema right
+  -> operationTypeConditionFeasible schema left
+  -> operationTypeConditionFeasible schema right
+  -> operationsSemanticallyEquivalent schema left right
+  -> operationsEqualUpToReordering
+      (normalizeOperation schema left) (normalizeOperation schema right)
+
+-----------------------------------------------------------------------------------------
 -- Complete Normalization
 -----------------------------------------------------------------------------------------
 
@@ -790,6 +919,16 @@ def operationBoolVars (operation : Operation) :
     List BoolVar :=
   dedupBoolVars (selectionSetBooleanVariables operation.selectionSet)
 
+-- A runtime variable environment is complete for a Boolean-variable support when
+-- every variable in that support resolves to a Boolean value.
+def boolVarsComplete
+    (variables : List BoolVar)
+    (variableValues : Execution.VariableValues) : Prop :=
+  ∀ varName, varName ∈ variables ->
+    ∃ value,
+      Execution.inputValueBoolean? variableValues (.variable varName) =
+        some value
+
 def completeNormalizeOperation
     (schema : Schema) (operation : Operation) : Operation :=
   let variables := operationBoolVars operation
@@ -811,7 +950,7 @@ export CompleteNormalization
     wrapWithBoolCase
     filterSelectionSetBoolCase normalizeBoolCaseForType
     completeNormalizeRootSelectionSet
-    completeNormalizeOperation operationBoolVars)
+    completeNormalizeOperation operationBoolVars boolVarsComplete)
 
 -----------------------------------------------------------------------------------------
 -- Complete Normalization Semantics Preservation
@@ -819,10 +958,7 @@ export CompleteNormalization
 
 def operationBoolVarsComplete
     (operation : Operation) (variableValues : Execution.VariableValues) : Prop :=
-  ∀ varName, varName ∈ operationBoolVars operation ->
-    ∃ value,
-      Execution.inputValueBoolean? variableValues (.variable varName) =
-        some value
+  boolVarsComplete (operationBoolVars operation) variableValues
 
 -- Public semantics-preservation statement for complete normalization. The theorem
 -- witness is
@@ -1043,6 +1179,139 @@ def completeNormalizeOperationValid
   -> operationBoolTypeConditionFeasible schema operation
   -> Validation.operationDefinitionValid schema
       (completeNormalizeOperation schema operation)
+
+-----------------------------------------------------------------------------------------
+-- Complete Normalization Uniqueness
+--
+-- Let ≈ and ≡ be defined over two operations φ and ψ as follows:
+-- * φ ≈ ψ: Semantic equivalence of φ and ψ  up to reordering of response fields
+-- * φ ≡ ψ: Syntactic equality of φ and ψ up to reordering of
+--   selections/arguments/directives
+--
+-- Then, the following holds for the normalization operation N:
+--   N(φ) ≡ N(ψ) ↔ φ ≈ ψ
+-- * The `<-` direction of the implication has some extra assumptions about the input
+--   query to ensure the normalized operations are validity preserving.
+-- * The `->` direction of the implication uses a slightly relaxed version of `≈` to
+--   preserve semantic equivalence of input operations and their normalized versions.
+-----------------------------------------------------------------------------------------
+
+-- States: two operations have the same set of Boolean variables.
+def operationBoolVarsEquivalent (left right : Operation) : Prop :=
+  ∀ varName,
+    varName ∈ operationBoolVars left ↔
+      varName ∈ operationBoolVars right
+
+def CompleteNormalSelectionEqualUpToReordering
+    (leftVariables rightVariables : List BoolVar)
+    (left right : Selection) : Prop :=
+  ∃ leftCase rightCase leftBody rightBody,
+    completeNormalBoolCase leftVariables leftCase
+      ∧ completeNormalBoolCase rightVariables rightCase
+      ∧ completeNormalBooleanStem leftCase left leftBody
+      ∧ completeNormalBooleanStem rightCase right rightBody
+      ∧ completeNormalBoolCasesEquivalent leftCase rightCase
+      ∧ SelectionSetEqualUpToReordering leftBody rightBody
+
+def CompleteNormalSelectionSetEqualUpToReordering
+    (leftVariables rightVariables : List BoolVar)
+    (left right : List Selection) : Prop :=
+  ∃ pairs : List (Selection × Selection),
+    (pairs.map Prod.fst).Perm left
+      ∧ (pairs.map Prod.snd).Perm right
+      ∧ ∀ pair, pair ∈ pairs ->
+        CompleteNormalSelectionEqualUpToReordering
+          leftVariables rightVariables pair.1 pair.2
+
+-- Syntactic equality (`≡`) up to reordering for complete-normal operations.
+def completeNormalOperationsEqualUpToReordering
+    (left right : Operation) : Prop :=
+  left.rootType = right.rootType
+    ∧ operationBoolVarsEquivalent left right
+    ∧ match operationBoolVars left with
+      | [] =>
+          SelectionSetEqualUpToReordering left.selectionSet right.selectionSet
+      | _ :: _ =>
+          CompleteNormalSelectionSetEqualUpToReordering
+            (operationBoolVars left) (operationBoolVars right)
+            left.selectionSet right.selectionSet
+
+-- States: Normalized operations that are syntactically equal (up to reordering) are
+-- semantically equivalent. The theorem witness is
+-- `CompleteNormalization.complete_normal_operations_equalUpToReordering_semanticallyEquivalent`
+-- in `GraphQL.NormalForm.CompleteNormalization.Uniqueness`.
+def completeNormalOperationsEqualUpToReorderingSemanticallyEquivalent
+    (schema : Schema) (left right : Operation) : Prop :=
+  completeNormalOperation schema left
+  -> completeNormalOperation schema right
+  -> completeNormalOperationsEqualUpToReordering left right
+  -> operationsSemanticallyEquivalent schema left right
+
+-- `operationsSemanticallyEquivalent` with an additional assumption that the input
+-- variables include complete Boolean variable assignments.
+-- The added assumption is necessary to utilize the semantic equivalence of operation
+-- and its normalized form.
+def operationsSemanticallyEquivalentForCompleteBoolVars
+    (schema : Schema) (variables : List BoolVar)
+    (left right : Operation) : Prop :=
+  ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
+    variableValues fuel (source : Execution.ResolverValue ObjectRef),
+    boolVarsComplete variables variableValues ->
+      Execution.Response.semanticEquivalent
+        (Execution.executeQueryWithFuel schema resolvers variableValues left
+          fuel source)
+        (Execution.executeQueryWithFuel schema resolvers variableValues right
+          fuel source)
+
+-- States: N(φ) ≡ N(ψ) → φ ≈ ψ
+-- The theorem witness is
+-- `CompleteNormalization.completeNormalizeOperations_equalUpToReordering_semanticallyEquivalent`
+-- in `GraphQL.NormalForm.CompleteNormalization.Uniqueness`.
+def completeNormalizeOperationsEqualUpToReorderingSemanticallyEquivalent
+    (schema : Schema) (left right : Operation) : Prop :=
+  SchemaWellFormedness.schemaWellFormed schema
+  -> Validation.operationDefinitionValid schema left
+  -> Validation.operationDefinitionValid schema right
+  -> operationBoolVarsEquivalent left right
+  -> completeNormalOperationsEqualUpToReordering
+      (completeNormalizeOperation schema left)
+      (completeNormalizeOperation schema right)
+  -> operationsSemanticallyEquivalentForCompleteBoolVars
+      schema (operationBoolVars left) left right
+
+-- States: Two semantically equivalent normal operations are syntactically equal.
+-- The theorem witness is
+-- `CompleteNormalization.complete_normal_operations_semanticallyEquivalent_equalUpToReordering`
+-- in `GraphQL.NormalForm.CompleteNormalization.Uniqueness`.
+def completeNormalOperationsSemanticallyEquivalentEqualUpToReordering
+    (schema : Schema) (left right : Operation) : Prop :=
+  SchemaWellFormedness.schemaWellFormed schema
+  -> Validation.operationDefinitionValid schema left
+  -> Validation.operationDefinitionValid schema right
+  -> completeNormalOperation schema left
+  -> completeNormalOperation schema right
+  -> operationBoolVarsEquivalent left right
+  -> operationsSemanticallyEquivalent schema left right
+  -> completeNormalOperationsEqualUpToReordering left right
+
+-- States: φ ≈ ψ → N(φ) ≡ N(ψ)
+-- The theorem witness is
+-- `CompleteNormalization.completeNormalizeOperation_uniqueUpToReordering` in
+-- `GraphQL.NormalForm.CompleteNormalization.Uniqueness`.
+def completeNormalizeOperationUniqueUpToReordering
+    (schema : Schema) (left right : Operation) : Prop :=
+  SchemaWellFormedness.schemaWellFormed schema
+  -> Validation.operationDefinitionValid schema left
+  -> Validation.operationDefinitionValid schema right
+  -> operationFieldsValidInPossibleTypes schema left
+  -> operationFieldsValidInPossibleTypes schema right
+  -> operationBoolTypeConditionFeasible schema left
+  -> operationBoolTypeConditionFeasible schema right
+  -> operationBoolVarsEquivalent left right
+  -> operationsSemanticallyEquivalent schema left right
+  -> completeNormalOperationsEqualUpToReordering
+      (completeNormalizeOperation schema left)
+      (completeNormalizeOperation schema right)
 
 end NormalForm
 

@@ -603,7 +603,7 @@ def depth_zero
         _hlater childDepth _runtimeType _identity hlt
       exact False.elim (Nat.not_lt_zero childDepth hlt) }
 
-def localAppendInvariant
+theorem localAppendInvariant
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
@@ -674,7 +674,7 @@ structure CollectedFieldGroupRecursiveAlignedAppendState
 
 namespace CollectedFieldGroupRecursiveAlignedAppendState
 
-def alignedAppendSteps_from_prefix
+theorem alignedAppendSteps_from_prefix
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {completionDepth : Nat}
@@ -767,7 +767,7 @@ def alignedAppendSteps_from_prefix
             hstable responseName field fields (prefixTail ++ [later]) rest
             hgroup hprefixNext hremainingRest⟩
 
-def alignedAppendSteps
+theorem alignedAppendSteps
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {completionDepth : Nat}

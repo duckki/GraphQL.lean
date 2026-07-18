@@ -350,7 +350,7 @@ theorem executeRootSelectionSet_append_one_aligned_of_complete
     parentType source prefixSelectionSet laterSelectionSet (.object [])]
   rw [hprefix]
   simp [htail]
-  simpa [rootSelectionResultOfVisit] using
+  exact
     groupedFieldVisitResult_singleFieldResult_combine_aligned responseName
       prefixCompleted laterCompleted combinedCompleted haligned
 
@@ -447,7 +447,7 @@ theorem executeRootSelectionSet_append_one_visit_aligned_of_complete
   rw [visitSubfields_append_equivalence schema resolvers variableValues depth
     parentType source prefixSelectionSet laterSelectionSet (.object [])]
   simp [htail]
-  simpa [rootSelectionResultOfVisit] using
+  exact
     (groupedFieldVisitResult_singleFieldResult_combine_visit_aligned responseName
       prefixCompleted laterCompleted combinedCompleted
       (visitSubfields schema resolvers variableValues depth parentType source
@@ -664,7 +664,7 @@ mutual
         | list values =>
             have hinner :
                 inner.isCompositeBool schema = false := by
-              simpa [TypeRef.isCompositeBool] using hno
+              simpa [TypeRef.isCompositeBool, TypeRef.namedType] using hno
             have hlist :=
               specCompleteValueList_eq_of_no_object schema resolvers
                 variableValues depth inner fields otherFields values hinner
@@ -672,7 +672,7 @@ mutual
     | depth + 1, .nonNull inner, fields, otherFields, resolved, hno => by
         have hinner :
             inner.isCompositeBool schema = false := by
-          simpa [TypeRef.isCompositeBool] using hno
+          simpa [TypeRef.isCompositeBool, TypeRef.namedType] using hno
         have hvalue :=
           specCompleteValue_eq_of_no_object schema resolvers variableValues
             (depth + 1) inner fields otherFields resolved hinner
@@ -1582,7 +1582,7 @@ theorem completeValue_named_group_append_one_result_aligned_spec_of_contained_al
         (by
           intro childDepth runtimeType identity hlt hcontains hincludes
           exact hprefixChildren childDepth runtimeType identity hlt hcontains
-            (by simpa using hincludes))
+            (by simpa [TypeRef.namedType] using hincludes))
   have hextended :
       ResponseValueResultAlignedEquivalent ungroupedExtended specExtended := by
     dsimp [ungroupedExtended, specExtended]
@@ -1593,7 +1593,7 @@ theorem completeValue_named_group_append_one_result_aligned_spec_of_contained_al
         (by
           intro childDepth runtimeType identity hlt hcontains hincludes
           exact hchildren childDepth runtimeType identity hlt hcontains
-            (by simpa using hincludes))
+            (by simpa [TypeRef.namedType] using hincludes))
   have hmergedAppend :
       GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later]) =
         GraphQL.Execution.mergedFieldSelectionSet prefixFields ++
@@ -1984,6 +1984,27 @@ theorem resultStatus_completeValue_named_group_append_second_eq_ok_of_contained
                 simp [h] at hincludes ⊢
             simp [GraphQL.Execution.completeValue, completeResolvedValue_previous_null, hnotIncludes, resultValueOrNull, resultStatus, visitOk]
 
+theorem completeValueList_cons_previous
+    {ObjectIdentity : Type}
+    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat)
+    (itemType : TypeRef) (selectionSet : List Selection)
+    (value : ResolverValue ObjectIdentity)
+    (rest : List (ResolverValue ObjectIdentity))
+    (previous : ResponseValue) (previousRest : List ResponseValue) :
+    completeValueList schema resolvers variableValues depth itemType
+        selectionSet (value :: rest) (previous :: previousRest) =
+      Result.combine List.cons
+        (match (some previous : Option ResponseValue) with
+        | some .null => .ok (.null, 0)
+        | _ =>
+            completeValue schema resolvers variableValues depth itemType
+              selectionSet value (some previous))
+        (completeValueList schema resolvers variableValues depth itemType
+          selectionSet rest previousRest) := by
+  rw [GraphQL.Algorithms.ExecutionUngrouped.completeValueList.eq_def]
+  rfl
+
 theorem completeValueList_head_eq_completeResolvedValue_of_composite
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
@@ -2009,7 +2030,7 @@ theorem completeValueList_head_eq_completeResolvedValue_of_composite
         simp [reusablePreviousValue?, hitemComposite]
   | nonNull inner ih =>
       have hinnerComposite : inner.isCompositeBool schema = true := by
-        simpa [TypeRef.isCompositeBool] using hitemComposite
+        simpa [TypeRef.isCompositeBool, TypeRef.namedType] using hitemComposite
       cases previous with
       | null =>
           unfold completeResolvedValue
@@ -2172,11 +2193,11 @@ theorem resultStatus_completeValueList_append_second_eq_ok_of_each
                                 simp [Result.combine,
                                   GraphQL.Execution.Result.combine,
                                   resultStatus, visitOk]
-                              simpa [GraphQL.Execution.completeValueList,
-                                completeValueList, hhead, htail,
-                                hrightTail, Result.combine,
-                                GraphQL.Execution.Result.combine,
-                                resultStatus, visitOk] using hstatusList
+                              rw [GraphQL.Execution.completeValueList, hhead,
+                                htail]
+                              simp [GraphQL.Execution.Result.combine]
+                              rw [completeValueList_cons_previous, hrightTail]
+                              exact hstatusList
                           | succ rightTailErrors =>
                               simp [hrightTail, resultStatus, visitOk] at htailStatus
                   | succ rightHeadErrors =>
@@ -2310,11 +2331,11 @@ theorem resultStatus_completeValueList_append_second_eq_ok_of_mem
                                 simp [Result.combine,
                                   GraphQL.Execution.Result.combine,
                                   resultStatus, visitOk]
-                              simpa [GraphQL.Execution.completeValueList,
-                                completeValueList, hhead, htail,
-                                hrightTail, Result.combine,
-                                GraphQL.Execution.Result.combine,
-                                resultStatus, visitOk] using hstatusList
+                              rw [GraphQL.Execution.completeValueList, hhead,
+                                htail]
+                              simp [GraphQL.Execution.Result.combine]
+                              rw [completeValueList_cons_previous, hrightTail]
+                              exact hstatusList
                           | succ rightTailErrors =>
                               simp [hrightTail, resultStatus, visitOk] at htailStatus
                   | succ rightHeadErrors =>
@@ -2472,8 +2493,13 @@ theorem completeValueList_append_result_aligned_of_each
                   completeValueList_head_eq_completeResolvedValue_of_composite
                     schema resolvers variableValues depth itemType
                     later.selectionSet value headValue hitemComposite
-              simpa [GraphQL.Execution.completeValueList, completeValueList,
-                hhead, htail, ← hrightHead, resultValueOrNull] using
+              rw [GraphQL.Execution.completeValueList, hhead, htail]
+              simp [GraphQL.Execution.Result.combine]
+              rw [completeValueList_cons_previous]
+              simpa [GraphQL.Execution.completeValueList, ← hrightHead,
+                hhead, htail, resultValueOrNull,
+                GraphQL.Execution.Result.combine,
+                Result.combine] using
                 ListResponseResultAlignedEquivalent.zip_cons hheadAppend
                   htailAppend
 
@@ -2631,8 +2657,13 @@ theorem completeValueList_append_result_aligned_of_mem
                   completeValueList_head_eq_completeResolvedValue_of_composite
                     schema resolvers variableValues depth itemType
                     later.selectionSet value headValue hitemComposite
-              simpa [GraphQL.Execution.completeValueList, completeValueList,
-                hhead, htail, ← hrightHead, resultValueOrNull] using
+              rw [GraphQL.Execution.completeValueList, hhead, htail]
+              simp [GraphQL.Execution.Result.combine]
+              rw [completeValueList_cons_previous]
+              simpa [GraphQL.Execution.completeValueList, ← hrightHead,
+                hhead, htail, resultValueOrNull,
+                GraphQL.Execution.Result.combine,
+                Result.combine] using
                 ListResponseResultAlignedEquivalent.zip_cons hheadAppend
                   htailAppend
 
@@ -2936,11 +2967,14 @@ theorem completeValueList_append_result_eq_spec_of_each
                                 simp [Result.combine,
                                   GraphQL.Execution.Result.combine,
                                   mergeResponseLists]
-                              simpa [GraphQL.Execution.completeValueList,
-                                completeValueList, hhead, htail, hrightTail,
-                                hheadAppend', htailAppend', Result.combine,
-                                GraphQL.Execution.Result.combine] using
-                                hcombinedList
+                              rw [GraphQL.Execution.completeValueList, hhead,
+                                htail]
+                              simp [GraphQL.Execution.Result.combine]
+                              rw [completeValueList_cons_previous, hrightTail]
+                              rw [GraphQL.Execution.completeValueList,
+                                hheadAppend', htailAppend', hrightTail]
+                              simpa [GraphQL.Execution.Result.combine,
+                                Result.combine] using hcombinedList
                           | succ rightTailErrors =>
                               simp [hrightTail, resultStatus, visitOk] at htailStatus'
                   | succ rightHeadErrors =>
@@ -3264,11 +3298,14 @@ theorem completeValueList_append_result_eq_spec_of_mem
                                 simp [Result.combine,
                                   GraphQL.Execution.Result.combine,
                                   mergeResponseLists]
-                              simpa [GraphQL.Execution.completeValueList,
-                                completeValueList, hhead, htail, hrightTail,
-                                hheadAppend', htailAppend', Result.combine,
-                                GraphQL.Execution.Result.combine] using
-                                hcombinedList
+                              rw [GraphQL.Execution.completeValueList, hhead,
+                                htail]
+                              simp [GraphQL.Execution.Result.combine]
+                              rw [completeValueList_cons_previous, hrightTail]
+                              rw [GraphQL.Execution.completeValueList,
+                                hheadAppend', htailAppend', hrightTail]
+                              simpa [GraphQL.Execution.Result.combine,
+                                Result.combine] using hcombinedList
                           | succ rightTailErrors =>
                               simp [hrightTail, resultStatus, visitOk] at htailStatus'
                   | succ rightHeadErrors =>

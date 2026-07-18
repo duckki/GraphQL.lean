@@ -215,8 +215,13 @@ mutual
                 Execution.collectFields, Execution.collectSelection, hexec,
                 filterExecutableGroupsBoolCase] using hchildCollect
           | cons filteredChild filteredChildren =>
+              have hempty :
+                  Execution.selectionDirectivesAllowBool variableValues [] =
+                    true := by
+                simp [Execution.selectionDirectivesAllowBool]
               simpa [filterSelectionSetBoolCase, hallow, hchild,
-                Execution.collectFields, Execution.collectSelection, hexec]
+                Execution.collectFields, Execution.collectSelection,
+                Execution.mergeExecutableGroups, hexec, hempty]
                 using hchildCollect
     | parentType, source,
       .inlineFragment (some typeCondition) directives selectionSet,
@@ -277,9 +282,14 @@ mutual
                   Execution.collectFields, Execution.collectSelection, hexec,
                   happly, filterExecutableGroupsBoolCase] using hchildCollect
             | cons filteredChild filteredChildren =>
+                have hempty :
+                    Execution.selectionDirectivesAllowBool variableValues [] =
+                      true := by
+                  simp [Execution.selectionDirectivesAllowBool]
                 simpa [filterSelectionSetBoolCase, hallow, hchild,
                   Execution.collectFields, Execution.collectSelection, hexec,
-                  happly] using hchildCollect
+                  Execution.mergeExecutableGroups, happly, hempty]
+                  using hchildCollect
 
   theorem collectFields_filterSelectionSetBoolCase
       (schema : Schema) (variableValues : Execution.VariableValues)

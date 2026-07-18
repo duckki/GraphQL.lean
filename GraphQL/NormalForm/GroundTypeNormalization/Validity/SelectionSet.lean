@@ -257,7 +257,9 @@ theorem normalizeSelectionSet_normalizedValid_of_typeConditionFeasible
               (hmergedFeasible returnType
                 (by
                   simpa [returnType] using
-                    object_typeIncludesObject_self schema hreturnObjectType))
+                    (List.contains_iff_mem.mp
+                      (object_typeIncludesObjectBool_self schema
+                        hreturnObjectType))))
         · have hreturnObjectFalse :
               objectTypeNameBool schema returnType = false := by
             cases hmatch : objectTypeNameBool schema returnType
@@ -674,8 +676,13 @@ theorem normalizeSelectionSet_normalizedValid_of_typeConditionFeasible
                   rest))) := by
         simpa [normalizedFieldWithRest, normalizedField] using
           hconsNormalizedValid hnormalizedSubselectionsNonempty
-      simpa [normalizeSelectionSet, hlookup, returnType,
-        normalizedSubselections] using hfinal
+      rw [normalizeSelectionSet.eq_2, hlookup]
+      change NormalizedSelectionSetValid schema variableDefinitions parentType
+        (normalizedFieldWithRest schema returnType responseName fieldName
+          arguments [] normalizedSubselections
+          (normalizeSelectionSet schema parentType
+            (withoutFieldSelectionsWithResponseName schema responseName rest)))
+      exact hfinal
   | case4 parentType rest directives subselections happend =>
       intro typeConditions hobject hstack hready himplementation hmerge hfree
         hfeasible

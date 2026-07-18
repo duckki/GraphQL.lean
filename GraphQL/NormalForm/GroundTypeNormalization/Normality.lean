@@ -47,7 +47,8 @@ theorem selectionSetDirectiveFree_normalizedFieldWithRest
           (normalizedFieldWithRest schema returnType responseName fieldName
             arguments directives normalizedSubselections normalizedRest) := by
   intro hfield hrest
-  simpa [normalizedFieldWithRest, normalizedField] using And.intro hfield hrest
+  simpa [normalizedFieldWithRest, normalizedField, selectionSetDirectiveFree]
+    using And.intro hfield hrest
 
 theorem selectionsAllFields_normalizedFieldWithRest
     (schema : Schema) (returnType responseName fieldName : Name)
@@ -222,7 +223,13 @@ theorem normalizeSelectionSet_directiveFree (schema : Schema) :
           (Selection.field responseName fieldName arguments []
             normalizedSubselections) := by
       exact ⟨rfl, hnormalizedSubselections⟩
-    simpa [normalizeSelectionSet, hlookup] using
+    rw [normalizeSelectionSet.eq_2, hlookup]
+    change selectionSetDirectiveFree
+      (normalizedFieldWithRest schema returnType responseName fieldName
+        arguments [] normalizedSubselections
+        (normalizeSelectionSet schema parentType
+          (withoutFieldSelectionsWithResponseName schema responseName rest)))
+    exact
       selectionSetDirectiveFree_normalizedFieldWithRest schema returnType
         responseName fieldName arguments [] normalizedSubselections
         (normalizeSelectionSet schema parentType
@@ -290,7 +297,13 @@ theorem normalizeSelectionSet_allFields (schema : Schema) :
         else
           possibleTypeNormalizations schema
             (schema.getPossibleTypes returnType) mergedSubselections
-      simpa [normalizeSelectionSet, hlookup] using
+      rw [normalizeSelectionSet.eq_2, hlookup]
+      change selectionsAllFields
+        (normalizedFieldWithRest schema returnType responseName fieldName
+          arguments directives normalizedSubselections
+          (normalizeSelectionSet schema parentType
+            (withoutFieldSelectionsWithResponseName schema responseName rest)))
+      exact
         selectionsAllFields_normalizedFieldWithRest schema returnType
           responseName fieldName arguments directives normalizedSubselections
           (normalizeSelectionSet schema parentType
@@ -422,8 +435,13 @@ theorem normalizeSelectionSet_groundTyped (schema : Schema)
       have hreturn :
           schema.fieldReturnType? parentType fieldName = some returnType := by
         simp [Schema.fieldReturnType?, hlookup, returnType]
-      unfold selectionSetGroundTyped
-      simpa [selectionSetGroundTyped, normalizeSelectionSet, hlookup] using
+      rw [normalizeSelectionSet.eq_2, hlookup]
+      change selectionSetGroundTyped schema parentType
+        (normalizedFieldWithRest schema returnType responseName fieldName
+          arguments directives normalizedSubselections
+          (normalizeSelectionSet schema parentType
+            (withoutFieldSelectionsWithResponseName schema responseName rest)))
+      exact
         selectionSetGroundTyped_normalizedFieldWithRest schema parentType returnType
           responseName fieldName arguments directives normalizedSubselections
           (normalizeSelectionSet schema parentType
@@ -484,7 +502,13 @@ theorem normalizeSelectionSet_responseNameFree (schema : Schema) :
             (Selection.field fieldResponseName fieldName arguments directives
               normalizedSubselections) := by
         simpa [selectionResponseNameFree] using hhead
-      simpa [normalizeSelectionSet, hlookup] using
+      rw [normalizeSelectionSet.eq_2, hlookup]
+      change selectionSetResponseNameFree schema parentType responseName
+        (normalizedFieldWithRest schema returnType fieldResponseName fieldName
+          arguments directives normalizedSubselections
+          (normalizeSelectionSet schema parentType
+            (withoutFieldSelectionsWithResponseName schema fieldResponseName rest)))
+      exact
         selectionSetResponseNameFree_normalizedFieldWithRest schema parentType
           returnType responseName fieldResponseName fieldName arguments
           directives normalizedSubselections
@@ -607,7 +631,13 @@ theorem normalizeSelectionSet_responseNamesNodup (schema : Schema) :
         normalizeSelectionSet_without_responseName_not_mem schema parentType
           responseName rest
       have htailNodup := hrest
-      simpa [normalizeSelectionSet, hlookup] using
+      rw [normalizeSelectionSet.eq_2, hlookup]
+      change responseNamesNodup
+        (normalizedFieldWithRest schema returnType responseName fieldName
+          arguments directives normalizedSubselections
+          (normalizeSelectionSet schema parentType
+            (withoutFieldSelectionsWithResponseName schema responseName rest)))
+      exact
         responseNamesNodup_normalizedFieldWithRest schema returnType
           responseName fieldName arguments directives normalizedSubselections
           (normalizeSelectionSet schema parentType
@@ -641,7 +671,8 @@ theorem inlineFragmentTypeConditionsNodup_of_selectionsAllFields
         exact hfields candidate (List.mem_cons_of_mem selection hcandidate)
       cases selection with
       | field responseName fieldName arguments directives selectionSet =>
-          simpa [inlineFragmentTypeConditionsNodup] using ih hrest
+          simpa [inlineFragmentTypeConditionsNodup, inlineFragmentTypeCondition?]
+            using ih hrest
       | inlineFragment typeCondition directives selectionSet =>
           simp [Selection.isField] at hhead
 
@@ -758,7 +789,7 @@ theorem possibleTypeNormalizations_inlineFragmentTypeConditionsNodup
                 simp at hcondition
                 subst restObjectType
                 exact hobjectNotMem hrestObjectType
-          simp [inlineFragmentTypeConditionsNodup,
+          simp [inlineFragmentTypeConditionsNodup, inlineFragmentTypeCondition?,
             possibleTypeNormalizations, hnormalized]
           exact ⟨hobjectNotInRestConditions, ih hrestNodup⟩
 
@@ -835,7 +866,13 @@ theorem normalizeSelectionSet_nonRedundant (schema : Schema)
       have htailNoResponseName :=
         normalizeSelectionSet_without_responseName_not_mem schema parentType
           responseName rest
-      simpa [normalizeSelectionSet, hlookup] using
+      rw [normalizeSelectionSet.eq_2, hlookup]
+      change selectionSetNonRedundant
+        (normalizedFieldWithRest schema returnType responseName fieldName
+          arguments directives normalizedSubselections
+          (normalizeSelectionSet schema parentType
+            (withoutFieldSelectionsWithResponseName schema responseName rest)))
+      exact
         selectionSetNonRedundant_normalizedFieldWithRest schema returnType
           responseName fieldName arguments directives normalizedSubselections
           (normalizeSelectionSet schema parentType

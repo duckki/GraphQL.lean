@@ -392,21 +392,24 @@ theorem completeResolvedValue_nonNull_ok_of_inner_ok
             have hreuseInner :
                 reusablePreviousValue? schema inner (some (.scalar scalarValue)) =
                   some (.scalar scalarValue) := by
-              simpa [reusablePreviousValue?] using hreuse
+              simpa [reusablePreviousValue?, TypeRef.isCompositeBool,
+                TypeRef.namedType] using hreuse
             unfold completeResolvedValue
             rw [hreuseInner]
         | object fields =>
             have hreuseInner :
                 reusablePreviousValue? schema inner (some (.object fields)) =
                   some (.object fields) := by
-              simpa [reusablePreviousValue?] using hreuse
+              simpa [reusablePreviousValue?, TypeRef.isCompositeBool,
+                TypeRef.namedType] using hreuse
             unfold completeResolvedValue
             rw [hreuseInner]
         | list values =>
             have hreuseInner :
                 reusablePreviousValue? schema inner (some (.list values)) =
                   some (.list values) := by
-              simpa [reusablePreviousValue?] using hreuse
+              simpa [reusablePreviousValue?, TypeRef.isCompositeBool,
+                TypeRef.namedType] using hreuse
             unfold completeResolvedValue
             rw [hreuseInner]
       rw [hinner'] at hinner
@@ -550,20 +553,23 @@ theorem executeField_resolved_eq_completeResolvedValue
       simp [executeField, hlookup, reusablePreviousValue?_null,
         completeResolvedValue_previous_null]
   | scalar value =>
-      simpa [executeField, hlookup, hresolve] using
-        reusableOrComplete_eq_completeResolvedValue schema resolvers
-          variableValues depth field.selectionSet resolved
-          fieldDefinition.outputType (.scalar value)
+      unfold executeField
+      rw [hlookup, hresolve]
+      exact reusableOrComplete_eq_completeResolvedValue schema resolvers
+        variableValues depth field.selectionSet resolved
+        fieldDefinition.outputType (.scalar value)
   | object fields =>
-      simpa [executeField, hlookup, hresolve] using
-        reusableOrComplete_eq_completeResolvedValue schema resolvers
-          variableValues depth field.selectionSet resolved
-          fieldDefinition.outputType (.object fields)
+      unfold executeField
+      rw [hlookup, hresolve]
+      exact reusableOrComplete_eq_completeResolvedValue schema resolvers
+        variableValues depth field.selectionSet resolved
+        fieldDefinition.outputType (.object fields)
   | list values =>
-      simpa [executeField, hlookup, hresolve] using
-        reusableOrComplete_eq_completeResolvedValue schema resolvers
-          variableValues depth field.selectionSet resolved
-          fieldDefinition.outputType (.list values)
+      unfold executeField
+      rw [hlookup, hresolve]
+      exact reusableOrComplete_eq_completeResolvedValue schema resolvers
+        variableValues depth field.selectionSet resolved
+        fieldDefinition.outputType (.list values)
 
 theorem executeField_empty_output
     {ObjectIdentity : Type}
@@ -1972,7 +1978,7 @@ theorem visitSelection_field_depth_zero_absorbs_of_ready
                 with ⟨found, hlookup⟩
               rw [hlookupNone] at hlookup
               contradiction
-          simpa [hprevious, mergeResponseFieldResult,
+          simpa [hprevious, mergeResponseFieldResult, resultValueOrNull,
             mergeResponseFieldIntoObject, outOfFuel] using hfield
       | some previous =>
           have hpreviousMem :
@@ -1993,7 +1999,7 @@ theorem visitSelection_field_depth_zero_absorbs_of_ready
                   (ResponseMergeReady_object_field fields responseName existing
                     hready hmem)
                   hpreviousReady)
-          simpa [hprevious, mergeResponseFieldResult,
+          simpa [hprevious, mergeResponseFieldResult, resultValueOrNull,
             mergeResponseFieldIntoObject, outOfFuel] using hfield
 
 theorem visitSelection_inline_none_blocked_absorbs_of_ready
@@ -2548,12 +2554,14 @@ mutual
                         lookupResponseField? fieldResponseName fields with
                     | none =>
                         simpa [visitSelection, hallowed, mergeResponseFieldResult,
+                          resultValueOrNull, outOfFuel,
                           mergeResponseFieldIntoObject, responseObjectField?,
                           hprevious] using
                           responseObjectField?_mergeResponseFieldIntoObject_other
                             responseName fieldResponseName .null fields hne
                     | some previous =>
                         simpa [visitSelection, hallowed, mergeResponseFieldResult,
+                          resultValueOrNull,
                           mergeResponseFieldIntoObject, responseObjectField?,
                           hprevious] using
                           responseObjectField?_mergeResponseFieldIntoObject_other

@@ -419,9 +419,9 @@ theorem ExecutableFieldsFlatSpecAlignedEquivalent_nonempty_group_of_alignedAppen
           (executableFieldSelections (field :: fields)))
         (GraphQL.Execution.executeField schema resolvers variableValues
           (completionDepth + 2) source responseName (field :: fields)) := by
-    simpa [executeRootSelectionSet] using
-      GroupedFieldVisitAlignedEquivalent.to_rootSelectionResult responseName
-        (by simpa using hgroup)
+    unfold executeRootSelectionSet
+    exact GroupedFieldVisitAlignedEquivalent.to_rootSelectionResult responseName
+      (by simpa using hgroup)
   have hspecRoot :
       GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
           (completionDepth + 2) parentType source

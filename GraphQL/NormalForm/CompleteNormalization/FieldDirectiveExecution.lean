@@ -675,7 +675,8 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_no_
         source
         (Execution.collectFields schema variableValues lookupParent source
           rest) := by
-    simpa [Execution.executeSelectionSet, normalizedRest] using htail
+    simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+      normalizedRest] using htail
   apply executeSelectionSet_staticCollectForGround_field_allowed_lookup_some_group_case
     schema resolvers variableValues
     (operationBoolVars operation) depth lookupParent
@@ -826,7 +827,8 @@ theorem executeSelectionSet_staticCollectForGround_field_allowed_lookup_none_no_
         source
         (Execution.collectFields schema variableValues lookupParent source
           rest) := by
-    simpa [Execution.executeSelectionSet, normalizedRest] using htail
+    simpa [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
+      normalizedRest] using htail
   apply executeSelectionSet_staticCollectForGround_field_allowed_lookup_none_group_case
     schema resolvers variableValues
     (operationBoolVars operation) depth lookupParent

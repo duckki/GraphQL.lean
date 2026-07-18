@@ -171,7 +171,8 @@ theorem fieldsInSetCanMerge_field_cons_of_rest_responseNameFree
     · intro _hparents
       exact ⟨rfl, harguments⟩
     · intro _hparents objectType
-      simpa [headScoped] using hchildSelf objectType
+      simpa [FieldMerge.fieldsInSetCanMerge, headScoped]
+        using hchildSelf objectType
   have hrestNoResponse :
       ∀ scopedField,
         scopedField ∈ FieldMerge.collectFields schema parentType rest ->

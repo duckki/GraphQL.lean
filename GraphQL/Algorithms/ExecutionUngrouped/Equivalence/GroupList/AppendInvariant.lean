@@ -65,7 +65,7 @@ structure FieldGroupAppendInvariant
             (GraphQL.Execution.mergedFieldSelectionSet prefixFields)
             (.object []))
 
-def FieldGroupAppendInvariant.depth_zero
+theorem FieldGroupAppendInvariant.depth_zero
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) :
@@ -80,7 +80,7 @@ def FieldGroupAppendInvariant.depth_zero
       intro _prefixFields _later childDepth _runtimeType _identity hlt
       exact False.elim (Nat.not_lt_zero childDepth hlt) }
 
-def ExecutedFieldAppendPlanState.of_appendInvariant
+theorem ExecutedFieldAppendPlanState.of_appendInvariant
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
@@ -192,7 +192,7 @@ structure CollectedFieldGroupAppendInvariant
                     ((field :: prefixTail) ++ [later]) }
               initial := .object [] }
 
-def CollectedFieldGroupAppendInvariant.depth_zero
+theorem CollectedFieldGroupAppendInvariant.depth_zero
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
@@ -317,7 +317,7 @@ structure CollectedFieldGroupContainedAppendInvariant
                     ((field :: prefixTail) ++ [later]) }
               initial := .object [] }
 
-def CollectedFieldGroupContainedAppendInvariant.depth_zero
+theorem CollectedFieldGroupContainedAppendInvariant.depth_zero
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (source : ResolverValue ObjectIdentity)
@@ -341,7 +341,7 @@ def CollectedFieldGroupContainedAppendInvariant.depth_zero
         _hlater childDepth _runtimeType _identity hlt _hcontains _hincludes
       exact False.elim (Nat.not_lt_zero childDepth hlt) }
 
-def CollectedFieldGroupContainedAppendInvariant.of_collectedAppendInvariant
+theorem CollectedFieldGroupContainedAppendInvariant.of_collectedAppendInvariant
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
@@ -419,7 +419,7 @@ theorem visitSubfields_absorbs_from_empty_object_prefix
         childDepth runtimeType (.object runtimeType identity) base
         laterSelectionSet base hbaseReady hbaseAbsorbs hlocal)
 
-def CollectedFieldGroupContainedAppendInvariant.of_prefixChildren
+theorem CollectedFieldGroupContainedAppendInvariant.of_prefixChildren
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
@@ -495,7 +495,7 @@ def CollectedFieldGroupContainedAppendInvariant.of_prefixChildren
               exact hlater)
           childDepth runtimeType identity hlt hcontains hincludes }
 
-def ExecutableFieldsMergedCompleteContainedAppendSteps.of_collectedInvariant_from_prefix
+theorem ExecutableFieldsMergedCompleteContainedAppendSteps.of_collectedInvariant_from_prefix
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
@@ -580,7 +580,7 @@ def ExecutableFieldsMergedCompleteContainedAppendSteps.of_collectedInvariant_fro
             field fields (prefixTail ++ [later]) rest hgroup hprefixNext
             hremainingRest⟩
 
-def ExecutableFieldsMergedCompleteContainedAppendSteps.of_collectedInvariant
+theorem ExecutableFieldsMergedCompleteContainedAppendSteps.of_collectedInvariant
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
@@ -648,7 +648,7 @@ structure CollectedFieldGroupLocalAppendInvariant
                 (field :: prefixTail))
               (.object []))
 
-def CollectedFieldGroupLocalAppendInvariant.of_child_state
+theorem CollectedFieldGroupLocalAppendInvariant.of_child_state
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
@@ -690,7 +690,7 @@ def CollectedFieldGroupLocalAppendInvariant.of_child_state
         (GraphQL.Execution.mergedFieldSelectionSet (field :: prefixTail)) hlt
     errorNeutral := herrors }
 
-def CollectedFieldGroupContainedAppendInvariant.of_collectedLocalAppendInvariant
+theorem CollectedFieldGroupContainedAppendInvariant.of_collectedLocalAppendInvariant
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
@@ -733,7 +733,7 @@ def CollectedFieldGroupContainedAppendInvariant.of_collectedLocalAppendInvariant
               exact hlater)
           childDepth runtimeType identity hlt hincludes }
 
-def ExecutedFieldAppendPlanState.of_collectedAppendInvariant_from_prefix
+theorem ExecutedFieldAppendPlanState.of_collectedAppendInvariant_from_prefix
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
@@ -793,7 +793,7 @@ def ExecutedFieldAppendPlanState.of_collectedAppendInvariant_from_prefix
               intro candidate hcandidate
               exact hremaining candidate (by simp [hcandidate]))
 
-def ExecutedFieldAppendPlanState.of_collectedAppendInvariant
+theorem ExecutedFieldAppendPlanState.of_collectedAppendInvariant
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
@@ -811,7 +811,7 @@ def ExecutedFieldAppendPlanState.of_collectedAppendInvariant
     (by intro candidate hmem; simp at hmem)
     (by intro later hlater; exact hlater)
 
-def ExecutedFieldAppendPlanState.of_collectedLocalAppendInvariant_from_prefix
+theorem ExecutedFieldAppendPlanState.of_collectedLocalAppendInvariant_from_prefix
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
@@ -916,7 +916,7 @@ def ExecutedFieldAppendPlanState.of_collectedLocalAppendInvariant_from_prefix
               intro candidate hcandidate
               exact hremaining candidate (by simp [hcandidate]))
 
-def ExecutedFieldAppendPlanState.of_collectedLocalAppendInvariant
+theorem ExecutedFieldAppendPlanState.of_collectedLocalAppendInvariant
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
@@ -1011,9 +1011,10 @@ theorem executeRootSelectionSet_executableFieldSelections_append_fresh_eq_combin
     simpa using hrightPrefix
   rw [hleft]
   rw [hright]
-  simpa [hrightPrefix'] using
-    combineVisitStatus_object_append_result leftFields rightFields
-      leftStatus rightStatus
+  dsimp
+  rw [hrightPrefix']
+  exact combineVisitStatus_object_append_result leftFields rightFields
+    leftStatus rightStatus
 
 namespace ExecutedFieldGroups
 

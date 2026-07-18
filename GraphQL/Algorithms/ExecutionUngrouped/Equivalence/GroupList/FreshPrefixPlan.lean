@@ -879,7 +879,7 @@ theorem collectFields_allFields_directiveFree_responseNamesNodup_prefix_empty
       selectionSet hall hfree
   have hfieldsNodup :
       (fields.map (fun field => field.responseName)).Nodup := by
-    simpa [fields, List.map_map] using
+    simpa [fields, List.map_map, Function.comp_def] using
       responseNamesNodup_map_executableFieldOfSelection parentType
         selectionSet hall hnodup
   have hparents : ExecutableFieldsParent parentType fields := by
@@ -924,7 +924,7 @@ theorem collectFields_allFields_directiveFree_responseNamesNodup_field_mem_prefi
       selectionSet hall hfree
   have hfieldsNodup :
       (fields.map (fun field => field.responseName)).Nodup := by
-    simpa [fields, List.map_map] using
+    simpa [fields, List.map_map, Function.comp_def] using
       responseNamesNodup_map_executableFieldOfSelection parentType
         selectionSet hall hnodup
   have hparents : ExecutableFieldsParent parentType fields := by
@@ -1157,7 +1157,7 @@ theorem of_allFields_directiveFree_responseNamesNodup
       selectionSet hall hfree
   have hfieldsNodup :
       (fields.map (fun field => field.responseName)).Nodup := by
-    simpa [fields, List.map_map] using
+    simpa [fields, List.map_map, Function.comp_def] using
       responseNamesNodup_map_executableFieldOfSelection parentType selectionSet
         hall hnodup
   have hparents : ExecutableFieldsParent parentType fields := by

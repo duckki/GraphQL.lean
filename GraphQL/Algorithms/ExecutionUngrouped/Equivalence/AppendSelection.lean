@@ -775,7 +775,8 @@ mutual
           cases depth with
           | zero =>
               simpa [GraphQL.Execution.executeFieldData,
-                GraphQL.Execution.executeField, GraphQL.Execution.Result.getD] using
+                GraphQL.Execution.executeField, GraphQL.Execution.Result.getD,
+                GraphQL.Execution.outOfFuel] using
                 ResponseMergeReady_empty_object
           | succ depth' =>
               cases hlookup :
@@ -1095,7 +1096,9 @@ theorem specExecuteRootSelectionSet_response_ready
       (.object
         (GraphQL.Execution.executeRootSelectionSetData schema resolvers
           variableValues depth parentType source selectionSet)) := by
-  simpa [GraphQL.Execution.executeRootSelectionSetData] using
+  simpa [GraphQL.Execution.executeRootSelectionSetData,
+    GraphQL.Execution.executeRootSelectionSet,
+    GraphQL.Execution.executeCollectedFieldsData] using
     specExecuteCollectedFields_collectFields_response_ready schema resolvers
       variableValues depth parentType source selectionSet
 
@@ -1294,9 +1297,21 @@ theorem executeRootSelectionSet_eq_spec_of_state_equivalent
         | .error errors => .error errors
         | .ok (fields, errors) =>
             .ok (mergeResponse (.object []) (.object fields), errors) := by
-      simpa [ExecutionStateEquivalent, ResponseResultEquivalent,
-        ExecutionEquivalenceState.ungroupedProjectionResult,
-        ExecutionEquivalenceState.specProjectionResult] using hstate
+      change
+        ExecutionWindow.visitSubfieldsResult window.schema window.resolvers
+            window.variableValues window.depth window.parentType window.source
+            window.selectionSet (.object []) =
+          match
+            GraphQL.Execution.executeCollectedFields window.schema
+              window.resolvers window.variableValues window.depth window.source
+              (GraphQL.Execution.collectFields window.schema
+                window.variableValues window.parentType window.source
+                window.selectionSet)
+          with
+          | .error errors => .error errors
+          | .ok (fields, errors) =>
+              .ok (mergeResponse (.object []) (.object fields), errors) at hstate
+      exact hstate
     rw [visitSubfieldsResult_empty_eq_executeRootSelectionSet_object] at hprojection
     unfold ExecutionWindow.ungroupedResult ExecutionWindow.specResult
     unfold GraphQL.Execution.executeRootSelectionSet

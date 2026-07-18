@@ -788,8 +788,14 @@ theorem collectFields_normalizeSelectionSet_mem_groupSource_nonempty
                 arguments directives normalizedSubselections ::
                 normalizeSelectionSet schema parentType
                   (withoutFieldSelectionsWithResponseName schema responseName rest)) := by
-          simpa [normalizeSelectionSet, hlookup, normalizedSubselections,
-            returnType] using hfieldMem
+          rw [normalizeSelectionSet.eq_2, hlookup] at hfieldMem
+          change candidate ∈ FieldMerge.collectFields schema parentType
+            (normalizedField schema returnType responseName fieldName
+              arguments directives normalizedSubselections ::
+              normalizeSelectionSet schema parentType
+                (withoutFieldSelectionsWithResponseName schema responseName rest))
+            at hfieldMem
+          exact hfieldMem
         cases hleaf :
             leafTypeNameBool schema returnType
         · cases hnormalizedSubselections : normalizedSubselections with

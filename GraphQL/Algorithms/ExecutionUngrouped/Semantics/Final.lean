@@ -1067,8 +1067,8 @@ theorem executeRootSelectionSet_completeNormalizeOperation_eq_spec_of_runtime_bo
             match visited.fst with
             | .object fields => Except.ok (fields, errors)
             | _ => Except.error (errors + 1)
-    simpa [executeRootSelectionSet, NormalForm.completeNormalizeOperation] using
-      congrArg toRootResult hvisit
+    unfold executeRootSelectionSet
+    exact congrArg toRootResult hvisit
   have hspec :
       Execution.executeRootSelectionSet schema resolvers variableValues depth
           operation.rootType source

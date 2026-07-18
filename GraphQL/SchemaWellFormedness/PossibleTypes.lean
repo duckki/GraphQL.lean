@@ -112,7 +112,7 @@ theorem object_typeIncludesObjectBool_eq_self
   rcases hobject with ⟨objectType, hlookup⟩
   have hname : objectType.name = typeName := by
     have hmatch := List.find?_some hlookup
-    simpa [Schema.lookupType] using hmatch
+    simpa [Schema.lookupType, TypeDefinition.name] using hmatch
   simp [Schema.typeIncludesObjectBool, Schema.getPossibleTypes, hlookup,
     hname] at hinclude
   exact hinclude

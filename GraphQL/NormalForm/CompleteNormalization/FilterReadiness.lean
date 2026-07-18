@@ -406,7 +406,8 @@ theorem fieldsInSetCanMerge_filterSelectionSetBoolCase_forSemantics
               (sourceLeft.selectionSet ++ sourceRight.selectionSet)) :=
         ihsubfields hsourceParents objectType
       rw [filterSelectionSetBoolCase_append] at hfilteredSubfields
-      simpa [hleftSource.selectionSet, hrightSource.selectionSet]
+      simpa [FieldMerge.fieldsInSetCanMerge, hleftSource.selectionSet,
+        hrightSource.selectionSet]
         using hfilteredSubfields
 
 mutual

@@ -276,16 +276,15 @@ theorem collectFields_normalizeSelectionSet_mem_source
               fieldDefinition.outputType
               (SchemaWellFormedness.schemaWellFormed_lookupField_outputType
                 hschema hlookup)⟩
-      have hfieldMem' :
-          normalizedSelection ∈
-            FieldMerge.collectFields schema parentType
-              (normalizedFieldWithRest schema returnType responseName fieldName
-                arguments directives normalizedSubselections
-                (normalizeSelectionSet schema parentType
-                  (withoutFieldSelectionsWithResponseName schema responseName
-                    rest))) := by
-        simpa [normalizeSelectionSet, hlookup, normalizedSubselections] using
-          hfieldMem
+      rw [normalizeSelectionSet.eq_2, hlookup] at hfieldMem
+      change normalizedSelection ∈
+        FieldMerge.collectFields schema parentType
+          (normalizedFieldWithRest schema returnType responseName fieldName
+            arguments directives normalizedSubselections
+            (normalizeSelectionSet schema parentType
+              (withoutFieldSelectionsWithResponseName schema responseName
+                rest))) at hfieldMem
+      have hfieldMem' := hfieldMem
       unfold normalizedFieldWithRest at hfieldMem'
       simp [normalizedField, hlookup, FieldMerge.collectFields] at hfieldMem'
       rcases hfieldMem' with hhead | htail

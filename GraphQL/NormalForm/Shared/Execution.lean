@@ -268,7 +268,10 @@ theorem addExecutableGroup_namesNodup
       rcases current with ⟨currentName, fields⟩
       intro hnodup
       by_cases hname : (currentName == group.fst) = true
-      · simpa [Execution.addExecutableGroup, hname] using hnodup
+      · have hcurrent : currentName = group.fst := beq_iff_eq.mp hname
+        subst currentName
+        simpa [Execution.addExecutableGroup, executableGroupNamesNodup]
+          using hnodup
       · have hfalse : (currentName == group.fst) = false := by
           cases hmatch : currentName == group.fst
           · rfl

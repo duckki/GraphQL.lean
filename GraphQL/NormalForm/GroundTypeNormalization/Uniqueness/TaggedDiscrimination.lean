@@ -405,7 +405,9 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_of_fiel
           (by
             simpa [Execution.ResponseValue.semanticEquivalent] using hvalue)
       simpa [wrapTypeRefSelectionSetResponse, leftChildResponse,
-        rightChildResponse, hleftWrapped, hrightWrapped] using hsingle
+        rightChildResponse, hleftWrapped, hrightWrapped,
+        Execution.singleFieldResult, Execution.selectionSetResultToResponse]
+        using hsingle
   exact
     SemanticSeparation.responseData_not_semanticEquivalent_of_field_value_diff_of_field_ok
       resolvers resolvers variableValues (fuel + 1)
@@ -613,7 +615,9 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_pair_of
           (by
             simpa [Execution.ResponseValue.semanticEquivalent] using hvalue)
       simpa [wrapTypeRefSelectionSetResponse, leftChildResponse,
-        rightChildResponse, hleftWrapped, hrightWrapped] using hsingle
+        rightChildResponse, hleftWrapped, hrightWrapped,
+        Execution.singleFieldResult, Execution.selectionSetResultToResponse]
+        using hsingle
   exact
     SemanticSeparation.responseData_not_semanticEquivalent_of_field_value_diff_of_field_ok
       resolvers resolvers variableValues (fuel + 1)

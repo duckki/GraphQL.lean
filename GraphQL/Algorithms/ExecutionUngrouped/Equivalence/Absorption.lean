@@ -805,7 +805,7 @@ mutual
                           variableValues depth' runtimeType
                           (.object runtimeType identity) selectionSet []
                           ResponseMergeReady_empty_object
-                      simpa [completeValue, hinclude] using
+                      simpa [completeValue, hinclude, reuseOrCreateObject?] using
                         resultValueOrNull_catchVisitBubbleAsNull_ready
                           (visitSubfields schema resolvers variableValues
                             depth' runtimeType (.object runtimeType identity)
@@ -825,7 +825,8 @@ mutual
                     cases values with
                     | nil =>
                         simpa [completeValue, resultValueOrNull,
-                          reuseOrCreateList?, completeValueList] using
+                          reuseOrCreateList?, completeValueList,
+                          catchBubbleAsNull] using
                           ResponseMergeReady_empty_list
                     | cons value rest =>
                         have hcompleted :
@@ -842,7 +843,7 @@ mutual
                               (value :: rest) []
                               (by intro previous hmem; simp at hmem)
                               completedValues errors hok)
-                        simpa [completeValue] using
+                        simpa [completeValue, reuseOrCreateList?] using
                           resultValueOrNull_catchBubbleAsNull_ready
                             ResponseValue.list
                             (completeValueList schema resolvers variableValues
@@ -879,7 +880,7 @@ mutual
             | succ depth' =>
                 cases fieldType with
                 | nonNull inner =>
-                    simpa [completeValue] using
+                    simpa [completeValue, nonNullCompletion] using
                       resultValueOrNull_nonNullCompletion_ready
                         (completeValue schema resolvers variableValues
                           (depth' + 1) inner selectionSet value
@@ -943,7 +944,7 @@ mutual
                               variableValues depth' runtimeType
                               (.object runtimeType identity) selectionSet
                               previousFields hpreviousReady
-                          simpa [completeValue, hinclude] using
+                          simpa [completeValue, hinclude, reuseOrCreateObject?] using
                             resultValueOrNull_catchVisitBubbleAsNull_ready
                               (visitSubfields schema resolvers variableValues
                                 depth' runtimeType (.object runtimeType identity)
@@ -1007,7 +1008,8 @@ mutual
                             cases previousValues with
                             | nil =>
                                 simpa [completeValue, resultValueOrNull,
-                                  reuseOrCreateList?, completeValueList] using
+                                  reuseOrCreateList?, completeValueList,
+                                  catchBubbleAsNull] using
                                   ResponseMergeReady_empty_list
                             | cons previous rest =>
                                 simp [completeValue, resultValueOrNull,
@@ -1035,7 +1037,7 @@ mutual
                                   selectionSet (value :: rest) previousValues
                                   hpreviousValuesReady completedValues
                                   errors hok)
-                            simpa [completeValue] using
+                            simpa [completeValue, reuseOrCreateList?] using
                               resultValueOrNull_catchBubbleAsNull_ready
                                 ResponseValue.list
                                 (completeValueList schema resolvers
@@ -1236,7 +1238,7 @@ mutual
               intro previousValue hmem
               exact hpreviousValues previousValue (by
                 right
-                simpa [remainingPrevious] using hmem)
+                exact hmem)
         have hheadReady :
             ResponseMergeReady (resultValueOrNull head) := by
           dsimp [head]
@@ -1284,8 +1286,11 @@ mutual
         exact
           resultCombine_cons_values_ready head tail hheadReady htailReady
             completedValues errors
-            (by simpa [completeValueList, head, tail, previous?,
-              remainingPrevious] using hok)
+            (by
+              rw [completeValueList.eq_3] at hok
+              change Result.combine List.cons head tail =
+                .ok (completedValues, errors) at hok
+              exact hok)
   termination_by values previousValues _hpreviousValues completedValues errors _hok =>
     (depth, 2, sizeOf itemType, sizeOf values)
   decreasing_by

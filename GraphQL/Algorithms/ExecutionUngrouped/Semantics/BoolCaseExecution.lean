@@ -1342,7 +1342,7 @@ theorem visitSubfields_completeNormalizeRootSelectionSet_runtime
           output hruntime hagrees
 
 mutual
-  def completeValue_filterSelectionSetBoolCase_eq
+  theorem completeValue_filterSelectionSetBoolCase_eq
       (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
       (variableValues : Execution.VariableValues)
       (operation : Operation) (boolCase : NormalForm.BoolCase)
@@ -1742,7 +1742,7 @@ mutual
       try (apply Prod.Lex.right; apply Prod.Lex.right; apply Prod.Lex.left; omega)
       try (apply Prod.Lex.right; apply Prod.Lex.left; omega)
 
-  def visitSubfields_filterSelectionSetBoolCase_eq
+  theorem visitSubfields_filterSelectionSetBoolCase_eq
       (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
       (variableValues : Execution.VariableValues)
       (operation : Operation) (boolCase : NormalForm.BoolCase)
@@ -2159,7 +2159,8 @@ theorem executeRootSelectionSet_eq_of_visitSubfields_eq
           match visited.fst with
           | .object fields => Except.ok (fields, errors)
           | _ => Except.error (errors + 1)
-  simpa [executeRootSelectionSet, toRootResult] using congrArg toRootResult hvisit
+  unfold executeRootSelectionSet
+  exact congrArg toRootResult hvisit
 
 theorem executeRootSelectionSet_filterSelectionSetBoolCase_eq
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)

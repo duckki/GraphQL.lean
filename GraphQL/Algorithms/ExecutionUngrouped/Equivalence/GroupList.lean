@@ -407,7 +407,7 @@ theorem visitSelection_executableField_prefix_fresh
               rcases hvisit with ⟨hresult, hstatus⟩
               subst result
               subst status
-              simpa using
+              simpa [resultValueOrNull, outOfFuel] using
                 mergeResponseField_append_of_not_mem responseName .null
                   prefixFields suffix hfreshName
           | some previous =>
@@ -465,7 +465,7 @@ theorem visitSelection_executableField_prefix_fresh
                     executableField, selectionDirectivesAllowBool_empty,
                     mergeResponseFieldResult, mergeResponseFieldIntoObject,
                     happend, hprevious]
-                  simpa [hprevious] using
+                  simpa [hprevious, executableField] using
                     mergeResponseField_append_of_not_mem responseName
                       (resultValueOrNull
                         (executeField schema resolvers variableValues depth'
@@ -674,7 +674,7 @@ theorem visitSelection_field_prefix_fresh
             rcases hvisit with ⟨hresult, hstatus⟩
             subst result
             subst status
-            simpa using
+            simpa [resultValueOrNull, outOfFuel] using
               mergeResponseField_append_of_not_mem responseName .null
                 prefixFields suffix hfreshName
         | some previous =>
@@ -704,7 +704,7 @@ theorem visitSelection_field_prefix_fresh
             subst status
             simp [visitSelection, hallowed, mergeResponseFieldResult,
               mergeResponseFieldIntoObject, happend, hprevious]
-            simpa [hprevious] using
+            simpa [hprevious, executableField] using
               mergeResponseField_append_of_not_mem responseName
                 (resultValueOrNull
                   (executeField schema resolvers variableValues depth' source
@@ -725,7 +725,7 @@ theorem visitSelection_field_prefix_fresh
                 subst status
                 simp [visitSelection, hallowed, mergeResponseFieldResult,
                   mergeResponseFieldIntoObject, happend, hprevious]
-                simpa [hprevious] using
+                simpa [hprevious, executableField] using
                   mergeResponseField_append_of_not_mem responseName
                     (resultValueOrNull
                       (executeField schema resolvers variableValues depth'
@@ -745,7 +745,7 @@ theorem visitSelection_field_prefix_fresh
                 subst status
                 simp [visitSelection, hallowed, mergeResponseFieldResult,
                   mergeResponseFieldIntoObject, happend, hprevious]
-                simpa [hprevious] using
+                simpa [hprevious, executableField] using
                   mergeResponseField_append_of_not_mem responseName
                     (resultValueOrNull
                       (executeField schema resolvers variableValues depth'
@@ -765,7 +765,7 @@ theorem visitSelection_field_prefix_fresh
                 subst status
                 simp [visitSelection, hallowed, mergeResponseFieldResult,
                   mergeResponseFieldIntoObject, happend, hprevious]
-                simpa [hprevious] using
+                simpa [hprevious, executableField] using
                   mergeResponseField_append_of_not_mem responseName
                     (resultValueOrNull
                       (executeField schema resolvers variableValues depth'
@@ -785,7 +785,7 @@ theorem visitSelection_field_prefix_fresh
                 subst status
                 simp [visitSelection, hallowed, mergeResponseFieldResult,
                   mergeResponseFieldIntoObject, happend, hprevious]
-                simpa [hprevious] using
+                simpa [hprevious, executableField] using
                   mergeResponseField_append_of_not_mem responseName
                     (resultValueOrNull
                       (executeField schema resolvers variableValues depth'
@@ -1171,7 +1171,7 @@ theorem visitSubfields_executableFieldSelections_same_response_key_mem
         exact Prod.ext hheadFst rfl
       simp [executableFieldSelections, visitSubfields]
       rw [hhead]
-      simpa using htail
+      simpa [executableFieldSelections] using htail
 
 theorem visitSubfields_executableFieldSelections_singleton_append_of_mem_succ
     {ObjectIdentity : Type}
@@ -1248,7 +1248,7 @@ theorem visitSubfields_executableFieldSelections_singleton_append_of_mem_succ
       rw [hlookupAppend]
       simpa [visitOk, executeField, executableField, hfieldLookup,
         reusablePreviousValue?_null, mergeResponseFieldResult,
-        mergeResponseFieldIntoObject] using
+        mergeResponseFieldIntoObject, resultValueOrNull] using
         mergeResponseField_append_of_mem_left field.responseName .null fields
           suffix hmem
   | scalar value =>

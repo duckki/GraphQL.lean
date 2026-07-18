@@ -351,7 +351,8 @@ theorem fieldsForNameCanMerge_of_sameSelection_bridge
     have hsubfields :=
       FieldMerge.fieldsForNameCanMerge_subfields habstractMerge
         habstractParentCondition objectType
-    simpa [hleftSelectionSet, hrightSelectionSet] using hsubfields
+    simpa [FieldMerge.fieldsInSetCanMerge, hleftSelectionSet, hrightSelectionSet]
+      using hsubfields
 
 theorem fieldMerge_collectFields_objectParent_possibleParent
     (schema : Schema) :

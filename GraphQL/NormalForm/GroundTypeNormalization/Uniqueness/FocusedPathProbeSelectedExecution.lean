@@ -665,7 +665,9 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
           (by
             simpa [Execution.ResponseValue.semanticEquivalent] using hvalue)
       simpa [wrapTypeRefSelectionSetResponse, leftChildResponse,
-        rightChildResponse, hleftWrapped, hrightWrapped] using hsingle
+        rightChildResponse, hleftWrapped, hrightWrapped,
+        Execution.singleFieldResult, Execution.selectionSetResultToResponse]
+        using hsingle
   exact
     SemanticSeparation.responseData_not_semanticEquivalent_of_field_value_diff_of_field_ok
       resolvers resolvers variableValues (fuel + 1) leftSource rightSource
@@ -1043,7 +1045,9 @@ theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_selectedPathPr
           (by
             simpa [Execution.ResponseValue.semanticEquivalent] using hvalue)
       simpa [wrapTypeRefSelectionSetResponse, leftChildResponse,
-        rightChildResponse, hleftWrapped, hrightWrapped] using hsingle
+        rightChildResponse, hleftWrapped, hrightWrapped,
+        Execution.singleFieldResult, Execution.selectionSetResultToResponse]
+        using hsingle
   rcases
       ExecutionSuccess.executeSelectionSetAsResponse_object_field_mem_of_field_ok
         schema resolvers variableValues (parentFuel + 1) parentType

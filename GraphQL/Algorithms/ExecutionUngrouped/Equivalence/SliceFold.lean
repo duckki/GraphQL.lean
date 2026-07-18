@@ -941,7 +941,7 @@ theorem visitFieldSliceFold_eq_visitSubfields_executableFieldSelections
       simp only [visitFieldSliceFold, executableFieldSelections, List.map_cons,
         List.foldl_cons, visitSubfields]
       rw [hstep]
-      simpa [visitFieldSliceFold]
+      simpa [visitFieldSliceFold, executableFieldSelections]
         using
           visitFieldSliceFold_eq_visitSubfields_executableFieldSelections
             schema resolvers variableValues selectionDepth parentType source
@@ -1065,7 +1065,7 @@ theorem responseObjectSlices_pairKeysNodup
           source fields) := by
   intro hnodup
   unfold PairKeysNodup
-  simpa [responseObjectSlices] using hnodup
+  simpa [responseObjectSlices, Function.comp_def] using hnodup
 
 def mergeResponseSliceFold
     {ObjectIdentity : Type}
@@ -1366,7 +1366,7 @@ theorem completeValue_null_resultValueOrNull
           | zero =>
               simp [completeValue, outOfFuel, resultValueOrNull]
           | succ depth =>
-              simpa [completeValue] using
+              simpa [completeValue, nonNullCompletion] using
                 resultValueOrNull_nonNullCompletion_eq_null
                 (completeValue schema resolvers variableValues (depth + 1)
                   inner selectionSet (.null : ResolverValue ObjectIdentity)
@@ -1386,14 +1386,7 @@ theorem completeValue_null_resultValueOrNull
           | zero =>
               simp [completeValue, resultValueOrNull, outOfFuel]
           | succ depth =>
-              simpa [completeValue] using
-                resultValueOrNull_nonNullCompletion_eq_null
-                (completeValue schema resolvers variableValues (depth + 1)
-                  inner selectionSet (.null : ResolverValue ObjectIdentity)
-                  (some (.scalar previousValue)))
-                (completeValue_null_resultValueOrNull schema resolvers
-                  variableValues inner (depth + 1) selectionSet
-                  (some (.scalar previousValue)))
+              simp [completeValue, resultValueOrNull]
         | object previousFields =>
           cases completionDepth with
           | zero =>
@@ -1869,7 +1862,7 @@ theorem visitFieldSlice_succ_object_eq_mergeResponseSlice_of_step
 
 namespace FieldSliceMergeStep
 
-def of_fresh
+theorem of_fresh
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
@@ -1887,7 +1880,7 @@ def of_fresh
     rw [hlookup] at hexisting
     cases hexisting
 
-def of_reentry
+theorem of_reentry
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}

@@ -289,14 +289,14 @@ theorem visitSubfields_executableFieldSelections_single_aligned_of_contained_chi
                     (by
                       intro childDepth runtimeType identity hlt hcontains
                         hincludes
-                      simpa [executable,
+                      simpa [executable, executableField,
                         GraphQL.Execution.mergedFieldSelectionSet] using
                         hchildren childDepth runtimeType identity hlt hcontains
                           (by
                             simpa [Schema.fieldReturnType?, hlookup] using
                               hincludes))
-                simpa [executable, GraphQL.Execution.mergedFieldSelectionSet]
-                  using hgroup
+                simpa [executable, executableField,
+                  GraphQL.Execution.mergedFieldSelectionSet] using hgroup
               rw [show
                   executableFieldSelections
                       [{ parentType := parentType
@@ -801,8 +801,8 @@ theorem executeRootSelectionSet_executableFieldSelections_append_one_aligned_res
             responseName fieldName laterArguments laterSelectionSet
             fieldDefinition resolvedValue prefixValue hlookup hresolveLater
         simpa [prefixCompleted, laterCompleted, groupedFieldVisitResult,
-          GraphQL.Execution.singleFieldResult, hprefixCompleted, later] using
-          hlaterVisit
+          GraphQL.Execution.singleFieldResult, hprefixCompleted, later,
+          resultValueOrNull, Nat.add_assoc] using hlaterVisit
   have haligned :
       ResponseValueResultAlignedEquivalent
         (GraphQL.Execution.Result.combine mergeResponse prefixCompleted
@@ -1027,8 +1027,8 @@ theorem executeRootSelectionSet_executableFieldSelections_append_one_visit_align
             responseName fieldName laterArguments laterSelectionSet
             fieldDefinition resolvedValue prefixValue hlookup hresolveLater
         simpa [prefixCompleted, laterCompleted, groupedFieldVisitResult,
-          GraphQL.Execution.singleFieldResult, hprefixCompleted, later] using
-          hlaterVisit
+          GraphQL.Execution.singleFieldResult, hprefixCompleted, later,
+          resultValueOrNull, Nat.add_assoc] using hlaterVisit
   have haligned :
       ResponseValueResultAlignedEquivalent
         (GraphQL.Execution.Result.combine mergeResponse prefixCompleted
@@ -1262,8 +1262,8 @@ theorem executeRootSelectionSet_executableFieldSelections_append_one_visit_align
             responseName fieldName laterArguments laterSelectionSet
             fieldDefinition resolvedValue prefixValue hlookup hresolveLater
         simpa [prefixCompleted, laterCompleted, groupedFieldVisitResult,
-          GraphQL.Execution.singleFieldResult, hprefixCompleted, later] using
-          hlaterVisit
+          GraphQL.Execution.singleFieldResult, hprefixCompleted, later,
+          resultValueOrNull, Nat.add_assoc] using hlaterVisit
   have haligned :
       ResponseValueResultAlignedEquivalent
         (GraphQL.Execution.Result.combine mergeResponse prefixCompleted
@@ -1498,8 +1498,8 @@ theorem visitSubfields_executableFieldSelections_append_one_visit_aligned_resolv
             responseName fieldName laterArguments laterSelectionSet
             fieldDefinition resolvedValue prefixValue hlookup hresolveLater
         simpa [prefixCompleted, laterCompleted, groupedFieldVisitResult,
-          GraphQL.Execution.singleFieldResult, hprefixCompleted, later] using
-          hlaterVisit
+          GraphQL.Execution.singleFieldResult, hprefixCompleted, later,
+          resultValueOrNull, Nat.add_assoc] using hlaterVisit
   have haligned :
       ResponseValueResultAlignedEquivalent
         (GraphQL.Execution.Result.combine mergeResponse prefixCompleted

@@ -142,14 +142,17 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_single
           intro field hfield
           apply hfresh field
           simpa [GraphQL.Execution.collectFields,
-            GraphQL.Execution.collectSelection, hallowed] using hfield
+            GraphQL.Execution.collectSelection,
+            GraphQL.Execution.mergeExecutableGroups, hallowed] using hfield
       | some typeCondition =>
           intro hallowed happly
           apply hbody hallowed happly fields
           intro field hfield
           apply hfresh field
           simpa [GraphQL.Execution.collectFields,
-            GraphQL.Execution.collectSelection, hallowed, happly] using hfield
+            GraphQL.Execution.collectSelection,
+            GraphQL.Execution.mergeExecutableGroups, hallowed, happly] using
+            hfield
 
 theorem VisitSubfieldsFlatCollectsFreshPrefixes_field_single
     {ObjectIdentity : Type}

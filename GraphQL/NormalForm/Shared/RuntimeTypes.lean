@@ -56,7 +56,7 @@ theorem object_typeIncludesObjectBool_self
   rcases hobject with ⟨objectType, hlookup⟩
   have hname : objectType.name = typeName := by
     have hmatch := List.find?_some hlookup
-    simpa [Schema.lookupType] using hmatch
+    simpa [Schema.lookupType, TypeDefinition.name] using hmatch
   simp [Schema.typeIncludesObjectBool, Schema.getPossibleTypes, hlookup,
     hname]
 
@@ -70,7 +70,7 @@ theorem object_typesOverlapBool_eq
   rcases hleft with ⟨leftObject, hleftLookup⟩
   have hleftName : leftObject.name = left := by
     have hmatch := List.find?_some hleftLookup
-    simpa [Schema.lookupType] using hmatch
+    simpa [Schema.lookupType, TypeDefinition.name] using hmatch
   simp [Schema.typesOverlapBool, Schema.getPossibleTypes, hleftLookup,
     hleftName] at hoverlap
   exact (object_typeIncludesObjectBool_eq_self schema
@@ -84,7 +84,7 @@ theorem object_typesOverlapBool_self
   rcases hobject with ⟨objectType, hlookup⟩
   have hname : objectType.name = typeName := by
     have hmatch := List.find?_some hlookup
-    simpa [Schema.lookupType] using hmatch
+    simpa [Schema.lookupType, TypeDefinition.name] using hmatch
   simp [Schema.typesOverlapBool, Schema.typeIncludesObjectBool,
     Schema.getPossibleTypes, hlookup, hname]
 
@@ -97,7 +97,7 @@ theorem typeIncludesObjectBool_of_object_typesOverlapBool
   rcases hobject with ⟨objectDefinition, hlookup⟩
   have hname : objectDefinition.name = objectType := by
     have hmatch := List.find?_some hlookup
-    simpa [Schema.lookupType] using hmatch
+    simpa [Schema.lookupType, TypeDefinition.name] using hmatch
   unfold Schema.typesOverlapBool at hoverlap
   simp [Schema.getPossibleTypes, hlookup, hname] at hoverlap
   exact hoverlap

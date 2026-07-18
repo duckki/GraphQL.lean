@@ -1759,7 +1759,9 @@ theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_pathLocalProbe
           (by
             simpa [Execution.ResponseValue.semanticEquivalent] using hvalue)
       simpa [wrapTypeRefSelectionSetResponse, leftChildResponse,
-        rightChildResponse, hleftWrapped, hrightWrapped] using hsingle
+        rightChildResponse, hleftWrapped, hrightWrapped,
+        Execution.singleFieldResult, Execution.selectionSetResultToResponse]
+        using hsingle
   have hsource :
       ∃ runtimeType ref,
         source = Execution.ResolverValue.object runtimeType ref

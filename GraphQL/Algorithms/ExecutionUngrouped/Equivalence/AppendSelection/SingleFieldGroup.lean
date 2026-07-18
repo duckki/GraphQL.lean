@@ -321,7 +321,9 @@ theorem completeValue_object_group_aligned_of_merged_child_state
               | error visitErrors =>
                   simpa [hvisit, hcompleted, catchVisitBubbleAsNull,
                     GraphQL.Execution.catchBubbleAsNull,
-                    ResponseValueResultAlignedEquivalent] using hchild
+                    ResponseValueResultAlignedEquivalent,
+                    RootSelectionResultAlignedEquivalent,
+                    ErrorPresenceEquivalent] using hchild
               | ok statusResult =>
                   rcases statusResult with ⟨unitValue, visitErrors⟩
                   cases unitValue
@@ -338,7 +340,9 @@ theorem completeValue_object_group_aligned_of_merged_child_state
                   cases unitValue
                   simpa [hvisit, hcompleted, catchVisitBubbleAsNull,
                     GraphQL.Execution.catchBubbleAsNull,
-                    ResponseValueResultAlignedEquivalent] using hchild
+                    ResponseValueResultAlignedEquivalent,
+                    RootSelectionResultAlignedEquivalent,
+                    ErrorPresenceEquivalent] using hchild
 
 theorem completeValue_object_group_aligned_of_guarded_merged_child_state
     {ObjectIdentity : Type}
@@ -527,7 +531,7 @@ theorem completeValue_group_aligned_of_guarded_merged_child_states
                       ListResponseResultAlignedEquivalent.combine_cons
                         hhead htail
               simpa [GraphQL.Algorithms.ExecutionUngrouped.completeValue,
-                GraphQL.Execution.completeValue] using
+                GraphQL.Execution.completeValue, reuseOrCreateList?] using
                 ListResponseResultAlignedEquivalent.catchBubbleAsNull hlist
   | nonNull inner ih =>
       intro depth value hchildren
@@ -689,7 +693,7 @@ theorem completeValue_group_aligned_of_contained_child_states
                       ListResponseResultAlignedEquivalent.combine_cons
                         hhead htail
               simpa [GraphQL.Algorithms.ExecutionUngrouped.completeValue,
-                GraphQL.Execution.completeValue] using
+                GraphQL.Execution.completeValue, reuseOrCreateList?] using
                 ListResponseResultAlignedEquivalent.catchBubbleAsNull hlist
   | nonNull inner ih =>
       intro depth value hchildren

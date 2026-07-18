@@ -342,8 +342,9 @@ mutual
                   scopedField.outputType.namedType childRuntime =
                 true :=
             hcompatible scopedField hscopedMem hmatch
-              (by simpa [scopedField, ScopedFieldRuntimeApplies] using
-                hparentRuntime)
+              (by
+                simpa [scopedField, ScopedFieldRuntimeApplies,
+                  ScopedParentRuntimeApplies] using hparentRuntime)
           have hchildValid :
               Validation.selectionSetValid schema variableDefinitions
                 fieldDefinition.outputType.namedType selectionSet :=
@@ -652,8 +653,9 @@ mutual
                       scopedField.outputType.namedType childRuntime =
                     true :=
                 hcompatible scopedField hscopedMem hmatch
-                  (by simpa [scopedField, ScopedFieldRuntimeApplies] using
-                    hparentRuntime)
+                  (by
+                    simpa [scopedField, ScopedFieldRuntimeApplies,
+                      ScopedParentRuntimeApplies] using hparentRuntime)
               exact
                 NormalForm.GroundTypeNormalization.selectionValidInPossibleTypes_field_child
                   himplementation hlookup
@@ -1128,7 +1130,7 @@ theorem collectFields_group_prefix_outputCompatible_of_concreteParent
     have hheadRuntime' :
         schema.typeIncludesObjectBool headScoped.parentType validParent =
           true := by
-      simpa [hruntimeEq] using hheadRuntime
+      simpa [ScopedFieldRuntimeApplies, hruntimeEq] using hheadRuntime
     exact List.contains_iff_mem.mp hheadRuntime'
   rcases
       SchemaWellFormedness.schemaWellFormed_possibleObject_lookupField_exists
@@ -1208,7 +1210,7 @@ theorem collectFields_group_prefix_outputCompatible_of_concreteParent
     have hruntime' :
         schema.typeIncludesObjectBool scopedField.parentType validParent =
           true := by
-      simpa [hruntimeEq] using hruntime
+      simpa [ScopedFieldRuntimeApplies, hruntimeEq] using hruntime
     exact List.contains_iff_mem.mp hruntime'
   have himplementationLookupForScoped :
       schema.lookupField validParent scopedField.fieldName =

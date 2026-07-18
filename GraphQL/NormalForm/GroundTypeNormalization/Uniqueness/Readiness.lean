@@ -1801,16 +1801,8 @@ theorem inlineFragmentTypeConditionsNodup_append_left
   intro hnodup
   unfold inlineFragmentTypeConditionsNodup at hnodup ⊢
   have hconditions :
-      (left.filterMap (fun selection =>
-          match selection with
-          | .inlineFragment (some typeCondition) _directives _selectionSet =>
-              some typeCondition
-          | _ => none) ++
-        right.filterMap (fun selection =>
-          match selection with
-          | .inlineFragment (some typeCondition) _directives _selectionSet =>
-              some typeCondition
-          | _ => none)).Nodup := by
+      (left.filterMap inlineFragmentTypeCondition? ++
+        right.filterMap inlineFragmentTypeCondition?).Nodup := by
     simpa [List.filterMap_append] using hnodup
   exact (List.nodup_append.mp hconditions).1
 
@@ -1821,16 +1813,8 @@ theorem inlineFragmentTypeConditionsNodup_append_right
   intro hnodup
   unfold inlineFragmentTypeConditionsNodup at hnodup ⊢
   have hconditions :
-      (left.filterMap (fun selection =>
-          match selection with
-          | .inlineFragment (some typeCondition) _directives _selectionSet =>
-              some typeCondition
-          | _ => none) ++
-        right.filterMap (fun selection =>
-          match selection with
-          | .inlineFragment (some typeCondition) _directives _selectionSet =>
-              some typeCondition
-          | _ => none)).Nodup := by
+      (left.filterMap inlineFragmentTypeCondition? ++
+        right.filterMap inlineFragmentTypeCondition?).Nodup := by
     simpa [List.filterMap_append] using hnodup
   exact (List.nodup_append.mp hconditions).2.1
 

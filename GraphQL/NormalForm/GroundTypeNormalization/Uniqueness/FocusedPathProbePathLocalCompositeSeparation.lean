@@ -253,7 +253,9 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_pathLocalP
           (by
             simpa [Execution.ResponseValue.semanticEquivalent] using hvalue)
       simpa [wrapTypeRefSelectionSetResponse, leftChildResponse,
-        rightChildResponse, hleftWrapped, hrightWrapped] using hsingle
+        rightChildResponse, hleftWrapped, hrightWrapped,
+        Execution.singleFieldResult, Execution.selectionSetResultToResponse]
+        using hsingle
   exact
     SemanticSeparation.responseData_not_semanticEquivalent_of_field_value_diff_of_field_ok
       resolvers resolvers variableValues (fuel + 1) leftSource rightSource

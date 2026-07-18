@@ -12,11 +12,6 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
-def inlineFragmentTypeCondition? : Selection -> Option Name
-  | .inlineFragment (some typeCondition) _directives _selectionSet =>
-      some typeCondition
-  | _ => none
-
 inductive NormalSelectionSetDiff
     (schema : Schema) : Name -> List Selection -> List Selection -> Prop where
   | objectLeftResponseName
@@ -306,16 +301,20 @@ theorem inlineFragmentTypeConditionsNodup_tail
   intro hnodup
   cases selection with
   | field responseName fieldName arguments directives childSelectionSet =>
-      simpa [inlineFragmentTypeConditionsNodup] using hnodup
+      simpa [inlineFragmentTypeConditionsNodup, inlineFragmentTypeCondition?]
+        using hnodup
   | inlineFragment typeCondition directives childSelectionSet =>
       cases typeCondition with
       | none =>
-          simpa [inlineFragmentTypeConditionsNodup] using hnodup
+          simpa [inlineFragmentTypeConditionsNodup, inlineFragmentTypeCondition?]
+            using hnodup
       | some typeCondition =>
-          simpa [inlineFragmentTypeConditionsNodup] using
+          simpa [inlineFragmentTypeConditionsNodup, inlineFragmentTypeCondition?]
+            using
             (List.nodup_cons.mp
               (by
-                simpa [inlineFragmentTypeConditionsNodup] using hnodup)).2
+                simpa [inlineFragmentTypeConditionsNodup,
+                  inlineFragmentTypeCondition?] using hnodup)).2
 
 theorem selectionSetNonRedundant_tail
     {selection : Selection} {selectionSet : List Selection} :

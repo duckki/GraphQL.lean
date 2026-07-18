@@ -10,6 +10,8 @@ namespace ExecutionUngrouped
 
 open GraphQL.Execution
 
+attribute [local simp] TypeRef.namedType
+
 local instance fieldGroupPrefixAppendResponseVisitStatusCoe :
     Coe (ResponseValue × VisitStatus) ResponseValue where
   coe := Prod.fst
@@ -566,7 +568,8 @@ theorem ExecutableFieldsMergedRaw_append_one_of_prefix
                                               hresolveLater
                                           simpa [hprefixCompleted,
                                             groupedFieldVisitResult,
-                                            GraphQL.Execution.singleFieldResult]
+                                            GraphQL.Execution.singleFieldResult,
+                                            resultValueOrNull, Nat.add_assoc]
                                             using hlaterVisit
                                     have hcombined :=
                                       groupedFieldVisitResult_singleFieldResult_combine_neutral
@@ -753,7 +756,8 @@ theorem ExecutableFieldsMergedRaw_append_one_of_prefix
                                           hresolveLater
                                       simpa [hprefixCompleted,
                                         groupedFieldVisitResult,
-                                        GraphQL.Execution.singleFieldResult]
+                                        GraphQL.Execution.singleFieldResult,
+                                        resultValueOrNull, Nat.add_assoc]
                                         using hlaterVisit
                                 have hcombined :=
                                   groupedFieldVisitResult_singleFieldResult_combine_neutral
@@ -938,7 +942,8 @@ theorem ExecutableFieldsMergedRaw_append_one_of_prefix
                                           hresolveLater
                                       simpa [hprefixCompleted,
                                         groupedFieldVisitResult,
-                                        GraphQL.Execution.singleFieldResult]
+                                        GraphQL.Execution.singleFieldResult,
+                                        resultValueOrNull, Nat.add_assoc]
                                         using hlaterVisit
                                 have hcombined :=
                                   groupedFieldVisitResult_singleFieldResult_combine_neutral
@@ -1478,7 +1483,8 @@ theorem ExecutableFieldsMergedRoot_append_one_visit_aligned_of_prefix_contained_
                       (.object []))
                     (GraphQL.Execution.singleFieldResult responseName
                       (.error 1)) := by
-                simpa [GraphQL.Execution.executeField, hlookup] using
+                simpa [GraphQL.Execution.executeField, hlookup,
+                  GraphQL.Execution.singleFieldResult] using
                   hprefixAligned
               have htail :
                   visitSubfields schema resolvers variableValues
@@ -1524,7 +1530,8 @@ theorem ExecutableFieldsMergedRoot_append_one_visit_aligned_of_prefix_contained_
                 simp [ResponseValueResultAlignedEquivalent,
                   GraphQL.Execution.Result.combine, ErrorPresenceEquivalent]
               simpa [GraphQL.Execution.executeField, hlookup,
-                executableFieldSelections, List.map_append] using
+                executableFieldSelections, List.map_append,
+                GraphQL.Execution.singleFieldResult] using
                 executeRootSelectionSet_append_one_visit_aligned_of_complete
                   schema resolvers variableValues (completionDepth + 2)
                   parentType source
@@ -1837,7 +1844,8 @@ theorem ExecutableFieldsMergedRoot_append_one_visit_aligned_of_prefix_contained_
                       (.object []))
                     (GraphQL.Execution.singleFieldResult responseName
                       (.error 1)) := by
-                simpa [GraphQL.Execution.executeField, hlookup] using
+                simpa [GraphQL.Execution.executeField, hlookup,
+                  GraphQL.Execution.singleFieldResult] using
                   hprefixAligned
               have htail :
                   visitSubfields schema resolvers variableValues
@@ -1883,7 +1891,8 @@ theorem ExecutableFieldsMergedRoot_append_one_visit_aligned_of_prefix_contained_
                 simp [ResponseValueResultAlignedEquivalent,
                   GraphQL.Execution.Result.combine, ErrorPresenceEquivalent]
               simpa [GraphQL.Execution.executeField, hlookup,
-                executableFieldSelections, List.map_append] using
+                executableFieldSelections, List.map_append,
+                GraphQL.Execution.singleFieldResult] using
                 executeRootSelectionSet_append_one_visit_aligned_of_complete
                   schema resolvers variableValues (completionDepth + 2)
                   parentType source
@@ -2197,7 +2206,8 @@ theorem ExecutableFieldsMergedVisit_append_one_visit_aligned_of_prefix_contained
                       (.object []))
                     (GraphQL.Execution.singleFieldResult responseName
                       (.error 1)) := by
-                simpa [GraphQL.Execution.executeField, hlookup] using
+                simpa [GraphQL.Execution.executeField, hlookup,
+                  GraphQL.Execution.singleFieldResult] using
                   hprefixAligned
               have htail :
                   visitSubfields schema resolvers variableValues
@@ -2243,7 +2253,8 @@ theorem ExecutableFieldsMergedVisit_append_one_visit_aligned_of_prefix_contained
                 simp [ResponseValueResultAlignedEquivalent,
                   GraphQL.Execution.Result.combine, ErrorPresenceEquivalent]
               simpa [GraphQL.Execution.executeField, hlookup,
-                executableFieldSelections, List.map_append] using
+                executableFieldSelections, List.map_append,
+                GraphQL.Execution.singleFieldResult] using
                 visitSubfields_append_one_visit_aligned_of_complete
                   schema resolvers variableValues (completionDepth + 2)
                   parentType source

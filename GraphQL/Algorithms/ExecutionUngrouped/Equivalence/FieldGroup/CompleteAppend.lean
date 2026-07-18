@@ -10,6 +10,8 @@ namespace ExecutionUngrouped
 
 open GraphQL.Execution
 
+attribute [local simp] TypeRef.namedType
+
 local instance fieldGroupCompleteAppendResponseVisitStatusCoe :
     Coe (ResponseValue × VisitStatus) ResponseValue where
   coe := Prod.fst

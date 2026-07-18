@@ -155,7 +155,7 @@ structure RecursiveSelectionSetGlobalFreshPrefixInvariants
 
 namespace RecursiveSelectionSetGlobalFreshPrefixInvariants
 
-def toGlobalInvariants
+theorem toGlobalInvariants
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}

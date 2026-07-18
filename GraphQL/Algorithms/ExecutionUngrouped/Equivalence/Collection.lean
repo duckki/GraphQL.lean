@@ -1339,7 +1339,8 @@ mutual
             }, ?_, ?_, ?_⟩
           · simp [FieldMerge.collectFields, hlookup]
           · exact ⟨rfl, rfl, rfl, rfl⟩
-          · simpa [ScopedFieldRuntimeApplies] using hparentRuntime
+          · simpa [ScopedFieldRuntimeApplies, ScopedParentRuntimeApplies]
+              using hparentRuntime
         · have hfalse :
               selectionDirectivesAllowBool variableValues directives = false := by
             cases hmatch : selectionDirectivesAllowBool variableValues directives
@@ -1388,7 +1389,8 @@ mutual
                     (.object runtimeType identity) typeCondition = true
               · have htypeRuntime :
                     ScopedParentRuntimeApplies schema runtimeType typeCondition := by
-                  simpa [doesFragmentTypeApplyBool, runtimeObjectType?] using happly
+                  simpa [ScopedParentRuntimeApplies, doesFragmentTypeApplyBool,
+                    runtimeObjectType?] using happly
                 have hrecursive :=
                   collectFields_runtimeScopedBy_of_selectionSetValid schema
                     variableDefinitions variableValues collectParent typeCondition
@@ -1527,7 +1529,8 @@ mutual
             }, ?_, ?_, ?_⟩
           · simp [FieldMerge.collectFields, hlookup]
           · exact ⟨rfl, rfl, rfl, rfl⟩
-          · simpa [ScopedFieldRuntimeApplies] using hparentRuntime
+          · simpa [ScopedFieldRuntimeApplies, ScopedParentRuntimeApplies]
+              using hparentRuntime
         · have hfalse :
               selectionDirectivesAllowBool variableValues directives = false := by
             cases hmatch : selectionDirectivesAllowBool variableValues directives
@@ -1576,7 +1579,8 @@ mutual
                     (.object runtimeType identity) typeCondition = true
               · have htypeRuntime :
                     ScopedParentRuntimeApplies schema runtimeType typeCondition := by
-                  simpa [doesFragmentTypeApplyBool, runtimeObjectType?] using happly
+                  simpa [ScopedParentRuntimeApplies, doesFragmentTypeApplyBool,
+                    runtimeObjectType?] using happly
                 have hrecursive :=
                   collectFields_runtimeScopedBy_of_selectionSetValid_object schema
                     variableDefinitions variableValues collectParent typeCondition
@@ -1717,7 +1721,8 @@ mutual
             }, ?_, ?_, ?_⟩
           · simp [FieldMerge.collectFields, hlookup]
           · exact ⟨rfl, rfl, rfl, rfl⟩
-          · simpa [ScopedFieldRuntimeApplies] using hparentRuntime
+          · simpa [ScopedFieldRuntimeApplies, ScopedParentRuntimeApplies]
+              using hparentRuntime
         · have hfalse :
               selectionDirectivesAllowBool variableValues directives = false := by
             cases hmatch : selectionDirectivesAllowBool variableValues directives
@@ -1761,7 +1766,8 @@ mutual
                     (.object runtimeType identity) typeCondition = true
               · have htypeRuntime :
                     ScopedParentRuntimeApplies schema runtimeType typeCondition := by
-                  simpa [doesFragmentTypeApplyBool, runtimeObjectType?] using happly
+                  simpa [ScopedParentRuntimeApplies, doesFragmentTypeApplyBool,
+                    runtimeObjectType?] using happly
                 have hrecursive :=
                   collectFields_runtimeScopedBy_of_selectionSetLookupValid schema
                     variableValues collectParent typeCondition runtimeType
@@ -1907,7 +1913,8 @@ mutual
             }, ?_, ?_, ?_⟩
           · simp [FieldMerge.collectFields, hlookup]
           · exact ⟨rfl, rfl, rfl, rfl⟩
-          · simpa [ScopedFieldRuntimeApplies] using hparentRuntime
+          · simpa [ScopedFieldRuntimeApplies, ScopedParentRuntimeApplies]
+              using hparentRuntime
         · have hfalse :
               selectionDirectivesAllowBool variableValues directives = false := by
             cases hmatch : selectionDirectivesAllowBool variableValues directives
@@ -1953,8 +1960,8 @@ mutual
                     (.object runtimeType identity) typeCondition = true
               · have htypeRuntime :
                     ScopedParentRuntimeApplies schema runtimeType typeCondition := by
-                  simpa [doesFragmentTypeApplyBool, runtimeObjectType?] using
-                    happly
+                  simpa [ScopedParentRuntimeApplies, doesFragmentTypeApplyBool,
+                    runtimeObjectType?] using happly
                 have hrecursive :=
                   collectFields_runtimeScopedBy_of_selectionSetLookupValid_object
                     schema variableValues collectParent typeCondition runtimeType

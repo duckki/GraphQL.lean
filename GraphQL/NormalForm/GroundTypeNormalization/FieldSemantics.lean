@@ -427,10 +427,13 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_of_completeValue
       =
       Selection.field responseName fieldName arguments [] normalizedSubselections
         :: normalizedRest := by
-    simp [normalizeSelectionSet, hlookup, matching, mergedSubselections,
-      returnType, normalizedRest, computedSubselections, hsubsections,
-      possibleTypeNormalizations]
-    simpa [hsubsections] using hnormalizedFieldWithRest
+    rw [normalizeSelectionSet.eq_2, hlookup]
+    change normalizedFieldWithRest schema returnType responseName fieldName
+      arguments [] computedSubselections normalizedRest =
+      Selection.field responseName fieldName arguments [] normalizedSubselections
+        :: normalizedRest
+    rw [← hsubsections]
+    exact hnormalizedFieldWithRest
   rw [hnormalized]
   exact executeSelectionSet_field_head_eq_of_completeValue
     schema resolvers variableValues depth parentType source responseName

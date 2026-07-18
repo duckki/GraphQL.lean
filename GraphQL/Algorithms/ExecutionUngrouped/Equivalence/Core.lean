@@ -1007,7 +1007,8 @@ theorem ScopedParentRuntimeApplies.of_rootSourceAppliesBool
     rootSourceAppliesBool schema operation (.object runtimeType identity) = true ->
       ScopedParentRuntimeApplies schema runtimeType operation.rootType := by
   intro hroot
-  simpa [rootSourceAppliesBool, runtimeObjectType?] using hroot
+  simpa [ScopedParentRuntimeApplies, rootSourceAppliesBool, runtimeObjectType?]
+    using hroot
 
 theorem ScopedParentRuntimeApplies.of_typeIncludesObjectBool
     (schema : Schema) (runtimeType parentType : Name) :

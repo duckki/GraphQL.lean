@@ -93,13 +93,13 @@ theorem interfaceImplementationArgumentsRejectedByPossibleTypesAssumption :
           GraphQL.Validation.selectionSetValidInPossibleTypes
             interfaceImplementationArgumentSchema [] objectType
             [ .field "value" "value" [] [] [] ] := by
-    simpa [GraphQL.Validation.selectionValidInPossibleTypes,
-      GraphQL.Validation.selectionValid,
-      GraphQL.Validation.fieldSelectionSetValid,
-      GraphQL.Validation.argumentsValid,
-      GraphQL.Validation.argumentValid,
-      interfaceImplementationArgumentSchema,
-      testObjectFieldDefinition] using hnodeImpl.2
+    have hnodeLookup :
+        interfaceImplementationArgumentSchema.lookupField "Query" "node" =
+          some (testObjectFieldDefinition "node" "Node") := by
+      rfl
+    have hbranches := hnodeImpl.2
+    rw [hnodeLookup] at hbranches
+    simpa [testObjectFieldDefinition, TypeRef.namedType] using hbranches
   have hhumanMem :
       "Human" ∈ interfaceImplementationArgumentSchema.getPossibleTypes "Node" := by
     native_decide

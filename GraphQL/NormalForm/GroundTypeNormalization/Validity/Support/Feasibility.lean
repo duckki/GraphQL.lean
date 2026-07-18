@@ -757,10 +757,11 @@ mutual
           selectionSetContainsTypeConditionFeasibleField_replace_base_with_object
             schema hschema baseType (typeCondition :: conditions) selectionSet
             (by
-              simpa using hfeasible) with
+              simpa [selectionContainsTypeConditionFeasibleField] using
+                hfeasible) with
           ⟨objectType, hbase, hobject, hbody⟩
         refine ⟨objectType, hbase, hobject, ?_⟩
-        simpa using hbody
+        simpa [selectionContainsTypeConditionFeasibleField] using hbody
 
   theorem selectionSetContainsTypeConditionFeasibleField_replace_base_with_object
       (schema : Schema)

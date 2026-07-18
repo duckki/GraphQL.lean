@@ -76,7 +76,8 @@ theorem fieldsForNameCanMerge_of_sameParent_sameSelection_source
   · intro _hparents
     exact ⟨hfield, harguments⟩
   · intro _hparents objectType
-    simpa [hleftSelection, hrightSelection] using hsubfields objectType
+    simpa [FieldMerge.fieldsInSetCanMerge, hleftSelection, hrightSelection]
+      using hsubfields objectType
 
 theorem fieldsInSetCanMerge_mergeSelectionSets_pair_of_scoped
     (schema : Schema) (parentType responseName objectType : Name)

@@ -1052,7 +1052,9 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_o
       (ExecutionSuccess.executeSelectionSetAsResponse_object_of_field_ok
         schema resolvers [] (parentFuel + 1) parentType source
         supportSelectionSet hfree hnormal hobject
-        (by simpa [resolvers, source, rootSelectionSet, currentSelectionSet]
+        (by simpa [resolvers, source, rootSelectionSet, currentSelectionSet,
+            leftInitialSelectionSet, rightInitialSelectionSet,
+            selectionSetFieldsExecuteOk]
           using hfieldOk))
   · simpa [source, projectionRootResolverValue, projectionResolverValue]
       using hdataNot

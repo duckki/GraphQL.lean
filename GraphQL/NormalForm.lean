@@ -374,13 +374,14 @@ def responseNamesNodup (selectionSet : List Selection) : Prop :=
 
 -- Spec-inspired fragment grounding invariant: non-spec uniqueness predicate for
 -- inline-fragment type conditions.
+def inlineFragmentTypeCondition? : Selection -> Option Name
+  | .inlineFragment (some typeCondition) _directives _selectionSet =>
+      some typeCondition
+  | _ => none
+
 def inlineFragmentTypeConditionsNodup
     (selectionSet : List Selection) : Prop :=
-  (selectionSet.filterMap (fun selection =>
-    match selection with
-    | .inlineFragment (some typeCondition) _directives _selectionSet =>
-        some typeCondition
-    | _ => none)).Nodup
+  (selectionSet.filterMap inlineFragmentTypeCondition?).Nodup
 
 -- Spec-inspired non-redundancy: non-spec predicate used by this project's normal form
 -- rather than by GraphQL itself.

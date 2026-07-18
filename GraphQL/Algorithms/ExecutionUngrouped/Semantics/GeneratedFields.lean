@@ -21,7 +21,7 @@ theorem responseNamesNodup_tail
   unfold NormalForm.responseNamesNodup at hnodup ⊢
   cases selection with
   | field responseName fieldName arguments directives subselections =>
-      simpa [Selection.responseName?] using hnodup.tail
+      exact hnodup.tail
   | inlineFragment typeCondition directives subselections =>
       simpa [Selection.responseName?] using hnodup
 
@@ -33,13 +33,16 @@ theorem inlineFragmentTypeConditionsNodup_tail
   unfold NormalForm.inlineFragmentTypeConditionsNodup at hnodup ⊢
   cases selection with
   | field responseName fieldName arguments directives subselections =>
-      simpa using hnodup
+      simpa [NormalForm.inlineFragmentTypeCondition?] using hnodup
   | inlineFragment typeCondition directives subselections =>
       cases typeCondition with
       | none =>
-          simpa using hnodup
+          simpa [NormalForm.inlineFragmentTypeCondition?] using hnodup
       | some typeCondition =>
-          simpa using hnodup.tail
+          change List.Pairwise (fun x1 x2 => ¬ x1 = x2)
+            (List.filterMap NormalForm.inlineFragmentTypeCondition?
+              selectionSet)
+          simpa [NormalForm.inlineFragmentTypeCondition?] using hnodup.tail
 
 theorem selectionSetNonRedundant_tail
     {selection : Selection} {selectionSet : List Selection} :
@@ -109,7 +112,7 @@ theorem selectionSetNormal_field_child
   unfold NormalForm.selectionGroundTyped at hselectionGround
   unfold NormalForm.selectionNonRedundant at hselectionNonRedundant
   rcases hselectionGround with ⟨returnType, hreturn, hchildGround⟩
-  simpa [hreturn] using
+  simpa [hreturn, NormalForm.selectionSetNormal] using
     (⟨hchildGround, hselectionNonRedundant⟩ :
       NormalForm.selectionSetNormal schema returnType selectionSet)
 
@@ -468,7 +471,8 @@ theorem visitSubfields_possibleTypeNormalizations_runtime_branch
                   (Execution.ResolverValue.object runtimeType ref)
                   (selection :: restNormalized) output).fst
             simpa [NormalForm.GroundTypeNormalization.possibleTypeNormalizations,
-              hnormalized, visitSubfields, visitSelection, happly] using htailAt
+              hnormalized, visitSubfields, visitSelection, happly,
+              selectionDirectivesAllowBool_empty] using htailAt
           · have hrestMem : runtimeType ∈ rest := by
               rcases List.mem_cons.mp hmem with hhead | htail
               · exact False.elim (heq hhead.symm)
@@ -783,7 +787,7 @@ theorem generatedNormalizedFieldChild_selectionSetDirectiveFree
           NormalForm.normalizeSelectionSet schema childType
             sourceSelectionSet := by
       simpa [hobject] using hchild
-    simpa [hchildEq] using
+    simpa [hchildEq, NormalForm.selectionSetNormal] using
       NormalForm.GroundTypeNormalization.normalizeSelectionSet_directiveFree
         schema childType sourceSelectionSet hsourceFree
   · have hfalse :
@@ -866,7 +870,7 @@ theorem generatedNormalizedFieldChild_selectionSetNormal
               schema
               (SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects
                 hschema childType objectType hobjectType))).2)
-    simpa [hchildEq] using
+    simpa [hchildEq, NormalForm.selectionSetNormal] using
       (⟨hground, hnonRedundant⟩ :
         NormalForm.selectionSetNormal schema childType
           (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
@@ -2216,7 +2220,7 @@ theorem selectionSetNormal_field_child_of_mem
   unfold NormalForm.selectionGroundTyped at hselectionGround
   unfold NormalForm.selectionNonRedundant at hselectionNonRedundant
   rcases hselectionGround with ⟨returnType, hreturn, hchildGround⟩
-  simpa [hreturn] using
+  simpa [hreturn, NormalForm.selectionSetNormal] using
     (⟨hchildGround, hselectionNonRedundant⟩ :
       NormalForm.selectionSetNormal schema returnType childSelectionSet)
 

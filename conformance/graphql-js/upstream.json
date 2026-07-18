@@ -50,12 +50,16 @@
       "path": "src/execution/__tests__/abstract-test.ts",
       "status": "adapted",
       "notes": "Positive interface runtime-type dispatch is adapted using explicit resolver-owned refs."
+    },
+    {
+      "path": "src/execution/__tests__/fragments-test.ts",
+      "status": "mirrored",
+      "notes": "Basic named fragment spread execution is mirrored for GraphQL.NamedFragment.Execution."
     }
   ],
   "skips": [
     "mutation execution",
     "subscription execution",
-    "named fragment definitions and fragment spreads",
     "custom directives",
     "input and result coercion diagnostics",
     "request errors",

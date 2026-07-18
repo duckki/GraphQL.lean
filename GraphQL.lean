@@ -4,6 +4,12 @@ import GraphQL.Validation.FieldMerge
 import GraphQL.Execution.Data
 import GraphQL.Execution.ResolverValue
 import GraphQL.Execution.FieldCollection
+import GraphQL.Execution.SemanticEquivalence
+import GraphQL.NamedFragment.Validation
+import GraphQL.NamedFragment.Execution
+import GraphQL.NamedFragment.Inline.Basic
+import GraphQL.NamedFragment.Semantics.Inline
+import GraphQL.NamedFragment.Semantics.Validation
 import GraphQL.Algorithms.ExecutionUngrouped.Semantics
 import GraphQL.Algorithms.ExecutionUngrouped.Equivalence
 import GraphQL.NormalForm.GroundTypeNormalization.Semantics

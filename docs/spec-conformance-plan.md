@@ -21,6 +21,8 @@ The current conformance target includes:
   selection shape, non-empty operation and composite selection sets,
   inline-fragment applicability, and field merge compatibility,
 - inline fragments,
+- named fragment definitions and fragment spreads in the separate
+  `GraphQL.NamedFragment` proof-facing layer,
 - variables and the built-in executable directives `@skip` and `@include`,
 - possible-object semantics for abstract types,
 - execution field errors as resolver failure counts in the query response
@@ -33,7 +35,6 @@ These are out of scope for the current conformance pass:
 
 - mutation execution,
 - subscription execution,
-- named fragment definitions and fragment spreads,
 - custom directives and directive definitions beyond modeled `@skip` and
   `@include`,
 - full input coercion and result coercion,
@@ -101,13 +102,19 @@ The main modules are:
 - `GraphQL.Execution`: bounded resolver-based execution with compatibility data
   projection, response null bubbling through non-null output wrappers, and a
   query response envelope containing data plus a `Nat` execution-error count.
+- `GraphQL.NamedFragment`: separate fragment-aware operation syntax,
+  validation, direct fragment-aware execution, and inlining support for later
+  equivalence proofs. This layer intentionally does not modify the existing
+  fragment-free `GraphQL.Operation`, `GraphQL.Validation`, or
+  `GraphQL.Execution` definitions.
 
-Conformance testing now includes a first graphql-js execution projection under
+Conformance testing now includes graphql-js execution projections under
 `conformance/graphql-js/`. The fixtures intentionally compare only the behavior
-represented by `GraphQL.Execution`: ordered response data and execution-error
-count. The graphql-js oracle script projects `errors.length` and drops messages,
-paths, locations, extensions, async scheduling details, and resolver info
-metadata. Generated Lean tests live under `Tests/Conformance/Execution/` and
+represented by `GraphQL.Execution` and `GraphQL.NamedFragment.Execution`:
+ordered response data and execution-error count. The graphql-js oracle script
+projects `errors.length` and drops messages, paths, locations, extensions,
+async scheduling details, and resolver info metadata. Generated Lean tests for
+the fragment-free execution model live under `Tests/Conformance/Execution/` and
 are regenerated with:
 
 ```sh
@@ -115,11 +122,27 @@ node scripts/gen-graphql-js-conformance.mjs
 lake build Tests.Conformance.Execution
 ```
 
+Named-fragment fixtures live under `conformance/graphql-js/named-fragment-cases/`
+and are regenerated with:
+
+```sh
+node scripts/gen-graphql-js-conformance.mjs \
+  --cases conformance/graphql-js/named-fragment-cases \
+  --target named-fragment
+lake build Tests.Conformance.NamedFragment
+```
+
 When a local graphql-js package or checkout is available, the same fixtures can
 be checked against graphql-js with:
 
 ```sh
 GRAPHQL_JS_MODULE=graphql node scripts/graphql-js-oracle.mjs --check
+```
+
+The named-fragment oracle can be checked with:
+
+```sh
+npm run oracle:graphql-js:named-fragment
 ```
 
 ## Related Documentation

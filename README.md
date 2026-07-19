@@ -29,6 +29,21 @@ Run linting:
 lake lint
 ```
 
+This package uses LeanFmt from
+[duckki/LeanFmt](https://github.com/duckki/LeanFmt) as a Lake dependency.
+
+Format all Lean sources:
+
+```sh
+lake exe fmt --recursive GraphQL.lean Tests.lean Lint.lean GraphQL Tests
+```
+
+Check formatting without rewriting files:
+
+```sh
+lake exe fmt --check --recursive GraphQL.lean Tests.lean Lint.lean GraphQL Tests
+```
+
 The lint target runs Lean's built-in linters with documentation warnings disabled.
 It also enforces project-local community-style checks inspired by common
 Mathlib/CSLib practice: lines at 100 columns except URLs, no trailing

@@ -21,8 +21,8 @@ open GraphQL.Execution
 
 instance : Inhabited ResponseValue := ⟨.null⟩
 
-def lookupResponseField? (responseName : Name) :
-    List (Name × ResponseValue) -> Option ResponseValue
+def lookupResponseField? (responseName : Name)
+    : List (Name × ResponseValue) -> Option ResponseValue
   | [] => none
   | (fieldResponseName, response) :: rest =>
       if fieldResponseName == responseName then
@@ -35,8 +35,8 @@ def responseObjectField? (responseName : Name) : ResponseValue -> Option Respons
   | _ => none
 
 def executableField (parentType responseName fieldName : Name)
-    (arguments : List Argument) (selectionSet : List Selection) :
-    ExecutableField :=
+    (arguments : List Argument) (selectionSet : List Selection)
+    : ExecutableField :=
   {
     parentType := parentType
     responseName := responseName
@@ -49,8 +49,8 @@ def executableField (parentType responseName fieldName : Name)
 -- helper only decides when that previous value is already final for this response
 -- position, so field execution can stop instead of resolving and completing more
 -- subfields.
-def reusablePreviousValue? (schema : Schema) :
-    TypeRef -> Option ResponseValue -> Option ResponseValue
+def reusablePreviousValue? (schema : Schema)
+    : TypeRef -> Option ResponseValue -> Option ResponseValue
   | _fieldType, none =>
       none
   | _fieldType, some .null =>
@@ -84,30 +84,30 @@ mutual
         .list (mergeResponseLists existingValues incomingValues)
     | _, _ => existing
 
-  def mergeResponseFields :
-      List (Name × ResponseValue) -> List (Name × ResponseValue) -> List (Name × ResponseValue)
+  def mergeResponseFields
+      : List (Name × ResponseValue) -> List (Name × ResponseValue)
+        -> List (Name × ResponseValue)
     | existingFields, [] => existingFields
     | existingFields, (responseName, incoming) :: rest =>
         mergeResponseFields
           (mergeResponseField responseName incoming existingFields)
           rest
 
-  def mergeResponseField (responseName : Name) (incoming : ResponseValue) :
-      List (Name × ResponseValue) -> List (Name × ResponseValue)
+  def mergeResponseField (responseName : Name) (incoming : ResponseValue)
+      : List (Name × ResponseValue) -> List (Name × ResponseValue)
     | [] => [(responseName, incoming)]
     | (fieldResponseName, existing) :: rest =>
         if fieldResponseName == responseName then
           (fieldResponseName, mergeResponse existing incoming) :: rest
         else
-          (fieldResponseName, existing) ::
-            mergeResponseField responseName incoming rest
+          (fieldResponseName, existing) :: mergeResponseField responseName incoming rest
 
-  def mergeResponseLists : List ResponseValue -> List ResponseValue -> List ResponseValue
+  def mergeResponseLists
+      : List ResponseValue -> List ResponseValue -> List ResponseValue
     | [], _incomingValues => []
     | existingValues, [] => existingValues
     | existing :: existingRest, incoming :: incomingRest =>
-        mergeResponse existing incoming ::
-          mergeResponseLists existingRest incomingRest
+        mergeResponse existing incoming :: mergeResponseLists existingRest incomingRest
 end
 
 abbrev VisitStatus : Type :=
@@ -127,23 +127,24 @@ def resultStatus {α : Type} : Result α -> VisitStatus
   | .error errors => .error errors
   | .ok (_value, errors) => visitOk errors
 
-def mergeResponseFieldIntoObject (responseName : Name) (incoming : ResponseValue) :
-    ResponseValue -> ResponseValue
+def mergeResponseFieldIntoObject (responseName : Name) (incoming : ResponseValue)
+    : ResponseValue -> ResponseValue
   | .object fields => .object (mergeResponseField responseName incoming fields)
   | response => response
 
 def mergeResponseFieldResult (responseName : Name)
-    (fieldResult : Result ResponseValue) (output : ResponseValue) :
-    ResponseValue × VisitStatus :=
-  (mergeResponseFieldIntoObject responseName (resultValueOrNull fieldResult)
-    output,
-   resultStatus fieldResult)
+    (fieldResult : Result ResponseValue) (output : ResponseValue)
+    : ResponseValue × VisitStatus :=
+  (
+    mergeResponseFieldIntoObject responseName (resultValueOrNull fieldResult) output,
+    resultStatus fieldResult
+  )
 
 def combineVisitStatus (left right : VisitStatus) : VisitStatus :=
   Result.combine (fun _unit _unit => ()) left right
 
-def catchVisitBubbleAsNull (value : ResponseValue)
-    (status : VisitStatus) : Result ResponseValue :=
+def catchVisitBubbleAsNull (value : ResponseValue) (status : VisitStatus)
+    : Result ResponseValue :=
   match status with
   | .error errors => .ok (.null, errors)
   | .ok (_unit, errors) => .ok (value, errors)
@@ -154,8 +155,8 @@ mutual
   def visitSubfields {ObjectRef : Type}
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues)
-      (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef) :
-      List Selection -> ResponseValue -> ResponseValue × VisitStatus
+      (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef)
+      : List Selection -> ResponseValue -> ResponseValue × VisitStatus
     | [], output => (output, visitOk)
     | selection :: rest, output =>
         let head :=
@@ -171,12 +172,11 @@ mutual
   def visitSelection {ObjectRef : Type}
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues)
-      (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef) :
-      Selection -> ResponseValue -> ResponseValue × VisitStatus
+      (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef)
+      : Selection -> ResponseValue -> ResponseValue × VisitStatus
     | .field responseName fieldName arguments directives selectionSet, output =>
         if selectionDirectivesAllowBool variableValues directives then
-          let previous? :=
-            responseObjectField? responseName output
+          let previous? := responseObjectField? responseName output
           let fieldResult :=
             match fuel with
             | 0 =>
@@ -216,7 +216,8 @@ mutual
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) (completionFuel : Nat)
       (source : ResolverValue ObjectRef) (previous? : Option ResponseValue)
-      (field : ExecutableField) : Result ResponseValue :=
+      (field : ExecutableField)
+      : Result ResponseValue :=
     match schema.lookupField field.parentType field.fieldName with
     | none => .error 1
     | some fieldDefinition =>
@@ -224,7 +225,7 @@ mutual
         | some previous => .ok (previous, 0)
         | none =>
             match resolvers.resolve field.parentType field.fieldName
-                field.arguments source with
+                    field.arguments source with
             | none =>
                 handleFieldError fieldDefinition.outputType
             | some resolved =>
@@ -236,9 +237,9 @@ mutual
   -- revisits. Scalar/enum result coercion and error metadata remain abstract.
   def completeValue {ObjectRef : Type}
       (schema : Schema) (resolvers : Resolvers ObjectRef)
-      (variableValues : VariableValues) :
-      Nat -> TypeRef -> List Selection -> ResolverValue ObjectRef ->
-        Option ResponseValue -> Result ResponseValue
+      (variableValues : VariableValues)
+      : Nat -> TypeRef -> List Selection -> ResolverValue ObjectRef
+        -> Option ResponseValue -> Result ResponseValue
     | 0, _fieldType, _selectionSet, _value, _previous? =>
         outOfFuel
     | _fuel, _fieldType, _selectionSet, _value, some .null =>
@@ -262,8 +263,11 @@ mutual
             else
               .ok (.scalar value, 0)
         | some _ => .error 1
-    | fuel + 1, .named parentType, selectionSet, source@(.object runtimeType _ref),
-        previous? =>
+    | fuel + 1,
+      .named parentType,
+      selectionSet,
+      source@(.object runtimeType _ref),
+      previous? =>
         if schema.typeIncludesObjectBool parentType runtimeType then
           match reuseOrCreateObject? previous? with
           | some output =>
@@ -291,9 +295,9 @@ mutual
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues)
       (fuel : Nat) (itemType : TypeRef)
-      (selectionSet : List Selection) :
-      List (ResolverValue ObjectRef) -> List ResponseValue ->
-        Result (List ResponseValue)
+      (selectionSet : List Selection)
+      : List (ResolverValue ObjectRef) -> List ResponseValue
+        -> Result (List ResponseValue)
     | [], _ :: _ => .error 1
     | [], [] => .ok ([], 0)
     | value :: values, previousValues =>
@@ -316,7 +320,8 @@ def executeRootSelectionSet {ObjectRef : Type}
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
     (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef)
-    (selectionSet: List Selection) : Result (List (Name × ResponseValue)) :=
+    (selectionSet: List Selection)
+    : Result (List (Name × ResponseValue)) :=
   let visited :=
     visitSubfields schema resolvers variableValues fuel parentType source
       selectionSet (.object [])
@@ -332,15 +337,16 @@ def executeRootSelectionSet {ObjectRef : Type}
 def executeSelectionSet {ObjectRef : Type}
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
-    (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef) :
-    List Selection -> Result (List (Name × ResponseValue)) :=
+    (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef)
+    : List Selection -> Result (List (Name × ResponseValue)) :=
   executeRootSelectionSet schema resolvers variableValues fuel parentType source
 
 -- Spec 6.2.1 `ExecuteQuery`
 def executeQueryWithFuel {ObjectRef : Type}
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
-    (fuel : Nat) (source : ResolverValue ObjectRef) : Response :=
+    (fuel : Nat) (source : ResolverValue ObjectRef)
+    : Response :=
   if rootSourceAppliesBool schema operation source then
     Execution.selectionSetResultToResponse
       (executeRootSelectionSet schema resolvers variableValues
@@ -353,10 +359,10 @@ def executeQueryWithFuel {ObjectRef : Type}
 def executeQuery {ObjectRef : Type}
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
-    (source : ResolverValue ObjectRef) : Response :=
+    (source : ResolverValue ObjectRef)
+    : Response :=
   executeQueryWithFuel schema resolvers variableValues operation
     (executeQueryFuelBound operation) source
-
 
 -----------------------------------------------------------------------------------------
 -- Correctness theorem: ungroupedExecutionPreservesSpecExecution
@@ -364,11 +370,11 @@ def executeQuery {ObjectRef : Type}
 
 -- A helper definition where response data is equal and the presence of execution errors
 -- stays the same, but the number of errors may differ.
-def responseDataAndErrorPresenceEquivalent
-    (ungrouped spec : GraphQL.Execution.Response) : Prop :=
+def responseDataAndErrorPresenceEquivalent (ungrouped spec : GraphQL.Execution.Response)
+    : Prop :=
   ungrouped.data = spec.data
-    ∧ (spec.errors = 0 -> ungrouped.errors = 0)
-    ∧ (0 < spec.errors -> 0 < ungrouped.errors)
+  ∧ (spec.errors = 0 -> ungrouped.errors = 0)
+  ∧ (0 < spec.errors -> 0 < ungrouped.errors)
 
 -- Resolver-parametric correctness statement for ungrouped execution. Ungrouped execution
 -- preserves response data and whether execution errors are present, but it may count
@@ -376,16 +382,15 @@ def responseDataAndErrorPresenceEquivalent
 -- `null`. See example `duplicateHeroNullBubbleQuery` in `Tests/ExecutionUngrouped.lean`.
 -- Proof witness: ungroupedExecutionPreservesSpecExecution_proof in
 -- `Semantics/Final.lean`.
-def ungroupedExecutionPreservesSpecExecution
-    (schema : Schema) (operation : Operation) : Prop :=
-  SchemaWellFormedness.schemaWellFormed schema ->
-  Validation.operationDefinitionValid schema operation ->
-    ∀ {ObjectRef : Type} (resolvers : Resolvers ObjectRef)
-      variableValues fuel (source : ResolverValue ObjectRef),
-        NormalForm.operationBoolVarsComplete operation variableValues ->
-        responseDataAndErrorPresenceEquivalent
-          (executeQueryWithFuel schema resolvers variableValues
-            operation fuel source)
+def ungroupedExecutionPreservesSpecExecution (schema : Schema) (operation : Operation)
+    : Prop :=
+  SchemaWellFormedness.schemaWellFormed schema
+  -> Validation.operationDefinitionValid schema operation
+  -> ∀ {ObjectRef : Type} (resolvers : Resolvers ObjectRef)
+        variableValues fuel (source : ResolverValue ObjectRef),
+      NormalForm.operationBoolVarsComplete operation variableValues
+      -> responseDataAndErrorPresenceEquivalent
+          (executeQueryWithFuel schema resolvers variableValues operation fuel source)
           (GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
             operation fuel source)
 

@@ -18,18 +18,16 @@ structure ExecutedFieldGroupComplete
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField) where
   resolved : Option (ResolverValue ObjectIdentity)
-  responseName_eq :
-    ∀ candidate, candidate ∈ field :: fields ->
-      candidate.responseName = responseName
-  parent_eq :
-    ∀ candidate, candidate ∈ field :: fields ->
-      candidate.parentType = parentType
-  resolved_eq :
-    resolvers.resolve field.parentType field.fieldName field.arguments source =
-      resolved
-  mergedComplete :
-    ExecutableFieldsMergedComplete schema resolvers variableValues depth
-      parentType source responseName field fields resolved
+  responseName_eq
+    : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName
+  parent_eq
+    : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType
+  resolved_eq
+    : resolvers.resolve field.parentType field.fieldName field.arguments source
+      = resolved
+  mergedComplete
+    : ExecutableFieldsMergedComplete schema resolvers variableValues depth
+        parentType source responseName field fields resolved
 
 namespace ExecutedFieldGroupComplete
 
@@ -40,13 +38,13 @@ theorem mergedComplete_resolved
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     {responseName : Name} {field : ExecutableField}
     {fields : List ExecutableField}
-    (group :
-      ExecutedFieldGroupComplete schema resolvers variableValues depth
-        parentType source responseName field fields) :
-    ExecutableFieldsMergedComplete schema resolvers variableValues depth
-      parentType source responseName field fields
-      (resolvers.resolve field.parentType field.fieldName field.arguments
-        source) := by
+    (group
+      : ExecutedFieldGroupComplete schema resolvers variableValues depth
+          parentType source responseName field fields)
+    : ExecutableFieldsMergedComplete schema resolvers variableValues depth
+        parentType source responseName field fields
+        (resolvers.resolve field.parentType field.fieldName field.arguments
+          source) := by
   rw [group.resolved_eq]
   exact group.mergedComplete
 
@@ -102,15 +100,15 @@ def ExecutedFieldGroupsComplete
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    List (Name × List ExecutableField) -> Type
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : List (Name × List ExecutableField) -> Type
   | [] => Unit
   | (_responseName, []) :: _rest => Empty
   | (responseName, field :: fields) :: rest =>
       ExecutedFieldGroupComplete schema resolvers variableValues depth
-        parentType source responseName field fields ×
-      ExecutedFieldGroupsComplete schema resolvers variableValues depth
-        parentType source rest
+        parentType source responseName field fields
+      × ExecutedFieldGroupsComplete schema resolvers variableValues depth
+          parentType source rest
 
 namespace ExecutedFieldGroupsComplete
 
@@ -119,10 +117,10 @@ theorem no_empty_head
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
-    {responseName : Name} {rest : List (Name × List ExecutableField)} :
-    ExecutedFieldGroupsComplete schema resolvers variableValues depth
-      parentType source ((responseName, []) :: rest) ->
-    False := by
+    {responseName : Name} {rest : List (Name × List ExecutableField)}
+    : ExecutedFieldGroupsComplete schema resolvers variableValues depth
+        parentType source ((responseName, []) :: rest)
+      -> False := by
   intro hgroups
   exact nomatch hgroups
 
@@ -130,11 +128,11 @@ theorem fieldsNonempty
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : ResolverValue ObjectIdentity} :
-    ∀ {groups : List (Name × List ExecutableField)},
-      ExecutedFieldGroupsComplete schema resolvers variableValues depth
-        parentType source groups ->
-      CollectedGroupsFieldsNonempty groups
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    : ∀ {groups : List (Name × List ExecutableField)},
+        ExecutedFieldGroupsComplete schema resolvers variableValues depth
+          parentType source groups
+        -> CollectedGroupsFieldsNonempty groups
   | [], _hgroups => CollectedGroupsFieldsNonempty_nil
   | (groupResponseName, []) :: rest, hgroups =>
       False.elim (no_empty_head hgroups)
@@ -152,11 +150,11 @@ theorem responseName
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : ResolverValue ObjectIdentity} :
-    ∀ {groups : List (Name × List ExecutableField)},
-      ExecutedFieldGroupsComplete schema resolvers variableValues depth
-        parentType source groups ->
-      CollectedGroupsResponseName groups
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    : ∀ {groups : List (Name × List ExecutableField)},
+        ExecutedFieldGroupsComplete schema resolvers variableValues depth
+          parentType source groups
+        -> CollectedGroupsResponseName groups
   | [], _hgroups => by
       intro _responseName _fields hmem
       simp at hmem
@@ -177,11 +175,11 @@ theorem parent
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : ResolverValue ObjectIdentity} :
-    ∀ {groups : List (Name × List ExecutableField)},
-      ExecutedFieldGroupsComplete schema resolvers variableValues depth
-        parentType source groups ->
-      CollectedGroupsParent parentType groups
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    : ∀ {groups : List (Name × List ExecutableField)},
+        ExecutedFieldGroupsComplete schema resolvers variableValues depth
+          parentType source groups
+        -> CollectedGroupsParent parentType groups
   | [], _hgroups => by
       intro _responseName _fields hmem
       simp at hmem
@@ -271,11 +269,11 @@ theorem groupFlatSpecEquivalent
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     {groups : List (Name × List ExecutableField)}
-    (hgroups :
-      ExecutedFieldGroupsComplete schema resolvers variableValues depth
-        parentType source groups)
-    (hnodup : PairKeysNodup groups) :
-      ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues
+    (hgroups
+      : ExecutedFieldGroupsComplete schema resolvers variableValues depth
+          parentType source groups)
+    (hnodup : PairKeysNodup groups)
+    : ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues
         (depth + 1) parentType source groups := by
   unfold ExecutableGroupsFlatSpecEquivalent
   unfold ExecutableFieldsFlatSpecEquivalent
@@ -452,32 +450,37 @@ theorem executeRootSelectionSet_eq_spec_of_collected_groups_containedAppendInvar
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     {selectionSet : List Selection}
     {groups : List (Name × List ExecutableField)}
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet = groups)
-    (hflat :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        parentType source selectionSet (.object []))
-    (hcollected :
-      ExecutionCollectedFieldInvariant
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := parentType
-            source := source
-            selectionSet := selectionSet }
-          initial := .object [] })
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet
+        = groups)
+    (hflat
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          parentType source selectionSet (.object []))
+    (hcollected
+      : ExecutionCollectedFieldInvariant
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := depth
+                parentType := parentType
+                source := source
+                selectionSet := selectionSet
+              }
+            initial := .object []
+          })
     (hlookups : CollectedGroupsFieldLookupValid schema parentType groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
-    (happend :
-      CollectedFieldGroupContainedAppendInvariant schema resolvers
-        variableValues depth source groups) :
-    executeRootSelectionSet schema resolvers variableValues (depth + 1)
-      parentType source selectionSet =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      (depth + 1) parentType source selectionSet := by
+    (happend
+      : CollectedFieldGroupContainedAppendInvariant schema resolvers
+          variableValues depth source groups)
+    : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+        parentType source selectionSet
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (depth + 1) parentType source selectionSet := by
   let state : ExecutionEquivalenceState ObjectIdentity :=
     { window :=
       { schema := schema
@@ -525,32 +528,36 @@ theorem executeQueryWithFuel_eq_spec_of_collected_groups_containedAppendInvarian
     {depth : Nat} {source : ResolverValue ObjectIdentity}
     {groups : List (Name × List ExecutableField)}
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = groups)
-    (hflat :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        operation.rootType source operation.selectionSet (.object []))
-    (hcollected :
-      ExecutionCollectedFieldInvariant
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := operation.rootType
-            source := source
-            selectionSet := operation.selectionSet }
-          initial := .object [] })
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = groups)
+    (hflat
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          operation.rootType source operation.selectionSet (.object []))
+    (hcollected
+      : ExecutionCollectedFieldInvariant
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := depth
+                parentType := operation.rootType
+                source := source
+                selectionSet := operation.selectionSet
+              }
+            initial := .object []
+          })
     (hlookups : CollectedGroupsFieldLookupValid schema operation.rootType groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
-    (happend :
-      CollectedFieldGroupContainedAppendInvariant schema resolvers
-        variableValues depth source groups) :
-    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
-      source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
-      operation (depth + 1) source := by
+    (happend
+      : CollectedFieldGroupContainedAppendInvariant schema resolvers
+          variableValues depth source groups)
+    : executeQueryWithFuel schema resolvers variableValues operation (depth + 1) source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
+          operation (depth + 1) source := by
   apply executeQueryWithFuel_eq_spec_of_root_fields_eq schema resolvers
     variableValues operation (depth + 1) source hroot
   exact
@@ -565,31 +572,36 @@ theorem executeQuery_eq_spec_of_collected_groups_containedAppendInvariant
     {groups : List (Name × List ExecutableField)}
     (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = groups)
-    (hflat :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        operation.rootType source operation.selectionSet (.object []))
-    (hcollected :
-      ExecutionCollectedFieldInvariant
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := operation.rootType
-            source := source
-            selectionSet := operation.selectionSet }
-          initial := .object [] })
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = groups)
+    (hflat
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          operation.rootType source operation.selectionSet (.object []))
+    (hcollected
+      : ExecutionCollectedFieldInvariant
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := depth
+                parentType := operation.rootType
+                source := source
+                selectionSet := operation.selectionSet
+              }
+            initial := .object []
+          })
     (hlookups : CollectedGroupsFieldLookupValid schema operation.rootType groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
-    (happend :
-      CollectedFieldGroupContainedAppendInvariant schema resolvers
-        variableValues depth source groups) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+    (happend
+      : CollectedFieldGroupContainedAppendInvariant schema resolvers
+          variableValues depth source groups)
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact

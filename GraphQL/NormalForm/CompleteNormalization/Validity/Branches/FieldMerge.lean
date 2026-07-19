@@ -11,10 +11,10 @@ namespace CompleteNormalization
 
 theorem normalizedSelectionSetFieldsCanMerge_anyParent
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType mergeParent : Name} {selectionSet : List Selection} :
-    GroundTypeNormalization.NormalizedSelectionSetValid schema
-      variableDefinitions parentType selectionSet ->
-      FieldMerge.fieldsInSetCanMerge schema mergeParent selectionSet := by
+    {parentType mergeParent : Name} {selectionSet : List Selection}
+    : GroundTypeNormalization.NormalizedSelectionSetValid schema
+        variableDefinitions parentType selectionSet
+      -> FieldMerge.fieldsInSetCanMerge schema mergeParent selectionSet := by
   intro hvalid
   exact fieldsInSetCanMerge_append_left schema mergeParent selectionSet
     selectionSet (hvalid.fieldsCanMergeSelf mergeParent)
@@ -24,21 +24,21 @@ theorem fieldsForNameCanMerge_of_sameParent_sameSelection_source
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     {leftParent rightParent : Name}
     {leftSet rightSet : List Selection}
-    {left right sourceLeft sourceRight : FieldMerge.ScopedField} :
-    left ∈ FieldMerge.collectFields schema leftParent leftSet ->
-    right ∈ FieldMerge.collectFields schema rightParent rightSet ->
-    scopedFieldSameSelection left sourceLeft ->
-    scopedFieldSameSelection right sourceRight ->
-    left.parentType = right.parentType ->
-    sourceLeft.responseName = sourceRight.responseName ->
-    (sourceLeft.parentType = sourceRight.parentType
-        ∨ ¬ schema.objectType sourceLeft.parentType
-        ∨ ¬ schema.objectType sourceRight.parentType) ->
-    FieldMerge.fieldsForNameCanMerge schema sourceLeft sourceRight ->
-    (∀ objectType,
-      FieldMerge.fieldsInSetCanMerge schema objectType
-        (left.selectionSet ++ right.selectionSet)) ->
-      FieldMerge.fieldsForNameCanMerge schema left right := by
+    {left right sourceLeft sourceRight : FieldMerge.ScopedField}
+    : left ∈ FieldMerge.collectFields schema leftParent leftSet
+      -> right ∈ FieldMerge.collectFields schema rightParent rightSet
+      -> scopedFieldSameSelection left sourceLeft
+      -> scopedFieldSameSelection right sourceRight
+      -> left.parentType = right.parentType
+      -> sourceLeft.responseName = sourceRight.responseName
+      -> (sourceLeft.parentType = sourceRight.parentType
+          ∨ ¬ schema.objectType sourceLeft.parentType
+          ∨ ¬ schema.objectType sourceRight.parentType)
+      -> FieldMerge.fieldsForNameCanMerge schema sourceLeft sourceRight
+      -> (∀ objectType,
+            FieldMerge.fieldsInSetCanMerge schema objectType
+              (left.selectionSet ++ right.selectionSet))
+      -> FieldMerge.fieldsForNameCanMerge schema left right := by
   intro hleftMem hrightMem hleftSame hrightSame hparent
     hsourceResponse hsourceParents hsourceMerge hsubfields
   rcases hleftSame with
@@ -81,20 +81,20 @@ theorem fieldsForNameCanMerge_of_sameParent_sameSelection_source
 
 theorem fieldsInSetCanMerge_mergeSelectionSets_pair_of_scoped
     (schema : Schema) (parentType responseName objectType : Name)
-    (selectionSet leftGroup rightGroup : List Selection) :
-    schema.objectType parentType ->
-    FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-    (∀ selection, selection ∈ leftGroup ++ rightGroup ->
-      ∃ scopedField,
-        scopedField ∈ FieldMerge.collectFields schema parentType
-          selectionSet
-          ∧ scopedField.responseName = responseName
-          ∧ scopedField.selectionSet = selection.subselections
-          ∧ (schema.objectType scopedField.parentType ->
-            schema.typesOverlapBool parentType scopedField.parentType =
-              true)) ->
-      FieldMerge.fieldsInSetCanMerge schema objectType
-        (mergeSelectionSets leftGroup ++ mergeSelectionSets rightGroup) := by
+    (selectionSet leftGroup rightGroup : List Selection)
+    : schema.objectType parentType
+      -> FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+      -> (∀ selection,
+            selection ∈ leftGroup ++ rightGroup
+            -> ∃ scopedField,
+                scopedField ∈ FieldMerge.collectFields schema parentType selectionSet
+                ∧ scopedField.responseName = responseName
+                ∧ scopedField.selectionSet = selection.subselections
+                ∧ (schema.objectType scopedField.parentType
+                    -> schema.typesOverlapBool parentType scopedField.parentType
+                        = true))
+      -> FieldMerge.fieldsInSetCanMerge schema objectType
+          (mergeSelectionSets leftGroup ++ mergeSelectionSets rightGroup) := by
   intro hobject hmerge hscopedOf
   have hgroupMerge :
       FieldMerge.fieldsInSetCanMerge schema objectType
@@ -158,19 +158,19 @@ theorem fieldsInSetCanMerge_mergeSelectionSets_pair_of_scoped
 
 theorem fieldsInSetCanMerge_mergeSelectionSets_pair_of_scoped_source_object
     (schema : Schema) (parentType responseName objectType : Name)
-    (selectionSet leftGroup rightGroup : List Selection) :
-    schema.objectType parentType ->
-    FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-    (∀ selection, selection ∈ leftGroup ++ rightGroup ->
-      ∃ scopedField,
-        scopedField ∈ FieldMerge.collectFields schema parentType
-          selectionSet
-          ∧ scopedField.responseName = responseName
-          ∧ scopedField.selectionSet = selection.subselections
-          ∧ schema.typeIncludesObjectBool scopedField.parentType
-            parentType = true) ->
-      FieldMerge.fieldsInSetCanMerge schema objectType
-        (mergeSelectionSets leftGroup ++ mergeSelectionSets rightGroup) := by
+    (selectionSet leftGroup rightGroup : List Selection)
+    : schema.objectType parentType
+      -> FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+      -> (∀ selection,
+            selection ∈ leftGroup ++ rightGroup
+            -> ∃ scopedField,
+                scopedField ∈ FieldMerge.collectFields schema parentType selectionSet
+                ∧ scopedField.responseName = responseName
+                ∧ scopedField.selectionSet = selection.subselections
+                ∧ schema.typeIncludesObjectBool scopedField.parentType parentType
+                  = true)
+      -> FieldMerge.fieldsInSetCanMerge schema objectType
+          (mergeSelectionSets leftGroup ++ mergeSelectionSets rightGroup) := by
   intro hobject hmerge hscopedOf
   apply fieldsInSetCanMerge_mergeSelectionSets_pair_of_scoped schema
     parentType responseName objectType selectionSet leftGroup rightGroup
@@ -187,24 +187,23 @@ theorem fieldsInSetCanMerge_mergeSelectionSets_pair_of_scoped_source_object
   simpa [hparentEq] using object_typesOverlapBool_self schema hobject
 
 theorem fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped_lookupValid_source_object
-    (schema : Schema) (filterParent collectParent responseName : Name) :
-    ∀ selectionSet fieldName arguments directives subselections,
-      (schema.objectType filterParent ->
-        schema.typeIncludesObjectBool collectParent filterParent = true) ->
-      selectionSetLookupValid schema collectParent selectionSet ->
-      Selection.field responseName fieldName arguments directives subselections
-        ∈ fieldSelectionsWithResponseNameInScope schema filterParent responseName
-          selectionSet ->
-        ∃ scopedField,
-          scopedField ∈ FieldMerge.collectFields schema collectParent
-            selectionSet
+    (schema : Schema) (filterParent collectParent responseName : Name)
+    : ∀ selectionSet fieldName arguments directives subselections,
+        (schema.objectType filterParent
+          -> schema.typeIncludesObjectBool collectParent filterParent = true)
+        -> selectionSetLookupValid schema collectParent selectionSet
+        -> Selection.field responseName fieldName arguments directives subselections
+            ∈ fieldSelectionsWithResponseNameInScope schema filterParent responseName
+                selectionSet
+        -> ∃ scopedField,
+            scopedField ∈ FieldMerge.collectFields schema collectParent selectionSet
             ∧ scopedField.responseName = responseName
             ∧ scopedField.fieldName = fieldName
             ∧ scopedField.arguments = arguments
             ∧ scopedField.selectionSet = subselections
-            ∧ (schema.objectType filterParent ->
-              schema.typeIncludesObjectBool scopedField.parentType
-                filterParent = true)
+            ∧ (schema.objectType filterParent
+                -> schema.typeIncludesObjectBool scopedField.parentType filterParent
+                    = true)
   | [], _fieldName, _arguments, _directives, _subselections,
       _hsourceScope, _hlookupValid, hfield => by
       simp [fieldSelectionsWithResponseNameInScope] at hfield
@@ -357,34 +356,34 @@ theorem fieldsInSetCanMerge_fieldHead_merged_pair_of_canMerge_object_lookupValid
     (schema : Schema)
     (parentType responseName leftFieldName rightFieldName objectType : Name)
     (leftArguments rightArguments : List Argument)
-    (leftSubselections rightSubselections leftRest rightRest :
-      List Selection)
-    (leftFieldDefinition rightFieldDefinition : FieldDefinition) :
-    schema.objectType parentType ->
-    selectionSetLookupValid schema parentType
-      (Selection.field responseName leftFieldName leftArguments []
-        leftSubselections :: leftRest) ->
-    selectionSetLookupValid schema parentType
-      (Selection.field responseName rightFieldName rightArguments []
-        rightSubselections :: rightRest) ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      ((Selection.field responseName leftFieldName leftArguments []
-          leftSubselections :: leftRest)
-        ++
-        (Selection.field responseName rightFieldName rightArguments []
-          rightSubselections :: rightRest)) ->
-    schema.lookupField parentType leftFieldName = some leftFieldDefinition ->
-    schema.lookupField parentType rightFieldName = some rightFieldDefinition ->
-      FieldMerge.fieldsInSetCanMerge schema objectType
-        ((leftSubselections ++
-            mergeSelectionSets
-              (fieldSelectionsWithResponseNameInScope schema parentType responseName
-                leftRest))
-          ++
-          (rightSubselections ++
-            mergeSelectionSets
-              (fieldSelectionsWithResponseNameInScope schema parentType responseName
-                rightRest))) := by
+    (leftSubselections rightSubselections leftRest rightRest : List Selection)
+    (leftFieldDefinition rightFieldDefinition : FieldDefinition)
+    : schema.objectType parentType
+      -> selectionSetLookupValid schema parentType
+          (Selection.field responseName leftFieldName leftArguments [] leftSubselections
+            :: leftRest)
+      -> selectionSetLookupValid schema parentType
+          (Selection.field responseName rightFieldName rightArguments []
+              rightSubselections
+            :: rightRest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          ((Selection.field responseName leftFieldName leftArguments []
+                leftSubselections
+              :: leftRest)
+            ++ (Selection.field responseName rightFieldName rightArguments []
+                  rightSubselections
+                :: rightRest))
+      -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
+      -> FieldMerge.fieldsInSetCanMerge schema objectType
+          ((leftSubselections
+              ++ mergeSelectionSets
+                  (fieldSelectionsWithResponseNameInScope schema parentType responseName
+                    leftRest))
+            ++ (rightSubselections
+                ++ mergeSelectionSets
+                    (fieldSelectionsWithResponseNameInScope schema parentType
+                      responseName rightRest))) := by
   intro hobject hleftLookupValid hrightLookupValid hmerge hleftLookup
     hrightLookup
   let leftHead : Selection :=
@@ -530,16 +529,14 @@ theorem fieldsInSetCanMerge_fieldHead_merged_pair_of_canMerge_object_lookupValid
 theorem fieldsInSetCanMerge_field_cons_pair_of_lookup_none
     (schema : Schema) (parentType responseName fieldName : Name)
     (arguments : List Argument)
-    (leftSelectionSet rightSelectionSet leftRest rightRest : List Selection) :
-    schema.lookupField parentType fieldName = none ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (leftRest ++ rightRest) ->
-      FieldMerge.fieldsInSetCanMerge schema parentType
-        ((Selection.field responseName fieldName arguments []
-            leftSelectionSet :: leftRest)
-          ++
-          (Selection.field responseName fieldName arguments []
-            rightSelectionSet :: rightRest)) := by
+    (leftSelectionSet rightSelectionSet leftRest rightRest : List Selection)
+    : schema.lookupField parentType fieldName = none
+      -> FieldMerge.fieldsInSetCanMerge schema parentType (leftRest ++ rightRest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          ((Selection.field responseName fieldName arguments [] leftSelectionSet
+              :: leftRest)
+            ++ (Selection.field responseName fieldName arguments [] rightSelectionSet
+                :: rightRest)) := by
   intro hlookup hrestPair
   unfold FieldMerge.fieldsInSetCanMerge
   refine FieldMerge.FieldsInSetCanMerge.intro parentType
@@ -570,29 +567,29 @@ theorem fieldsForNameCanMerge_sameField_of_subfields
     (parentType responseName fieldName : Name)
     (arguments : List Argument)
     (leftSelectionSet rightSelectionSet : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (∀ objectType,
-      FieldMerge.fieldsInSetCanMerge schema objectType
-        (leftSelectionSet ++ rightSelectionSet)) ->
-      FieldMerge.fieldsForNameCanMerge schema
-        {
-          parentType := parentType,
-          responseName := responseName,
-          fieldName := fieldName,
-          arguments := arguments,
-          outputType := fieldDefinition.outputType,
-          selectionSet := leftSelectionSet
-        }
-        {
-          parentType := parentType,
-          responseName := responseName,
-          fieldName := fieldName,
-          arguments := arguments,
-          outputType := fieldDefinition.outputType,
-          selectionSet := rightSelectionSet
-        } := by
+    (fieldDefinition : FieldDefinition)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (∀ objectType,
+            FieldMerge.fieldsInSetCanMerge schema objectType
+              (leftSelectionSet ++ rightSelectionSet))
+      -> FieldMerge.fieldsForNameCanMerge schema
+          {
+            parentType := parentType,
+            responseName := responseName,
+            fieldName := fieldName,
+            arguments := arguments,
+            outputType := fieldDefinition.outputType,
+            selectionSet := leftSelectionSet
+          }
+          {
+            parentType := parentType,
+            responseName := responseName,
+            fieldName := fieldName,
+            arguments := arguments,
+            outputType := fieldDefinition.outputType,
+            selectionSet := rightSelectionSet
+          } := by
   intro hschema hlookup hsubfields
   refine FieldMerge.FieldsForNameCanMerge.intro _ _ ?_ ?_ ?_
   · exact FieldMerge.sameResponseShape_refl schema
@@ -608,43 +605,41 @@ theorem fieldsInSetCanMerge_field_cons_pair_of_rest_responseNameFree
     (schema : Schema) (parentType responseName fieldName : Name)
     (arguments : List Argument)
     (leftSelectionSet rightSelectionSet leftRest rightRest : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    FieldMerge.fieldsForNameCanMerge schema
-      {
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        outputType := fieldDefinition.outputType,
-        selectionSet := leftSelectionSet
-      }
-      {
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        outputType := fieldDefinition.outputType,
-        selectionSet := rightSelectionSet
-      } ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.field responseName fieldName arguments [] leftSelectionSet
-        :: leftRest) ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.field responseName fieldName arguments [] rightSelectionSet
-        :: rightRest) ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (leftRest ++ rightRest) ->
-    selectionsAllFields leftRest ->
-    selectionsAllFields rightRest ->
-    selectionSetResponseNameFree schema parentType responseName leftRest ->
-    selectionSetResponseNameFree schema parentType responseName rightRest ->
-      FieldMerge.fieldsInSetCanMerge schema parentType
-        ((Selection.field responseName fieldName arguments []
-            leftSelectionSet :: leftRest)
-          ++
-          (Selection.field responseName fieldName arguments []
-            rightSelectionSet :: rightRest)) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> FieldMerge.fieldsForNameCanMerge schema
+          {
+            parentType := parentType,
+            responseName := responseName,
+            fieldName := fieldName,
+            arguments := arguments,
+            outputType := fieldDefinition.outputType,
+            selectionSet := leftSelectionSet
+          }
+          {
+            parentType := parentType,
+            responseName := responseName,
+            fieldName := fieldName,
+            arguments := arguments,
+            outputType := fieldDefinition.outputType,
+            selectionSet := rightSelectionSet
+          }
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.field responseName fieldName arguments [] leftSelectionSet
+            :: leftRest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.field responseName fieldName arguments [] rightSelectionSet
+            :: rightRest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType (leftRest ++ rightRest)
+      -> selectionsAllFields leftRest
+      -> selectionsAllFields rightRest
+      -> selectionSetResponseNameFree schema parentType responseName leftRest
+      -> selectionSetResponseNameFree schema parentType responseName rightRest
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          ((Selection.field responseName fieldName arguments [] leftSelectionSet
+              :: leftRest)
+            ++ (Selection.field responseName fieldName arguments [] rightSelectionSet
+                :: rightRest)) := by
   intro hlookup hheadMerge hleftMerge hrightMerge hrestPair
     hallLeft hallRight hleftFree hrightFree
   apply fieldsInSetCanMerge_append_of_pairwise
@@ -687,29 +682,27 @@ theorem fieldsInSetCanMerge_field_cons_pair_of_rest_responseNameFree
 theorem fieldsInSetCanMerge_field_cons_pair_of_subfields_and_rest
     (schema : Schema) (parentType responseName fieldName : Name)
     (arguments : List Argument)
-    (leftSelectionSet rightSelectionSet leftRest rightRest : List Selection) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    (∀ objectType,
-      FieldMerge.fieldsInSetCanMerge schema objectType
-        (leftSelectionSet ++ rightSelectionSet)) ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.field responseName fieldName arguments []
-        leftSelectionSet :: leftRest) ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.field responseName fieldName arguments []
-        rightSelectionSet :: rightRest) ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (leftRest ++ rightRest) ->
-    selectionsAllFields leftRest ->
-    selectionsAllFields rightRest ->
-    selectionSetResponseNameFree schema parentType responseName leftRest ->
-    selectionSetResponseNameFree schema parentType responseName rightRest ->
-      FieldMerge.fieldsInSetCanMerge schema parentType
-        ((Selection.field responseName fieldName arguments []
-            leftSelectionSet :: leftRest)
-          ++
-          (Selection.field responseName fieldName arguments []
-            rightSelectionSet :: rightRest)) := by
+    (leftSelectionSet rightSelectionSet leftRest rightRest : List Selection)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> (∀ objectType,
+            FieldMerge.fieldsInSetCanMerge schema objectType
+              (leftSelectionSet ++ rightSelectionSet))
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.field responseName fieldName arguments [] leftSelectionSet
+            :: leftRest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.field responseName fieldName arguments [] rightSelectionSet
+            :: rightRest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType (leftRest ++ rightRest)
+      -> selectionsAllFields leftRest
+      -> selectionsAllFields rightRest
+      -> selectionSetResponseNameFree schema parentType responseName leftRest
+      -> selectionSetResponseNameFree schema parentType responseName rightRest
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          ((Selection.field responseName fieldName arguments [] leftSelectionSet
+              :: leftRest)
+            ++ (Selection.field responseName fieldName arguments [] rightSelectionSet
+                :: rightRest)) := by
   intro hschema hsubfields hleftMerge hrightMerge hrestPair hallLeft
     hallRight hleftFree hrightFree
   cases hlookup : schema.lookupField parentType fieldName with
@@ -745,15 +738,13 @@ theorem fieldsInSetCanMerge_field_cons_pair_of_subfields_and_rest
         hlookup hheadMerge hleftMerge hrightMerge hrestPair hallLeft
         hallRight hleftFree hrightFree
 
-theorem collectFields_flatten_mem
-    (schema : Schema) (parentType : Name) :
-    ∀ selectionSets scopedField,
-      scopedField ∈ FieldMerge.collectFields schema parentType
-          (List.flatten selectionSets) ->
-        ∃ selectionSet,
-          selectionSet ∈ selectionSets
-            ∧ scopedField ∈ FieldMerge.collectFields schema parentType
-              selectionSet
+theorem collectFields_flatten_mem (schema : Schema) (parentType : Name)
+    : ∀ selectionSets scopedField,
+        scopedField
+          ∈ FieldMerge.collectFields schema parentType (List.flatten selectionSets)
+        -> ∃ selectionSet,
+            selectionSet ∈ selectionSets
+            ∧ scopedField ∈ FieldMerge.collectFields schema parentType selectionSet
   | [], scopedField, hfield => by
       simp [FieldMerge.collectFields] at hfield
   | selectionSet :: rest, scopedField, hfield => by
@@ -768,13 +759,14 @@ theorem collectFields_flatten_mem
 
 theorem fieldsInSetCanMerge_flatten_of_pairwise
     (schema : Schema) (parentType : Name)
-    (selectionSets : List (List Selection)) :
-    (∀ leftSet, leftSet ∈ selectionSets ->
-      ∀ rightSet, rightSet ∈ selectionSets ->
-        FieldMerge.fieldsInSetCanMerge schema parentType
-          (leftSet ++ rightSet)) ->
-      FieldMerge.fieldsInSetCanMerge schema parentType
-        (List.flatten selectionSets) := by
+    (selectionSets : List (List Selection))
+    : (∀ leftSet,
+        leftSet ∈ selectionSets
+        -> ∀ rightSet,
+            rightSet ∈ selectionSets
+            -> FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet))
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (List.flatten selectionSets) := by
   intro hpairwise
   unfold FieldMerge.fieldsInSetCanMerge
   refine FieldMerge.FieldsInSetCanMerge.intro parentType
@@ -811,19 +803,17 @@ theorem fieldsInSetCanMerge_flatten_of_pairwise
 theorem completeNormalizeBranchPair_fieldsInSetCanMerge
     (schema : Schema) (parentType : Name)
     (leftCase rightCase : BoolCase)
-    (leftBody rightBody : List Selection) :
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (leftBody ++ rightBody) ->
-      FieldMerge.fieldsInSetCanMerge schema parentType
-        ((match leftBody with
-          | [] => []
-          | selection :: rest =>
-              wrapWithBoolCase leftCase (selection :: rest))
-        ++
-        (match rightBody with
-          | [] => []
-          | selection :: rest =>
-              wrapWithBoolCase rightCase (selection :: rest))) := by
+    (leftBody rightBody : List Selection)
+    : FieldMerge.fieldsInSetCanMerge schema parentType (leftBody ++ rightBody)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          ((match leftBody with
+            | [] => []
+            | selection :: rest =>
+                wrapWithBoolCase leftCase (selection :: rest))
+            ++ (match rightBody with
+                | [] => []
+                | selection :: rest =>
+                    wrapWithBoolCase rightCase (selection :: rest))) := by
   intro hmerge
   cases leftBody with
   | nil =>
@@ -856,18 +846,19 @@ theorem completeNormalizeBranchPair_fieldsInSetCanMerge
 
 theorem completeNormalizeRootSelectionSet_fieldsInSetCanMerge_of_branchPairs
     (schema : Schema) (variables : List BoolVar)
-    (parentType : Name) (selectionSet : List Selection) :
-    (∀ leftCase, leftCase ∈ allBoolCases variables ->
-      ∀ rightCase, rightCase ∈ allBoolCases variables ->
-        FieldMerge.fieldsInSetCanMerge schema parentType
-          (normalizeSelectionSet schema parentType
-              (filterSelectionSetBoolCase leftCase selectionSet)
-            ++
-            normalizeSelectionSet schema parentType
-              (filterSelectionSetBoolCase rightCase selectionSet))) ->
-      FieldMerge.fieldsInSetCanMerge schema parentType
-        (completeNormalizeRootSelectionSet schema variables parentType
-          selectionSet) := by
+    (parentType : Name) (selectionSet : List Selection)
+    : (∀ leftCase,
+        leftCase ∈ allBoolCases variables
+        -> ∀ rightCase,
+            rightCase ∈ allBoolCases variables
+            -> FieldMerge.fieldsInSetCanMerge schema parentType
+                (normalizeSelectionSet schema parentType
+                    (filterSelectionSetBoolCase leftCase selectionSet)
+                  ++ normalizeSelectionSet schema parentType
+                      (filterSelectionSetBoolCase rightCase selectionSet)))
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (completeNormalizeRootSelectionSet schema variables parentType
+            selectionSet) := by
   intro hbranchPairs
   unfold completeNormalizeRootSelectionSet
   apply fieldsInSetCanMerge_flatten_of_pairwise
@@ -884,7 +875,6 @@ theorem completeNormalizeRootSelectionSet_fieldsInSetCanMerge_of_branchPairs
     (normalizeSelectionSet schema parentType
       (filterSelectionSetBoolCase rightCase selectionSet))
     (hbranchPairs leftCase hleftCaseMem rightCase hrightCaseMem)
-
 
 end CompleteNormalization
 

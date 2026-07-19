@@ -17,24 +17,21 @@ theorem collectFields_flatten_boolCaseWrappers_nonruntime
     (operation : Operation)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (runtimeCase : BoolCase)
-    (selectionSetForCase : BoolCase -> List Selection) :
-    ∀ boolCases : List BoolCase,
-      runtimeCase ∈
-        allBoolCases (operationBoolVars operation) ->
-      variableValuesAgreeWithCase variableValues runtimeCase
-        (operationBoolVars operation) ->
-      (∀ candidateCase, candidateCase ∈ boolCases ->
-        candidateCase ∈
-          allBoolCases (operationBoolVars operation)) ->
-      (∀ candidateCase, candidateCase ∈ boolCases ->
-        candidateCase ≠ runtimeCase) ->
-        Execution.collectFields schema variableValues parentType source
-            (List.flatten
-              (boolCases.map (fun boolCase =>
-                wrapWithBoolCase boolCase
-                  (selectionSetForCase boolCase))))
-          =
-        []
+    (selectionSetForCase : BoolCase -> List Selection)
+    : ∀ boolCases : List BoolCase,
+        runtimeCase ∈ allBoolCases (operationBoolVars operation)
+        -> variableValuesAgreeWithCase variableValues runtimeCase
+            (operationBoolVars operation)
+        -> (∀ candidateCase,
+              candidateCase ∈ boolCases
+              -> candidateCase ∈ allBoolCases (operationBoolVars operation))
+        -> (∀ candidateCase, candidateCase ∈ boolCases -> candidateCase ≠ runtimeCase)
+        -> Execution.collectFields schema variableValues parentType source
+              (List.flatten
+                (boolCases.map
+                  (fun boolCase =>
+                    wrapWithBoolCase boolCase (selectionSetForCase boolCase))))
+            = []
   | [], _hruntime, _hagrees, _hall, _hne => by
       simp [Execution.collectFields]
   | candidateCase :: restCases, hruntime, hagrees, hall, hne => by
@@ -90,26 +87,20 @@ theorem collectFields_flatten_boolCaseWrappers_split_runtime
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (runtimeCase : BoolCase)
     (selectionSetForCase : BoolCase -> List Selection)
-    (before after : List BoolCase) :
-    allBoolCases (operationBoolVars operation)
-        =
-      before ++ runtimeCase :: after ->
-    (∀ candidate, candidate ∈ before -> candidate ≠ runtimeCase) ->
-    (∀ candidate, candidate ∈ after -> candidate ≠ runtimeCase) ->
-    runtimeCase ∈
-      allBoolCases (operationBoolVars operation) ->
-    variableValuesAgreeWithCase variableValues runtimeCase
-      (operationBoolVars operation) ->
-      Execution.collectFields schema variableValues parentType source
-          (List.flatten
-            ((allBoolCases
-              (operationBoolVars operation)).map
-              (fun boolCase =>
-                wrapWithBoolCase boolCase
-                  (selectionSetForCase boolCase))))
-        =
-      Execution.collectFields schema variableValues parentType source
-        (selectionSetForCase runtimeCase) := by
+    (before after : List BoolCase)
+    : allBoolCases (operationBoolVars operation) = before ++ runtimeCase :: after
+      -> (∀ candidate, candidate ∈ before -> candidate ≠ runtimeCase)
+      -> (∀ candidate, candidate ∈ after -> candidate ≠ runtimeCase)
+      -> runtimeCase ∈ allBoolCases (operationBoolVars operation)
+      -> variableValuesAgreeWithCase variableValues runtimeCase
+          (operationBoolVars operation)
+      -> Execution.collectFields schema variableValues parentType source
+            (List.flatten
+              ((allBoolCases (operationBoolVars operation)).map
+                (fun boolCase =>
+                  wrapWithBoolCase boolCase (selectionSetForCase boolCase))))
+          = Execution.collectFields schema variableValues parentType source
+              (selectionSetForCase runtimeCase) := by
   intro hsplit hbeforeNe hafterNe hruntime hagrees
   have hbeforeAll :
       ∀ candidateCase, candidateCase ∈ before ->
@@ -187,21 +178,17 @@ theorem collectFields_flatten_boolCaseWrappers_runtime
     (operation : Operation)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (runtimeCase : BoolCase)
-    (selectionSetForCase : BoolCase -> List Selection) :
-    runtimeCase ∈
-      allBoolCases (operationBoolVars operation) ->
-    variableValuesAgreeWithCase variableValues runtimeCase
-      (operationBoolVars operation) ->
-      Execution.collectFields schema variableValues parentType source
-          (List.flatten
-            ((allBoolCases
-              (operationBoolVars operation)).map
-              (fun boolCase =>
-                wrapWithBoolCase boolCase
-                  (selectionSetForCase boolCase))))
-        =
-      Execution.collectFields schema variableValues parentType source
-        (selectionSetForCase runtimeCase) := by
+    (selectionSetForCase : BoolCase -> List Selection)
+    : runtimeCase ∈ allBoolCases (operationBoolVars operation)
+      -> variableValuesAgreeWithCase variableValues runtimeCase
+          (operationBoolVars operation)
+      -> Execution.collectFields schema variableValues parentType source
+            (List.flatten
+              ((allBoolCases (operationBoolVars operation)).map
+                (fun boolCase =>
+                  wrapWithBoolCase boolCase (selectionSetForCase boolCase))))
+          = Execution.collectFields schema variableValues parentType source
+              (selectionSetForCase runtimeCase) := by
   intro hruntime hagrees
   rcases
       allBoolCases_operationBoolVars_split operation
@@ -218,19 +205,17 @@ theorem collectFields_boolCaseBranchesForGround_runtime
     (operation : Operation)
     (groundType : Name) (source : Execution.ResolverValue ObjectRef)
     (runtimeCase : BoolCase)
-    (selectionSet : List Selection) :
-    runtimeCase ∈
-      allBoolCases (operationBoolVars operation) ->
-    variableValuesAgreeWithCase variableValues runtimeCase
-      (operationBoolVars operation) ->
-      Execution.collectFields schema variableValues groundType source
-          (boolCaseBranchesForGround schema groundType
-            (operationBoolVars operation) selectionSet)
-        =
-      Execution.collectFields schema variableValues groundType source
-        (staticCollectForGround schema
-          (operationBoolVars operation) groundType groundType
-          runtimeCase selectionSet) := by
+    (selectionSet : List Selection)
+    : runtimeCase ∈ allBoolCases (operationBoolVars operation)
+      -> variableValuesAgreeWithCase variableValues runtimeCase
+          (operationBoolVars operation)
+      -> Execution.collectFields schema variableValues groundType source
+            (boolCaseBranchesForGround schema groundType
+              (operationBoolVars operation) selectionSet)
+          = Execution.collectFields schema variableValues groundType source
+              (staticCollectForGround schema
+                (operationBoolVars operation) groundType groundType
+                runtimeCase selectionSet) := by
   intro hruntime hagrees
   unfold boolCaseBranchesForGround
   exact collectFields_flatten_boolCaseWrappers_runtime schema variableValues
@@ -245,31 +230,28 @@ theorem executeSelectionSet_boolCaseBranchesForGround_runtime
     (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-      (operation : Operation)
-      (depth : Nat)
-      (groundType : Name) (source : Execution.ResolverValue ObjectRef)
+    (operation : Operation)
+    (depth : Nat)
+    (groundType : Name) (source : Execution.ResolverValue ObjectRef)
     (runtimeCase : BoolCase)
-    (selectionSet : List Selection) :
-    runtimeCase ∈
-      allBoolCases (operationBoolVars operation) ->
-    variableValuesAgreeWithCase variableValues runtimeCase
-      (operationBoolVars operation) ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-          groundType source
-          (boolCaseBranchesForGround schema groundType
-            (operationBoolVars operation) selectionSet)
-        =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        groundType source
-        (staticCollectForGround schema
-          (operationBoolVars operation) groundType groundType
-          runtimeCase selectionSet) := by
+    (selectionSet : List Selection)
+    : runtimeCase ∈ allBoolCases (operationBoolVars operation)
+      -> variableValuesAgreeWithCase variableValues runtimeCase
+          (operationBoolVars operation)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            groundType source
+            (boolCaseBranchesForGround schema groundType
+              (operationBoolVars operation) selectionSet)
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              groundType source
+              (staticCollectForGround schema
+                (operationBoolVars operation) groundType groundType
+                runtimeCase selectionSet) := by
     intro hruntime hagrees
     apply executeSelectionSet_eq_of_collectFields_eq
     exact collectFields_boolCaseBranchesForGround_runtime schema
       variableValues operation groundType source runtimeCase selectionSet
       hruntime hagrees
-
 
 end CompleteNormalization
 

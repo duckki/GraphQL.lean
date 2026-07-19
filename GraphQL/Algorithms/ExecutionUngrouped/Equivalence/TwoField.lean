@@ -158,85 +158,102 @@ theorem stateEquivalent_of_collected_two_field_group_invariant
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (first later : ExecutableField)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet = groups)
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet
+        = groups)
     (hgroup : (responseName, [first, later]) ∈ groups)
     (hexact : groups = [(responseName, [first, later])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        parentType source selectionSet (.object []))
-    (hinvariant :
-      ExecutionCollectedFieldInvariant
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := parentType
-            source := source
-            selectionSet := selectionSet }
-          initial := .object [] })
-    (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField parentType first.fieldName =
-        some fieldDefinition)
-    (hfirstChildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          parentType source selectionSet (.object []))
+    (hinvariant
+      : ExecutionCollectedFieldInvariant
+          {
+            window :=
+              {
+                schema := schema
                 resolvers := resolvers
                 variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet }
-              initial := .object [] })
-    (hobjects :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
+                depth := depth
+                parentType := parentType
+                source := source
+                selectionSet := selectionSet
+              }
+            initial := .object []
+          })
+    (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField parentType first.fieldName = some fieldDefinition)
+    (hfirstChildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet
+                  }
+                initial := .object []
+              })
+    (hobjects
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ResponseAbsorbs
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object []))
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity) first.selectionSet
+                  (.object []))))
+    (herrors
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
               runtimeType (.object runtimeType identity) later.selectionSet
               (visitSubfields schema resolvers variableValues childDepth
                 runtimeType (.object runtimeType identity) first.selectionSet
-                (.object []))))
-    (herrors :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity) later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet ++ later.selectionSet }
-              initial := .object [] }) :
-    ExecutionStateEquivalent
-      { window :=
-        { schema := schema
-          resolvers := resolvers
-          variableValues := variableValues
-          depth := depth + 1
-          parentType := parentType
-          source := source
-          selectionSet := selectionSet }
-        initial := .object [] } := by
+                (.object [])))
+    (hchildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet ++ later.selectionSet
+                  }
+                initial := .object []
+              })
+    : ExecutionStateEquivalent
+        {
+          window :=
+            {
+              schema := schema
+              resolvers := resolvers
+              variableValues := variableValues
+              depth := depth + 1
+              parentType := parentType
+              source := source
+              selectionSet := selectionSet
+            }
+          initial := .object []
+        } := by
   have hprefixChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -326,85 +343,102 @@ theorem stateEquivalent_of_collected_two_field_group_invariant_steps
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (first later : ExecutableField)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet = groups)
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet
+        = groups)
     (hgroup : (responseName, [first, later]) ∈ groups)
     (hexact : groups = [(responseName, [first, later])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        parentType source selectionSet (.object []))
-    (hinvariant :
-      ExecutionCollectedFieldInvariant
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := parentType
-            source := source
-            selectionSet := selectionSet }
-          initial := .object [] })
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          parentType source selectionSet (.object []))
+    (hinvariant
+      : ExecutionCollectedFieldInvariant
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := depth
+                parentType := parentType
+                source := source
+                selectionSet := selectionSet
+              }
+            initial := .object []
+          })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField parentType first.fieldName =
-        some fieldDefinition)
-    (hfirstChildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet }
-              initial := .object [] })
-    (hobjectSteps :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsAbsorbsFrom schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity)
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object []))
-            later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (herrors :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity) later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet ++ later.selectionSet }
-              initial := .object [] }) :
-    ExecutionStateEquivalent
-      { window :=
-        { schema := schema
-          resolvers := resolvers
-          variableValues := variableValues
-          depth := depth + 1
-          parentType := parentType
-          source := source
-          selectionSet := selectionSet }
-        initial := .object [] } := by
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField parentType first.fieldName = some fieldDefinition)
+    (hfirstChildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet
+                  }
+                initial := .object []
+              })
+    (hobjectSteps
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object []))
+              later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object [])))
+    (herrors
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity) later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object [])))
+    (hchildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet ++ later.selectionSet
+                  }
+                initial := .object []
+              })
+    : ExecutionStateEquivalent
+        {
+          window :=
+            {
+              schema := schema
+              resolvers := resolvers
+              variableValues := variableValues
+              depth := depth + 1
+              parentType := parentType
+              source := source
+              selectionSet := selectionSet
+            }
+          initial := .object []
+        } := by
   have hprefixChildren :
       ∀ childDepth runtimeType identity,
         childDepth < depth ->
@@ -492,79 +526,92 @@ theorem executeRootSelectionSet_eq_spec_of_collected_two_field_group_invariant_s
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (first later : ExecutableField)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet = groups)
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet
+        = groups)
     (hgroup : (responseName, [first, later]) ∈ groups)
     (hexact : groups = [(responseName, [first, later])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        parentType source selectionSet (.object []))
-    (hinvariant :
-      ExecutionCollectedFieldInvariant
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := parentType
-            source := source
-            selectionSet := selectionSet }
-          initial := .object [] })
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          parentType source selectionSet (.object []))
+    (hinvariant
+      : ExecutionCollectedFieldInvariant
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := depth
+                parentType := parentType
+                source := source
+                selectionSet := selectionSet
+              }
+            initial := .object []
+          })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField parentType first.fieldName =
-        some fieldDefinition)
-    (hfirstChildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet }
-              initial := .object [] })
-    (hobjectSteps :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsAbsorbsFrom schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity)
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object []))
-            later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (herrors :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity) later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet ++ later.selectionSet }
-              initial := .object [] }) :
-    executeRootSelectionSet schema resolvers variableValues (depth + 1)
-      parentType source selectionSet =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      (depth + 1) parentType source selectionSet :=
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField parentType first.fieldName = some fieldDefinition)
+    (hfirstChildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet
+                  }
+                initial := .object []
+              })
+    (hobjectSteps
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object []))
+              later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object [])))
+    (herrors
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity) later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object [])))
+    (hchildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet ++ later.selectionSet
+                  }
+                initial := .object []
+              })
+    : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+        parentType source selectionSet
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (depth + 1) parentType source selectionSet :=
   executeRootSelectionSet_eq_spec_of_state_equivalent_auto_nodup
     { schema := schema
       resolvers := resolvers
@@ -586,79 +633,91 @@ theorem executeQueryWithFuel_eq_spec_of_collected_two_field_group_invariant_step
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (first later : ExecutableField)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = groups)
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = groups)
     (hgroup : (responseName, [first, later]) ∈ groups)
     (hexact : groups = [(responseName, [first, later])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        operation.rootType source operation.selectionSet (.object []))
-    (hinvariant :
-      ExecutionCollectedFieldInvariant
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := operation.rootType
-            source := source
-            selectionSet := operation.selectionSet }
-          initial := .object [] })
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          operation.rootType source operation.selectionSet (.object []))
+    (hinvariant
+      : ExecutionCollectedFieldInvariant
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := depth
+                parentType := operation.rootType
+                source := source
+                selectionSet := operation.selectionSet
+              }
+            initial := .object []
+          })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField operation.rootType
-        first.fieldName = some fieldDefinition)
-    (hfirstChildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet }
-              initial := .object [] })
-    (hobjectSteps :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsAbsorbsFrom schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity)
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object []))
-            later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (herrors :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity) later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet ++ later.selectionSet }
-              initial := .object [] }) :
-    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
-      source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
-      operation (depth + 1) source := by
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField operation.rootType first.fieldName = some fieldDefinition)
+    (hfirstChildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet
+                  }
+                initial := .object []
+              })
+    (hobjectSteps
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object []))
+              later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object [])))
+    (herrors
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity) later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object [])))
+    (hchildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet ++ later.selectionSet
+                  }
+                initial := .object []
+              })
+    : executeQueryWithFuel schema resolvers variableValues operation (depth + 1) source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
+          operation (depth + 1) source := by
   apply executeQueryWithFuel_eq_spec_of_state_equivalent schema resolvers
     variableValues operation (depth + 1) source hroot
   exact
@@ -677,78 +736,91 @@ theorem executeQuery_eq_spec_of_collected_two_field_group_invariant_steps
     (responseName : Name) (first later : ExecutableField)
     (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = groups)
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = groups)
     (hgroup : (responseName, [first, later]) ∈ groups)
     (hexact : groups = [(responseName, [first, later])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        operation.rootType source operation.selectionSet (.object []))
-    (hinvariant :
-      ExecutionCollectedFieldInvariant
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := operation.rootType
-            source := source
-            selectionSet := operation.selectionSet }
-          initial := .object [] })
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          operation.rootType source operation.selectionSet (.object []))
+    (hinvariant
+      : ExecutionCollectedFieldInvariant
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := depth
+                parentType := operation.rootType
+                source := source
+                selectionSet := operation.selectionSet
+              }
+            initial := .object []
+          })
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField operation.rootType
-        first.fieldName = some fieldDefinition)
-    (hfirstChildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet }
-              initial := .object [] })
-    (hobjectSteps :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsAbsorbsFrom schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity)
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object []))
-            later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (herrors :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity) later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet ++ later.selectionSet }
-              initial := .object [] }) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField operation.rootType first.fieldName = some fieldDefinition)
+    (hfirstChildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet
+                  }
+                initial := .object []
+              })
+    (hobjectSteps
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object []))
+              later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object [])))
+    (herrors
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity) later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object [])))
+    (hchildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet ++ later.selectionSet
+                  }
+                initial := .object []
+              })
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
@@ -765,79 +837,92 @@ theorem executeRootSelectionSet_eq_spec_of_collected_two_field_group_invariant
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (first later : ExecutableField)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet = groups)
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet
+        = groups)
     (hgroup : (responseName, [first, later]) ∈ groups)
     (hexact : groups = [(responseName, [first, later])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        parentType source selectionSet (.object []))
-    (hinvariant :
-      ExecutionCollectedFieldInvariant
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := parentType
-            source := source
-            selectionSet := selectionSet }
-          initial := .object [] })
-    (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField parentType first.fieldName =
-        some fieldDefinition)
-    (hfirstChildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          parentType source selectionSet (.object []))
+    (hinvariant
+      : ExecutionCollectedFieldInvariant
+          {
+            window :=
+              {
+                schema := schema
                 resolvers := resolvers
                 variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet }
-              initial := .object [] })
-    (hobjects :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
+                depth := depth
+                parentType := parentType
+                source := source
+                selectionSet := selectionSet
+              }
+            initial := .object []
+          })
+    (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField parentType first.fieldName = some fieldDefinition)
+    (hfirstChildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet
+                  }
+                initial := .object []
+              })
+    (hobjects
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ResponseAbsorbs
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object []))
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity) first.selectionSet
+                  (.object []))))
+    (herrors
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
               runtimeType (.object runtimeType identity) later.selectionSet
               (visitSubfields schema resolvers variableValues childDepth
                 runtimeType (.object runtimeType identity) first.selectionSet
-                (.object []))))
-    (herrors :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity) later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet ++ later.selectionSet }
-              initial := .object [] }) :
-    executeRootSelectionSet schema resolvers variableValues (depth + 1)
-      parentType source selectionSet =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      (depth + 1) parentType source selectionSet :=
+                (.object [])))
+    (hchildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet ++ later.selectionSet
+                  }
+                initial := .object []
+              })
+    : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+        parentType source selectionSet
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (depth + 1) parentType source selectionSet :=
   executeRootSelectionSet_eq_spec_of_state_equivalent_auto_nodup
     { schema := schema
       resolvers := resolvers
@@ -859,79 +944,91 @@ theorem executeQueryWithFuel_eq_spec_of_collected_two_field_group_invariant
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (first later : ExecutableField)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = groups)
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = groups)
     (hgroup : (responseName, [first, later]) ∈ groups)
     (hexact : groups = [(responseName, [first, later])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        operation.rootType source operation.selectionSet (.object []))
-    (hinvariant :
-      ExecutionCollectedFieldInvariant
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := operation.rootType
-            source := source
-            selectionSet := operation.selectionSet }
-          initial := .object [] })
-    (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField operation.rootType
-        first.fieldName = some fieldDefinition)
-    (hfirstChildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          operation.rootType source operation.selectionSet (.object []))
+    (hinvariant
+      : ExecutionCollectedFieldInvariant
+          {
+            window :=
+              {
+                schema := schema
                 resolvers := resolvers
                 variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet }
-              initial := .object [] })
-    (hobjects :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
+                depth := depth
+                parentType := operation.rootType
+                source := source
+                selectionSet := operation.selectionSet
+              }
+            initial := .object []
+          })
+    (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField operation.rootType first.fieldName = some fieldDefinition)
+    (hfirstChildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet
+                  }
+                initial := .object []
+              })
+    (hobjects
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ResponseAbsorbs
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object []))
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity) first.selectionSet
+                  (.object []))))
+    (herrors
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
               runtimeType (.object runtimeType identity) later.selectionSet
               (visitSubfields schema resolvers variableValues childDepth
                 runtimeType (.object runtimeType identity) first.selectionSet
-                (.object []))))
-    (herrors :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity) later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet ++ later.selectionSet }
-              initial := .object [] }) :
-    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
-      source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
-      operation (depth + 1) source := by
+                (.object [])))
+    (hchildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet ++ later.selectionSet
+                  }
+                initial := .object []
+              })
+    : executeQueryWithFuel schema resolvers variableValues operation (depth + 1) source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
+          operation (depth + 1) source := by
   apply executeQueryWithFuel_eq_spec_of_state_equivalent schema resolvers
     variableValues operation (depth + 1) source hroot
   exact
@@ -949,78 +1046,91 @@ theorem executeQuery_eq_spec_of_collected_two_field_group_invariant
     (responseName : Name) (first later : ExecutableField)
     (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = groups)
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = groups)
     (hgroup : (responseName, [first, later]) ∈ groups)
     (hexact : groups = [(responseName, [first, later])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        operation.rootType source operation.selectionSet (.object []))
-    (hinvariant :
-      ExecutionCollectedFieldInvariant
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := operation.rootType
-            source := source
-            selectionSet := operation.selectionSet }
-          initial := .object [] })
-    (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField operation.rootType
-        first.fieldName = some fieldDefinition)
-    (hfirstChildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          operation.rootType source operation.selectionSet (.object []))
+    (hinvariant
+      : ExecutionCollectedFieldInvariant
+          {
+            window :=
+              {
+                schema := schema
                 resolvers := resolvers
                 variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet }
-              initial := .object [] })
-    (hobjects :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
+                depth := depth
+                parentType := operation.rootType
+                source := source
+                selectionSet := operation.selectionSet
+              }
+            initial := .object []
+          })
+    (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField operation.rootType first.fieldName = some fieldDefinition)
+    (hfirstChildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet
+                  }
+                initial := .object []
+              })
+    (hobjects
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ResponseAbsorbs
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object []))
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity) first.selectionSet
+                  (.object []))))
+    (herrors
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
               runtimeType (.object runtimeType identity) later.selectionSet
               (visitSubfields schema resolvers variableValues childDepth
                 runtimeType (.object runtimeType identity) first.selectionSet
-                (.object []))))
-    (herrors :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity) later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet ++ later.selectionSet }
-              initial := .object [] }) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+                (.object [])))
+    (hchildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet ++ later.selectionSet
+                  }
+                initial := .object []
+              })
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
@@ -1228,73 +1338,82 @@ theorem executeRootSelectionSet_eq_spec_of_exact_two_field_group_appendPlan
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (responseName : Name) (first later : ExecutableField)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet = [(responseName, [first, later])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        parentType source selectionSet (.object []))
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet
+        = [(responseName, [first, later])])
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          parentType source selectionSet (.object []))
     (hfirstParent : first.parentType = parentType)
     (hlaterParent : later.parentType = parentType)
     (hfirstResponse : first.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hfieldName : later.fieldName = first.fieldName)
-    (hresolveLater :
-      resolvers.resolve later.parentType later.fieldName later.arguments source =
-      resolvers.resolve first.parentType first.fieldName first.arguments source)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField parentType first.fieldName =
-        some fieldDefinition)
-    (hfirstChildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet }
-              initial := .object [] })
-    (hobjects :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
+    (hresolveLater
+      : resolvers.resolve later.parentType later.fieldName later.arguments source
+        = resolvers.resolve first.parentType first.fieldName first.arguments source)
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField parentType first.fieldName = some fieldDefinition)
+    (hfirstChildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet
+                  }
+                initial := .object []
+              })
+    (hobjects
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ResponseAbsorbs
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object []))
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity) first.selectionSet
+                  (.object []))))
+    (herrors
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
               runtimeType (.object runtimeType identity) later.selectionSet
               (visitSubfields schema resolvers variableValues childDepth
                 runtimeType (.object runtimeType identity) first.selectionSet
-                (.object []))))
-    (herrors :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity) later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet ++ later.selectionSet }
-              initial := .object [] }) :
-    executeRootSelectionSet schema resolvers variableValues (depth + 1)
-      parentType source selectionSet =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      (depth + 1) parentType source selectionSet := by
+                (.object [])))
+    (hchildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet ++ later.selectionSet
+                  }
+                initial := .object []
+              })
+    : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+        parentType source selectionSet
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (depth + 1) parentType source selectionSet := by
   exact
     executeRootSelectionSet_eq_spec_of_executedFieldGroup schema resolvers
       variableValues depth parentType source selectionSet responseName first
@@ -1314,71 +1433,80 @@ theorem executeRootSelectionSet_eq_spec_of_collected_two_field_group_appendPlan
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (first later : ExecutableField)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet = groups)
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet
+        = groups)
     (hgroup : (responseName, [first, later]) ∈ groups)
     (hexact : groups = [(responseName, [first, later])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        parentType source selectionSet (.object []))
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          parentType source selectionSet (.object []))
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent parentType groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
     (hstable : CollectedGroupsResolveStable resolvers source groups)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField parentType first.fieldName =
-        some fieldDefinition)
-    (hfirstChildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet }
-              initial := .object [] })
-    (hobjects :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField parentType first.fieldName = some fieldDefinition)
+    (hfirstChildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet
+                  }
+                initial := .object []
+              })
+    (hobjects
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ResponseAbsorbs
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object []))
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity) first.selectionSet
+                  (.object []))))
+    (herrors
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
               runtimeType (.object runtimeType identity) later.selectionSet
               (visitSubfields schema resolvers variableValues childDepth
                 runtimeType (.object runtimeType identity) first.selectionSet
-                (.object []))))
-    (herrors :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity) later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet ++ later.selectionSet }
-              initial := .object [] }) :
-    executeRootSelectionSet schema resolvers variableValues (depth + 1)
-      parentType source selectionSet =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      (depth + 1) parentType source selectionSet := by
+                (.object [])))
+    (hchildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet ++ later.selectionSet
+                  }
+                initial := .object []
+              })
+    : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+        parentType source selectionSet
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (depth + 1) parentType source selectionSet := by
   rw [hexact] at hcollect hgroup hresponses hparents hcompatible hstable
   exact
     executeRootSelectionSet_eq_spec_of_executedFieldGroup schema resolvers
@@ -1397,71 +1525,79 @@ theorem executeQueryWithFuel_eq_spec_of_collected_two_field_group_appendPlan
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (first later : ExecutableField)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = groups)
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = groups)
     (hgroup : (responseName, [first, later]) ∈ groups)
     (hexact : groups = [(responseName, [first, later])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        operation.rootType source operation.selectionSet (.object []))
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          operation.rootType source operation.selectionSet (.object []))
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent operation.rootType groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
     (hstable : CollectedGroupsResolveStable resolvers source groups)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField operation.rootType
-        first.fieldName = some fieldDefinition)
-    (hfirstChildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet }
-              initial := .object [] })
-    (hobjects :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField operation.rootType first.fieldName = some fieldDefinition)
+    (hfirstChildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet
+                  }
+                initial := .object []
+              })
+    (hobjects
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ResponseAbsorbs
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object []))
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity) first.selectionSet
+                  (.object []))))
+    (herrors
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
               runtimeType (.object runtimeType identity) later.selectionSet
               (visitSubfields schema resolvers variableValues childDepth
                 runtimeType (.object runtimeType identity) first.selectionSet
-                (.object []))))
-    (herrors :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity) later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet ++ later.selectionSet }
-              initial := .object [] }) :
-    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
-      source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
-      operation (depth + 1) source := by
+                (.object [])))
+    (hchildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet ++ later.selectionSet
+                  }
+                initial := .object []
+              })
+    : executeQueryWithFuel schema resolvers variableValues operation (depth + 1) source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
+          operation (depth + 1) source := by
   apply executeQueryWithFuel_eq_spec_of_root_fields_eq schema resolvers
     variableValues operation (depth + 1) source hroot
   exact
@@ -1480,70 +1616,79 @@ theorem executeQuery_eq_spec_of_collected_two_field_group_appendPlan
     (responseName : Name) (first later : ExecutableField)
     (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = groups)
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = groups)
     (hgroup : (responseName, [first, later]) ∈ groups)
     (hexact : groups = [(responseName, [first, later])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        operation.rootType source operation.selectionSet (.object []))
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          operation.rootType source operation.selectionSet (.object []))
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent operation.rootType groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
     (hstable : CollectedGroupsResolveStable resolvers source groups)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField operation.rootType
-        first.fieldName = some fieldDefinition)
-    (hfirstChildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet }
-              initial := .object [] })
-    (hobjects :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ResponseAbsorbs
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object []))
-            (visitSubfields schema resolvers variableValues childDepth
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField operation.rootType first.fieldName = some fieldDefinition)
+    (hfirstChildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet
+                  }
+                initial := .object []
+              })
+    (hobjects
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ResponseAbsorbs
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object []))
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) later.selectionSet
+                (visitSubfields schema resolvers variableValues childDepth
+                  runtimeType (.object runtimeType identity) first.selectionSet
+                  (.object []))))
+    (herrors
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
               runtimeType (.object runtimeType identity) later.selectionSet
               (visitSubfields schema resolvers variableValues childDepth
                 runtimeType (.object runtimeType identity) first.selectionSet
-                (.object []))))
-    (herrors :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsErrorNeutral schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity) later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])))
-    (hchildren :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := first.selectionSet ++ later.selectionSet }
-              initial := .object [] }) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+                (.object [])))
+    (hchildren
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := first.selectionSet ++ later.selectionSet
+                  }
+                initial := .object []
+              })
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
@@ -1552,7 +1697,6 @@ theorem executeQuery_eq_spec_of_collected_two_field_group_appendPlan
       later hroot hcollect hgroup hexact hdirect hresponses hparents
       hcompatible hstable hfieldLookup hfirstChildren hobjects herrors
       hchildren
-
 
 end ExecutionUngrouped
 end Algorithms

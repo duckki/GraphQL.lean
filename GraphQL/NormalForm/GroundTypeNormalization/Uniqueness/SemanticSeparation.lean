@@ -19,11 +19,11 @@ namespace SemanticSeparation
 
 theorem responseValue_object_left_key_mismatch_not_semanticallyEquivalent
     {left right : List (Name × Execution.ResponseValue)}
-    {name : Name} :
-    name ∈ left.map Prod.fst ->
-    name ∉ right.map Prod.fst ->
-      ¬ Execution.ResponseValue.semanticEquivalent (.object left)
-        (.object right) := by
+    {name : Name}
+    : name ∈ left.map Prod.fst
+      -> name ∉ right.map Prod.fst
+      -> ¬ Execution.ResponseValue.semanticEquivalent (.object left)
+            (.object right) := by
   intro hleftKey hrightNoKey hsem
   exact hrightNoKey
     ((ResponseKeys.ResponseValue.semanticEquivalent_object_mem_fst_iff
@@ -31,11 +31,11 @@ theorem responseValue_object_left_key_mismatch_not_semanticallyEquivalent
 
 theorem responseValue_object_right_key_mismatch_not_semanticallyEquivalent
     {left right : List (Name × Execution.ResponseValue)}
-    {name : Name} :
-    name ∉ left.map Prod.fst ->
-    name ∈ right.map Prod.fst ->
-      ¬ Execution.ResponseValue.semanticEquivalent (.object left)
-        (.object right) := by
+    {name : Name}
+    : name ∉ left.map Prod.fst
+      -> name ∈ right.map Prod.fst
+      -> ¬ Execution.ResponseValue.semanticEquivalent (.object left)
+            (.object right) := by
   intro hleftNoKey hrightKey hsem
   exact hleftNoKey
     ((ResponseKeys.ResponseValue.semanticEquivalent_object_mem_fst_iff
@@ -43,25 +43,25 @@ theorem responseValue_object_right_key_mismatch_not_semanticallyEquivalent
 
 theorem responseValue_object_field_value_mismatch_not_semanticallyEquivalent
     {left right : List (Name × Execution.ResponseValue)}
-    {name : Name} {leftValue rightValue : Execution.ResponseValue} :
-    (left.map Prod.fst).Nodup ->
-    (right.map Prod.fst).Nodup ->
-    (name, leftValue) ∈ left ->
-    (name, rightValue) ∈ right ->
-    ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue ->
-      ¬ Execution.ResponseValue.semanticEquivalent (.object left)
-        (.object right) := by
+    {name : Name} {leftValue rightValue : Execution.ResponseValue}
+    : (left.map Prod.fst).Nodup
+      -> (right.map Prod.fst).Nodup
+      -> (name, leftValue) ∈ left
+      -> (name, rightValue) ∈ right
+      -> ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue
+      -> ¬ Execution.ResponseValue.semanticEquivalent (.object left)
+            (.object right) := by
   intro hleftNodup hrightNodup hleftMem hrightMem hvalue hsem
   exact hvalue
     (ResponseKeys.ResponseValue.semanticEquivalent_object_field_canonical_eq
       hsem hleftNodup hrightNodup hleftMem hrightMem)
 
 theorem responseValue_semanticEquivalent_singleton_object_field
-    {responseName : Name} {left right : Execution.ResponseValue} :
-    Execution.ResponseValue.semanticEquivalent
+    {responseName : Name} {left right : Execution.ResponseValue}
+    : Execution.ResponseValue.semanticEquivalent
         (.object [(responseName, left)])
-        (.object [(responseName, right)]) ->
-      Execution.ResponseValue.semanticEquivalent left right := by
+        (.object [(responseName, right)])
+      -> Execution.ResponseValue.semanticEquivalent left right := by
   intro hsemantic
   have hcanonical :
       Execution.ResponseValue.canonical left =
@@ -74,9 +74,9 @@ theorem responseValue_semanticEquivalent_singleton_object_field
   simpa [Execution.ResponseValue.semanticEquivalent] using hcanonical
 
 theorem responseValue_singleton_object_not_semanticEquivalent_null
-    {responseName : Name} {value : Execution.ResponseValue} :
-    ¬ Execution.ResponseValue.semanticEquivalent
-      (.object [(responseName, value)]) .null := by
+    {responseName : Name} {value : Execution.ResponseValue}
+    : ¬ Execution.ResponseValue.semanticEquivalent
+          (.object [(responseName, value)]) .null := by
   intro hsemantic
   simp [Execution.ResponseValue.semanticEquivalent,
     Execution.ResponseValue.canonical,
@@ -85,9 +85,9 @@ theorem responseValue_singleton_object_not_semanticEquivalent_null
 
 theorem responseValue_object_cons_not_semanticEquivalent_null
     {field : Name × Execution.ResponseValue}
-    {fields : List (Name × Execution.ResponseValue)} :
-    ¬ Execution.ResponseValue.semanticEquivalent (.object (field :: fields))
-      .null := by
+    {fields : List (Name × Execution.ResponseValue)}
+    : ¬ Execution.ResponseValue.semanticEquivalent (.object (field :: fields))
+          .null := by
   intro hsemantic
   rcases field with ⟨responseName, value⟩
   simp [Execution.ResponseValue.semanticEquivalent,
@@ -97,9 +97,9 @@ theorem responseValue_object_cons_not_semanticEquivalent_null
 
 theorem responseValue_null_not_semanticEquivalent_object_cons
     {field : Name × Execution.ResponseValue}
-    {fields : List (Name × Execution.ResponseValue)} :
-    ¬ Execution.ResponseValue.semanticEquivalent .null
-      (.object (field :: fields)) := by
+    {fields : List (Name × Execution.ResponseValue)}
+    : ¬ Execution.ResponseValue.semanticEquivalent .null
+          (.object (field :: fields)) := by
   intro hsemantic
   rcases field with ⟨responseName, value⟩
   simp [Execution.ResponseValue.semanticEquivalent,
@@ -108,18 +108,16 @@ theorem responseValue_null_not_semanticEquivalent_object_cons
     Execution.ResponseValue.sortObjectFieldsByName] at hsemantic
 
 theorem responseValue_not_semanticEquivalent_null_of_ne
-    {value : Execution.ResponseValue} :
-    value ≠ .null ->
-      ¬ Execution.ResponseValue.semanticEquivalent value .null := by
+    {value : Execution.ResponseValue}
+    : value ≠ .null -> ¬ Execution.ResponseValue.semanticEquivalent value .null := by
   intro hne hsemantic
   cases value <;>
     simp [Execution.ResponseValue.semanticEquivalent,
       Execution.ResponseValue.canonical] at hsemantic hne
 
 theorem responseValue_null_not_semanticEquivalent_of_ne
-    {value : Execution.ResponseValue} :
-    value ≠ .null ->
-      ¬ Execution.ResponseValue.semanticEquivalent .null value := by
+    {value : Execution.ResponseValue}
+    : value ≠ .null -> ¬ Execution.ResponseValue.semanticEquivalent .null value := by
   intro hne hsemantic
   cases value <;>
     simp [Execution.ResponseValue.semanticEquivalent,
@@ -127,9 +125,9 @@ theorem responseValue_null_not_semanticEquivalent_of_ne
 
 theorem responseValue_object_cons_not_semanticEquivalent_empty_object
     {field : Name × Execution.ResponseValue}
-    {fields : List (Name × Execution.ResponseValue)} :
-    ¬ Execution.ResponseValue.semanticEquivalent (.object (field :: fields))
-      (.object []) := by
+    {fields : List (Name × Execution.ResponseValue)}
+    : ¬ Execution.ResponseValue.semanticEquivalent (.object (field :: fields))
+          (.object []) := by
   intro hsemantic
   have hnameMem :
       field.1 ∈ ([] : List (Name × Execution.ResponseValue)).map Prod.fst :=
@@ -139,13 +137,13 @@ theorem responseValue_object_cons_not_semanticEquivalent_empty_object
 
 theorem response_object_left_key_mismatch_not_semanticallyEquivalent
     {left right : List (Name × Execution.ResponseValue)}
-    {leftErrors rightErrors : Nat} {name : Name} :
-    name ∈ left.map Prod.fst ->
-    name ∉ right.map Prod.fst ->
-      ¬ Execution.Response.semanticEquivalent
-        ({ data := .object left, errors := leftErrors } : Execution.Response)
-        ({ data := .object right, errors := rightErrors } :
-          Execution.Response) := by
+    {leftErrors rightErrors : Nat} {name : Name}
+    : name ∈ left.map Prod.fst
+      -> name ∉ right.map Prod.fst
+      -> ¬ Execution.Response.semanticEquivalent
+            ({ data := .object left, errors := leftErrors } : Execution.Response)
+            ({ data := .object right, errors := rightErrors }
+              : Execution.Response) := by
   intro hleftKey hrightNoKey hsem
   exact hrightNoKey
     ((ResponseKeys.response_semanticEquivalent_object_mem_fst_iff hsem).mp
@@ -153,13 +151,13 @@ theorem response_object_left_key_mismatch_not_semanticallyEquivalent
 
 theorem response_object_right_key_mismatch_not_semanticallyEquivalent
     {left right : List (Name × Execution.ResponseValue)}
-    {leftErrors rightErrors : Nat} {name : Name} :
-    name ∉ left.map Prod.fst ->
-    name ∈ right.map Prod.fst ->
-      ¬ Execution.Response.semanticEquivalent
-        ({ data := .object left, errors := leftErrors } : Execution.Response)
-        ({ data := .object right, errors := rightErrors } :
-          Execution.Response) := by
+    {leftErrors rightErrors : Nat} {name : Name}
+    : name ∉ left.map Prod.fst
+      -> name ∈ right.map Prod.fst
+      -> ¬ Execution.Response.semanticEquivalent
+            ({ data := .object left, errors := leftErrors } : Execution.Response)
+            ({ data := .object right, errors := rightErrors }
+              : Execution.Response) := by
   intro hleftNoKey hrightKey hsem
   exact hleftNoKey
     ((ResponseKeys.response_semanticEquivalent_object_mem_fst_iff hsem).mpr
@@ -168,16 +166,16 @@ theorem response_object_right_key_mismatch_not_semanticallyEquivalent
 theorem response_object_field_value_mismatch_not_semanticallyEquivalent
     {left right : List (Name × Execution.ResponseValue)}
     {leftErrors rightErrors : Nat} {name : Name}
-    {leftValue rightValue : Execution.ResponseValue} :
-    (left.map Prod.fst).Nodup ->
-    (right.map Prod.fst).Nodup ->
-    (name, leftValue) ∈ left ->
-    (name, rightValue) ∈ right ->
-    ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue ->
-      ¬ Execution.Response.semanticEquivalent
-        ({ data := .object left, errors := leftErrors } : Execution.Response)
-        ({ data := .object right, errors := rightErrors } :
-          Execution.Response) := by
+    {leftValue rightValue : Execution.ResponseValue}
+    : (left.map Prod.fst).Nodup
+      -> (right.map Prod.fst).Nodup
+      -> (name, leftValue) ∈ left
+      -> (name, rightValue) ∈ right
+      -> ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue
+      -> ¬ Execution.Response.semanticEquivalent
+            ({ data := .object left, errors := leftErrors } : Execution.Response)
+            ({ data := .object right, errors := rightErrors }
+              : Execution.Response) := by
   intro hleftNodup hrightNodup hleftMem hrightMem hvalue hsem
   exact hvalue
     (ResponseKeys.response_semanticEquivalent_object_field_canonical_eq hsem
@@ -188,27 +186,26 @@ theorem responseValue_semanticEquivalent_of_selectionSetsDataEquivalent_object_f
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
     {leftErrors rightErrors : Nat} {name : Name}
-    {leftValue rightValue : Execution.ResponseValue} :
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-    (leftFields.map Prod.fst).Nodup ->
-    (rightFields.map Prod.fst).Nodup ->
-    (name, leftValue) ∈ leftFields ->
-    (name, rightValue) ∈ rightFields ->
-    selectionSetsDataEquivalent schema parentType left right ->
-      Execution.ResponseValue.semanticEquivalent leftValue rightValue := by
+    {leftValue rightValue : Execution.ResponseValue}
+    : Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+          parentType source left
+        = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> (leftFields.map Prod.fst).Nodup
+      -> (rightFields.map Prod.fst).Nodup
+      -> (name, leftValue) ∈ leftFields
+      -> (name, rightValue) ∈ rightFields
+      -> selectionSetsDataEquivalent schema parentType left right
+      -> Execution.ResponseValue.semanticEquivalent leftValue rightValue := by
   intro hleftResponse hrightResponse hleftNodup hrightNodup hleftMem
     hrightMem hdata
   have hobjectData :
@@ -225,23 +222,22 @@ theorem not_selectionSetsSemanticallyEquivalent_of_left_response_key_mismatch
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
-    {leftErrors rightErrors : Nat} {name : Name} :
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-    name ∈ leftFields.map Prod.fst ->
-    name ∉ rightFields.map Prod.fst ->
-      ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
+    {leftErrors rightErrors : Nat} {name : Name}
+    : Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+          parentType source left
+        = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> name ∈ leftFields.map Prod.fst
+      -> name ∉ rightFields.map Prod.fst
+      -> ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
   intro hleftExec hrightExec hleftKey hrightNoKey hsem
   have hresponses :=
     hsem resolvers variableValues fuel source hsource
@@ -254,23 +250,22 @@ theorem not_selectionSetsSemanticallyEquivalent_of_right_response_key_mismatch
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
-    {leftErrors rightErrors : Nat} {name : Name} :
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-    name ∉ leftFields.map Prod.fst ->
-    name ∈ rightFields.map Prod.fst ->
-      ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
+    {leftErrors rightErrors : Nat} {name : Name}
+    : Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+          parentType source left
+        = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> name ∉ leftFields.map Prod.fst
+      -> name ∈ rightFields.map Prod.fst
+      -> ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
   intro hleftExec hrightExec hleftNoKey hrightKey hsem
   have hresponses :=
     hsem resolvers variableValues fuel source hsource
@@ -283,27 +278,26 @@ theorem not_selectionSetsSemanticallyEquivalent_of_response_field_value_mismatch
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
     {leftErrors rightErrors : Nat} {name : Name}
-    {leftValue rightValue : Execution.ResponseValue} :
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-    (leftFields.map Prod.fst).Nodup ->
-    (rightFields.map Prod.fst).Nodup ->
-    (name, leftValue) ∈ leftFields ->
-    (name, rightValue) ∈ rightFields ->
-    ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue ->
-      ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
+    {leftValue rightValue : Execution.ResponseValue}
+    : Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+          parentType source left
+        = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> (leftFields.map Prod.fst).Nodup
+      -> (rightFields.map Prod.fst).Nodup
+      -> (name, leftValue) ∈ leftFields
+      -> (name, rightValue) ∈ rightFields
+      -> ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue
+      -> ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
   intro hleftExec hrightExec hleftNodup hrightNodup hleftMem hrightMem
     hvalue hsem
   have hresponses :=
@@ -317,23 +311,22 @@ theorem not_selectionSetsDataEquivalent_of_left_response_key_mismatch
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
-    {leftErrors rightErrors : Nat} {name : Name} :
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-    name ∈ leftFields.map Prod.fst ->
-    name ∉ rightFields.map Prod.fst ->
-      ¬ selectionSetsDataEquivalent schema parentType left right := by
+    {leftErrors rightErrors : Nat} {name : Name}
+    : Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+          parentType source left
+        = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> name ∈ leftFields.map Prod.fst
+      -> name ∉ rightFields.map Prod.fst
+      -> ¬ selectionSetsDataEquivalent schema parentType left right := by
   intro hleftExec hrightExec hleftKey hrightNoKey hdata
   have hresponses :=
     hdata resolvers variableValues fuel source hsource
@@ -346,23 +339,22 @@ theorem not_selectionSetsDataEquivalent_of_right_response_key_mismatch
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
-    {leftErrors rightErrors : Nat} {name : Name} :
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-    name ∉ leftFields.map Prod.fst ->
-    name ∈ rightFields.map Prod.fst ->
-      ¬ selectionSetsDataEquivalent schema parentType left right := by
+    {leftErrors rightErrors : Nat} {name : Name}
+    : Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+          parentType source left
+        = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> name ∉ leftFields.map Prod.fst
+      -> name ∈ rightFields.map Prod.fst
+      -> ¬ selectionSetsDataEquivalent schema parentType left right := by
   intro hleftExec hrightExec hleftNoKey hrightKey hdata
   have hresponses :=
     hdata resolvers variableValues fuel source hsource
@@ -375,27 +367,26 @@ theorem not_selectionSetsDataEquivalent_of_response_field_value_mismatch
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
     {leftErrors rightErrors : Nat} {name : Name}
-    {leftValue rightValue : Execution.ResponseValue} :
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-    (leftFields.map Prod.fst).Nodup ->
-    (rightFields.map Prod.fst).Nodup ->
-    (name, leftValue) ∈ leftFields ->
-    (name, rightValue) ∈ rightFields ->
-    ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue ->
-      ¬ selectionSetsDataEquivalent schema parentType left right := by
+    {leftValue rightValue : Execution.ResponseValue}
+    : Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+          parentType source left
+        = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> (leftFields.map Prod.fst).Nodup
+      -> (rightFields.map Prod.fst).Nodup
+      -> (name, leftValue) ∈ leftFields
+      -> (name, rightValue) ∈ rightFields
+      -> ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue
+      -> ¬ selectionSetsDataEquivalent schema parentType left right := by
   intro hleftExec hrightExec hleftNodup hrightNodup hleftMem hrightMem
     hvalue hdata
   have hresponses :=
@@ -414,25 +405,24 @@ theorem responseData_not_semanticEquivalent_of_response_field_value_mismatch
     (rightSource : Execution.ResolverValue RightRef)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
     {leftErrors rightErrors : Nat} {name : Name}
-    {leftValue rightValue : Execution.ResponseValue} :
-    Execution.executeSelectionSetAsResponse schema leftResolvers variableValues fuel
-      parentType leftSource left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema rightResolvers variableValues fuel
-      parentType rightSource right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-    (leftFields.map Prod.fst).Nodup ->
-    (rightFields.map Prod.fst).Nodup ->
-    (name, leftValue) ∈ leftFields ->
-    (name, rightValue) ∈ rightFields ->
-    ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues fuel
-          parentType leftSource left).data
-        (Execution.executeSelectionSetAsResponse schema rightResolvers variableValues fuel
-          parentType rightSource right).data := by
+    {leftValue rightValue : Execution.ResponseValue}
+    : Execution.executeSelectionSetAsResponse schema leftResolvers variableValues fuel
+          parentType leftSource left
+        = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema rightResolvers variableValues
+            fuel parentType rightSource right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> (leftFields.map Prod.fst).Nodup
+      -> (rightFields.map Prod.fst).Nodup
+      -> (name, leftValue) ∈ leftFields
+      -> (name, rightValue) ∈ rightFields
+      -> ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
+              fuel parentType leftSource left).data
+            (Execution.executeSelectionSetAsResponse schema rightResolvers
+              variableValues fuel parentType rightSource right).data := by
   intro hleftExec hrightExec hleftNodup hrightNodup hleftMem hrightMem
     hvalue hresponses
   rw [hleftExec, hrightExec] at hresponses
@@ -450,25 +440,24 @@ theorem responseData_not_semanticEquivalent_of_response_field_value_mismatch_pai
     (rightSource : Execution.ResolverValue RightRef)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
     {leftErrors rightErrors : Nat} {name : Name}
-    {leftValue rightValue : Execution.ResponseValue} :
-    Execution.executeSelectionSetAsResponse schema leftResolvers variableValues fuel
-      leftParentType leftSource left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema rightResolvers variableValues fuel
-      rightParentType rightSource right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-    (leftFields.map Prod.fst).Nodup ->
-    (rightFields.map Prod.fst).Nodup ->
-    (name, leftValue) ∈ leftFields ->
-    (name, rightValue) ∈ rightFields ->
-    ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues fuel
-          leftParentType leftSource left).data
-        (Execution.executeSelectionSetAsResponse schema rightResolvers variableValues fuel
-          rightParentType rightSource right).data := by
+    {leftValue rightValue : Execution.ResponseValue}
+    : Execution.executeSelectionSetAsResponse schema leftResolvers variableValues fuel
+          leftParentType leftSource left
+        = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema rightResolvers variableValues
+            fuel rightParentType rightSource right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> (leftFields.map Prod.fst).Nodup
+      -> (rightFields.map Prod.fst).Nodup
+      -> (name, leftValue) ∈ leftFields
+      -> (name, rightValue) ∈ rightFields
+      -> ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
+              fuel leftParentType leftSource left).data
+            (Execution.executeSelectionSetAsResponse schema rightResolvers
+              variableValues fuel rightParentType rightSource right).data := by
   intro hleftExec hrightExec hleftNodup hrightNodup hleftMem hrightMem
     hvalue hresponses
   rw [hleftExec, hrightExec] at hresponses
@@ -486,25 +475,24 @@ theorem responseData_not_semanticEquivalent_of_response_field_value_mismatch_pai
     (rightSource : Execution.ResolverValue RightRef)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
     {leftErrors rightErrors : Nat} {name : Name}
-    {leftValue rightValue : Execution.ResponseValue} :
-    Execution.executeSelectionSetAsResponse schema leftResolvers variableValues leftFuel
-      leftParentType leftSource left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema rightResolvers variableValues rightFuel
-      rightParentType rightSource right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-    (leftFields.map Prod.fst).Nodup ->
-    (rightFields.map Prod.fst).Nodup ->
-    (name, leftValue) ∈ leftFields ->
-    (name, rightValue) ∈ rightFields ->
-    ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
-          leftFuel leftParentType leftSource left).data
-        (Execution.executeSelectionSetAsResponse schema rightResolvers variableValues
-          rightFuel rightParentType rightSource right).data := by
+    {leftValue rightValue : Execution.ResponseValue}
+    : Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
+          leftFuel leftParentType leftSource left
+        = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema rightResolvers variableValues
+            rightFuel rightParentType rightSource right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> (leftFields.map Prod.fst).Nodup
+      -> (rightFields.map Prod.fst).Nodup
+      -> (name, leftValue) ∈ leftFields
+      -> (name, rightValue) ∈ rightFields
+      -> ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
+              leftFuel leftParentType leftSource left).data
+            (Execution.executeSelectionSetAsResponse schema rightResolvers
+              variableValues rightFuel rightParentType rightSource right).data := by
   intro hleftExec hrightExec hleftNodup hrightNodup hleftMem hrightMem
     hvalue hresponses
   rw [hleftExec, hrightExec] at hresponses
@@ -514,10 +502,10 @@ theorem responseData_not_semanticEquivalent_of_response_field_value_mismatch_pai
 theorem responseName_mem_filterMap_of_field_mem
     {selectionSet : List Selection} {responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} :
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ selectionSet ->
-      responseName ∈ selectionSet.filterMap Selection.responseName? := by
+    {childSelectionSet : List Selection}
+    : Selection.field responseName fieldName arguments directives childSelectionSet
+        ∈ selectionSet
+      -> responseName ∈ selectionSet.filterMap Selection.responseName? := by
   intro hmem
   exact List.mem_filterMap.mpr
     ⟨Selection.field responseName fieldName arguments directives
@@ -528,57 +516,55 @@ theorem responseName_mem_filterMap_of_field_mem
 theorem responseData_not_semanticEquivalent_of_left_responseName_diff_of_field_ok_sources
     {schema : Schema} {parentType : Name} {left right : List Selection}
     {responseName fieldName : Name} {arguments : List Argument}
-    {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection}
-    {LeftRef RightRef : Type}
-    (leftResolvers : Execution.Resolvers LeftRef)
+    {directives : List DirectiveApplication} {childSelectionSet : List Selection}
+    {LeftRef RightRef : Type} (leftResolvers : Execution.Resolvers LeftRef)
     (rightResolvers : Execution.Resolvers RightRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (leftSource : Execution.ResolverValue LeftRef)
-    (rightSource : Execution.ResolverValue RightRef) :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ left ->
-    responseName ∉ right.filterMap Selection.responseName? ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema leftResolvers variableValues fuel
-            leftSource responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema rightResolvers variableValues fuel
-            rightSource responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues fuel
-          parentType leftSource left).data
-        (Execution.executeSelectionSetAsResponse schema rightResolvers variableValues fuel
-          parentType rightSource right).data := by
+    (rightSource : Execution.ResolverValue RightRef)
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ left
+      -> responseName ∉ right.filterMap Selection.responseName?
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema leftResolvers variableValues fuel
+                  leftSource responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema rightResolvers variableValues fuel
+                  rightSource responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
+              fuel parentType leftSource left).data
+            (Execution.executeSelectionSetAsResponse schema rightResolvers
+              variableValues fuel parentType rightSource right).data := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hleftMem
     hrightNoResponseName hleftFieldOk hrightFieldOk hsemantic
   rcases
@@ -633,57 +619,55 @@ theorem responseData_not_semanticEquivalent_of_left_responseName_diff_of_field_o
 theorem responseData_not_semanticEquivalent_of_right_responseName_diff_of_field_ok_sources
     {schema : Schema} {parentType : Name} {left right : List Selection}
     {responseName fieldName : Name} {arguments : List Argument}
-    {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection}
-    {LeftRef RightRef : Type}
-    (leftResolvers : Execution.Resolvers LeftRef)
+    {directives : List DirectiveApplication} {childSelectionSet : List Selection}
+    {LeftRef RightRef : Type} (leftResolvers : Execution.Resolvers LeftRef)
     (rightResolvers : Execution.Resolvers RightRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (leftSource : Execution.ResolverValue LeftRef)
-    (rightSource : Execution.ResolverValue RightRef) :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ right ->
-    responseName ∉ left.filterMap Selection.responseName? ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema leftResolvers variableValues fuel
-            leftSource responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema rightResolvers variableValues fuel
-            rightSource responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues fuel
-          parentType leftSource left).data
-        (Execution.executeSelectionSetAsResponse schema rightResolvers variableValues fuel
-          parentType rightSource right).data := by
+    (rightSource : Execution.ResolverValue RightRef)
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ right
+      -> responseName ∉ left.filterMap Selection.responseName?
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema leftResolvers variableValues fuel
+                  leftSource responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema rightResolvers variableValues fuel
+                  rightSource responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
+              fuel parentType leftSource left).data
+            (Execution.executeSelectionSetAsResponse schema rightResolvers
+              variableValues fuel parentType rightSource right).data := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hrightMem
     hleftNoResponseName hleftFieldOk hrightFieldOk hsemantic
   exact
@@ -694,60 +678,58 @@ theorem responseData_not_semanticEquivalent_of_right_responseName_diff_of_field_
 
 theorem responseData_not_semanticEquivalent_of_left_responseName_diff_of_field_ok_sources_pair
     {schema : Schema} {leftParentType rightParentType : Name}
-    {left right : List Selection}
-    {responseName fieldName : Name} {arguments : List Argument}
-    {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection}
-    {LeftRef RightRef : Type}
+    {left right : List Selection} {responseName fieldName : Name}
+    {arguments : List Argument} {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection} {LeftRef RightRef : Type}
     (leftResolvers : Execution.Resolvers LeftRef)
     (rightResolvers : Execution.Resolvers RightRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (leftSource : Execution.ResolverValue LeftRef)
-    (rightSource : Execution.ResolverValue RightRef) :
-    objectTypeNameBool schema leftParentType = true ->
-    objectTypeNameBool schema rightParentType = true ->
-    selectionSetNormal schema leftParentType left ->
-    selectionSetNormal schema rightParentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ left ->
-    responseName ∉ right.filterMap Selection.responseName? ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema leftResolvers variableValues fuel
-            leftSource responseName
-            [{
-              parentType := leftParentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema rightResolvers variableValues fuel
-            rightSource responseName
-            [{
-              parentType := rightParentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues fuel
-          leftParentType leftSource left).data
-        (Execution.executeSelectionSetAsResponse schema rightResolvers variableValues fuel
-          rightParentType rightSource right).data := by
+    (rightSource : Execution.ResolverValue RightRef)
+    : objectTypeNameBool schema leftParentType = true
+      -> objectTypeNameBool schema rightParentType = true
+      -> selectionSetNormal schema leftParentType left
+      -> selectionSetNormal schema rightParentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ left
+      -> responseName ∉ right.filterMap Selection.responseName?
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema leftResolvers variableValues fuel
+                  leftSource responseName
+                  [{
+                    parentType := leftParentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema rightResolvers variableValues fuel
+                  rightSource responseName
+                  [{
+                    parentType := rightParentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
+              fuel leftParentType leftSource left).data
+            (Execution.executeSelectionSetAsResponse schema rightResolvers
+              variableValues fuel rightParentType rightSource right).data := by
   intro hleftObject hrightObject hleftNormal hrightNormal hleftFree
     hrightFree hleftMem hrightNoResponseName hleftFieldOk hrightFieldOk
     hsemantic
@@ -802,60 +784,58 @@ theorem responseData_not_semanticEquivalent_of_left_responseName_diff_of_field_o
 
 theorem responseData_not_semanticEquivalent_of_left_responseName_diff_of_field_ok_sources_pair_fuels
     {schema : Schema} {leftParentType rightParentType : Name}
-    {left right : List Selection}
-    {responseName fieldName : Name} {arguments : List Argument}
-    {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection}
-    {LeftRef RightRef : Type}
+    {left right : List Selection} {responseName fieldName : Name}
+    {arguments : List Argument} {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection} {LeftRef RightRef : Type}
     (leftResolvers : Execution.Resolvers LeftRef)
     (rightResolvers : Execution.Resolvers RightRef)
     (variableValues : Execution.VariableValues) (leftFuel rightFuel : Nat)
     (leftSource : Execution.ResolverValue LeftRef)
-    (rightSource : Execution.ResolverValue RightRef) :
-    objectTypeNameBool schema leftParentType = true ->
-    objectTypeNameBool schema rightParentType = true ->
-    selectionSetNormal schema leftParentType left ->
-    selectionSetNormal schema rightParentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ left ->
-    responseName ∉ right.filterMap Selection.responseName? ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema leftResolvers variableValues leftFuel
-            leftSource responseName
-            [{
-              parentType := leftParentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema rightResolvers variableValues rightFuel
-            rightSource responseName
-            [{
-              parentType := rightParentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
-          leftFuel leftParentType leftSource left).data
-        (Execution.executeSelectionSetAsResponse schema rightResolvers variableValues
-          rightFuel rightParentType rightSource right).data := by
+    (rightSource : Execution.ResolverValue RightRef)
+    : objectTypeNameBool schema leftParentType = true
+      -> objectTypeNameBool schema rightParentType = true
+      -> selectionSetNormal schema leftParentType left
+      -> selectionSetNormal schema rightParentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ left
+      -> responseName ∉ right.filterMap Selection.responseName?
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema leftResolvers variableValues leftFuel
+                  leftSource responseName
+                  [{
+                    parentType := leftParentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema rightResolvers variableValues rightFuel
+                  rightSource responseName
+                  [{
+                    parentType := rightParentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
+              leftFuel leftParentType leftSource left).data
+            (Execution.executeSelectionSetAsResponse schema rightResolvers
+              variableValues rightFuel rightParentType rightSource right).data := by
   intro hleftObject hrightObject hleftNormal hrightNormal hleftFree
     hrightFree hleftMem hrightNoResponseName hleftFieldOk hrightFieldOk
     hsemantic
@@ -910,60 +890,58 @@ theorem responseData_not_semanticEquivalent_of_left_responseName_diff_of_field_o
 
 theorem responseData_not_semanticEquivalent_of_right_responseName_diff_of_field_ok_sources_pair
     {schema : Schema} {leftParentType rightParentType : Name}
-    {left right : List Selection}
-    {responseName fieldName : Name} {arguments : List Argument}
-    {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection}
-    {LeftRef RightRef : Type}
+    {left right : List Selection} {responseName fieldName : Name}
+    {arguments : List Argument} {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection} {LeftRef RightRef : Type}
     (leftResolvers : Execution.Resolvers LeftRef)
     (rightResolvers : Execution.Resolvers RightRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (leftSource : Execution.ResolverValue LeftRef)
-    (rightSource : Execution.ResolverValue RightRef) :
-    objectTypeNameBool schema leftParentType = true ->
-    objectTypeNameBool schema rightParentType = true ->
-    selectionSetNormal schema leftParentType left ->
-    selectionSetNormal schema rightParentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ right ->
-    responseName ∉ left.filterMap Selection.responseName? ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema leftResolvers variableValues fuel
-            leftSource responseName
-            [{
-              parentType := leftParentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema rightResolvers variableValues fuel
-            rightSource responseName
-            [{
-              parentType := rightParentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues fuel
-          leftParentType leftSource left).data
-        (Execution.executeSelectionSetAsResponse schema rightResolvers variableValues fuel
-          rightParentType rightSource right).data := by
+    (rightSource : Execution.ResolverValue RightRef)
+    : objectTypeNameBool schema leftParentType = true
+      -> objectTypeNameBool schema rightParentType = true
+      -> selectionSetNormal schema leftParentType left
+      -> selectionSetNormal schema rightParentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ right
+      -> responseName ∉ left.filterMap Selection.responseName?
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema leftResolvers variableValues fuel
+                  leftSource responseName
+                  [{
+                    parentType := leftParentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema rightResolvers variableValues fuel
+                  rightSource responseName
+                  [{
+                    parentType := rightParentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
+              fuel leftParentType leftSource left).data
+            (Execution.executeSelectionSetAsResponse schema rightResolvers
+              variableValues fuel rightParentType rightSource right).data := by
   intro hleftObject hrightObject hleftNormal hrightNormal hleftFree
     hrightFree hrightMem hleftNoResponseName hleftFieldOk hrightFieldOk
     hsemantic
@@ -976,60 +954,58 @@ theorem responseData_not_semanticEquivalent_of_right_responseName_diff_of_field_
 
 theorem responseData_not_semanticEquivalent_of_right_responseName_diff_of_field_ok_sources_pair_fuels
     {schema : Schema} {leftParentType rightParentType : Name}
-    {left right : List Selection}
-    {responseName fieldName : Name} {arguments : List Argument}
-    {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection}
-    {LeftRef RightRef : Type}
+    {left right : List Selection} {responseName fieldName : Name}
+    {arguments : List Argument} {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection} {LeftRef RightRef : Type}
     (leftResolvers : Execution.Resolvers LeftRef)
     (rightResolvers : Execution.Resolvers RightRef)
     (variableValues : Execution.VariableValues) (leftFuel rightFuel : Nat)
     (leftSource : Execution.ResolverValue LeftRef)
-    (rightSource : Execution.ResolverValue RightRef) :
-    objectTypeNameBool schema leftParentType = true ->
-    objectTypeNameBool schema rightParentType = true ->
-    selectionSetNormal schema leftParentType left ->
-    selectionSetNormal schema rightParentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ right ->
-    responseName ∉ left.filterMap Selection.responseName? ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema leftResolvers variableValues leftFuel
-            leftSource responseName
-            [{
-              parentType := leftParentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema rightResolvers variableValues rightFuel
-            rightSource responseName
-            [{
-              parentType := rightParentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
-          leftFuel leftParentType leftSource left).data
-        (Execution.executeSelectionSetAsResponse schema rightResolvers variableValues
-          rightFuel rightParentType rightSource right).data := by
+    (rightSource : Execution.ResolverValue RightRef)
+    : objectTypeNameBool schema leftParentType = true
+      -> objectTypeNameBool schema rightParentType = true
+      -> selectionSetNormal schema leftParentType left
+      -> selectionSetNormal schema rightParentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ right
+      -> responseName ∉ left.filterMap Selection.responseName?
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema leftResolvers variableValues leftFuel
+                  leftSource responseName
+                  [{
+                    parentType := leftParentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema rightResolvers variableValues rightFuel
+                  rightSource responseName
+                  [{
+                    parentType := rightParentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
+              leftFuel leftParentType leftSource left).data
+            (Execution.executeSelectionSetAsResponse schema rightResolvers
+              variableValues rightFuel rightParentType rightSource right).data := by
   intro hleftObject hrightObject hleftNormal hrightNormal hleftFree
     hrightFree hrightMem hleftNoResponseName hleftFieldOk hrightFieldOk
     hsemantic
@@ -1048,29 +1024,28 @@ theorem not_selectionSetsSemanticallyEquivalent_of_left_responseName_diff
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
-    {leftErrors rightErrors : Nat} :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ left ->
-    responseName ∉ right.filterMap Selection.responseName? ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-      ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
+    {leftErrors rightErrors : Nat}
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ left
+      -> responseName ∉ right.filterMap Selection.responseName?
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source left
+          = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hleftMem
     hrightNoResponseName hleftExec hrightExec
   have hleftResponseName :
@@ -1117,29 +1092,28 @@ theorem not_selectionSetsDataEquivalent_of_left_responseName_diff
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
-    {leftErrors rightErrors : Nat} :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ left ->
-    responseName ∉ right.filterMap Selection.responseName? ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-      ¬ selectionSetsDataEquivalent schema parentType left right := by
+    {leftErrors rightErrors : Nat}
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ left
+      -> responseName ∉ right.filterMap Selection.responseName?
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source left
+          = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> ¬ selectionSetsDataEquivalent schema parentType left right := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hleftMem
     hrightNoResponseName hleftExec hrightExec
   have hleftResponseName :
@@ -1186,29 +1160,28 @@ theorem not_selectionSetsSemanticallyEquivalent_of_right_responseName_diff
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
-    {leftErrors rightErrors : Nat} :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ right ->
-    responseName ∉ left.filterMap Selection.responseName? ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-      ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
+    {leftErrors rightErrors : Nat}
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ right
+      -> responseName ∉ left.filterMap Selection.responseName?
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source left
+          = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hrightMem
     hleftNoResponseName hleftExec hrightExec
   have hrightResponseName :
@@ -1255,29 +1228,28 @@ theorem not_selectionSetsDataEquivalent_of_right_responseName_diff
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
-    {leftErrors rightErrors : Nat} :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ right ->
-    responseName ∉ left.filterMap Selection.responseName? ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-      ¬ selectionSetsDataEquivalent schema parentType left right := by
+    {leftErrors rightErrors : Nat}
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ right
+      -> responseName ∉ left.filterMap Selection.responseName?
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source left
+          = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> ¬ selectionSetsDataEquivalent schema parentType left right := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hrightMem
     hleftNoResponseName hleftExec hrightExec
   have hrightResponseName :
@@ -1324,49 +1296,49 @@ theorem not_selectionSetsSemanticallyEquivalent_of_left_responseName_diff_of_fie
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ left ->
-    responseName ∉ right.filterMap Selection.responseName? ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ left
+      -> responseName ∉ right.filterMap Selection.responseName?
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hleftMem
     hrightNoResponseName hleftFieldOk hrightFieldOk
   rcases
@@ -1392,49 +1364,49 @@ theorem not_selectionSetsDataEquivalent_of_left_responseName_diff_of_field_ok
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ left ->
-    responseName ∉ right.filterMap Selection.responseName? ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ selectionSetsDataEquivalent schema parentType left right := by
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ left
+      -> responseName ∉ right.filterMap Selection.responseName?
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ selectionSetsDataEquivalent schema parentType left right := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hleftMem
     hrightNoResponseName hleftFieldOk hrightFieldOk
   rcases
@@ -1460,49 +1432,49 @@ theorem not_selectionSetsSemanticallyEquivalent_of_right_responseName_diff_of_fi
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ right ->
-    responseName ∉ left.filterMap Selection.responseName? ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ right
+      -> responseName ∉ left.filterMap Selection.responseName?
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hrightMem
     hleftNoResponseName hleftFieldOk hrightFieldOk
   rcases
@@ -1528,49 +1500,49 @@ theorem not_selectionSetsDataEquivalent_of_right_responseName_diff_of_field_ok
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ right ->
-    responseName ∉ left.filterMap Selection.responseName? ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ selectionSetsDataEquivalent schema parentType left right := by
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ right
+      -> responseName ∉ left.filterMap Selection.responseName?
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ selectionSetsDataEquivalent schema parentType left right := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hrightMem
     hleftNoResponseName hleftFieldOk hrightFieldOk
   rcases
@@ -1599,73 +1571,73 @@ theorem not_selectionSetsSemanticallyEquivalent_of_responseName_value_diff_of_fi
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName rightFieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    Execution.executeField schema resolvers variableValues fuel source
-      responseName
-      [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := leftFieldName,
-        arguments := leftArguments,
-        selectionSet := leftChildSelectionSet
-      }]
-    =
-    .ok ([(responseName, leftValue)], leftTargetErrors) ->
-    Execution.executeField schema resolvers variableValues fuel source
-      responseName
-      [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := rightFieldName,
-        arguments := rightArguments,
-        selectionSet := rightChildSelectionSet
-      }]
-    =
-    .ok ([(responseName, rightValue)], rightTargetErrors) ->
-    ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema resolvers variableValues fuel source
-          responseName
-          [{
-            parentType := parentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema resolvers variableValues fuel source
-          responseName
-          [{
-            parentType := parentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> Execution.executeField schema resolvers variableValues fuel source
+            responseName
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := leftFieldName,
+              arguments := leftArguments,
+              selectionSet := leftChildSelectionSet
+            }]
+          = .ok ([(responseName, leftValue)], leftTargetErrors)
+      -> Execution.executeField schema resolvers variableValues fuel source
+            responseName
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := rightFieldName,
+              arguments := rightArguments,
+              selectionSet := rightChildSelectionSet
+            }]
+          = .ok ([(responseName, rightValue)], rightTargetErrors)
+      -> ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ selectionSetsSemanticallyEquivalent schema parentType left right := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hleftMem
     hrightMem hleftTarget hrightTarget hvalue hleftFieldOk hrightFieldOk
   rcases
@@ -1711,73 +1683,73 @@ theorem not_selectionSetsDataEquivalent_of_responseName_value_diff_of_field_ok
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName rightFieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    Execution.executeField schema resolvers variableValues fuel source
-      responseName
-      [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := leftFieldName,
-        arguments := leftArguments,
-        selectionSet := leftChildSelectionSet
-      }]
-    =
-    .ok ([(responseName, leftValue)], leftTargetErrors) ->
-    Execution.executeField schema resolvers variableValues fuel source
-      responseName
-      [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := rightFieldName,
-        arguments := rightArguments,
-        selectionSet := rightChildSelectionSet
-      }]
-    =
-    .ok ([(responseName, rightValue)], rightTargetErrors) ->
-    ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema resolvers variableValues fuel source
-          responseName
-          [{
-            parentType := parentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema resolvers variableValues fuel source
-          responseName
-          [{
-            parentType := parentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ selectionSetsDataEquivalent schema parentType left right := by
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> Execution.executeField schema resolvers variableValues fuel source
+            responseName
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := leftFieldName,
+              arguments := leftArguments,
+              selectionSet := leftChildSelectionSet
+            }]
+          = .ok ([(responseName, leftValue)], leftTargetErrors)
+      -> Execution.executeField schema resolvers variableValues fuel source
+            responseName
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := rightFieldName,
+              arguments := rightArguments,
+              selectionSet := rightChildSelectionSet
+            }]
+          = .ok ([(responseName, rightValue)], rightTargetErrors)
+      -> ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ selectionSetsDataEquivalent schema parentType left right := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hleftMem
     hrightMem hleftTarget hrightTarget hvalue hleftFieldOk hrightFieldOk
   rcases
@@ -1826,74 +1798,74 @@ theorem responseData_not_semanticEquivalent_of_field_value_diff_of_field_ok
     (variableValues : Execution.VariableValues)
     (fuel : Nat)
     (leftSource : Execution.ResolverValue LeftRef)
-    (rightSource : Execution.ResolverValue RightRef) :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName rightFieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    Execution.executeField schema leftResolvers variableValues fuel
-      leftSource responseName
-      [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := leftFieldName,
-        arguments := leftArguments,
-        selectionSet := leftChildSelectionSet
-      }]
-    =
-    .ok ([(responseName, leftValue)], leftTargetErrors) ->
-    Execution.executeField schema rightResolvers variableValues fuel
-      rightSource responseName
-      [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := rightFieldName,
-        arguments := rightArguments,
-        selectionSet := rightChildSelectionSet
-      }]
-    =
-    .ok ([(responseName, rightValue)], rightTargetErrors) ->
-    ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema leftResolvers variableValues fuel
-          leftSource responseName
-          [{
-            parentType := parentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema rightResolvers variableValues fuel
-          rightSource responseName
-          [{
-            parentType := parentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues fuel
-          parentType leftSource left).data
-        (Execution.executeSelectionSetAsResponse schema rightResolvers variableValues fuel
-          parentType rightSource right).data := by
+    (rightSource : Execution.ResolverValue RightRef)
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> Execution.executeField schema leftResolvers variableValues fuel
+            leftSource responseName
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := leftFieldName,
+              arguments := leftArguments,
+              selectionSet := leftChildSelectionSet
+            }]
+          = .ok ([(responseName, leftValue)], leftTargetErrors)
+      -> Execution.executeField schema rightResolvers variableValues fuel
+            rightSource responseName
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := rightFieldName,
+              arguments := rightArguments,
+              selectionSet := rightChildSelectionSet
+            }]
+          = .ok ([(responseName, rightValue)], rightTargetErrors)
+      -> ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema leftResolvers variableValues fuel
+                  leftSource responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema rightResolvers variableValues fuel
+                  rightSource responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
+              fuel parentType leftSource left).data
+            (Execution.executeSelectionSetAsResponse schema rightResolvers
+              variableValues fuel parentType rightSource right).data := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hleftMem
     hrightMem hleftTarget hrightTarget hvalue hleftFieldOk hrightFieldOk
     hresponses
@@ -1949,75 +1921,75 @@ theorem responseData_not_semanticEquivalent_of_field_value_diff_of_field_ok_pair
     (variableValues : Execution.VariableValues)
     (fuel : Nat)
     (leftSource : Execution.ResolverValue LeftRef)
-    (rightSource : Execution.ResolverValue RightRef) :
-    objectTypeNameBool schema leftParentType = true ->
-    objectTypeNameBool schema rightParentType = true ->
-    selectionSetNormal schema leftParentType left ->
-    selectionSetNormal schema rightParentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName rightFieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    Execution.executeField schema leftResolvers variableValues fuel
-      leftSource responseName
-      [{
-        parentType := leftParentType,
-        responseName := responseName,
-        fieldName := leftFieldName,
-        arguments := leftArguments,
-        selectionSet := leftChildSelectionSet
-      }]
-    =
-    .ok ([(responseName, leftValue)], leftTargetErrors) ->
-    Execution.executeField schema rightResolvers variableValues fuel
-      rightSource responseName
-      [{
-        parentType := rightParentType,
-        responseName := responseName,
-        fieldName := rightFieldName,
-        arguments := rightArguments,
-        selectionSet := rightChildSelectionSet
-      }]
-    =
-    .ok ([(responseName, rightValue)], rightTargetErrors) ->
-    ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema leftResolvers variableValues fuel
-          leftSource responseName
-          [{
-            parentType := leftParentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema rightResolvers variableValues fuel
-          rightSource responseName
-          [{
-            parentType := rightParentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues fuel
-          leftParentType leftSource left).data
-        (Execution.executeSelectionSetAsResponse schema rightResolvers variableValues fuel
-          rightParentType rightSource right).data := by
+    (rightSource : Execution.ResolverValue RightRef)
+    : objectTypeNameBool schema leftParentType = true
+      -> objectTypeNameBool schema rightParentType = true
+      -> selectionSetNormal schema leftParentType left
+      -> selectionSetNormal schema rightParentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> Execution.executeField schema leftResolvers variableValues fuel
+            leftSource responseName
+            [{
+              parentType := leftParentType,
+              responseName := responseName,
+              fieldName := leftFieldName,
+              arguments := leftArguments,
+              selectionSet := leftChildSelectionSet
+            }]
+          = .ok ([(responseName, leftValue)], leftTargetErrors)
+      -> Execution.executeField schema rightResolvers variableValues fuel
+            rightSource responseName
+            [{
+              parentType := rightParentType,
+              responseName := responseName,
+              fieldName := rightFieldName,
+              arguments := rightArguments,
+              selectionSet := rightChildSelectionSet
+            }]
+          = .ok ([(responseName, rightValue)], rightTargetErrors)
+      -> ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema leftResolvers variableValues fuel
+                  leftSource responseName
+                  [{
+                    parentType := leftParentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema rightResolvers variableValues fuel
+                  rightSource responseName
+                  [{
+                    parentType := rightParentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
+              fuel leftParentType leftSource left).data
+            (Execution.executeSelectionSetAsResponse schema rightResolvers
+              variableValues fuel rightParentType rightSource right).data := by
   intro hleftObject hrightObject hleftNormal hrightNormal hleftFree
     hrightFree hleftMem hrightMem hleftTarget hrightTarget hvalue
     hleftFieldOk hrightFieldOk hresponses
@@ -2074,75 +2046,75 @@ theorem responseData_not_semanticEquivalent_of_field_value_diff_of_field_ok_pair
     (variableValues : Execution.VariableValues)
     (leftFuel rightFuel : Nat)
     (leftSource : Execution.ResolverValue LeftRef)
-    (rightSource : Execution.ResolverValue RightRef) :
-    objectTypeNameBool schema leftParentType = true ->
-    objectTypeNameBool schema rightParentType = true ->
-    selectionSetNormal schema leftParentType left ->
-    selectionSetNormal schema rightParentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName rightFieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    Execution.executeField schema leftResolvers variableValues leftFuel
-      leftSource responseName
-      [{
-        parentType := leftParentType,
-        responseName := responseName,
-        fieldName := leftFieldName,
-        arguments := leftArguments,
-        selectionSet := leftChildSelectionSet
-      }]
-    =
-    .ok ([(responseName, leftValue)], leftTargetErrors) ->
-    Execution.executeField schema rightResolvers variableValues rightFuel
-      rightSource responseName
-      [{
-        parentType := rightParentType,
-        responseName := responseName,
-        fieldName := rightFieldName,
-        arguments := rightArguments,
-        selectionSet := rightChildSelectionSet
-      }]
-    =
-    .ok ([(responseName, rightValue)], rightTargetErrors) ->
-    ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema leftResolvers variableValues leftFuel
-          leftSource responseName
-          [{
-            parentType := leftParentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema rightResolvers variableValues rightFuel
-          rightSource responseName
-          [{
-            parentType := rightParentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
-          leftFuel leftParentType leftSource left).data
-        (Execution.executeSelectionSetAsResponse schema rightResolvers variableValues
-          rightFuel rightParentType rightSource right).data := by
+    (rightSource : Execution.ResolverValue RightRef)
+    : objectTypeNameBool schema leftParentType = true
+      -> objectTypeNameBool schema rightParentType = true
+      -> selectionSetNormal schema leftParentType left
+      -> selectionSetNormal schema rightParentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> Execution.executeField schema leftResolvers variableValues leftFuel
+            leftSource responseName
+            [{
+              parentType := leftParentType,
+              responseName := responseName,
+              fieldName := leftFieldName,
+              arguments := leftArguments,
+              selectionSet := leftChildSelectionSet
+            }]
+          = .ok ([(responseName, leftValue)], leftTargetErrors)
+      -> Execution.executeField schema rightResolvers variableValues rightFuel
+            rightSource responseName
+            [{
+              parentType := rightParentType,
+              responseName := responseName,
+              fieldName := rightFieldName,
+              arguments := rightArguments,
+              selectionSet := rightChildSelectionSet
+            }]
+          = .ok ([(responseName, rightValue)], rightTargetErrors)
+      -> ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema leftResolvers variableValues leftFuel
+                  leftSource responseName
+                  [{
+                    parentType := leftParentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema rightResolvers variableValues rightFuel
+                  rightSource responseName
+                  [{
+                    parentType := rightParentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema leftResolvers variableValues
+              leftFuel leftParentType leftSource left).data
+            (Execution.executeSelectionSetAsResponse schema rightResolvers
+              variableValues rightFuel rightParentType rightSource right).data := by
   intro hleftObject hrightObject hleftNormal hrightNormal hleftFree
     hrightFree hleftMem hrightMem hleftTarget hrightTarget hvalue
     hleftFieldOk hrightFieldOk hresponses
@@ -2197,73 +2169,73 @@ theorem responseValue_semanticEquivalent_of_selectionSetsDataEquivalent_field_ok
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName rightFieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    Execution.executeField schema resolvers variableValues fuel source
-      responseName
-      [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := leftFieldName,
-        arguments := leftArguments,
-        selectionSet := leftChildSelectionSet
-      }]
-    =
-    .ok ([(responseName, leftValue)], leftTargetErrors) ->
-    Execution.executeField schema resolvers variableValues fuel source
-      responseName
-      [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := rightFieldName,
-        arguments := rightArguments,
-        selectionSet := rightChildSelectionSet
-      }]
-    =
-    .ok ([(responseName, rightValue)], rightTargetErrors) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema resolvers variableValues fuel source
-          responseName
-          [{
-            parentType := parentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema resolvers variableValues fuel source
-          responseName
-          [{
-            parentType := parentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)) ->
-    selectionSetsDataEquivalent schema parentType left right ->
-      Execution.ResponseValue.semanticEquivalent leftValue rightValue := by
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> Execution.executeField schema resolvers variableValues fuel source
+            responseName
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := leftFieldName,
+              arguments := leftArguments,
+              selectionSet := leftChildSelectionSet
+            }]
+          = .ok ([(responseName, leftValue)], leftTargetErrors)
+      -> Execution.executeField schema resolvers variableValues fuel source
+            responseName
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := rightFieldName,
+              arguments := rightArguments,
+              selectionSet := rightChildSelectionSet
+            }]
+          = .ok ([(responseName, rightValue)], rightTargetErrors)
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> selectionSetsDataEquivalent schema parentType left right
+      -> Execution.ResponseValue.semanticEquivalent leftValue rightValue := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hleftMem
     hrightMem hleftTarget hrightTarget hleftFieldOk hrightFieldOk hdata
   rcases
@@ -2304,28 +2276,27 @@ theorem responseNames_perm_of_normal_object_semanticallyEquivalent_with_object_r
     {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
-    (hsource :
-      ∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
+    (hsource
+      : ∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
           ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
-    {leftErrors rightErrors : Nat} :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source left =
-      ({ data := .object leftFields, errors := leftErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source right =
-      ({ data := .object rightFields, errors := rightErrors } :
-        Execution.Response) ->
-    selectionSetsSemanticallyEquivalent schema parentType left right ->
-      (left.filterMap Selection.responseName?).Perm
-        (right.filterMap Selection.responseName?) := by
+    {leftErrors rightErrors : Nat}
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source left
+          = ({ data := .object leftFields, errors := leftErrors } : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source right
+          = ({ data := .object rightFields, errors := rightErrors }
+              : Execution.Response)
+      -> selectionSetsSemanticallyEquivalent schema parentType left right
+      -> (left.filterMap Selection.responseName?).Perm
+          (right.filterMap Selection.responseName?) := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hleftExec
     hrightExec hsem
   apply listPermOfNodupSubsetSubset

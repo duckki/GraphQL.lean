@@ -9,10 +9,10 @@ namespace SchemaWellFormedness
 
 theorem fieldDefinitionsWellFormed_lookupFieldDefinition_wellFormed
     {schema : Schema} {fields : List FieldDefinition}
-    {fieldName : Name} {fieldDefinition : FieldDefinition} :
-    fieldDefinitionsWellFormed schema fields ->
-      Schema.lookupFieldDefinition fields fieldName = some fieldDefinition ->
-        fieldDefinitionWellFormed schema fieldDefinition := by
+    {fieldName : Name} {fieldDefinition : FieldDefinition}
+    : fieldDefinitionsWellFormed schema fields
+      -> Schema.lookupFieldDefinition fields fieldName = some fieldDefinition
+      -> fieldDefinitionWellFormed schema fieldDefinition := by
   intro hfields hlookup
   have hmem : fieldDefinition ∈ fields := by
     simpa [Schema.lookupFieldDefinition] using
@@ -21,10 +21,10 @@ theorem fieldDefinitionsWellFormed_lookupFieldDefinition_wellFormed
 
 theorem fieldDefinitionsWellFormed_lookupFieldDefinition_outputType
     {schema : Schema} {fields : List FieldDefinition}
-    {fieldName : Name} {fieldDefinition : FieldDefinition} :
-    fieldDefinitionsWellFormed schema fields ->
-      Schema.lookupFieldDefinition fields fieldName = some fieldDefinition ->
-        fieldDefinition.outputType.isOutputType schema := by
+    {fieldName : Name} {fieldDefinition : FieldDefinition}
+    : fieldDefinitionsWellFormed schema fields
+      -> Schema.lookupFieldDefinition fields fieldName = some fieldDefinition
+      -> fieldDefinition.outputType.isOutputType schema := by
   intro hfields hlookup
   exact
     (fieldDefinitionsWellFormed_lookupFieldDefinition_wellFormed
@@ -32,44 +32,42 @@ theorem fieldDefinitionsWellFormed_lookupFieldDefinition_outputType
 
 theorem objectTypeWellFormed_lookupFieldDefinition_wellFormed
     {schema : Schema} {objectType : ObjectType}
-    {fieldName : Name} {fieldDefinition : FieldDefinition} :
-    objectTypeWellFormed schema objectType ->
-      Schema.lookupFieldDefinition objectType.fields fieldName =
-        some fieldDefinition ->
-        fieldDefinitionWellFormed schema fieldDefinition := by
+    {fieldName : Name} {fieldDefinition : FieldDefinition}
+    : objectTypeWellFormed schema objectType
+      -> Schema.lookupFieldDefinition objectType.fields fieldName = some fieldDefinition
+      -> fieldDefinitionWellFormed schema fieldDefinition := by
   intro hobject hlookup
   exact fieldDefinitionsWellFormed_lookupFieldDefinition_wellFormed
     hobject.1 hlookup
 
 theorem objectTypeWellFormed_lookupFieldDefinition_outputType
     {schema : Schema} {objectType : ObjectType}
-    {fieldName : Name} {fieldDefinition : FieldDefinition} :
-    objectTypeWellFormed schema objectType ->
-      Schema.lookupFieldDefinition objectType.fields fieldName =
-        some fieldDefinition ->
-        fieldDefinition.outputType.isOutputType schema := by
+    {fieldName : Name} {fieldDefinition : FieldDefinition}
+    : objectTypeWellFormed schema objectType
+      -> Schema.lookupFieldDefinition objectType.fields fieldName = some fieldDefinition
+      -> fieldDefinition.outputType.isOutputType schema := by
   intro hobject hlookup
   exact fieldDefinitionsWellFormed_lookupFieldDefinition_outputType
     hobject.1 hlookup
 
 theorem interfaceTypeWellFormed_lookupFieldDefinition_wellFormed
     {schema : Schema} {interfaceType : InterfaceType}
-    {fieldName : Name} {fieldDefinition : FieldDefinition} :
-    interfaceTypeWellFormed schema interfaceType ->
-      Schema.lookupFieldDefinition interfaceType.fields fieldName =
-        some fieldDefinition ->
-        fieldDefinitionWellFormed schema fieldDefinition := by
+    {fieldName : Name} {fieldDefinition : FieldDefinition}
+    : interfaceTypeWellFormed schema interfaceType
+      -> Schema.lookupFieldDefinition interfaceType.fields fieldName
+          = some fieldDefinition
+      -> fieldDefinitionWellFormed schema fieldDefinition := by
   intro hinterface hlookup
   exact fieldDefinitionsWellFormed_lookupFieldDefinition_wellFormed
     hinterface.1 hlookup
 
 theorem interfaceTypeWellFormed_lookupFieldDefinition_outputType
     {schema : Schema} {interfaceType : InterfaceType}
-    {fieldName : Name} {fieldDefinition : FieldDefinition} :
-    interfaceTypeWellFormed schema interfaceType ->
-      Schema.lookupFieldDefinition interfaceType.fields fieldName =
-        some fieldDefinition ->
-        fieldDefinition.outputType.isOutputType schema := by
+    {fieldName : Name} {fieldDefinition : FieldDefinition}
+    : interfaceTypeWellFormed schema interfaceType
+      -> Schema.lookupFieldDefinition interfaceType.fields fieldName
+          = some fieldDefinition
+      -> fieldDefinition.outputType.isOutputType schema := by
   intro hinterface hlookup
   exact fieldDefinitionsWellFormed_lookupFieldDefinition_outputType
     hinterface.1 hlookup
@@ -77,11 +75,11 @@ theorem interfaceTypeWellFormed_lookupFieldDefinition_outputType
 theorem typeDefinitionWellFormed_lookupFieldDefinition_outputType
     {schema : Schema} {typeDefinition : TypeDefinition}
     {fields : List FieldDefinition} {fieldName : Name}
-    {fieldDefinition : FieldDefinition} :
-    typeDefinitionWellFormed schema typeDefinition ->
-      typeDefinition.fields? = some fields ->
-        Schema.lookupFieldDefinition fields fieldName = some fieldDefinition ->
-          fieldDefinition.outputType.isOutputType schema := by
+    {fieldDefinition : FieldDefinition}
+    : typeDefinitionWellFormed schema typeDefinition
+      -> typeDefinition.fields? = some fields
+      -> Schema.lookupFieldDefinition fields fieldName = some fieldDefinition
+      -> fieldDefinition.outputType.isOutputType schema := by
   intro htype hfields hlookup
   cases typeDefinition with
   | object objectType =>
@@ -106,10 +104,10 @@ theorem typeDefinitionWellFormed_lookupFieldDefinition_outputType
       simp [TypeDefinition.fields?] at hfields
 
 theorem schemaWellFormed_lookupType_typeDefinitionWellFormed
-    {schema : Schema} {typeName : Name} {typeDefinition : TypeDefinition} :
-    schemaWellFormed schema ->
-      schema.lookupType typeName = some typeDefinition ->
-        typeDefinitionWellFormed schema typeDefinition := by
+    {schema : Schema} {typeName : Name} {typeDefinition : TypeDefinition}
+    : schemaWellFormed schema
+      -> schema.lookupType typeName = some typeDefinition
+      -> typeDefinitionWellFormed schema typeDefinition := by
   intro hschema hlookup
   have hmemAll : typeDefinition ∈ schema.allTypes := by
     simpa [Schema.lookupType] using List.mem_of_find?_eq_some hlookup
@@ -131,10 +129,10 @@ theorem schemaWellFormed_lookupType_typeDefinitionWellFormed
 
 theorem schemaWellFormed_lookupField_outputType
     {schema : Schema} {parentType fieldName : Name}
-    {fieldDefinition : FieldDefinition} :
-    schemaWellFormed schema ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-        fieldDefinition.outputType.isOutputType schema := by
+    {fieldDefinition : FieldDefinition}
+    : schemaWellFormed schema
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> fieldDefinition.outputType.isOutputType schema := by
   intro hschema hlookup
   cases htype : schema.lookupType parentType with
   | none =>

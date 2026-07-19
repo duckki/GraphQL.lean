@@ -18,71 +18,82 @@ structure AppendAllowedFieldState
     (left : List Selection)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
-    (selectionSet : List Selection) (childDepth : Nat) : Prop where
+    (selectionSet : List Selection) (childDepth : Nat)
+    : Prop where
   depth_eq : depth = childDepth + 1
   allowed : selectionDirectivesAllowBool variableValues directives = true
-  rightEquivalent :
-    ExecutionStateEquivalent
-      { window :=
-        { schema := schema
-          resolvers := resolvers
-          variableValues := variableValues
-          depth := depth
-          parentType := parentType
-          source := source
-          selectionSet :=
-            [.field responseName fieldName arguments directives selectionSet] }
-        initial := .object [] }
-  namesDisjoint :
-    GraphQL.NormalForm.executableGroupNamesDisjoint
-      (GraphQL.Execution.collectFields schema variableValues parentType
-        source left)
-      (GraphQL.Execution.collectFields schema variableValues parentType source
-        [.field responseName fieldName arguments directives selectionSet])
+  rightEquivalent
+    : ExecutionStateEquivalent
+        {
+          window :=
+            {
+              schema := schema
+              resolvers := resolvers
+              variableValues := variableValues
+              depth := depth
+              parentType := parentType
+              source := source
+              selectionSet :=
+                [.field responseName fieldName arguments directives selectionSet]
+            }
+          initial := .object []
+        }
+  namesDisjoint
+    : GraphQL.NormalForm.executableGroupNamesDisjoint
+        (GraphQL.Execution.collectFields schema variableValues parentType source left)
+        (GraphQL.Execution.collectFields schema variableValues parentType source
+          [.field responseName fieldName arguments directives selectionSet])
 
 def AppendSelectionState
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (left : List Selection) : Selection -> Prop
+    (left : List Selection)
+    : Selection -> Prop
   | .field responseName fieldName arguments directives selectionSet =>
-      selectionDirectivesAllowBool variableValues directives = false ∨
-      ∃ childDepth,
-        AppendAllowedFieldState schema resolvers variableValues depth parentType
-          source left responseName fieldName arguments directives selectionSet
-          childDepth
+      selectionDirectivesAllowBool variableValues directives = false
+      ∨ ∃ childDepth,
+          AppendAllowedFieldState schema resolvers variableValues depth parentType
+            source left responseName fieldName arguments directives selectionSet
+            childDepth
   | .inlineFragment none directives selectionSet =>
-      selectionDirectivesAllowBool variableValues directives = false ∨
-      selectionDirectivesAllowBool variableValues directives = true ∧
-      ExecutionStateEquivalent
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := parentType
-            source := source
-            selectionSet := left ++ selectionSet }
-          initial := .object [] }
+      selectionDirectivesAllowBool variableValues directives = false
+      ∨ selectionDirectivesAllowBool variableValues directives = true
+        ∧ ExecutionStateEquivalent
+            {
+              window :=
+                {
+                  schema := schema
+                  resolvers := resolvers
+                  variableValues := variableValues
+                  depth := depth
+                  parentType := parentType
+                  source := source
+                  selectionSet := left ++ selectionSet
+                }
+              initial := .object []
+            }
   | .inlineFragment (some typeCondition) directives selectionSet =>
-      selectionDirectivesAllowBool variableValues directives = false ∨
-      (selectionDirectivesAllowBool variableValues directives = true ∧
-        doesFragmentTypeApplyBool schema parentType source typeCondition =
-          false) ∨
-      (selectionDirectivesAllowBool variableValues directives = true ∧
-        doesFragmentTypeApplyBool schema parentType source typeCondition =
-          true ∧
-        ExecutionStateEquivalent
-          { window :=
-            { schema := schema
-              resolvers := resolvers
-              variableValues := variableValues
-              depth := depth
-              parentType := parentType
-              source := source
-              selectionSet := left ++ selectionSet }
-            initial := .object [] })
+      selectionDirectivesAllowBool variableValues directives = false
+      ∨ (selectionDirectivesAllowBool variableValues directives = true
+          ∧ doesFragmentTypeApplyBool schema parentType source typeCondition = false)
+      ∨ (selectionDirectivesAllowBool variableValues directives = true
+          ∧ doesFragmentTypeApplyBool schema parentType source typeCondition = true
+          ∧ ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := depth
+                    parentType := parentType
+                    source := source
+                    selectionSet := left ++ selectionSet
+                  }
+                initial := .object []
+              })
 
 theorem AppendSelectionState.field_blocked
     {ObjectIdentity : Type}
@@ -92,11 +103,10 @@ theorem AppendSelectionState.field_blocked
     {left : List Selection}
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication} {selectionSet : List Selection}
-    (hblocked :
-      selectionDirectivesAllowBool variableValues directives = false) :
-    AppendSelectionState schema resolvers variableValues depth parentType
-      source left
-      (.field responseName fieldName arguments directives selectionSet) := by
+    (hblocked : selectionDirectivesAllowBool variableValues directives = false)
+    : AppendSelectionState schema resolvers variableValues depth parentType
+        source left
+        (.field responseName fieldName arguments directives selectionSet) := by
   simp [AppendSelectionState, hblocked]
 
 theorem AppendSelectionState.field_allowed
@@ -107,13 +117,13 @@ theorem AppendSelectionState.field_allowed
     {left : List Selection}
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication} {selectionSet : List Selection}
-    (hstate :
-      AppendAllowedFieldState schema resolvers variableValues depth parentType
-        source left responseName fieldName arguments directives selectionSet
-        childDepth) :
-    AppendSelectionState schema resolvers variableValues depth parentType
-      source left
-      (.field responseName fieldName arguments directives selectionSet) := by
+    (hstate
+      : AppendAllowedFieldState schema resolvers variableValues depth parentType
+          source left responseName fieldName arguments directives selectionSet
+          childDepth)
+    : AppendSelectionState schema resolvers variableValues depth parentType
+        source left
+        (.field responseName fieldName arguments directives selectionSet) := by
   simp [AppendSelectionState]
   exact Or.inr ⟨childDepth, hstate⟩
 
@@ -124,10 +134,9 @@ theorem AppendSelectionState.inline_none_blocked
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     {left : List Selection}
     {directives : List DirectiveApplication} {selectionSet : List Selection}
-    (hblocked :
-      selectionDirectivesAllowBool variableValues directives = false) :
-    AppendSelectionState schema resolvers variableValues depth parentType
-      source left (.inlineFragment none directives selectionSet) := by
+    (hblocked : selectionDirectivesAllowBool variableValues directives = false)
+    : AppendSelectionState schema resolvers variableValues depth parentType
+        source left (.inlineFragment none directives selectionSet) := by
   simp [AppendSelectionState, hblocked]
 
 theorem AppendSelectionState.inline_none_allowed
@@ -138,19 +147,23 @@ theorem AppendSelectionState.inline_none_allowed
     {left : List Selection}
     {directives : List DirectiveApplication} {selectionSet : List Selection}
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (hbody :
-      ExecutionStateEquivalent
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := parentType
-            source := source
-            selectionSet := left ++ selectionSet }
-          initial := .object [] }) :
-    AppendSelectionState schema resolvers variableValues depth parentType
-      source left (.inlineFragment none directives selectionSet) := by
+    (hbody
+      : ExecutionStateEquivalent
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := depth
+                parentType := parentType
+                source := source
+                selectionSet := left ++ selectionSet
+              }
+            initial := .object []
+          })
+    : AppendSelectionState schema resolvers variableValues depth parentType
+        source left (.inlineFragment none directives selectionSet) := by
   simp [AppendSelectionState, hallowed, hbody]
 
 theorem AppendSelectionState.inline_some_blocked
@@ -160,11 +173,10 @@ theorem AppendSelectionState.inline_some_blocked
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     {left : List Selection} {typeCondition : Name}
     {directives : List DirectiveApplication} {selectionSet : List Selection}
-    (hblocked :
-      selectionDirectivesAllowBool variableValues directives = false) :
-    AppendSelectionState schema resolvers variableValues depth parentType
-      source left
-      (.inlineFragment (some typeCondition) directives selectionSet) := by
+    (hblocked : selectionDirectivesAllowBool variableValues directives = false)
+    : AppendSelectionState schema resolvers variableValues depth parentType
+        source left
+        (.inlineFragment (some typeCondition) directives selectionSet) := by
   simp [AppendSelectionState, hblocked]
 
 theorem AppendSelectionState.inline_some_not_apply
@@ -175,12 +187,11 @@ theorem AppendSelectionState.inline_some_not_apply
     {left : List Selection} {typeCondition : Name}
     {directives : List DirectiveApplication} {selectionSet : List Selection}
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (hnotApply :
-      doesFragmentTypeApplyBool schema parentType source typeCondition =
-        false) :
-    AppendSelectionState schema resolvers variableValues depth parentType
-      source left
-      (.inlineFragment (some typeCondition) directives selectionSet) := by
+    (hnotApply
+      : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
+    : AppendSelectionState schema resolvers variableValues depth parentType
+        source left
+        (.inlineFragment (some typeCondition) directives selectionSet) := by
   simp [AppendSelectionState, hallowed, hnotApply]
 
 theorem AppendSelectionState.inline_some_apply
@@ -191,23 +202,25 @@ theorem AppendSelectionState.inline_some_apply
     {left : List Selection} {typeCondition : Name}
     {directives : List DirectiveApplication} {selectionSet : List Selection}
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (happly :
-      doesFragmentTypeApplyBool schema parentType source typeCondition =
-        true)
-    (hbody :
-      ExecutionStateEquivalent
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := parentType
-            source := source
-            selectionSet := left ++ selectionSet }
-          initial := .object [] }) :
-    AppendSelectionState schema resolvers variableValues depth parentType
-      source left
-      (.inlineFragment (some typeCondition) directives selectionSet) := by
+    (happly : doesFragmentTypeApplyBool schema parentType source typeCondition = true)
+    (hbody
+      : ExecutionStateEquivalent
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := depth
+                parentType := parentType
+                source := source
+                selectionSet := left ++ selectionSet
+              }
+            initial := .object []
+          })
+    : AppendSelectionState schema resolvers variableValues depth parentType
+        source left
+        (.inlineFragment (some typeCondition) directives selectionSet) := by
   simp [AppendSelectionState, hallowed, happly, hbody]
 
 theorem stateEquivalent_of_append_single_selection_state
@@ -216,30 +229,38 @@ theorem stateEquivalent_of_append_single_selection_state
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     {left : List Selection} (selection : Selection)
-    (hleft :
-      ExecutionStateEquivalent
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := parentType
-            source := source
-            selectionSet := left }
-          initial := .object [] })
-    (hselection :
-      AppendSelectionState schema resolvers variableValues depth parentType
-        source left selection) :
-    ExecutionStateEquivalent
-      { window :=
-        { schema := schema
-          resolvers := resolvers
-          variableValues := variableValues
-          depth := depth
-          parentType := parentType
-          source := source
-          selectionSet := left ++ [selection] }
-        initial := .object [] } := by
+    (hleft
+      : ExecutionStateEquivalent
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := depth
+                parentType := parentType
+                source := source
+                selectionSet := left
+              }
+            initial := .object []
+          })
+    (hselection
+      : AppendSelectionState schema resolvers variableValues depth parentType
+          source left selection)
+    : ExecutionStateEquivalent
+        {
+          window :=
+            {
+              schema := schema
+              resolvers := resolvers
+              variableValues := variableValues
+              depth := depth
+              parentType := parentType
+              source := source
+              selectionSet := left ++ [selection]
+            }
+          initial := .object []
+        } := by
   cases selection with
   | field responseName fieldName arguments directives selectionSet =>
       simp [AppendSelectionState] at hselection
@@ -275,23 +296,23 @@ def AppendSelectionSetState
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    List Selection -> List Selection -> Prop
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : List Selection -> List Selection -> Prop
   | _left, [] => True
   | left, selection :: rest =>
       AppendSelectionState schema resolvers variableValues depth parentType
-        source left selection ∧
-      AppendSelectionSetState schema resolvers variableValues depth parentType
-        source (left ++ [selection]) rest
+        source left selection
+      ∧ AppendSelectionSetState schema resolvers variableValues depth parentType
+          source (left ++ [selection]) rest
 
 theorem AppendSelectionSetState.nil
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
-    {left : List Selection} :
-    AppendSelectionSetState schema resolvers variableValues depth parentType
-      source left [] := by
+    {left : List Selection}
+    : AppendSelectionSetState schema resolvers variableValues depth parentType
+        source left [] := by
   simp [AppendSelectionSetState]
 
 theorem AppendSelectionSetState.cons
@@ -300,14 +321,14 @@ theorem AppendSelectionSetState.cons
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     {left : List Selection} {selection : Selection} {rest : List Selection}
-    (hselection :
-      AppendSelectionState schema resolvers variableValues depth parentType
-        source left selection)
-    (hrest :
-      AppendSelectionSetState schema resolvers variableValues depth parentType
-        source (left ++ [selection]) rest) :
-    AppendSelectionSetState schema resolvers variableValues depth parentType
-      source left (selection :: rest) := by
+    (hselection
+      : AppendSelectionState schema resolvers variableValues depth parentType
+          source left selection)
+    (hrest
+      : AppendSelectionSetState schema resolvers variableValues depth parentType
+          source (left ++ [selection]) rest)
+    : AppendSelectionSetState schema resolvers variableValues depth parentType
+        source left (selection :: rest) := by
   exact ⟨hselection, hrest⟩
 
 def AppendSelectionSetPrefixState
@@ -315,10 +336,11 @@ def AppendSelectionSetPrefixState
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (left selectionSet : List Selection) : Prop :=
+    (left selectionSet : List Selection)
+    : Prop :=
   ∀ prefixSelections selection suffix,
-    selectionSet = prefixSelections ++ selection :: suffix ->
-      AppendSelectionState schema resolvers variableValues depth parentType
+    selectionSet = prefixSelections ++ selection :: suffix
+    -> AppendSelectionState schema resolvers variableValues depth parentType
         source (left ++ prefixSelections) selection
 
 theorem AppendSelectionSetPrefixState.nil
@@ -326,9 +348,9 @@ theorem AppendSelectionSetPrefixState.nil
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
-    {left : List Selection} :
-    AppendSelectionSetPrefixState schema resolvers variableValues depth
-      parentType source left [] := by
+    {left : List Selection}
+    : AppendSelectionSetPrefixState schema resolvers variableValues depth
+        parentType source left [] := by
   intro prefixSelections selection suffix hselectionSet
   have hlength := congrArg List.length hselectionSet
   simp at hlength
@@ -339,11 +361,11 @@ theorem AppendSelectionSetPrefixState.singleton
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     {left : List Selection} {selection : Selection}
-    (hselection :
-      AppendSelectionState schema resolvers variableValues depth parentType
-        source left selection) :
-    AppendSelectionSetPrefixState schema resolvers variableValues depth
-      parentType source left [selection] := by
+    (hselection
+      : AppendSelectionState schema resolvers variableValues depth parentType
+          source left selection)
+    : AppendSelectionSetPrefixState schema resolvers variableValues depth
+        parentType source left [selection] := by
   intro prefixSelections nextSelection suffix hselectionSet
   cases prefixSelections with
   | nil =>
@@ -361,14 +383,14 @@ theorem AppendSelectionSetPrefixState.cons
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     {left : List Selection} {selection : Selection}
     {rest : List Selection}
-    (hselection :
-      AppendSelectionState schema resolvers variableValues depth parentType
-        source left selection)
-    (hrest :
-      AppendSelectionSetPrefixState schema resolvers variableValues depth
-        parentType source (left ++ [selection]) rest) :
-    AppendSelectionSetPrefixState schema resolvers variableValues depth
-      parentType source left (selection :: rest) := by
+    (hselection
+      : AppendSelectionState schema resolvers variableValues depth parentType
+          source left selection)
+    (hrest
+      : AppendSelectionSetPrefixState schema resolvers variableValues depth
+          parentType source (left ++ [selection]) rest)
+    : AppendSelectionSetPrefixState schema resolvers variableValues depth
+        parentType source left (selection :: rest) := by
   intro prefixSelections nextSelection suffix hselectionSet
   cases prefixSelections with
   | nil =>
@@ -385,12 +407,12 @@ theorem AppendSelectionSetState.of_prefix_state
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : ResolverValue ObjectIdentity} :
-    ∀ (left selectionSet : List Selection),
-      AppendSelectionSetPrefixState schema resolvers variableValues depth
-        parentType source left selectionSet ->
-      AppendSelectionSetState schema resolvers variableValues depth parentType
-        source left selectionSet
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    : ∀ (left selectionSet : List Selection),
+        AppendSelectionSetPrefixState schema resolvers variableValues depth
+          parentType source left selectionSet
+        -> AppendSelectionSetState schema resolvers variableValues depth parentType
+            source left selectionSet
   | _left, [], _hstate => by
       exact AppendSelectionSetState.nil
   | left, selection :: rest, hstate => by
@@ -410,14 +432,14 @@ theorem AppendSelectionSetState.append
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : ResolverValue ObjectIdentity} :
-    ∀ (left middle right : List Selection),
-      AppendSelectionSetState schema resolvers variableValues depth parentType
-        source left middle ->
-      AppendSelectionSetState schema resolvers variableValues depth parentType
-        source (left ++ middle) right ->
-      AppendSelectionSetState schema resolvers variableValues depth parentType
-        source left (middle ++ right)
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    : ∀ (left middle right : List Selection),
+        AppendSelectionSetState schema resolvers variableValues depth parentType
+          source left middle
+        -> AppendSelectionSetState schema resolvers variableValues depth parentType
+            source (left ++ middle) right
+        -> AppendSelectionSetState schema resolvers variableValues depth parentType
+            source left (middle ++ right)
   | _left, [], right, _hmiddle, hright => by
       simpa using hright
   | left, selection :: rest, right, hmiddle, hright => by
@@ -430,30 +452,38 @@ theorem stateEquivalent_of_append_selectionSet_state
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
-    {parentType : Name} {source : ResolverValue ObjectIdentity} :
-    ∀ (left right : List Selection),
-      ExecutionStateEquivalent
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := parentType
-            source := source
-            selectionSet := left }
-          initial := .object [] } ->
-      AppendSelectionSetState schema resolvers variableValues depth parentType
-        source left right ->
-      ExecutionStateEquivalent
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := parentType
-            source := source
-            selectionSet := left ++ right }
-          initial := .object [] }
+    {parentType : Name} {source : ResolverValue ObjectIdentity}
+    : ∀ (left right : List Selection),
+        ExecutionStateEquivalent
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := depth
+                parentType := parentType
+                source := source
+                selectionSet := left
+              }
+            initial := .object []
+          }
+        -> AppendSelectionSetState schema resolvers variableValues depth parentType
+            source left right
+        -> ExecutionStateEquivalent
+            {
+              window :=
+                {
+                  schema := schema
+                  resolvers := resolvers
+                  variableValues := variableValues
+                  depth := depth
+                  parentType := parentType
+                  source := source
+                  selectionSet := left ++ right
+                }
+              initial := .object []
+            }
   | left, [], hleft, _hstate => by
       simpa using hleft
   | left, selection :: rest, hleft, hstate => by
@@ -483,19 +513,23 @@ theorem stateEquivalent_of_selectionSet_state
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     {selectionSet : List Selection}
-    (hstate :
-      AppendSelectionSetState schema resolvers variableValues depth parentType
-        source [] selectionSet) :
-    ExecutionStateEquivalent
-      { window :=
-        { schema := schema
-          resolvers := resolvers
-          variableValues := variableValues
-          depth := depth
-          parentType := parentType
-          source := source
-          selectionSet := selectionSet }
-        initial := .object [] } := by
+    (hstate
+      : AppendSelectionSetState schema resolvers variableValues depth parentType
+          source [] selectionSet)
+    : ExecutionStateEquivalent
+        {
+          window :=
+            {
+              schema := schema
+              resolvers := resolvers
+              variableValues := variableValues
+              depth := depth
+              parentType := parentType
+              source := source
+              selectionSet := selectionSet
+            }
+          initial := .object []
+        } := by
   simpa using
     stateEquivalent_of_append_selectionSet_state
       ([] : List Selection) selectionSet
@@ -509,19 +543,23 @@ theorem stateEquivalent_of_selectionSet_prefix_state
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     {selectionSet : List Selection}
-    (hstate :
-      AppendSelectionSetPrefixState schema resolvers variableValues depth
-        parentType source [] selectionSet) :
-    ExecutionStateEquivalent
-      { window :=
-        { schema := schema
-          resolvers := resolvers
-          variableValues := variableValues
-          depth := depth
-          parentType := parentType
-          source := source
-          selectionSet := selectionSet }
-        initial := .object [] } :=
+    (hstate
+      : AppendSelectionSetPrefixState schema resolvers variableValues depth
+          parentType source [] selectionSet)
+    : ExecutionStateEquivalent
+        {
+          window :=
+            {
+              schema := schema
+              resolvers := resolvers
+              variableValues := variableValues
+              depth := depth
+              parentType := parentType
+              source := source
+              selectionSet := selectionSet
+            }
+          initial := .object []
+        } :=
   stateEquivalent_of_selectionSet_state
     (AppendSelectionSetState.of_prefix_state [] selectionSet hstate)
 
@@ -531,13 +569,13 @@ theorem executeRootSelectionSet_eq_spec_of_selectionSet_state
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     {selectionSet : List Selection}
-    (hstate :
-      AppendSelectionSetState schema resolvers variableValues depth parentType
-        source [] selectionSet) :
-    executeRootSelectionSet schema resolvers variableValues depth parentType
-      source selectionSet =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      depth parentType source selectionSet :=
+    (hstate
+      : AppendSelectionSetState schema resolvers variableValues depth parentType
+          source [] selectionSet)
+    : executeRootSelectionSet schema resolvers variableValues depth parentType
+        source selectionSet
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          depth parentType source selectionSet :=
   executeRootSelectionSet_eq_spec_of_state_equivalent_auto_nodup
     { schema := schema
       resolvers := resolvers
@@ -554,13 +592,13 @@ theorem executeRootSelectionSet_eq_spec_of_selectionSet_prefix_state
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     {selectionSet : List Selection}
-    (hstate :
-      AppendSelectionSetPrefixState schema resolvers variableValues depth
-        parentType source [] selectionSet) :
-    executeRootSelectionSet schema resolvers variableValues depth parentType
-      source selectionSet =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      depth parentType source selectionSet :=
+    (hstate
+      : AppendSelectionSetPrefixState schema resolvers variableValues depth
+          parentType source [] selectionSet)
+    : executeRootSelectionSet schema resolvers variableValues depth parentType
+        source selectionSet
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          depth parentType source selectionSet :=
   executeRootSelectionSet_eq_spec_of_selectionSet_state
     (AppendSelectionSetState.of_prefix_state [] selectionSet hstate)
 
@@ -570,14 +608,14 @@ theorem executeQueryWithFuel_eq_spec_of_root_fields_eq
     (variableValues : VariableValues) (operation : Operation)
     (depth : Nat) (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hfields :
-      executeRootSelectionSet schema resolvers variableValues depth
-        operation.rootType source operation.selectionSet =
-      GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-        depth operation.rootType source operation.selectionSet) :
-    executeQueryWithFuel schema resolvers variableValues operation depth source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
-      depth source := by
+    (hfields
+      : executeRootSelectionSet schema resolvers variableValues depth
+          operation.rootType source operation.selectionSet
+        = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+            depth operation.rootType source operation.selectionSet)
+    : executeQueryWithFuel schema resolvers variableValues operation depth source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
+          depth source := by
   rw [executeQueryWithFuel, GraphQL.Execution.executeQueryWithFuel, hroot,
     hfields]
 
@@ -586,10 +624,10 @@ theorem executeQueryWithFuel_eq_spec_of_root_false
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (operation : Operation)
     (depth : Nat) (source : ResolverValue ObjectIdentity)
-    (hroot : rootSourceAppliesBool schema operation source = false) :
-    executeQueryWithFuel schema resolvers variableValues operation depth source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
-      depth source := by
+    (hroot : rootSourceAppliesBool schema operation source = false)
+    : executeQueryWithFuel schema resolvers variableValues operation depth source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
+          depth source := by
   rw [executeQueryWithFuel, GraphQL.Execution.executeQueryWithFuel, hroot]
   simp
 
@@ -599,20 +637,24 @@ theorem executeQueryWithFuel_eq_spec_of_state_equivalent
     (variableValues : VariableValues) (operation : Operation)
     (depth : Nat) (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hstate :
-      ExecutionStateEquivalent
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := operation.rootType
-            source := source
-            selectionSet := operation.selectionSet }
-          initial := .object [] }) :
-    executeQueryWithFuel schema resolvers variableValues operation depth source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
-      depth source := by
+    (hstate
+      : ExecutionStateEquivalent
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := depth
+                parentType := operation.rootType
+                source := source
+                selectionSet := operation.selectionSet
+              }
+            initial := .object []
+          })
+    : executeQueryWithFuel schema resolvers variableValues operation depth source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
+          depth source := by
   apply executeQueryWithFuel_eq_spec_of_root_fields_eq schema resolvers
     variableValues operation depth source hroot
   exact
@@ -632,12 +674,12 @@ theorem executeQueryWithFuel_eq_spec_of_selectionSet_state
     (variableValues : VariableValues) (operation : Operation)
     (depth : Nat) (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hstate :
-      AppendSelectionSetState schema resolvers variableValues depth
-        operation.rootType source [] operation.selectionSet) :
-    executeQueryWithFuel schema resolvers variableValues operation depth source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
-      depth source :=
+    (hstate
+      : AppendSelectionSetState schema resolvers variableValues depth
+          operation.rootType source [] operation.selectionSet)
+    : executeQueryWithFuel schema resolvers variableValues operation depth source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
+          depth source :=
   executeQueryWithFuel_eq_spec_of_state_equivalent schema resolvers
     variableValues operation depth source hroot
     (stateEquivalent_of_selectionSet_state hstate)
@@ -648,12 +690,12 @@ theorem executeQueryWithFuel_eq_spec_of_selectionSet_prefix_state
     (variableValues : VariableValues) (operation : Operation)
     (depth : Nat) (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hstate :
-      AppendSelectionSetPrefixState schema resolvers variableValues depth
-        operation.rootType source [] operation.selectionSet) :
-    executeQueryWithFuel schema resolvers variableValues operation depth source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
-      depth source :=
+    (hstate
+      : AppendSelectionSetPrefixState schema resolvers variableValues depth
+          operation.rootType source [] operation.selectionSet)
+    : executeQueryWithFuel schema resolvers variableValues operation depth source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
+          depth source :=
   executeQueryWithFuel_eq_spec_of_selectionSet_state schema resolvers
     variableValues operation depth source hroot
     (AppendSelectionSetState.of_prefix_state [] operation.selectionSet hstate)
@@ -664,18 +706,18 @@ theorem executeQueryWithFuel_eq_spec_of_flattened_collectFields_eq
     (variableValues : VariableValues) (operation : Operation)
     (depth : Nat) (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hflat :
-      executeRootSelectionSet schema resolvers variableValues depth
-        operation.rootType source operation.selectionSet =
-      GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-        depth operation.rootType source
-        (executableFieldSelections
-          (collectedExecutableFields
-            (GraphQL.Execution.collectFields schema variableValues
-              operation.rootType source operation.selectionSet)))) :
-    executeQueryWithFuel schema resolvers variableValues operation depth source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
-      depth source := by
+    (hflat
+      : executeRootSelectionSet schema resolvers variableValues depth
+          operation.rootType source operation.selectionSet
+        = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+            depth operation.rootType source
+            (executableFieldSelections
+              (collectedExecutableFields
+                (GraphQL.Execution.collectFields schema variableValues
+                  operation.rootType source operation.selectionSet))))
+    : executeQueryWithFuel schema resolvers variableValues operation depth source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
+          depth source := by
   apply executeQueryWithFuel_eq_spec_of_root_fields_eq schema resolvers
     variableValues operation depth source hroot
   exact executeRootSelectionSet_eq_spec_of_flattened_collectFields_eq schema
@@ -688,18 +730,18 @@ theorem executeQueryWithFuel_eq_spec_of_flat_predicates
     (variableValues : VariableValues) (operation : Operation)
     (depth : Nat) (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues depth
-        operation.rootType source operation.selectionSet (.object []))
-    (hflatSpec :
-      ExecutableFieldsFlatSpecEquivalent schema resolvers variableValues depth
-        operation.rootType source
-        (collectedExecutableFields
-          (GraphQL.Execution.collectFields schema variableValues
-            operation.rootType source operation.selectionSet))) :
-    executeQueryWithFuel schema resolvers variableValues operation depth source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
-      depth source := by
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues depth
+          operation.rootType source operation.selectionSet (.object []))
+    (hflatSpec
+      : ExecutableFieldsFlatSpecEquivalent schema resolvers variableValues depth
+          operation.rootType source
+          (collectedExecutableFields
+            (GraphQL.Execution.collectFields schema variableValues
+              operation.rootType source operation.selectionSet)))
+    : executeQueryWithFuel schema resolvers variableValues operation depth source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
+          depth source := by
   apply executeQueryWithFuel_eq_spec_of_root_fields_eq schema resolvers
     variableValues operation depth source hroot
   exact executeRootSelectionSet_eq_spec_of_flatCollects_and_flatSpecEquivalent
@@ -712,17 +754,17 @@ theorem executeQueryWithFuel_eq_spec_of_group_flat_predicates
     (variableValues : VariableValues) (operation : Operation)
     (depth : Nat) (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues depth
-        operation.rootType source operation.selectionSet (.object []))
-    (hgroups :
-      ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues depth
-        operation.rootType source
-        (GraphQL.Execution.collectFields schema variableValues operation.rootType
-          source operation.selectionSet)) :
-    executeQueryWithFuel schema resolvers variableValues operation depth source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
-      depth source := by
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues depth
+          operation.rootType source operation.selectionSet (.object []))
+    (hgroups
+      : ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues depth
+          operation.rootType source
+          (GraphQL.Execution.collectFields schema variableValues operation.rootType
+            source operation.selectionSet))
+    : executeQueryWithFuel schema resolvers variableValues operation depth source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
+          depth source := by
   apply executeQueryWithFuel_eq_spec_of_root_fields_eq schema resolvers
     variableValues operation depth source hroot
   exact
@@ -736,15 +778,16 @@ theorem executeQueryWithFuel_eq_spec_of_exact_empty_group
     (variableValues : VariableValues) (operation : Operation)
     (depth : Nat) (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = [])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues depth
-        operation.rootType source operation.selectionSet (.object [])) :
-    executeQueryWithFuel schema resolvers variableValues operation depth source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
-      depth source := by
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = [])
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues depth
+          operation.rootType source operation.selectionSet (.object []))
+    : executeQueryWithFuel schema resolvers variableValues operation depth source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues operation
+          depth source := by
   apply executeQueryWithFuel_eq_spec_of_state_equivalent schema resolvers
     variableValues operation depth source hroot
   exact stateEquivalent_of_exact_empty_group schema resolvers variableValues
@@ -756,16 +799,16 @@ theorem executeQuery_eq_spec_of_root_fields_eq
     (variableValues : VariableValues) (operation : Operation)
     (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hfields :
-      executeRootSelectionSet schema resolvers variableValues
-        (GraphQL.Execution.executeQueryFuelBound operation)
-        operation.rootType source operation.selectionSet =
-      GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-        (GraphQL.Execution.executeQueryFuelBound operation)
-        operation.rootType source operation.selectionSet) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+    (hfields
+      : executeRootSelectionSet schema resolvers variableValues
+          (GraphQL.Execution.executeQueryFuelBound operation)
+          operation.rootType source operation.selectionSet
+        = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+            (GraphQL.Execution.executeQueryFuelBound operation)
+            operation.rootType source operation.selectionSet)
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   exact executeQueryWithFuel_eq_spec_of_root_fields_eq schema resolvers variableValues
     operation (GraphQL.Execution.executeQueryFuelBound operation) source hroot
@@ -777,20 +820,24 @@ theorem executeQuery_eq_spec_of_state_equivalent
     (variableValues : VariableValues) (operation : Operation)
     (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hstate :
-      ExecutionStateEquivalent
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := GraphQL.Execution.executeQueryFuelBound operation
-            parentType := operation.rootType
-            source := source
-            selectionSet := operation.selectionSet }
-          initial := .object [] }) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+    (hstate
+      : ExecutionStateEquivalent
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := GraphQL.Execution.executeQueryFuelBound operation
+                parentType := operation.rootType
+                source := source
+                selectionSet := operation.selectionSet
+              }
+            initial := .object []
+          })
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   exact executeQueryWithFuel_eq_spec_of_state_equivalent schema resolvers
     variableValues operation (GraphQL.Execution.executeQueryFuelBound operation)
@@ -802,13 +849,13 @@ theorem executeQuery_eq_spec_of_selectionSet_state
     (variableValues : VariableValues) (operation : Operation)
     (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hstate :
-      AppendSelectionSetState schema resolvers variableValues
-        (GraphQL.Execution.executeQueryFuelBound operation)
-        operation.rootType source [] operation.selectionSet) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+    (hstate
+      : AppendSelectionSetState schema resolvers variableValues
+          (GraphQL.Execution.executeQueryFuelBound operation)
+          operation.rootType source [] operation.selectionSet)
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   exact executeQueryWithFuel_eq_spec_of_selectionSet_state schema resolvers
     variableValues operation (GraphQL.Execution.executeQueryFuelBound operation)
@@ -820,13 +867,13 @@ theorem executeQuery_eq_spec_of_selectionSet_prefix_state
     (variableValues : VariableValues) (operation : Operation)
     (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hstate :
-      AppendSelectionSetPrefixState schema resolvers variableValues
-        (GraphQL.Execution.executeQueryFuelBound operation)
-        operation.rootType source [] operation.selectionSet) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+    (hstate
+      : AppendSelectionSetPrefixState schema resolvers variableValues
+          (GraphQL.Execution.executeQueryFuelBound operation)
+          operation.rootType source [] operation.selectionSet)
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   exact
     executeQueryWithFuel_eq_spec_of_selectionSet_prefix_state schema resolvers
@@ -839,20 +886,20 @@ theorem executeQuery_eq_spec_of_flattened_collectFields_eq
     (variableValues : VariableValues) (operation : Operation)
     (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hflat :
-      executeRootSelectionSet schema resolvers variableValues
-        (GraphQL.Execution.executeQueryFuelBound operation)
-        operation.rootType source operation.selectionSet =
-      GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-        (GraphQL.Execution.executeQueryFuelBound operation)
-        operation.rootType source
-        (executableFieldSelections
-          (collectedExecutableFields
-            (GraphQL.Execution.collectFields schema variableValues
-              operation.rootType source operation.selectionSet)))) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+    (hflat
+      : executeRootSelectionSet schema resolvers variableValues
+          (GraphQL.Execution.executeQueryFuelBound operation)
+          operation.rootType source operation.selectionSet
+        = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+            (GraphQL.Execution.executeQueryFuelBound operation)
+            operation.rootType source
+            (executableFieldSelections
+              (collectedExecutableFields
+                (GraphQL.Execution.collectFields schema variableValues
+                  operation.rootType source operation.selectionSet))))
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   exact executeQueryWithFuel_eq_spec_of_flattened_collectFields_eq schema
     resolvers variableValues operation
@@ -864,20 +911,20 @@ theorem executeQuery_eq_spec_of_flat_predicates
     (variableValues : VariableValues) (operation : Operation)
     (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues
-        (GraphQL.Execution.executeQueryFuelBound operation)
-        operation.rootType source operation.selectionSet (.object []))
-    (hflatSpec :
-      ExecutableFieldsFlatSpecEquivalent schema resolvers variableValues
-        (GraphQL.Execution.executeQueryFuelBound operation)
-        operation.rootType source
-        (collectedExecutableFields
-          (GraphQL.Execution.collectFields schema variableValues
-            operation.rootType source operation.selectionSet))) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues
+          (GraphQL.Execution.executeQueryFuelBound operation)
+          operation.rootType source operation.selectionSet (.object []))
+    (hflatSpec
+      : ExecutableFieldsFlatSpecEquivalent schema resolvers variableValues
+          (GraphQL.Execution.executeQueryFuelBound operation)
+          operation.rootType source
+          (collectedExecutableFields
+            (GraphQL.Execution.collectFields schema variableValues
+              operation.rootType source operation.selectionSet)))
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   exact executeQueryWithFuel_eq_spec_of_flat_predicates schema resolvers
     variableValues operation (GraphQL.Execution.executeQueryFuelBound operation)
@@ -889,19 +936,19 @@ theorem executeQuery_eq_spec_of_group_flat_predicates
     (variableValues : VariableValues) (operation : Operation)
     (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues
-        (GraphQL.Execution.executeQueryFuelBound operation)
-        operation.rootType source operation.selectionSet (.object []))
-    (hgroups :
-      ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues
-        (GraphQL.Execution.executeQueryFuelBound operation)
-        operation.rootType source
-        (GraphQL.Execution.collectFields schema variableValues operation.rootType
-          source operation.selectionSet)) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues
+          (GraphQL.Execution.executeQueryFuelBound operation)
+          operation.rootType source operation.selectionSet (.object []))
+    (hgroups
+      : ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues
+          (GraphQL.Execution.executeQueryFuelBound operation)
+          operation.rootType source
+          (GraphQL.Execution.collectFields schema variableValues operation.rootType
+            source operation.selectionSet))
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   exact executeQueryWithFuel_eq_spec_of_group_flat_predicates schema resolvers
     variableValues operation (GraphQL.Execution.executeQueryFuelBound operation)
@@ -913,16 +960,17 @@ theorem executeQuery_eq_spec_of_exact_empty_group
     (variableValues : VariableValues) (operation : Operation)
     (source : ResolverValue ObjectIdentity)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = [])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues
-        (GraphQL.Execution.executeQueryFuelBound operation)
-        operation.rootType source operation.selectionSet (.object [])) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = [])
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues
+          (GraphQL.Execution.executeQueryFuelBound operation)
+          operation.rootType source operation.selectionSet (.object []))
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   exact executeQueryWithFuel_eq_spec_of_exact_empty_group schema resolvers
     variableValues operation (GraphQL.Execution.executeQueryFuelBound operation)

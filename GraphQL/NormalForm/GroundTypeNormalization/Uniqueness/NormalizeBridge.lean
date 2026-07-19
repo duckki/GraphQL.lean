@@ -14,10 +14,10 @@ namespace NormalForm
 namespace GroundTypeNormalization
 
 theorem normalizeOperation_uniqueUpToReordering_of_normal_operations
-    {schema : Schema} {left right : Operation} :
-    normalOperationsSemanticallyEquivalentEqualUpToReordering schema
-        (normalizeOperation schema left) (normalizeOperation schema right) ->
-      normalizeOperationUniqueUpToReordering schema left right := by
+    {schema : Schema} {left right : Operation}
+    : normalOperationsSemanticallyEquivalentEqualUpToReordering schema
+        (normalizeOperation schema left) (normalizeOperation schema right)
+      -> normalizeOperationUniqueUpToReordering schema left right := by
   intro hnormalUnique hschema hleftValid hrightValid hleftFree hrightFree
     hleftFields hrightFields hleftFeasible hrightFeasible hsem
   have hleftNormalizedValid :

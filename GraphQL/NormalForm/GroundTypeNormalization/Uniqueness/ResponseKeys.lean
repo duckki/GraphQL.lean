@@ -19,10 +19,9 @@ namespace ResponseValue
 
 open Execution
 
-theorem mem_map_fst_canonicalObjectFields_iff
-    (name : Name) :
-    ∀ fields : List (Name × ResponseValue),
-      name ∈ (ResponseValue.canonicalObjectFields fields).map Prod.fst
+theorem mem_map_fst_canonicalObjectFields_iff (name : Name)
+    : ∀ fields : List (Name × ResponseValue),
+        name ∈ (ResponseValue.canonicalObjectFields fields).map Prod.fst
         ↔ name ∈ fields.map Prod.fst
   | [] => by
       simp [ResponseValue.canonicalObjectFields]
@@ -31,10 +30,9 @@ theorem mem_map_fst_canonicalObjectFields_iff
         mem_map_fst_canonicalObjectFields_iff name rest]
 
 theorem mem_map_fst_insertObjectFieldSorted_iff
-    (name : Name) (field : Name × ResponseValue) :
-    ∀ fields : List (Name × ResponseValue),
-      name ∈ (ResponseValue.insertObjectFieldSorted field fields).map
-          Prod.fst
+    (name : Name) (field : Name × ResponseValue)
+    : ∀ fields : List (Name × ResponseValue),
+        name ∈ (ResponseValue.insertObjectFieldSorted field fields).map Prod.fst
         ↔ name = field.1 ∨ name ∈ fields.map Prod.fst
   | [] => by
       simp [ResponseValue.insertObjectFieldSorted]
@@ -55,10 +53,9 @@ theorem mem_map_fst_insertObjectFieldSorted_iff
           · exact Or.inl hcandidate
           · exact Or.inr (Or.inr hrest)
 
-theorem mem_map_fst_sortObjectFieldsByName_iff
-    (name : Name) :
-    ∀ fields : List (Name × ResponseValue),
-      name ∈ (ResponseValue.sortObjectFieldsByName fields).map Prod.fst
+theorem mem_map_fst_sortObjectFieldsByName_iff (name : Name)
+    : ∀ fields : List (Name × ResponseValue),
+        name ∈ (ResponseValue.sortObjectFieldsByName fields).map Prod.fst
         ↔ name ∈ fields.map Prod.fst
   | [] => by
       simp [ResponseValue.sortObjectFieldsByName]
@@ -70,8 +67,8 @@ theorem mem_map_fst_sortObjectFieldsByName_iff
 
 theorem mem_insertObjectFieldSorted_iff
     (field candidate : Name × ResponseValue)
-    (fields : List (Name × ResponseValue)) :
-    candidate ∈ ResponseValue.insertObjectFieldSorted field fields
+    (fields : List (Name × ResponseValue))
+    : candidate ∈ ResponseValue.insertObjectFieldSorted field fields
       ↔ candidate = field ∨ candidate ∈ fields := by
   induction fields with
   | nil =>
@@ -83,9 +80,8 @@ theorem mem_insertObjectFieldSorted_iff
 
 theorem mem_sortObjectFieldsByName_iff
     (fields : List (Name × ResponseValue))
-    (candidate : Name × ResponseValue) :
-    candidate ∈ ResponseValue.sortObjectFieldsByName fields
-      ↔ candidate ∈ fields := by
+    (candidate : Name × ResponseValue)
+    : candidate ∈ ResponseValue.sortObjectFieldsByName fields ↔ candidate ∈ fields := by
   induction fields with
   | nil =>
       simp [ResponseValue.sortObjectFieldsByName]
@@ -93,10 +89,9 @@ theorem mem_sortObjectFieldsByName_iff
       simp [ResponseValue.sortObjectFieldsByName,
         mem_insertObjectFieldSorted_iff, ih]
 
-theorem canonicalObjectFields_map_fst
-    (fields : List (Name × ResponseValue)) :
-    (ResponseValue.canonicalObjectFields fields).map Prod.fst =
-      fields.map Prod.fst := by
+theorem canonicalObjectFields_map_fst (fields : List (Name × ResponseValue))
+    : (ResponseValue.canonicalObjectFields fields).map Prod.fst
+      = fields.map Prod.fst := by
   induction fields with
   | nil =>
       simp [ResponseValue.canonicalObjectFields]
@@ -105,10 +100,10 @@ theorem canonicalObjectFields_map_fst
 
 theorem canonicalObjectFields_mem
     {fields : List (Name × ResponseValue)} {name : Name}
-    {value : ResponseValue} :
-    (name, value) ∈ fields ->
-      (name, ResponseValue.canonical value) ∈
-        ResponseValue.canonicalObjectFields fields := by
+    {value : ResponseValue}
+    : (name, value) ∈ fields
+      -> (name, ResponseValue.canonical value)
+          ∈ ResponseValue.canonicalObjectFields fields := by
   intro hmem
   induction fields with
   | nil =>
@@ -120,19 +115,17 @@ theorem canonicalObjectFields_mem
         simp [ResponseValue.canonicalObjectFields]
       · exact List.mem_cons_of_mem _ (ih htail)
 
-theorem canonicalObjectFields_nodup
-    (fields : List (Name × ResponseValue)) :
-    (fields.map Prod.fst).Nodup ->
-      ((ResponseValue.canonicalObjectFields fields).map Prod.fst).Nodup := by
+theorem canonicalObjectFields_nodup (fields : List (Name × ResponseValue))
+    : (fields.map Prod.fst).Nodup
+      -> ((ResponseValue.canonicalObjectFields fields).map Prod.fst).Nodup := by
   intro hnodup
   simpa [canonicalObjectFields_map_fst] using hnodup
 
 theorem insertObjectFieldSorted_nodup
-    (field : Name × ResponseValue) (fields : List (Name × ResponseValue)) :
-    field.1 ∉ fields.map Prod.fst ->
-    (fields.map Prod.fst).Nodup ->
-      ((ResponseValue.insertObjectFieldSorted field fields).map
-        Prod.fst).Nodup := by
+    (field : Name × ResponseValue) (fields : List (Name × ResponseValue))
+    : field.1 ∉ fields.map Prod.fst
+      -> (fields.map Prod.fst).Nodup
+      -> ((ResponseValue.insertObjectFieldSorted field fields).map Prod.fst).Nodup := by
   induction fields with
   | nil =>
       intro _hnot _hnodup
@@ -167,10 +160,9 @@ theorem insertObjectFieldSorted_nodup
         simp [ResponseValue.insertObjectFieldSorted, hle, hheadNotInsert,
           hinsertRestNodup]
 
-theorem sortObjectFieldsByName_nodup
-    (fields : List (Name × ResponseValue)) :
-    (fields.map Prod.fst).Nodup ->
-      ((ResponseValue.sortObjectFieldsByName fields).map Prod.fst).Nodup := by
+theorem sortObjectFieldsByName_nodup (fields : List (Name × ResponseValue))
+    : (fields.map Prod.fst).Nodup
+      -> ((ResponseValue.sortObjectFieldsByName fields).map Prod.fst).Nodup := by
   induction fields with
   | nil =>
       intro _hnodup
@@ -194,11 +186,10 @@ theorem sortObjectFieldsByName_nodup
 
 theorem find?_eq_some_of_mem_nodup
     {fields : List (Name × ResponseValue)} {name : Name}
-    {value : ResponseValue} :
-    (name, value) ∈ fields ->
-    (fields.map Prod.fst).Nodup ->
-      fields.find? (fun field => field.1 == name) =
-        some (name, value) := by
+    {value : ResponseValue}
+    : (name, value) ∈ fields
+      -> (fields.map Prod.fst).Nodup
+      -> fields.find? (fun field => field.1 == name) = some (name, value) := by
   intro hmem hnodup
   induction fields with
   | nil =>
@@ -218,14 +209,13 @@ theorem find?_eq_some_of_mem_nodup
 
 theorem sort_canonicalObjectFields_find?_eq_some
     {fields : List (Name × ResponseValue)} {name : Name}
-    {value : ResponseValue} :
-    (name, value) ∈ fields ->
-    (fields.map Prod.fst).Nodup ->
-      (ResponseValue.sortObjectFieldsByName
-          (ResponseValue.canonicalObjectFields fields)).find?
-          (fun field => field.1 == name)
-        =
-      some (name, ResponseValue.canonical value) := by
+    {value : ResponseValue}
+    : (name, value) ∈ fields
+      -> (fields.map Prod.fst).Nodup
+      -> (ResponseValue.sortObjectFieldsByName
+            (ResponseValue.canonicalObjectFields fields)).find?
+            (fun field => field.1 == name)
+          = some (name, ResponseValue.canonical value) := by
   intro hmem hnodup
   have hcanonicalMem :
       (name, ResponseValue.canonical value) ∈
@@ -246,10 +236,9 @@ theorem sort_canonicalObjectFields_find?_eq_some
   exact find?_eq_some_of_mem_nodup hsortedMem hsortedNodup
 
 theorem canonical_object_eq_mem_fst_iff
-    {left right : List (Name × ResponseValue)} {name : Name} :
-    ResponseValue.canonical (.object left)
-      = ResponseValue.canonical (.object right) ->
-      (name ∈ left.map Prod.fst ↔ name ∈ right.map Prod.fst) := by
+    {left right : List (Name × ResponseValue)} {name : Name}
+    : ResponseValue.canonical (.object left) = ResponseValue.canonical (.object right)
+      -> (name ∈ left.map Prod.fst ↔ name ∈ right.map Prod.fst) := by
   intro heq
   unfold ResponseValue.canonical at heq
   injection heq with hfields
@@ -284,22 +273,21 @@ theorem canonical_object_eq_mem_fst_iff
       mem_map_fst_canonicalObjectFields_iff] using hleftCanonical
 
 theorem semanticEquivalent_object_mem_fst_iff
-    {left right : List (Name × ResponseValue)} {name : Name} :
-    ResponseValue.semanticEquivalent (.object left) (.object right) ->
-      (name ∈ left.map Prod.fst ↔ name ∈ right.map Prod.fst) := by
+    {left right : List (Name × ResponseValue)} {name : Name}
+    : ResponseValue.semanticEquivalent (.object left) (.object right)
+      -> (name ∈ left.map Prod.fst ↔ name ∈ right.map Prod.fst) := by
   intro hsem
   exact canonical_object_eq_mem_fst_iff hsem
 
 theorem semanticEquivalent_object_field_canonical_eq
     {left right : List (Name × ResponseValue)} {name : Name}
-    {leftValue rightValue : ResponseValue} :
-    ResponseValue.semanticEquivalent (.object left) (.object right) ->
-    (left.map Prod.fst).Nodup ->
-    (right.map Prod.fst).Nodup ->
-    (name, leftValue) ∈ left ->
-    (name, rightValue) ∈ right ->
-      ResponseValue.canonical leftValue =
-        ResponseValue.canonical rightValue := by
+    {leftValue rightValue : ResponseValue}
+    : ResponseValue.semanticEquivalent (.object left) (.object right)
+      -> (left.map Prod.fst).Nodup
+      -> (right.map Prod.fst).Nodup
+      -> (name, leftValue) ∈ left
+      -> (name, rightValue) ∈ right
+      -> ResponseValue.canonical leftValue = ResponseValue.canonical rightValue := by
   intro hsemantic hleftNodup hrightNodup hleftMem hrightMem
   have hfields :
       ResponseValue.sortObjectFieldsByName
@@ -347,27 +335,26 @@ end ResponseValue
 
 theorem response_semanticEquivalent_object_mem_fst_iff
     {left right : List (Name × Execution.ResponseValue)}
-    {leftErrors rightErrors : Nat} {name : Name} :
-    Execution.Response.semanticEquivalent
-      ({ data := .object left, errors := leftErrors } : Execution.Response)
-      ({ data := .object right, errors := rightErrors } : Execution.Response) ->
-      (name ∈ left.map Prod.fst ↔ name ∈ right.map Prod.fst) := by
+    {leftErrors rightErrors : Nat} {name : Name}
+    : Execution.Response.semanticEquivalent
+        ({ data := .object left, errors := leftErrors } : Execution.Response)
+        ({ data := .object right, errors := rightErrors } : Execution.Response)
+      -> (name ∈ left.map Prod.fst ↔ name ∈ right.map Prod.fst) := by
   intro hsem
   exact ResponseValue.semanticEquivalent_object_mem_fst_iff hsem.1
 
 theorem response_semanticEquivalent_object_field_canonical_eq
     {left right : List (Name × Execution.ResponseValue)}
     {leftErrors rightErrors : Nat} {name : Name}
-    {leftValue rightValue : Execution.ResponseValue} :
-    Execution.Response.semanticEquivalent
-      ({ data := .object left, errors := leftErrors } : Execution.Response)
-      ({ data := .object right, errors := rightErrors } :
-        Execution.Response) ->
-    (left.map Prod.fst).Nodup ->
-    (right.map Prod.fst).Nodup ->
-    (name, leftValue) ∈ left ->
-    (name, rightValue) ∈ right ->
-      Execution.ResponseValue.semanticEquivalent leftValue rightValue := by
+    {leftValue rightValue : Execution.ResponseValue}
+    : Execution.Response.semanticEquivalent
+        ({ data := .object left, errors := leftErrors } : Execution.Response)
+        ({ data := .object right, errors := rightErrors } : Execution.Response)
+      -> (left.map Prod.fst).Nodup
+      -> (right.map Prod.fst).Nodup
+      -> (name, leftValue) ∈ left
+      -> (name, rightValue) ∈ right
+      -> Execution.ResponseValue.semanticEquivalent leftValue rightValue := by
   intro hsem hleftNodup hrightNodup hleftMem hrightMem
   exact ResponseValue.semanticEquivalent_object_field_canonical_eq hsem.1
     hleftNodup hrightNodup hleftMem hrightMem

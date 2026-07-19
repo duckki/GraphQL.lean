@@ -9,10 +9,8 @@ namespace GraphQL
 
 namespace NormalForm
 
-
 mutual
-  def selectionLookupValid (schema : Schema)
-      (parentType : Name) : Selection -> Prop
+  def selectionLookupValid (schema : Schema) (parentType : Name) : Selection -> Prop
     | .field _responseName fieldName _arguments _directives _selectionSet =>
         ∃ fieldDefinition,
           schema.lookupField parentType fieldName = some fieldDefinition
@@ -22,22 +20,22 @@ mutual
         selectionSetLookupValid schema typeCondition selectionSet
 
   def selectionSetLookupValid (schema : Schema)
-      (parentType : Name) (selectionSet : List Selection) : Prop :=
-    ∀ selection, selection ∈ selectionSet ->
-      selectionLookupValid schema parentType selection
+      (parentType : Name) (selectionSet : List Selection)
+      : Prop :=
+    ∀ selection,
+      selection ∈ selectionSet -> selectionLookupValid schema parentType selection
 end
 
-theorem selectionSetLookupValid_nil (schema : Schema)
-    (parentType : Name) :
-    selectionSetLookupValid schema parentType [] := by
+theorem selectionSetLookupValid_nil (schema : Schema) (parentType : Name)
+    : selectionSetLookupValid schema parentType [] := by
   simp [selectionSetLookupValid]
 
 theorem selectionSetLookupValid_append
     {schema : Schema} {parentType : Name}
-    {left right : List Selection} :
-    selectionSetLookupValid schema parentType left ->
-      selectionSetLookupValid schema parentType right ->
-        selectionSetLookupValid schema parentType (left ++ right) := by
+    {left right : List Selection}
+    : selectionSetLookupValid schema parentType left
+      -> selectionSetLookupValid schema parentType right
+      -> selectionSetLookupValid schema parentType (left ++ right) := by
   intro hleft hright
   unfold selectionSetLookupValid at hleft hright ⊢
   intro selection hselection
@@ -47,9 +45,9 @@ theorem selectionSetLookupValid_append
 
 theorem selectionSetLookupValid_append_left
     {schema : Schema} {parentType : Name}
-    {left right : List Selection} :
-    selectionSetLookupValid schema parentType (left ++ right) ->
-      selectionSetLookupValid schema parentType left := by
+    {left right : List Selection}
+    : selectionSetLookupValid schema parentType (left ++ right)
+      -> selectionSetLookupValid schema parentType left := by
   intro hvalid
   unfold selectionSetLookupValid at hvalid ⊢
   intro selection hselection
@@ -57,9 +55,9 @@ theorem selectionSetLookupValid_append_left
 
 theorem selectionSetLookupValid_append_right
     {schema : Schema} {parentType : Name}
-    {left right : List Selection} :
-    selectionSetLookupValid schema parentType (left ++ right) ->
-      selectionSetLookupValid schema parentType right := by
+    {left right : List Selection}
+    : selectionSetLookupValid schema parentType (left ++ right)
+      -> selectionSetLookupValid schema parentType right := by
   intro hvalid
   unfold selectionSetLookupValid at hvalid ⊢
   intro selection hselection
@@ -67,9 +65,9 @@ theorem selectionSetLookupValid_append_right
 
 theorem selectionSetLookupValid_tail
     {schema : Schema} {parentType : Name}
-    {selection : Selection} {selectionSet : List Selection} :
-    selectionSetLookupValid schema parentType (selection :: selectionSet) ->
-      selectionSetLookupValid schema parentType selectionSet := by
+    {selection : Selection} {selectionSet : List Selection}
+    : selectionSetLookupValid schema parentType (selection :: selectionSet)
+      -> selectionSetLookupValid schema parentType selectionSet := by
   intro hvalid
   unfold selectionSetLookupValid at hvalid ⊢
   intro candidate hcandidate
@@ -77,19 +75,19 @@ theorem selectionSetLookupValid_tail
 
 theorem selectionSetLookupValid_head
     {schema : Schema} {parentType : Name}
-    {selection : Selection} {selectionSet : List Selection} :
-    selectionSetLookupValid schema parentType (selection :: selectionSet) ->
-      selectionLookupValid schema parentType selection := by
+    {selection : Selection} {selectionSet : List Selection}
+    : selectionSetLookupValid schema parentType (selection :: selectionSet)
+      -> selectionLookupValid schema parentType selection := by
   intro hvalid
   unfold selectionSetLookupValid at hvalid
   exact hvalid selection (by simp)
 
 theorem selectionSetLookupValid_withoutFieldSelectionsWithResponseName_core
-    (schema : Schema) (responseName : Name) :
-    ∀ parentType selectionSet,
-      selectionSetLookupValid schema parentType selectionSet ->
-        selectionSetLookupValid schema parentType
-          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+    (schema : Schema) (responseName : Name)
+    : ∀ parentType selectionSet,
+        selectionSetLookupValid schema parentType selectionSet
+        -> selectionSetLookupValid schema parentType
+            (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
   | _parentType, [], _hvalid => by
       simp [withoutFieldSelectionsWithResponseName, selectionSetLookupValid]
   | parentType, selection :: rest, hvalid => by
@@ -146,11 +144,10 @@ theorem selectionSetLookupValid_withoutFieldSelectionsWithResponseName_core
 mutual
   theorem selectionLookupValid_of_selectionValid
       {schema : Schema} {variableDefinitions : List VariableDefinition}
-      {parentType : Name} :
-      ∀ selection,
-        Validation.selectionValid schema variableDefinitions parentType
-          selection ->
-          selectionLookupValid schema parentType selection
+      {parentType : Name}
+      : ∀ selection,
+          Validation.selectionValid schema variableDefinitions parentType selection
+          -> selectionLookupValid schema parentType selection
     | .field _responseName fieldName _arguments _directives _selectionSet,
         hvalid => by
         rcases Validation.selectionValid_field_lookup hvalid with
@@ -169,11 +166,11 @@ mutual
 
   theorem selectionSetLookupValid_of_selectionSetValid
       {schema : Schema} {variableDefinitions : List VariableDefinition}
-      {parentType : Name} :
-      ∀ selectionSet,
-        Validation.selectionSetValid schema variableDefinitions parentType
-          selectionSet ->
-          selectionSetLookupValid schema parentType selectionSet
+      {parentType : Name}
+      : ∀ selectionSet,
+          Validation.selectionSetValid schema variableDefinitions parentType
+            selectionSet
+          -> selectionSetLookupValid schema parentType selectionSet
     | [], _hvalid => by
         exact selectionSetLookupValid_nil schema parentType
     | selection :: rest, hvalid => by
@@ -196,13 +193,12 @@ end
 mutual
   theorem selectionLookupValid_of_selectionValid_possibleObject
       (schema : Schema) (variableDefinitions : List VariableDefinition)
-      (parentType objectType : Name) :
-      SchemaWellFormedness.schemaWellFormed schema ->
-        objectType ∈ schema.getPossibleTypes parentType ->
-          ∀ selection,
-            Validation.selectionValid schema variableDefinitions parentType
-              selection ->
-              selectionLookupValid schema objectType selection
+      (parentType objectType : Name)
+      : SchemaWellFormedness.schemaWellFormed schema
+        -> objectType ∈ schema.getPossibleTypes parentType
+        -> ∀ selection,
+            Validation.selectionValid schema variableDefinitions parentType selection
+            -> selectionLookupValid schema objectType selection
     | hschema, hpossible,
       .field _responseName fieldName _arguments _directives _selectionSet,
       hvalid => by
@@ -229,14 +225,14 @@ mutual
               hvalid)
 
 theorem selectionSetLookupValid_of_selectionSetValid_possibleObject
-      (schema : Schema) (variableDefinitions : List VariableDefinition)
-      (parentType objectType : Name) :
-      SchemaWellFormedness.schemaWellFormed schema ->
-        objectType ∈ schema.getPossibleTypes parentType ->
-          ∀ selectionSet,
-            Validation.selectionSetValid schema variableDefinitions parentType
-              selectionSet ->
-              selectionSetLookupValid schema objectType selectionSet
+    (schema : Schema) (variableDefinitions : List VariableDefinition)
+    (parentType objectType : Name)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> objectType ∈ schema.getPossibleTypes parentType
+      -> ∀ selectionSet,
+          Validation.selectionSetValid schema variableDefinitions parentType
+            selectionSet
+          -> selectionSetLookupValid schema objectType selectionSet
     | _hschema, _hpossible, [], _hvalid => by
         exact selectionSetLookupValid_nil schema objectType
     | hschema, hpossible, selection :: rest, hvalid => by
@@ -259,9 +255,6 @@ theorem selectionSetLookupValid_of_selectionSetValid_possibleObject
               schema variableDefinitions parentType objectType hschema
               hpossible rest htail
 end
-
-
-
 
 end NormalForm
 

@@ -6,11 +6,11 @@ namespace GraphQL
 namespace NormalForm
 
 theorem selectionSetLookupValid_withoutFieldSelectionsWithResponseName
-    (schema : Schema) (responseName : Name) :
-    ∀ parentType selectionSet,
-      selectionSetLookupValid schema parentType selectionSet ->
-        selectionSetLookupValid schema parentType
-          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+    (schema : Schema) (responseName : Name)
+    : ∀ parentType selectionSet,
+        selectionSetLookupValid schema parentType selectionSet
+        -> selectionSetLookupValid schema parentType
+            (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
   | _parentType, [], _hvalid => by
       simp [withoutFieldSelectionsWithResponseName, selectionSetLookupValid]
   | parentType, selection :: rest, hvalid => by
@@ -65,23 +65,22 @@ theorem selectionSetLookupValid_withoutFieldSelectionsWithResponseName
                     schema responseName parentType rest htail
 
 theorem fieldSelectionsWithResponseNameInScope_field_mem_collectFields_scoped_lookupValid
-    (schema : Schema)
-    (filterParent collectParent responseName : Name) :
-    ∀ selectionSet fieldName arguments directives subselections,
-      (schema.objectType collectParent ->
-        schema.typesOverlapBool filterParent collectParent = true) ->
-      selectionSetLookupValid schema collectParent selectionSet ->
-      Selection.field responseName fieldName arguments directives subselections
-        ∈ fieldSelectionsWithResponseNameInScope schema filterParent responseName
-          selectionSet ->
-        ∃ scopedField,
-          scopedField ∈ FieldMerge.collectFields schema collectParent selectionSet
+    (schema : Schema) (filterParent collectParent responseName : Name)
+    : ∀ selectionSet fieldName arguments directives subselections,
+        (schema.objectType collectParent
+          -> schema.typesOverlapBool filterParent collectParent = true)
+        -> selectionSetLookupValid schema collectParent selectionSet
+        -> Selection.field responseName fieldName arguments directives subselections
+            ∈ fieldSelectionsWithResponseNameInScope schema filterParent responseName
+                selectionSet
+        -> ∃ scopedField,
+            scopedField ∈ FieldMerge.collectFields schema collectParent selectionSet
             ∧ scopedField.responseName = responseName
             ∧ scopedField.fieldName = fieldName
             ∧ scopedField.arguments = arguments
             ∧ scopedField.selectionSet = subselections
-            ∧ (schema.objectType scopedField.parentType ->
-              schema.typesOverlapBool filterParent scopedField.parentType = true)
+            ∧ (schema.objectType scopedField.parentType
+                -> schema.typesOverlapBool filterParent scopedField.parentType = true)
   | [], fieldName, arguments, directives, subselections, _hoverlapScope,
       _hlookupValid, hfield => by
       simp [fieldSelectionsWithResponseNameInScope] at hfield
@@ -225,20 +224,18 @@ theorem fieldsInSetCanMerge_fieldHead_merged_of_canMerge_object_lookupValid
     (schema : Schema)
     (parentType responseName fieldName objectType : Name)
     (arguments : List Argument) (subselections rest : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    schema.objectType parentType ->
-    selectionSetLookupValid schema parentType
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      FieldMerge.fieldsInSetCanMerge schema objectType
-        (subselections
-          ++ mergeSelectionSets
-            (fieldSelectionsWithResponseNameInScope schema parentType responseName
-              rest)) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.objectType parentType
+      -> selectionSetLookupValid schema parentType
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> FieldMerge.fieldsInSetCanMerge schema objectType
+          (subselections
+            ++ mergeSelectionSets
+                (fieldSelectionsWithResponseNameInScope schema parentType responseName
+                  rest)) := by
   intro hobject hlookupValid hmerge hlookup
   let headSelection : Selection :=
     Selection.field responseName fieldName arguments [] subselections
@@ -349,23 +346,18 @@ theorem fieldsInSetCanMerge_fieldHead_merged_of_canMerge_object_lookupValid
     Selection.subselections] using hgroupMerge
 
 theorem fieldSelectionsWithResponseNameInScope_matching_same_field_of_canMerge_object_lookupValid
-    (schema : Schema)
-    (parentType responseName fieldName : Name)
-    (arguments : List Argument) (subselections rest : List Selection) :
-    schema.objectType parentType ->
-    selectionSetLookupValid schema parentType
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-      ∀ matchedFieldName matchedArguments matchedDirectives
-        matchedSubselections,
-        Selection.field responseName matchedFieldName matchedArguments
-            matchedDirectives matchedSubselections
-          ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
-            rest ->
-          matchedFieldName = fieldName := by
+    (schema : Schema) (parentType responseName fieldName : Name)
+    (arguments : List Argument) (subselections rest : List Selection)
+    : schema.objectType parentType
+      -> selectionSetLookupValid schema parentType
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> ∀ matchedFieldName matchedArguments matchedDirectives matchedSubselections,
+          Selection.field responseName matchedFieldName matchedArguments
+              matchedDirectives matchedSubselections
+            ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest
+          -> matchedFieldName = fieldName := by
   intro hobject hlookupValid hmerge matchedFieldName matchedArguments
     matchedDirectives matchedSubselections hmatched
   have hheadLookup :
@@ -428,23 +420,20 @@ theorem fieldSelectionsWithResponseNameInScope_matching_same_field_of_canMerge_o
   exact hmatchedField.symm.trans (hidentity.1.symm.trans hheadField)
 
 theorem fieldSelectionsWithResponseNameInScope_matching_field_shape_of_canMerge_object_lookupValid
-    (schema : Schema)
-    (parentType responseName fieldName : Name)
-    (arguments : List Argument) (subselections rest : List Selection) :
-    schema.objectType parentType ->
-    selectionSetLookupValid schema parentType
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-      ∀ selection,
-        selection ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
-          rest ->
-          ∃ matchedArguments matchedDirectives matchedSubselections,
-            selection =
-              Selection.field responseName fieldName matchedArguments
-                matchedDirectives matchedSubselections := by
+    (schema : Schema) (parentType responseName fieldName : Name)
+    (arguments : List Argument) (subselections rest : List Selection)
+    : schema.objectType parentType
+      -> selectionSetLookupValid schema parentType
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> ∀ selection,
+          selection
+            ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest
+          -> ∃ matchedArguments matchedDirectives matchedSubselections,
+              selection
+              = Selection.field responseName fieldName matchedArguments
+                  matchedDirectives matchedSubselections := by
   intro hobject hlookupValid hmerge selection hselection
   rcases fieldSelectionsWithResponseNameInScope_mem_field schema parentType responseName
       rest selection hselection with
@@ -461,26 +450,22 @@ theorem fieldSelectionsWithResponseNameInScope_matching_field_shape_of_canMerge_
 
 theorem fieldSelectionsWithResponseNameInScope_matching_subselections_lookupValid_of_child_object
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (parentType responseName fieldName runtimeType : Name)
-    (arguments : List Argument) (subselections rest : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    schema.objectType parentType ->
-    Validation.selectionSetValid schema variableDefinitions parentType
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-      ∀ matchedFieldName matchedArguments matchedDirectives
-        matchedSubselections,
-        Selection.field responseName matchedFieldName matchedArguments
-            matchedDirectives matchedSubselections
-          ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest ->
-          selectionSetLookupValid schema runtimeType matchedSubselections := by
+    (parentType responseName fieldName runtimeType : Name) (arguments : List Argument)
+    (subselections rest : List Selection) (fieldDefinition : FieldDefinition)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> schema.objectType parentType
+      -> Validation.selectionSetValid schema variableDefinitions parentType
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> ∀ matchedFieldName matchedArguments matchedDirectives matchedSubselections,
+          Selection.field responseName matchedFieldName matchedArguments
+              matchedDirectives matchedSubselections
+            ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest
+          -> selectionSetLookupValid schema runtimeType matchedSubselections := by
   intro hschema hobject hvalid hmerge hlookup hinclude matchedFieldName
     matchedArguments matchedDirectives matchedSubselections hmatched
   let headScoped : FieldMerge.ScopedField := {
@@ -592,30 +577,24 @@ theorem fieldSelectionsWithResponseNameInScope_matching_subselections_lookupVali
     hschema hmatchedPossible matchedSubselections hmatchedSelectionValid
 
 theorem fieldSelectionsWithResponseNameInScope_matching_subselections_semanticsReady_of_child_object
-    (schema : Schema)
-    (parentType responseName fieldName runtimeType : Name)
+    (schema : Schema) (parentType responseName fieldName runtimeType : Name)
     (arguments : List Argument) (subselections rest : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    schema.objectType parentType ->
-    selectionSetSemanticsReady schema parentType
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-    selectionSetLookupValid schema parentType
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-      ∀ matchedFieldName matchedArguments matchedDirectives
-        matchedSubselections,
-        Selection.field responseName matchedFieldName matchedArguments
-            matchedDirectives matchedSubselections
-          ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest ->
-          selectionSetSemanticsReady schema runtimeType
-            matchedSubselections := by
+    (fieldDefinition : FieldDefinition)
+    : schema.objectType parentType
+      -> selectionSetSemanticsReady schema parentType
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> selectionSetLookupValid schema parentType
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> ∀ matchedFieldName matchedArguments matchedDirectives matchedSubselections,
+          Selection.field responseName matchedFieldName matchedArguments
+              matchedDirectives matchedSubselections
+            ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest
+          -> selectionSetSemanticsReady schema runtimeType matchedSubselections := by
   intro hobject hready hlookupValid hmerge hlookup hinclude
     matchedFieldName matchedArguments matchedDirectives matchedSubselections
     hmatched
@@ -640,7 +619,6 @@ theorem fieldSelectionsWithResponseNameInScope_matching_subselections_semanticsR
     rfl
   subst matchedDefinition
   exact hmatchedReady runtimeType hinclude
-
 
 end NormalForm
 

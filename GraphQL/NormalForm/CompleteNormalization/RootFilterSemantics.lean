@@ -15,12 +15,11 @@ variable {ObjectRef : Type}
 theorem collectFields_wrapWithBoolCase_empty
     (schema : Schema)
     (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.ResolverValue ObjectRef) :
-    ∀ boolCase,
-      Execution.collectFields schema variableValues parentType source
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
+    : ∀ boolCase,
+        Execution.collectFields schema variableValues parentType source
           (wrapWithBoolCase boolCase [])
-        =
-      []
+        = []
   | [] => by
       simp [wrapWithBoolCase, Execution.collectFields]
   | (varName, value) :: rest => by
@@ -41,14 +40,13 @@ theorem collectFields_completeRootBranch_eq_wrapped
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (boolCase : BoolCase) (selectionSet : List Selection) :
-    Execution.collectFields schema variableValues parentType source
+    (boolCase : BoolCase) (selectionSet : List Selection)
+    : Execution.collectFields schema variableValues parentType source
         (match selectionSet with
-        | [] => []
-        | selection :: rest => wrapWithBoolCase boolCase (selection :: rest))
-      =
-    Execution.collectFields schema variableValues parentType source
-      (wrapWithBoolCase boolCase selectionSet) := by
+          | [] => []
+          | selection :: rest => wrapWithBoolCase boolCase (selection :: rest))
+      = Execution.collectFields schema variableValues parentType source
+          (wrapWithBoolCase boolCase selectionSet) := by
   cases selectionSet with
   | nil =>
       simpa [Execution.collectFields] using
@@ -62,17 +60,16 @@ theorem collectFields_completeNormalizeRootSelectionSet_eq_wrapped
     (variableValues : Execution.VariableValues)
     (variables : List BoolVar)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    Execution.collectFields schema variableValues parentType source
-        (completeNormalizeRootSelectionSet schema variables parentType
-          selectionSet)
-      =
-    Execution.collectFields schema variableValues parentType source
-      (List.flatten ((allBoolCases variables).map
-        (fun boolCase =>
-          wrapWithBoolCase boolCase
-            (normalizeSelectionSet schema parentType
-              (filterSelectionSetBoolCase boolCase selectionSet))))) := by
+    (selectionSet : List Selection)
+    : Execution.collectFields schema variableValues parentType source
+        (completeNormalizeRootSelectionSet schema variables parentType selectionSet)
+      = Execution.collectFields schema variableValues parentType source
+          (List.flatten
+            ((allBoolCases variables).map
+              (fun boolCase =>
+                wrapWithBoolCase boolCase
+                  (normalizeSelectionSet schema parentType
+                    (filterSelectionSetBoolCase boolCase selectionSet))))) := by
   unfold completeNormalizeRootSelectionSet
   induction allBoolCases variables with
   | nil =>
@@ -119,19 +116,18 @@ theorem executeSelectionSet_completeNormalizeRootSelectionSet_runtime
     (operation : Operation)
     (depth : Nat) (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (runtimeCase : BoolCase) (selectionSet : List Selection) :
-    runtimeCase ∈ allBoolCases (operationBoolVars operation) ->
-    variableValuesAgreeWithCase variableValues runtimeCase
-      (operationBoolVars operation) ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source
-          (completeNormalizeRootSelectionSet schema
-            (operationBoolVars operation) parentType selectionSet)
-        =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source
-          (normalizeSelectionSet schema parentType
-            (filterSelectionSetBoolCase runtimeCase selectionSet)) := by
+    (runtimeCase : BoolCase) (selectionSet : List Selection)
+    : runtimeCase ∈ allBoolCases (operationBoolVars operation)
+      -> variableValuesAgreeWithCase variableValues runtimeCase
+          (operationBoolVars operation)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (completeNormalizeRootSelectionSet schema
+              (operationBoolVars operation) parentType selectionSet)
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
+              (normalizeSelectionSet schema parentType
+                (filterSelectionSetBoolCase runtimeCase selectionSet)) := by
     intro hruntime hagrees
     apply executeSelectionSet_eq_of_collectFields_eq
     calc

@@ -7,32 +7,30 @@ namespace GraphQL
 
 namespace NormalForm
 
-
-theorem selectionSetDirectiveFree_nil :
-    selectionSetDirectiveFree ([] : List Selection) := by
+theorem selectionSetDirectiveFree_nil
+    : selectionSetDirectiveFree ([] : List Selection) := by
   simp [selectionSetDirectiveFree]
 
 theorem selectionSetDirectiveFree_head
     {selection : Selection}
-    {selectionSet : List Selection} :
-    selectionSetDirectiveFree (selection :: selectionSet) ->
-      selectionDirectiveFree selection := by
+    {selectionSet : List Selection}
+    : selectionSetDirectiveFree (selection :: selectionSet)
+      -> selectionDirectiveFree selection := by
   intro hfree
   exact hfree.1
 
 theorem selectionSetDirectiveFree_tail
     {selection : Selection}
-    {selectionSet : List Selection} :
-    selectionSetDirectiveFree (selection :: selectionSet) ->
-      selectionSetDirectiveFree selectionSet := by
+    {selectionSet : List Selection}
+    : selectionSetDirectiveFree (selection :: selectionSet)
+      -> selectionSetDirectiveFree selectionSet := by
   intro hfree
   exact hfree.2
 
-theorem selectionSetDirectiveFree_append
-    {left right : List Selection} :
-    selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-        selectionSetDirectiveFree (left ++ right) := by
+theorem selectionSetDirectiveFree_append {left right : List Selection}
+    : selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetDirectiveFree (left ++ right) := by
   intro hleft hright
   induction left with
   | nil =>
@@ -40,10 +38,8 @@ theorem selectionSetDirectiveFree_append
   | cons selection rest ih =>
       exact ⟨hleft.1, ih hleft.2⟩
 
-theorem selectionSetDirectiveFree_append_left
-    {left right : List Selection} :
-    selectionSetDirectiveFree (left ++ right) ->
-      selectionSetDirectiveFree left := by
+theorem selectionSetDirectiveFree_append_left {left right : List Selection}
+    : selectionSetDirectiveFree (left ++ right) -> selectionSetDirectiveFree left := by
   intro hfree
   induction left with
   | nil =>
@@ -51,10 +47,8 @@ theorem selectionSetDirectiveFree_append_left
   | cons selection rest ih =>
       exact ⟨hfree.1, ih hfree.2⟩
 
-theorem selectionSetDirectiveFree_append_right
-    {left right : List Selection} :
-    selectionSetDirectiveFree (left ++ right) ->
-      selectionSetDirectiveFree right := by
+theorem selectionSetDirectiveFree_append_right {left right : List Selection}
+    : selectionSetDirectiveFree (left ++ right) -> selectionSetDirectiveFree right := by
   intro hfree
   induction left with
   | nil =>
@@ -62,10 +56,9 @@ theorem selectionSetDirectiveFree_append_right
   | cons selection rest ih =>
       exact ih hfree.2
 
-theorem selectionDirectiveFree_subselections
-    {selection : Selection} :
-    selectionDirectiveFree selection ->
-      selectionSetDirectiveFree selection.subselections := by
+theorem selectionDirectiveFree_subselections {selection : Selection}
+    : selectionDirectiveFree selection
+      -> selectionSetDirectiveFree selection.subselections := by
   intro hfree
   cases selection with
   | field responseName fieldName arguments directives selectionSet =>
@@ -73,12 +66,11 @@ theorem selectionDirectiveFree_subselections
   | inlineFragment typeCondition directives selectionSet =>
       simpa [Selection.subselections, selectionDirectiveFree] using hfree.2
 
-theorem fieldMerge_collectFields_mem_selectionSetDirectiveFree
-    (schema : Schema) :
-    ∀ parentType selectionSet scopedField,
-      selectionSetDirectiveFree selectionSet ->
-      scopedField ∈ FieldMerge.collectFields schema parentType selectionSet ->
-        selectionSetDirectiveFree scopedField.selectionSet
+theorem fieldMerge_collectFields_mem_selectionSetDirectiveFree (schema : Schema)
+    : ∀ parentType selectionSet scopedField,
+        selectionSetDirectiveFree selectionSet
+        -> scopedField ∈ FieldMerge.collectFields schema parentType selectionSet
+        -> selectionSetDirectiveFree scopedField.selectionSet
   | _parentType, [], _scopedField, _hfree, hmem => by
       simp [FieldMerge.collectFields] at hmem
   | parentType, selection :: rest, scopedField, hfree, hmem => by
@@ -121,10 +113,9 @@ theorem fieldMerge_collectFields_mem_selectionSetDirectiveFree
               · exact fieldMerge_collectFields_mem_selectionSetDirectiveFree
                   schema parentType rest scopedField hrestFree htail
 
-theorem selectionSetDirectiveFree_mergeSelectionSets
-    {selections : List Selection} :
-    selectionSetDirectiveFree selections ->
-      selectionSetDirectiveFree (mergeSelectionSets selections) := by
+theorem selectionSetDirectiveFree_mergeSelectionSets {selections : List Selection}
+    : selectionSetDirectiveFree selections
+      -> selectionSetDirectiveFree (mergeSelectionSets selections) := by
   intro hselections
   induction selections with
   | nil =>
@@ -137,11 +128,11 @@ theorem selectionSetDirectiveFree_mergeSelectionSets
         (ih (selectionSetDirectiveFree_tail hselections))
 
 theorem withoutFieldSelectionsWithResponseName_directiveFree (schema : Schema)
-    (responseName : Name) :
-    ∀ selectionSet,
-      selectionSetDirectiveFree selectionSet ->
-        selectionSetDirectiveFree
-          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+    (responseName : Name)
+    : ∀ selectionSet,
+        selectionSetDirectiveFree selectionSet
+        -> selectionSetDirectiveFree
+            (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
   | [], _hfree => by
       simpa [withoutFieldSelectionsWithResponseName] using selectionSetDirectiveFree_nil
   | selection :: rest, hfree => by
@@ -173,11 +164,12 @@ theorem withoutFieldSelectionsWithResponseName_directiveFree (schema : Schema)
               rest hrest⟩
 
 theorem fieldSelectionsWithResponseNameInScope_directiveFree (schema : Schema)
-    (parentType responseName : Name) :
-    ∀ selectionSet,
-      selectionSetDirectiveFree selectionSet ->
-        selectionSetDirectiveFree
-          (fieldSelectionsWithResponseNameInScope schema parentType responseName selectionSet)
+    (parentType responseName : Name)
+    : ∀ selectionSet,
+        selectionSetDirectiveFree selectionSet
+        -> selectionSetDirectiveFree
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName
+              selectionSet)
   | [], _hfree => by
       simpa [fieldSelectionsWithResponseNameInScope] using selectionSetDirectiveFree_nil
   | selection :: rest, hfree => by
@@ -227,23 +219,20 @@ theorem fieldSelectionsWithResponseNameInScope_directiveFree (schema : Schema)
 theorem selectionSetDirectiveFree_fieldHead_merged
     (schema : Schema) (parentType responseName : Name)
     (fieldName : Name) (arguments : List Argument)
-    (subselections rest : List Selection) :
-    selectionSetDirectiveFree
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-      selectionSetDirectiveFree
-        (subselections
-          ++ mergeSelectionSets
-            (fieldSelectionsWithResponseNameInScope schema parentType responseName
-              rest)) := by
+    (subselections rest : List Selection)
+    : selectionSetDirectiveFree
+        (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> selectionSetDirectiveFree
+          (subselections
+            ++ mergeSelectionSets
+                (fieldSelectionsWithResponseNameInScope schema parentType responseName
+                  rest)) := by
   intro hfree
   apply selectionSetDirectiveFree_append
   · exact (selectionSetDirectiveFree_head hfree).2
   · exact selectionSetDirectiveFree_mergeSelectionSets
       (fieldSelectionsWithResponseNameInScope_directiveFree schema parentType
         responseName rest (selectionSetDirectiveFree_tail hfree))
-
-
 
 end NormalForm
 

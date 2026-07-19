@@ -9,13 +9,13 @@ open GraphQL.Execution
 
 theorem lookupResponseField?_mergeResponseField_same
     (responseName : Name) (incoming : ResponseValue)
-    (fields : List (Name × ResponseValue)) :
-    lookupResponseField? responseName
-      (mergeResponseField responseName incoming fields) =
-    some
-      (match lookupResponseField? responseName fields with
-       | some existing => mergeResponse existing incoming
-       | none => incoming) := by
+    (fields : List (Name × ResponseValue))
+    : lookupResponseField? responseName
+        (mergeResponseField responseName incoming fields)
+      = some
+          (match lookupResponseField? responseName fields with
+            | some existing => mergeResponse existing incoming
+            | none => incoming) := by
   induction fields with
   | nil =>
       simp [lookupResponseField?, mergeResponseField]
@@ -28,11 +28,10 @@ theorem lookupResponseField?_mergeResponseField_same
 
 theorem lookupResponseField?_mergeResponseField_other
     (target responseName : Name) (incoming : ResponseValue)
-    (fields : List (Name × ResponseValue)) :
-    target ≠ responseName ->
-      lookupResponseField? target
-        (mergeResponseField responseName incoming fields) =
-      lookupResponseField? target fields := by
+    (fields : List (Name × ResponseValue))
+    : target ≠ responseName
+      -> lookupResponseField? target (mergeResponseField responseName incoming fields)
+          = lookupResponseField? target fields := by
   intro htarget
   induction fields with
   | nil =>
@@ -57,9 +56,9 @@ theorem lookupResponseField?_mergeResponseField_other
 
 theorem lookupResponseField?_some_mem
     (responseName : Name) (response : ResponseValue)
-    (fields : List (Name × ResponseValue)) :
-    lookupResponseField? responseName fields = some response ->
-      (responseName, response) ∈ fields := by
+    (fields : List (Name × ResponseValue))
+    : lookupResponseField? responseName fields = some response
+      -> (responseName, response) ∈ fields := by
   induction fields with
   | nil =>
       simp [lookupResponseField?]
@@ -76,9 +75,9 @@ theorem lookupResponseField?_some_mem
             simpa using Or.inr (ih hlookup)
 
 theorem lookupResponseField?_some_of_mem
-    (responseName : Name) (fields : List (Name × ResponseValue)) :
-    responseName ∈ fields.map Prod.fst ->
-      ∃ response, lookupResponseField? responseName fields = some response := by
+    (responseName : Name) (fields : List (Name × ResponseValue))
+    : responseName ∈ fields.map Prod.fst
+      -> ∃ response, lookupResponseField? responseName fields = some response := by
   induction fields with
   | nil =>
       intro hmem
@@ -99,10 +98,9 @@ theorem lookupResponseField?_some_of_mem
 
 theorem lookupResponseField?_append_of_some_left
     (responseName : Name) (fields suffix : List (Name × ResponseValue))
-    (response : ResponseValue) :
-    lookupResponseField? responseName fields = some response ->
-      lookupResponseField? responseName (fields ++ suffix) =
-        some response := by
+    (response : ResponseValue)
+    : lookupResponseField? responseName fields = some response
+      -> lookupResponseField? responseName (fields ++ suffix) = some response := by
   intro hlookup
   induction fields with
   | nil =>
@@ -117,19 +115,19 @@ theorem lookupResponseField?_append_of_some_left
 
 theorem responseObjectField?_object_append_of_some_left
     (responseName : Name) (fields suffix : List (Name × ResponseValue))
-    (response : ResponseValue) :
-    responseObjectField? responseName (.object fields) = some response ->
-      responseObjectField? responseName (.object (fields ++ suffix)) =
-        some response := by
+    (response : ResponseValue)
+    : responseObjectField? responseName (.object fields) = some response
+      -> responseObjectField? responseName (.object (fields ++ suffix))
+          = some response := by
   intro hlookup
   simpa [responseObjectField?] using
     lookupResponseField?_append_of_some_left responseName fields suffix
       response (by simpa [responseObjectField?] using hlookup)
 
 theorem lookupResponseField?_none_of_not_mem
-    (responseName : Name) (fields : List (Name × ResponseValue)) :
-    responseName ∉ fields.map Prod.fst ->
-      lookupResponseField? responseName fields = none := by
+    (responseName : Name) (fields : List (Name × ResponseValue))
+    : responseName ∉ fields.map Prod.fst
+      -> lookupResponseField? responseName fields = none := by
   intro hnot
   induction fields with
   | nil =>
@@ -145,48 +143,48 @@ theorem lookupResponseField?_none_of_not_mem
           · simp [lookupResponseField?, h, ih hrestNot]
 
 theorem responseObjectField?_none_of_not_mem
-    (responseName : Name) (fields : List (Name × ResponseValue)) :
-    responseName ∉ fields.map Prod.fst ->
-      responseObjectField? responseName (.object fields) = none := by
+    (responseName : Name) (fields : List (Name × ResponseValue))
+    : responseName ∉ fields.map Prod.fst
+      -> responseObjectField? responseName (.object fields) = none := by
   intro hnot
   simpa [responseObjectField?] using
     lookupResponseField?_none_of_not_mem responseName fields hnot
 
-theorem responseObjectField?_mergeResponseFieldIntoObject_same
-    (responseName : Name) (incoming : ResponseValue) (fields : List (Name × ResponseValue)) :
-    responseObjectField? responseName
-      (mergeResponseFieldIntoObject responseName incoming (.object fields)) =
-    some
-      (match responseObjectField? responseName (.object fields) with
-       | some existing => mergeResponse existing incoming
-       | none => incoming) := by
+theorem responseObjectField?_mergeResponseFieldIntoObject_same (responseName : Name)
+    (incoming : ResponseValue) (fields : List (Name × ResponseValue))
+    : responseObjectField? responseName
+        (mergeResponseFieldIntoObject responseName incoming (.object fields))
+      = some
+          (match responseObjectField? responseName (.object fields) with
+            | some existing => mergeResponse existing incoming
+            | none => incoming) := by
   simp [responseObjectField?, mergeResponseFieldIntoObject,
     lookupResponseField?_mergeResponseField_same]
 
 theorem responseObjectField?_mergeResponseFieldIntoObject_other
     (target responseName : Name) (incoming : ResponseValue)
-    (fields : List (Name × ResponseValue)) :
-    target ≠ responseName ->
-      responseObjectField? target
-        (mergeResponseFieldIntoObject responseName incoming (.object fields)) =
-      responseObjectField? target (.object fields) := by
+    (fields : List (Name × ResponseValue))
+    : target ≠ responseName
+      -> responseObjectField? target
+            (mergeResponseFieldIntoObject responseName incoming (.object fields))
+          = responseObjectField? target (.object fields) := by
   intro htarget
   simp [responseObjectField?, mergeResponseFieldIntoObject,
     lookupResponseField?_mergeResponseField_other target responseName incoming
       fields htarget]
 
 theorem mergeResponseFieldIntoObject_empty
-    (responseName : Name) (response : ResponseValue) :
-    mergeResponseFieldIntoObject responseName response (.object []) =
-      .object [(responseName, response)] := by
+    (responseName : Name) (response : ResponseValue)
+    : mergeResponseFieldIntoObject responseName response (.object [])
+      = .object [(responseName, response)] := by
   simp [mergeResponseFieldIntoObject, mergeResponseField]
 
 theorem mergeResponseField_of_not_mem
     (responseName : Name) (incoming : ResponseValue)
-    (fields : List (Name × ResponseValue)) :
-    responseName ∉ fields.map Prod.fst ->
-      mergeResponseField responseName incoming fields =
-        fields ++ [(responseName, incoming)] := by
+    (fields : List (Name × ResponseValue))
+    : responseName ∉ fields.map Prod.fst
+      -> mergeResponseField responseName incoming fields
+          = fields ++ [(responseName, incoming)] := by
   intro hnot
   induction fields with
   | nil =>
@@ -204,10 +202,10 @@ theorem mergeResponseField_of_not_mem
 
 theorem mergeResponseField_append_of_mem_left
     (responseName : Name) (incoming : ResponseValue)
-    (fields suffix : List (Name × ResponseValue)) :
-    responseName ∈ fields.map Prod.fst ->
-      mergeResponseField responseName incoming (fields ++ suffix) =
-      mergeResponseField responseName incoming fields ++ suffix := by
+    (fields suffix : List (Name × ResponseValue))
+    : responseName ∈ fields.map Prod.fst
+      -> mergeResponseField responseName incoming (fields ++ suffix)
+          = mergeResponseField responseName incoming fields ++ suffix := by
   intro hmem
   induction fields with
   | nil =>
@@ -229,11 +227,12 @@ theorem mergeResponseField_append_of_mem_left
         simp [mergeResponseField, h, ih hrestMem]
 
 theorem mergeResponseFields_append_of_disjoint
-    (existing incoming : List (Name × ResponseValue)) :
-    PairKeysNodup incoming ->
-    (∀ responseName, responseName ∈ incoming.map Prod.fst ->
-      responseName ∉ existing.map Prod.fst) ->
-      mergeResponseFields existing incoming = existing ++ incoming := by
+    (existing incoming : List (Name × ResponseValue))
+    : PairKeysNodup incoming
+      -> (∀ responseName,
+            responseName ∈ incoming.map Prod.fst
+            -> responseName ∉ existing.map Prod.fst)
+      -> mergeResponseFields existing incoming = existing ++ incoming := by
   intro hnodup hdisjoint
   induction incoming generalizing existing with
   | nil =>
@@ -267,13 +266,12 @@ theorem mergeResponseFields_append_of_disjoint
             hrestDisjoint]
           simp [List.append_assoc]
 
-theorem PairKeysNodup_append_of_disjoint
-    {α : Type} (left right : List (Name × α)) :
-    PairKeysNodup left ->
-    PairKeysNodup right ->
-    (∀ responseName, responseName ∈ right.map Prod.fst ->
-      responseName ∉ left.map Prod.fst) ->
-      PairKeysNodup (left ++ right) := by
+theorem PairKeysNodup_append_of_disjoint {α : Type} (left right : List (Name × α))
+    : PairKeysNodup left
+      -> PairKeysNodup right
+      -> (∀ responseName,
+            responseName ∈ right.map Prod.fst -> responseName ∉ left.map Prod.fst)
+      -> PairKeysNodup (left ++ right) := by
   intro hleft hright hdisjoint
   induction left with
   | nil =>
@@ -303,30 +301,30 @@ theorem PairKeysNodup_append_of_disjoint
           ih hparts.2 hrestDisjoint
 
 theorem mergeResponse_object_append_of_disjoint
-    (existing incoming : List (Name × ResponseValue)) :
-    PairKeysNodup incoming ->
-    (∀ responseName, responseName ∈ incoming.map Prod.fst ->
-      responseName ∉ existing.map Prod.fst) ->
-      mergeResponse (.object existing) (.object incoming) =
-        .object (existing ++ incoming) := by
+    (existing incoming : List (Name × ResponseValue))
+    : PairKeysNodup incoming
+      -> (∀ responseName,
+            responseName ∈ incoming.map Prod.fst
+            -> responseName ∉ existing.map Prod.fst)
+      -> mergeResponse (.object existing) (.object incoming)
+          = .object (existing ++ incoming) := by
   intro hnodup hdisjoint
   simp [mergeResponse,
     mergeResponseFields_append_of_disjoint existing incoming hnodup hdisjoint]
 
 theorem mergeResponse_object_assoc_of_disjoint
-    (left middle right : List (Name × ResponseValue)) :
-    PairKeysNodup middle ->
-    PairKeysNodup right ->
-    (∀ responseName, responseName ∈ middle.map Prod.fst ->
-      responseName ∉ left.map Prod.fst) ->
-    (∀ responseName, responseName ∈ right.map Prod.fst ->
-      responseName ∉ middle.map Prod.fst) ->
-    (∀ responseName, responseName ∈ right.map Prod.fst ->
-      responseName ∉ left.map Prod.fst) ->
-      mergeResponse (mergeResponse (.object left) (.object middle))
-          (.object right) =
-        mergeResponse (.object left)
-          (mergeResponse (.object middle) (.object right)) := by
+    (left middle right : List (Name × ResponseValue))
+    : PairKeysNodup middle
+      -> PairKeysNodup right
+      -> (∀ responseName,
+            responseName ∈ middle.map Prod.fst -> responseName ∉ left.map Prod.fst)
+      -> (∀ responseName,
+            responseName ∈ right.map Prod.fst -> responseName ∉ middle.map Prod.fst)
+      -> (∀ responseName,
+            responseName ∈ right.map Prod.fst -> responseName ∉ left.map Prod.fst)
+      -> mergeResponse (mergeResponse (.object left) (.object middle)) (.object right)
+          = mergeResponse (.object left)
+              (mergeResponse (.object middle) (.object right)) := by
   intro hmiddle hright hmiddleLeft hrightMiddle hrightLeft
   have hrightLeftMiddle :
       ∀ responseName, responseName ∈ right.map Prod.fst ->
@@ -360,79 +358,69 @@ theorem mergeResponse_object_assoc_of_disjoint
   simp [List.append_assoc]
 
 theorem mergeResponseFields_nil_left_of_pairKeysNodup
-    (fields : List (Name × ResponseValue)) :
-    PairKeysNodup fields ->
-      mergeResponseFields [] fields = fields := by
+    (fields : List (Name × ResponseValue))
+    : PairKeysNodup fields -> mergeResponseFields [] fields = fields := by
   intro hnodup
   simpa using
     mergeResponseFields_append_of_disjoint [] fields hnodup
       (by intro responseName hmem; simp)
 
 theorem mergeResponse_empty_object_left_of_pairKeysNodup
-    (fields : List (Name × ResponseValue)) :
-    PairKeysNodup fields ->
-      mergeResponse (.object []) (.object fields) = .object fields := by
+    (fields : List (Name × ResponseValue))
+    : PairKeysNodup fields
+      -> mergeResponse (.object []) (.object fields) = .object fields := by
   intro hnodup
   simp [mergeResponse, mergeResponseFields_nil_left_of_pairKeysNodup fields hnodup]
 
-theorem mergeResponse_empty_object_right (response : ResponseValue) :
-    mergeResponse response (.object []) = response := by
+theorem mergeResponse_empty_object_right (response : ResponseValue)
+    : mergeResponse response (.object []) = response := by
   cases response <;> simp [mergeResponse, mergeResponseFields]
 
-theorem ResponseAbsorbs_empty_object_left
-    (fields : List (Name × ResponseValue)) :
-    PairKeysNodup fields ->
-      ResponseAbsorbs (.object []) (.object fields) := by
+theorem ResponseAbsorbs_empty_object_left (fields : List (Name × ResponseValue))
+    : PairKeysNodup fields -> ResponseAbsorbs (.object []) (.object fields) := by
   intro hnodup
   exact mergeResponse_empty_object_left_of_pairKeysNodup fields hnodup
 
-theorem ResponseAbsorbs_object_iff
-    (base output : List (Name × ResponseValue)) :
-    ResponseAbsorbs (.object base) (.object output) ↔
-      mergeResponseFields base output = output := by
+theorem ResponseAbsorbs_object_iff (base output : List (Name × ResponseValue))
+    : ResponseAbsorbs (.object base) (.object output)
+      ↔ mergeResponseFields base output = output := by
   simp [ResponseAbsorbs, mergeResponse]
 
-theorem ResponseAbsorbs_list_iff
-    (base output : List ResponseValue) :
-    ResponseAbsorbs (.list base) (.list output) ↔
-      mergeResponseLists base output = output := by
+theorem ResponseAbsorbs_list_iff (base output : List ResponseValue)
+    : ResponseAbsorbs (.list base) (.list output)
+      ↔ mergeResponseLists base output = output := by
   simp [ResponseAbsorbs, mergeResponse]
 
-theorem ResponseMergeReady_object
-    (fields : List (Name × ResponseValue)) :
-    PairKeysNodup fields ->
-    (∀ responseName response,
-      (responseName, response) ∈ fields ->
-        ResponseMergeReady response) ->
-      ResponseMergeReady (.object fields) := by
+theorem ResponseMergeReady_object (fields : List (Name × ResponseValue))
+    : PairKeysNodup fields
+      -> (∀ responseName response,
+            (responseName, response) ∈ fields -> ResponseMergeReady response)
+      -> ResponseMergeReady (.object fields) := by
   intro hnodup hfields
   exact ResponseMergeReady.object fields hnodup hfields
 
-theorem ResponseMergeReady_object_pairKeysNodup
-    (fields : List (Name × ResponseValue)) :
-    ResponseMergeReady (.object fields) ->
-      PairKeysNodup fields := by
+theorem ResponseMergeReady_object_pairKeysNodup (fields : List (Name × ResponseValue))
+    : ResponseMergeReady (.object fields) -> PairKeysNodup fields := by
   intro hready
   cases hready with
   | object _ hnodup _ => exact hnodup
 
 theorem ResponseMergeReady_object_field
     (fields : List (Name × ResponseValue))
-    (responseName : Name) (response : ResponseValue) :
-    ResponseMergeReady (.object fields) ->
-    (responseName, response) ∈ fields ->
-      ResponseMergeReady response := by
+    (responseName : Name) (response : ResponseValue)
+    : ResponseMergeReady (.object fields)
+      -> (responseName, response) ∈ fields
+      -> ResponseMergeReady response := by
   intro hready hmem
   cases hready with
   | object _ _ hfields => exact hfields responseName response hmem
 
-theorem ResponseMergeReady_object_append
-    (left right : List (Name × ResponseValue)) :
-    ResponseMergeReady (.object left) ->
-    ResponseMergeReady (.object right) ->
-    (∀ responseName, responseName ∈ right.map Prod.fst ->
-      responseName ∉ left.map Prod.fst) ->
-      ResponseMergeReady (.object (left ++ right)) := by
+theorem ResponseMergeReady_object_append (left right : List (Name × ResponseValue))
+    : ResponseMergeReady (.object left)
+      -> ResponseMergeReady (.object right)
+      -> (∀ responseName,
+            responseName ∈ right.map Prod.fst -> responseName ∉ left.map Prod.fst)
+      -> ResponseMergeReady (.object (left ++ right)) := by
   intro hleft hright hdisjoint
   apply ResponseMergeReady.object
   · exact PairKeysNodup_append_of_disjoint left right
@@ -448,59 +436,55 @@ theorem ResponseMergeReady_object_append
 
 theorem responseObjectField?_some_ready
     (responseName : Name) (response : ResponseValue)
-    (fields : List (Name × ResponseValue)) :
-    ResponseMergeReady (.object fields) ->
-    responseObjectField? responseName (.object fields) = some response ->
-      ResponseMergeReady response := by
+    (fields : List (Name × ResponseValue))
+    : ResponseMergeReady (.object fields)
+      -> responseObjectField? responseName (.object fields) = some response
+      -> ResponseMergeReady response := by
   intro hready hlookup
   exact ResponseMergeReady_object_field fields responseName response hready
     (lookupResponseField?_some_mem responseName response fields hlookup)
 
-theorem ResponseMergeReady_list
-    (values : List ResponseValue) :
-    (∀ response, response ∈ values -> ResponseMergeReady response) ->
-      ResponseMergeReady (.list values) := by
+theorem ResponseMergeReady_list (values : List ResponseValue)
+    : (∀ response, response ∈ values -> ResponseMergeReady response)
+      -> ResponseMergeReady (.list values) := by
   intro hvalues
   exact ResponseMergeReady.list values hvalues
 
 theorem ResponseMergeReady_list_value
-    (values : List ResponseValue) (response : ResponseValue) :
-    ResponseMergeReady (.list values) ->
-    response ∈ values ->
-      ResponseMergeReady response := by
+    (values : List ResponseValue) (response : ResponseValue)
+    : ResponseMergeReady (.list values)
+      -> response ∈ values
+      -> ResponseMergeReady response := by
   intro hready hmem
   cases hready with
   | list _ hvalues => exact hvalues response hmem
 
-theorem ResponseMergeReady_empty_object :
-    ResponseMergeReady (.object []) :=
+theorem ResponseMergeReady_empty_object : ResponseMergeReady (.object []) :=
   ResponseMergeReady.object [] (by simp [PairKeysNodup])
     (by intro responseName response hmem; simp at hmem)
 
-theorem ResponseMergeReady_empty_list :
-    ResponseMergeReady (.list []) :=
+theorem ResponseMergeReady_empty_list : ResponseMergeReady (.list []) :=
   ResponseMergeReady.list [] (by intro response hmem; simp at hmem)
 
-theorem ResponseMergeReady_scalar_response_list
-    (values : List String) :
-    ResponseMergeReady
-      (.list (values.map (fun value => (.scalar value : ResponseValue)))) := by
+theorem ResponseMergeReady_scalar_response_list (values : List String)
+    : ResponseMergeReady
+        (.list (values.map (fun value => (.scalar value : ResponseValue)))) := by
   apply ResponseMergeReady.list
   intro response hmem
   rcases List.mem_map.mp hmem with ⟨value, _hvalue, hresponse⟩
   rw [← hresponse]
   exact ResponseMergeReady.scalar value
 
-theorem ResponseMergeReady_outOfFuel :
-    ResponseMergeReady (Result.getD .null (outOfFuel : Result ResponseValue)) := by
+theorem ResponseMergeReady_outOfFuel
+    : ResponseMergeReady (Result.getD .null (outOfFuel : Result ResponseValue)) := by
   simp [outOfFuel, Result.getD]
   exact ResponseMergeReady.null
 
 theorem mergeResponseField_key_mem
     (responseName key : Name) (incoming : ResponseValue)
-    (fields : List (Name × ResponseValue)) :
-    key ∈ (mergeResponseField responseName incoming fields).map Prod.fst ->
-      key = responseName ∨ key ∈ fields.map Prod.fst := by
+    (fields : List (Name × ResponseValue))
+    : key ∈ (mergeResponseField responseName incoming fields).map Prod.fst
+      -> key = responseName ∨ key ∈ fields.map Prod.fst := by
   induction fields with
   | nil =>
       simp [mergeResponseField]
@@ -523,9 +507,9 @@ theorem mergeResponseField_key_mem
 
 theorem mergeResponseField_pairKeysNodup
     (responseName : Name) (incoming : ResponseValue)
-    (fields : List (Name × ResponseValue)) :
-    PairKeysNodup fields ->
-      PairKeysNodup (mergeResponseField responseName incoming fields) := by
+    (fields : List (Name × ResponseValue))
+    : PairKeysNodup fields
+      -> PairKeysNodup (mergeResponseField responseName incoming fields) := by
   intro hnodup
   induction fields with
   | nil =>
@@ -554,9 +538,9 @@ theorem mergeResponseField_pairKeysNodup
                 exact (List.nodup_cons.mp hnodup).2)
 
 theorem mergeResponseFields_pairKeysNodup
-    (existing incoming : List (Name × ResponseValue)) :
-    PairKeysNodup existing ->
-      PairKeysNodup (mergeResponseFields existing incoming) := by
+    (existing incoming : List (Name × ResponseValue))
+    : PairKeysNodup existing
+      -> PairKeysNodup (mergeResponseFields existing incoming) := by
   intro hnodup
   induction incoming generalizing existing with
   | nil =>
@@ -572,11 +556,10 @@ theorem mergeResponseFields_pairKeysNodup
 
 theorem mergeResponseFields_cons_left_of_not_mem
     (responseName : Name) (response : ResponseValue)
-    (existing incoming : List (Name × ResponseValue)) :
-    responseName ∉ incoming.map Prod.fst ->
-      mergeResponseFields ((responseName, response) :: existing) incoming =
-        (responseName, response) ::
-          mergeResponseFields existing incoming := by
+    (existing incoming : List (Name × ResponseValue))
+    : responseName ∉ incoming.map Prod.fst
+      -> mergeResponseFields ((responseName, response) :: existing) incoming
+          = (responseName, response) :: mergeResponseFields existing incoming := by
   intro hnot
   induction incoming generalizing existing with
   | nil =>
@@ -598,18 +581,17 @@ theorem mergeResponseFields_cons_left_of_not_mem
 
 theorem mergeResponseField_field_ready
     (responseName : Name) (incoming : ResponseValue)
-    (fields : List (Name × ResponseValue)) :
-    ResponseMergeReady incoming ->
-    (∀ fieldResponseName response,
-      (fieldResponseName, response) ∈ fields ->
-        ResponseMergeReady response) ->
-    (∀ existing,
-      (responseName, existing) ∈ fields ->
-        ResponseMergeReady (mergeResponse existing incoming)) ->
-    ∀ fieldResponseName response,
-      (fieldResponseName, response) ∈
-        mergeResponseField responseName incoming fields ->
-        ResponseMergeReady response := by
+    (fields : List (Name × ResponseValue))
+    : ResponseMergeReady incoming
+      -> (∀ fieldResponseName response,
+            (fieldResponseName, response) ∈ fields -> ResponseMergeReady response)
+      -> (∀ existing,
+            (responseName, existing) ∈ fields
+            -> ResponseMergeReady (mergeResponse existing incoming))
+      -> ∀ fieldResponseName response,
+          (fieldResponseName, response)
+            ∈ mergeResponseField responseName incoming fields
+          -> ResponseMergeReady response := by
   intro hincoming hfields hmerge
   induction fields with
   | nil =>
@@ -643,14 +625,14 @@ theorem mergeResponseField_field_ready
 
 theorem mergeResponseField_object_ready
     (responseName : Name) (incoming : ResponseValue)
-    (fields : List (Name × ResponseValue)) :
-    ResponseMergeReady (.object fields) ->
-    ResponseMergeReady incoming ->
-    (∀ existing,
-      (responseName, existing) ∈ fields ->
-        ResponseMergeReady (mergeResponse existing incoming)) ->
-      ResponseMergeReady
-        (.object (mergeResponseField responseName incoming fields)) := by
+    (fields : List (Name × ResponseValue))
+    : ResponseMergeReady (.object fields)
+      -> ResponseMergeReady incoming
+      -> (∀ existing,
+            (responseName, existing) ∈ fields
+            -> ResponseMergeReady (mergeResponse existing incoming))
+      -> ResponseMergeReady
+          (.object (mergeResponseField responseName incoming fields)) := by
   intro hfieldsReady hincoming hmerge
   apply ResponseMergeReady.object
   · exact mergeResponseField_pairKeysNodup responseName incoming fields
@@ -664,10 +646,10 @@ theorem mergeResponseField_object_ready
       hmerge
 
 theorem mergeResponseFields_object_ready_of_steps
-    (existing incoming : List (Name × ResponseValue)) :
-    ResponseMergeReady (.object existing) ->
-    MergeResponseFieldsReadySteps existing incoming ->
-      ResponseMergeReady (.object (mergeResponseFields existing incoming)) := by
+    (existing incoming : List (Name × ResponseValue))
+    : ResponseMergeReady (.object existing)
+      -> MergeResponseFieldsReadySteps existing incoming
+      -> ResponseMergeReady (.object (mergeResponseFields existing incoming)) := by
   intro hexisting hsteps
   induction incoming generalizing existing with
   | nil =>
@@ -684,10 +666,9 @@ theorem mergeResponseFields_object_ready_of_steps
             hrest
 
 mutual
-  theorem mergeResponse_self_of_ready :
-      ∀ response : ResponseValue,
-        ResponseMergeReady response ->
-          mergeResponse response response = response
+  theorem mergeResponse_self_of_ready
+      : ∀ response : ResponseValue,
+          ResponseMergeReady response -> mergeResponse response response = response
     | .null, _hready => by
         simp [mergeResponse]
     | .scalar value, _hready => by
@@ -703,13 +684,12 @@ mutual
             simp [mergeResponse]
             exact mergeResponseLists_self_of_ready values hvalues
 
-  theorem mergeResponseFields_self_of_ready :
-      ∀ fields : List (Name × ResponseValue),
-        PairKeysNodup fields ->
-        (∀ responseName response,
-          (responseName, response) ∈ fields ->
-            ResponseMergeReady response) ->
-          mergeResponseFields fields fields = fields
+  theorem mergeResponseFields_self_of_ready
+      : ∀ fields : List (Name × ResponseValue),
+          PairKeysNodup fields
+          -> (∀ responseName response,
+                (responseName, response) ∈ fields -> ResponseMergeReady response)
+          -> mergeResponseFields fields fields = fields
     | [], _hnodup, _hfields => by
         simp [mergeResponseFields]
     | (responseName, response) :: rest, hnodup, hfields => by
@@ -739,10 +719,10 @@ mutual
           mergeResponseFields_cons_left_of_not_mem responseName response rest
             rest hresponseNameNotRest, hrestSelf]
 
-  theorem mergeResponseLists_self_of_ready :
-      ∀ values : List ResponseValue,
-        (∀ response, response ∈ values -> ResponseMergeReady response) ->
-          mergeResponseLists values values = values
+  theorem mergeResponseLists_self_of_ready
+      : ∀ values : List ResponseValue,
+          (∀ response, response ∈ values -> ResponseMergeReady response)
+          -> mergeResponseLists values values = values
     | [], _hvalues => by
         simp [mergeResponseLists]
     | response :: rest, hvalues => by
@@ -763,19 +743,17 @@ mutual
         simp [mergeResponseLists, hresponseSelf, hrestSelf]
 end
 
-theorem ResponseAbsorbs_refl_of_ready
-    (response : ResponseValue) :
-    ResponseMergeReady response ->
-      ResponseAbsorbs response response := by
+theorem ResponseAbsorbs_refl_of_ready (response : ResponseValue)
+    : ResponseMergeReady response -> ResponseAbsorbs response response := by
   intro hready
   exact mergeResponse_self_of_ready response hready
 
 theorem mergeResponseFields_cons_left_exists
     (responseName : Name) (response : ResponseValue)
-    (fields incoming : List (Name × ResponseValue)) :
-    ∃ response' fields',
-      mergeResponseFields ((responseName, response) :: fields) incoming =
-        (responseName, response') :: fields' := by
+    (fields incoming : List (Name × ResponseValue))
+    : ∃ response' fields',
+        mergeResponseFields ((responseName, response) :: fields) incoming
+        = (responseName, response') :: fields' := by
   induction incoming generalizing response fields with
   | nil =>
       exact ⟨response, fields, by simp [mergeResponseFields]⟩
@@ -796,49 +774,45 @@ theorem mergeResponseFields_cons_left_exists
 mutual
   inductive ResponseAbsorptionShape : ResponseValue -> ResponseValue -> Prop where
     | null : ResponseAbsorptionShape .null .null
-    | toNull (base : ResponseValue) :
-        ResponseAbsorptionShape base .null
-    | scalar (value : String) :
-        ResponseAbsorptionShape (.scalar value) (.scalar value)
-    | object {base output : List (Name × ResponseValue)} :
-        ResponseFieldsAbsorptionShape base output ->
-          ResponseAbsorptionShape (.object base) (.object output)
-    | list {base output : List ResponseValue} :
-        ResponseListAbsorptionShape base output ->
-          ResponseAbsorptionShape (.list base) (.list output)
+    | toNull (base : ResponseValue) : ResponseAbsorptionShape base .null
+    | scalar (value : String) : ResponseAbsorptionShape (.scalar value) (.scalar value)
+    | object {base output : List (Name × ResponseValue)}
+      : ResponseFieldsAbsorptionShape base output
+        -> ResponseAbsorptionShape (.object base) (.object output)
+    | list {base output : List ResponseValue}
+      : ResponseListAbsorptionShape base output
+        -> ResponseAbsorptionShape (.list base) (.list output)
 
-  inductive ResponseFieldsAbsorptionShape :
-      List (Name × ResponseValue) -> List (Name × ResponseValue) -> Prop where
-    | nil (output : List (Name × ResponseValue)) :
-        ResponseMergeReady (.object output) ->
-          ResponseFieldsAbsorptionShape [] output
+  inductive ResponseFieldsAbsorptionShape
+      : List (Name × ResponseValue) -> List (Name × ResponseValue) -> Prop where
+    | nil (output : List (Name × ResponseValue))
+      : ResponseMergeReady (.object output) -> ResponseFieldsAbsorptionShape [] output
     | cons (responseName : Name)
-        {baseResponse outputResponse : ResponseValue}
-        {baseRest outputRest : List (Name × ResponseValue)} :
-        ResponseMergeReady (.object ((responseName, outputResponse) :: outputRest)) ->
-        ResponseAbsorptionShape baseResponse outputResponse ->
-        ResponseFieldsAbsorptionShape baseRest outputRest ->
-          ResponseFieldsAbsorptionShape
+      {baseResponse outputResponse : ResponseValue}
+      {baseRest outputRest : List (Name × ResponseValue)}
+      : ResponseMergeReady (.object ((responseName, outputResponse) :: outputRest))
+        -> ResponseAbsorptionShape baseResponse outputResponse
+        -> ResponseFieldsAbsorptionShape baseRest outputRest
+        -> ResponseFieldsAbsorptionShape
             ((responseName, baseResponse) :: baseRest)
             ((responseName, outputResponse) :: outputRest)
 
-  inductive ResponseListAbsorptionShape :
-      List ResponseValue -> List ResponseValue -> Prop where
+  inductive ResponseListAbsorptionShape
+      : List ResponseValue -> List ResponseValue -> Prop where
     | nil : ResponseListAbsorptionShape [] []
     | cons {baseResponse outputResponse : ResponseValue}
-        {baseRest outputRest : List ResponseValue} :
-        ResponseMergeReady (.list (outputResponse :: outputRest)) ->
-        ResponseAbsorptionShape baseResponse outputResponse ->
-        ResponseListAbsorptionShape baseRest outputRest ->
-          ResponseListAbsorptionShape
+      {baseRest outputRest : List ResponseValue}
+      : ResponseMergeReady (.list (outputResponse :: outputRest))
+        -> ResponseAbsorptionShape baseResponse outputResponse
+        -> ResponseListAbsorptionShape baseRest outputRest
+        -> ResponseListAbsorptionShape
             (baseResponse :: baseRest) (outputResponse :: outputRest)
 end
 
 mutual
-  theorem ResponseAbsorptionShape.output_ready :
-      ∀ {base output : ResponseValue},
-        ResponseAbsorptionShape base output ->
-          ResponseMergeReady output
+  theorem ResponseAbsorptionShape.output_ready
+      : ∀ {base output : ResponseValue},
+          ResponseAbsorptionShape base output -> ResponseMergeReady output
     | .null, .null, ResponseAbsorptionShape.null =>
         ResponseMergeReady.null
     | _base, .null, ResponseAbsorptionShape.toNull _ =>
@@ -852,19 +826,18 @@ mutual
         ResponseAbsorptionShape.list hvalues =>
         ResponseListAbsorptionShape.output_ready hvalues
 
-  theorem ResponseFieldsAbsorptionShape.output_ready :
-      ∀ {base output : List (Name × ResponseValue)},
-        ResponseFieldsAbsorptionShape base output ->
-          ResponseMergeReady (.object output)
+  theorem ResponseFieldsAbsorptionShape.output_ready
+      : ∀ {base output : List (Name × ResponseValue)},
+          ResponseFieldsAbsorptionShape base output
+          -> ResponseMergeReady (.object output)
     | _base, _output, hshape => by
         cases hshape with
         | nil _ hready => exact hready
         | cons _ hready _ _ => exact hready
 
-  theorem ResponseListAbsorptionShape.output_ready :
-      ∀ {base output : List ResponseValue},
-        ResponseListAbsorptionShape base output ->
-          ResponseMergeReady (.list output)
+  theorem ResponseListAbsorptionShape.output_ready
+      : ∀ {base output : List ResponseValue},
+          ResponseListAbsorptionShape base output -> ResponseMergeReady (.list output)
     | [], [], ResponseListAbsorptionShape.nil =>
         ResponseMergeReady_empty_list
     | _baseResponse :: _baseRest, _outputResponse :: _outputRest,
@@ -876,8 +849,8 @@ mutual
   theorem ResponseAbsorptionShape.trans
       {base middle output : ResponseValue}
       (hbaseMiddle : ResponseAbsorptionShape base middle)
-      (hmiddleOutput : ResponseAbsorptionShape middle output) :
-      ResponseAbsorptionShape base output := by
+      (hmiddleOutput : ResponseAbsorptionShape middle output)
+      : ResponseAbsorptionShape base output := by
     cases hmiddleOutput with
     | null =>
         exact ResponseAbsorptionShape.toNull base
@@ -896,11 +869,11 @@ mutual
             exact ResponseAbsorptionShape.list
               (ResponseListAbsorptionShape.trans hbaseMiddle hmiddleOutput)
 
-  theorem ResponseFieldsAbsorptionShape.trans :
-      ∀ {base middle output : List (Name × ResponseValue)},
-        ResponseFieldsAbsorptionShape base middle ->
-        ResponseFieldsAbsorptionShape middle output ->
-          ResponseFieldsAbsorptionShape base output
+  theorem ResponseFieldsAbsorptionShape.trans
+      : ∀ {base middle output : List (Name × ResponseValue)},
+          ResponseFieldsAbsorptionShape base middle
+          -> ResponseFieldsAbsorptionShape middle output
+          -> ResponseFieldsAbsorptionShape base output
     | _base, _middle, _output, hbaseMiddle, hmiddleOutput => by
         cases hbaseMiddle with
         | nil _ _ =>
@@ -916,11 +889,11 @@ mutual
                     (ResponseFieldsAbsorptionShape.trans hbaseMiddleRest
                       hmiddleOutputRest)
 
-  theorem ResponseListAbsorptionShape.trans :
-      ∀ {base middle output : List ResponseValue},
-        ResponseListAbsorptionShape base middle ->
-        ResponseListAbsorptionShape middle output ->
-          ResponseListAbsorptionShape base output
+  theorem ResponseListAbsorptionShape.trans
+      : ∀ {base middle output : List ResponseValue},
+          ResponseListAbsorptionShape base middle
+          -> ResponseListAbsorptionShape middle output
+          -> ResponseListAbsorptionShape base output
     | [], [], [], ResponseListAbsorptionShape.nil,
         ResponseListAbsorptionShape.nil =>
         ResponseListAbsorptionShape.nil
@@ -938,10 +911,9 @@ mutual
 end
 
 mutual
-  theorem ResponseAbsorptionShape.to_absorbs :
-      ∀ {base output : ResponseValue},
-        ResponseAbsorptionShape base output ->
-          ResponseAbsorbs base output
+  theorem ResponseAbsorptionShape.to_absorbs
+      : ∀ {base output : ResponseValue},
+          ResponseAbsorptionShape base output -> ResponseAbsorbs base output
     | .null, .null, ResponseAbsorptionShape.null => by
         simp [ResponseAbsorbs, mergeResponse]
     | base, .null, ResponseAbsorptionShape.toNull _ => by
@@ -958,10 +930,10 @@ mutual
         simp [ResponseAbsorbs, mergeResponse]
         exact ResponseListAbsorptionShape.to_merge hvalues
 
-  theorem ResponseFieldsAbsorptionShape.to_merge :
-      ∀ {base output : List (Name × ResponseValue)},
-        ResponseFieldsAbsorptionShape base output ->
-          mergeResponseFields base output = output
+  theorem ResponseFieldsAbsorptionShape.to_merge
+      : ∀ {base output : List (Name × ResponseValue)},
+          ResponseFieldsAbsorptionShape base output
+          -> mergeResponseFields base output = output
     | _base, output, hshape => by
       cases hshape with
       | nil _ houtputReady =>
@@ -986,10 +958,10 @@ mutual
           outputResponse baseRest outputRest hresponseNameNotRest]
         simp [hrestMerge]
 
-  theorem ResponseListAbsorptionShape.to_merge :
-      ∀ {base output : List ResponseValue},
-        ResponseListAbsorptionShape base output ->
-          mergeResponseLists base output = output
+  theorem ResponseListAbsorptionShape.to_merge
+      : ∀ {base output : List ResponseValue},
+          ResponseListAbsorptionShape base output
+          -> mergeResponseLists base output = output
     | [], [], ResponseListAbsorptionShape.nil => by
         simp [mergeResponseLists]
     | baseResponse :: baseRest, outputResponse :: outputRest,
@@ -1005,12 +977,12 @@ mutual
 end
 
 mutual
-  theorem ResponseAbsorptionShape.of_absorbs :
-      ∀ (base output : ResponseValue),
-        ResponseMergeReady base ->
-        ResponseMergeReady output ->
-        ResponseAbsorbs base output ->
-          ResponseAbsorptionShape base output
+  theorem ResponseAbsorptionShape.of_absorbs
+      : ∀ (base output : ResponseValue),
+          ResponseMergeReady base
+          -> ResponseMergeReady output
+          -> ResponseAbsorbs base output
+          -> ResponseAbsorptionShape base output
     | .null, .null, _hbaseReady, _houtputReady, _habsorbs =>
         ResponseAbsorptionShape.null
     | .null, .scalar _value, _hbaseReady, _houtputReady, habsorbs => by
@@ -1061,12 +1033,12 @@ mutual
             hbaseReady houtputReady (by
               simpa [ResponseAbsorbs, mergeResponse] using habsorbs))
 
-  theorem ResponseFieldsAbsorptionShape.of_merge :
-      ∀ (base output : List (Name × ResponseValue)),
-        ResponseMergeReady (.object base) ->
-        ResponseMergeReady (.object output) ->
-        mergeResponseFields base output = output ->
-          ResponseFieldsAbsorptionShape base output
+  theorem ResponseFieldsAbsorptionShape.of_merge
+      : ∀ (base output : List (Name × ResponseValue)),
+          ResponseMergeReady (.object base)
+          -> ResponseMergeReady (.object output)
+          -> mergeResponseFields base output = output
+          -> ResponseFieldsAbsorptionShape base output
     | [], output, _hbaseReady, houtputReady, _hmerge =>
         ResponseFieldsAbsorptionShape.nil output houtputReady
     | (responseName, baseResponse) :: baseRest, [], _hbaseReady,
@@ -1138,12 +1110,12 @@ mutual
             (ResponseFieldsAbsorptionShape.of_merge baseRest outputRest
               hbaseRestReady houtputRestReady hrestMerge)
 
-  theorem ResponseListAbsorptionShape.of_merge :
-      ∀ (base output : List ResponseValue),
-        ResponseMergeReady (.list base) ->
-        ResponseMergeReady (.list output) ->
-        mergeResponseLists base output = output ->
-          ResponseListAbsorptionShape base output
+  theorem ResponseListAbsorptionShape.of_merge
+      : ∀ (base output : List ResponseValue),
+          ResponseMergeReady (.list base)
+          -> ResponseMergeReady (.list output)
+          -> mergeResponseLists base output = output
+          -> ResponseListAbsorptionShape base output
     | [], [], _hbaseReady, _houtputReady, _hmerge =>
         ResponseListAbsorptionShape.nil
     | [], outputResponse :: outputRest, _hbaseReady, _houtputReady,
@@ -1188,14 +1160,13 @@ mutual
               hbaseRestReady houtputRestReady hrestMerge)
 end
 
-theorem ResponseAbsorbs_trans_of_ready
-    (base middle output : ResponseValue) :
-    ResponseMergeReady base ->
-    ResponseMergeReady middle ->
-    ResponseMergeReady output ->
-    ResponseAbsorbs base middle ->
-    ResponseAbsorbs middle output ->
-      ResponseAbsorbs base output := by
+theorem ResponseAbsorbs_trans_of_ready (base middle output : ResponseValue)
+    : ResponseMergeReady base
+      -> ResponseMergeReady middle
+      -> ResponseMergeReady output
+      -> ResponseAbsorbs base middle
+      -> ResponseAbsorbs middle output
+      -> ResponseAbsorbs base output := by
   intro hbaseReady hmiddleReady houtputReady hbaseMiddle hmiddleOutput
   exact
     ResponseAbsorptionShape.to_absorbs
@@ -1206,11 +1177,11 @@ theorem ResponseAbsorbs_trans_of_ready
           houtputReady hmiddleOutput))
 
 mutual
-  theorem mergeResponse_ready :
-      ∀ existing incoming : ResponseValue,
-        ResponseMergeReady existing ->
-        ResponseMergeReady incoming ->
-          ResponseMergeReady (mergeResponse existing incoming)
+  theorem mergeResponse_ready
+      : ∀ existing incoming : ResponseValue,
+          ResponseMergeReady existing
+          -> ResponseMergeReady incoming
+          -> ResponseMergeReady (mergeResponse existing incoming)
     | .object existingFields, .object incomingFields, hexisting, hincoming => by
         simp [mergeResponse]
         exact mergeResponseFields_object_ready_of_steps existingFields
@@ -1244,11 +1215,11 @@ mutual
     | .list values, .object fields, hexisting, _hincoming => by
         simpa [mergeResponse] using hexisting
 
-  theorem mergeResponseFields_ready_steps_of_ready :
-      ∀ existing incoming : List (Name × ResponseValue),
-        ResponseMergeReady (.object existing) ->
-        ResponseMergeReady (.object incoming) ->
-          MergeResponseFieldsReadySteps existing incoming
+  theorem mergeResponseFields_ready_steps_of_ready
+      : ∀ existing incoming : List (Name × ResponseValue),
+          ResponseMergeReady (.object existing)
+          -> ResponseMergeReady (.object incoming)
+          -> MergeResponseFieldsReadySteps existing incoming
     | existing, [], _hexisting, _hincoming => by
         simp [MergeResponseFieldsReadySteps]
     | existing, (responseName, incomingResponse) :: rest, hexisting,
@@ -1291,11 +1262,11 @@ mutual
             hupdatedReady hrestIncoming
         exact ⟨hincomingResponse, hcollision, hrestSteps⟩
 
-  theorem mergeResponseLists_ready :
-      ∀ existing incoming : List ResponseValue,
-        ResponseMergeReady (.list existing) ->
-        ResponseMergeReady (.list incoming) ->
-          ResponseMergeReady (.list (mergeResponseLists existing incoming))
+  theorem mergeResponseLists_ready
+      : ∀ existing incoming : List ResponseValue,
+          ResponseMergeReady (.list existing)
+          -> ResponseMergeReady (.list incoming)
+          -> ResponseMergeReady (.list (mergeResponseLists existing incoming))
     | [], _incoming, _hexisting, _hincoming => by
         simp [mergeResponseLists]
         exact ResponseMergeReady_empty_list
@@ -1333,13 +1304,13 @@ end
 
 theorem mergeResponseField_object_absorbs
     (responseName : Name) (incoming : ResponseValue)
-    (fields : List (Name × ResponseValue)) :
-    ResponseMergeReady (.object fields) ->
-    (∀ existing,
-      (responseName, existing) ∈ fields ->
-        ResponseAbsorbs existing (mergeResponse existing incoming)) ->
-      ResponseAbsorbs (.object fields)
-        (.object (mergeResponseField responseName incoming fields)) := by
+    (fields : List (Name × ResponseValue))
+    : ResponseMergeReady (.object fields)
+      -> (∀ existing,
+            (responseName, existing) ∈ fields
+            -> ResponseAbsorbs existing (mergeResponse existing incoming))
+      -> ResponseAbsorbs (.object fields)
+          (.object (mergeResponseField responseName incoming fields)) := by
   intro hfieldsReady hcollisionAbsorbs
   unfold ResponseAbsorbs
   simp [mergeResponse]
@@ -1421,11 +1392,11 @@ theorem mergeResponseField_object_absorbs
 
 theorem mergeResponseField_object_ready_of_ready
     (responseName : Name) (incoming : ResponseValue)
-    (fields : List (Name × ResponseValue)) :
-    ResponseMergeReady (.object fields) ->
-    ResponseMergeReady incoming ->
-      ResponseMergeReady
-        (.object (mergeResponseField responseName incoming fields)) := by
+    (fields : List (Name × ResponseValue))
+    : ResponseMergeReady (.object fields)
+      -> ResponseMergeReady incoming
+      -> ResponseMergeReady
+          (.object (mergeResponseField responseName incoming fields)) := by
   intro hfieldsReady hincoming
   exact mergeResponseField_object_ready responseName incoming fields
     hfieldsReady hincoming
@@ -1437,21 +1408,21 @@ theorem mergeResponseField_object_ready_of_ready
         hincoming)
 
 theorem mergeResponseFields_object_ready_of_ready
-    (existing incoming : List (Name × ResponseValue)) :
-    ResponseMergeReady (.object existing) ->
-    ResponseMergeReady (.object incoming) ->
-      ResponseMergeReady (.object (mergeResponseFields existing incoming)) := by
+    (existing incoming : List (Name × ResponseValue))
+    : ResponseMergeReady (.object existing)
+      -> ResponseMergeReady (.object incoming)
+      -> ResponseMergeReady (.object (mergeResponseFields existing incoming)) := by
   intro hexisting hincoming
   simpa [mergeResponse] using
     mergeResponse_ready (.object existing) (.object incoming) hexisting
       hincoming
 
 mutual
-  theorem ResponseAbsorbs_merge_of_ready :
-      ∀ existing incoming : ResponseValue,
-        ResponseMergeReady existing ->
-        ResponseMergeReady incoming ->
-          ResponseAbsorbs existing (mergeResponse existing incoming)
+  theorem ResponseAbsorbs_merge_of_ready
+      : ∀ existing incoming : ResponseValue,
+          ResponseMergeReady existing
+          -> ResponseMergeReady incoming
+          -> ResponseAbsorbs existing (mergeResponse existing incoming)
     | .object existingFields, .object incomingFields, hexisting, hincoming => by
         simp [mergeResponse]
         exact mergeResponseFields_object_absorbs_merge_of_ready existingFields
@@ -1491,12 +1462,12 @@ mutual
         simpa [mergeResponse] using
           ResponseAbsorbs_refl_of_ready (.list values) hexisting
 
-  theorem mergeResponseFields_object_absorbs_merge_of_ready :
-      ∀ existing incoming : List (Name × ResponseValue),
-        ResponseMergeReady (.object existing) ->
-        ResponseMergeReady (.object incoming) ->
-          ResponseAbsorbs (.object existing)
-            (.object (mergeResponseFields existing incoming))
+  theorem mergeResponseFields_object_absorbs_merge_of_ready
+      : ∀ existing incoming : List (Name × ResponseValue),
+          ResponseMergeReady (.object existing)
+          -> ResponseMergeReady (.object incoming)
+          -> ResponseAbsorbs (.object existing)
+              (.object (mergeResponseFields existing incoming))
     | existing, [], hexisting, _hincoming => by
         simpa [mergeResponseFields] using
           ResponseAbsorbs_refl_of_ready (.object existing) hexisting
@@ -1565,12 +1536,12 @@ mutual
                 rest))
             hexisting hupdatedReady hfinalReady hbaseUpdated hupdatedFinal
 
-  theorem mergeResponseLists_absorbs_merge_of_ready :
-      ∀ existing incoming : List ResponseValue,
-        ResponseMergeReady (.list existing) ->
-        ResponseMergeReady (.list incoming) ->
-          ResponseAbsorbs (.list existing)
-            (.list (mergeResponseLists existing incoming))
+  theorem mergeResponseLists_absorbs_merge_of_ready
+      : ∀ existing incoming : List ResponseValue,
+          ResponseMergeReady (.list existing)
+          -> ResponseMergeReady (.list incoming)
+          -> ResponseAbsorbs (.list existing)
+              (.list (mergeResponseLists existing incoming))
     | [], _incoming, _hexisting, _hincoming => by
         simp [mergeResponseLists, ResponseAbsorbs, mergeResponse]
     | existing, [], hexisting, _hincoming => by
@@ -1624,10 +1595,10 @@ mutual
 end
 
 theorem mergeResponseFields_object_absorbs_from_steps
-    (base current incoming : List (Name × ResponseValue)) :
-    MergeResponseFieldsAbsorbsFrom base current incoming ->
-      ResponseAbsorbs (.object base)
-        (.object (mergeResponseFields current incoming)) := by
+    (base current incoming : List (Name × ResponseValue))
+    : MergeResponseFieldsAbsorbsFrom base current incoming
+      -> ResponseAbsorbs (.object base)
+          (.object (mergeResponseFields current incoming)) := by
   intro hsteps
   induction incoming generalizing current with
   | nil =>
@@ -1646,17 +1617,21 @@ theorem emptySelectionStateEquivalent
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (initial : ResponseValue) :
-      ExecutionStateEquivalent
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := parentType
-            source := source
-            selectionSet := [] }
-          initial := initial } := by
+    (initial : ResponseValue)
+    : ExecutionStateEquivalent
+        {
+          window :=
+            {
+              schema := schema
+              resolvers := resolvers
+              variableValues := variableValues
+              depth := depth
+              parentType := parentType
+              source := source
+              selectionSet := []
+            }
+          initial := initial
+        } := by
     simp [ExecutionStateEquivalent, ResponseResultEquivalent,
       ExecutionEquivalenceState.ungroupedProjectionResult,
       ExecutionEquivalenceState.specProjectionResult,

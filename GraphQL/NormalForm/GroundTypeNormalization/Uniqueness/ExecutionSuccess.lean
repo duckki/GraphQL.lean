@@ -18,31 +18,30 @@ theorem executeSelectionSet_ok_of_field_ok
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (fuel : Nat) (parentType : Name)
-    (source : Execution.ResolverValue ObjectRef) :
-    ∀ selectionSet,
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetNormal schema parentType selectionSet ->
-      objectTypeNameBool schema parentType = true ->
-      (∀ responseName fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-          ∃ responseValue fieldErrors,
-            Execution.executeField schema resolvers variableValues fuel source
-              responseName
-              [{
-                parentType := parentType,
-                responseName := responseName,
-                fieldName := fieldName,
-                arguments := arguments,
-                selectionSet := childSelectionSet
-              }]
-            =
-            .ok ([(responseName, responseValue)], fieldErrors)) ->
-        ∃ responseFields errors,
-          Execution.executeSelectionSet schema resolvers variableValues fuel
-            parentType source selectionSet
-          =
-          .ok (responseFields, errors)
+    (source : Execution.ResolverValue ObjectRef)
+    : ∀ selectionSet,
+        selectionSetDirectiveFree selectionSet
+        -> selectionSetNormal schema parentType selectionSet
+        -> objectTypeNameBool schema parentType = true
+        -> (∀ responseName fieldName arguments directives childSelectionSet,
+              Selection.field responseName fieldName arguments directives
+                  childSelectionSet
+                ∈ selectionSet
+              -> ∃ responseValue fieldErrors,
+                  Execution.executeField schema resolvers variableValues fuel source
+                    responseName
+                    [{
+                      parentType := parentType,
+                      responseName := responseName,
+                      fieldName := fieldName,
+                      arguments := arguments,
+                      selectionSet := childSelectionSet
+                    }]
+                  = .ok ([(responseName, responseValue)], fieldErrors))
+        -> ∃ responseFields errors,
+            Execution.executeSelectionSet schema resolvers variableValues fuel
+              parentType source selectionSet
+            = .ok (responseFields, errors)
   | [], _hfree, _hnormal, _hobject, _hfieldOk => by
       exact ⟨[], 0, by
         simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
@@ -118,30 +117,30 @@ theorem executeSelectionSetAsResponse_object_of_field_ok
     (variableValues : Execution.VariableValues)
     (fuel : Nat) (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = true ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ∃ responseFields errors,
-        Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-          parentType source selectionSet =
-          ({ data := .object responseFields, errors := errors } :
-            Execution.Response) := by
+    (selectionSet : List Selection)
+    : selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ∃ responseFields errors,
+          Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source selectionSet
+          = ({ data := .object responseFields, errors := errors }
+              : Execution.Response) := by
   intro hfree hnormal hobject hfieldOk
   rcases executeSelectionSet_ok_of_field_ok schema resolvers variableValues
       fuel parentType source selectionSet hfree hnormal hobject hfieldOk with
@@ -161,44 +160,43 @@ theorem executeSelectionSet_ok_field_mem_of_field_ok
     (targetDirectives : List DirectiveApplication)
     (targetChildSelectionSet : List Selection)
     (targetValue : Execution.ResponseValue)
-    (targetErrors : Nat) :
-    ∀ selectionSet,
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetNormal schema parentType selectionSet ->
-      objectTypeNameBool schema parentType = true ->
-      Selection.field targetResponseName targetFieldName targetArguments
-        targetDirectives targetChildSelectionSet ∈ selectionSet ->
-      Execution.executeField schema resolvers variableValues fuel source
-        targetResponseName
-        [{
-          parentType := parentType,
-          responseName := targetResponseName,
-          fieldName := targetFieldName,
-          arguments := targetArguments,
-          selectionSet := targetChildSelectionSet
-        }]
-      =
-      .ok ([(targetResponseName, targetValue)], targetErrors) ->
-      (∀ responseName fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-          ∃ responseValue fieldErrors,
-            Execution.executeField schema resolvers variableValues fuel source
-              responseName
+    (targetErrors : Nat)
+    : ∀ selectionSet,
+        selectionSetDirectiveFree selectionSet
+        -> selectionSetNormal schema parentType selectionSet
+        -> objectTypeNameBool schema parentType = true
+        -> Selection.field targetResponseName targetFieldName targetArguments
+              targetDirectives targetChildSelectionSet
+            ∈ selectionSet
+        -> Execution.executeField schema resolvers variableValues fuel source
+              targetResponseName
               [{
                 parentType := parentType,
-                responseName := responseName,
-                fieldName := fieldName,
-                arguments := arguments,
-                selectionSet := childSelectionSet
+                responseName := targetResponseName,
+                fieldName := targetFieldName,
+                arguments := targetArguments,
+                selectionSet := targetChildSelectionSet
               }]
-            =
-            .ok ([(responseName, responseValue)], fieldErrors)) ->
-        ∃ responseFields errors,
-          Execution.executeSelectionSet schema resolvers variableValues fuel
-            parentType source selectionSet
-          =
-          .ok (responseFields, errors)
+            = .ok ([(targetResponseName, targetValue)], targetErrors)
+        -> (∀ responseName fieldName arguments directives childSelectionSet,
+              Selection.field responseName fieldName arguments directives
+                  childSelectionSet
+                ∈ selectionSet
+              -> ∃ responseValue fieldErrors,
+                  Execution.executeField schema resolvers variableValues fuel source
+                    responseName
+                    [{
+                      parentType := parentType,
+                      responseName := responseName,
+                      fieldName := fieldName,
+                      arguments := arguments,
+                      selectionSet := childSelectionSet
+                    }]
+                  = .ok ([(responseName, responseValue)], fieldErrors))
+        -> ∃ responseFields errors,
+            Execution.executeSelectionSet schema resolvers variableValues fuel
+                parentType source selectionSet
+              = .ok (responseFields, errors)
             ∧ (targetResponseName, targetValue) ∈ responseFields
   | [], _hfree, _hnormal, _hobject, htargetMem, _htargetExecute,
       _hfieldOk => by
@@ -323,43 +321,43 @@ theorem executeSelectionSetAsResponse_object_field_mem_of_field_ok
     (targetDirectives : List DirectiveApplication)
     (targetChildSelectionSet : List Selection)
     (targetValue : Execution.ResponseValue)
-    (targetErrors : Nat) :
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = true ->
-    Selection.field targetResponseName targetFieldName targetArguments
-      targetDirectives targetChildSelectionSet ∈ selectionSet ->
-    Execution.executeField schema resolvers variableValues fuel source
-      targetResponseName
-      [{
-        parentType := parentType,
-        responseName := targetResponseName,
-        fieldName := targetFieldName,
-        arguments := targetArguments,
-        selectionSet := targetChildSelectionSet
-      }]
-    =
-    .ok ([(targetResponseName, targetValue)], targetErrors) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema resolvers variableValues fuel source
-          responseName
-          [{
-            parentType := parentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ∃ responseFields errors,
-        Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-          parentType source selectionSet =
-          ({ data := .object responseFields, errors := errors } :
-            Execution.Response)
+    (targetErrors : Nat)
+    : selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> Selection.field targetResponseName targetFieldName targetArguments
+            targetDirectives targetChildSelectionSet
+          ∈ selectionSet
+      -> Execution.executeField schema resolvers variableValues fuel source
+            targetResponseName
+            [{
+              parentType := parentType,
+              responseName := targetResponseName,
+              fieldName := targetFieldName,
+              arguments := targetArguments,
+              selectionSet := targetChildSelectionSet
+            }]
+          = .ok ([(targetResponseName, targetValue)], targetErrors)
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ∃ responseFields errors,
+          Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+              parentType source selectionSet
+            = ({ data := .object responseFields, errors := errors }
+                : Execution.Response)
           ∧ (targetResponseName, targetValue) ∈ responseFields := by
   intro hfree hnormal hobject htargetMem htargetExecute hfieldOk
   rcases

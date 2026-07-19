@@ -18,27 +18,27 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_merged_complete
     (selectionSet : List Selection)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet = [(responseName, field :: fields)])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        parentType source selectionSet (.object []))
-    (hresponse :
-      ∀ candidate, candidate ∈ field :: fields ->
-        candidate.responseName = responseName)
-    (hparent :
-      ∀ candidate, candidate ∈ field :: fields ->
-        candidate.parentType = parentType)
-    (hungrouped :
-      executeRootSelectionSet schema resolvers variableValues (depth + 1)
-        parentType source (executableFieldSelections (field :: fields)) =
-      GraphQL.Execution.executeField schema resolvers variableValues
-        (depth + 1) source responseName (field :: fields)) :
-    executeRootSelectionSet schema resolvers variableValues (depth + 1)
-      parentType source selectionSet =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      (depth + 1) parentType source selectionSet := by
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet
+        = [(responseName, field :: fields)])
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          parentType source selectionSet (.object []))
+    (hresponse
+      : ∀ candidate,
+          candidate ∈ field :: fields -> candidate.responseName = responseName)
+    (hparent
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
+    (hungrouped
+      : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+          parentType source (executableFieldSelections (field :: fields))
+        = GraphQL.Execution.executeField schema resolvers variableValues
+            (depth + 1) source responseName (field :: fields))
+    : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+        parentType source selectionSet
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (depth + 1) parentType source selectionSet := by
   have hgroups :
       ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues
         (depth + 1) parentType source
@@ -65,27 +65,26 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_mergedComplete
     (selectionSet : List Selection)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet = [(responseName, field :: fields)])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        parentType source selectionSet (.object []))
-    (hresponse :
-      ∀ candidate, candidate ∈ field :: fields ->
-        candidate.responseName = responseName)
-    (hparent :
-      ∀ candidate, candidate ∈ field :: fields ->
-        candidate.parentType = parentType)
-    (hmerged :
-      ExecutableFieldsMergedComplete schema resolvers variableValues depth
-        parentType source responseName field fields
-        (resolvers.resolve field.parentType field.fieldName field.arguments
-          source)) :
-    executeRootSelectionSet schema resolvers variableValues (depth + 1)
-      parentType source selectionSet =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      (depth + 1) parentType source selectionSet := by
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet
+        = [(responseName, field :: fields)])
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          parentType source selectionSet (.object []))
+    (hresponse
+      : ∀ candidate,
+          candidate ∈ field :: fields -> candidate.responseName = responseName)
+    (hparent
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
+    (hmerged
+      : ExecutableFieldsMergedComplete schema resolvers variableValues depth
+          parentType source responseName field fields
+          (resolvers.resolve field.parentType field.fieldName field.arguments source))
+    : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+        parentType source selectionSet
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (depth + 1) parentType source selectionSet := by
   unfold ExecutableFieldsMergedComplete at hmerged
   exact
     executeRootSelectionSet_eq_spec_of_exact_nonempty_group_merged_complete
@@ -100,28 +99,28 @@ theorem executeQueryWithFuel_eq_spec_of_exact_nonempty_group_merged_complete
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = [(responseName, field :: fields)])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        operation.rootType source operation.selectionSet (.object []))
-    (hresponse :
-      ∀ candidate, candidate ∈ field :: fields ->
-        candidate.responseName = responseName)
-    (hparent :
-      ∀ candidate, candidate ∈ field :: fields ->
-        candidate.parentType = operation.rootType)
-    (hungrouped :
-      executeRootSelectionSet schema resolvers variableValues (depth + 1)
-        operation.rootType source
-        (executableFieldSelections (field :: fields)) =
-      GraphQL.Execution.executeField schema resolvers variableValues
-        (depth + 1) source responseName (field :: fields)) :
-    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
-      source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
-      operation (depth + 1) source := by
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = [(responseName, field :: fields)])
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          operation.rootType source operation.selectionSet (.object []))
+    (hresponse
+      : ∀ candidate,
+          candidate ∈ field :: fields -> candidate.responseName = responseName)
+    (hparent
+      : ∀ candidate,
+          candidate ∈ field :: fields -> candidate.parentType = operation.rootType)
+    (hungrouped
+      : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+          operation.rootType source
+          (executableFieldSelections (field :: fields))
+        = GraphQL.Execution.executeField schema resolvers variableValues
+            (depth + 1) source responseName (field :: fields))
+    : executeQueryWithFuel schema resolvers variableValues operation (depth + 1) source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
+          operation (depth + 1) source := by
   apply executeQueryWithFuel_eq_spec_of_root_fields_eq schema resolvers
     variableValues operation (depth + 1) source hroot
   exact
@@ -138,27 +137,26 @@ theorem executeQueryWithFuel_eq_spec_of_exact_nonempty_group_mergedComplete
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = [(responseName, field :: fields)])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        operation.rootType source operation.selectionSet (.object []))
-    (hresponse :
-      ∀ candidate, candidate ∈ field :: fields ->
-        candidate.responseName = responseName)
-    (hparent :
-      ∀ candidate, candidate ∈ field :: fields ->
-        candidate.parentType = operation.rootType)
-    (hmerged :
-      ExecutableFieldsMergedComplete schema resolvers variableValues depth
-        operation.rootType source responseName field fields
-        (resolvers.resolve field.parentType field.fieldName field.arguments
-          source)) :
-    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
-      source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
-      operation (depth + 1) source := by
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = [(responseName, field :: fields)])
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          operation.rootType source operation.selectionSet (.object []))
+    (hresponse
+      : ∀ candidate,
+          candidate ∈ field :: fields -> candidate.responseName = responseName)
+    (hparent
+      : ∀ candidate,
+          candidate ∈ field :: fields -> candidate.parentType = operation.rootType)
+    (hmerged
+      : ExecutableFieldsMergedComplete schema resolvers variableValues depth
+          operation.rootType source responseName field fields
+          (resolvers.resolve field.parentType field.fieldName field.arguments source))
+    : executeQueryWithFuel schema resolvers variableValues operation (depth + 1) source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
+          operation (depth + 1) source := by
   apply executeQueryWithFuel_eq_spec_of_root_fields_eq schema resolvers
     variableValues operation (depth + 1) source hroot
   exact
@@ -176,27 +174,28 @@ theorem executeQuery_eq_spec_of_exact_nonempty_group_merged_complete
     (fields : List ExecutableField)
     (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = [(responseName, field :: fields)])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        operation.rootType source operation.selectionSet (.object []))
-    (hresponse :
-      ∀ candidate, candidate ∈ field :: fields ->
-        candidate.responseName = responseName)
-    (hparent :
-      ∀ candidate, candidate ∈ field :: fields ->
-        candidate.parentType = operation.rootType)
-    (hungrouped :
-      executeRootSelectionSet schema resolvers variableValues (depth + 1)
-        operation.rootType source
-        (executableFieldSelections (field :: fields)) =
-      GraphQL.Execution.executeField schema resolvers variableValues
-        (depth + 1) source responseName (field :: fields)) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = [(responseName, field :: fields)])
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          operation.rootType source operation.selectionSet (.object []))
+    (hresponse
+      : ∀ candidate,
+          candidate ∈ field :: fields -> candidate.responseName = responseName)
+    (hparent
+      : ∀ candidate,
+          candidate ∈ field :: fields -> candidate.parentType = operation.rootType)
+    (hungrouped
+      : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+          operation.rootType source
+          (executableFieldSelections (field :: fields))
+        = GraphQL.Execution.executeField schema resolvers variableValues
+            (depth + 1) source responseName (field :: fields))
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
@@ -213,26 +212,26 @@ theorem executeQuery_eq_spec_of_exact_nonempty_group_mergedComplete
     (fields : List ExecutableField)
     (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = [(responseName, field :: fields)])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        operation.rootType source operation.selectionSet (.object []))
-    (hresponse :
-      ∀ candidate, candidate ∈ field :: fields ->
-        candidate.responseName = responseName)
-    (hparent :
-      ∀ candidate, candidate ∈ field :: fields ->
-        candidate.parentType = operation.rootType)
-    (hmerged :
-      ExecutableFieldsMergedComplete schema resolvers variableValues depth
-        operation.rootType source responseName field fields
-        (resolvers.resolve field.parentType field.fieldName field.arguments
-          source)) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = [(responseName, field :: fields)])
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          operation.rootType source operation.selectionSet (.object []))
+    (hresponse
+      : ∀ candidate,
+          candidate ∈ field :: fields -> candidate.responseName = responseName)
+    (hparent
+      : ∀ candidate,
+          candidate ∈ field :: fields -> candidate.parentType = operation.rootType)
+    (hmerged
+      : ExecutableFieldsMergedComplete schema resolvers variableValues depth
+          operation.rootType source responseName field fields
+          (resolvers.resolve field.parentType field.fieldName field.arguments source))
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact
@@ -247,30 +246,35 @@ theorem executeRootSelectionSet_eq_spec_of_exact_single_field_group
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (responseName : Name) (field : ExecutableField)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet = [(responseName, [field])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        parentType source selectionSet (.object []))
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet
+        = [(responseName, [field])])
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          parentType source selectionSet (.object []))
     (hparent : field.parentType = parentType)
-    (hchildren :
-      ∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := field.selectionSet }
-              initial := .object [] }) :
-    executeRootSelectionSet schema resolvers variableValues (depth + 1)
-      parentType source selectionSet =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      (depth + 1) parentType source selectionSet := by
+    (hchildren
+      : ∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := field.selectionSet
+                  }
+                initial := .object []
+              })
+    : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+        parentType source selectionSet
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (depth + 1) parentType source selectionSet := by
   have hgroups :
       ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues
         (depth + 1) parentType source
@@ -293,36 +297,45 @@ theorem stateEquivalent_of_exact_single_field_group
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
     (responseName : Name) (field : ExecutableField)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet = [(responseName, [field])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        parentType source selectionSet (.object []))
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet
+        = [(responseName, [field])])
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          parentType source selectionSet (.object []))
     (hparent : field.parentType = parentType)
-    (hchildren :
-      ∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := field.selectionSet }
-              initial := .object [] }) :
-    ExecutionStateEquivalent
-      { window :=
-        { schema := schema
-          resolvers := resolvers
-          variableValues := variableValues
-          depth := depth + 1
-          parentType := parentType
-          source := source
-          selectionSet := selectionSet }
-        initial := .object [] } :=
+    (hchildren
+      : ∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := field.selectionSet
+                  }
+                initial := .object []
+              })
+    : ExecutionStateEquivalent
+        {
+          window :=
+            {
+              schema := schema
+              resolvers := resolvers
+              variableValues := variableValues
+              depth := depth + 1
+              parentType := parentType
+              source := source
+              selectionSet := selectionSet
+            }
+          initial := .object []
+        } :=
   stateEquivalent_of_executeRootSelectionSet_eq_spec schema resolvers
     variableValues (depth + 1) parentType source selectionSet
     (executeRootSelectionSet_eq_spec_of_exact_single_field_group schema
@@ -337,37 +350,46 @@ theorem stateEquivalent_of_collected_single_field_group
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (field : ExecutableField)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet = groups)
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet
+        = groups)
     (hgroup : (responseName, [field]) ∈ groups)
     (hexact : groups = [(responseName, [field])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        parentType source selectionSet (.object []))
-    (hchildren :
-      ∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := field.selectionSet }
-              initial := .object [] }) :
-    ExecutionStateEquivalent
-      { window :=
-        { schema := schema
-          resolvers := resolvers
-          variableValues := variableValues
-          depth := depth + 1
-          parentType := parentType
-          source := source
-          selectionSet := selectionSet }
-        initial := .object [] } := by
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          parentType source selectionSet (.object []))
+    (hchildren
+      : ∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := field.selectionSet
+                  }
+                initial := .object []
+              })
+    : ExecutionStateEquivalent
+        {
+          window :=
+            {
+              schema := schema
+              resolvers := resolvers
+              variableValues := variableValues
+              depth := depth + 1
+              parentType := parentType
+              source := source
+              selectionSet := selectionSet
+            }
+          initial := .object []
+        } := by
   let state : ExecutionEquivalenceState ObjectIdentity :=
     { window :=
       { schema := schema
@@ -396,30 +418,34 @@ theorem executeQueryWithFuel_eq_spec_of_exact_single_field_group
     (depth : Nat) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = [(responseName, [field])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        operation.rootType source operation.selectionSet (.object []))
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = [(responseName, [field])])
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          operation.rootType source operation.selectionSet (.object []))
     (hparent : field.parentType = operation.rootType)
-    (hchildren :
-      ∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := field.selectionSet }
-              initial := .object [] }) :
-    executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
-      source =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
-      operation (depth + 1) source := by
+    (hchildren
+      : ∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := field.selectionSet
+                  }
+                initial := .object []
+              })
+    : executeQueryWithFuel schema resolvers variableValues operation (depth + 1) source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
+          operation (depth + 1) source := by
   apply executeQueryWithFuel_eq_spec_of_state_equivalent schema resolvers
     variableValues operation (depth + 1) source hroot
   exact stateEquivalent_of_exact_single_field_group schema resolvers
@@ -434,29 +460,34 @@ theorem executeQuery_eq_spec_of_exact_single_field_group
     (responseName : Name) (field : ExecutableField)
     (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     (hroot : rootSourceAppliesBool schema operation source = true)
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues operation.rootType
-        source operation.selectionSet = [(responseName, [field])])
-    (hdirect :
-      VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
-        operation.rootType source operation.selectionSet (.object []))
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues operation.rootType
+          source operation.selectionSet
+        = [(responseName, [field])])
+    (hdirect
+      : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
+          operation.rootType source operation.selectionSet (.object []))
     (hparent : field.parentType = operation.rootType)
-    (hchildren :
-      ∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := field.selectionSet }
-              initial := .object [] }) :
-    executeQuery schema resolvers variableValues operation source =
-    GraphQL.Execution.executeQuery schema resolvers variableValues operation
-      source := by
+    (hchildren
+      : ∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := field.selectionSet
+                  }
+                initial := .object []
+              })
+    : executeQuery schema resolvers variableValues operation source
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
+          source := by
   unfold executeQuery GraphQL.Execution.executeQuery
   rw [hdepth]
   exact executeQueryWithFuel_eq_spec_of_exact_single_field_group schema

@@ -33,16 +33,16 @@ namespace Option
 protected def null {ObjectRef : Type} : Option (ResolverValue ObjectRef) :=
   some .null
 
-protected def scalar {ObjectRef : Type} (value : String) :
-    Option (ResolverValue ObjectRef) :=
+protected def scalar {ObjectRef : Type} (value : String)
+    : Option (ResolverValue ObjectRef) :=
   some (.scalar value)
 
-protected def object {ObjectRef : Type} (typeName : Name)
-    (ref : ObjectRef) : Option (ResolverValue ObjectRef) :=
+protected def object {ObjectRef : Type} (typeName : Name) (ref : ObjectRef)
+    : Option (ResolverValue ObjectRef) :=
   some (.object typeName ref)
 
-protected def list {ObjectRef : Type} (values : List (ResolverValue ObjectRef)) :
-    Option (ResolverValue ObjectRef) :=
+protected def list {ObjectRef : Type} (values : List (ResolverValue ObjectRef))
+    : Option (ResolverValue ObjectRef) :=
   some (.list values)
 
 end Option
@@ -79,8 +79,7 @@ def getD (default : α) : Result α -> α
   | .error _errors => default
   | .ok (value, _errors) => value
 
-def combine {α β γ : Type} (combine : α -> β -> γ) :
-    Result α -> Result β -> Result γ
+def combine {α β γ : Type} (combine : α -> β -> γ) : Result α -> Result β -> Result γ
   | .ok (left, leftErrors), .ok (right, rightErrors) =>
       .ok (combine left right, leftErrors + rightErrors)
   | .error leftErrors, .ok (_right, rightErrors) =>
@@ -99,14 +98,14 @@ instance instCoeResult {α : Type} [Inhabited α] : Coe (Result α) α where
 -- for object-type field resolvers and receives uncoerced modeled arguments. `none`
 -- models a resolver-raised field error without carrying error metadata.
 structure Resolvers (ObjectRef : Type := PUnit) where
-  resolve :
-    Name -> Name -> List Argument ->
-      ResolverValue ObjectRef -> Option (ResolverValue ObjectRef)
-  resolve_argumentsEquivalent :
-    ∀ parentType fieldName firstArguments laterArguments source,
-      Argument.argumentsEquivalent firstArguments laterArguments ->
-        resolve parentType fieldName firstArguments source =
-        resolve parentType fieldName laterArguments source
+  resolve
+    : Name -> Name -> List Argument -> ResolverValue ObjectRef
+      -> Option (ResolverValue ObjectRef)
+  resolve_argumentsEquivalent
+    : ∀ parentType fieldName firstArguments laterArguments source,
+        Argument.argumentsEquivalent firstArguments laterArguments
+        -> resolve parentType fieldName firstArguments source
+            = resolve parentType fieldName laterArguments source
 
 -- Spec 6.1.2 `CoerceVariableValues`: partial; variables are assumed already supplied as
 -- modeled input values without coercion or validation.
@@ -118,7 +117,8 @@ instance instCoeNameToTypeRef : Coe Name TypeRef where
   coe := TypeRef.named
 
 -- Spec 6.1.2 variable value lookup helper for already-coerced modeled variables.
-def lookupVariableValue? (variableValues : VariableValues) (name : Name) : Option InputValue :=
+def lookupVariableValue? (variableValues : VariableValues) (name : Name)
+    : Option InputValue :=
   match variableValues with
   | [] => none
   | (variableName, value) :: rest =>
@@ -134,7 +134,8 @@ def inputValueBoolean? (variableValues : VariableValues) : InputValue -> Option 
 
 -- Spec 6.3.2 `CollectFields` inline `@skip`/`@include` checks: local per-directive
 -- helper, not a named spec algorithm.
-def directiveAllowsSelectionBool (variableValues : VariableValues) : DirectiveApplication -> Bool
+def directiveAllowsSelectionBool (variableValues : VariableValues)
+    : DirectiveApplication -> Bool
   | .skip ifArgument =>
       match inputValueBoolean? variableValues ifArgument with
       | some value => !value
@@ -147,8 +148,10 @@ def directiveAllowsSelectionBool (variableValues : VariableValues) : DirectiveAp
 -- Spec 6.3.2 `CollectFields` inline directive checks: local helper over one selection's
 -- directive list, not a named spec algorithm.
 def selectionDirectivesAllowBool (variableValues : VariableValues)
-    (directives : List DirectiveApplication) : Bool :=
-  directives.all (fun directive => directiveAllowsSelectionBool variableValues directive)
+    (directives : List DirectiveApplication)
+    : Bool :=
+  directives.all
+    (fun directive => directiveAllowsSelectionBool variableValues directive)
 
 -- Spec 6.3.2 `DoesFragmentTypeApply` needs a runtime object type when the source value
 -- is object-like.
@@ -160,7 +163,8 @@ def runtimeObjectType? : ResolverValue ObjectRef -> Option Name
 -- known, but falls back to parent/type overlap for non-object placeholder values.
 def doesFragmentTypeApplyBool
     (schema : Schema) (parentType : Name)
-    (source : ResolverValue ObjectRef) (typeCondition : Name) : Bool :=
+    (source : ResolverValue ObjectRef) (typeCondition : Name)
+    : Bool :=
   match runtimeObjectType? source with
   | some objectName => schema.typeIncludesObjectBool typeCondition objectName
   | none => schema.typesOverlapBool parentType typeCondition
@@ -176,8 +180,8 @@ structure ExecutableField where
 deriving Repr
 
 -- Spec 6.3.2 collected fields map helper: inserts one existing group into another map.
-def addExecutableGroup (group : Name × List ExecutableField) :
-    List (Name × List ExecutableField) -> List (Name × List ExecutableField)
+def addExecutableGroup (group : Name × List ExecutableField)
+    : List (Name × List ExecutableField) -> List (Name × List ExecutableField)
   | [] => [group]
   | (responseName, fields) :: rest =>
       if responseName == group.fst then
@@ -186,8 +190,8 @@ def addExecutableGroup (group : Name × List ExecutableField) :
         (responseName, fields) :: addExecutableGroup group rest
 
 -- Spec 6.3.2 `CollectFields` grouping merge for list-backed response-name maps.
-def mergeExecutableGroups (left right : List (Name × List ExecutableField)) :
-    List (Name × List ExecutableField) :=
+def mergeExecutableGroups (left right : List (Name × List ExecutableField))
+    : List (Name × List ExecutableField) :=
   right.foldl (fun grouped group => addExecutableGroup group grouped) left
 
 -- Fuel exhaustion is an internal truncation of the executable model, so it is modeled
@@ -208,21 +212,20 @@ def nonNullCompletion (completed : Result ResponseValue) : Result ResponseValue 
   match completed with
   | .error errors => .error errors
   | .ok (.null, errors) =>
-      .error <|
-        match errors with
-        | 0 => 1
-        | errors + 1 => errors + 1
+      .error
+      <| match errors with
+          | 0 => 1
+          | errors + 1 => errors + 1
   | .ok (response, errors) => .ok (response, errors)
 
-def singleFieldResult (responseName : Name)
-    (completed : Result ResponseValue) :
-    Result (List (Name × ResponseValue)) :=
+def singleFieldResult (responseName : Name) (completed : Result ResponseValue)
+    : Result (List (Name × ResponseValue)) :=
   match completed with
   | .error errors => .error errors
   | .ok (response, errors) => .ok ([(responseName, response)], errors)
 
-def catchBubbleAsNull {α : Type} (wrap : α -> ResponseValue)
-    (completed : Result α) : Result ResponseValue :=
+def catchBubbleAsNull {α : Type} (wrap : α -> ResponseValue) (completed : Result α)
+    : Result ResponseValue :=
   match completed with
   | .error errors => .ok (.null, errors)
   | .ok (value, errors) => .ok (wrap value, errors)
@@ -232,19 +235,23 @@ def catchBubbleAsNull {α : Type} (wrap : α -> ResponseValue)
 mutual
   -- Spec 6.3.2 `CollectFields` selection step: partial; handles built-in directives and
   -- inline fragments.
-  def collectSelection
-      (schema : Schema) (variableValues : VariableValues) :
-      Name -> ResolverValue ObjectRef -> Selection ->
-        List (Name × List ExecutableField)
-    | parentType, _source, .field responseName fieldName arguments directives selectionSet =>
+  def collectSelection (schema : Schema) (variableValues : VariableValues)
+      : Name -> ResolverValue ObjectRef -> Selection
+        -> List (Name × List ExecutableField)
+    | parentType,
+      _source,
+      .field responseName fieldName arguments directives selectionSet =>
         if selectionDirectivesAllowBool variableValues directives then
-          [(responseName, [{
-            parentType := parentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := selectionSet
-          }])]
+          [(
+            responseName,
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := selectionSet
+            }]
+          )]
         else
           []
     | parentType, source, .inlineFragment none directives selectionSet =>
@@ -252,7 +259,9 @@ mutual
           collectFields schema variableValues parentType source selectionSet
         else
           []
-    | parentType, source, .inlineFragment (some typeCondition) directives selectionSet =>
+    | parentType,
+      source,
+      .inlineFragment (some typeCondition) directives selectionSet =>
         if selectionDirectivesAllowBool variableValues directives then
           if doesFragmentTypeApplyBool schema parentType source typeCondition then
             collectFields schema variableValues parentType source selectionSet
@@ -263,10 +272,9 @@ mutual
 
   -- Spec 6.3.2 `CollectFields`: partial; list-backed ordered grouping of executable
   -- fields by response name.
-  def collectFields
-      (schema : Schema) (variableValues : VariableValues) :
-      Name -> ResolverValue ObjectRef -> List Selection ->
-        List (Name × List ExecutableField)
+  def collectFields (schema : Schema) (variableValues : VariableValues)
+      : Name -> ResolverValue ObjectRef -> List Selection
+        -> List (Name × List ExecutableField)
     | _parentType, _source, [] => []
     | parentType, source, selection :: rest =>
         mergeExecutableGroups
@@ -278,12 +286,13 @@ mutual
   -- type.
   def collectSubfields
       (schema : Schema) (variableValues : VariableValues)
-      (objectType : Name) (objectValue : ResolverValue ObjectRef) :
-      List ExecutableField -> List (Name × List ExecutableField)
+      (objectType : Name) (objectValue : ResolverValue ObjectRef)
+      : List ExecutableField -> List (Name × List ExecutableField)
     | [] => []
     | field :: fields =>
         mergeExecutableGroups
-          (collectFields schema variableValues objectType objectValue field.selectionSet)
+          (collectFields schema variableValues objectType objectValue
+            field.selectionSet)
           (collectSubfields schema variableValues objectType objectValue fields)
 end
 
@@ -295,17 +304,14 @@ mutual
   def executeCollectedFields
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) (fuel : Nat)
-      (source : ResolverValue ObjectRef) :
-      List (Name × List ExecutableField) ->
-        Result (List (Name × ResponseValue))
+      (source : ResolverValue ObjectRef)
+      : List (Name × List ExecutableField) -> Result (List (Name × ResponseValue))
     | [] => .ok ([], 0)
     | (responseName, fields) :: rest =>
         let head :=
-          executeField schema resolvers variableValues fuel source
-            responseName fields
+          executeField schema resolvers variableValues fuel source responseName fields
         let tail :=
-          executeCollectedFields schema resolvers variableValues
-            fuel source rest
+          executeCollectedFields schema resolvers variableValues fuel source rest
         Result.combine List.append head tail
 
   -- Spec 6.4 `ExecuteField`: resolves one grouped response name once and completes
@@ -316,8 +322,8 @@ mutual
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) (fuel : Nat)
       (source : ResolverValue ObjectRef)
-      (responseName : Name) :
-      List ExecutableField -> Result (List (Name × ResponseValue))
+      (responseName : Name)
+      : List ExecutableField -> Result (List (Name × ResponseValue))
     | [] => .error 1
     | field :: fields =>
         match fuel with
@@ -327,7 +333,7 @@ mutual
             | none => .error 1
             | some fieldDefinition =>
                 match resolvers.resolve field.parentType field.fieldName
-                    field.arguments source with
+                        field.arguments source with
                 | none =>
                     singleFieldResult responseName
                       (handleFieldError fieldDefinition.outputType)
@@ -343,15 +349,14 @@ mutual
   -- carried by `ResolverValue.object`.
   def completeValue
       (schema : Schema) (resolvers : Resolvers ObjectRef)
-      (variableValues : VariableValues) :
-      Nat -> TypeRef -> List ExecutableField -> ResolverValue ObjectRef ->
-        Result ResponseValue
+      (variableValues : VariableValues)
+      : Nat -> TypeRef -> List ExecutableField -> ResolverValue ObjectRef
+        -> Result ResponseValue
     | 0, _fieldType, _fields, _value =>
         outOfFuel
     | fuel, .nonNull inner, fields, value =>
         nonNullCompletion
-          (completeValue schema resolvers variableValues
-            fuel inner fields value)
+          (completeValue schema resolvers variableValues fuel inner fields value)
     | _fuel + 1, _fieldType, _fields, .null =>
         .ok (.null, 0)
     | _fuel + 1, .named typeName, _fields, .scalar value =>
@@ -369,8 +374,7 @@ mutual
           .error 1
     | fuel + 1, .list inner, fields, .list values =>
         let completed :=
-          completeValueList schema resolvers variableValues
-            fuel inner fields values
+          completeValueList schema resolvers variableValues fuel inner fields values
         catchBubbleAsNull ResponseValue.list completed
     | _fuel + 1, .named _typeName, _fields, .list _values =>
         .error 1
@@ -381,16 +385,14 @@ mutual
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues)
       (fuel : Nat) (itemType : TypeRef)
-      (fields : List ExecutableField) :
-      List (ResolverValue ObjectRef) -> Result (List ResponseValue)
+      (fields : List ExecutableField)
+      : List (ResolverValue ObjectRef) -> Result (List ResponseValue)
     | [] => .ok ([], 0)
     | value :: values =>
         let head :=
-          completeValue schema resolvers variableValues
-            fuel itemType fields value
+          completeValue schema resolvers variableValues fuel itemType fields value
         let tail :=
-          completeValueList schema resolvers variableValues
-            fuel itemType fields values
+          completeValueList schema resolvers variableValues fuel itemType fields values
         Result.combine List.cons head tail
 end
 
@@ -398,8 +400,8 @@ end
 def executeRootSelectionSet
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
-    (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef) :
-    List Selection -> Result (List (Name × ResponseValue))
+    (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef)
+    : List Selection -> Result (List (Name × ResponseValue))
   | selectionSet =>
       executeCollectedFields schema resolvers variableValues
         fuel source
@@ -410,13 +412,12 @@ def executeRootSelectionSet
 def executeSelectionSet
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
-    (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef) :
-    List Selection -> Result (List (Name × ResponseValue)) :=
+    (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef)
+    : List Selection -> Result (List (Name × ResponseValue)) :=
   executeRootSelectionSet schema resolvers variableValues fuel parentType source
 
 -- Convert the internal selection-set completion result into a response envelope.
-def selectionSetResultToResponse :
-    Result (List (Name × ResponseValue)) -> Response
+def selectionSetResultToResponse : Result (List (Name × ResponseValue)) -> Response
   | .error errors => { data := .null, errors := errors }
   | .ok (fields, errors) => { data := .object fields, errors := errors }
 
@@ -429,7 +430,8 @@ def executeQueryFuelBound (operation : Operation) : Nat :=
 -- execution error so equivalence statements are not forced to account for invalid roots.
 def rootSourceAppliesBool
     (schema : Schema) (operation : Operation)
-    (source : ResolverValue ObjectRef) : Bool :=
+    (source : ResolverValue ObjectRef)
+    : Bool :=
   match runtimeObjectType? source with
   | some objectName => schema.typeIncludesObjectBool operation.rootType objectName
   | none => false
@@ -438,7 +440,8 @@ def rootSourceAppliesBool
 def executeQueryWithFuel
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
-    (fuel : Nat) (source : ResolverValue ObjectRef) : Response :=
+    (fuel : Nat) (source : ResolverValue ObjectRef)
+    : Response :=
   if rootSourceAppliesBool schema operation source then
     selectionSetResultToResponse
       (executeRootSelectionSet schema resolvers variableValues
@@ -450,7 +453,8 @@ def executeQueryWithFuel
 def executeQuery
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
-    (source : ResolverValue ObjectRef) : Response :=
+    (source : ResolverValue ObjectRef)
+    : Response :=
   executeQueryWithFuel schema resolvers variableValues operation
     (executeQueryFuelBound operation) source
 
@@ -459,9 +463,8 @@ def executeQuery
 -----------------------------------------------------------------------------------------
 namespace ResponseValue
 
-def insertObjectFieldSorted
-    (field : Name × ResponseValue) :
-    List (Name × ResponseValue) -> List (Name × ResponseValue)
+def insertObjectFieldSorted (field : Name × ResponseValue)
+    : List (Name × ResponseValue) -> List (Name × ResponseValue)
   | [] => [field]
   | candidate :: rest =>
       if field.1 <= candidate.1 then
@@ -469,8 +472,7 @@ def insertObjectFieldSorted
       else
         candidate :: insertObjectFieldSorted field rest
 
-def sortObjectFieldsByName :
-    List (Name × ResponseValue) -> List (Name × ResponseValue)
+def sortObjectFieldsByName : List (Name × ResponseValue) -> List (Name × ResponseValue)
   | [] => []
   | field :: rest =>
       insertObjectFieldSorted field (sortObjectFieldsByName rest)
@@ -488,8 +490,7 @@ mutual
     | value :: rest =>
         canonical value :: canonicalList rest
 
-  def canonicalObjectFields :
-      List (Name × ResponseValue) -> List (Name × ResponseValue)
+  def canonicalObjectFields : List (Name × ResponseValue) -> List (Name × ResponseValue)
     | [] => []
     | (name, value) :: rest =>
         (name, canonical value) :: canonicalObjectFields rest
@@ -502,8 +503,7 @@ end ResponseValue
 namespace Response
 
 def semanticEquivalent (left right : Response) : Prop :=
-  ResponseValue.semanticEquivalent left.data right.data
-    ∧ left.errors = right.errors
+  ResponseValue.semanticEquivalent left.data right.data ∧ left.errors = right.errors
 
 end Response
 

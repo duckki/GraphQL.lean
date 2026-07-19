@@ -11,12 +11,11 @@ namespace NormalForm
 namespace CompleteNormalization
 
 private theorem selectionSetsSemanticallyEquivalentForCompleteBoolVars_of_operations
-    {schema : Schema} {variables : List BoolVar} {left right : Operation} :
-    left.rootType = right.rootType ->
-    operationsSemanticallyEquivalentForCompleteBoolVars schema variables
-      left right ->
-      selectionSetsSemanticallyEquivalentForCompleteBoolVars schema variables
-        left.rootType left.selectionSet right.selectionSet := by
+    {schema : Schema} {variables : List BoolVar} {left right : Operation}
+    : left.rootType = right.rootType
+      -> operationsSemanticallyEquivalentForCompleteBoolVars schema variables left right
+      -> selectionSetsSemanticallyEquivalentForCompleteBoolVars schema variables
+          left.rootType left.selectionSet right.selectionSet := by
   intro hroot hsem ObjectRef resolvers variableValues fuel source hcomplete
     hsource
   rcases hsource with ⟨runtimeType, _ref, hsourceEq, hinclude⟩
@@ -40,8 +39,8 @@ private theorem selectionSetsSemanticallyEquivalentForCompleteBoolVars_of_operat
 private theorem completeNormalBoolCase_of_operationBoolVarsEquivalent
     {left right : Operation} {boolCase : BoolCase}
     (hvariables : operationBoolVarsEquivalent left right)
-    (hcomplete : completeNormalBoolCase (operationBoolVars left) boolCase) :
-    completeNormalBoolCase (operationBoolVars right) boolCase := by
+    (hcomplete : completeNormalBoolCase (operationBoolVars left) boolCase)
+    : completeNormalBoolCase (operationBoolVars right) boolCase := by
   exact completeNormalBoolCase_of_variable_mem_iff hcomplete
     (operationBoolVars_nodup right) fun varName =>
       (hcomplete.2.2 varName).trans (hvariables varName)
@@ -49,8 +48,8 @@ private theorem completeNormalBoolCase_of_operationBoolVarsEquivalent
 private theorem operationBoolVars_eq_nil_of_equivalent_left_nil
     {left right : Operation}
     (hvariables : operationBoolVarsEquivalent left right)
-    (hleft : operationBoolVars left = []) :
-    operationBoolVars right = [] := by
+    (hleft : operationBoolVars left = [])
+    : operationBoolVars right = [] := by
   cases hright : operationBoolVars right with
   | nil => rfl
   | cons head tail =>
@@ -63,9 +62,11 @@ private theorem operationBoolVars_eq_nil_of_equivalent_left_nil
 private theorem list_map_nodup_of_injective_on
     {source : List α} {target : α -> β}
     (hsourceNodup : source.Nodup)
-    (hinjective : ∀ left, left ∈ source -> ∀ right, right ∈ source ->
-      target left = target right -> left = right) :
-    (source.map target).Nodup := by
+    (hinjective
+      : ∀ left,
+          left ∈ source
+          -> ∀ right, right ∈ source -> target left = target right -> left = right)
+    : (source.map target).Nodup := by
   have htargetPairwise :
       List.Pairwise (fun left right => target left ≠ target right) source :=
     List.Pairwise.imp_of_mem
@@ -83,9 +84,10 @@ theorem complete_normal_operations_equalUpToReordering_of_complete_bool_vars_sem
     (hleftNormal : completeNormalOperation schema left)
     (hrightNormal : completeNormalOperation schema right)
     (hvariables : operationBoolVarsEquivalent left right)
-    (hsem : operationsSemanticallyEquivalentForCompleteBoolVars schema
-      (operationBoolVars left) left right) :
-    completeNormalOperationsEqualUpToReordering left right := by
+    (hsem
+      : operationsSemanticallyEquivalentForCompleteBoolVars schema
+          (operationBoolVars left) left right)
+    : completeNormalOperationsEqualUpToReordering left right := by
   classical
   have hroot : left.rootType = right.rootType :=
     GroundTypeNormalization.operation_rootType_eq_of_operationDefinitionValid
@@ -303,9 +305,9 @@ theorem complete_normal_operations_equalUpToReordering_of_complete_bool_vars_sem
               ⟨pairs, hpairsLeft, hpairsRight, hpairsEqual⟩)
 
 theorem complete_normal_operations_semanticallyEquivalent_equalUpToReordering
-    {schema : Schema} {left right : Operation} :
-    completeNormalOperationsSemanticallyEquivalentEqualUpToReordering
-      schema left right := by
+    {schema : Schema} {left right : Operation}
+    : completeNormalOperationsSemanticallyEquivalentEqualUpToReordering
+        schema left right := by
   intro hschema hleftValid hrightValid hleftNormal hrightNormal hvariables
     hsem
   exact

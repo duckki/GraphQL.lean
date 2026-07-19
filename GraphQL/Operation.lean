@@ -31,10 +31,10 @@ def equivalent (left right : Argument) : Prop :=
 -- Spec 5.3.2 field argument comparison lifted to argument lists as unordered sets by
 -- argument name.
 def argumentsEquivalent (left right : List Argument) : Prop :=
-  (∀ argument, argument ∈ left ->
-    ∃ argument', argument' ∈ right ∧ argument.equivalent argument')
-    ∧ (∀ argument, argument ∈ right ->
-      ∃ argument', argument' ∈ left ∧ argument'.equivalent argument)
+  (∀ argument,
+    argument ∈ left -> ∃ argument', argument' ∈ right ∧ argument.equivalent argument')
+  ∧ (∀ argument,
+      argument ∈ right -> ∃ argument', argument' ∈ left ∧ argument'.equivalent argument)
 
 end Argument
 
@@ -88,15 +88,15 @@ def directivesAllowBool (directives : List DirectiveApplication) : Bool :=
 -- aliases are precomputed into response names.
 inductive Selection where
   | field
-      (responseName : Name)
-      (fieldName : Name)
-      (arguments : List Argument)
-      (directives : List DirectiveApplication)
-      (selectionSet : List Selection)
+    (responseName : Name)
+    (fieldName : Name)
+    (arguments : List Argument)
+    (directives : List DirectiveApplication)
+    (selectionSet : List Selection)
   | inlineFragment
-      (typeCondition : Option Name)
-      (directives : List DirectiveApplication)
-      (selectionSet : List Selection)
+    (typeCondition : Option Name)
+    (directives : List DirectiveApplication)
+    (selectionSet : List Selection)
 deriving Repr
 
 -- Spec 2.4 `OperationDefinition`: partial; operation kind and document-level operation
@@ -129,7 +129,8 @@ namespace Selection
 -- Spec 2.8 `Alias` / response name: faithful for fields; non-field selections have no
 -- response name.
 def responseName? : Selection -> Option Name
-  | .field responseName _fieldName _arguments _directives _selectionSet => some responseName
+  | .field responseName _fieldName _arguments _directives _selectionSet =>
+      some responseName
   | _ => none
 
 -- Spec 6.3.2 `CollectSubfields`: partial helper exposing a selection's nested selection
@@ -154,20 +155,23 @@ namespace SelectionSet
 
 -- Spec 6.3.2 field collection groups by response name: partial helper that only filters
 -- direct fields and does not traverse inline fragments.
-def fieldsWithResponseName (responseName : Name) (selectionSet : List Selection) :
-    List Selection :=
-  selectionSet.filter (fun selection =>
-    match selection.responseName? with
-    | some name => name == responseName
-    | none => false)
+def fieldsWithResponseName (responseName : Name) (selectionSet : List Selection)
+    : List Selection :=
+  selectionSet.filter
+    (fun selection =>
+      match selection.responseName? with
+      | some name => name == responseName
+      | none => false)
 
 -- Spec 6.3.2 field collection helper: removes direct fields with one response name.
-def withoutFieldSelectionsWithResponseName (responseName : Name) (selectionSet : List Selection) :
-    List Selection :=
-  selectionSet.filter (fun selection =>
-    match selection.responseName? with
-    | some name => !(name == responseName)
-    | none => true)
+def withoutFieldSelectionsWithResponseName (responseName : Name)
+    (selectionSet : List Selection)
+    : List Selection :=
+  selectionSet.filter
+    (fun selection =>
+      match selection.responseName? with
+      | some name => !(name == responseName)
+      | none => true)
 
 -- Spec 6.3.2 `CollectSubfields` analogue: concatenates nested selection sets.
 def mergeSelectionSets (selections : List Selection) : List Selection :=

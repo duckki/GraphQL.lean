@@ -36,9 +36,8 @@ deriving Repr
 
 namespace InputValue
 
-def insertObjectFieldSorted
-    (field : Name × InputValue) :
-    List (Name × InputValue) -> List (Name × InputValue)
+def insertObjectFieldSorted (field : Name × InputValue)
+    : List (Name × InputValue) -> List (Name × InputValue)
   | [] => [field]
   | candidate :: rest =>
       if field.1 <= candidate.1 then
@@ -69,8 +68,7 @@ mutual
     | value :: rest =>
         canonical value :: canonicalValues rest
 
-  def canonicalObjectFields :
-      List (Name × InputValue) -> List (Name × InputValue)
+  def canonicalObjectFields : List (Name × InputValue) -> List (Name × InputValue)
     | [] => []
     | (name, value) :: rest =>
         (name, canonical value) :: canonicalObjectFields rest
@@ -94,18 +92,17 @@ mutual
   def structuralValuesEquivalent : List InputValue -> List InputValue -> Prop
     | [], [] => True
     | left :: lefts, right :: rights =>
-        structuralEquivalent left right
-          ∧ structuralValuesEquivalent lefts rights
+        structuralEquivalent left right ∧ structuralValuesEquivalent lefts rights
     | _left, _right => False
 
-  def structuralObjectFieldsEquivalent :
-      List (Name × InputValue) -> List (Name × InputValue) -> Prop
+  def structuralObjectFieldsEquivalent
+      : List (Name × InputValue) -> List (Name × InputValue) -> Prop
     | [], [] => True
     | (leftName, leftValue) :: lefts,
-        (rightName, rightValue) :: rights =>
+      (rightName, rightValue) :: rights =>
         leftName = rightName
-          ∧ structuralEquivalent leftValue rightValue
-          ∧ structuralObjectFieldsEquivalent lefts rights
+        ∧ structuralEquivalent leftValue rightValue
+        ∧ structuralObjectFieldsEquivalent lefts rights
     | _left, _right => False
 end
 
@@ -170,8 +167,8 @@ mutual
     | [] => []
     | value :: rest => value.toInputValue :: valuesToInputValues rest
 
-  def objectFieldsToInputFields :
-      List (Name × ConstInputValue) -> List (Name × InputValue)
+  def objectFieldsToInputFields
+      : List (Name × ConstInputValue) -> List (Name × InputValue)
     | [] => []
     | (name, value) :: rest =>
         (name, value.toInputValue) :: objectFieldsToInputFields rest
@@ -378,8 +375,13 @@ namespace Schema
 -- Spec 3.5 built-in scalar availability: faithful for adding the five required scalar
 -- definitions to every modeled schema.
 def builtinScalarDefinitions : List TypeDefinition :=
-  [.builtinScalar .int, .builtinScalar .float, .builtinScalar .string,
-    .builtinScalar .boolean, .builtinScalar .id]
+  [
+    .builtinScalar .int,
+    .builtinScalar .float,
+    .builtinScalar .string,
+    .builtinScalar .boolean,
+    .builtinScalar .id
+  ]
 
 -- Spec 3.5 built-in scalar availability plus user-provided schema types.
 def allTypes (schema : Schema) : List TypeDefinition :=
@@ -409,29 +411,28 @@ def lookupInterface (schema : Schema) (typeName : Name) : Option InterfaceType :
 
 -- Spec 3.6 / 3.7 interface implementation transitivity as proof-facing
 -- reachability over declared interface inheritance.
-inductive InterfaceTypeImplementsInterface (schema : Schema) :
-    Name -> Name -> Prop where
-  | refl (interfaceName : Name) :
-      InterfaceTypeImplementsInterface schema interfaceName interfaceName
+inductive InterfaceTypeImplementsInterface (schema : Schema)
+    : Name -> Name -> Prop where
+  | refl (interfaceName : Name)
+    : InterfaceTypeImplementsInterface schema interfaceName interfaceName
   | trans (interfaceName targetName : Name) (interfaceType : InterfaceType)
-      (parentName : Name)
-      (hlookup : schema.lookupInterface interfaceName = some interfaceType)
-      (hparent : parentName ∈ interfaceType.interfaces)
-      (himplements :
-        InterfaceTypeImplementsInterface schema parentName targetName) :
-      InterfaceTypeImplementsInterface schema interfaceName targetName
+    (parentName : Name)
+    (hlookup : schema.lookupInterface interfaceName = some interfaceType)
+    (hparent : parentName ∈ interfaceType.interfaces)
+    (himplements : InterfaceTypeImplementsInterface schema parentName targetName)
+    : InterfaceTypeImplementsInterface schema interfaceName targetName
 
-def interfaceTypeImplementsInterface (schema : Schema)
-    (interfaceName targetName : Name) : Prop :=
+def interfaceTypeImplementsInterface (schema : Schema) (interfaceName targetName : Name)
+    : Prop :=
   InterfaceTypeImplementsInterface schema interfaceName targetName
 
 -- Boolean counterpart bounded for cyclic raw schema declarations.
-def interfaceTypeImplementsInterfaceBoundedBool (schema : Schema) :
-    Nat -> Name -> Name -> Bool
+def interfaceTypeImplementsInterfaceBoundedBool (schema : Schema)
+    : Nat -> Name -> Name -> Bool
   | 0, _interfaceName, _targetName => false
   | bound + 1, interfaceName, targetName =>
       (interfaceName == targetName)
-        || match schema.lookupInterface interfaceName with
+      || match schema.lookupInterface interfaceName with
           | some interfaceType =>
               interfaceType.interfaces.any
                 (fun parentName =>
@@ -440,50 +441,57 @@ def interfaceTypeImplementsInterfaceBoundedBool (schema : Schema) :
           | none => false
 
 def interfaceTypeImplementsInterfaceBool (schema : Schema)
-    (interfaceName targetName : Name) : Bool :=
+    (interfaceName targetName : Name)
+    : Bool :=
   interfaceTypeImplementsInterfaceBoundedBool
     schema (schema.types.length + 1) interfaceName targetName
 
 -- Spec 3.6 object/interface relationship, including transitive interface inheritance.
 def objectTypeImplementsInterface (schema : Schema)
-    (objectType : ObjectType) (interfaceName : Name) : Prop :=
+    (objectType : ObjectType) (interfaceName : Name)
+    : Prop :=
   ∃ declaredInterfaceName,
     declaredInterfaceName ∈ objectType.interfaces
-      ∧ schema.interfaceTypeImplementsInterface declaredInterfaceName interfaceName
+    ∧ schema.interfaceTypeImplementsInterface declaredInterfaceName interfaceName
 
 def objectTypeImplementsInterfaceBool (schema : Schema)
-    (objectType : ObjectType) (interfaceName : Name) : Bool :=
+    (objectType : ObjectType) (interfaceName : Name)
+    : Bool :=
   objectType.interfaces.any
     (fun declaredInterfaceName =>
       schema.interfaceTypeImplementsInterfaceBool declaredInterfaceName interfaceName)
 
 -- Spec 5.5.2.3 `GetPossibleTypes` object universe: user-defined object types only.
 def objectTypes (schema : Schema) : List ObjectType :=
-  schema.types.filterMap (fun typeDefinition =>
-    match typeDefinition with
-    | .object objectType => some objectType
-    | _ => none)
+  schema.types.filterMap
+    (fun typeDefinition =>
+      match typeDefinition with
+      | .object objectType => some objectType
+      | _ => none)
 
 -- Spec 5.5.2.3 `GetPossibleTypes` interface case: objects implementing an interface.
-def objectTypesImplementingInterface (schema : Schema) (interfaceName : Name) :
-    List Name :=
+def objectTypesImplementingInterface (schema : Schema) (interfaceName : Name)
+    : List Name :=
   (schema.objectTypes.filter
     (fun objectType =>
-      schema.objectTypeImplementsInterfaceBool objectType interfaceName)).map ObjectType.name
+      schema.objectTypeImplementsInterfaceBool objectType interfaceName)).map
+    ObjectType.name
 
-def lookupField (schema : Schema) (parentType fieldName : Name) : Option FieldDefinition := do
+def lookupField (schema : Schema) (parentType fieldName : Name)
+    : Option FieldDefinition := do
   let typeDefinition <- schema.lookupType parentType
   let fields <- typeDefinition.fields?
   fields.find? (fun field => field.name == fieldName)
 
 -- Spec 5.4.1 argument definition lookup by name.
 def lookupArgumentDefinition (definitions : List InputValueDefinition)
-    (argumentName : Name) : Option InputValueDefinition :=
+    (argumentName : Name)
+    : Option InputValueDefinition :=
   definitions.find? (fun definition => definition.name == argumentName)
 
 -- Spec 3.6 / 3.7 field implementation checks use field lookup by name.
-def lookupFieldDefinition (definitions : List FieldDefinition)
-    (fieldName : Name) : Option FieldDefinition :=
+def lookupFieldDefinition (definitions : List FieldDefinition) (fieldName : Name)
+    : Option FieldDefinition :=
   definitions.find? (fun definition => definition.name == fieldName)
 
 def fieldReturnType? (schema : Schema) (parentType fieldName : Name) : Option Name := do
@@ -512,7 +520,7 @@ def typeIncludesObjectBool (schema : Schema) (typeName objectName : Name) : Bool
 def typesOverlap (schema : Schema) (left right : Name) : Prop :=
   ∃ objectName,
     schema.typeIncludesObject left objectName
-      ∧ schema.typeIncludesObject right objectName
+    ∧ schema.typeIncludesObject right objectName
 
 -- Boolean counterpart to `typesOverlap`.
 def typesOverlapBool (schema : Schema) (left right : Name) : Bool :=
@@ -525,38 +533,32 @@ def typeExists (schema : Schema) (typeName : Name) : Prop :=
 
 -- Spec object type category helper.
 def objectType (schema : Schema) (typeName : Name) : Prop :=
-  ∃ objectType,
-    schema.lookupType typeName = some (.object objectType)
+  ∃ objectType, schema.lookupType typeName = some (.object objectType)
 
 -- Spec interface type category helper.
 def interfaceType (schema : Schema) (typeName : Name) : Prop :=
-  ∃ interfaceType,
-    schema.lookupType typeName = some (.interface interfaceType)
+  ∃ interfaceType, schema.lookupType typeName = some (.interface interfaceType)
 
 -- Spec 3.4.2 `IsInputType`: schema-level lookup wrapper for named types.
 def isInputType (schema : Schema) (typeName : Name) : Prop :=
   ∃ typeDefinition,
-    schema.lookupType typeName = some typeDefinition
-      ∧ typeDefinition.isInputType
+    schema.lookupType typeName = some typeDefinition ∧ typeDefinition.isInputType
 
 -- Spec 3.4.2 `IsOutputType`: schema-level lookup wrapper for named types.
 def isOutputType (schema : Schema) (typeName : Name) : Prop :=
   ∃ typeDefinition,
-    schema.lookupType typeName = some typeDefinition
-      ∧ typeDefinition.isOutputType
+    schema.lookupType typeName = some typeDefinition ∧ typeDefinition.isOutputType
 
 -- Spec composite type category: schema-level lookup wrapper for object/interface/union.
 def isCompositeType (schema : Schema) (typeName : Name) : Prop :=
   ∃ typeDefinition,
-    schema.lookupType typeName = some typeDefinition
-      ∧ typeDefinition.isCompositeType
+    schema.lookupType typeName = some typeDefinition ∧ typeDefinition.isCompositeType
 
 -- Spec leaf type category used by field validation and `SameResponseShape`: schema-level
 -- lookup wrapper for scalar/enum types.
 def isLeafType (schema : Schema) (typeName : Name) : Prop :=
   ∃ typeDefinition,
-    schema.lookupType typeName = some typeDefinition
-      ∧ typeDefinition.isLeafType
+    schema.lookupType typeName = some typeDefinition ∧ typeDefinition.isLeafType
 
 end Schema
 
@@ -591,8 +593,8 @@ end TypeRef
 namespace Schema
 
 -- Spec 5.6.2 input object field lookup helper for constant/default validation.
-def getConstInputObjectField? (fields : List (Name × ConstInputValue))
-    (name : Name) : Option ConstInputValue :=
+def getConstInputObjectField? (fields : List (Name × ConstInputValue)) (name : Name)
+    : Option ConstInputValue :=
   match fields with
   | [] => none
   | (fieldName, value) :: rest =>
@@ -601,115 +603,111 @@ def getConstInputObjectField? (fields : List (Name × ConstInputValue))
 mutual
   -- Spec 3.6.1 / 3.10 default-value validity: constants are checked against input
   -- object definitions recursively, while scalar coercion details remain out of scope.
-  inductive ConstInputValueIsCorrectType (schema : Schema) :
-      ConstInputValue -> TypeRef -> Prop where
-    | nullNamed (typeName : Name)
-        (hinput : (TypeRef.named typeName).isInputType schema) :
-        ConstInputValueIsCorrectType schema
+  inductive ConstInputValueIsCorrectType (schema : Schema)
+      : ConstInputValue -> TypeRef -> Prop where
+    | nullNamed (typeName : Name) (hinput : (TypeRef.named typeName).isInputType schema)
+      : ConstInputValueIsCorrectType schema
           ConstInputValue.null (TypeRef.named typeName)
-    | nullList (inner : TypeRef)
-        (hinput : (TypeRef.list inner).isInputType schema) :
-        ConstInputValueIsCorrectType schema
-          ConstInputValue.null (TypeRef.list inner)
+    | nullList (inner : TypeRef) (hinput : (TypeRef.list inner).isInputType schema)
+      : ConstInputValueIsCorrectType schema ConstInputValue.null (TypeRef.list inner)
     | nonNull (value : ConstInputValue) (inner : TypeRef)
-        (hinput : (TypeRef.nonNull inner).isInputType schema)
-        (hnotNull : value ≠ ConstInputValue.null)
-        (hinner : ConstInputValueIsCorrectType schema value inner) :
-        ConstInputValueIsCorrectType schema value (TypeRef.nonNull inner)
+      (hinput : (TypeRef.nonNull inner).isInputType schema)
+      (hnotNull : value ≠ ConstInputValue.null)
+      (hinner : ConstInputValueIsCorrectType schema value inner)
+      : ConstInputValueIsCorrectType schema value (TypeRef.nonNull inner)
     | list (values : List ConstInputValue) (inner : TypeRef)
-        (hinput : (TypeRef.list inner).isInputType schema)
-        (hitems :
-          ∀ item, item ∈ values ->
-            ConstInputValueIsCorrectType schema item inner) :
-        ConstInputValueIsCorrectType schema
+      (hinput : (TypeRef.list inner).isInputType schema)
+      (hitems : ∀ item, item ∈ values -> ConstInputValueIsCorrectType schema item inner)
+      : ConstInputValueIsCorrectType schema
           (ConstInputValue.list values) (TypeRef.list inner)
     | objectNamed (fields : List (Name × ConstInputValue)) (typeName : Name)
-        (inputObject : InputObjectType)
-        (hinput : (TypeRef.named typeName).isInputType schema)
-        (hlookup : schema.lookupInputObject typeName = some inputObject)
-        (hfields :
-          ConstInputObjectFieldsValid schema inputObject.inputFields fields) :
-        ConstInputValueIsCorrectType schema
+      (inputObject : InputObjectType)
+      (hinput : (TypeRef.named typeName).isInputType schema)
+      (hlookup : schema.lookupInputObject typeName = some inputObject)
+      (hfields : ConstInputObjectFieldsValid schema inputObject.inputFields fields)
+      : ConstInputValueIsCorrectType schema
           (ConstInputValue.object fields) (TypeRef.named typeName)
     | objectAsListItem (fields : List (Name × ConstInputValue)) (inner : TypeRef)
-        (hinput : (TypeRef.list inner).isInputType schema)
-        (hitem : ConstInputObjectAsListItemValid schema fields inner) :
-        ConstInputValueIsCorrectType schema
+      (hinput : (TypeRef.list inner).isInputType schema)
+      (hitem : ConstInputObjectAsListItemValid schema fields inner)
+      : ConstInputValueIsCorrectType schema
           (ConstInputValue.object fields) (TypeRef.list inner)
     | singletonListItem (value : ConstInputValue) (inner : TypeRef)
-        (hinput : (TypeRef.list inner).isInputType schema)
-        (hnotList : ∀ values, value ≠ ConstInputValue.list values)
-        (hnotObject : ∀ fields, value ≠ ConstInputValue.object fields)
-        (hnotNull : value ≠ ConstInputValue.null)
-        (hitem : ConstInputValueIsCorrectType schema value inner) :
-        ConstInputValueIsCorrectType schema value (TypeRef.list inner)
+      (hinput : (TypeRef.list inner).isInputType schema)
+      (hnotList : ∀ values, value ≠ ConstInputValue.list values)
+      (hnotObject : ∀ fields, value ≠ ConstInputValue.object fields)
+      (hnotNull : value ≠ ConstInputValue.null)
+      (hitem : ConstInputValueIsCorrectType schema value inner)
+      : ConstInputValueIsCorrectType schema value (TypeRef.list inner)
     | namedNonInputObject (value : ConstInputValue) (typeName : Name)
-        (hinput : (TypeRef.named typeName).isInputType schema)
-        (hnotObject : ∀ fields, value ≠ ConstInputValue.object fields)
-        (hnotNull : value ≠ ConstInputValue.null)
-        (hlookup : schema.lookupInputObject typeName = none) :
-        ConstInputValueIsCorrectType schema value (TypeRef.named typeName)
+      (hinput : (TypeRef.named typeName).isInputType schema)
+      (hnotObject : ∀ fields, value ≠ ConstInputValue.object fields)
+      (hnotNull : value ≠ ConstInputValue.null)
+      (hlookup : schema.lookupInputObject typeName = none)
+      : ConstInputValueIsCorrectType schema value (TypeRef.named typeName)
 
   -- Spec 3.6.1 / 3.10 default-value validity through 5.6.2-5.6.4 input object rules:
   -- object fields must be unique, known, correctly typed, and include required fields.
-  inductive ConstInputObjectFieldsValid (schema : Schema) :
-      List InputValueDefinition -> List (Name × ConstInputValue) -> Prop where
+  inductive ConstInputObjectFieldsValid (schema : Schema)
+      : List InputValueDefinition -> List (Name × ConstInputValue) -> Prop where
     | intro (definitions : List InputValueDefinition)
-        (fields : List (Name × ConstInputValue))
-        (hnodup : (fields.map Prod.fst).Nodup)
-        (hknown :
-          ∀ name value, (name, value) ∈ fields ->
-            (Schema.lookupArgumentDefinition definitions name).isSome = true)
-        (htyped :
-          ∀ name value definition, (name, value) ∈ fields ->
-            Schema.lookupArgumentDefinition definitions name = some definition ->
-              ConstInputValueIsCorrectType schema value definition.inputType)
-        (hrequiredPresent :
-          ∀ definition, definition ∈ definitions ->
-            definition.isRequired ->
-              (getConstInputObjectField? fields definition.name).isSome = true)
-        (hrequiredNonNull :
-          ∀ definition value, definition ∈ definitions ->
-            definition.isRequired ->
-              getConstInputObjectField? fields definition.name = some value ->
-                value.nonNull) :
-        ConstInputObjectFieldsValid schema definitions fields
+      (fields : List (Name × ConstInputValue))
+      (hnodup : (fields.map Prod.fst).Nodup)
+      (hknown
+        : ∀ name value,
+            (name, value) ∈ fields
+            -> (Schema.lookupArgumentDefinition definitions name).isSome = true)
+      (htyped
+        : ∀ name value definition,
+            (name, value) ∈ fields
+            -> Schema.lookupArgumentDefinition definitions name = some definition
+            -> ConstInputValueIsCorrectType schema value definition.inputType)
+      (hrequiredPresent
+        : ∀ definition,
+            definition ∈ definitions
+            -> definition.isRequired
+            -> (getConstInputObjectField? fields definition.name).isSome = true)
+      (hrequiredNonNull
+        : ∀ definition value,
+            definition ∈ definitions
+            -> definition.isRequired
+            -> getConstInputObjectField? fields definition.name = some value
+            -> value.nonNull)
+      : ConstInputObjectFieldsValid schema definitions fields
 
   -- Spec 5.6.1 list input rule analogue for constants: a non-list value can be checked
   -- as a single list item at a list location.
-  inductive ConstInputObjectAsListItemValid (schema : Schema) :
-      List (Name × ConstInputValue) -> TypeRef -> Prop where
+  inductive ConstInputObjectAsListItemValid (schema : Schema)
+      : List (Name × ConstInputValue) -> TypeRef -> Prop where
     | intro (fields : List (Name × ConstInputValue)) (inner : TypeRef)
-        (hvalue :
-          ConstInputValueIsCorrectType schema
-            (ConstInputValue.object fields) inner) :
-        ConstInputObjectAsListItemValid schema fields inner
+      (hvalue
+        : ConstInputValueIsCorrectType schema (ConstInputValue.object fields) inner)
+      : ConstInputObjectAsListItemValid schema fields inner
 end
 
 -- Spec 3.6.1 / 3.10 default-value validity wrapper.
 def constInputValueIsCorrectType (schema : Schema)
-    (value : ConstInputValue) (expectedType : TypeRef) : Prop :=
+    (value : ConstInputValue) (expectedType : TypeRef)
+    : Prop :=
   ConstInputValueIsCorrectType schema value expectedType
 
 -- Spec 3.6 / 3.7 field return covariance for object/interface implementation:
 -- wrappers are structural, leaf named types are invariant, and composite named types
 -- compare by possible runtime object subset.
-def namedOutputTypeSubtype (schema : Schema)
-    (implementation expected : Name) : Prop :=
+def namedOutputTypeSubtype (schema : Schema) (implementation expected : Name) : Prop :=
   (schema.isLeafType implementation
     ∧ schema.isLeafType expected
     ∧ implementation = expected)
-    ∨ (schema.isCompositeType implementation
+  ∨ (schema.isCompositeType implementation
       ∧ schema.isCompositeType expected
       ∧ ∀ objectName,
-        schema.typeIncludesObject implementation objectName ->
-          schema.typeIncludesObject expected objectName)
+          schema.typeIncludesObject implementation objectName
+          -> schema.typeIncludesObject expected objectName)
 
 -- Spec 3.6 / 3.7 field return covariance with GraphQL wrapper rules: implementation
 -- non-null may refine nullable, expected non-null requires implementation non-null, and
 -- list wrappers must match recursively.
-def outputTypeSubtype (schema : Schema) :
-    TypeRef -> TypeRef -> Prop
+def outputTypeSubtype (schema : Schema) : TypeRef -> TypeRef -> Prop
   | .nonNull implementationInner, .nonNull expectedInner =>
       outputTypeSubtype schema implementationInner expectedInner
   | .nonNull implementationInner, expected =>
@@ -727,8 +725,8 @@ end Schema
 namespace ConstInputValue
 
 -- Spec 3.6.1 / 3.10 default-value validity exposed from the constant-value namespace.
-def isCorrectType (value : ConstInputValue)
-    (schema : Schema) (expectedType : TypeRef) : Prop :=
+def isCorrectType (value : ConstInputValue) (schema : Schema) (expectedType : TypeRef)
+    : Prop :=
   schema.constInputValueIsCorrectType value expectedType
 
 end ConstInputValue

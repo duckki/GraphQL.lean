@@ -12,8 +12,8 @@ namespace NormalForm
 namespace GroundTypeNormalization
 
 mutual
-  theorem inputValue_structuralEquivalent_refl :
-      ∀ value, InputValue.structuralEquivalent value value
+  theorem inputValue_structuralEquivalent_refl
+      : ∀ value, InputValue.structuralEquivalent value value
     | .null => by simp [InputValue.structuralEquivalent]
     | .int _ => by simp [InputValue.structuralEquivalent]
     | .float _ => by simp [InputValue.structuralEquivalent]
@@ -28,16 +28,16 @@ mutual
         simp [InputValue.structuralEquivalent,
           inputObjectFields_structuralEquivalent_refl fields]
 
-  theorem inputValues_structuralEquivalent_refl :
-      ∀ values, InputValue.structuralValuesEquivalent values values
+  theorem inputValues_structuralEquivalent_refl
+      : ∀ values, InputValue.structuralValuesEquivalent values values
     | [] => by simp [InputValue.structuralValuesEquivalent]
     | value :: rest => by
         simp [InputValue.structuralValuesEquivalent,
           inputValue_structuralEquivalent_refl value,
           inputValues_structuralEquivalent_refl rest]
 
-  theorem inputObjectFields_structuralEquivalent_refl :
-      ∀ fields, InputValue.structuralObjectFieldsEquivalent fields fields
+  theorem inputObjectFields_structuralEquivalent_refl
+      : ∀ fields, InputValue.structuralObjectFieldsEquivalent fields fields
     | [] => by simp [InputValue.structuralObjectFieldsEquivalent]
     | (name, value) :: rest => by
         simp [InputValue.structuralObjectFieldsEquivalent,
@@ -45,33 +45,29 @@ mutual
           inputObjectFields_structuralEquivalent_refl rest]
 end
 
-theorem inputValue_equivalent_refl (value : InputValue) :
-    value.equivalent value := by
+theorem inputValue_equivalent_refl (value : InputValue) : value.equivalent value := by
   exact inputValue_structuralEquivalent_refl value.canonical
 
-theorem argument_equivalent_refl (argument : Argument) :
-    argument.equivalent argument := by
+theorem argument_equivalent_refl (argument : Argument)
+    : argument.equivalent argument := by
   exact ⟨rfl, inputValue_equivalent_refl argument.value⟩
 
-theorem argumentsEquivalent_refl (arguments : List Argument) :
-    Argument.argumentsEquivalent arguments arguments := by
+theorem argumentsEquivalent_refl (arguments : List Argument)
+    : Argument.argumentsEquivalent arguments arguments := by
   constructor
   · intro argument hargument
     exact ⟨argument, hargument, argument_equivalent_refl argument⟩
   · intro argument hargument
     exact ⟨argument, hargument, argument_equivalent_refl argument⟩
 
-theorem objectType_isCompositeType
-    {schema : Schema} {typeName : Name} :
-    schema.objectType typeName -> schema.isCompositeType typeName := by
+theorem objectType_isCompositeType {schema : Schema} {typeName : Name}
+    : schema.objectType typeName -> schema.isCompositeType typeName := by
   intro hobject
   rcases hobject with ⟨objectType, hlookup⟩
   exact ⟨.object objectType, hlookup, by simp [TypeDefinition.isCompositeType]⟩
 
-theorem leafTypeNameBool_eq_true_isLeafType
-    (schema : Schema) {typeName : Name} :
-    leafTypeNameBool schema typeName = true ->
-      schema.isLeafType typeName := by
+theorem leafTypeNameBool_eq_true_isLeafType (schema : Schema) {typeName : Name}
+    : leafTypeNameBool schema typeName = true -> schema.isLeafType typeName := by
   intro hleaf
   unfold leafTypeNameBool at hleaf
   cases hlookup : schema.lookupType typeName with
@@ -97,10 +93,8 @@ theorem leafTypeNameBool_eq_true_isLeafType
       | inputObject inputObjectType =>
           simp [hlookup] at hleaf
 
-theorem leafTypeNameBool_eq_true_of_isLeafType
-    (schema : Schema) {typeName : Name} :
-    schema.isLeafType typeName ->
-      leafTypeNameBool schema typeName = true := by
+theorem leafTypeNameBool_eq_true_of_isLeafType (schema : Schema) {typeName : Name}
+    : schema.isLeafType typeName -> leafTypeNameBool schema typeName = true := by
   intro hleaf
   rcases hleaf with ⟨typeDefinition, hlookup, hleafDefinition⟩
   cases typeDefinition with
@@ -119,9 +113,8 @@ theorem leafTypeNameBool_eq_true_of_isLeafType
   | inputObject inputObjectType =>
       simp [TypeDefinition.isLeafType] at hleafDefinition
 
-theorem isLeafType_not_isCompositeType
-    {schema : Schema} {typeName : Name} :
-    schema.isLeafType typeName -> schema.isCompositeType typeName -> False := by
+theorem isLeafType_not_isCompositeType {schema : Schema} {typeName : Name}
+    : schema.isLeafType typeName -> schema.isCompositeType typeName -> False := by
   intro hleaf hcomposite
   rcases hleaf with ⟨leafDefinition, hleafLookup, hleafType⟩
   rcases hcomposite with
@@ -132,10 +125,8 @@ theorem isLeafType_not_isCompositeType
     simp [TypeDefinition.isLeafType, TypeDefinition.isCompositeType]
       at hleafType hcompositeType
 
-theorem leafTypeNameBool_eq_false_of_isCompositeType
-    (schema : Schema) {typeName : Name} :
-    schema.isCompositeType typeName ->
-      leafTypeNameBool schema typeName = false := by
+theorem leafTypeNameBool_eq_false_of_isCompositeType (schema : Schema) {typeName : Name}
+    : schema.isCompositeType typeName -> leafTypeNameBool schema typeName = false := by
   intro hcomposite
   cases hleaf : leafTypeNameBool schema typeName
   · rfl
@@ -144,10 +135,8 @@ theorem leafTypeNameBool_eq_false_of_isCompositeType
         (leafTypeNameBool_eq_true_isLeafType schema hleaf)
         hcomposite)
 
-theorem objectTypeNameBool_eq_false_of_isLeafType
-    (schema : Schema) {typeName : Name} :
-    schema.isLeafType typeName ->
-      objectTypeNameBool schema typeName = false := by
+theorem objectTypeNameBool_eq_false_of_isLeafType (schema : Schema) {typeName : Name}
+    : schema.isLeafType typeName -> objectTypeNameBool schema typeName = false := by
   intro hleaf
   rcases hleaf with ⟨typeDefinition, hlookup, hleafDefinition⟩
   cases typeDefinition with
@@ -166,55 +155,45 @@ theorem objectTypeNameBool_eq_false_of_isLeafType
   | inputObject inputObjectType =>
       simp [TypeDefinition.isLeafType] at hleafDefinition
 
-theorem possibleTypes_eq_nil_of_leafTypeNameBool
-    (schema : Schema) {typeName : Name} :
-    leafTypeNameBool schema typeName = true ->
-      schema.getPossibleTypes typeName = [] := by
+theorem possibleTypes_eq_nil_of_leafTypeNameBool (schema : Schema) {typeName : Name}
+    : leafTypeNameBool schema typeName = true
+      -> schema.getPossibleTypes typeName = [] := by
   intro hleaf
   exact possibleTypes_eq_nil_of_isLeafType schema
     (leafTypeNameBool_eq_true_isLeafType schema hleaf)
 
-theorem object_typeIncludesObject_self
-    (schema : Schema) {typeName : Name} :
-    schema.objectType typeName ->
-      schema.typeIncludesObject typeName typeName := by
+theorem object_typeIncludesObject_self (schema : Schema) {typeName : Name}
+    : schema.objectType typeName -> schema.typeIncludesObject typeName typeName := by
   intro hobject
   exact List.contains_iff_mem.mp
     (object_typeIncludesObjectBool_self schema hobject)
 
-theorem typesOverlap_possible_object
-    (schema : Schema) {parentType objectType : Name} :
-    objectType ∈ schema.getPossibleTypes parentType ->
-    schema.objectType objectType ->
-      schema.typesOverlap parentType objectType := by
+theorem typesOverlap_possible_object (schema : Schema) {parentType objectType : Name}
+    : objectType ∈ schema.getPossibleTypes parentType
+      -> schema.objectType objectType
+      -> schema.typesOverlap parentType objectType := by
   intro hpossible hobject
   exact ⟨objectType, hpossible,
     object_typeIncludesObject_self schema hobject⟩
 
-theorem typesOverlapBool_eq_true_of_typesOverlap
-    (schema : Schema) {left right : Name} :
-    schema.typesOverlap left right ->
-      schema.typesOverlapBool left right = true := by
+theorem typesOverlapBool_eq_true_of_typesOverlap (schema : Schema) {left right : Name}
+    : schema.typesOverlap left right -> schema.typesOverlapBool left right = true := by
   intro hoverlap
   rcases hoverlap with ⟨objectName, hleft, hright⟩
   unfold Schema.typesOverlapBool
   rw [List.any_eq_true]
   exact ⟨objectName, hleft, List.contains_iff_mem.mpr hright⟩
 
-theorem possibleTypes_ne_nil_left_of_typesOverlap
-    (schema : Schema) {left right : Name} :
-    schema.typesOverlap left right ->
-      schema.getPossibleTypes left ≠ [] := by
+theorem possibleTypes_ne_nil_left_of_typesOverlap (schema : Schema) {left right : Name}
+    : schema.typesOverlap left right -> schema.getPossibleTypes left ≠ [] := by
   intro hoverlap hnil
   rcases hoverlap with ⟨objectName, hleft, _hright⟩
   unfold Schema.typeIncludesObject at hleft
   rw [hnil] at hleft
   cases hleft
 
-theorem possibleTypes_ne_nil_right_of_typesOverlap
-    (schema : Schema) {left right : Name} :
-    schema.typesOverlap left right ->
-      schema.getPossibleTypes right ≠ [] := by
+theorem possibleTypes_ne_nil_right_of_typesOverlap (schema : Schema) {left right : Name}
+    : schema.typesOverlap left right -> schema.getPossibleTypes right ≠ [] := by
   intro hoverlap hnil
   rcases hoverlap with ⟨objectName, _hleft, hright⟩
   unfold Schema.typeIncludesObject at hright
@@ -223,21 +202,21 @@ theorem possibleTypes_ne_nil_right_of_typesOverlap
 
 theorem selectionSetValidInPossibleTypes_nil
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (parentType : Name) :
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType [] := by
+    (parentType : Name)
+    : Validation.selectionSetValidInPossibleTypes schema
+        variableDefinitions parentType [] := by
   simp [Validation.selectionSetValidInPossibleTypes]
 
 theorem selectionSetValidInPossibleTypes_cons
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {selection : Selection}
-    {selectionSet : List Selection} :
-    Validation.selectionValidInPossibleTypes schema variableDefinitions
-      parentType selection ->
-    Validation.selectionSetValidInPossibleTypes schema variableDefinitions
-      parentType selectionSet ->
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions parentType (selection :: selectionSet) := by
+    {selectionSet : List Selection}
+    : Validation.selectionValidInPossibleTypes schema variableDefinitions
+        parentType selection
+      -> Validation.selectionSetValidInPossibleTypes schema variableDefinitions
+          parentType selectionSet
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType (selection :: selectionSet) := by
   intro hselection hselectionSet
   simp [Validation.selectionSetValidInPossibleTypes, hselection,
     hselectionSet]
@@ -245,34 +224,34 @@ theorem selectionSetValidInPossibleTypes_cons
 theorem selectionSetValidInPossibleTypes_head
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {selection : Selection}
-    {selectionSet : List Selection} :
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType (selection :: selectionSet) ->
-      Validation.selectionValidInPossibleTypes schema variableDefinitions
-        parentType selection := by
+    {selectionSet : List Selection}
+    : Validation.selectionSetValidInPossibleTypes schema
+        variableDefinitions parentType (selection :: selectionSet)
+      -> Validation.selectionValidInPossibleTypes schema variableDefinitions
+          parentType selection := by
   intro hvalid
   simpa [Validation.selectionSetValidInPossibleTypes] using hvalid.1
 
 theorem selectionSetValidInPossibleTypes_tail
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {selection : Selection}
-    {selectionSet : List Selection} :
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType (selection :: selectionSet) ->
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions parentType selectionSet := by
+    {selectionSet : List Selection}
+    : Validation.selectionSetValidInPossibleTypes schema
+        variableDefinitions parentType (selection :: selectionSet)
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType selectionSet := by
   intro hvalid
   simpa [Validation.selectionSetValidInPossibleTypes] using hvalid.2
 
 theorem selectionSetValidInPossibleTypes_append
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType : Name} {left right : List Selection} :
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType left ->
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType right ->
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions parentType (left ++ right) := by
+    {parentType : Name} {left right : List Selection}
+    : Validation.selectionSetValidInPossibleTypes schema
+        variableDefinitions parentType left
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType right
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType (left ++ right) := by
   intro hleft hright
   induction left with
   | nil =>
@@ -287,11 +266,11 @@ theorem selectionSetValidInPossibleTypes_append
 
 theorem selectionSetValidInPossibleTypes_append_left
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType : Name} {left right : List Selection} :
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType (left ++ right) ->
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions parentType left := by
+    {parentType : Name} {left right : List Selection}
+    : Validation.selectionSetValidInPossibleTypes schema
+        variableDefinitions parentType (left ++ right)
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType left := by
   intro hvalid
   induction left with
   | nil =>
@@ -303,11 +282,11 @@ theorem selectionSetValidInPossibleTypes_append_left
 
 theorem selectionSetValidInPossibleTypes_append_right
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType : Name} {left right : List Selection} :
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType (left ++ right) ->
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions parentType right := by
+    {parentType : Name} {left right : List Selection}
+    : Validation.selectionSetValidInPossibleTypes schema
+        variableDefinitions parentType (left ++ right)
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType right := by
   intro hvalid
   induction left with
   | nil =>
@@ -316,13 +295,13 @@ theorem selectionSetValidInPossibleTypes_append_right
       exact ih (selectionSetValidInPossibleTypes_tail hvalid)
 
 theorem selectionSetValidInPossibleTypes_withoutFieldSelectionsWithResponseName
-    (schema : Schema) (responseName : Name) :
-    ∀ variableDefinitions parentType selectionSet,
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions parentType selectionSet ->
+    (schema : Schema) (responseName : Name)
+    : ∀ variableDefinitions parentType selectionSet,
         Validation.selectionSetValidInPossibleTypes schema
-          variableDefinitions parentType
-          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+          variableDefinitions parentType selectionSet
+        -> Validation.selectionSetValidInPossibleTypes schema
+            variableDefinitions parentType
+            (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
   | _variableDefinitions, _parentType, [], _hvalid => by
       simp [withoutFieldSelectionsWithResponseName,
         Validation.selectionSetValidInPossibleTypes]
@@ -381,13 +360,14 @@ theorem selectionSetValidInPossibleTypes_withoutFieldSelectionsWithResponseName
 
 theorem selectionSetValidInPossibleTypes_mergeSelectionSets_of_subselections
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType : Name} :
-    ∀ selections,
-      (∀ selection, selection ∈ selections ->
-        Validation.selectionSetValidInPossibleTypes schema
-          variableDefinitions parentType selection.subselections) ->
-        Validation.selectionSetValidInPossibleTypes schema
-          variableDefinitions parentType (mergeSelectionSets selections)
+    {parentType : Name}
+    : ∀ selections,
+        (∀ selection,
+          selection ∈ selections
+          -> Validation.selectionSetValidInPossibleTypes schema
+              variableDefinitions parentType selection.subselections)
+        -> Validation.selectionSetValidInPossibleTypes schema
+            variableDefinitions parentType (mergeSelectionSets selections)
   | [], _hvalid => by
       simp [mergeSelectionSets,
         Validation.selectionSetValidInPossibleTypes]
@@ -404,19 +384,19 @@ theorem selectionSetValidInPossibleTypes_mergeSelectionSets_of_subselections
 theorem selectionSetValidInPossibleTypes_mergeSelectionSets_of_field_subselections
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType responseName : Name}
-    (selections : List Selection) :
-    (∀ selection, selection ∈ selections ->
-      ∃ fieldName arguments directives subselections,
-        selection =
-          Selection.field responseName fieldName arguments directives
-            subselections) ->
-    (∀ fieldName arguments directives subselections,
-      Selection.field responseName fieldName arguments directives
-          subselections ∈ selections ->
-        Validation.selectionSetValidInPossibleTypes schema
-          variableDefinitions parentType subselections) ->
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions parentType (mergeSelectionSets selections) := by
+    (selections : List Selection)
+    : (∀ selection,
+        selection ∈ selections
+        -> ∃ fieldName arguments directives subselections,
+            selection
+            = Selection.field responseName fieldName arguments directives subselections)
+      -> (∀ fieldName arguments directives subselections,
+            Selection.field responseName fieldName arguments directives subselections
+              ∈ selections
+            -> Validation.selectionSetValidInPossibleTypes schema
+                variableDefinitions parentType subselections)
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType (mergeSelectionSets selections) := by
   intro hshape hfields
   apply selectionSetValidInPossibleTypes_mergeSelectionSets_of_subselections
   intro selection hselection
@@ -428,19 +408,18 @@ theorem selectionSetValidInPossibleTypes_mergeSelectionSets_of_field_subselectio
 
 theorem selectionSetValidInPossibleTypes_mergeSelectionSets_fieldSelectionsWithResponseNameInScope
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType responseName childType : Name}
-    (selectionSet : List Selection) :
-    (∀ fieldName arguments directives subselections,
-      Selection.field responseName fieldName arguments directives subselections
-        ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
-          selectionSet ->
-        Validation.selectionSetValidInPossibleTypes schema
-          variableDefinitions childType subselections) ->
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions childType
-        (mergeSelectionSets
-          (fieldSelectionsWithResponseNameInScope schema parentType responseName
-            selectionSet)) := by
+    {parentType responseName childType : Name} (selectionSet : List Selection)
+    : (∀ fieldName arguments directives subselections,
+        Selection.field responseName fieldName arguments directives subselections
+          ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
+              selectionSet
+        -> Validation.selectionSetValidInPossibleTypes schema
+            variableDefinitions childType subselections)
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions childType
+          (mergeSelectionSets
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName
+              selectionSet)) := by
   intro hfields
   apply selectionSetValidInPossibleTypes_mergeSelectionSets_of_field_subselections
   · intro selection hselection
@@ -451,13 +430,13 @@ theorem selectionSetValidInPossibleTypes_mergeSelectionSets_fieldSelectionsWithR
 
 theorem selectionSetValid_of_allFields_validInPossibleTypes
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (parentType : Name) :
-    ∀ selectionSet,
-      selectionsAllFields selectionSet ->
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions parentType selectionSet ->
-        Validation.selectionSetValid schema variableDefinitions parentType
-          selectionSet
+    (parentType : Name)
+    : ∀ selectionSet,
+        selectionsAllFields selectionSet
+        -> Validation.selectionSetValidInPossibleTypes schema
+            variableDefinitions parentType selectionSet
+        -> Validation.selectionSetValid schema variableDefinitions parentType
+            selectionSet
   | [], _hallFields, _himplementation => by
       simp [Validation.selectionSetValid]
   | selection :: rest, hallFields, himplementation => by
@@ -495,7 +474,6 @@ theorem selectionSetValid_of_allFields_validInPossibleTypes
           exact ⟨hheadValid, htailValid⟩
       | inlineFragment typeCondition directives selectionSet =>
           simp [Selection.isField] at hheadField
-
 
 end GroundTypeNormalization
 

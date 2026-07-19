@@ -8,12 +8,11 @@ open GraphQL.Execution
 
 variable {ObjectRef : Type}
 
-theorem combineVisitStatus_error_positive
-    {left right : VisitStatus} {errors : Nat} :
-    (combineVisitStatus left right) = .error errors ->
-    (∀ leftErrors, left = .error leftErrors -> 0 < leftErrors) ->
-    (∀ rightErrors, right = .error rightErrors -> 0 < rightErrors) ->
-      0 < errors := by
+theorem combineVisitStatus_error_positive {left right : VisitStatus} {errors : Nat}
+    : (combineVisitStatus left right) = .error errors
+      -> (∀ leftErrors, left = .error leftErrors -> 0 < leftErrors)
+      -> (∀ rightErrors, right = .error rightErrors -> 0 < rightErrors)
+      -> 0 < errors := by
   intro h hleft hright
   cases left with
   | error leftErrors =>
@@ -41,11 +40,12 @@ mutual
   theorem visitSubfields_status_error_positive
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) (fuel : Nat)
-      (parentType : Name) (source : ResolverValue ObjectRef) :
-      ∀ (selectionSet : List Selection) (output : ResponseValue) errors,
-        (visitSubfields schema resolvers variableValues fuel parentType source
-          selectionSet output).snd = .error errors ->
-          0 < errors
+      (parentType : Name) (source : ResolverValue ObjectRef)
+      : ∀ (selectionSet : List Selection) (output : ResponseValue) errors,
+          (visitSubfields schema resolvers variableValues fuel parentType source
+              selectionSet output).snd
+            = .error errors
+          -> 0 < errors
     | [], output, errors, h => by
         simp [visitSubfields, visitOk] at h
     | selection :: rest, output, errors, h => by
@@ -65,11 +65,12 @@ mutual
   theorem visitSelection_status_error_positive
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) (fuel : Nat)
-      (parentType : Name) (source : ResolverValue ObjectRef) :
-      ∀ (selection : Selection) (output : ResponseValue) errors,
-        (visitSelection schema resolvers variableValues fuel parentType source
-          selection output).snd = .error errors ->
-          0 < errors
+      (parentType : Name) (source : ResolverValue ObjectRef)
+      : ∀ (selection : Selection) (output : ResponseValue) errors,
+          (visitSelection schema resolvers variableValues fuel parentType source
+              selection output).snd
+            = .error errors
+          -> 0 < errors
     | .field responseName fieldName arguments directives selectionSet, output,
         errors, h => by
         by_cases hallows :
@@ -156,10 +157,11 @@ mutual
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) (completionFuel : Nat)
       (source : ResolverValue ObjectRef) (previous? : Option ResponseValue)
-      (field : ExecutableField) errors :
-      executeField schema resolvers variableValues completionFuel source
-        previous? field = .error errors ->
-      0 < errors := by
+      (field : ExecutableField) errors
+      : executeField schema resolvers variableValues completionFuel source
+            previous? field
+          = .error errors
+        -> 0 < errors := by
     intro h
     cases hlookup : schema.lookupField field.parentType field.fieldName with
     | none =>
@@ -196,12 +198,13 @@ mutual
 
   theorem completeValue_error_positive
       (schema : Schema) (resolvers : Resolvers ObjectRef)
-      (variableValues : VariableValues) :
-      ∀ fuel fieldType selectionSet (value : ResolverValue ObjectRef)
-        previous? errors,
-        completeValue schema resolvers variableValues fuel fieldType selectionSet
-          value previous? = .error errors ->
-        0 < errors
+      (variableValues : VariableValues)
+      : ∀ fuel fieldType selectionSet (value : ResolverValue ObjectRef)
+            previous? errors,
+          completeValue schema resolvers variableValues fuel fieldType selectionSet
+              value previous?
+            = .error errors
+          -> 0 < errors
     | 0, fieldType, selectionSet, value, previous?, errors, h => by
         rw [completeValue.eq_def] at h
         simp [outOfFuel] at h
@@ -438,13 +441,14 @@ mutual
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) (fuel : Nat) (itemType : TypeRef)
       (selectionSet : List Selection) (value : ResolverValue ObjectRef)
-      (previousValues : List ResponseValue) errors :
-      (match previousValues.head? with
-        | some .null => (.ok (.null, 0) : Result ResponseValue)
-        | _ =>
-            completeValue schema resolvers variableValues fuel itemType
-              selectionSet value previousValues.head?) = .error errors ->
-      0 < errors := by
+      (previousValues : List ResponseValue) errors
+      : (match previousValues.head? with
+          | some .null => (.ok (.null, 0) : Result ResponseValue)
+          | _ =>
+              completeValue schema resolvers variableValues fuel itemType
+                selectionSet value previousValues.head?)
+          = .error errors
+        -> 0 < errors := by
     intro h
     cases hprev : previousValues.head? with
     | none =>
@@ -491,11 +495,12 @@ mutual
   theorem completeValueList_error_positive
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) (fuel : Nat) (itemType : TypeRef)
-      (selectionSet : List Selection) :
-      ∀ values previousValues errors,
-        completeValueList schema resolvers variableValues fuel itemType
-          selectionSet values previousValues = .error errors ->
-        0 < errors
+      (selectionSet : List Selection)
+      : ∀ values previousValues errors,
+          completeValueList schema resolvers variableValues fuel itemType
+              selectionSet values previousValues
+            = .error errors
+          -> 0 < errors
     | [], previous :: previousValues, errors, h => by
         simp [completeValueList] at h
         omega
@@ -585,11 +590,12 @@ theorem completeResolvedValue_error_positive
     (variableValues : VariableValues) (depth : Nat)
     (fieldType : TypeRef) (selectionSet : List Selection)
     (resolved : ResolverValue ObjectIdentity)
-    (previous? : Option ResponseValue) :
-    ∀ errors,
-      completeResolvedValue schema resolvers variableValues depth fieldType
-        selectionSet resolved previous? = .error errors ->
-      0 < errors := by
+    (previous? : Option ResponseValue)
+    : ∀ errors,
+        completeResolvedValue schema resolvers variableValues depth fieldType
+            selectionSet resolved previous?
+          = .error errors
+        -> 0 < errors := by
   intro errors h
   unfold completeResolvedValue at h
   cases hreuse :
@@ -626,11 +632,12 @@ theorem completeResolvedValue_error_positive
 mutual
   theorem specCompleteValue_error_positive
       (schema : Schema) (resolvers : Resolvers ObjectRef)
-      (variableValues : VariableValues) :
-      ∀ fuel fieldType fields (value : ResolverValue ObjectRef) errors,
-        GraphQL.Execution.completeValue schema resolvers variableValues fuel
-          fieldType fields value = .error errors ->
-        0 < errors
+      (variableValues : VariableValues)
+      : ∀ fuel fieldType fields (value : ResolverValue ObjectRef) errors,
+          GraphQL.Execution.completeValue schema resolvers variableValues fuel
+              fieldType fields value
+            = .error errors
+          -> 0 < errors
     | 0, fieldType, fields, value, errors, h => by
         simp [GraphQL.Execution.completeValue, outOfFuel] at h
         omega
@@ -710,11 +717,12 @@ mutual
   theorem specCompleteValueList_error_positive
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) (fuel : Nat) (itemType : TypeRef)
-      (fields : List ExecutableField) :
-      ∀ values errors,
-        GraphQL.Execution.completeValueList schema resolvers variableValues fuel
-          itemType fields values = .error errors ->
-        0 < errors
+      (fields : List ExecutableField)
+      : ∀ values errors,
+          GraphQL.Execution.completeValueList schema resolvers variableValues fuel
+              itemType fields values
+            = .error errors
+          -> 0 < errors
     | [], errors, h => by
         simp [GraphQL.Execution.completeValueList] at h
     | value :: values, errors, h => by

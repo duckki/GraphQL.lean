@@ -8,65 +8,80 @@ namespace ExecutionUngrouped
 open GraphQL.Tests.Execution
 
 def duplicateHeroMergedSubfieldsQuery : Operation :=
-  { name := some "DuplicateHeroMergedSubfields"
+  {
+    name := some "DuplicateHeroMergedSubfields"
     rootType := "Query"
     selectionSet :=
-      [ .field "mainHero" "hero" [] [] [
-          .field "name" "name" [] [] []
-        ]
-      , .field "mainHero" "hero" [] [] [
-          .field "friends" "friends" [] [] [
-            .field "name" "name" [] [] []
-          ]
-        ]
-      ] }
+      [
+        .field "mainHero" "hero" [] [] [.field "name" "name" [] [] []],
+        .field "mainHero" "hero" [] []
+          [.field "friends" "friends" [] [] [.field "name" "name" [] [] []]]
+      ]
+  }
 
 def duplicateRootNameQuery : Operation :=
-  { name := some "DuplicateRootName"
+  {
+    name := some "DuplicateRootName"
     rootType := "Query"
     selectionSet :=
-      [ .field "name" "name" [] [] []
-      , .field "name" "name" [] [] [] ] }
+      [.field "name" "name" [] [] [], .field "name" "name" [] [] []]
+  }
 
 def duplicateHeroNullBubbleSchema : Schema :=
-  { queryType := "Query"
+  {
+    queryType := "Query"
     types :=
-      [ .object
-          { name := "Query"
+      [
+        .object
+          {
+            name := "Query"
             fields := [testObjectFieldDefinition "hero" "Character"]
-            interfaces := [] }
-      , .object
-          { name := "Character"
+            interfaces := []
+          },
+        .object
+          {
+            name := "Character"
             fields :=
-              [ testNonNullStringFieldDefinition "name"
-              , testNonNullStringFieldDefinition "age" ]
-            interfaces := [] } ] }
+              [
+                testNonNullStringFieldDefinition "name",
+                testNonNullStringFieldDefinition "age"
+              ]
+            interfaces := []
+          }
+      ]
+  }
 
 def duplicateHeroLaterNullBubbleSchema : Schema :=
-  { queryType := "Query"
+  {
+    queryType := "Query"
     types :=
-      [ .object
-          { name := "Query"
+      [
+        .object
+          {
+            name := "Query"
             fields := [testObjectFieldDefinition "hero" "Character"]
-            interfaces := [] }
-      , .object
-          { name := "Character"
+            interfaces := []
+          },
+        .object
+          {
+            name := "Character"
             fields :=
-              [ testStringFieldDefinition "name"
-              , testNonNullStringFieldDefinition "age" ]
-            interfaces := [] } ] }
+              [testStringFieldDefinition "name", testNonNullStringFieldDefinition "age"]
+            interfaces := []
+          }
+      ]
+  }
 
 def duplicateHeroNullBubbleQuery : Operation :=
-  { name := some "DuplicateHeroNullBubble"
+  {
+    name := some "DuplicateHeroNullBubble"
     rootType := "Query"
     selectionSet :=
-      [ .field "hero" "hero" [] [] [
-          .field "name" "name" [] [] []
-        ]
-      , .field "hero" "hero" [] [] [
-          .field "age" "age" [] [] []
-        ]
-      ] }
+      [
+        .field "hero" "hero" [] [] [.field "name" "name" [] [] []],
+        .field "hero" "hero" [] [] [.field "age" "age" [] [] []]
+      ]
+  }
 
 def sampleResolversWithFriends : GraphQL.Execution.Resolvers :=
   { resolve := fun parentType fieldName _arguments _source =>
@@ -102,63 +117,68 @@ def laterNullBubblingDuplicateResolvers : GraphQL.Execution.Resolvers :=
       intros
       rfl }
 
-theorem duplicateCompositeFieldCompletesIntoPreviousSmoke :
-    let source := GraphQL.Execution.ResolverValue.object "Query" ()
-    let spec :=
-      GraphQL.Execution.executeQuery sampleSchema sampleResolversWithFriends []
-        duplicateHeroMergedSubfieldsQuery source
-    let ungrouped :=
-      GraphQL.Algorithms.ExecutionUngrouped.executeQuery sampleSchema
-        sampleResolversWithFriends [] duplicateHeroMergedSubfieldsQuery source
-    spec.errors = ungrouped.errors
+theorem duplicateCompositeFieldCompletesIntoPreviousSmoke
+    : let source := GraphQL.Execution.ResolverValue.object "Query" ()
+      let spec :=
+        GraphQL.Execution.executeQuery sampleSchema sampleResolversWithFriends []
+          duplicateHeroMergedSubfieldsQuery source
+      let ungrouped :=
+        GraphQL.Algorithms.ExecutionUngrouped.executeQuery sampleSchema
+          sampleResolversWithFriends [] duplicateHeroMergedSubfieldsQuery source
+      spec.errors = ungrouped.errors
       ∧ responseEqBool spec.data ungrouped.data = true
       ∧ responseEqBool ungrouped.data
-        (.object
-          [ ("mainHero"
-            , .object
-                [ ("name", .scalar "Leia")
-                , ("friends", .object [("name", .scalar "Leia")]) ]) ]) = true := by
+          (.object
+            [(
+              "mainHero",
+              .object
+                [
+                  ("name", .scalar "Leia"),
+                  ("friends", .object [("name", .scalar "Leia")])
+                ]
+            )])
+        = true := by
   native_decide
 
-theorem duplicateRootFieldFuelZeroCountsResponseNameOnceSmoke :
-    let source := GraphQL.Execution.ResolverValue.object "Query" ()
-    let spec :=
-      GraphQL.Execution.executeQueryWithFuel sampleSchema sampleResolvers []
-        duplicateRootNameQuery 0 source
-    let ungrouped :=
-      GraphQL.Algorithms.ExecutionUngrouped.executeQueryWithFuel sampleSchema
-        sampleResolvers [] duplicateRootNameQuery 0 source
-    spec.errors = 1
+theorem duplicateRootFieldFuelZeroCountsResponseNameOnceSmoke
+    : let source := GraphQL.Execution.ResolverValue.object "Query" ()
+      let spec :=
+        GraphQL.Execution.executeQueryWithFuel sampleSchema sampleResolvers []
+          duplicateRootNameQuery 0 source
+      let ungrouped :=
+        GraphQL.Algorithms.ExecutionUngrouped.executeQueryWithFuel sampleSchema
+          sampleResolvers [] duplicateRootNameQuery 0 source
+      spec.errors = 1
       ∧ spec.errors = ungrouped.errors
       ∧ responseEqBool spec.data ungrouped.data = true := by
   native_decide
 
-theorem duplicateCompositeNullBubbleErrorsDifferSmoke :
-    let source := GraphQL.Execution.ResolverValue.object "Query" ()
-    let spec :=
-      GraphQL.Execution.executeQueryWithFuel duplicateHeroNullBubbleSchema
-        nullBubblingDuplicateResolvers [] duplicateHeroNullBubbleQuery 5 source
-    let ungrouped :=
-      GraphQL.Algorithms.ExecutionUngrouped.executeQueryWithFuel
-        duplicateHeroNullBubbleSchema nullBubblingDuplicateResolvers []
-        duplicateHeroNullBubbleQuery 5 source
-    spec.errors = 2
+theorem duplicateCompositeNullBubbleErrorsDifferSmoke
+    : let source := GraphQL.Execution.ResolverValue.object "Query" ()
+      let spec :=
+        GraphQL.Execution.executeQueryWithFuel duplicateHeroNullBubbleSchema
+          nullBubblingDuplicateResolvers [] duplicateHeroNullBubbleQuery 5 source
+      let ungrouped :=
+        GraphQL.Algorithms.ExecutionUngrouped.executeQueryWithFuel
+          duplicateHeroNullBubbleSchema nullBubblingDuplicateResolvers []
+          duplicateHeroNullBubbleQuery 5 source
+      spec.errors = 2
       ∧ ungrouped.errors = 1
       ∧ responseEqBool spec.data ungrouped.data = true
       ∧ responseEqBool spec.data (.object [("hero", .null)]) = true := by
   native_decide
 
-theorem duplicateCompositeLaterNullBubbleOverridesPreviousDataSmoke :
-    let source := GraphQL.Execution.ResolverValue.object "Query" ()
-    let spec :=
-      GraphQL.Execution.executeQueryWithFuel duplicateHeroLaterNullBubbleSchema
-        laterNullBubblingDuplicateResolvers [] duplicateHeroNullBubbleQuery 5
-        source
-    let ungrouped :=
-      GraphQL.Algorithms.ExecutionUngrouped.executeQueryWithFuel
-        duplicateHeroLaterNullBubbleSchema laterNullBubblingDuplicateResolvers []
-        duplicateHeroNullBubbleQuery 5 source
-    spec.errors = 1
+theorem duplicateCompositeLaterNullBubbleOverridesPreviousDataSmoke
+    : let source := GraphQL.Execution.ResolverValue.object "Query" ()
+      let spec :=
+        GraphQL.Execution.executeQueryWithFuel duplicateHeroLaterNullBubbleSchema
+          laterNullBubblingDuplicateResolvers [] duplicateHeroNullBubbleQuery 5
+          source
+      let ungrouped :=
+        GraphQL.Algorithms.ExecutionUngrouped.executeQueryWithFuel
+          duplicateHeroLaterNullBubbleSchema laterNullBubblingDuplicateResolvers []
+          duplicateHeroNullBubbleQuery 5 source
+      spec.errors = 1
       ∧ ungrouped.errors = 1
       ∧ responseEqBool spec.data (.object [("hero", .null)]) = true
       ∧ responseEqBool spec.data ungrouped.data = true := by

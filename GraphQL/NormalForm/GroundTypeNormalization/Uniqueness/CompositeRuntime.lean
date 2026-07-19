@@ -22,39 +22,38 @@ theorem fieldHeadCompositeRuntime_framed_members_of_valid_normal_mem
     {arguments : List Argument} {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
     {members : List (List Selection)}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    (∀ memberSelectionSet,
-      memberSelectionSet ∈ members ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            memberSelectionSet
-          ∧ selectionSetDirectiveFree memberSelectionSet
-          ∧ selectionSetNormal schema parentType memberSelectionSet) ->
-    selectionSet ∈ members ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-      ∃ runtimeType,
-        (((objectTypeNameBool schema fieldDefinition.outputType.namedType =
-              true
-            ∧ runtimeType = fieldDefinition.outputType.namedType)
-          ∨
-          ((TypeRef.named
-              fieldDefinition.outputType.namedType).isCompositeBool schema =
-              true
-            ∧ objectTypeNameBool schema
-              fieldDefinition.outputType.namedType = false
-            ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-              arguments parentType
-              [Selection.inlineFragment (some parentType) []
-                (List.flatten members)] = some runtimeType))
-        ∧ schema.typeIncludesObjectBool
-          fieldDefinition.outputType.namedType runtimeType = true) := by
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> (∀ memberSelectionSet,
+            memberSelectionSet ∈ members
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  memberSelectionSet
+                ∧ selectionSetDirectiveFree memberSelectionSet
+                ∧ selectionSetNormal schema parentType memberSelectionSet)
+      -> selectionSet ∈ members
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> ∃ runtimeType,
+          (((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+                ∧ runtimeType = fieldDefinition.outputType.namedType)
+              ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
+                    = false
+                  ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                      arguments parentType
+                      [Selection.inlineFragment (some parentType) []
+                        (List.flatten members)]
+                    = some runtimeType))
+            ∧ schema.typeIncludesObjectBool
+                fieldDefinition.outputType.namedType runtimeType
+              = true) := by
   intro hvalid hnormal hmembers hmember hmem hlookup hcomposite
   by_cases hobject :
       objectTypeNameBool schema fieldDefinition.outputType.namedType = true
@@ -92,31 +91,30 @@ theorem fieldHeadCompositeRuntime_of_valid_normal_mem
     {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    selectionSetDeepHeadPromotionAvailable schema rootSelectionSet parentType
-      selectionSet ->
-      ∃ runtimeType,
-        (((objectTypeNameBool schema fieldDefinition.outputType.namedType =
-              true
-            ∧ runtimeType = fieldDefinition.outputType.namedType)
-          ∨
-          ((TypeRef.named
-              fieldDefinition.outputType.namedType).isCompositeBool schema =
-              true
-            ∧ objectTypeNameBool schema
-              fieldDefinition.outputType.namedType = false
-            ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-              arguments parentType rootSelectionSet = some runtimeType))
-        ∧ schema.typeIncludesObjectBool
-          fieldDefinition.outputType.namedType runtimeType = true) := by
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet parentType
+          selectionSet
+      -> ∃ runtimeType,
+          (((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+                ∧ runtimeType = fieldDefinition.outputType.namedType)
+              ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
+                    = false
+                  ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                      arguments parentType rootSelectionSet
+                    = some runtimeType))
+            ∧ schema.typeIncludesObjectBool
+                fieldDefinition.outputType.namedType runtimeType
+              = true) := by
   intro hvalid hnormal hmem hlookup hcomposite hheadPromote
   by_cases hobject :
       objectTypeNameBool schema fieldDefinition.outputType.namedType = true
@@ -147,29 +145,27 @@ theorem fieldCompositeSelectedChildRuntime_of_valid_normal_mem
     {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-      ∃ runtimeType,
-        (((objectTypeNameBool schema fieldDefinition.outputType.namedType =
-              true
-            ∧ runtimeType = fieldDefinition.outputType.namedType)
-          ∨
-          ((TypeRef.named
-              fieldDefinition.outputType.namedType).isCompositeBool schema =
-              true
-            ∧ objectTypeNameBool schema
-              fieldDefinition.outputType.namedType = false
-            ∧ firstInlineFragmentTypeCondition? childSelectionSet =
-              some runtimeType))
-        ∧ schema.typeIncludesObjectBool
-          fieldDefinition.outputType.namedType runtimeType = true) := by
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> ∃ runtimeType,
+          (((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+                ∧ runtimeType = fieldDefinition.outputType.namedType)
+              ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
+                    = false
+                  ∧ firstInlineFragmentTypeCondition? childSelectionSet
+                    = some runtimeType))
+            ∧ schema.typeIncludesObjectBool
+                fieldDefinition.outputType.namedType runtimeType
+              = true) := by
   intro hvalid hnormal hmem hlookup hcomposite
   by_cases hobject :
       objectTypeNameBool schema fieldDefinition.outputType.namedType = true

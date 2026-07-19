@@ -20,21 +20,19 @@ theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_case
     (variableDefinitions : List VariableDefinition)
     (depth : Nat) (parentType responseName fieldName : Name)
     (arguments : List Argument) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet rest : List Selection) :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      (Selection.field responseName fieldName arguments [] selectionSet
-        :: rest) ->
-      schema.lookupField parentType fieldName = none ->
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source
-          (normalizeSelectionSet schema parentType
-            (Selection.field responseName fieldName arguments []
-              selectionSet :: rest))
-          =
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source
-          (Selection.field responseName fieldName arguments []
-            selectionSet :: rest) := by
+    (selectionSet rest : List Selection)
+    : Validation.selectionSetValid schema variableDefinitions parentType
+        (Selection.field responseName fieldName arguments [] selectionSet :: rest)
+      -> schema.lookupField parentType fieldName = none
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType
+              (Selection.field responseName fieldName arguments [] selectionSet
+                :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
+              (Selection.field responseName fieldName arguments [] selectionSet
+                :: rest) := by
   intro hvalid hlookup
   exact False.elim
     (Validation.selectionSetValid_field_head_lookup_none_false
@@ -46,21 +44,19 @@ theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_lookupValid_
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType responseName fieldName : Name)
     (arguments : List Argument) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet rest : List Selection) :
-    selectionSetLookupValid schema parentType
-      (Selection.field responseName fieldName arguments [] selectionSet
-        :: rest) ->
-      schema.lookupField parentType fieldName = none ->
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source
-          (normalizeSelectionSet schema parentType
-            (Selection.field responseName fieldName arguments []
-              selectionSet :: rest))
-          =
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source
-          (Selection.field responseName fieldName arguments []
-            selectionSet :: rest) := by
+    (selectionSet rest : List Selection)
+    : selectionSetLookupValid schema parentType
+        (Selection.field responseName fieldName arguments [] selectionSet :: rest)
+      -> schema.lookupField parentType fieldName = none
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType
+              (Selection.field responseName fieldName arguments [] selectionSet
+                :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
+              (Selection.field responseName fieldName arguments [] selectionSet
+                :: rest) := by
   intro hvalid hlookup
   exact False.elim
     (selectionSetLookupValid_field_head_lookup_none_false hvalid hlookup)
@@ -72,27 +68,25 @@ theorem executeField_singleton_eq_group_of_completeValue
     (depth : Nat) (source : Execution.ResolverValue ObjectRef) (responseName : Name)
     (field : Execution.ExecutableField)
     (fields : List Execution.ExecutableField)
-    (normalizedSelectionSet : List Selection) :
-    let fieldDefinition? := schema.lookupField field.parentType field.fieldName
-    (match fieldDefinition? with
-    | some fieldDefinition =>
-        match resolvers.resolve field.parentType field.fieldName
-            field.arguments source with
-        | some value =>
-            Execution.completeValue schema resolvers variableValues depth
-              fieldDefinition.outputType
-              [{ field with selectionSet := normalizedSelectionSet }] value
-              =
-            Execution.completeValue schema resolvers variableValues depth
-              fieldDefinition.outputType (field :: fields) value
-        | none => True
-    | none => True) ->
-      Execution.executeField schema resolvers variableValues (depth + 1)
-        source responseName
-        [{ field with selectionSet := normalizedSelectionSet }]
-        =
-      Execution.executeField schema resolvers variableValues (depth + 1)
-        source responseName (field :: fields) := by
+    (normalizedSelectionSet : List Selection)
+    : let fieldDefinition? := schema.lookupField field.parentType field.fieldName
+      (match fieldDefinition? with
+        | some fieldDefinition =>
+            match resolvers.resolve field.parentType field.fieldName
+                    field.arguments source with
+            | some value =>
+                Execution.completeValue schema resolvers variableValues depth
+                  fieldDefinition.outputType
+                  [{ field with selectionSet := normalizedSelectionSet }] value
+                = Execution.completeValue schema resolvers variableValues depth
+                    fieldDefinition.outputType (field :: fields) value
+            | none => True
+        | none => True)
+      -> Execution.executeField schema resolvers variableValues (depth + 1)
+            source responseName
+            [{ field with selectionSet := normalizedSelectionSet }]
+          = Execution.executeField schema resolvers variableValues (depth + 1)
+              source responseName (field :: fields) := by
   intro fieldDefinition? hcomplete
   simp only [Execution.executeField]
   cases hlookup : schema.lookupField field.parentType field.fieldName with
@@ -121,22 +115,20 @@ theorem executeField_singleton_eq_group_of_child_object_lt
     (depth : Nat) (source : Execution.ResolverValue ObjectRef) (responseName : Name)
     (field : Execution.ExecutableField)
     (fields : List Execution.ExecutableField)
-    (normalizedSelectionSet : List Selection) :
-    (∀ childDepth runtimeType ref,
-      childDepth < depth ->
-        Execution.executeSelectionSet schema resolvers variableValues
-          childDepth runtimeType (.object runtimeType ref)
-          normalizedSelectionSet
-          =
-        Execution.executeSelectionSet schema resolvers variableValues
-          childDepth runtimeType (.object runtimeType ref)
-          (Execution.mergedFieldSelectionSet (field :: fields))) ->
-      Execution.executeField schema resolvers variableValues (depth + 1)
-        source responseName
-        [{ field with selectionSet := normalizedSelectionSet }]
-        =
-      Execution.executeField schema resolvers variableValues (depth + 1)
-        source responseName (field :: fields) := by
+    (normalizedSelectionSet : List Selection)
+    : (∀ childDepth runtimeType ref,
+        childDepth < depth
+        -> Execution.executeSelectionSet schema resolvers variableValues
+              childDepth runtimeType (.object runtimeType ref)
+              normalizedSelectionSet
+            = Execution.executeSelectionSet schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType ref)
+                (Execution.mergedFieldSelectionSet (field :: fields)))
+      -> Execution.executeField schema resolvers variableValues (depth + 1)
+            source responseName
+            [{ field with selectionSet := normalizedSelectionSet }]
+          = Execution.executeField schema resolvers variableValues (depth + 1)
+              source responseName (field :: fields) := by
   intro hcomplete
   apply executeField_singleton_eq_group_of_completeValue
     schema resolvers variableValues depth source responseName field fields
@@ -165,25 +157,20 @@ theorem executeCollectedFields_cons_eq_of_parts
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (source : Execution.ResolverValue ObjectRef)
-    (normalizedGroup sourceGroup :
-      Name × List Execution.ExecutableField)
-    (normalizedRest sourceRest :
-      List (Name × List Execution.ExecutableField)) :
-    Execution.executeField schema resolvers variableValues depth source
-      normalizedGroup.fst normalizedGroup.snd
-      =
-    Execution.executeField schema resolvers variableValues depth source
-      sourceGroup.fst sourceGroup.snd ->
-    Execution.executeCollectedFields schema resolvers variableValues depth
-      source normalizedRest
-      =
-    Execution.executeCollectedFields schema resolvers variableValues depth
-      source sourceRest ->
-    Execution.executeCollectedFields schema resolvers variableValues depth
-      source (normalizedGroup :: normalizedRest)
-      =
-    Execution.executeCollectedFields schema resolvers variableValues depth
-      source (sourceGroup :: sourceRest) := by
+    (normalizedGroup sourceGroup : Name × List Execution.ExecutableField)
+    (normalizedRest sourceRest : List (Name × List Execution.ExecutableField))
+    : Execution.executeField schema resolvers variableValues depth source
+          normalizedGroup.fst normalizedGroup.snd
+        = Execution.executeField schema resolvers variableValues depth source
+            sourceGroup.fst sourceGroup.snd
+      -> Execution.executeCollectedFields schema resolvers variableValues depth
+            source normalizedRest
+          = Execution.executeCollectedFields schema resolvers variableValues depth
+              source sourceRest
+      -> Execution.executeCollectedFields schema resolvers variableValues depth
+            source (normalizedGroup :: normalizedRest)
+          = Execution.executeCollectedFields schema resolvers variableValues depth
+              source (sourceGroup :: sourceRest) := by
   intro hhead htail
   cases normalizedGroup with
   | mk normalizedResponseName normalizedFields =>
@@ -192,28 +179,26 @@ theorem executeCollectedFields_cons_eq_of_parts
           simp [Execution.executeCollectedFields]
           rw [hhead, htail]
 
-  theorem executeCollectedFields_zero
-    (schema : Schema)
+theorem executeCollectedFields_zero (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
-    (variableValues : Execution.VariableValues) (source : Execution.ResolverValue ObjectRef) :
-    ∀ groups,
-      Execution.executeCollectedFields schema resolvers variableValues 0 source
-        groups
-        =
-        match groups with
-        | [] => .ok ([], 0)
-        | (_responseName, []) :: rest =>
-            Execution.Result.combine
-              List.append
-              (Execution.outOfFuel)
-              (Execution.executeCollectedFields schema resolvers variableValues 0
-                source rest)
-        | (_responseName, _field :: _fields) :: rest =>
-            Execution.Result.combine
-              List.append
-              (Execution.outOfFuel)
-              (Execution.executeCollectedFields schema resolvers variableValues 0
-                source rest)
+    (variableValues : Execution.VariableValues)
+    (source : Execution.ResolverValue ObjectRef)
+    : ∀ groups,
+        Execution.executeCollectedFields schema resolvers variableValues 0 source groups
+        = match groups with
+          | [] => .ok ([], 0)
+          | (_responseName, []) :: rest =>
+              Execution.Result.combine
+                List.append
+                (Execution.outOfFuel)
+                (Execution.executeCollectedFields schema resolvers variableValues 0
+                  source rest)
+          | (_responseName, _field :: _fields) :: rest =>
+              Execution.Result.combine
+                List.append
+                (Execution.outOfFuel)
+                (Execution.executeCollectedFields schema resolvers variableValues 0
+                  source rest)
   | [] => by
       simp [Execution.executeCollectedFields]
   | (_responseName, fields) :: rest => by
@@ -231,57 +216,52 @@ theorem executeSelectionSet_field_head_eq_of_completeValue
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
-    (subselections normalizedSubselections normalizedRest rest :
-      List Selection)
+    (subselections normalizedSubselections normalizedRest rest : List Selection)
     (sourceFields : List Execution.ExecutableField)
-    (sourceRest : List (Name × List Execution.ExecutableField)) :
-    let sourceField : Execution.ExecutableField :=
-      {
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := subselections
-      }
-    let fieldDefinition? :=
-      schema.lookupField sourceField.parentType sourceField.fieldName
-    responseName ∉
-      (Execution.collectFields schema variableValues parentType source
-        normalizedRest).map Prod.fst ->
-    Execution.collectFields schema variableValues parentType source
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest)
-      =
-    (responseName, sourceField :: sourceFields) :: sourceRest ->
-    (match fieldDefinition? with
-    | some fieldDefinition =>
-        match resolvers.resolve sourceField.parentType sourceField.fieldName
-            sourceField.arguments source with
-        | some value =>
-            Execution.completeValue schema resolvers variableValues (depth - 1)
-              fieldDefinition.outputType
-              [{ sourceField with selectionSet := normalizedSubselections }] value
-              =
-            Execution.completeValue schema resolvers variableValues (depth - 1)
-              fieldDefinition.outputType (sourceField :: sourceFields) value
-        | none => True
-    | none => True) ->
-    Execution.executeCollectedFields schema resolvers variableValues depth
-      source
-      (Execution.collectFields schema variableValues parentType source
-        normalizedRest)
-      =
-    Execution.executeCollectedFields schema resolvers variableValues depth
-      source sourceRest ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        parentType source
-        (Selection.field responseName fieldName arguments []
-          normalizedSubselections :: normalizedRest)
-        =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        parentType source
-        (Selection.field responseName fieldName arguments [] subselections
-          :: rest) := by
+    (sourceRest : List (Name × List Execution.ExecutableField))
+    : let sourceField : Execution.ExecutableField :=
+        {
+          parentType := parentType,
+          responseName := responseName,
+          fieldName := fieldName,
+          arguments := arguments,
+          selectionSet := subselections
+        }
+      let fieldDefinition? :=
+        schema.lookupField sourceField.parentType sourceField.fieldName
+      responseName
+        ∉ (Execution.collectFields schema variableValues parentType source
+            normalizedRest).map
+            Prod.fst
+      -> Execution.collectFields schema variableValues parentType source
+            (Selection.field responseName fieldName arguments [] subselections :: rest)
+          = (responseName, sourceField :: sourceFields) :: sourceRest
+      -> (match fieldDefinition? with
+          | some fieldDefinition =>
+              match resolvers.resolve sourceField.parentType sourceField.fieldName
+                      sourceField.arguments source with
+              | some value =>
+                  Execution.completeValue schema resolvers variableValues (depth - 1)
+                    fieldDefinition.outputType
+                    [{ sourceField with selectionSet := normalizedSubselections }] value
+                  = Execution.completeValue schema resolvers variableValues (depth - 1)
+                      fieldDefinition.outputType (sourceField :: sourceFields) value
+              | none => True
+          | none => True)
+      -> Execution.executeCollectedFields schema resolvers variableValues depth
+            source
+            (Execution.collectFields schema variableValues parentType source
+              normalizedRest)
+          = Execution.executeCollectedFields schema resolvers variableValues depth
+              source sourceRest
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (Selection.field responseName fieldName arguments [] normalizedSubselections
+              :: normalizedRest)
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
+              (Selection.field responseName fieldName arguments [] subselections
+                :: rest) := by
   intro sourceField fieldDefinition? hnotin hsourceCollect
     hcomplete htail
   cases depth with
@@ -349,74 +329,68 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_of_completeValue
     (subselections rest normalizedSubselections : List Selection)
     (fieldDefinition : FieldDefinition)
     (sourceFields : List Execution.ExecutableField)
-    (sourceRest : List (Name × List Execution.ExecutableField)) :
-    let sourceField : Execution.ExecutableField :=
-      {
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := subselections
-      }
-    let matching :=
-      fieldSelectionsWithResponseNameInScope schema parentType responseName rest
-    let mergedSubselections :=
-      subselections ++ mergeSelectionSets matching
-    let returnType := fieldDefinition.outputType.namedType
-    let normalizedRest :=
-      normalizeSelectionSet schema parentType
-        (withoutFieldSelectionsWithResponseName schema responseName rest)
-    let computedSubselections :=
-      if objectTypeNameBool schema returnType then
-        normalizeSelectionSet schema returnType mergedSubselections
-      else
-        possibleTypeNormalizations schema (schema.getPossibleTypes returnType)
-          mergedSubselections
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    normalizedSubselections = computedSubselections ->
-    responseName ∉
-      (Execution.collectFields schema variableValues parentType source
-        normalizedRest).map Prod.fst ->
-    Execution.collectFields schema variableValues parentType source
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest)
-      =
-    (responseName, sourceField :: sourceFields) :: sourceRest ->
-    normalizedFieldWithRest schema fieldDefinition.outputType.namedType
-        responseName fieldName arguments [] normalizedSubselections
-        normalizedRest
-      =
-      Selection.field responseName fieldName arguments [] normalizedSubselections
-        :: normalizedRest ->
-    (match schema.lookupField parentType fieldName with
-    | some fieldDefinition =>
-        match resolvers.resolve parentType fieldName arguments source with
-        | some value =>
-            Execution.completeValue schema resolvers variableValues (depth - 1)
-              fieldDefinition.outputType
-              [{ sourceField with selectionSet := normalizedSubselections }] value
-              =
-            Execution.completeValue schema resolvers variableValues (depth - 1)
-              fieldDefinition.outputType (sourceField :: sourceFields) value
-        | none => True
-    | none => True) ->
-    Execution.executeCollectedFields schema resolvers variableValues depth
-      source
-      (Execution.collectFields schema variableValues parentType source
-        normalizedRest)
-      =
-    Execution.executeCollectedFields schema resolvers variableValues depth
-      source sourceRest ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        parentType source
-        (normalizeSelectionSet schema parentType
-          (Selection.field responseName fieldName arguments [] subselections
-            :: rest))
-        =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        parentType source
-        (Selection.field responseName fieldName arguments [] subselections
-          :: rest) := by
+    (sourceRest : List (Name × List Execution.ExecutableField))
+    : let sourceField : Execution.ExecutableField :=
+        {
+          parentType := parentType,
+          responseName := responseName,
+          fieldName := fieldName,
+          arguments := arguments,
+          selectionSet := subselections
+        }
+      let matching :=
+        fieldSelectionsWithResponseNameInScope schema parentType responseName rest
+      let mergedSubselections := subselections ++ mergeSelectionSets matching
+      let returnType := fieldDefinition.outputType.namedType
+      let normalizedRest :=
+        normalizeSelectionSet schema parentType
+          (withoutFieldSelectionsWithResponseName schema responseName rest)
+      let computedSubselections :=
+        if objectTypeNameBool schema returnType then
+          normalizeSelectionSet schema returnType mergedSubselections
+        else
+          possibleTypeNormalizations schema (schema.getPossibleTypes returnType)
+            mergedSubselections
+      schema.lookupField parentType fieldName = some fieldDefinition
+      -> normalizedSubselections = computedSubselections
+      -> responseName
+          ∉ (Execution.collectFields schema variableValues parentType source
+              normalizedRest).map
+              Prod.fst
+      -> Execution.collectFields schema variableValues parentType source
+            (Selection.field responseName fieldName arguments [] subselections :: rest)
+          = (responseName, sourceField :: sourceFields) :: sourceRest
+      -> normalizedFieldWithRest schema fieldDefinition.outputType.namedType
+            responseName fieldName arguments [] normalizedSubselections
+            normalizedRest
+          = Selection.field responseName fieldName arguments [] normalizedSubselections
+            :: normalizedRest
+      -> (match schema.lookupField parentType fieldName with
+          | some fieldDefinition =>
+              match resolvers.resolve parentType fieldName arguments source with
+              | some value =>
+                  Execution.completeValue schema resolvers variableValues (depth - 1)
+                    fieldDefinition.outputType
+                    [{ sourceField with selectionSet := normalizedSubselections }] value
+                  = Execution.completeValue schema resolvers variableValues (depth - 1)
+                      fieldDefinition.outputType (sourceField :: sourceFields) value
+              | none => True
+          | none => True)
+      -> Execution.executeCollectedFields schema resolvers variableValues depth
+            source
+            (Execution.collectFields schema variableValues parentType source
+              normalizedRest)
+          = Execution.executeCollectedFields schema resolvers variableValues depth
+              source sourceRest
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType
+              (Selection.field responseName fieldName arguments [] subselections
+                :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
+              (Selection.field responseName fieldName arguments [] subselections
+                :: rest) := by
   intro sourceField matching mergedSubselections returnType normalizedRest
     computedSubselections hlookup hsubsections hnotin hsourceCollect
     hnormalizedFieldWithRest hcomplete htail
@@ -449,68 +423,64 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case
     (depth : Nat) (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections rest normalizedSubselections : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType ref,
-        source = .object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-        selectionSetDirectiveFree
-          (Selection.field responseName fieldName arguments [] subselections
-            :: rest) ->
-        schema.lookupField parentType fieldName = some fieldDefinition ->
-        normalizedSubselections =
-          (let matching :=
-            fieldSelectionsWithResponseNameInScope schema parentType responseName rest
-          let mergedSubselections :=
-            subselections ++ mergeSelectionSets matching
-          let returnType := fieldDefinition.outputType.namedType
-          if objectTypeNameBool schema returnType then
-            normalizeSelectionSet schema returnType mergedSubselections
-          else
-            possibleTypeNormalizations schema
-              (schema.getPossibleTypes returnType) mergedSubselections) ->
-        (let returnType := fieldDefinition.outputType.namedType
-        let normalizedRest :=
-          normalizeSelectionSet schema parentType
-            (withoutFieldSelectionsWithResponseName schema responseName rest)
-        normalizedFieldWithRest schema returnType responseName fieldName
+    (fieldDefinition : FieldDefinition)
+    : objectTypeNameBool schema parentType = true
+      -> (∃ runtimeType ref,
+            source = .object runtimeType ref
+            ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+      -> selectionSetDirectiveFree
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> normalizedSubselections
+          = ( let matching :=
+                fieldSelectionsWithResponseNameInScope schema parentType responseName
+                  rest
+              let mergedSubselections := subselections ++ mergeSelectionSets matching
+              let returnType := fieldDefinition.outputType.namedType
+              if objectTypeNameBool schema returnType then
+                normalizeSelectionSet schema returnType mergedSubselections
+              else
+                possibleTypeNormalizations schema
+                  (schema.getPossibleTypes returnType) mergedSubselections)
+      -> (let returnType := fieldDefinition.outputType.namedType
+          let normalizedRest :=
+            normalizeSelectionSet schema parentType
+              (withoutFieldSelectionsWithResponseName schema responseName rest)
+          normalizedFieldWithRest schema returnType responseName fieldName
             arguments [] normalizedSubselections normalizedRest
-          =
-          Selection.field responseName fieldName arguments [] normalizedSubselections
-            :: normalizedRest) ->
-        (∀ childDepth runtimeType ref,
-          childDepth < depth ->
-            schema.typeIncludesObjectBool
-              ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-              runtimeType = true ->
-              Execution.executeSelectionSet schema resolvers variableValues
-                childDepth runtimeType (.object runtimeType ref)
-                normalizedSubselections
-                =
-              Execution.executeSelectionSet schema resolvers variableValues
-                childDepth runtimeType (.object runtimeType ref)
-                (subselections
-                  ++ mergeSelectionSets
-                    (fieldSelectionsWithResponseNameInScope schema parentType responseName
-                      rest))) ->
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source
-          (normalizeSelectionSet schema parentType
-            (withoutFieldSelectionsWithResponseName schema responseName rest))
-          =
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source
-          (withoutFieldSelectionsWithResponseName schema responseName rest) ->
-          Execution.executeSelectionSet schema resolvers variableValues depth
+          = Selection.field responseName fieldName arguments [] normalizedSubselections
+            :: normalizedRest)
+      -> (∀ childDepth runtimeType ref,
+            childDepth < depth
+            -> schema.typeIncludesObjectBool
+                  ((schema.fieldReturnType? parentType fieldName).getD fieldName)
+                  runtimeType
+                = true
+            -> Execution.executeSelectionSet schema resolvers variableValues
+                  childDepth runtimeType (.object runtimeType ref)
+                  normalizedSubselections
+                = Execution.executeSelectionSet schema resolvers variableValues
+                    childDepth runtimeType (.object runtimeType ref)
+                    (subselections
+                      ++ mergeSelectionSets
+                          (fieldSelectionsWithResponseNameInScope schema parentType
+                            responseName rest)))
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
             (normalizeSelectionSet schema parentType
-              (Selection.field responseName fieldName arguments []
-                subselections :: rest))
-          =
-          Execution.executeSelectionSet schema resolvers variableValues depth
+              (withoutFieldSelectionsWithResponseName schema responseName rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
+              (withoutFieldSelectionsWithResponseName schema responseName rest)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
-            (Selection.field responseName fieldName arguments []
-              subselections :: rest) := by
+            (normalizeSelectionSet schema parentType
+              (Selection.field responseName fieldName arguments [] subselections
+                :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
+              (Selection.field responseName fieldName arguments [] subselections
+                :: rest) := by
   intro hobject hsource hfree hlookup hsubsections hnormalizedFieldWithRest
     hchild htail
   rcases collectFields_field_head_exists schema variableValues parentType
@@ -635,76 +605,69 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
     (depth : Nat) (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
     (subselections rest : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType ref,
-        source = .object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-    selectionSetDirectiveFree
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-    selectionSetSemanticsReady schema parentType
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.field responseName fieldName arguments [] subselections
-        :: rest) ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (let matching := fieldSelectionsWithResponseNameInScope schema parentType
-      responseName rest
-    let mergedSubselections :=
-      subselections ++ mergeSelectionSets matching
-    let returnType := fieldDefinition.outputType.namedType
-    let normalizedSubselections :=
-      if objectTypeNameBool schema returnType then
-        normalizeSelectionSet schema returnType mergedSubselections
-      else
-        possibleTypeNormalizations schema (schema.getPossibleTypes returnType)
-          mergedSubselections
-    let normalizedRest :=
-      normalizeSelectionSet schema parentType
-        (withoutFieldSelectionsWithResponseName schema responseName rest)
-    normalizedFieldWithRest schema returnType responseName fieldName arguments []
-        normalizedSubselections normalizedRest
-      =
-      Selection.field responseName fieldName arguments [] normalizedSubselections
-        :: normalizedRest) ->
-    (let mergedSubselections :=
-      subselections
-        ++ mergeSelectionSets
-          (fieldSelectionsWithResponseNameInScope schema parentType responseName rest)
-    ∀ (childDepth : Nat) (runtimeType : Name) (ref : ObjectRef),
-      childDepth < depth ->
-        objectTypeNameBool schema runtimeType = true ->
-        selectionSetDirectiveFree mergedSubselections ->
-        selectionSetLookupValid schema runtimeType mergedSubselections ->
-        selectionSetSemanticsReady schema runtimeType mergedSubselections ->
-          FieldMerge.fieldsInSetCanMerge schema runtimeType mergedSubselections ->
-            Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType ref)
-              (normalizeSelectionSet schema runtimeType mergedSubselections)
-            =
-            Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType ref)
-              mergedSubselections) ->
-    Execution.executeSelectionSet schema resolvers variableValues depth
-      parentType source
-      (normalizeSelectionSet schema parentType
-        (withoutFieldSelectionsWithResponseName schema responseName rest))
-      =
-    Execution.executeSelectionSet schema resolvers variableValues depth
-      parentType source
-      (withoutFieldSelectionsWithResponseName schema responseName rest) ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        parentType source
-        (normalizeSelectionSet schema parentType
-          (Selection.field responseName fieldName arguments []
-            subselections :: rest))
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        parentType source
-        (Selection.field responseName fieldName arguments []
-            subselections :: rest) := by
+    (fieldDefinition : FieldDefinition)
+    : objectTypeNameBool schema parentType = true
+      -> (∃ runtimeType ref,
+            source = .object runtimeType ref
+            ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+      -> selectionSetDirectiveFree
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> selectionSetSemanticsReady schema parentType
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (let matching :=
+            fieldSelectionsWithResponseNameInScope schema parentType responseName rest
+          let mergedSubselections := subselections ++ mergeSelectionSets matching
+          let returnType := fieldDefinition.outputType.namedType
+          let normalizedSubselections :=
+            if objectTypeNameBool schema returnType then
+              normalizeSelectionSet schema returnType mergedSubselections
+            else
+              possibleTypeNormalizations schema (schema.getPossibleTypes returnType)
+                mergedSubselections
+          let normalizedRest :=
+            normalizeSelectionSet schema parentType
+              (withoutFieldSelectionsWithResponseName schema responseName rest)
+          normalizedFieldWithRest schema returnType responseName fieldName arguments []
+            normalizedSubselections normalizedRest
+          = Selection.field responseName fieldName arguments [] normalizedSubselections
+            :: normalizedRest)
+      -> (let mergedSubselections :=
+            subselections
+            ++ mergeSelectionSets
+                (fieldSelectionsWithResponseNameInScope schema parentType responseName
+                  rest)
+          ∀ (childDepth : Nat) (runtimeType : Name) (ref : ObjectRef),
+            childDepth < depth
+            -> objectTypeNameBool schema runtimeType = true
+            -> selectionSetDirectiveFree mergedSubselections
+            -> selectionSetLookupValid schema runtimeType mergedSubselections
+            -> selectionSetSemanticsReady schema runtimeType mergedSubselections
+            -> FieldMerge.fieldsInSetCanMerge schema runtimeType mergedSubselections
+            -> Execution.executeSelectionSet schema resolvers variableValues
+                  childDepth runtimeType (.object runtimeType ref)
+                  (normalizeSelectionSet schema runtimeType mergedSubselections)
+                = Execution.executeSelectionSet schema resolvers variableValues
+                    childDepth runtimeType (.object runtimeType ref)
+                    mergedSubselections)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType
+              (withoutFieldSelectionsWithResponseName schema responseName rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
+              (withoutFieldSelectionsWithResponseName schema responseName rest)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType
+              (Selection.field responseName fieldName arguments [] subselections
+                :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
+              (Selection.field responseName fieldName arguments [] subselections
+                :: rest) := by
   intro hobject hsource hfree hready hmerge hlookup hnormalizedFieldWithRest
     hrecursive htail
   let matching := fieldSelectionsWithResponseNameInScope schema parentType responseName rest

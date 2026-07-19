@@ -18,30 +18,28 @@ structure CompleteScopedSelection where
   lookupParent : Name
   selection : Selection
 
-def completeScopedSelectionSet (lookupParent : Name) :
-    List Selection -> List CompleteScopedSelection
+def completeScopedSelectionSet (lookupParent : Name)
+    : List Selection -> List CompleteScopedSelection
   | [] => []
   | selection :: rest =>
       { lookupParent := lookupParent, selection := selection }
-        :: completeScopedSelectionSet lookupParent rest
+      :: completeScopedSelectionSet lookupParent rest
 
-def eraseCompleteScopedSelection :
-    CompleteScopedSelection -> Selection
+def eraseCompleteScopedSelection : CompleteScopedSelection -> Selection
   | scopedSelection => scopedSelection.selection
 
-def eraseCompleteScopedSelectionSet :
-    List CompleteScopedSelection -> List Selection
+def eraseCompleteScopedSelectionSet : List CompleteScopedSelection -> List Selection
   | [] => []
   | scopedSelection :: rest =>
       eraseCompleteScopedSelection scopedSelection
-        :: eraseCompleteScopedSelectionSet rest
+      :: eraseCompleteScopedSelectionSet rest
 
 theorem eraseCompleteScopedSelectionSet_mem_of_mem
     {scopedSelection : CompleteScopedSelection}
-    {scopedSelections : List CompleteScopedSelection} :
-    scopedSelection ∈ scopedSelections ->
-      scopedSelection.selection ∈
-        eraseCompleteScopedSelectionSet scopedSelections := by
+    {scopedSelections : List CompleteScopedSelection}
+    : scopedSelection ∈ scopedSelections
+      -> scopedSelection.selection
+          ∈ eraseCompleteScopedSelectionSet scopedSelections := by
   intro hmem
   induction scopedSelections with
   | nil =>
@@ -55,8 +53,8 @@ theorem eraseCompleteScopedSelectionSet_mem_of_mem
 
 def staticCollectCompleteScopedSelection
     (schema : Schema) (variables : List BoolVar)
-    (groundType : Name) (boolCase : BoolCase) :
-    CompleteScopedSelection -> List Selection
+    (groundType : Name) (boolCase : BoolCase)
+    : CompleteScopedSelection -> List Selection
   | scopedSelection =>
       staticCollectForGround schema variables
         scopedSelection.lookupParent groundType boolCase
@@ -64,37 +62,34 @@ def staticCollectCompleteScopedSelection
 
 def staticCollectCompleteScopedSelectionSet
     (schema : Schema) (variables : List BoolVar)
-    (groundType : Name) (boolCase : BoolCase) :
-    List CompleteScopedSelection -> List Selection
+    (groundType : Name) (boolCase : BoolCase)
+    : List CompleteScopedSelection -> List Selection
   | [] => []
   | scopedSelection :: rest =>
       staticCollectCompleteScopedSelection schema variables groundType
         boolCase scopedSelection
-        ++ staticCollectCompleteScopedSelectionSet schema variables
+      ++ staticCollectCompleteScopedSelectionSet schema variables
           groundType boolCase rest
 
 def completeScopedSelectionRuntimeReady
     (schema : Schema) (boolCase : BoolCase)
-    (runtimeType : Name) (scopedSelection : CompleteScopedSelection) : Prop :=
+    (runtimeType : Name) (scopedSelection : CompleteScopedSelection)
+    : Prop :=
   match scopedSelection.selection with
   | .field _responseName fieldName _arguments directives _selectionSet =>
       directivesAllowIn boolCase directives = true
-        ∧ ∃ fieldDefinition,
-          schema.lookupField scopedSelection.lookupParent fieldName =
-            some fieldDefinition
-          ∧ leafTypeNameBool schema fieldDefinition.outputType.namedType =
-            false
-          ∧ runtimeType ∈
-            groundObjectTypesForType schema
-              fieldDefinition.outputType.namedType
+      ∧ ∃ fieldDefinition,
+          schema.lookupField scopedSelection.lookupParent fieldName
+            = some fieldDefinition
+          ∧ leafTypeNameBool schema fieldDefinition.outputType.namedType = false
+          ∧ runtimeType
+            ∈ groundObjectTypesForType schema fieldDefinition.outputType.namedType
   | .inlineFragment _typeCondition _directives _selectionSet => False
 
-theorem eraseCompleteScopedSelectionSet_append :
-    ∀ left right : List CompleteScopedSelection,
-      eraseCompleteScopedSelectionSet (left ++ right)
-        =
-      eraseCompleteScopedSelectionSet left
-        ++ eraseCompleteScopedSelectionSet right
+theorem eraseCompleteScopedSelectionSet_append
+    : ∀ left right : List CompleteScopedSelection,
+        eraseCompleteScopedSelectionSet (left ++ right)
+        = eraseCompleteScopedSelectionSet left ++ eraseCompleteScopedSelectionSet right
   | [], right => by
       simp [eraseCompleteScopedSelectionSet]
   | scopedSelection :: rest, right => by
@@ -103,15 +98,14 @@ theorem eraseCompleteScopedSelectionSet_append :
 
 theorem staticCollectCompleteScopedSelectionSet_append
     (schema : Schema) (variables : List BoolVar)
-    (groundType : Name) (boolCase : BoolCase) :
-    ∀ left right : List CompleteScopedSelection,
-      staticCollectCompleteScopedSelectionSet schema variables groundType
+    (groundType : Name) (boolCase : BoolCase)
+    : ∀ left right : List CompleteScopedSelection,
+        staticCollectCompleteScopedSelectionSet schema variables groundType
           boolCase (left ++ right)
-        =
-      staticCollectCompleteScopedSelectionSet schema variables groundType
-          boolCase left
-        ++ staticCollectCompleteScopedSelectionSet schema variables groundType
-          boolCase right
+        = staticCollectCompleteScopedSelectionSet schema variables groundType
+            boolCase left
+          ++ staticCollectCompleteScopedSelectionSet schema variables groundType
+              boolCase right
   | [], right => by
       simp [staticCollectCompleteScopedSelectionSet]
   | scopedSelection :: rest, right => by
@@ -119,13 +113,11 @@ theorem staticCollectCompleteScopedSelectionSet_append
         staticCollectCompleteScopedSelectionSet_append schema variables
           groundType boolCase rest right, List.append_assoc]
 
-theorem eraseCompleteScopedSelectionSet_completeScopedSelectionSet
-    (lookupParent : Name) :
-    ∀ selectionSet,
-      eraseCompleteScopedSelectionSet
+theorem eraseCompleteScopedSelectionSet_completeScopedSelectionSet (lookupParent : Name)
+    : ∀ selectionSet,
+        eraseCompleteScopedSelectionSet
           (completeScopedSelectionSet lookupParent selectionSet)
-        =
-      selectionSet
+        = selectionSet
   | [] => by
       simp [eraseCompleteScopedSelectionSet, completeScopedSelectionSet]
   | selection :: rest => by
@@ -135,10 +127,10 @@ theorem eraseCompleteScopedSelectionSet_completeScopedSelectionSet
           lookupParent rest]
 
 theorem completeScopedSelectionSet_lookupParent_eq
-    {lookupParent : Name} {scopedSelection : CompleteScopedSelection} :
-    ∀ {selectionSet : List Selection},
-      scopedSelection ∈ completeScopedSelectionSet lookupParent selectionSet ->
-        scopedSelection.lookupParent = lookupParent
+    {lookupParent : Name} {scopedSelection : CompleteScopedSelection}
+    : ∀ {selectionSet : List Selection},
+        scopedSelection ∈ completeScopedSelectionSet lookupParent selectionSet
+        -> scopedSelection.lookupParent = lookupParent
   | [], hmem => by
       cases hmem
   | selection :: rest, hmem => by
@@ -150,14 +142,13 @@ theorem completeScopedSelectionSet_lookupParent_eq
 
 theorem staticCollectCompleteScopedSelectionSet_completeScopedSelectionSet
     (schema : Schema) (variables : List BoolVar)
-    (lookupParent groundType : Name) (boolCase : BoolCase) :
-    ∀ selectionSet,
-      staticCollectCompleteScopedSelectionSet schema variables groundType
+    (lookupParent groundType : Name) (boolCase : BoolCase)
+    : ∀ selectionSet,
+        staticCollectCompleteScopedSelectionSet schema variables groundType
           boolCase
           (completeScopedSelectionSet lookupParent selectionSet)
-        =
-      staticCollectForGround schema variables lookupParent
-        groundType boolCase selectionSet
+        = staticCollectForGround schema variables lookupParent
+            groundType boolCase selectionSet
   | [] => by
       simp [staticCollectCompleteScopedSelectionSet,
         completeScopedSelectionSet, staticCollectForGround]
@@ -172,31 +163,28 @@ theorem staticCollectCompleteScopedSelectionSet_completeScopedSelectionSet
           schema variables lookupParent groundType boolCase rest]
       simpa using happend.symm
 
-theorem completeSelectionSet_size_append (left right : List Selection) :
-    SelectionSet.size (left ++ right)
-      =
-    SelectionSet.size left + SelectionSet.size right := by
+theorem completeSelectionSet_size_append (left right : List Selection)
+    : SelectionSet.size (left ++ right)
+      = SelectionSet.size left + SelectionSet.size right := by
   induction left with
   | nil => simp [SelectionSet.size]
   | cons selection rest ih =>
       simp [SelectionSet.size, ih, Nat.add_assoc]
 
 theorem eraseCompleteScopedSelectionSet_completeScopedSelectionSet_size
-    (lookupParent : Name) (selectionSet : List Selection) :
-    SelectionSet.size
+    (lookupParent : Name) (selectionSet : List Selection)
+    : SelectionSet.size
         (eraseCompleteScopedSelectionSet
           (completeScopedSelectionSet lookupParent selectionSet))
-      =
-    SelectionSet.size selectionSet := by
+      = SelectionSet.size selectionSet := by
   rw [eraseCompleteScopedSelectionSet_completeScopedSelectionSet]
 
 theorem eraseCompleteScopedSelectionSet_tail_size_lt
     (scopedSelection : CompleteScopedSelection)
-    (rest : List CompleteScopedSelection) :
-    SelectionSet.size (eraseCompleteScopedSelectionSet rest)
-      <
-    SelectionSet.size
-      (eraseCompleteScopedSelectionSet (scopedSelection :: rest)) := by
+    (rest : List CompleteScopedSelection)
+    : SelectionSet.size (eraseCompleteScopedSelectionSet rest)
+      < SelectionSet.size
+          (eraseCompleteScopedSelectionSet (scopedSelection :: rest)) := by
   cases scopedSelection with
   | mk lookupParent selection =>
       cases selection <;>
@@ -206,16 +194,17 @@ theorem eraseCompleteScopedSelectionSet_tail_size_lt
 
 theorem eraseCompleteScopedSelectionSet_inlineFragment_none_flatten_size_lt
     (lookupParent : Name) (selectionSet : List Selection)
-    (rest : List CompleteScopedSelection) :
-    SelectionSet.size
+    (rest : List CompleteScopedSelection)
+    : SelectionSet.size
         (eraseCompleteScopedSelectionSet
           (completeScopedSelectionSet lookupParent selectionSet ++ rest))
-      <
-    SelectionSet.size
-      (eraseCompleteScopedSelectionSet
-        ({ lookupParent := lookupParent,
-           selection := Selection.inlineFragment none [] selectionSet }
-          :: rest)) := by
+      < SelectionSet.size
+          (eraseCompleteScopedSelectionSet
+            ({
+                lookupParent := lookupParent,
+                selection := Selection.inlineFragment none [] selectionSet
+              }
+              :: rest)) := by
   simp [eraseCompleteScopedSelectionSet_append,
     eraseCompleteScopedSelectionSet_completeScopedSelectionSet,
     eraseCompleteScopedSelectionSet, eraseCompleteScopedSelection,
@@ -223,26 +212,27 @@ theorem eraseCompleteScopedSelectionSet_inlineFragment_none_flatten_size_lt
 
 theorem eraseCompleteScopedSelectionSet_inlineFragment_some_flatten_size_lt
     (lookupParent typeCondition : Name) (selectionSet : List Selection)
-    (rest : List CompleteScopedSelection) :
-    SelectionSet.size
+    (rest : List CompleteScopedSelection)
+    : SelectionSet.size
         (eraseCompleteScopedSelectionSet
           (completeScopedSelectionSet typeCondition selectionSet ++ rest))
-      <
-    SelectionSet.size
-      (eraseCompleteScopedSelectionSet
-        ({ lookupParent := lookupParent,
-           selection :=
-            Selection.inlineFragment (some typeCondition) [] selectionSet }
-          :: rest)) := by
+      < SelectionSet.size
+          (eraseCompleteScopedSelectionSet
+            ({
+                lookupParent := lookupParent,
+                selection :=
+                  Selection.inlineFragment (some typeCondition) [] selectionSet
+              }
+              :: rest)) := by
   simp [eraseCompleteScopedSelectionSet_append,
     eraseCompleteScopedSelectionSet_completeScopedSelectionSet,
     eraseCompleteScopedSelectionSet, eraseCompleteScopedSelection,
     completeSelectionSet_size_append, SelectionSet.size, Selection.size]
 
 theorem completeSize_withoutFieldSelectionsWithResponseName_le
-    (schema : Schema) (responseName : Name) :
-    ∀ selectionSet,
-      SelectionSet.size
+    (schema : Schema) (responseName : Name)
+    : ∀ selectionSet,
+        SelectionSet.size
           (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
         ≤ SelectionSet.size selectionSet
   | [] => by
@@ -275,13 +265,12 @@ decreasing_by
     omega
 
 theorem fieldSelectionsWithResponseNameInScope_append
-    (schema : Schema) (parentType responseName : Name) :
-    ∀ left right,
-      fieldSelectionsWithResponseNameInScope schema parentType responseName
+    (schema : Schema) (parentType responseName : Name)
+    : ∀ left right,
+        fieldSelectionsWithResponseNameInScope schema parentType responseName
           (left ++ right)
-        =
-      fieldSelectionsWithResponseNameInScope schema parentType responseName left
-        ++ fieldSelectionsWithResponseNameInScope schema parentType responseName right
+        = fieldSelectionsWithResponseNameInScope schema parentType responseName left
+          ++ fieldSelectionsWithResponseNameInScope schema parentType responseName right
   | [], right => by
       simp [fieldSelectionsWithResponseNameInScope]
   | selection :: rest, right => by
@@ -307,19 +296,19 @@ theorem fieldSelectionsWithResponseNameInScope_append
                   List.append_assoc]
 
 def completeScopedSelectionSetLookupValid
-    (schema : Schema) (scopedSelections : List CompleteScopedSelection) :
-    Prop :=
-  ∀ scopedSelection, scopedSelection ∈ scopedSelections ->
-    selectionLookupValid schema scopedSelection.lookupParent
-      scopedSelection.selection
+    (schema : Schema) (scopedSelections : List CompleteScopedSelection)
+    : Prop :=
+  ∀ scopedSelection,
+    scopedSelection ∈ scopedSelections
+    -> selectionLookupValid schema scopedSelection.lookupParent
+        scopedSelection.selection
 
 theorem completeScopedSelectionSetLookupValid_completeScopedSelectionSet
-    (schema : Schema) (lookupParent : Name) :
-    ∀ selectionSet,
-      completeScopedSelectionSetLookupValid schema
+    (schema : Schema) (lookupParent : Name)
+    : ∀ selectionSet,
+        completeScopedSelectionSetLookupValid schema
           (completeScopedSelectionSet lookupParent selectionSet)
-        ↔
-      selectionSetLookupValid schema lookupParent selectionSet
+        ↔ selectionSetLookupValid schema lookupParent selectionSet
   | [] => by
       simp [completeScopedSelectionSetLookupValid,
         completeScopedSelectionSet, selectionSetLookupValid]
@@ -359,82 +348,83 @@ theorem completeScopedSelectionSetLookupValid_completeScopedSelectionSet
               scopedSelection htail
 
 theorem completeScopedSelectionSetLookupValid_append
-    {schema : Schema} {left right : List CompleteScopedSelection} :
-    completeScopedSelectionSetLookupValid schema left ->
-      completeScopedSelectionSetLookupValid schema right ->
-        completeScopedSelectionSetLookupValid schema (left ++ right) := by
+    {schema : Schema} {left right : List CompleteScopedSelection}
+    : completeScopedSelectionSetLookupValid schema left
+      -> completeScopedSelectionSetLookupValid schema right
+      -> completeScopedSelectionSetLookupValid schema (left ++ right) := by
   intro hleft hright scopedSelection hmem
   rcases List.mem_append.mp hmem with hmem | hmem
   · exact hleft scopedSelection hmem
   · exact hright scopedSelection hmem
 
 theorem completeScopedSelectionSetLookupValid_append_left
-    {schema : Schema} {left right : List CompleteScopedSelection} :
-    completeScopedSelectionSetLookupValid schema (left ++ right) ->
-      completeScopedSelectionSetLookupValid schema left := by
+    {schema : Schema} {left right : List CompleteScopedSelection}
+    : completeScopedSelectionSetLookupValid schema (left ++ right)
+      -> completeScopedSelectionSetLookupValid schema left := by
   intro hvalid scopedSelection hmem
   exact hvalid scopedSelection (List.mem_append.mpr (Or.inl hmem))
 
 theorem completeScopedSelectionSetLookupValid_append_right
-    {schema : Schema} {left right : List CompleteScopedSelection} :
-    completeScopedSelectionSetLookupValid schema (left ++ right) ->
-      completeScopedSelectionSetLookupValid schema right := by
+    {schema : Schema} {left right : List CompleteScopedSelection}
+    : completeScopedSelectionSetLookupValid schema (left ++ right)
+      -> completeScopedSelectionSetLookupValid schema right := by
   intro hvalid scopedSelection hmem
   exact hvalid scopedSelection (List.mem_append.mpr (Or.inr hmem))
 
 theorem completeScopedSelectionSetLookupValid_tail
     {schema : Schema} {scopedSelection : CompleteScopedSelection}
-    {rest : List CompleteScopedSelection} :
-    completeScopedSelectionSetLookupValid schema (scopedSelection :: rest) ->
-      completeScopedSelectionSetLookupValid schema rest := by
+    {rest : List CompleteScopedSelection}
+    : completeScopedSelectionSetLookupValid schema (scopedSelection :: rest)
+      -> completeScopedSelectionSetLookupValid schema rest := by
   intro hvalid candidate hcandidate
   exact hvalid candidate (List.mem_cons_of_mem scopedSelection hcandidate)
 
 def completeScopedSelectionSetGroundApplies
     (schema : Schema) (groundType : Name)
-    (scopedSelections : List CompleteScopedSelection) : Prop :=
-  ∀ scopedSelection, scopedSelection ∈ scopedSelections ->
-    schema.typeIncludesObjectBool scopedSelection.lookupParent groundType =
-      true
+    (scopedSelections : List CompleteScopedSelection)
+    : Prop :=
+  ∀ scopedSelection,
+    scopedSelection ∈ scopedSelections
+    -> schema.typeIncludesObjectBool scopedSelection.lookupParent groundType = true
 
 def completeScopedSelectionSetSemanticsReady
     (schema : Schema) (execParent : Name)
-    (scopedSelections : List CompleteScopedSelection) : Prop :=
+    (scopedSelections : List CompleteScopedSelection)
+    : Prop :=
   selectionSetSemanticsReady schema execParent
     (eraseCompleteScopedSelectionSet scopedSelections)
 
 def completeScopedSelectionSetCanMerge
     (schema : Schema) (execParent : Name)
-    (scopedSelections : List CompleteScopedSelection) : Prop :=
+    (scopedSelections : List CompleteScopedSelection)
+    : Prop :=
   FieldMerge.fieldsInSetCanMerge schema execParent
     (eraseCompleteScopedSelectionSet scopedSelections)
 
 theorem completeScopedSelectionSetSemanticsReady_completeScopedSelectionSet
     (schema : Schema) (execParent lookupParent : Name)
-    (selectionSet : List Selection) :
-    completeScopedSelectionSetSemanticsReady schema execParent
+    (selectionSet : List Selection)
+    : completeScopedSelectionSetSemanticsReady schema execParent
         (completeScopedSelectionSet lookupParent selectionSet)
-      ↔
-    selectionSetSemanticsReady schema execParent selectionSet := by
+      ↔ selectionSetSemanticsReady schema execParent selectionSet := by
   simp [completeScopedSelectionSetSemanticsReady,
     eraseCompleteScopedSelectionSet_completeScopedSelectionSet]
 
 theorem completeScopedSelectionSetCanMerge_completeScopedSelectionSet
     (schema : Schema) (execParent lookupParent : Name)
-    (selectionSet : List Selection) :
-    completeScopedSelectionSetCanMerge schema execParent
+    (selectionSet : List Selection)
+    : completeScopedSelectionSetCanMerge schema execParent
         (completeScopedSelectionSet lookupParent selectionSet)
-      ↔
-    FieldMerge.fieldsInSetCanMerge schema execParent selectionSet := by
+      ↔ FieldMerge.fieldsInSetCanMerge schema execParent selectionSet := by
   simp [completeScopedSelectionSetCanMerge,
     eraseCompleteScopedSelectionSet_completeScopedSelectionSet]
 
 theorem completeScopedSelectionSetSemanticsReady_append
     {schema : Schema} {execParent : Name}
-    {left right : List CompleteScopedSelection} :
-    completeScopedSelectionSetSemanticsReady schema execParent left ->
-      completeScopedSelectionSetSemanticsReady schema execParent right ->
-        completeScopedSelectionSetSemanticsReady schema execParent
+    {left right : List CompleteScopedSelection}
+    : completeScopedSelectionSetSemanticsReady schema execParent left
+      -> completeScopedSelectionSetSemanticsReady schema execParent right
+      -> completeScopedSelectionSetSemanticsReady schema execParent
           (left ++ right) := by
   intro hleft hright
   simpa [completeScopedSelectionSetSemanticsReady,
@@ -443,10 +433,9 @@ theorem completeScopedSelectionSetSemanticsReady_append
 
 theorem completeScopedSelectionSetSemanticsReady_append_left
     {schema : Schema} {execParent : Name}
-    {left right : List CompleteScopedSelection} :
-    completeScopedSelectionSetSemanticsReady schema execParent
-        (left ++ right) ->
-      completeScopedSelectionSetSemanticsReady schema execParent left := by
+    {left right : List CompleteScopedSelection}
+    : completeScopedSelectionSetSemanticsReady schema execParent (left ++ right)
+      -> completeScopedSelectionSetSemanticsReady schema execParent left := by
   intro hready
   have hraw :
       selectionSetSemanticsReady schema execParent
@@ -462,10 +451,9 @@ theorem completeScopedSelectionSetSemanticsReady_append_left
 
 theorem completeScopedSelectionSetSemanticsReady_append_right
     {schema : Schema} {execParent : Name}
-    {left right : List CompleteScopedSelection} :
-    completeScopedSelectionSetSemanticsReady schema execParent
-        (left ++ right) ->
-      completeScopedSelectionSetSemanticsReady schema execParent right := by
+    {left right : List CompleteScopedSelection}
+    : completeScopedSelectionSetSemanticsReady schema execParent (left ++ right)
+      -> completeScopedSelectionSetSemanticsReady schema execParent right := by
   intro hready
   have hraw :
       selectionSetSemanticsReady schema execParent
@@ -482,10 +470,10 @@ theorem completeScopedSelectionSetSemanticsReady_append_right
 theorem completeScopedSelectionSetSemanticsReady_tail
     {schema : Schema} {execParent : Name}
     {scopedSelection : CompleteScopedSelection}
-    {rest : List CompleteScopedSelection} :
-    completeScopedSelectionSetSemanticsReady schema execParent
-        (scopedSelection :: rest) ->
-      completeScopedSelectionSetSemanticsReady schema execParent rest := by
+    {rest : List CompleteScopedSelection}
+    : completeScopedSelectionSetSemanticsReady schema execParent
+        (scopedSelection :: rest)
+      -> completeScopedSelectionSetSemanticsReady schema execParent rest := by
   intro hready
   simpa [completeScopedSelectionSetSemanticsReady,
     eraseCompleteScopedSelectionSet] using
@@ -495,9 +483,9 @@ theorem completeScopedSelectionSetSemanticsReady_tail
 
 theorem completeScopedSelectionSetCanMerge_append_left
     (schema : Schema) (execParent : Name)
-    (left right : List CompleteScopedSelection) :
-    completeScopedSelectionSetCanMerge schema execParent (left ++ right) ->
-      completeScopedSelectionSetCanMerge schema execParent left := by
+    (left right : List CompleteScopedSelection)
+    : completeScopedSelectionSetCanMerge schema execParent (left ++ right)
+      -> completeScopedSelectionSetCanMerge schema execParent left := by
   intro hmerge
   have hraw :
       FieldMerge.fieldsInSetCanMerge schema execParent
@@ -513,9 +501,9 @@ theorem completeScopedSelectionSetCanMerge_append_left
 
 theorem completeScopedSelectionSetCanMerge_append_right
     (schema : Schema) (execParent : Name)
-    (left right : List CompleteScopedSelection) :
-    completeScopedSelectionSetCanMerge schema execParent (left ++ right) ->
-      completeScopedSelectionSetCanMerge schema execParent right := by
+    (left right : List CompleteScopedSelection)
+    : completeScopedSelectionSetCanMerge schema execParent (left ++ right)
+      -> completeScopedSelectionSetCanMerge schema execParent right := by
   intro hmerge
   have hraw :
       FieldMerge.fieldsInSetCanMerge schema execParent
@@ -532,10 +520,9 @@ theorem completeScopedSelectionSetCanMerge_append_right
 theorem completeScopedSelectionSetCanMerge_tail
     (schema : Schema) (execParent : Name)
     (scopedSelection : CompleteScopedSelection)
-    (rest : List CompleteScopedSelection) :
-    completeScopedSelectionSetCanMerge schema execParent
-        (scopedSelection :: rest) ->
-      completeScopedSelectionSetCanMerge schema execParent rest := by
+    (rest : List CompleteScopedSelection)
+    : completeScopedSelectionSetCanMerge schema execParent (scopedSelection :: rest)
+      -> completeScopedSelectionSetCanMerge schema execParent rest := by
   intro hmerge
   simpa [completeScopedSelectionSetCanMerge,
     eraseCompleteScopedSelectionSet] using
@@ -545,11 +532,10 @@ theorem completeScopedSelectionSetCanMerge_tail
 
 theorem completeScopedSelectionSetGroundApplies_append
     {schema : Schema} {groundType : Name}
-    {left right : List CompleteScopedSelection} :
-    completeScopedSelectionSetGroundApplies schema groundType left ->
-      completeScopedSelectionSetGroundApplies schema groundType right ->
-        completeScopedSelectionSetGroundApplies schema groundType
-          (left ++ right) := by
+    {left right : List CompleteScopedSelection}
+    : completeScopedSelectionSetGroundApplies schema groundType left
+      -> completeScopedSelectionSetGroundApplies schema groundType right
+      -> completeScopedSelectionSetGroundApplies schema groundType (left ++ right) := by
   intro hleft hright scopedSelection hmem
   rcases List.mem_append.mp hmem with hmem | hmem
   · exact hleft scopedSelection hmem
@@ -557,48 +543,44 @@ theorem completeScopedSelectionSetGroundApplies_append
 
 theorem completeScopedSelectionSetGroundApplies_append_left
     {schema : Schema} {groundType : Name}
-    {left right : List CompleteScopedSelection} :
-    completeScopedSelectionSetGroundApplies schema groundType
-        (left ++ right) ->
-      completeScopedSelectionSetGroundApplies schema groundType left := by
+    {left right : List CompleteScopedSelection}
+    : completeScopedSelectionSetGroundApplies schema groundType (left ++ right)
+      -> completeScopedSelectionSetGroundApplies schema groundType left := by
   intro hground scopedSelection hmem
   exact hground scopedSelection (List.mem_append.mpr (Or.inl hmem))
 
 theorem completeScopedSelectionSetGroundApplies_append_right
     {schema : Schema} {groundType : Name}
-    {left right : List CompleteScopedSelection} :
-    completeScopedSelectionSetGroundApplies schema groundType
-        (left ++ right) ->
-      completeScopedSelectionSetGroundApplies schema groundType right := by
+    {left right : List CompleteScopedSelection}
+    : completeScopedSelectionSetGroundApplies schema groundType (left ++ right)
+      -> completeScopedSelectionSetGroundApplies schema groundType right := by
   intro hground scopedSelection hmem
   exact hground scopedSelection (List.mem_append.mpr (Or.inr hmem))
 
 theorem completeScopedSelectionSetGroundApplies_tail
     {schema : Schema} {groundType : Name}
     {scopedSelection : CompleteScopedSelection}
-    {rest : List CompleteScopedSelection} :
-    completeScopedSelectionSetGroundApplies schema groundType
-        (scopedSelection :: rest) ->
-      completeScopedSelectionSetGroundApplies schema groundType rest := by
+    {rest : List CompleteScopedSelection}
+    : completeScopedSelectionSetGroundApplies schema groundType
+        (scopedSelection :: rest)
+      -> completeScopedSelectionSetGroundApplies schema groundType rest := by
   intro hground candidate hcandidate
   exact hground candidate (List.mem_cons_of_mem scopedSelection hcandidate)
 
 def staticScopedFieldsWithResponseName
     (schema : Schema) (boolCase : BoolCase)
-    (lookupParent groundType responseName : Name) :
-    List Selection -> List CompleteScopedSelection
+    (lookupParent groundType responseName : Name)
+    : List Selection -> List CompleteScopedSelection
   | [] => []
   | selection :: rest =>
       let restFields :=
         staticScopedFieldsWithResponseName schema boolCase lookupParent
           groundType responseName rest
       match selection with
-      | .field fieldResponseName _fieldName _arguments directives
-          _selectionSet =>
+      | .field fieldResponseName _fieldName _arguments directives _selectionSet =>
           if directivesAllowIn boolCase directives then
             if fieldResponseName == responseName then
-              { lookupParent := lookupParent, selection := selection }
-                :: restFields
+              { lookupParent := lookupParent, selection := selection } :: restFields
             else
               restFields
           else
@@ -606,31 +588,30 @@ def staticScopedFieldsWithResponseName
       | .inlineFragment none directives selectionSet =>
           if directivesAllowIn boolCase directives then
             staticScopedFieldsWithResponseName schema boolCase lookupParent
-                groundType responseName selectionSet
-              ++ restFields
+              groundType responseName selectionSet
+            ++ restFields
           else
             restFields
       | .inlineFragment (some typeCondition) directives selectionSet =>
           if directivesAllowIn boolCase directives
               && schema.typeIncludesObjectBool typeCondition groundType then
             staticScopedFieldsWithResponseName schema boolCase typeCondition
-                groundType responseName selectionSet
-              ++ restFields
+              groundType responseName selectionSet
+            ++ restFields
           else
             restFields
 
 def completeScopedSelectionSetStaticFieldsWithResponseName
     (schema : Schema) (boolCase : BoolCase)
-    (groundType responseName : Name) :
-    List CompleteScopedSelection -> List CompleteScopedSelection
+    (groundType responseName : Name)
+    : List CompleteScopedSelection -> List CompleteScopedSelection
   | [] => []
   | scopedSelection :: rest =>
       let restFields :=
         completeScopedSelectionSetStaticFieldsWithResponseName schema
           boolCase groundType responseName rest
       match scopedSelection.selection with
-      | .field fieldResponseName _fieldName _arguments directives
-          _selectionSet =>
+      | .field fieldResponseName _fieldName _arguments directives _selectionSet =>
           if directivesAllowIn boolCase directives then
             if fieldResponseName == responseName then
               scopedSelection :: restFields
@@ -641,55 +622,54 @@ def completeScopedSelectionSetStaticFieldsWithResponseName
       | .inlineFragment none directives selectionSet =>
           if directivesAllowIn boolCase directives then
             staticScopedFieldsWithResponseName schema boolCase
-                scopedSelection.lookupParent groundType responseName
-                selectionSet
-              ++ restFields
+              scopedSelection.lookupParent groundType responseName
+              selectionSet
+            ++ restFields
           else
             restFields
       | .inlineFragment (some typeCondition) directives selectionSet =>
           if directivesAllowIn boolCase directives
               && schema.typeIncludesObjectBool typeCondition groundType then
             staticScopedFieldsWithResponseName schema boolCase typeCondition
-                groundType responseName selectionSet
-              ++ restFields
+              groundType responseName selectionSet
+            ++ restFields
           else
             restFields
 
 def completeScopedSelectionSetWithoutFieldSelectionsWithResponseName
-    (schema : Schema) (responseName : Name) :
-    List CompleteScopedSelection -> List CompleteScopedSelection
+    (schema : Schema) (responseName : Name)
+    : List CompleteScopedSelection -> List CompleteScopedSelection
   | [] => []
   | scopedSelection :: rest =>
       let filteredRest :=
         completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
           responseName rest
       match scopedSelection.selection with
-      | .field fieldResponseName _fieldName _arguments _directives
-          _selectionSet =>
+      | .field fieldResponseName _fieldName _arguments _directives _selectionSet =>
           if fieldResponseName == responseName then
             filteredRest
           else
             scopedSelection :: filteredRest
       | .inlineFragment typeCondition directives selectionSet =>
-          { scopedSelection with
-            selection :=
-              .inlineFragment typeCondition directives
-                (withoutFieldSelectionsWithResponseName schema responseName
-                  selectionSet) }
-            :: filteredRest
+          {
+              scopedSelection with
+                selection :=
+                  .inlineFragment typeCondition directives
+                    (withoutFieldSelectionsWithResponseName schema responseName
+                      selectionSet)
+            }
+          :: filteredRest
 
 theorem completeScopedSelectionSetStaticFieldsWithResponseName_append
     (schema : Schema) (boolCase : BoolCase)
-    (groundType responseName : Name) :
-    ∀ left right,
-      completeScopedSelectionSetStaticFieldsWithResponseName schema
+    (groundType responseName : Name)
+    : ∀ left right,
+        completeScopedSelectionSetStaticFieldsWithResponseName schema
           boolCase groundType responseName (left ++ right)
-        =
-      completeScopedSelectionSetStaticFieldsWithResponseName schema
-          boolCase groundType responseName left
-        ++
-      completeScopedSelectionSetStaticFieldsWithResponseName schema
-          boolCase groundType responseName right
+        = completeScopedSelectionSetStaticFieldsWithResponseName schema
+            boolCase groundType responseName left
+          ++ completeScopedSelectionSetStaticFieldsWithResponseName schema
+              boolCase groundType responseName right
   | [], right => by
       simp [completeScopedSelectionSetStaticFieldsWithResponseName]
   | scopedSelection :: rest, right => by
@@ -734,16 +714,14 @@ theorem completeScopedSelectionSetStaticFieldsWithResponseName_append
                       List.append_assoc]
 
 theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_append
-    (schema : Schema) (responseName : Name) :
-    ∀ left right,
-      completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
+    (schema : Schema) (responseName : Name)
+    : ∀ left right,
+        completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
           responseName (left ++ right)
-        =
-      completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
-          responseName left
-        ++
-      completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
-          responseName right
+        = completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
+            responseName left
+          ++ completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
+              responseName right
   | [], right => by
       simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName]
   | scopedSelection :: rest, right => by
@@ -762,14 +740,13 @@ theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_append
                   schema responseName rest right]
 
 theorem eraseCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName
-    (schema : Schema) (responseName : Name) :
-    ∀ scopedSelections,
-      eraseCompleteScopedSelectionSet
+    (schema : Schema) (responseName : Name)
+    : ∀ scopedSelections,
+        eraseCompleteScopedSelectionSet
           (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
             responseName scopedSelections)
-        =
-      withoutFieldSelectionsWithResponseName schema responseName
-        (eraseCompleteScopedSelectionSet scopedSelections)
+        = withoutFieldSelectionsWithResponseName schema responseName
+            (eraseCompleteScopedSelectionSet scopedSelections)
   | [] => by
       simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
         eraseCompleteScopedSelectionSet, withoutFieldSelectionsWithResponseName]
@@ -795,19 +772,20 @@ theorem eraseCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName
 theorem eraseCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName_size_lt_field_directives
     (schema : Schema) (lookupParent responseName fieldName : Name)
     (arguments : List Argument) (directives : List DirectiveApplication)
-    (selectionSet : List Selection) (rest : List CompleteScopedSelection) :
-    SelectionSet.size
+    (selectionSet : List Selection) (rest : List CompleteScopedSelection)
+    : SelectionSet.size
         (eraseCompleteScopedSelectionSet
           (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
             responseName rest))
-      <
-    SelectionSet.size
-      (eraseCompleteScopedSelectionSet
-        ({ lookupParent := lookupParent,
-           selection :=
-            Selection.field responseName fieldName arguments directives
-              selectionSet }
-          :: rest)) := by
+      < SelectionSet.size
+          (eraseCompleteScopedSelectionSet
+            ({
+                lookupParent := lookupParent,
+                selection :=
+                  Selection.field responseName fieldName arguments directives
+                    selectionSet
+              }
+              :: rest)) := by
   have hle :
       SelectionSet.size
           (withoutFieldSelectionsWithResponseName schema responseName
@@ -836,12 +814,12 @@ theorem eraseCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName_s
   exact Nat.lt_of_le_of_lt hle htail
 
 theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_lookupValid
-    (schema : Schema) (responseName : Name) :
-    ∀ scopedSelections,
-      completeScopedSelectionSetLookupValid schema scopedSelections ->
-        completeScopedSelectionSetLookupValid schema
-          (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
-            responseName scopedSelections)
+    (schema : Schema) (responseName : Name)
+    : ∀ scopedSelections,
+        completeScopedSelectionSetLookupValid schema scopedSelections
+        -> completeScopedSelectionSetLookupValid schema
+            (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
+              responseName scopedSelections)
   | [], _hvalid => by
       simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
         completeScopedSelectionSetLookupValid]
@@ -899,13 +877,12 @@ theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_lookupV
               · exact hrest candidate hcandidate
 
 theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_semanticsReady
-    (schema : Schema) (execParent responseName : Name) :
-    ∀ scopedSelections,
-      completeScopedSelectionSetSemanticsReady schema execParent
-          scopedSelections ->
-        completeScopedSelectionSetSemanticsReady schema execParent
-          (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
-            responseName scopedSelections)
+    (schema : Schema) (execParent responseName : Name)
+    : ∀ scopedSelections,
+        completeScopedSelectionSetSemanticsReady schema execParent scopedSelections
+        -> completeScopedSelectionSetSemanticsReady schema execParent
+            (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
+              responseName scopedSelections)
   | scopedSelections, hready => by
       simpa [completeScopedSelectionSetSemanticsReady,
         eraseCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName] using
@@ -914,12 +891,12 @@ theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_semanti
           (eraseCompleteScopedSelectionSet scopedSelections) hready
 
 theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_canMerge
-    (schema : Schema) (execParent responseName : Name) :
-    ∀ scopedSelections,
-      completeScopedSelectionSetCanMerge schema execParent scopedSelections ->
-        completeScopedSelectionSetCanMerge schema execParent
-          (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
-            responseName scopedSelections)
+    (schema : Schema) (execParent responseName : Name)
+    : ∀ scopedSelections,
+        completeScopedSelectionSetCanMerge schema execParent scopedSelections
+        -> completeScopedSelectionSetCanMerge schema execParent
+            (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
+              responseName scopedSelections)
   | scopedSelections, hmerge => by
       simpa [completeScopedSelectionSetCanMerge,
         eraseCompleteScopedSelectionSet_withoutFieldSelectionsWithResponseName] using
@@ -927,13 +904,12 @@ theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_canMerg
           execParent (eraseCompleteScopedSelectionSet scopedSelections) hmerge
 
 theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_groundApplies
-    (schema : Schema) (groundType responseName : Name) :
-    ∀ scopedSelections,
-      completeScopedSelectionSetGroundApplies schema groundType
-          scopedSelections ->
-        completeScopedSelectionSetGroundApplies schema groundType
-          (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
-            responseName scopedSelections)
+    (schema : Schema) (groundType responseName : Name)
+    : ∀ scopedSelections,
+        completeScopedSelectionSetGroundApplies schema groundType scopedSelections
+        -> completeScopedSelectionSetGroundApplies schema groundType
+            (completeScopedSelectionSetWithoutFieldSelectionsWithResponseName schema
+              responseName scopedSelections)
   | [], _hground => by
       simp [completeScopedSelectionSetWithoutFieldSelectionsWithResponseName,
         completeScopedSelectionSetGroundApplies]
@@ -975,15 +951,14 @@ theorem completeScopedSelectionSetWithoutFieldSelectionsWithResponseName_groundA
 
 theorem eraseCompleteScopedSelectionSet_staticScopedFieldsWithResponseName_lookupParent
     (schema : Schema) (boolCase : BoolCase)
-    (leftParent rightParent groundType responseName : Name) :
-    ∀ selectionSet,
-      eraseCompleteScopedSelectionSet
+    (leftParent rightParent groundType responseName : Name)
+    : ∀ selectionSet,
+        eraseCompleteScopedSelectionSet
           (staticScopedFieldsWithResponseName schema boolCase leftParent
             groundType responseName selectionSet)
-        =
-      eraseCompleteScopedSelectionSet
-          (staticScopedFieldsWithResponseName schema boolCase rightParent
-            groundType responseName selectionSet)
+        = eraseCompleteScopedSelectionSet
+            (staticScopedFieldsWithResponseName schema boolCase rightParent
+              groundType responseName selectionSet)
   | [] => by
       simp [staticScopedFieldsWithResponseName,
         eraseCompleteScopedSelectionSet]
@@ -1031,16 +1006,15 @@ theorem eraseCompleteScopedSelectionSet_staticScopedFieldsWithResponseName_looku
 
 theorem eraseCompleteScopedSelectionSet_completeScopedSelectionSetStaticFieldsWithResponseName
     (schema : Schema) (boolCase : BoolCase)
-    (lookupParent groundType responseName : Name) :
-    ∀ scopedSelections,
-      eraseCompleteScopedSelectionSet
+    (lookupParent groundType responseName : Name)
+    : ∀ scopedSelections,
+        eraseCompleteScopedSelectionSet
           (completeScopedSelectionSetStaticFieldsWithResponseName schema
             boolCase groundType responseName scopedSelections)
-        =
-      eraseCompleteScopedSelectionSet
-        (staticScopedFieldsWithResponseName schema boolCase lookupParent
-          groundType responseName
-          (eraseCompleteScopedSelectionSet scopedSelections))
+        = eraseCompleteScopedSelectionSet
+            (staticScopedFieldsWithResponseName schema boolCase lookupParent
+              groundType responseName
+              (eraseCompleteScopedSelectionSet scopedSelections))
   | [] => by
       simp [completeScopedSelectionSetStaticFieldsWithResponseName,
         staticScopedFieldsWithResponseName, eraseCompleteScopedSelectionSet]
@@ -1107,7 +1081,6 @@ theorem eraseCompleteScopedSelectionSet_completeScopedSelectionSetStaticFieldsWi
                       eraseCompleteScopedSelectionSet_completeScopedSelectionSetStaticFieldsWithResponseName
                         schema boolCase lookupParent groundType responseName
                         rest]
-
 
 end CompleteNormalization
 

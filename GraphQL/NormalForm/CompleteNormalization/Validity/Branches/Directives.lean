@@ -11,18 +11,18 @@ namespace NormalForm
 namespace CompleteNormalization
 
 theorem directivesValid_nil
-    (schema : Schema) (variableDefinitions : List VariableDefinition) :
-    Validation.directivesValid schema variableDefinitions [] := by
+    (schema : Schema) (variableDefinitions : List VariableDefinition)
+    : Validation.directivesValid schema variableDefinitions [] := by
   simp [Validation.directivesValid]
 
 theorem directiveIfArgumentValid_of_inputValueBooleanVariables
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (varName : BoolVar) :
-    ∀ value,
-      varName ∈ inputValueBooleanVariables value ->
-      Validation.directiveIfArgumentValid schema variableDefinitions value ->
-        Validation.directiveIfArgumentValid schema variableDefinitions
-          (.variable varName)
+    (varName : BoolVar)
+    : ∀ value,
+        varName ∈ inputValueBooleanVariables value
+        -> Validation.directiveIfArgumentValid schema variableDefinitions value
+        -> Validation.directiveIfArgumentValid schema variableDefinitions
+            (.variable varName)
   | .null, hmem, _hvalid => by
       simp [inputValueBooleanVariables] at hmem
   | .int _value, hmem, _hvalid => by
@@ -46,12 +46,12 @@ theorem directiveIfArgumentValid_of_inputValueBooleanVariables
 
 theorem directiveIfArgumentValid_of_directiveBooleanVariables
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (varName : BoolVar) :
-    ∀ directive,
-      varName ∈ directiveBooleanVariables directive ->
-      Validation.directiveValid schema variableDefinitions directive ->
-        Validation.directiveIfArgumentValid schema variableDefinitions
-          (.variable varName)
+    (varName : BoolVar)
+    : ∀ directive,
+        varName ∈ directiveBooleanVariables directive
+        -> Validation.directiveValid schema variableDefinitions directive
+        -> Validation.directiveIfArgumentValid schema variableDefinitions
+            (.variable varName)
   | .skip ifArgument, hmem, hvalid => by
       exact directiveIfArgumentValid_of_inputValueBooleanVariables
         schema variableDefinitions varName ifArgument
@@ -65,12 +65,12 @@ theorem directiveIfArgumentValid_of_directiveBooleanVariables
 
 theorem directiveIfArgumentValid_of_directivesBooleanVariables
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (varName : BoolVar) :
-    ∀ directives,
-      varName ∈ directivesBooleanVariables directives ->
-      Validation.directivesValid schema variableDefinitions directives ->
-        Validation.directiveIfArgumentValid schema variableDefinitions
-          (.variable varName)
+    (varName : BoolVar)
+    : ∀ directives,
+        varName ∈ directivesBooleanVariables directives
+        -> Validation.directivesValid schema variableDefinitions directives
+        -> Validation.directiveIfArgumentValid schema variableDefinitions
+            (.variable varName)
   | [], hmem, _hvalid => by
       simp [directivesBooleanVariables] at hmem
   | directive :: rest, hmem, hvalid => by
@@ -96,13 +96,12 @@ theorem directiveIfArgumentValid_of_directivesBooleanVariables
 mutual
   theorem directiveIfArgumentValid_of_selectionBooleanVariables
       (schema : Schema) (variableDefinitions : List VariableDefinition)
-      (varName : BoolVar) :
-      ∀ parentType selection,
-        varName ∈ selectionBooleanVariables selection ->
-        Validation.selectionValid schema variableDefinitions parentType
-          selection ->
-          Validation.directiveIfArgumentValid schema variableDefinitions
-            (.variable varName)
+      (varName : BoolVar)
+      : ∀ parentType selection,
+          varName ∈ selectionBooleanVariables selection
+          -> Validation.selectionValid schema variableDefinitions parentType selection
+          -> Validation.directiveIfArgumentValid schema variableDefinitions
+              (.variable varName)
     | parentType,
       .field responseName fieldName arguments directives selectionSet,
       hmem, hvalid => by
@@ -161,13 +160,13 @@ mutual
 
   theorem directiveIfArgumentValid_of_selectionSetBooleanVariables
       (schema : Schema) (variableDefinitions : List VariableDefinition)
-      (varName : BoolVar) :
-      ∀ parentType selectionSet,
-        varName ∈ selectionSetBooleanVariables selectionSet ->
-        Validation.selectionSetValid schema variableDefinitions parentType
-          selectionSet ->
-          Validation.directiveIfArgumentValid schema variableDefinitions
-            (.variable varName)
+      (varName : BoolVar)
+      : ∀ parentType selectionSet,
+          varName ∈ selectionSetBooleanVariables selectionSet
+          -> Validation.selectionSetValid schema variableDefinitions parentType
+              selectionSet
+          -> Validation.directiveIfArgumentValid schema variableDefinitions
+              (.variable varName)
     | _parentType, [], hmem, _hvalid => by
         simp [selectionSetBooleanVariables] at hmem
     | parentType, selection :: rest, hmem, hvalid => by
@@ -191,11 +190,11 @@ end
 
 theorem directiveForBit_directivesValid_of_operationBoolVars
     (schema : Schema) (operation : Operation)
-    {varName : BoolVar} {value : Bool} :
-    Validation.operationDefinitionValid schema operation ->
-    varName ∈ operationBoolVars operation ->
-      Validation.directivesValid schema operation.variableDefinitions
-        [directiveForBit varName value] := by
+    {varName : BoolVar} {value : Bool}
+    : Validation.operationDefinitionValid schema operation
+      -> varName ∈ operationBoolVars operation
+      -> Validation.directivesValid schema operation.variableDefinitions
+          [directiveForBit varName value] := by
   intro hvalid hmem
   have hsourceMem :
       varName ∈ selectionSetBooleanVariables operation.selectionSet :=
@@ -216,10 +215,9 @@ theorem directiveForBit_directivesValid_of_operationBoolVars
     cases value <;>
       simpa [directiveForBit, Validation.directiveValid] using hif
 
-theorem wrapWithBoolCase_ne_nil :
-    ∀ boolCase selectionSet,
-      selectionSet ≠ [] ->
-        wrapWithBoolCase boolCase selectionSet ≠ []
+theorem wrapWithBoolCase_ne_nil
+    : ∀ boolCase selectionSet,
+        selectionSet ≠ [] -> wrapWithBoolCase boolCase selectionSet ≠ []
   | [], selectionSet, hne => by
       simpa [wrapWithBoolCase] using hne
   | (_varName, _value) :: rest, selectionSet, _hne => by
@@ -227,16 +225,16 @@ theorem wrapWithBoolCase_ne_nil :
 
 theorem wrapWithBoolCase_selectionSetValid
     (schema : Schema) (operation : Operation)
-    (parentType : Name) :
-    ∀ boolCase selectionSet,
-      Validation.operationDefinitionValid schema operation ->
-      (∀ varName, varName ∈ boolCase.map Prod.fst ->
-        varName ∈ operationBoolVars operation) ->
-      selectionSet ≠ [] ->
-      Validation.selectionSetValid schema operation.variableDefinitions
-        parentType selectionSet ->
-        Validation.selectionSetValid schema operation.variableDefinitions
-          parentType (wrapWithBoolCase boolCase selectionSet)
+    (parentType : Name)
+    : ∀ boolCase selectionSet,
+        Validation.operationDefinitionValid schema operation
+        -> (∀ varName,
+              varName ∈ boolCase.map Prod.fst -> varName ∈ operationBoolVars operation)
+        -> selectionSet ≠ []
+        -> Validation.selectionSetValid schema operation.variableDefinitions
+            parentType selectionSet
+        -> Validation.selectionSetValid schema operation.variableDefinitions
+            parentType (wrapWithBoolCase boolCase selectionSet)
   | [], selectionSet, _hoperation, _hvars, _hne, hvalid => by
       simpa [wrapWithBoolCase] using hvalid
   | (varName, value) :: rest, selectionSet, hoperation, hvars, hne,
@@ -266,13 +264,13 @@ theorem wrapWithBoolCase_selectionSetValid
 
 theorem wrapWithBoolCase_selectionSetValidInPossibleTypes
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (parentType : Name) (hparentObject : schema.objectType parentType) :
-    ∀ boolCase selectionSet,
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions parentType selectionSet ->
+    (parentType : Name) (hparentObject : schema.objectType parentType)
+    : ∀ boolCase selectionSet,
         Validation.selectionSetValidInPossibleTypes schema
-          variableDefinitions parentType
-          (wrapWithBoolCase boolCase selectionSet)
+          variableDefinitions parentType selectionSet
+        -> Validation.selectionSetValidInPossibleTypes schema
+            variableDefinitions parentType
+            (wrapWithBoolCase boolCase selectionSet)
   | [], selectionSet, himplementation => by
       simpa [wrapWithBoolCase] using himplementation
   | (_varName, _value) :: rest, selectionSet, himplementation => by
@@ -294,25 +292,22 @@ theorem wrapWithBoolCase_selectionSetValidInPossibleTypes
         object_typeIncludesObjectBool_eq_self schema hparentObject hinclude
       simpa [hobjectEq] using hchild
 
-theorem collectFields_wrapWithBoolCase
-    (schema : Schema) (parentType : Name) :
-    ∀ boolCase selectionSet,
-      FieldMerge.collectFields schema parentType
+theorem collectFields_wrapWithBoolCase (schema : Schema) (parentType : Name)
+    : ∀ boolCase selectionSet,
+        FieldMerge.collectFields schema parentType
           (wrapWithBoolCase boolCase selectionSet)
-        =
-      FieldMerge.collectFields schema parentType selectionSet
+        = FieldMerge.collectFields schema parentType selectionSet
   | [], selectionSet => by
       simp [wrapWithBoolCase]
   | (_varName, _value) :: rest, selectionSet => by
       simp [wrapWithBoolCase, FieldMerge.collectFields,
         collectFields_wrapWithBoolCase schema parentType rest selectionSet]
 
-theorem fieldsInSetCanMerge_wrapWithBoolCase
-    (schema : Schema) (parentType : Name) :
-    ∀ boolCase selectionSet,
-      FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-        FieldMerge.fieldsInSetCanMerge schema parentType
-          (wrapWithBoolCase boolCase selectionSet)
+theorem fieldsInSetCanMerge_wrapWithBoolCase (schema : Schema) (parentType : Name)
+    : ∀ boolCase selectionSet,
+        FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+        -> FieldMerge.fieldsInSetCanMerge schema parentType
+            (wrapWithBoolCase boolCase selectionSet)
   | boolCase, selectionSet, hmerge => by
       unfold FieldMerge.fieldsInSetCanMerge at hmerge ⊢
       cases hmerge with
@@ -327,12 +322,11 @@ theorem fieldsInSetCanMerge_wrapWithBoolCase
 theorem fieldsInSetCanMerge_wrapWithBoolCase_pair
     (schema : Schema) (parentType : Name)
     (leftCase rightCase : BoolCase)
-    (leftSet rightSet : List Selection) :
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (leftSet ++ rightSet) ->
-      FieldMerge.fieldsInSetCanMerge schema parentType
-        (wrapWithBoolCase leftCase leftSet
-          ++ wrapWithBoolCase rightCase rightSet) := by
+    (leftSet rightSet : List Selection)
+    : FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (wrapWithBoolCase leftCase leftSet
+            ++ wrapWithBoolCase rightCase rightSet) := by
   intro hmerge
   unfold FieldMerge.fieldsInSetCanMerge at hmerge ⊢
   cases hmerge with
@@ -407,17 +401,16 @@ theorem fieldsInSetCanMerge_wrapWithBoolCase_pair
 
 theorem fieldsInSetCanMerge_append_of_pairwise
     (schema : Schema) (parentType : Name)
-    (leftSet rightSet : List Selection) :
-    FieldMerge.fieldsInSetCanMerge schema parentType leftSet ->
-    FieldMerge.fieldsInSetCanMerge schema parentType rightSet ->
-    (∀ leftField,
-      leftField ∈ FieldMerge.collectFields schema parentType leftSet ->
-      ∀ rightField,
-        rightField ∈ FieldMerge.collectFields schema parentType rightSet ->
-        leftField.responseName = rightField.responseName ->
-          FieldMerge.fieldsForNameCanMerge schema leftField rightField) ->
-      FieldMerge.fieldsInSetCanMerge schema parentType
-        (leftSet ++ rightSet) := by
+    (leftSet rightSet : List Selection)
+    : FieldMerge.fieldsInSetCanMerge schema parentType leftSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType rightSet
+      -> (∀ leftField,
+            leftField ∈ FieldMerge.collectFields schema parentType leftSet
+            -> ∀ rightField,
+                rightField ∈ FieldMerge.collectFields schema parentType rightSet
+                -> leftField.responseName = rightField.responseName
+                -> FieldMerge.fieldsForNameCanMerge schema leftField rightField)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet) := by
   intro hleftMerge hrightMerge hcross
   unfold FieldMerge.fieldsInSetCanMerge at hleftMerge hrightMerge ⊢
   cases hleftMerge with
@@ -437,7 +430,6 @@ theorem fieldsInSetCanMerge_append_of_pairwise
             · exact FieldMerge.fieldsForNameCanMerge_symm
                 (hcross right hrightMem left hleftMem hresponse.symm)
             · exact hrightFields left hleftMem right hrightMem hresponse
-
 
 end CompleteNormalization
 

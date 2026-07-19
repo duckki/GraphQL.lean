@@ -20,55 +20,48 @@ namespace ReorderingSoundness
 
 open Execution
 
-def ResponseValueResultEquivalent
-    (left right : Result ResponseValue) : Prop :=
+def ResponseValueResultEquivalent (left right : Result ResponseValue) : Prop :=
   match left, right with
   | .error leftErrors, .error rightErrors => leftErrors = rightErrors
   | .ok (leftValue, leftErrors), .ok (rightValue, rightErrors) =>
-      ResponseValue.semanticEquivalent leftValue rightValue
-        ∧ leftErrors = rightErrors
+      ResponseValue.semanticEquivalent leftValue rightValue ∧ leftErrors = rightErrors
   | _, _ => False
 
-def ListResponseValueResultEquivalent
-    (left right : Result (List ResponseValue)) : Prop :=
+def ListResponseValueResultEquivalent (left right : Result (List ResponseValue))
+    : Prop :=
   match left, right with
   | .error leftErrors, .error rightErrors => leftErrors = rightErrors
   | .ok (leftValues, leftErrors), .ok (rightValues, rightErrors) =>
-      ResponseValue.canonicalList leftValues =
-        ResponseValue.canonicalList rightValues
-        ∧ leftErrors = rightErrors
+      ResponseValue.canonicalList leftValues = ResponseValue.canonicalList rightValues
+      ∧ leftErrors = rightErrors
   | _, _ => False
 
-def SelectionSetResultEquivalent
-    (left right : Result (List (Name × ResponseValue))) : Prop :=
+def SelectionSetResultEquivalent (left right : Result (List (Name × ResponseValue)))
+    : Prop :=
   match left, right with
   | .error leftErrors, .error rightErrors => leftErrors = rightErrors
   | .ok (leftFields, leftErrors), .ok (rightFields, rightErrors) =>
       ResponseValue.semanticEquivalent (.object leftFields) (.object rightFields)
-        ∧ leftErrors = rightErrors
+      ∧ leftErrors = rightErrors
   | _, _ => False
 
-theorem responseValue_semanticEquivalent_refl
-    (value : ResponseValue) :
-    ResponseValue.semanticEquivalent value value := by
+theorem responseValue_semanticEquivalent_refl (value : ResponseValue)
+    : ResponseValue.semanticEquivalent value value := by
   rfl
 
-theorem responseValue_semanticEquivalent_symm
-    {left right : ResponseValue} :
-    ResponseValue.semanticEquivalent left right ->
-      ResponseValue.semanticEquivalent right left := by
+theorem responseValue_semanticEquivalent_symm {left right : ResponseValue}
+    : ResponseValue.semanticEquivalent left right
+      -> ResponseValue.semanticEquivalent right left := by
   exact Eq.symm
 
-theorem responseValue_semanticEquivalent_trans
-    {left middle right : ResponseValue} :
-    ResponseValue.semanticEquivalent left middle ->
-    ResponseValue.semanticEquivalent middle right ->
-      ResponseValue.semanticEquivalent left right := by
+theorem responseValue_semanticEquivalent_trans {left middle right : ResponseValue}
+    : ResponseValue.semanticEquivalent left middle
+      -> ResponseValue.semanticEquivalent middle right
+      -> ResponseValue.semanticEquivalent left right := by
   exact Eq.trans
 
-theorem responseValueResultEquivalent_of_eq
-    {left right : Result ResponseValue} :
-    left = right -> ResponseValueResultEquivalent left right := by
+theorem responseValueResultEquivalent_of_eq {left right : Result ResponseValue}
+    : left = right -> ResponseValueResultEquivalent left right := by
   intro heq
   subst right
   cases left with
@@ -78,8 +71,8 @@ theorem responseValueResultEquivalent_of_eq
       exact ⟨responseValue_semanticEquivalent_refl value, rfl⟩
 
 theorem selectionSetResultEquivalent_of_eq
-    {left right : Result (List (Name × ResponseValue))} :
-    left = right -> SelectionSetResultEquivalent left right := by
+    {left right : Result (List (Name × ResponseValue))}
+    : left = right -> SelectionSetResultEquivalent left right := by
   intro heq
   subst right
   cases left with
@@ -88,15 +81,12 @@ theorem selectionSetResultEquivalent_of_eq
       rcases result with ⟨fields, errors⟩
       exact ⟨responseValue_semanticEquivalent_refl (.object fields), rfl⟩
 
-private def responseFieldLE
-    (left right : Name × ResponseValue) : Prop :=
+private def responseFieldLE (left right : Name × ResponseValue) : Prop :=
   left.1 ≤ right.1
 
-private theorem insertObjectFieldSorted_perm
-    (field : Name × ResponseValue) :
-    ∀ fields,
-      (ResponseValue.insertObjectFieldSorted field fields).Perm
-        (field :: fields)
+private theorem insertObjectFieldSorted_perm (field : Name × ResponseValue)
+    : ∀ fields,
+        (ResponseValue.insertObjectFieldSorted field fields).Perm (field :: fields)
   | [] => List.Perm.refl _
   | candidate :: rest => by
       by_cases hle : field.1 ≤ candidate.1
@@ -107,9 +97,8 @@ private theorem insertObjectFieldSorted_perm
           ((insertObjectFieldSorted_perm field rest).cons candidate).trans
             (List.Perm.swap field candidate rest)
 
-private theorem sortObjectFieldsByName_perm :
-    ∀ fields,
-      (ResponseValue.sortObjectFieldsByName fields).Perm fields
+private theorem sortObjectFieldsByName_perm
+    : ∀ fields, (ResponseValue.sortObjectFieldsByName fields).Perm fields
   | [] => List.Perm.refl _
   | field :: rest => by
       exact
@@ -117,19 +106,17 @@ private theorem sortObjectFieldsByName_perm :
           (ResponseValue.sortObjectFieldsByName rest)).trans
           ((sortObjectFieldsByName_perm rest).cons field)
 
-private theorem responseFieldLE_trans
-    {first second third : Name × ResponseValue} :
-    responseFieldLE first second ->
-    responseFieldLE second third ->
-      responseFieldLE first third := by
+private theorem responseFieldLE_trans {first second third : Name × ResponseValue}
+    : responseFieldLE first second
+      -> responseFieldLE second third
+      -> responseFieldLE first third := by
   exact String.le_trans
 
-private theorem insertObjectFieldSorted_pairwise
-    (field : Name × ResponseValue) :
-    ∀ fields,
-      List.Pairwise responseFieldLE fields ->
-        List.Pairwise responseFieldLE
-          (ResponseValue.insertObjectFieldSorted field fields)
+private theorem insertObjectFieldSorted_pairwise (field : Name × ResponseValue)
+    : ∀ fields,
+        List.Pairwise responseFieldLE fields
+        -> List.Pairwise responseFieldLE
+            (ResponseValue.insertObjectFieldSorted field fields)
   | [], _hsorted => by
       simp [ResponseValue.insertObjectFieldSorted]
   | candidate :: rest, hsorted => by
@@ -167,10 +154,9 @@ private theorem insertObjectFieldSorted_pairwise
           · exact hcandidateRest restField hrest
         · exact insertObjectFieldSorted_pairwise field rest hrestSorted
 
-private theorem sortObjectFieldsByName_pairwise :
-    ∀ fields,
-      List.Pairwise responseFieldLE
-        (ResponseValue.sortObjectFieldsByName fields)
+private theorem sortObjectFieldsByName_pairwise
+    : ∀ fields,
+        List.Pairwise responseFieldLE (ResponseValue.sortObjectFieldsByName fields)
   | [] => by simp [ResponseValue.sortObjectFieldsByName]
   | field :: rest => by
       exact insertObjectFieldSorted_pairwise field
@@ -180,12 +166,12 @@ private theorem sortObjectFieldsByName_pairwise :
 private theorem pair_eq_of_same_key_of_mem_nodup
     {left right : List (Name × ResponseValue)}
     (hnodup : (left.map Prod.fst).Nodup)
-    {first second : Name × ResponseValue} :
-    first ∈ left ->
-    second ∈ right ->
-    left.Perm right ->
-    first.1 = second.1 ->
-      first = second := by
+    {first second : Name × ResponseValue}
+    : first ∈ left
+      -> second ∈ right
+      -> left.Perm right
+      -> first.1 = second.1
+      -> first = second := by
   intro hfirst hsecond hperm hkeys
   have hsecondLeft : second ∈ left := hperm.mem_iff.mpr hsecond
   have unique :
@@ -225,9 +211,9 @@ private theorem pair_eq_of_same_key_of_mem_nodup
 private theorem sortObjectFieldsByName_eq_of_perm_nodup
     {left right : List (Name × ResponseValue)}
     (hperm : left.Perm right)
-    (hnodup : (left.map Prod.fst).Nodup) :
-    ResponseValue.sortObjectFieldsByName left =
-      ResponseValue.sortObjectFieldsByName right := by
+    (hnodup : (left.map Prod.fst).Nodup)
+    : ResponseValue.sortObjectFieldsByName left
+      = ResponseValue.sortObjectFieldsByName right := by
   apply List.Perm.eq_of_pairwise
   · intro first second hfirst hsecond hfirstSecond hsecondFirst
     apply pair_eq_of_same_key_of_mem_nodup hnodup
@@ -243,11 +229,11 @@ private theorem sortObjectFieldsByName_eq_of_perm_nodup
 
 theorem semanticEquivalent_object_of_canonical_fields_perm_nodup
     {left right : List (Name × ResponseValue)}
-    (hperm :
-      (ResponseValue.canonicalObjectFields left).Perm
-        (ResponseValue.canonicalObjectFields right))
-    (hnodup : (left.map Prod.fst).Nodup) :
-    ResponseValue.semanticEquivalent (.object left) (.object right) := by
+    (hperm
+      : (ResponseValue.canonicalObjectFields left).Perm
+          (ResponseValue.canonicalObjectFields right))
+    (hnodup : (left.map Prod.fst).Nodup)
+    : ResponseValue.semanticEquivalent (.object left) (.object right) := by
   unfold ResponseValue.semanticEquivalent ResponseValue.canonical
   apply congrArg ResponseValue.object
   apply sortObjectFieldsByName_eq_of_perm_nodup hperm
@@ -256,13 +242,12 @@ theorem semanticEquivalent_object_of_canonical_fields_perm_nodup
 
 theorem responseValue_semanticEquivalent_object_cons
     {name : Name} {leftValue rightValue : ResponseValue}
-    {leftFields rightFields : List (Name × ResponseValue)} :
-    ResponseValue.semanticEquivalent leftValue rightValue ->
-    ResponseValue.semanticEquivalent (.object leftFields)
-      (.object rightFields) ->
-      ResponseValue.semanticEquivalent
-        (.object ((name, leftValue) :: leftFields))
-        (.object ((name, rightValue) :: rightFields)) := by
+    {leftFields rightFields : List (Name × ResponseValue)}
+    : ResponseValue.semanticEquivalent leftValue rightValue
+      -> ResponseValue.semanticEquivalent (.object leftFields) (.object rightFields)
+      -> ResponseValue.semanticEquivalent
+          (.object ((name, leftValue) :: leftFields))
+          (.object ((name, rightValue) :: rightFields)) := by
   intro hvalue hfields
   unfold ResponseValue.semanticEquivalent at hvalue hfields ⊢
   simp only [ResponseValue.canonical] at hfields ⊢
@@ -271,10 +256,10 @@ theorem responseValue_semanticEquivalent_object_cons
     ResponseValue.sortObjectFieldsByName, hvalue, hfields']
 
 theorem responseValueResultEquivalent_nonNullCompletion
-    {left right : Result ResponseValue} :
-    ResponseValueResultEquivalent left right ->
-      ResponseValueResultEquivalent
-        (nonNullCompletion left) (nonNullCompletion right) := by
+    {left right : Result ResponseValue}
+    : ResponseValueResultEquivalent left right
+      -> ResponseValueResultEquivalent
+          (nonNullCompletion left) (nonNullCompletion right) := by
   intro hequivalent
   cases left with
   | error leftErrors =>
@@ -300,11 +285,11 @@ theorem responseValueResultEquivalent_nonNullCompletion
           all_goals exact hvalue
 
 theorem listResponseValueResultEquivalent_catchBubbleAsNull
-    {left right : Result (List ResponseValue)} :
-    ListResponseValueResultEquivalent left right ->
-      ResponseValueResultEquivalent
-        (catchBubbleAsNull ResponseValue.list left)
-        (catchBubbleAsNull ResponseValue.list right) := by
+    {left right : Result (List ResponseValue)}
+    : ListResponseValueResultEquivalent left right
+      -> ResponseValueResultEquivalent
+          (catchBubbleAsNull ResponseValue.list left)
+          (catchBubbleAsNull ResponseValue.list right) := by
   intro hequivalent
   cases left <;> cases right <;>
     simp [ListResponseValueResultEquivalent,
@@ -313,11 +298,11 @@ theorem listResponseValueResultEquivalent_catchBubbleAsNull
   all_goals exact hequivalent
 
 theorem selectionSetResultEquivalent_catchBubbleAsNull
-    {left right : Result (List (Name × ResponseValue))} :
-    SelectionSetResultEquivalent left right ->
-      ResponseValueResultEquivalent
-        (catchBubbleAsNull ResponseValue.object left)
-        (catchBubbleAsNull ResponseValue.object right) := by
+    {left right : Result (List (Name × ResponseValue))}
+    : SelectionSetResultEquivalent left right
+      -> ResponseValueResultEquivalent
+          (catchBubbleAsNull ResponseValue.object left)
+          (catchBubbleAsNull ResponseValue.object right) := by
   intro hequivalent
   cases left <;> cases right <;>
     simp [SelectionSetResultEquivalent,
@@ -327,12 +312,12 @@ theorem selectionSetResultEquivalent_catchBubbleAsNull
 
 theorem listResponseValueResultEquivalent_combine_cons
     {leftHead rightHead : Result ResponseValue}
-    {leftTail rightTail : Result (List ResponseValue)} :
-    ResponseValueResultEquivalent leftHead rightHead ->
-    ListResponseValueResultEquivalent leftTail rightTail ->
-      ListResponseValueResultEquivalent
-        (Result.combine List.cons leftHead leftTail)
-        (Result.combine List.cons rightHead rightTail) := by
+    {leftTail rightTail : Result (List ResponseValue)}
+    : ResponseValueResultEquivalent leftHead rightHead
+      -> ListResponseValueResultEquivalent leftTail rightTail
+      -> ListResponseValueResultEquivalent
+          (Result.combine List.cons leftHead leftTail)
+          (Result.combine List.cons rightHead rightTail) := by
   intro hhead htail
   cases leftHead <;> cases rightHead <;>
     cases leftTail <;> cases rightTail <;>
@@ -353,9 +338,9 @@ theorem listResponseValueResultEquivalent_combine_cons
   · omega
 
 theorem selectionSetResultEquivalent_symm
-    {left right : Result (List (Name × ResponseValue))} :
-    SelectionSetResultEquivalent left right ->
-      SelectionSetResultEquivalent right left := by
+    {left right : Result (List (Name × ResponseValue))}
+    : SelectionSetResultEquivalent left right
+      -> SelectionSetResultEquivalent right left := by
   intro hequivalent
   cases left with
   | error leftErrors =>
@@ -373,10 +358,10 @@ theorem selectionSetResultEquivalent_symm
           exact ⟨responseValue_semanticEquivalent_symm hdata, herrors.symm⟩
 
 theorem selectionSetResultEquivalent_trans
-    {left middle right : Result (List (Name × ResponseValue))} :
-    SelectionSetResultEquivalent left middle ->
-    SelectionSetResultEquivalent middle right ->
-      SelectionSetResultEquivalent left right := by
+    {left middle right : Result (List (Name × ResponseValue))}
+    : SelectionSetResultEquivalent left middle
+      -> SelectionSetResultEquivalent middle right
+      -> SelectionSetResultEquivalent left right := by
   intro hleft hright
   cases left with
   | error leftErrors =>
@@ -402,30 +387,32 @@ theorem selectionSetResultEquivalent_trans
                 ⟨responseValue_semanticEquivalent_trans hleft.1 hright.1,
                   hleft.2.trans hright.2⟩
 
-private def fieldGroupOfSelection (executionParentType : Name) :
-    Selection -> Name × List ExecutableField
+private def fieldGroupOfSelection (executionParentType : Name)
+    : Selection -> Name × List ExecutableField
   | .field responseName fieldName arguments _directives childSelectionSet =>
-      (responseName, [{
-        parentType := executionParentType
-        responseName := responseName
-        fieldName := fieldName
-        arguments := arguments
-        selectionSet := childSelectionSet
-      }])
+      (
+        responseName,
+        [{
+          parentType := executionParentType
+          responseName := responseName
+          fieldName := fieldName
+          arguments := arguments
+          selectionSet := childSelectionSet
+        }]
+      )
   | .inlineFragment _typeCondition _directives _childSelectionSet =>
       ("", [])
 
 theorem collectFields_allFields_directiveFree_nodup_eq_map
     {ObjectRef : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (executionParentType : Name) (source : ResolverValue ObjectRef) :
-    ∀ selectionSet,
-      selectionsAllFields selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-      responseNamesNodup selectionSet ->
-        collectFields schema variableValues executionParentType source
-          selectionSet =
-        selectionSet.map (fieldGroupOfSelection executionParentType)
+    (executionParentType : Name) (source : ResolverValue ObjectRef)
+    : ∀ selectionSet,
+        selectionsAllFields selectionSet
+        -> selectionSetDirectiveFree selectionSet
+        -> responseNamesNodup selectionSet
+        -> collectFields schema variableValues executionParentType source selectionSet
+            = selectionSet.map (fieldGroupOfSelection executionParentType)
   | [], _hallFields, _hfree, _hnodup => by
       simp [collectFields]
   | selection :: rest, hallFields, hfree, hnodup => by
@@ -468,11 +455,11 @@ theorem collectFields_allFields_directiveFree_nodup_eq_map
           rfl
 
 theorem selectionSetEqualUpToReordering_left_mem
-    {left right : List Selection} {leftSelection : Selection} :
-    SelectionSetEqualUpToReordering left right ->
-    leftSelection ∈ left ->
-      ∃ rightSelection,
-        rightSelection ∈ right
+    {left right : List Selection} {leftSelection : Selection}
+    : SelectionSetEqualUpToReordering left right
+      -> leftSelection ∈ left
+      -> ∃ rightSelection,
+          rightSelection ∈ right
           ∧ SelectionEqualUpToReordering leftSelection rightSelection := by
   intro hequal hleftMem
   rcases hequal with ⟨pairs, hleft, hright, hrelations⟩
@@ -487,11 +474,11 @@ theorem selectionSetEqualUpToReordering_left_mem
       hpairLeft ▸ hrelations pair hpairMem⟩
 
 theorem selectionSetEqualUpToReordering_right_mem
-    {left right : List Selection} {rightSelection : Selection} :
-    SelectionSetEqualUpToReordering left right ->
-    rightSelection ∈ right ->
-      ∃ leftSelection,
-        leftSelection ∈ left
+    {left right : List Selection} {rightSelection : Selection}
+    : SelectionSetEqualUpToReordering left right
+      -> rightSelection ∈ right
+      -> ∃ leftSelection,
+          leftSelection ∈ left
           ∧ SelectionEqualUpToReordering leftSelection rightSelection := by
   intro hequal hrightMem
   rcases hequal with ⟨pairs, hleft, hright, hrelations⟩
@@ -506,10 +493,10 @@ theorem selectionSetEqualUpToReordering_right_mem
       hpairRight ▸ hrelations pair hpairMem⟩
 
 theorem inlineFragmentTypeCondition_mem_iff_of_equalUpToReordering
-    {left right : List Selection} {typeCondition : Name} :
-    SelectionSetEqualUpToReordering left right ->
-      (typeCondition ∈ left.filterMap inlineFragmentTypeCondition? ↔
-        typeCondition ∈ right.filterMap inlineFragmentTypeCondition?) := by
+    {left right : List Selection} {typeCondition : Name}
+    : SelectionSetEqualUpToReordering left right
+      -> (typeCondition ∈ left.filterMap inlineFragmentTypeCondition?
+          ↔ typeCondition ∈ right.filterMap inlineFragmentTypeCondition?) := by
   intro hequal
   constructor
   · intro hleftCondition
@@ -548,9 +535,8 @@ theorem inlineFragmentTypeCondition_mem_iff_of_equalUpToReordering
                   hrightConditionValue⟩
 
 private theorem fields_eq_singleton_of_map_fst_eq_singleton
-    {fields : List (Name × ResponseValue)} {name : Name} :
-    fields.map Prod.fst = [name] ->
-      ∃ value, fields = [(name, value)] := by
+    {fields : List (Name × ResponseValue)} {name : Name}
+    : fields.map Prod.fst = [name] -> ∃ value, fields = [(name, value)] := by
   intro hkeys
   cases fields with
   | nil => simp at hkeys
@@ -564,11 +550,10 @@ private theorem fields_eq_singleton_of_map_fst_eq_singleton
       | cons second tail =>
           simp at hkeys
 
-private theorem canonicalObjectFields_perm
-    {left right : List (Name × ResponseValue)} :
-    left.Perm right ->
-      (ResponseValue.canonicalObjectFields left).Perm
-        (ResponseValue.canonicalObjectFields right) := by
+private theorem canonicalObjectFields_perm {left right : List (Name × ResponseValue)}
+    : left.Perm right
+      -> (ResponseValue.canonicalObjectFields left).Perm
+          (ResponseValue.canonicalObjectFields right) := by
   intro hperm
   induction hperm with
   | nil => exact List.Perm.nil
@@ -593,22 +578,20 @@ private theorem executeCollectedFields_cons_equivalent
     (source : ResolverValue ObjectRef)
     (responseName : Name)
     (leftFields rightFields : List ExecutableField)
-    (leftTail rightTail : List (Name × List ExecutableField)) :
-    SelectionSetResultEquivalent
-      (executeField schema resolvers variableValues fuel source responseName
-        leftFields)
-      (executeField schema resolvers variableValues fuel source responseName
-        rightFields) ->
-    SelectionSetResultEquivalent
-      (executeCollectedFields schema resolvers variableValues fuel source
-        leftTail)
-      (executeCollectedFields schema resolvers variableValues fuel source
-        rightTail) ->
-      SelectionSetResultEquivalent
-        (executeCollectedFields schema resolvers variableValues fuel source
-          ((responseName, leftFields) :: leftTail))
-        (executeCollectedFields schema resolvers variableValues fuel source
-          ((responseName, rightFields) :: rightTail)) := by
+    (leftTail rightTail : List (Name × List ExecutableField))
+    : SelectionSetResultEquivalent
+        (executeField schema resolvers variableValues fuel source responseName
+          leftFields)
+        (executeField schema resolvers variableValues fuel source responseName
+          rightFields)
+      -> SelectionSetResultEquivalent
+          (executeCollectedFields schema resolvers variableValues fuel source leftTail)
+          (executeCollectedFields schema resolvers variableValues fuel source rightTail)
+      -> SelectionSetResultEquivalent
+          (executeCollectedFields schema resolvers variableValues fuel source
+            ((responseName, leftFields) :: leftTail))
+          (executeCollectedFields schema resolvers variableValues fuel source
+            ((responseName, rightFields) :: rightTail)) := by
   intro hhead htail
   cases hleftHead :
       executeField schema resolvers variableValues fuel source responseName
@@ -658,14 +641,13 @@ theorem executeCollectedFields_equivalent_of_perm
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (fuel : Nat)
     (source : ResolverValue ObjectRef)
-    {left right : List (Name × List ExecutableField)} :
-    left.Perm right ->
-    (left.map Prod.fst).Nodup ->
-      SelectionSetResultEquivalent
-        (executeCollectedFields schema resolvers variableValues fuel source
-          left)
-        (executeCollectedFields schema resolvers variableValues fuel source
-          right) := by
+    {left right : List (Name × List ExecutableField)}
+    : left.Perm right
+      -> (left.map Prod.fst).Nodup
+      -> SelectionSetResultEquivalent
+          (executeCollectedFields schema resolvers variableValues fuel source left)
+          (executeCollectedFields schema resolvers variableValues fuel source
+            right) := by
   intro hperm
   induction hperm with
   | nil =>
@@ -741,20 +723,20 @@ theorem executeCollectedFields_equivalent_of_perm
 
 def CompleteValueSoundAtFuel (fuel : Nat) : Prop :=
   ∀ {ObjectRef : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectRef)
-    (variableValues : VariableValues)
-    (executionParentType responseName fieldName : Name)
-    (leftArguments rightArguments : List Argument)
-    (leftChild rightChild : List Selection)
-    (normalChildParentType : Name)
-    (fieldType : TypeRef) (value : ResolverValue ObjectRef),
-    Argument.argumentsEquivalent leftArguments rightArguments ->
-    selectionSetDirectiveFree leftChild ->
-    selectionSetDirectiveFree rightChild ->
-    selectionSetNormal schema normalChildParentType leftChild ->
-    selectionSetNormal schema normalChildParentType rightChild ->
-    SelectionSetEqualUpToReordering leftChild rightChild ->
-      ResponseValueResultEquivalent
+      (schema : Schema) (resolvers : Resolvers ObjectRef)
+      (variableValues : VariableValues)
+      (executionParentType responseName fieldName : Name)
+      (leftArguments rightArguments : List Argument)
+      (leftChild rightChild : List Selection)
+      (normalChildParentType : Name)
+      (fieldType : TypeRef) (value : ResolverValue ObjectRef),
+    Argument.argumentsEquivalent leftArguments rightArguments
+    -> selectionSetDirectiveFree leftChild
+    -> selectionSetDirectiveFree rightChild
+    -> selectionSetNormal schema normalChildParentType leftChild
+    -> selectionSetNormal schema normalChildParentType rightChild
+    -> SelectionSetEqualUpToReordering leftChild rightChild
+    -> ResponseValueResultEquivalent
         (completeValue schema resolvers variableValues fuel fieldType
           [{
             parentType := executionParentType
@@ -774,19 +756,19 @@ def CompleteValueSoundAtFuel (fuel : Nat) : Prop :=
 
 def SelectionSetSoundAtFuel (fuel : Nat) : Prop :=
   ∀ {ObjectRef : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectRef)
-    (variableValues : VariableValues)
-    (normalParentType executionParentType runtimeType : Name)
-    (ref : ObjectRef) (left right : List Selection),
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema normalParentType left ->
-    selectionSetNormal schema normalParentType right ->
-    SelectionSetEqualUpToReordering left right ->
-    (objectTypeNameBool schema normalParentType = true
-      ∨ executionParentType = normalParentType
-      ∨ executionParentType = runtimeType) ->
-      SelectionSetResultEquivalent
+      (schema : Schema) (resolvers : Resolvers ObjectRef)
+      (variableValues : VariableValues)
+      (normalParentType executionParentType runtimeType : Name)
+      (ref : ObjectRef) (left right : List Selection),
+    selectionSetDirectiveFree left
+    -> selectionSetDirectiveFree right
+    -> selectionSetNormal schema normalParentType left
+    -> selectionSetNormal schema normalParentType right
+    -> SelectionSetEqualUpToReordering left right
+    -> (objectTypeNameBool schema normalParentType = true
+        ∨ executionParentType = normalParentType
+        ∨ executionParentType = runtimeType)
+    -> SelectionSetResultEquivalent
         (executeSelectionSet schema resolvers variableValues fuel
           executionParentType (.object runtimeType ref) left)
         (executeSelectionSet schema resolvers variableValues fuel
@@ -794,19 +776,19 @@ def SelectionSetSoundAtFuel (fuel : Nat) : Prop :=
 
 def SingletonFieldSoundAtFuel (fuel : Nat) : Prop :=
   ∀ {ObjectRef : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectRef)
-    (variableValues : VariableValues) (source : ResolverValue ObjectRef)
-    (responseName executionParentType fieldName : Name)
-    (leftArguments rightArguments : List Argument)
-    (leftChild rightChild : List Selection)
-    (normalChildParentType : Name),
-    Argument.argumentsEquivalent leftArguments rightArguments ->
-    selectionSetDirectiveFree leftChild ->
-    selectionSetDirectiveFree rightChild ->
-    selectionSetNormal schema normalChildParentType leftChild ->
-    selectionSetNormal schema normalChildParentType rightChild ->
-    SelectionSetEqualUpToReordering leftChild rightChild ->
-      SelectionSetResultEquivalent
+      (schema : Schema) (resolvers : Resolvers ObjectRef)
+      (variableValues : VariableValues) (source : ResolverValue ObjectRef)
+      (responseName executionParentType fieldName : Name)
+      (leftArguments rightArguments : List Argument)
+      (leftChild rightChild : List Selection)
+      (normalChildParentType : Name),
+    Argument.argumentsEquivalent leftArguments rightArguments
+    -> selectionSetDirectiveFree leftChild
+    -> selectionSetDirectiveFree rightChild
+    -> selectionSetNormal schema normalChildParentType leftChild
+    -> selectionSetNormal schema normalChildParentType rightChild
+    -> SelectionSetEqualUpToReordering leftChild rightChild
+    -> SelectionSetResultEquivalent
         (executeField schema resolvers variableValues fuel source responseName
           [{
             parentType := executionParentType
@@ -825,11 +807,11 @@ def SingletonFieldSoundAtFuel (fuel : Nat) : Prop :=
           }])
 
 theorem selectionSetResultEquivalent_singleFieldResult
-    {responseName : Name} {left right : Result ResponseValue} :
-    ResponseValueResultEquivalent left right ->
-      SelectionSetResultEquivalent
-        (singleFieldResult responseName left)
-        (singleFieldResult responseName right) := by
+    {responseName : Name} {left right : Result ResponseValue}
+    : ResponseValueResultEquivalent left right
+      -> SelectionSetResultEquivalent
+          (singleFieldResult responseName left)
+          (singleFieldResult responseName right) := by
   intro hequivalent
   cases left with
   | error leftErrors =>
@@ -859,24 +841,24 @@ theorem executeField_singleton_equivalent_zero
     (source : ResolverValue ObjectRef)
     (responseName executionParentType fieldName : Name)
     (leftArguments rightArguments : List Argument)
-    (leftChild rightChild : List Selection) :
-    SelectionSetResultEquivalent
-      (executeField schema resolvers variableValues 0 source responseName
-        [{
-          parentType := executionParentType
-          responseName := responseName
-          fieldName := fieldName
-          arguments := leftArguments
-          selectionSet := leftChild
-        }])
-      (executeField schema resolvers variableValues 0 source responseName
-        [{
-          parentType := executionParentType
-          responseName := responseName
-          fieldName := fieldName
-          arguments := rightArguments
-          selectionSet := rightChild
-        }]) := by
+    (leftChild rightChild : List Selection)
+    : SelectionSetResultEquivalent
+        (executeField schema resolvers variableValues 0 source responseName
+          [{
+            parentType := executionParentType
+            responseName := responseName
+            fieldName := fieldName
+            arguments := leftArguments
+            selectionSet := leftChild
+          }])
+        (executeField schema resolvers variableValues 0 source responseName
+          [{
+            parentType := executionParentType
+            responseName := responseName
+            fieldName := fieldName
+            arguments := rightArguments
+            selectionSet := rightChild
+          }]) := by
   simp [executeField, outOfFuel, SelectionSetResultEquivalent]
 
 theorem executeField_singleton_equivalent_succ
@@ -888,32 +870,32 @@ theorem executeField_singleton_equivalent_succ
     (responseName executionParentType fieldName : Name)
     (leftArguments rightArguments : List Argument)
     (leftChild rightChild : List Selection)
-    (normalChildParentType : Name) :
-    Argument.argumentsEquivalent leftArguments rightArguments ->
-    selectionSetDirectiveFree leftChild ->
-    selectionSetDirectiveFree rightChild ->
-    selectionSetNormal schema normalChildParentType leftChild ->
-    selectionSetNormal schema normalChildParentType rightChild ->
-    SelectionSetEqualUpToReordering leftChild rightChild ->
-      SelectionSetResultEquivalent
-        (executeField schema resolvers variableValues (fuel + 1) source
-          responseName
-          [{
-            parentType := executionParentType
-            responseName := responseName
-            fieldName := fieldName
-            arguments := leftArguments
-            selectionSet := leftChild
-          }])
-        (executeField schema resolvers variableValues (fuel + 1) source
-          responseName
-          [{
-            parentType := executionParentType
-            responseName := responseName
-            fieldName := fieldName
-            arguments := rightArguments
-            selectionSet := rightChild
-          }]) := by
+    (normalChildParentType : Name)
+    : Argument.argumentsEquivalent leftArguments rightArguments
+      -> selectionSetDirectiveFree leftChild
+      -> selectionSetDirectiveFree rightChild
+      -> selectionSetNormal schema normalChildParentType leftChild
+      -> selectionSetNormal schema normalChildParentType rightChild
+      -> SelectionSetEqualUpToReordering leftChild rightChild
+      -> SelectionSetResultEquivalent
+          (executeField schema resolvers variableValues (fuel + 1) source
+            responseName
+            [{
+              parentType := executionParentType
+              responseName := responseName
+              fieldName := fieldName
+              arguments := leftArguments
+              selectionSet := leftChild
+            }])
+          (executeField schema resolvers variableValues (fuel + 1) source
+            responseName
+            [{
+              parentType := executionParentType
+              responseName := responseName
+              fieldName := fieldName
+              arguments := rightArguments
+              selectionSet := rightChild
+            }]) := by
   intro harguments hleftFree hrightFree hleftNormal hrightNormal hequal
   cases hlookup : schema.lookupField executionParentType fieldName with
   | none =>
@@ -955,10 +937,8 @@ theorem singletonFieldSoundAtFuel_zero : SingletonFieldSoundAtFuel 0 := by
     variableValues source responseName executionParentType fieldName
     leftArguments rightArguments leftChild rightChild
 
-theorem singletonFieldSoundAtFuel_succ
-    {fuel : Nat} :
-    CompleteValueSoundAtFuel fuel ->
-      SingletonFieldSoundAtFuel (fuel + 1) := by
+theorem singletonFieldSoundAtFuel_succ {fuel : Nat}
+    : CompleteValueSoundAtFuel fuel -> SingletonFieldSoundAtFuel (fuel + 1) := by
   intro hcomplete ObjectRef schema resolvers variableValues source responseName
     executionParentType fieldName leftArguments rightArguments leftChild
     rightChild normalChildParentType harguments hleftFree hrightFree
@@ -980,19 +960,20 @@ private theorem execute_paired_normal_field_groups_equivalent
     (hrightFree : selectionSetDirectiveFree right)
     (hleftNormal : selectionSetNormal schema normalParentType left)
     (hrightNormal : selectionSetNormal schema normalParentType right)
-    (hobject : objectTypeNameBool schema normalParentType = true) :
-    ∀ pairs : List (Selection × Selection),
-      (∀ pair, pair ∈ pairs ->
-        pair.1 ∈ left
-          ∧ pair.2 ∈ right
-          ∧ SelectionEqualUpToReordering pair.1 pair.2) ->
-      SelectionSetResultEquivalent
-        (executeCollectedFields schema resolvers variableValues fuel source
-          (pairs.map
-            (fun pair => fieldGroupOfSelection executionParentType pair.1)))
-        (executeCollectedFields schema resolvers variableValues fuel source
-          (pairs.map
-            (fun pair => fieldGroupOfSelection executionParentType pair.2)))
+    (hobject : objectTypeNameBool schema normalParentType = true)
+    : ∀ pairs : List (Selection × Selection),
+        (∀ pair,
+          pair ∈ pairs
+          -> pair.1 ∈ left
+              ∧ pair.2 ∈ right
+              ∧ SelectionEqualUpToReordering pair.1 pair.2)
+        -> SelectionSetResultEquivalent
+            (executeCollectedFields schema resolvers variableValues fuel source
+              (pairs.map
+                (fun pair => fieldGroupOfSelection executionParentType pair.1)))
+            (executeCollectedFields schema resolvers variableValues fuel source
+              (pairs.map
+                (fun pair => fieldGroupOfSelection executionParentType pair.2)))
   | [], _hpairs => selectionSetResultEquivalent_of_eq rfl
   | pair :: rest, hpairs => by
       rcases pair with ⟨leftSelection, rightSelection⟩
@@ -1044,10 +1025,9 @@ private theorem execute_paired_normal_field_groups_equivalent
                     intro pair hpair
                     exact hpairs pair (List.mem_cons_of_mem _ hpair))
 
-private theorem pairKeysNodup_of_executableGroupNamesNodup :
-    ∀ groups : List (Name × List ExecutableField),
-      executableGroupNamesNodup groups ->
-        (groups.map Prod.fst).Nodup
+private theorem pairKeysNodup_of_executableGroupNamesNodup
+    : ∀ groups : List (Name × List ExecutableField),
+        executableGroupNamesNodup groups -> (groups.map Prod.fst).Nodup
   | [], _hnodup => by simp
   | group :: rest, hnodup => by
       apply List.nodup_cons.mpr
@@ -1061,18 +1041,18 @@ private theorem object_selectionSetSoundAtFuel_of_singletonFieldSound
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
     (normalParentType executionParentType runtimeType : Name)
-    (ref : ObjectRef) (left right : List Selection) :
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema normalParentType left ->
-    selectionSetNormal schema normalParentType right ->
-    SelectionSetEqualUpToReordering left right ->
-    objectTypeNameBool schema normalParentType = true ->
-      SelectionSetResultEquivalent
-        (executeSelectionSet schema resolvers variableValues fuel
-          executionParentType (.object runtimeType ref) left)
-        (executeSelectionSet schema resolvers variableValues fuel
-          executionParentType (.object runtimeType ref) right) := by
+    (ref : ObjectRef) (left right : List Selection)
+    : selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema normalParentType left
+      -> selectionSetNormal schema normalParentType right
+      -> SelectionSetEqualUpToReordering left right
+      -> objectTypeNameBool schema normalParentType = true
+      -> SelectionSetResultEquivalent
+          (executeSelectionSet schema resolvers variableValues fuel
+            executionParentType (.object runtimeType ref) left)
+          (executeSelectionSet schema resolvers variableValues fuel
+            executionParentType (.object runtimeType ref) right) := by
   intro hleftFree hrightFree hleftNormal hrightNormal hequal hobject
   have hleftAll : selectionsAllFields left :=
     selectionSetNormal_allFields_of_object hleftNormal hobject
@@ -1172,13 +1152,13 @@ private theorem executeSelectionSet_singleton_runtimeFragment_eq_child
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (fuel : Nat)
     (executionParentType runtimeType : Name) (ref : ObjectRef)
-    (childSelectionSet : List Selection) :
-    objectTypeNameBool schema runtimeType = true ->
-      executeSelectionSet schema resolvers variableValues fuel
-        executionParentType (.object runtimeType ref)
-        [Selection.inlineFragment (some runtimeType) [] childSelectionSet] =
-      executeSelectionSet schema resolvers variableValues fuel
-        executionParentType (.object runtimeType ref) childSelectionSet := by
+    (childSelectionSet : List Selection)
+    : objectTypeNameBool schema runtimeType = true
+      -> executeSelectionSet schema resolvers variableValues fuel
+            executionParentType (.object runtimeType ref)
+            [Selection.inlineFragment (some runtimeType) [] childSelectionSet]
+          = executeSelectionSet schema resolvers variableValues fuel
+              executionParentType (.object runtimeType ref) childSelectionSet := by
   intro hruntimeObject
   have happly :
       doesFragmentTypeApplyBool schema executionParentType
@@ -1189,9 +1169,8 @@ private theorem executeSelectionSet_singleton_runtimeFragment_eq_child
     collectSelection, ExecutionKeys.selectionDirectivesAllowBool_nil,
     happly, mergeExecutableGroups]
 
-theorem selectionSetSoundAtFuel_of_singletonFieldSound
-    {fuel : Nat} :
-    SingletonFieldSoundAtFuel fuel -> SelectionSetSoundAtFuel fuel := by
+theorem selectionSetSoundAtFuel_of_singletonFieldSound {fuel : Nat}
+    : SingletonFieldSoundAtFuel fuel -> SelectionSetSoundAtFuel fuel := by
   intro hfieldSound ObjectRef schema resolvers variableValues normalParentType
     executionParentType runtimeType ref left right hleftFree hrightFree
     hleftNormal hrightNormal hequal hexecutionScope
@@ -1369,11 +1348,10 @@ theorem completeValueSoundAtFuel_zero : CompleteValueSoundAtFuel 0 := by
     _hleftNormal _hrightNormal _hequal
   simp [completeValue, outOfFuel, ResponseValueResultEquivalent]
 
-theorem completeValueSoundAtFuel_succ
-    {fuel : Nat} :
-    SelectionSetSoundAtFuel fuel ->
-    CompleteValueSoundAtFuel fuel ->
-      CompleteValueSoundAtFuel (fuel + 1) := by
+theorem completeValueSoundAtFuel_succ {fuel : Nat}
+    : SelectionSetSoundAtFuel fuel
+      -> CompleteValueSoundAtFuel fuel
+      -> CompleteValueSoundAtFuel (fuel + 1) := by
   intro hselection hcomplete ObjectRef schema resolvers variableValues
     executionParentType responseName fieldName leftArguments rightArguments
     leftChild rightChild normalChildParentType fieldType value harguments
@@ -1466,9 +1444,8 @@ theorem completeValueSoundAtFuel_succ
           simp only [completeValue]
           exact listResponseValueResultEquivalent_catchBubbleAsNull hvalues
 
-theorem selectionSetSound_completeValueSound_atFuel :
-    ∀ fuel : Nat,
-      SelectionSetSoundAtFuel fuel ∧ CompleteValueSoundAtFuel fuel
+theorem selectionSetSound_completeValueSound_atFuel
+    : ∀ fuel : Nat, SelectionSetSoundAtFuel fuel ∧ CompleteValueSoundAtFuel fuel
   | 0 =>
       ⟨selectionSetSoundAtFuel_of_singletonFieldSound
           singletonFieldSoundAtFuel_zero,
@@ -1483,11 +1460,11 @@ theorem selectionSetSound_completeValueSound_atFuel :
           completeValueSoundAtFuel_succ hselection hcomplete⟩
 
 theorem responseEquivalent_of_selectionSetResultEquivalent
-    {left right : Result (List (Name × ResponseValue))} :
-    SelectionSetResultEquivalent left right ->
-      Response.semanticEquivalent
-        (Execution.selectionSetResultToResponse left)
-        (Execution.selectionSetResultToResponse right) := by
+    {left right : Result (List (Name × ResponseValue))}
+    : SelectionSetResultEquivalent left right
+      -> Response.semanticEquivalent
+          (Execution.selectionSetResultToResponse left)
+          (Execution.selectionSetResultToResponse right) := by
   intro hequivalent
   cases left <;> cases right <;>
     simp [SelectionSetResultEquivalent, Execution.selectionSetResultToResponse,
@@ -1496,13 +1473,13 @@ theorem responseEquivalent_of_selectionSetResultEquivalent
   all_goals exact hequivalent
 
 theorem normal_selectionSetsSemanticallyEquivalent_of_equalUpToReordering
-    {schema : Schema} {parentType : Name} {left right : List Selection} :
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    SelectionSetEqualUpToReordering left right ->
-      selectionSetsSemanticallyEquivalent schema parentType left right := by
+    {schema : Schema} {parentType : Name} {left right : List Selection}
+    : selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> SelectionSetEqualUpToReordering left right
+      -> selectionSetsSemanticallyEquivalent schema parentType left right := by
   intro hleftFree hrightFree hleftNormal hrightNormal hequal ObjectRef
     resolvers variableValues fuel source hsource
   rcases hsource with ⟨runtimeType, ref, hsource, _hincludes⟩
@@ -1518,19 +1495,19 @@ theorem normal_selectionSetsSemanticallyEquivalent_of_equalUpToReordering
 end ReorderingSoundness
 
 theorem selectionSetsSemanticallyEquivalent_of_equalUpToReordering
-    {schema : Schema} {parentType : Name} {left right : List Selection} :
-    normalSelectionSetsEqualUpToReorderingSemanticallyEquivalent
-      schema parentType left right :=
+    {schema : Schema} {parentType : Name} {left right : List Selection}
+    : normalSelectionSetsEqualUpToReorderingSemanticallyEquivalent
+        schema parentType left right :=
   ReorderingSoundness.normal_selectionSetsSemanticallyEquivalent_of_equalUpToReordering
 
 theorem selectionSetsDataEquivalent_of_equalUpToReordering
-    {schema : Schema} {parentType : Name} {left right : List Selection} :
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    SelectionSetEqualUpToReordering left right ->
-      selectionSetsDataEquivalent schema parentType left right := by
+    {schema : Schema} {parentType : Name} {left right : List Selection}
+    : selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> SelectionSetEqualUpToReordering left right
+      -> selectionSetsDataEquivalent schema parentType left right := by
   intro hleftFree hrightFree hleftNormal hrightNormal hequal
   exact selectionSetsDataEquivalent_of_selectionSetsSemanticallyEquivalent
     (selectionSetsSemanticallyEquivalent_of_equalUpToReordering

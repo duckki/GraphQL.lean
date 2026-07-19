@@ -15,10 +15,9 @@ namespace NormalForm
 namespace GroundTypeNormalization
 
 theorem PathLocalSelectionSetCurrentContext.of_mem_flatten
-    {selectionSet : List Selection} {members : List (List Selection)} :
-    selectionSet ∈ members ->
-      PathLocalSelectionSetCurrentContext selectionSet
-        (List.flatten members) := by
+    {selectionSet : List Selection} {members : List (List Selection)}
+    : selectionSet ∈ members
+      -> PathLocalSelectionSetCurrentContext selectionSet (List.flatten members) := by
   intro hmember
   induction members with
   | nil =>
@@ -32,57 +31,56 @@ theorem PathLocalSelectionSetCurrentContext.of_mem_flatten
 
 theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_selectedPathProbe_root_of_valid_normal_member
     {schema : Schema} {parentType leftFieldName rightFieldName : Name}
-    {leftArguments rightArguments : List Argument}
-    {leftRuntime rightRuntime : Name}
+    {leftArguments rightArguments : List Argument} {leftRuntime rightRuntime : Name}
     {leftFieldDefinition rightFieldDefinition : FieldDefinition}
-    {members : List (List Selection)} {selectionSet : List Selection}
-    {parentFuel : Nat}
-    (leftSpine rightSpine : List NormalSelectionSetObservableFieldStep) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    (∀ memberSelectionSet,
-      memberSelectionSet ∈ members ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            memberSelectionSet
-          ∧ selectionSetDirectiveFree memberSelectionSet
-          ∧ selectionSetNormal schema parentType memberSelectionSet) ->
-    selectionSet ∈ members ->
-    objectTypeNameBool schema parentType = true ->
-    selectionSetDeepProbeFuel schema parentType (List.flatten members) ≤
-      parentFuel ->
-    schema.lookupField parentType leftFieldName = some leftFieldDefinition ->
-    schema.lookupField parentType rightFieldName = some rightFieldDefinition ->
-    (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    schema.typeIncludesObjectBool leftFieldDefinition.outputType.namedType
-      leftRuntime = true ->
-    schema.typeIncludesObjectBool rightFieldDefinition.outputType.namedType
-      rightRuntime = true ->
-    SelectedFieldSpineRuntimeValid schema
-      leftFieldDefinition.outputType.namedType leftRuntime leftSpine ->
-    SelectedFieldSpineRuntimeValid schema
-      rightFieldDefinition.outputType.namedType rightRuntime rightSpine ->
-    leafProbeFuel leftFieldDefinition.outputType ≤ parentFuel ->
-    leafProbeFuel rightFieldDefinition.outputType ≤ parentFuel ->
-      selectionSetFieldsExecuteOk schema
-        (fieldPairOrDeepSuccessResolvers schema
-          [Selection.inlineFragment (some parentType) []
-            (List.flatten members)]
-          (fieldPairSelectedPathProbeResolvers schema
-            (fieldPairPathLocalNextSelectionSet schema parentType leftRuntime
-              leftFieldName leftArguments (List.flatten members))
-            (fieldPairPathLocalNextSelectionSet schema parentType rightRuntime
-              rightFieldName rightArguments (List.flatten members))
-            leftSpine rightSpine parentType leftFieldName rightFieldName
-            leftArguments rightArguments leftRuntime rightRuntime)
-          parentType leftFieldName rightFieldName leftArguments
-          rightArguments)
-        [] (parentFuel + 1) parentType
-        (projectionRootResolverValue
-          (.object parentType FieldPairSelectedPathProbeRef.root))
-        selectionSet := by
+    {members : List (List Selection)} {selectionSet : List Selection} {parentFuel : Nat}
+    (leftSpine rightSpine : List NormalSelectionSetObservableFieldStep)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> (∀ memberSelectionSet,
+            memberSelectionSet ∈ members
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  memberSelectionSet
+                ∧ selectionSetDirectiveFree memberSelectionSet
+                ∧ selectionSetNormal schema parentType memberSelectionSet)
+      -> selectionSet ∈ members
+      -> objectTypeNameBool schema parentType = true
+      -> selectionSetDeepProbeFuel schema parentType (List.flatten members) ≤ parentFuel
+      -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
+      -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> schema.typeIncludesObjectBool leftFieldDefinition.outputType.namedType
+            leftRuntime
+          = true
+      -> schema.typeIncludesObjectBool rightFieldDefinition.outputType.namedType
+            rightRuntime
+          = true
+      -> SelectedFieldSpineRuntimeValid schema
+          leftFieldDefinition.outputType.namedType leftRuntime leftSpine
+      -> SelectedFieldSpineRuntimeValid schema
+          rightFieldDefinition.outputType.namedType rightRuntime rightSpine
+      -> leafProbeFuel leftFieldDefinition.outputType ≤ parentFuel
+      -> leafProbeFuel rightFieldDefinition.outputType ≤ parentFuel
+      -> selectionSetFieldsExecuteOk schema
+          (fieldPairOrDeepSuccessResolvers schema
+            [Selection.inlineFragment (some parentType) [] (List.flatten members)]
+            (fieldPairSelectedPathProbeResolvers schema
+              (fieldPairPathLocalNextSelectionSet schema parentType leftRuntime
+                leftFieldName leftArguments (List.flatten members))
+              (fieldPairPathLocalNextSelectionSet schema parentType rightRuntime
+                rightFieldName rightArguments (List.flatten members))
+              leftSpine rightSpine parentType leftFieldName rightFieldName
+              leftArguments rightArguments leftRuntime rightRuntime)
+            parentType leftFieldName rightFieldName leftArguments
+            rightArguments)
+          [] (parentFuel + 1) parentType
+          (projectionRootResolverValue
+            (.object parentType FieldPairSelectedPathProbeRef.root))
+          selectionSet := by
   intro hschema hmembers hmember hobject hparentFuel hleftLookup
     hrightLookup hleftComposite hrightComposite hleftInclude hrightInclude
     hleftSpineValid hrightSpineValid hleftLeafFuel hrightLeafFuel
@@ -316,122 +314,128 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_selectedPathProbe_roo
 
 theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPathProbe_root_field_head_child_response_diff_of_field_ok
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet :
-      List Selection)
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet : List Selection)
     (leftSpine rightSpine : List NormalSelectionSetObservableFieldStep)
-    (parentFuel : Nat)
-    (parentType responseName leftFieldName rightFieldName : Name)
-    (leftArguments rightArguments : List Argument)
-    (leftRuntime rightRuntime : Name)
+    (parentFuel : Nat) (parentType responseName leftFieldName rightFieldName : Name)
+    (leftArguments rightArguments : List Argument) (leftRuntime rightRuntime : Name)
     {left right : List Selection}
     {leftDirectives rightDirectives : List DirectiveApplication}
     {leftChildSelectionSet rightChildSelectionSet : List Selection}
     {leftFieldDefinition rightFieldDefinition : FieldDefinition}
-    {leftChildFields rightChildFields :
-      List (Name × Execution.ResponseValue)}
-    {leftChildErrors rightChildErrors : Nat} :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName rightFieldName rightArguments
-      rightDirectives rightChildSelectionSet ∈ right ->
-    schema.lookupField parentType leftFieldName = some leftFieldDefinition ->
-    schema.lookupField parentType rightFieldName = some rightFieldDefinition ->
-    schema.typeIncludesObjectBool leftFieldDefinition.outputType.namedType
-      leftRuntime = true ->
-    schema.typeIncludesObjectBool rightFieldDefinition.outputType.namedType
-      rightRuntime = true ->
-    leafProbeFuel leftFieldDefinition.outputType ≤ parentFuel ->
-    leafProbeFuel rightFieldDefinition.outputType ≤ parentFuel ->
-    (∀ arguments,
-      Argument.argumentsEquivalent arguments rightArguments ->
-        ¬ fieldProbeTarget parentType leftFieldName leftArguments parentType
-          rightFieldName arguments) ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairSelectedPathProbeResolvers schema leftInitialSelectionSet
-            rightInitialSelectionSet leftSpine rightSpine parentType
-            leftFieldName rightFieldName leftArguments rightArguments
-            leftRuntime rightRuntime)
-          parentType leftFieldName rightFieldName leftArguments
-          rightArguments)
-        [] (parentFuel - leafProbeFuel leftFieldDefinition.outputType)
-        leftRuntime
-        (projectionTargetResolverValue
-          (.object leftRuntime
-            (FieldPairSelectedPathProbeRef.target FieldPairProbeTag.left
-              leftInitialSelectionSet leftSpine)))
-        leftChildSelectionSet =
-      ({ data := Execution.ResponseValue.object leftChildFields,
-         errors := leftChildErrors } : Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairSelectedPathProbeResolvers schema leftInitialSelectionSet
-            rightInitialSelectionSet leftSpine rightSpine parentType
-            leftFieldName rightFieldName leftArguments rightArguments
-            leftRuntime rightRuntime)
-          parentType leftFieldName rightFieldName leftArguments
-          rightArguments)
-        [] (parentFuel - leafProbeFuel rightFieldDefinition.outputType)
-        rightRuntime
-        (projectionTargetResolverValue
-          (.object rightRuntime
-            (FieldPairSelectedPathProbeRef.target FieldPairProbeTag.right
-              rightInitialSelectionSet rightSpine)))
-        rightChildSelectionSet =
-      ({ data := Execution.ResponseValue.object rightChildFields,
-         errors := rightChildErrors } : Execution.Response) ->
-    ¬ Execution.ResponseValue.semanticEquivalent
-      (Execution.ResponseValue.object leftChildFields)
-      (Execution.ResponseValue.object rightChildFields) ->
-    selectionSetFieldsExecuteOk schema
-      (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-        (fieldPairSelectedPathProbeResolvers schema leftInitialSelectionSet
-          rightInitialSelectionSet leftSpine rightSpine parentType
-          leftFieldName rightFieldName leftArguments rightArguments
-          leftRuntime rightRuntime)
-        parentType leftFieldName rightFieldName leftArguments rightArguments)
-      [] (parentFuel + 1) parentType
-      (projectionRootResolverValue
-        (.object parentType FieldPairSelectedPathProbeRef.root)) left ->
-    selectionSetFieldsExecuteOk schema
-      (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-        (fieldPairSelectedPathProbeResolvers schema leftInitialSelectionSet
-          rightInitialSelectionSet leftSpine rightSpine parentType
-          leftFieldName rightFieldName leftArguments rightArguments
-          leftRuntime rightRuntime)
-        parentType leftFieldName rightFieldName leftArguments rightArguments)
-      [] (parentFuel + 1) parentType
-      (projectionRootResolverValue
-        (.object parentType FieldPairSelectedPathProbeRef.root)) right ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema
+    {leftChildFields rightChildFields : List (Name × Execution.ResponseValue)}
+    {leftChildErrors rightChildErrors : Nat}
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments
+            rightDirectives rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
+      -> schema.typeIncludesObjectBool leftFieldDefinition.outputType.namedType
+            leftRuntime
+          = true
+      -> schema.typeIncludesObjectBool rightFieldDefinition.outputType.namedType
+            rightRuntime
+          = true
+      -> leafProbeFuel leftFieldDefinition.outputType ≤ parentFuel
+      -> leafProbeFuel rightFieldDefinition.outputType ≤ parentFuel
+      -> (∀ arguments,
+            Argument.argumentsEquivalent arguments rightArguments
+            -> ¬ fieldProbeTarget parentType leftFieldName leftArguments parentType
+                  rightFieldName arguments)
+      -> Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairSelectedPathProbeResolvers schema leftInitialSelectionSet
+                rightInitialSelectionSet leftSpine rightSpine parentType
+                leftFieldName rightFieldName leftArguments rightArguments
+                leftRuntime rightRuntime)
+              parentType leftFieldName rightFieldName leftArguments
+              rightArguments)
+            [] (parentFuel - leafProbeFuel leftFieldDefinition.outputType)
+            leftRuntime
+            (projectionTargetResolverValue
+              (.object leftRuntime
+                (FieldPairSelectedPathProbeRef.target FieldPairProbeTag.left
+                  leftInitialSelectionSet leftSpine)))
+            leftChildSelectionSet
+          = ({
+                data := Execution.ResponseValue.object leftChildFields,
+                errors := leftChildErrors
+              }
+              : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairSelectedPathProbeResolvers schema leftInitialSelectionSet
+                rightInitialSelectionSet leftSpine rightSpine parentType
+                leftFieldName rightFieldName leftArguments rightArguments
+                leftRuntime rightRuntime)
+              parentType leftFieldName rightFieldName leftArguments
+              rightArguments)
+            [] (parentFuel - leafProbeFuel rightFieldDefinition.outputType)
+            rightRuntime
+            (projectionTargetResolverValue
+              (.object rightRuntime
+                (FieldPairSelectedPathProbeRef.target FieldPairProbeTag.right
+                  rightInitialSelectionSet rightSpine)))
+            rightChildSelectionSet
+          = ({
+                data := Execution.ResponseValue.object rightChildFields,
+                errors := rightChildErrors
+              }
+              : Execution.Response)
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.ResponseValue.object leftChildFields)
+            (Execution.ResponseValue.object rightChildFields)
+      -> selectionSetFieldsExecuteOk schema
           (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairSelectedPathProbeResolvers schema
-              leftInitialSelectionSet rightInitialSelectionSet leftSpine
-              rightSpine parentType leftFieldName rightFieldName
-              leftArguments rightArguments leftRuntime rightRuntime)
-            parentType leftFieldName rightFieldName leftArguments
-            rightArguments)
+            (fieldPairSelectedPathProbeResolvers schema leftInitialSelectionSet
+              rightInitialSelectionSet leftSpine rightSpine parentType
+              leftFieldName rightFieldName leftArguments rightArguments
+              leftRuntime rightRuntime)
+            parentType leftFieldName rightFieldName leftArguments rightArguments)
           [] (parentFuel + 1) parentType
           (projectionRootResolverValue
-            (.object parentType FieldPairSelectedPathProbeRef.root)) left).data
-        (Execution.executeSelectionSetAsResponse schema
+            (.object parentType FieldPairSelectedPathProbeRef.root)) left
+      -> selectionSetFieldsExecuteOk schema
           (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairSelectedPathProbeResolvers schema
-              leftInitialSelectionSet rightInitialSelectionSet leftSpine
-              rightSpine parentType leftFieldName rightFieldName
-              leftArguments rightArguments leftRuntime rightRuntime)
-            parentType leftFieldName rightFieldName leftArguments
-            rightArguments)
+            (fieldPairSelectedPathProbeResolvers schema leftInitialSelectionSet
+              rightInitialSelectionSet leftSpine rightSpine parentType
+              leftFieldName rightFieldName leftArguments rightArguments
+              leftRuntime rightRuntime)
+            parentType leftFieldName rightFieldName leftArguments rightArguments)
           [] (parentFuel + 1) parentType
           (projectionRootResolverValue
-            (.object parentType FieldPairSelectedPathProbeRef.root))
-          right).data := by
+            (.object parentType FieldPairSelectedPathProbeRef.root)) right
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                (fieldPairSelectedPathProbeResolvers schema
+                  leftInitialSelectionSet rightInitialSelectionSet leftSpine
+                  rightSpine parentType leftFieldName rightFieldName
+                  leftArguments rightArguments leftRuntime rightRuntime)
+                parentType leftFieldName rightFieldName leftArguments
+                rightArguments)
+              [] (parentFuel + 1) parentType
+              (projectionRootResolverValue
+                (.object parentType FieldPairSelectedPathProbeRef.root)) left).data
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                (fieldPairSelectedPathProbeResolvers schema
+                  leftInitialSelectionSet rightInitialSelectionSet leftSpine
+                  rightSpine parentType leftFieldName rightFieldName
+                  leftArguments rightArguments leftRuntime rightRuntime)
+                parentType leftFieldName rightFieldName leftArguments
+                rightArguments)
+              [] (parentFuel + 1) parentType
+              (projectionRootResolverValue
+                (.object parentType FieldPairSelectedPathProbeRef.root))
+              right).data := by
   intro hobject hleftNormal hrightNormal hleftFree hrightFree hleftMem
     hrightMem hleftLookup hrightLookup hleftInclude hrightInclude
     hleftLeafFuel hrightLeafFuel hrightNotLeft hleftChildResponse
@@ -593,43 +597,43 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_o
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
     {leftChildSelectionSet rightChildSelectionSet : List Selection}
-    {leftFieldDefinition rightFieldDefinition : FieldDefinition}
-    {minFuel : Nat} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = true ->
-    (∀ supportSelectionSet,
-      supportSelectionSet ∈ supportSelectionSets ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            supportSelectionSet
-          ∧ selectionSetDirectiveFree supportSelectionSet
-          ∧ selectionSetNormal schema parentType supportSelectionSet) ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName rightFieldName rightArguments
-      rightDirectives rightChildSelectionSet ∈ right ->
-    schema.lookupField parentType leftFieldName = some leftFieldDefinition ->
-    schema.lookupField parentType rightFieldName = some rightFieldDefinition ->
-    (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    (∀ arguments,
-      Argument.argumentsEquivalent arguments rightArguments ->
-        ¬ fieldProbeTarget parentType leftFieldName leftArguments parentType
-          rightFieldName arguments) ->
-      selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
-        parentType parentType left right
-        (fun selectionSet => selectionSet ∈ supportSelectionSets)
-        minFuel := by
+    {leftFieldDefinition rightFieldDefinition : FieldDefinition} {minFuel : Nat}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = true
+      -> (∀ supportSelectionSet,
+            supportSelectionSet ∈ supportSelectionSets
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  supportSelectionSet
+                ∧ selectionSetDirectiveFree supportSelectionSet
+                ∧ selectionSetNormal schema parentType supportSelectionSet)
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments
+            rightDirectives rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
+      -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> (∀ arguments,
+            Argument.argumentsEquivalent arguments rightArguments
+            -> ¬ fieldProbeTarget parentType leftFieldName leftArguments parentType
+                  rightFieldName arguments)
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
+          parentType parentType left right
+          (fun selectionSet => selectionSet ∈ supportSelectionSets)
+          minFuel := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hobject hsupportValid hleftMem hrightMem hleftLookup
     hrightLookup hleftComposite hrightComposite hrightNotLeft
@@ -1061,87 +1065,83 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_o
 
 theorem not_selectionSetsDataEquivalent_of_selectedPathProbe_root_arguments_child_data_diff
     {schema : Schema}
-    {leftVariableDefinitions rightVariableDefinitions :
-      List VariableDefinition}
+    {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType responseName fieldName leftRuntime rightRuntime : Name}
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
-    {leftChildSelectionSet rightChildSelectionSet left right :
-      List Selection}
+    {leftChildSelectionSet rightChildSelectionSet left right : List Selection}
     {fieldDefinition : FieldDefinition}
-    (leftInitialSpine rightInitialSpine :
-      List NormalSelectionSetObservableFieldStep) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = true ->
-    Selection.field responseName fieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName fieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      leftRuntime = true ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      rightRuntime = true ->
-    SelectedFieldSpineRuntimeValid schema
-      fieldDefinition.outputType.namedType leftRuntime leftInitialSpine ->
-    SelectedFieldSpineRuntimeValid schema
-      fieldDefinition.outputType.namedType rightRuntime rightInitialSpine ->
-    ¬ Argument.argumentsEquivalent leftArguments rightArguments ->
-    (let parentFuel :=
-        selectionSetDeepProbeFuel schema parentType (left ++ right)
-      let rootSelectionSet :=
-        [Selection.inlineFragment (some parentType) [] (left ++ right)]
-      let leftInitialSelectionSet :=
-        fieldPairPathLocalNextSelectionSet schema parentType leftRuntime
-          fieldName leftArguments (left ++ right)
-      let rightInitialSelectionSet :=
-        fieldPairPathLocalNextSelectionSet schema parentType rightRuntime
-          fieldName rightArguments (left ++ right)
-      let variableValues : Execution.VariableValues := []
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairSelectedPathProbeResolvers schema
-              leftInitialSelectionSet rightInitialSelectionSet
-              leftInitialSpine rightInitialSpine parentType fieldName
-              fieldName leftArguments rightArguments leftRuntime
-              rightRuntime)
-            parentType fieldName fieldName leftArguments rightArguments)
-          variableValues
-          (parentFuel - leafProbeFuel fieldDefinition.outputType)
-          leftRuntime
-          (projectionTargetResolverValue
-            (.object leftRuntime
-              (FieldPairSelectedPathProbeRef.target FieldPairProbeTag.left
-                leftInitialSelectionSet leftInitialSpine)))
-          leftChildSelectionSet).data
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairSelectedPathProbeResolvers schema
-              leftInitialSelectionSet rightInitialSelectionSet
-              leftInitialSpine rightInitialSpine parentType fieldName
-              fieldName leftArguments rightArguments leftRuntime
-              rightRuntime)
-            parentType fieldName fieldName leftArguments rightArguments)
-          variableValues
-          (parentFuel - leafProbeFuel fieldDefinition.outputType)
-          rightRuntime
-          (projectionTargetResolverValue
-            (.object rightRuntime
-              (FieldPairSelectedPathProbeRef.target FieldPairProbeTag.right
-                rightInitialSelectionSet rightInitialSpine)))
-          rightChildSelectionSet).data) ->
-      ¬ selectionSetsDataEquivalent schema parentType left right := by
+    (leftInitialSpine rightInitialSpine : List NormalSelectionSetObservableFieldStep)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName fieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType leftRuntime
+          = true
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType rightRuntime
+          = true
+      -> SelectedFieldSpineRuntimeValid schema
+          fieldDefinition.outputType.namedType leftRuntime leftInitialSpine
+      -> SelectedFieldSpineRuntimeValid schema
+          fieldDefinition.outputType.namedType rightRuntime rightInitialSpine
+      -> ¬ Argument.argumentsEquivalent leftArguments rightArguments
+      -> (let parentFuel := selectionSetDeepProbeFuel schema parentType (left ++ right)
+          let rootSelectionSet :=
+            [Selection.inlineFragment (some parentType) [] (left ++ right)]
+          let leftInitialSelectionSet :=
+            fieldPairPathLocalNextSelectionSet schema parentType leftRuntime
+              fieldName leftArguments (left ++ right)
+          let rightInitialSelectionSet :=
+            fieldPairPathLocalNextSelectionSet schema parentType rightRuntime
+              fieldName rightArguments (left ++ right)
+          let variableValues : Execution.VariableValues := []
+          ¬ Execution.ResponseValue.semanticEquivalent
+              (Execution.executeSelectionSetAsResponse schema
+                (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                  (fieldPairSelectedPathProbeResolvers schema
+                    leftInitialSelectionSet rightInitialSelectionSet
+                    leftInitialSpine rightInitialSpine parentType fieldName
+                    fieldName leftArguments rightArguments leftRuntime
+                    rightRuntime)
+                  parentType fieldName fieldName leftArguments rightArguments)
+                variableValues
+                (parentFuel - leafProbeFuel fieldDefinition.outputType)
+                leftRuntime
+                (projectionTargetResolverValue
+                  (.object leftRuntime
+                    (FieldPairSelectedPathProbeRef.target FieldPairProbeTag.left
+                      leftInitialSelectionSet leftInitialSpine)))
+                leftChildSelectionSet).data
+              (Execution.executeSelectionSetAsResponse schema
+                (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                  (fieldPairSelectedPathProbeResolvers schema
+                    leftInitialSelectionSet rightInitialSelectionSet
+                    leftInitialSpine rightInitialSpine parentType fieldName
+                    fieldName leftArguments rightArguments leftRuntime
+                    rightRuntime)
+                  parentType fieldName fieldName leftArguments rightArguments)
+                variableValues
+                (parentFuel - leafProbeFuel fieldDefinition.outputType)
+                rightRuntime
+                (projectionTargetResolverValue
+                  (.object rightRuntime
+                    (FieldPairSelectedPathProbeRef.target FieldPairProbeTag.right
+                      rightInitialSelectionSet rightInitialSpine)))
+                rightChildSelectionSet).data)
+      -> ¬ selectionSetsDataEquivalent schema parentType left right := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hobject hleftMem hrightMem hlookup hcomposite
     hleftInclude hrightInclude hleftSpineValid hrightSpineValid
@@ -1584,33 +1584,31 @@ theorem not_selectionSetsDataEquivalent_of_selectedPathProbe_root_arguments_chil
 
 theorem not_selectionSetsDataEquivalent_of_valid_normal_object_arguments_diff_composite_pairedPath
     {schema : Schema}
-    {leftVariableDefinitions rightVariableDefinitions :
-      List VariableDefinition}
+    {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType responseName fieldName : Name}
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
-    {leftChildSelectionSet rightChildSelectionSet left right :
-      List Selection}
-    {fieldDefinition : FieldDefinition} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = true ->
-    Selection.field responseName fieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName fieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    ¬ Argument.argumentsEquivalent leftArguments rightArguments ->
-      ¬ selectionSetsDataEquivalent schema parentType left right := by
+    {leftChildSelectionSet rightChildSelectionSet left right : List Selection}
+    {fieldDefinition : FieldDefinition}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName fieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> ¬ Argument.argumentsEquivalent leftArguments rightArguments
+      -> ¬ selectionSetsDataEquivalent schema parentType left right := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hobject hleftMem hrightMem hlookup hcomposite
     hargumentsDiff
@@ -1850,36 +1848,35 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_arguments_diff_co
 
 theorem not_selectionSetsDataEquivalent_of_valid_normal_object_fieldName_diff_composite_pairedPath
     {schema : Schema}
-    {leftVariableDefinitions rightVariableDefinitions :
-      List VariableDefinition}
+    {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType responseName leftFieldName rightFieldName : Name}
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
-    {leftChildSelectionSet rightChildSelectionSet left right :
-      List Selection}
-    {leftFieldDefinition rightFieldDefinition : FieldDefinition} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = true ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName rightFieldName rightArguments
-      rightDirectives rightChildSelectionSet ∈ right ->
-    schema.lookupField parentType leftFieldName = some leftFieldDefinition ->
-    schema.lookupField parentType rightFieldName = some rightFieldDefinition ->
-    (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    leftFieldName ≠ rightFieldName ->
-      ¬ selectionSetsDataEquivalent schema parentType left right := by
+    {leftChildSelectionSet rightChildSelectionSet left right : List Selection}
+    {leftFieldDefinition rightFieldDefinition : FieldDefinition}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = true
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments
+            rightDirectives rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
+      -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> leftFieldName ≠ rightFieldName
+      -> ¬ selectionSetsDataEquivalent schema parentType left right := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hobject hleftMem hrightMem hleftLookup hrightLookup
     hleftComposite hrightComposite hfieldDiff

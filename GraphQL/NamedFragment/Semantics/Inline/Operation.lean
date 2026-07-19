@@ -6,9 +6,9 @@ namespace NamedFragment
 namespace Semantics
 
 mutual
-  theorem inlineSelection_inlined :
-      ∀ (fragments : List FragmentDefinition) (selection : Selection),
-        selectionInlined (Inline.inlineSelection fragments selection)
+  theorem inlineSelection_inlined
+      : ∀ (fragments : List FragmentDefinition) (selection : Selection),
+          selectionInlined (Inline.inlineSelection fragments selection)
     | fragments, .field responseName fieldName arguments directives selectionSet => by
         simp [Inline.inlineSelection, selectionInlined,
           inlineSelectionSet_inlined fragments selectionSet]
@@ -42,10 +42,9 @@ mutual
           apply Prod.Lex.right
           omega
 
-  theorem inlineSelectionSet_inlined :
-      ∀ (fragments : List FragmentDefinition) (selectionSet : List Selection),
-        selectionSetInlined
-          (Inline.inlineSelectionSet fragments selectionSet)
+  theorem inlineSelectionSet_inlined
+      : ∀ (fragments : List FragmentDefinition) (selectionSet : List Selection),
+          selectionSetInlined (Inline.inlineSelectionSet fragments selectionSet)
     | fragments, [] => by
         simp [selectionSetInlined]
     | fragments, selection :: rest => by
@@ -64,10 +63,10 @@ mutual
 end
 
 mutual
-  theorem inlineSelection_eq_of_inlined
-      (fragments : List FragmentDefinition) :
-      ∀ selection, selectionInlined selection ->
-        Inline.inlineSelection fragments selection = selection
+  theorem inlineSelection_eq_of_inlined (fragments : List FragmentDefinition)
+      : ∀ selection,
+          selectionInlined selection
+          -> Inline.inlineSelection fragments selection = selection
     | .field responseName fieldName arguments directives selectionSet, hinlined => by
         simp [selectionInlined] at hinlined
         simp [Inline.inlineSelection,
@@ -79,10 +78,10 @@ mutual
     | .fragmentSpread fragmentName directives, hinlined => by
         simp [selectionInlined] at hinlined
 
-  theorem inlineSelectionSet_eq_of_inlined
-      (fragments : List FragmentDefinition) :
-      ∀ selectionSet, selectionSetInlined selectionSet ->
-        Inline.inlineSelectionSet fragments selectionSet = selectionSet
+  theorem inlineSelectionSet_eq_of_inlined (fragments : List FragmentDefinition)
+      : ∀ selectionSet,
+          selectionSetInlined selectionSet
+          -> Inline.inlineSelectionSet fragments selectionSet = selectionSet
     | [], _hinlined => by
         simp
     | selection :: rest, hinlined => by
@@ -93,16 +92,14 @@ mutual
           inlineSelectionSet_eq_of_inlined fragments rest hrest]
 end
 
-theorem inlineOperation_fragmentDefinitions
-    (operation : Operation) :
-    (Inline.inlineOperation operation).fragmentDefinitions = [] := by
+theorem inlineOperation_fragmentDefinitions (operation : Operation)
+    : (Inline.inlineOperation operation).fragmentDefinitions = [] := by
   cases operation
   rfl
 
-theorem inlineOperation_idem (operation : Operation) :
-    Inline.inlineOperation (Inline.inlineOperation operation)
-      =
-    Inline.inlineOperation operation := by
+theorem inlineOperation_idem (operation : Operation)
+    : Inline.inlineOperation (Inline.inlineOperation operation)
+      = Inline.inlineOperation operation := by
   cases operation with
   | mk name rootType variableDefinitions fragmentDefinitions selectionSet =>
       simp [Inline.inlineOperation]
@@ -112,8 +109,8 @@ theorem inlineOperation_idem (operation : Operation) :
 
 theorem inlineOperation_eq_of_inlined
     (operation : Operation)
-    (hinlined : operationInlined operation) :
-    Inline.inlineOperation operation = operation := by
+    (hinlined : operationInlined operation)
+    : Inline.inlineOperation operation = operation := by
   cases operation with
   | mk name rootType variableDefinitions fragmentDefinitions selectionSet =>
       rcases hinlined with ⟨hfragments, hselectionSet⟩
@@ -122,9 +119,8 @@ theorem inlineOperation_eq_of_inlined
       simp [Inline.inlineOperation]
       exact inlineSelectionSet_eq_of_inlined [] selectionSet hselectionSet
 
-theorem inlineOperation_inlined
-    (operation : Operation) :
-    operationInlined (Inline.inlineOperation operation) := by
+theorem inlineOperation_inlined (operation : Operation)
+    : operationInlined (Inline.inlineOperation operation) := by
   cases operation with
   | mk name rootType variableDefinitions fragmentDefinitions selectionSet =>
       constructor

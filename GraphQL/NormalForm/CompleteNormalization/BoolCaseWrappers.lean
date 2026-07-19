@@ -11,45 +11,43 @@ namespace CompleteNormalization
 
 variable {ObjectRef : Type}
 
-theorem wrapWithBoolCase_nil
-    (selectionSet : List Selection) :
-    wrapWithBoolCase [] selectionSet = selectionSet := by
+theorem wrapWithBoolCase_nil (selectionSet : List Selection)
+    : wrapWithBoolCase [] selectionSet = selectionSet := by
   rfl
 
 theorem wrapWithBoolCase_cons
     (varName : BoolVar) (value : Bool)
-    (rest : BoolCase) (selectionSet : List Selection) :
-    wrapWithBoolCase ((varName, value) :: rest) selectionSet =
-      [ .inlineFragment none [directiveForBit varName value]
-          (wrapWithBoolCase rest selectionSet) ] := by
+    (rest : BoolCase) (selectionSet : List Selection)
+    : wrapWithBoolCase ((varName, value) :: rest) selectionSet
+      = [.inlineFragment none [directiveForBit varName value]
+          (wrapWithBoolCase rest selectionSet)] := by
   rfl
 
 theorem wrapWithBoolCase_true_head
     (varName : BoolVar) (rest : BoolCase)
-    (selectionSet : List Selection) :
-    wrapWithBoolCase ((varName, true) :: rest) selectionSet =
-      [ .inlineFragment none [.include (.variable varName)]
-          (wrapWithBoolCase rest selectionSet) ] := by
+    (selectionSet : List Selection)
+    : wrapWithBoolCase ((varName, true) :: rest) selectionSet
+      = [.inlineFragment none [.include (.variable varName)]
+          (wrapWithBoolCase rest selectionSet)] := by
   simp [wrapWithBoolCase, directiveForBit]
 
 theorem wrapWithBoolCase_false_head
     (varName : BoolVar) (rest : BoolCase)
-    (selectionSet : List Selection) :
-    wrapWithBoolCase ((varName, false) :: rest) selectionSet =
-      [ .inlineFragment none [.skip (.variable varName)]
-          (wrapWithBoolCase rest selectionSet) ] := by
+    (selectionSet : List Selection)
+    : wrapWithBoolCase ((varName, false) :: rest) selectionSet
+      = [.inlineFragment none [.skip (.variable varName)]
+          (wrapWithBoolCase rest selectionSet)] := by
   simp [wrapWithBoolCase, directiveForBit]
 
 theorem collectFields_wrapWithBoolCase_nil
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    Execution.collectFields schema variableValues parentType source
+    (selectionSet : List Selection)
+    : Execution.collectFields schema variableValues parentType source
         (wrapWithBoolCase [] selectionSet)
-      =
-    Execution.collectFields schema variableValues parentType source
-        selectionSet := by
+      = Execution.collectFields schema variableValues parentType source
+          selectionSet := by
   rfl
 
 theorem collectFields_wrapWithBoolCase_cons_allowed
@@ -57,15 +55,14 @@ theorem collectFields_wrapWithBoolCase_cons_allowed
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (varName : BoolVar) (value : Bool) (rest : BoolCase)
-    (selectionSet : List Selection) :
-    Execution.selectionDirectivesAllowBool variableValues
-        [directiveForBit varName value] = true ->
-      Execution.collectFields schema variableValues parentType source
-          (wrapWithBoolCase
-            ((varName, value) :: rest) selectionSet)
-        =
-      Execution.collectFields schema variableValues parentType source
-          (wrapWithBoolCase rest selectionSet) := by
+    (selectionSet : List Selection)
+    : Execution.selectionDirectivesAllowBool variableValues
+          [directiveForBit varName value]
+        = true
+      -> Execution.collectFields schema variableValues parentType source
+            (wrapWithBoolCase ((varName, value) :: rest) selectionSet)
+          = Execution.collectFields schema variableValues parentType source
+              (wrapWithBoolCase rest selectionSet) := by
   intro hallow
   simp [wrapWithBoolCase, Execution.collectFields,
     Execution.collectSelection, hallow, Execution.mergeExecutableGroups]
@@ -75,25 +72,24 @@ theorem collectFields_wrapWithBoolCase_cons_skipped
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (varName : BoolVar) (value : Bool) (rest : BoolCase)
-    (selectionSet : List Selection) :
-    Execution.selectionDirectivesAllowBool variableValues
-        [directiveForBit varName value] = false ->
-      Execution.collectFields schema variableValues parentType source
-          (wrapWithBoolCase
-            ((varName, value) :: rest) selectionSet)
-        =
-      [] := by
+    (selectionSet : List Selection)
+    : Execution.selectionDirectivesAllowBool variableValues
+          [directiveForBit varName value]
+        = false
+      -> Execution.collectFields schema variableValues parentType source
+            (wrapWithBoolCase ((varName, value) :: rest) selectionSet)
+          = [] := by
   intro hallow
   simp [wrapWithBoolCase, Execution.collectFields,
     Execution.collectSelection, hallow, Execution.mergeExecutableGroups]
 
 theorem selectionDirectivesAllowBool_boolCaseBit_of_agrees
     (variableValues : Execution.VariableValues)
-    (varName : BoolVar) (value : Bool) :
-    Execution.inputValueBoolean? variableValues (.variable varName)
-        = some value ->
-      Execution.selectionDirectivesAllowBool variableValues
-        [directiveForBit varName value] = true := by
+    (varName : BoolVar) (value : Bool)
+    : Execution.inputValueBoolean? variableValues (.variable varName) = some value
+      -> Execution.selectionDirectivesAllowBool variableValues
+            [directiveForBit varName value]
+          = true := by
   intro hvalue
   cases value <;>
     simp [directiveForBit,
@@ -102,11 +98,11 @@ theorem selectionDirectivesAllowBool_boolCaseBit_of_agrees
 
 theorem selectionDirectivesAllowBool_boolCaseBit_of_mismatch
     (variableValues : Execution.VariableValues)
-    (varName : BoolVar) (value : Bool) :
-    Execution.inputValueBoolean? variableValues (.variable varName)
-        = some (!value) ->
-      Execution.selectionDirectivesAllowBool variableValues
-        [directiveForBit varName value] = false := by
+    (varName : BoolVar) (value : Bool)
+    : Execution.inputValueBoolean? variableValues (.variable varName) = some (!value)
+      -> Execution.selectionDirectivesAllowBool variableValues
+            [directiveForBit varName value]
+          = false := by
   intro hvalue
   cases value <;>
     simp [directiveForBit,
@@ -118,14 +114,11 @@ theorem collectFields_wrapWithBoolCase_cons_mismatch
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (varName : BoolVar) (value : Bool) (rest : BoolCase)
-    (selectionSet : List Selection) :
-    Execution.inputValueBoolean? variableValues (.variable varName)
-        = some (!value) ->
-      Execution.collectFields schema variableValues parentType source
-          (wrapWithBoolCase
-            ((varName, value) :: rest) selectionSet)
-        =
-      [] := by
+    (selectionSet : List Selection)
+    : Execution.inputValueBoolean? variableValues (.variable varName) = some (!value)
+      -> Execution.collectFields schema variableValues parentType source
+            (wrapWithBoolCase ((varName, value) :: rest) selectionSet)
+          = [] := by
   intro hmismatch
   exact collectFields_wrapWithBoolCase_cons_skipped schema
     variableValues parentType source varName value rest selectionSet
@@ -136,17 +129,16 @@ theorem collectFields_wrapWithBoolCase_of_mismatch_pair
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    ∀ boolCase : BoolCase,
-      (varName : BoolVar) ->
-      (value : Bool) ->
-      (varName, value) ∈ boolCase ->
-      Execution.inputValueBoolean? variableValues (.variable varName)
-        = some (!value) ->
-        Execution.collectFields schema variableValues parentType source
-            (wrapWithBoolCase boolCase selectionSet)
-          =
-        []
+    (selectionSet : List Selection)
+    : ∀ boolCase : BoolCase,
+        (varName : BoolVar)
+        -> (value : Bool)
+        -> (varName, value) ∈ boolCase
+            -> Execution.inputValueBoolean? variableValues (.variable varName)
+                = some (!value)
+            -> Execution.collectFields schema variableValues parentType source
+                  (wrapWithBoolCase boolCase selectionSet)
+                = []
   | [], varName, value, hpair, _hmismatch => by
       cases hpair
   | (headVar, headValue) :: rest, varName, value, hpair, hmismatch => by
@@ -178,17 +170,16 @@ theorem collectFields_wrapWithBoolCase_of_agrees
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    ∀ boolCase : BoolCase,
-      (∀ varName value, (varName, value) ∈ boolCase ->
-        Execution.inputValueBoolean? variableValues (.variable varName)
-          =
-        some value) ->
-        Execution.collectFields schema variableValues parentType source
-            (wrapWithBoolCase boolCase selectionSet)
-          =
-        Execution.collectFields schema variableValues parentType source
-            selectionSet
+    (selectionSet : List Selection)
+    : ∀ boolCase : BoolCase,
+        (∀ varName value,
+          (varName, value) ∈ boolCase
+          -> Execution.inputValueBoolean? variableValues (.variable varName)
+              = some value)
+        -> Execution.collectFields schema variableValues parentType source
+              (wrapWithBoolCase boolCase selectionSet)
+            = Execution.collectFields schema variableValues parentType source
+                selectionSet
   | [], _hagrees => by
       rfl
   | (varName, value) :: rest, hagrees => by
@@ -218,15 +209,15 @@ theorem collectFields_wrapWithBoolCase_of_variableValuesAgree
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (variables : List BoolVar) (boolCase : BoolCase)
-    (selectionSet : List Selection) :
-    (∀ varName value, (varName, value) ∈ boolCase ->
-      varName ∈ variables ∧ BoolCase.lookup? boolCase varName = some value) ->
-    variableValuesAgreeWithCase variableValues boolCase variables ->
-      Execution.collectFields schema variableValues parentType source
-          (wrapWithBoolCase boolCase selectionSet)
-        =
-      Execution.collectFields schema variableValues parentType source
-          selectionSet := by
+    (selectionSet : List Selection)
+    : (∀ varName value,
+        (varName, value) ∈ boolCase
+        -> varName ∈ variables ∧ BoolCase.lookup? boolCase varName = some value)
+      -> variableValuesAgreeWithCase variableValues boolCase variables
+      -> Execution.collectFields schema variableValues parentType source
+            (wrapWithBoolCase boolCase selectionSet)
+          = Execution.collectFields schema variableValues parentType source
+              selectionSet := by
   intro hcase hagrees
   exact
     collectFields_wrapWithBoolCase_of_agrees schema variableValues
@@ -241,15 +232,14 @@ theorem collectFields_wrapWithBoolCase_of_mem_allBoolCases
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (variables : List BoolVar) (boolCase : BoolCase)
-    (selectionSet : List Selection) :
-    variables.Nodup ->
-    boolCase ∈ allBoolCases variables ->
-    variableValuesAgreeWithCase variableValues boolCase variables ->
-      Execution.collectFields schema variableValues parentType source
-          (wrapWithBoolCase boolCase selectionSet)
-        =
-      Execution.collectFields schema variableValues parentType source
-          selectionSet := by
+    (selectionSet : List Selection)
+    : variables.Nodup
+      -> boolCase ∈ allBoolCases variables
+      -> variableValuesAgreeWithCase variableValues boolCase variables
+      -> Execution.collectFields schema variableValues parentType source
+            (wrapWithBoolCase boolCase selectionSet)
+          = Execution.collectFields schema variableValues parentType source
+              selectionSet := by
   intro hnodup hmem hagrees
   exact
     collectFields_wrapWithBoolCase_of_variableValuesAgree schema

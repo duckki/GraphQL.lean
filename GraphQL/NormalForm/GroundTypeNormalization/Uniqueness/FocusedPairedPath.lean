@@ -16,161 +16,148 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
-inductive NormalSelectionSetPairedPath (schema : Schema) :
-    Name -> Name -> List Selection -> List Selection -> Prop where
+inductive NormalSelectionSetPairedPath (schema : Schema)
+    : Name -> Name -> List Selection -> List Selection -> Prop where
   | objectLeftResponseName
-      {leftParentType rightParentType responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet left right : List Selection} :
-      objectTypeNameBool schema leftParentType = true ->
-      objectTypeNameBool schema rightParentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-      responseName ∉ right.filterMap Selection.responseName? ->
-      NormalSelectionSetPairedPath schema leftParentType rightParentType
-        left right
+    {leftParentType rightParentType responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet left right : List Selection}
+    : objectTypeNameBool schema leftParentType = true
+      -> objectTypeNameBool schema rightParentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ left
+      -> responseName ∉ right.filterMap Selection.responseName?
+      -> NormalSelectionSetPairedPath schema leftParentType rightParentType left right
 
   | objectLeafPair
-      {leftParentType rightParentType responseName
-        leftFieldName rightFieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet left right :
-        List Selection}
-      {leftFieldDefinition rightFieldDefinition : FieldDefinition} :
-      objectTypeNameBool schema leftParentType = true ->
-      objectTypeNameBool schema rightParentType = true ->
-      Selection.field responseName leftFieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName rightFieldName rightArguments
-        rightDirectives rightChildSelectionSet ∈ right ->
-      schema.lookupField leftParentType leftFieldName =
-        some leftFieldDefinition ->
-      schema.lookupField rightParentType rightFieldName =
-        some rightFieldDefinition ->
-      (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-      (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-      NormalSelectionSetPairedPath schema leftParentType rightParentType
-        left right
+    {leftParentType rightParentType responseName leftFieldName rightFieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet left right : List Selection}
+    {leftFieldDefinition rightFieldDefinition : FieldDefinition}
+    : objectTypeNameBool schema leftParentType = true
+      -> objectTypeNameBool schema rightParentType = true
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments
+            rightDirectives rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField leftParentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
+      -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = false
+      -> NormalSelectionSetPairedPath schema leftParentType rightParentType left right
   | objectCompositeLeftLeaf
-      {leftParentType rightParentType responseName
-        leftFieldName rightFieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet left right :
-        List Selection}
-      {leftFieldDefinition rightFieldDefinition : FieldDefinition} :
-      objectTypeNameBool schema leftParentType = true ->
-      objectTypeNameBool schema rightParentType = true ->
-      Selection.field responseName leftFieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName rightFieldName rightArguments
-        rightDirectives rightChildSelectionSet ∈ right ->
-      schema.lookupField leftParentType leftFieldName =
-        some leftFieldDefinition ->
-      schema.lookupField rightParentType rightFieldName =
-        some rightFieldDefinition ->
-      (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-        schema = true ->
-      (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-      NormalSelectionSetPairedPath schema leftParentType rightParentType
-        left right
+    {leftParentType rightParentType responseName leftFieldName rightFieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet left right : List Selection}
+    {leftFieldDefinition rightFieldDefinition : FieldDefinition}
+    : objectTypeNameBool schema leftParentType = true
+      -> objectTypeNameBool schema rightParentType = true
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments
+            rightDirectives rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField leftParentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
+      -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = false
+      -> NormalSelectionSetPairedPath schema leftParentType rightParentType left right
   | objectLeafCompositeRight
-      {leftParentType rightParentType responseName
-        leftFieldName rightFieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet left right :
-        List Selection}
-      {leftFieldDefinition rightFieldDefinition : FieldDefinition} :
-      objectTypeNameBool schema leftParentType = true ->
-      objectTypeNameBool schema rightParentType = true ->
-      Selection.field responseName leftFieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName rightFieldName rightArguments
-        rightDirectives rightChildSelectionSet ∈ right ->
-      schema.lookupField leftParentType leftFieldName =
-        some leftFieldDefinition ->
-      schema.lookupField rightParentType rightFieldName =
-        some rightFieldDefinition ->
-      (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-      (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-        schema = true ->
-      NormalSelectionSetPairedPath schema leftParentType rightParentType
-        left right
+    {leftParentType rightParentType responseName leftFieldName rightFieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet left right : List Selection}
+    {leftFieldDefinition rightFieldDefinition : FieldDefinition}
+    : objectTypeNameBool schema leftParentType = true
+      -> objectTypeNameBool schema rightParentType = true
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments
+            rightDirectives rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField leftParentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
+      -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> NormalSelectionSetPairedPath schema leftParentType rightParentType left right
   | objectCompositePair
-      {leftParentType rightParentType responseName
-        leftFieldName rightFieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet left right :
-        List Selection}
-      {leftFieldDefinition rightFieldDefinition : FieldDefinition} :
-      objectTypeNameBool schema leftParentType = true ->
-      objectTypeNameBool schema rightParentType = true ->
-      Selection.field responseName leftFieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName rightFieldName rightArguments
-        rightDirectives rightChildSelectionSet ∈ right ->
-      schema.lookupField leftParentType leftFieldName =
-        some leftFieldDefinition ->
-      schema.lookupField rightParentType rightFieldName =
-        some rightFieldDefinition ->
-      (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-        schema = true ->
-      (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-        schema = true ->
-      NormalSelectionSetPairedPath schema
-        leftFieldDefinition.outputType.namedType
-        rightFieldDefinition.outputType.namedType leftChildSelectionSet
-        rightChildSelectionSet ->
-      NormalSelectionSetPairedPath schema leftParentType rightParentType
-        left right
+    {leftParentType rightParentType responseName leftFieldName rightFieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet left right : List Selection}
+    {leftFieldDefinition rightFieldDefinition : FieldDefinition}
+    : objectTypeNameBool schema leftParentType = true
+      -> objectTypeNameBool schema rightParentType = true
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments
+            rightDirectives rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField leftParentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
+      -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> NormalSelectionSetPairedPath schema
+          leftFieldDefinition.outputType.namedType
+          rightFieldDefinition.outputType.namedType leftChildSelectionSet
+          rightChildSelectionSet
+      -> NormalSelectionSetPairedPath schema leftParentType rightParentType left right
   | leftAbstract
-      {leftParentType rightParentType typeCondition : Name}
-      {directives : List DirectiveApplication}
-      {leftChildSelectionSet left right : List Selection} :
-      objectTypeNameBool schema leftParentType = false ->
-      Selection.inlineFragment (some typeCondition) directives
-        leftChildSelectionSet ∈ left ->
-      NormalSelectionSetPairedPath schema typeCondition rightParentType
-        leftChildSelectionSet right ->
-      NormalSelectionSetPairedPath schema leftParentType rightParentType
-        left right
+    {leftParentType rightParentType typeCondition : Name}
+    {directives : List DirectiveApplication}
+    {leftChildSelectionSet left right : List Selection}
+    : objectTypeNameBool schema leftParentType = false
+      -> Selection.inlineFragment (some typeCondition) directives leftChildSelectionSet
+          ∈ left
+      -> NormalSelectionSetPairedPath schema typeCondition rightParentType
+          leftChildSelectionSet right
+      -> NormalSelectionSetPairedPath schema leftParentType rightParentType left right
   | rightAbstract
-      {leftParentType rightParentType typeCondition : Name}
-      {directives : List DirectiveApplication}
-      {rightChildSelectionSet left right : List Selection} :
-      objectTypeNameBool schema rightParentType = false ->
-      Selection.inlineFragment (some typeCondition) directives
-        rightChildSelectionSet ∈ right ->
-      NormalSelectionSetPairedPath schema leftParentType typeCondition left
-        rightChildSelectionSet ->
-      NormalSelectionSetPairedPath schema leftParentType rightParentType
-        left right
+    {leftParentType rightParentType typeCondition : Name}
+    {directives : List DirectiveApplication}
+    {rightChildSelectionSet left right : List Selection}
+    : objectTypeNameBool schema rightParentType = false
+      -> Selection.inlineFragment (some typeCondition) directives rightChildSelectionSet
+          ∈ right
+      -> NormalSelectionSetPairedPath schema leftParentType typeCondition left
+          rightChildSelectionSet
+      -> NormalSelectionSetPairedPath schema leftParentType rightParentType left right
 
 theorem normalSelectionSetPairedPath_of_valid_normal_nonempty_aux
     (n : Nat) {schema : Schema}
-    {leftVariableDefinitions rightVariableDefinitions :
-      List VariableDefinition}
+    {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {leftParentType rightParentType : Name}
-    {left right : List Selection} :
-    Validation.selectionSetValid schema leftVariableDefinitions
-      leftParentType left ->
-    Validation.selectionSetValid schema rightVariableDefinitions
-      rightParentType right ->
-    selectionSetNormal schema leftParentType left ->
-    selectionSetNormal schema rightParentType right ->
-    left ≠ [] ->
-    right ≠ [] ->
-    SelectionSet.size left + SelectionSet.size right < n ->
-      NormalSelectionSetPairedPath schema leftParentType rightParentType
-        left right := by
+    {left right : List Selection}
+    : Validation.selectionSetValid schema leftVariableDefinitions leftParentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions
+          rightParentType right
+      -> selectionSetNormal schema leftParentType left
+      -> selectionSetNormal schema rightParentType right
+      -> left ≠ []
+      -> right ≠ []
+      -> SelectionSet.size left + SelectionSet.size right < n
+      -> NormalSelectionSetPairedPath schema leftParentType rightParentType
+          left right := by
   revert schema leftVariableDefinitions rightVariableDefinitions
     leftParentType rightParentType left right
   induction n using Nat.strongRecOn with
@@ -386,20 +373,18 @@ theorem normalSelectionSetPairedPath_of_valid_normal_nonempty_aux
 
 theorem normalSelectionSetPairedPath_of_valid_normal_nonempty
     {schema : Schema}
-    {leftVariableDefinitions rightVariableDefinitions :
-      List VariableDefinition}
+    {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {leftParentType rightParentType : Name}
-    {left right : List Selection} :
-    Validation.selectionSetValid schema leftVariableDefinitions
-      leftParentType left ->
-    Validation.selectionSetValid schema rightVariableDefinitions
-      rightParentType right ->
-    selectionSetNormal schema leftParentType left ->
-    selectionSetNormal schema rightParentType right ->
-    left ≠ [] ->
-    right ≠ [] ->
-      NormalSelectionSetPairedPath schema leftParentType rightParentType
-        left right := by
+    {left right : List Selection}
+    : Validation.selectionSetValid schema leftVariableDefinitions leftParentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions
+          rightParentType right
+      -> selectionSetNormal schema leftParentType left
+      -> selectionSetNormal schema rightParentType right
+      -> left ≠ []
+      -> right ≠ []
+      -> NormalSelectionSetPairedPath schema leftParentType rightParentType
+          left right := by
   intro hleftValid hrightValid hleftNormal hrightNormal hleftNonempty
     hrightNonempty
   exact

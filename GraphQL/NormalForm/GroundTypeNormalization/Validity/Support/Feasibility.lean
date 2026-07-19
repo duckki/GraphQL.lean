@@ -9,7 +9,8 @@ namespace NormalForm
 
 mutual
   def selectionContainsTypeConditionFeasibleField (schema : Schema)
-      (typeConditions : List Name) : Selection -> Prop
+      (typeConditions : List Name)
+      : Selection -> Prop
     | .field _responseName _fieldName _arguments _directives _selectionSet =>
         typeConditionStackFeasible schema typeConditions
     | .inlineFragment none _directives selectionSet =>
@@ -20,50 +21,46 @@ mutual
           (typeCondition :: typeConditions) selectionSet
 
   def selectionSetContainsTypeConditionFeasibleField (schema : Schema)
-      (typeConditions : List Name) (selectionSet : List Selection) : Prop :=
+      (typeConditions : List Name) (selectionSet : List Selection)
+      : Prop :=
     match selectionSet with
     | [] => False
     | selection :: rest =>
-        selectionContainsTypeConditionFeasibleField schema typeConditions
-          selection
-          ∨ selectionSetContainsTypeConditionFeasibleField schema
-            typeConditions rest
+        selectionContainsTypeConditionFeasibleField schema typeConditions selection
+        ∨ selectionSetContainsTypeConditionFeasibleField schema typeConditions rest
 end
 
 -- Strong proof-facing form used by the existing preservation proofs: whenever the
 -- normalizer is asked to process a nonempty selection set in a concrete scope, that
 -- selection set contains a feasible field for that scope and recursively satisfies the
 -- operation-level type-condition feasibility predicate in that scope.
-def selectionSetsTypeConditionFeasibleInEveryNormalizerScope
-    (schema : Schema) : Prop :=
+def selectionSetsTypeConditionFeasibleInEveryNormalizerScope (schema : Schema) : Prop :=
   ∀ parentType selectionSet,
-    selectionSet ≠ [] ->
-      selectionSetContainsTypeConditionFeasibleField schema [parentType]
-        selectionSet
+    selectionSet ≠ []
+    -> selectionSetContainsTypeConditionFeasibleField schema [parentType] selectionSet
         ∧ selectionSetTypeConditionFeasible schema parentType [parentType]
-          .allFields selectionSet
+            .allFields selectionSet
 
 namespace GroundTypeNormalization
 
 theorem selectionSetTypeConditionFeasible_tail
     {schema : Schema} {parentType : Name} {typeConditions : List Name}
-    {selection : Selection} {selectionSet : List Selection} :
-    selectionSetTypeConditionFeasible schema parentType typeConditions
-      .allFields (selection :: selectionSet) ->
-      selectionSetTypeConditionFeasible schema parentType typeConditions
-        .allFields selectionSet := by
+    {selection : Selection} {selectionSet : List Selection}
+    : selectionSetTypeConditionFeasible schema parentType typeConditions
+        .allFields (selection :: selectionSet)
+      -> selectionSetTypeConditionFeasible schema parentType typeConditions
+          .allFields selectionSet := by
   intro hfeasible
   simpa [selectionSetTypeConditionFeasible] using hfeasible.2
 
 theorem selectionSetTypeConditionFeasible_append
     {schema : Schema} {parentType : Name} {typeConditions : List Name}
-    {left right : List Selection} :
-    selectionSetTypeConditionFeasible schema parentType typeConditions
-      .allFields left ->
-    selectionSetTypeConditionFeasible schema parentType typeConditions
-      .allFields right ->
-      selectionSetTypeConditionFeasible schema parentType typeConditions
-        .allFields (left ++ right) := by
+    {left right : List Selection}
+    : selectionSetTypeConditionFeasible schema parentType typeConditions .allFields left
+      -> selectionSetTypeConditionFeasible schema parentType typeConditions
+          .allFields right
+      -> selectionSetTypeConditionFeasible schema parentType typeConditions
+          .allFields (left ++ right) := by
   intro hleft hright
   induction left with
   | nil =>
@@ -82,13 +79,13 @@ theorem selectionSetTypeConditionFeasible_append
 
 theorem selectionSetTypeConditionFeasible_withoutFieldSelectionsWithResponseName
     (schema : Schema) (responseName parentType : Name)
-    (typeConditions : List Name) :
-    ∀ selectionSet,
-      selectionSetTypeConditionFeasible schema parentType typeConditions
-        .allFields selectionSet ->
-      selectionSetTypeConditionFeasible schema parentType typeConditions
-        .allFields
-        (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+    (typeConditions : List Name)
+    : ∀ selectionSet,
+        selectionSetTypeConditionFeasible schema parentType typeConditions
+          .allFields selectionSet
+        -> selectionSetTypeConditionFeasible schema parentType typeConditions
+            .allFields
+            (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
   | [], _hfeasible => by
       simp [withoutFieldSelectionsWithResponseName, selectionSetTypeConditionFeasible]
   | selection :: rest, hfeasible => by
@@ -140,10 +137,10 @@ theorem selectionSetTypeConditionFeasible_withoutFieldSelectionsWithResponseName
 
 theorem possibleTypeNormalizations_ne_nil_of_branch_forValidity
     (schema : Schema) {possibleTypes : List Name}
-    {selectionSet : List Selection} {objectType : Name} :
-    objectType ∈ possibleTypes ->
-      normalizeSelectionSet schema objectType selectionSet ≠ [] ->
-        possibleTypeNormalizations schema possibleTypes selectionSet ≠ [] := by
+    {selectionSet : List Selection} {objectType : Name}
+    : objectType ∈ possibleTypes
+      -> normalizeSelectionSet schema objectType selectionSet ≠ []
+      -> possibleTypeNormalizations schema possibleTypes selectionSet ≠ [] := by
   intro hmem hnonempty
   induction possibleTypes with
   | nil =>
@@ -169,22 +166,22 @@ theorem possibleTypeNormalizations_ne_nil_of_branch_forValidity
             simp [possibleTypeNormalizations, hnormalized]
 
 def objectSatisfiesTypeConditionStack
-    (schema : Schema) (objectType : Name) (typeConditions : List Name) :
-    Prop :=
-  ∀ typeCondition, typeCondition ∈ typeConditions ->
-    objectType ∈ schema.getPossibleTypes typeCondition
+    (schema : Schema) (objectType : Name) (typeConditions : List Name)
+    : Prop :=
+  ∀ typeCondition,
+    typeCondition ∈ typeConditions -> objectType ∈ schema.getPossibleTypes typeCondition
 
 theorem typeConditionStackFeasible_of_objectSatisfies_forValidity
-    {schema : Schema} {objectType : Name} {typeConditions : List Name} :
-    objectSatisfiesTypeConditionStack schema objectType typeConditions ->
-      typeConditionStackFeasible schema typeConditions := by
+    {schema : Schema} {objectType : Name} {typeConditions : List Name}
+    : objectSatisfiesTypeConditionStack schema objectType typeConditions
+      -> typeConditionStackFeasible schema typeConditions := by
   intro hobject
   exact ⟨objectType, hobject⟩
 
 theorem objectSatisfiesTypeConditionStack_singleton_of_object_forValidity
-    (schema : Schema) {objectType : Name} :
-    schema.objectType objectType ->
-      objectSatisfiesTypeConditionStack schema objectType [objectType] := by
+    (schema : Schema) {objectType : Name}
+    : schema.objectType objectType
+      -> objectSatisfiesTypeConditionStack schema objectType [objectType] := by
   intro hobject typeCondition hmem
   have heq : typeCondition = objectType := by simpa using hmem
   subst typeCondition
@@ -192,12 +189,12 @@ theorem objectSatisfiesTypeConditionStack_singleton_of_object_forValidity
 
 theorem objectSatisfiesTypeConditionStack_cons_of_overlap_forValidity
     (schema : Schema) {objectType typeCondition : Name}
-    {typeConditions : List Name} :
-    schema.objectType objectType ->
-    objectSatisfiesTypeConditionStack schema objectType typeConditions ->
-    schema.typesOverlapBool objectType typeCondition = true ->
-      objectSatisfiesTypeConditionStack schema objectType
-        (typeCondition :: typeConditions) := by
+    {typeConditions : List Name}
+    : schema.objectType objectType
+      -> objectSatisfiesTypeConditionStack schema objectType typeConditions
+      -> schema.typesOverlapBool objectType typeCondition = true
+      -> objectSatisfiesTypeConditionStack schema objectType
+          (typeCondition :: typeConditions) := by
   intro hobject hstack hoverlap candidate hcandidate
   rcases List.mem_cons.mp hcandidate with heq | htail
   · subst candidate
@@ -207,10 +204,10 @@ theorem objectSatisfiesTypeConditionStack_cons_of_overlap_forValidity
   · exact hstack candidate htail
 
 theorem typeConditionStackFeasible_of_subset_forValidity
-    {schema : Schema} {source target : List Name} :
-    typeConditionStackFeasible schema source ->
-    (∀ typeCondition, typeCondition ∈ target -> typeCondition ∈ source) ->
-      typeConditionStackFeasible schema target := by
+    {schema : Schema} {source target : List Name}
+    : typeConditionStackFeasible schema source
+      -> (∀ typeCondition, typeCondition ∈ target -> typeCondition ∈ source)
+      -> typeConditionStackFeasible schema target := by
   intro hfeasible hsubset
   rcases hfeasible with ⟨objectType, hobjectType⟩
   exact ⟨objectType, fun typeCondition hmem =>
@@ -218,12 +215,11 @@ theorem typeConditionStackFeasible_of_subset_forValidity
 
 mutual
   theorem selectionContainsTypeConditionFeasibleField_of_existsMode
-      (schema : Schema) (parentType : Name) (typeConditions : List Name) :
-      ∀ selection,
-        selectionTypeConditionFeasible schema parentType typeConditions
-          .existsField selection ->
-          selectionContainsTypeConditionFeasibleField schema typeConditions
-            selection
+      (schema : Schema) (parentType : Name) (typeConditions : List Name)
+      : ∀ selection,
+          selectionTypeConditionFeasible schema parentType typeConditions
+            .existsField selection
+          -> selectionContainsTypeConditionFeasibleField schema typeConditions selection
     | .field _responseName _fieldName _arguments _directives _selectionSet,
       hfeasible => by
         simpa [selectionTypeConditionFeasible,
@@ -240,12 +236,12 @@ mutual
             selectionSet hfeasible
 
   theorem selectionSetContainsTypeConditionFeasibleField_of_existsMode
-      (schema : Schema) (parentType : Name) (typeConditions : List Name) :
-      ∀ selectionSet,
-        selectionSetTypeConditionFeasible schema parentType typeConditions
-          .existsField selectionSet ->
-          selectionSetContainsTypeConditionFeasibleField schema typeConditions
-            selectionSet
+      (schema : Schema) (parentType : Name) (typeConditions : List Name)
+      : ∀ selectionSet,
+          selectionSetTypeConditionFeasible schema parentType typeConditions
+            .existsField selectionSet
+          -> selectionSetContainsTypeConditionFeasibleField schema typeConditions
+              selectionSet
     | [], hfeasible => by
         cases hfeasible
     | selection :: rest, hfeasible => by
@@ -260,12 +256,11 @@ end
 
 mutual
   theorem selectionTypeConditionFeasible_existsMode_of_contains
-      (schema : Schema) (parentType : Name) (typeConditions : List Name) :
-      ∀ selection,
-        selectionContainsTypeConditionFeasibleField schema typeConditions
-          selection ->
-          selectionTypeConditionFeasible schema parentType typeConditions
-            .existsField selection
+      (schema : Schema) (parentType : Name) (typeConditions : List Name)
+      : ∀ selection,
+          selectionContainsTypeConditionFeasibleField schema typeConditions selection
+          -> selectionTypeConditionFeasible schema parentType typeConditions
+              .existsField selection
     | .field _responseName _fieldName _arguments _directives _selectionSet,
       hcontains => by
         simpa [selectionTypeConditionFeasible,
@@ -282,12 +277,12 @@ mutual
             selectionSet hcontains
 
   theorem selectionSetTypeConditionFeasible_existsMode_of_contains
-      (schema : Schema) (parentType : Name) (typeConditions : List Name) :
-      ∀ selectionSet,
-        selectionSetContainsTypeConditionFeasibleField schema typeConditions
-          selectionSet ->
-          selectionSetTypeConditionFeasible schema parentType typeConditions
-            .existsField selectionSet
+      (schema : Schema) (parentType : Name) (typeConditions : List Name)
+      : ∀ selectionSet,
+          selectionSetContainsTypeConditionFeasibleField schema typeConditions
+            selectionSet
+          -> selectionSetTypeConditionFeasible schema parentType typeConditions
+              .existsField selectionSet
     | [], hcontains => by
         cases hcontains
     | selection :: rest, hcontains => by
@@ -302,13 +297,12 @@ end
 
 mutual
   theorem selectionTypeConditionFeasible_of_stack_subset
-      (schema : Schema) {parentType : Name} {source target : List Name} :
-      (∀ typeCondition, typeCondition ∈ source -> typeCondition ∈ target) ->
-      ∀ selection,
-        selectionTypeConditionFeasible schema parentType source .allFields
-          selection ->
-          selectionTypeConditionFeasible schema parentType target .allFields
-            selection
+      (schema : Schema) {parentType : Name} {source target : List Name}
+      : (∀ typeCondition, typeCondition ∈ source -> typeCondition ∈ target)
+        -> ∀ selection,
+            selectionTypeConditionFeasible schema parentType source .allFields selection
+            -> selectionTypeConditionFeasible schema parentType target .allFields
+                selection
     | hsubset,
       .field responseName fieldName arguments directives selectionSet,
       hfeasible => by
@@ -339,13 +333,13 @@ mutual
             selectionSet hfeasible
 
   theorem selectionSetTypeConditionFeasible_of_stack_subset
-      (schema : Schema) {parentType : Name} {source target : List Name} :
-      (∀ typeCondition, typeCondition ∈ source -> typeCondition ∈ target) ->
-      ∀ selectionSet,
-        selectionSetTypeConditionFeasible schema parentType source .allFields
-          selectionSet ->
-          selectionSetTypeConditionFeasible schema parentType target
-            .allFields selectionSet
+      (schema : Schema) {parentType : Name} {source target : List Name}
+      : (∀ typeCondition, typeCondition ∈ source -> typeCondition ∈ target)
+        -> ∀ selectionSet,
+            selectionSetTypeConditionFeasible schema parentType source .allFields
+              selectionSet
+            -> selectionSetTypeConditionFeasible schema parentType target
+                .allFields selectionSet
     | _hsubset, [], _hfeasible => by
         simp [selectionSetTypeConditionFeasible]
     | hsubset, selection :: rest, hfeasible => by
@@ -367,11 +361,11 @@ end
 
 mutual
   theorem selectionContainsTypeConditionFeasibleField_of_subset_forValidity
-      (schema : Schema) {source target : List Name} :
-      (∀ typeCondition, typeCondition ∈ target -> typeCondition ∈ source) ->
-      ∀ selection,
-        selectionContainsTypeConditionFeasibleField schema source selection ->
-          selectionContainsTypeConditionFeasibleField schema target selection
+      (schema : Schema) {source target : List Name}
+      : (∀ typeCondition, typeCondition ∈ target -> typeCondition ∈ source)
+        -> ∀ selection,
+            selectionContainsTypeConditionFeasibleField schema source selection
+            -> selectionContainsTypeConditionFeasibleField schema target selection
     | hsubset,
       .field _responseName _fieldName _arguments _directives _selectionSet,
       hfeasible => by
@@ -394,13 +388,11 @@ mutual
           selectionSet hfeasible
 
   theorem selectionSetContainsTypeConditionFeasibleField_of_subset_forValidity
-      (schema : Schema) {source target : List Name} :
-      (∀ typeCondition, typeCondition ∈ target -> typeCondition ∈ source) ->
-      ∀ selectionSet,
-        selectionSetContainsTypeConditionFeasibleField schema source
-          selectionSet ->
-          selectionSetContainsTypeConditionFeasibleField schema target
-            selectionSet
+      (schema : Schema) {source target : List Name}
+      : (∀ typeCondition, typeCondition ∈ target -> typeCondition ∈ source)
+        -> ∀ selectionSet,
+            selectionSetContainsTypeConditionFeasibleField schema source selectionSet
+            -> selectionSetContainsTypeConditionFeasibleField schema target selectionSet
     | _hsubset, [], hfeasible => by
         cases hfeasible
     | hsubset, selection :: rest, hfeasible => by
@@ -415,10 +407,10 @@ end
 
 theorem selectionSetContainsTypeConditionFeasibleField_append_left_forValidity
     (schema : Schema) (typeConditions : List Name)
-    {left right : List Selection} :
-    selectionSetContainsTypeConditionFeasibleField schema typeConditions left ->
-      selectionSetContainsTypeConditionFeasibleField schema typeConditions
-        (left ++ right) := by
+    {left right : List Selection}
+    : selectionSetContainsTypeConditionFeasibleField schema typeConditions left
+      -> selectionSetContainsTypeConditionFeasibleField schema typeConditions
+          (left ++ right) := by
   intro hleft
   induction left with
   | nil =>
@@ -430,10 +422,10 @@ theorem selectionSetContainsTypeConditionFeasibleField_append_left_forValidity
 
 theorem selectionSetContainsTypeConditionFeasibleField_append_right_forValidity
     (schema : Schema) (typeConditions : List Name)
-    (left : List Selection) {right : List Selection} :
-    selectionSetContainsTypeConditionFeasibleField schema typeConditions right ->
-      selectionSetContainsTypeConditionFeasibleField schema typeConditions
-        (left ++ right) := by
+    (left : List Selection) {right : List Selection}
+    : selectionSetContainsTypeConditionFeasibleField schema typeConditions right
+      -> selectionSetContainsTypeConditionFeasibleField schema typeConditions
+          (left ++ right) := by
   intro hright
   induction left with
   | nil =>
@@ -445,15 +437,15 @@ theorem selectionTypeConditionFeasible_field_child_contains_forObject
     (schema : Schema) {parentType responseName fieldName : Name}
     {typeConditions : List Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
-    {selectionSet : List Selection} {fieldDefinition : FieldDefinition} :
-    selectionTypeConditionFeasible schema parentType typeConditions
-      .allFields
-      (Selection.field responseName fieldName arguments directives selectionSet) ->
-    objectSatisfiesTypeConditionStack schema parentType typeConditions ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    selectionSet ≠ [] ->
-      selectionSetContainsTypeConditionFeasibleField schema
-        [fieldDefinition.outputType.namedType] selectionSet := by
+    {selectionSet : List Selection} {fieldDefinition : FieldDefinition}
+    : selectionTypeConditionFeasible schema parentType typeConditions
+        .allFields
+        (Selection.field responseName fieldName arguments directives selectionSet)
+      -> objectSatisfiesTypeConditionStack schema parentType typeConditions
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> selectionSet ≠ []
+      -> selectionSetContainsTypeConditionFeasibleField schema
+          [fieldDefinition.outputType.namedType] selectionSet := by
   intro hfeasible hstack hlookup hnonempty
   cases selectionSet with
   | nil =>
@@ -474,15 +466,15 @@ theorem selectionTypeConditionFeasible_field_child_branch_forObject
     {typeConditions : List Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
     {selectionSet : List Selection} {fieldDefinition : FieldDefinition}
-    {objectType : Name} :
-    selectionTypeConditionFeasible schema parentType typeConditions
-      .allFields
-      (Selection.field responseName fieldName arguments directives selectionSet) ->
-    objectSatisfiesTypeConditionStack schema parentType typeConditions ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    objectType ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType ->
-      selectionSetTypeConditionFeasible schema objectType [objectType]
-        .allFields selectionSet := by
+    {objectType : Name}
+    : selectionTypeConditionFeasible schema parentType typeConditions
+        .allFields
+        (Selection.field responseName fieldName arguments directives selectionSet)
+      -> objectSatisfiesTypeConditionStack schema parentType typeConditions
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> objectType ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType
+      -> selectionSetTypeConditionFeasible schema objectType [objectType]
+          .allFields selectionSet := by
   intro hfeasible hstack hlookup hobjectType
   cases selectionSet with
   | nil =>
@@ -496,13 +488,14 @@ theorem selectionTypeConditionFeasible_field_child_branch_forObject
       exact hchild.2 objectType hobjectType
 
 theorem selectionSetTypeConditionFeasible_mergeSelectionSets_of_subselections
-    {schema : Schema} {parentType : Name} {typeConditions : List Name} :
-    ∀ selections,
-      (∀ selection, selection ∈ selections ->
-        selectionSetTypeConditionFeasible schema parentType typeConditions
-          .allFields selection.subselections) ->
-        selectionSetTypeConditionFeasible schema parentType typeConditions
-          .allFields (mergeSelectionSets selections)
+    {schema : Schema} {parentType : Name} {typeConditions : List Name}
+    : ∀ selections,
+        (∀ selection,
+          selection ∈ selections
+          -> selectionSetTypeConditionFeasible schema parentType typeConditions
+              .allFields selection.subselections)
+        -> selectionSetTypeConditionFeasible schema parentType typeConditions
+            .allFields (mergeSelectionSets selections)
   | [], _hfeasible => by
       simp [mergeSelectionSets, selectionSetTypeConditionFeasible]
   | selection :: rest, hfeasible => by
@@ -518,19 +511,19 @@ theorem selectionSetTypeConditionFeasible_mergeSelectionSets_of_subselections
 theorem selectionSetTypeConditionFeasible_mergeSelectionSets_of_field_subselections
     {schema : Schema} {parentType responseName : Name}
     {typeConditions : List Name}
-    (selections : List Selection) :
-    (∀ selection, selection ∈ selections ->
-      ∃ fieldName arguments directives subselections,
-        selection =
-          Selection.field responseName fieldName arguments directives
-            subselections) ->
-    (∀ fieldName arguments directives subselections,
-      Selection.field responseName fieldName arguments directives
-          subselections ∈ selections ->
-        selectionSetTypeConditionFeasible schema parentType typeConditions
-          .allFields subselections) ->
-      selectionSetTypeConditionFeasible schema parentType typeConditions
-        .allFields (mergeSelectionSets selections) := by
+    (selections : List Selection)
+    : (∀ selection,
+        selection ∈ selections
+        -> ∃ fieldName arguments directives subselections,
+            selection
+            = Selection.field responseName fieldName arguments directives subselections)
+      -> (∀ fieldName arguments directives subselections,
+            Selection.field responseName fieldName arguments directives subselections
+              ∈ selections
+            -> selectionSetTypeConditionFeasible schema parentType typeConditions
+                .allFields subselections)
+      -> selectionSetTypeConditionFeasible schema parentType typeConditions
+          .allFields (mergeSelectionSets selections) := by
   intro hshape hfields
   apply selectionSetTypeConditionFeasible_mergeSelectionSets_of_subselections
   intro selection hselection
@@ -542,18 +535,17 @@ theorem selectionSetTypeConditionFeasible_mergeSelectionSets_of_field_subselecti
 
 theorem selectionSetTypeConditionFeasible_mergeSelectionSets_fieldSelectionsWithResponseNameInScope
     {schema : Schema} {parentType responseName childType : Name}
-    {typeConditions : List Name}
-    (selectionSet : List Selection) :
-    (∀ fieldName arguments directives subselections,
-      Selection.field responseName fieldName arguments directives subselections
-        ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
-          selectionSet ->
-        selectionSetTypeConditionFeasible schema childType typeConditions
-          .allFields subselections) ->
-      selectionSetTypeConditionFeasible schema childType typeConditions
-        .allFields (mergeSelectionSets
-          (fieldSelectionsWithResponseNameInScope schema parentType responseName
-            selectionSet)) := by
+    {typeConditions : List Name} (selectionSet : List Selection)
+    : (∀ fieldName arguments directives subselections,
+        Selection.field responseName fieldName arguments directives subselections
+          ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
+              selectionSet
+        -> selectionSetTypeConditionFeasible schema childType typeConditions
+            .allFields subselections)
+      -> selectionSetTypeConditionFeasible schema childType typeConditions .allFields
+          (mergeSelectionSets
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName
+              selectionSet)) := by
   intro hfields
   apply selectionSetTypeConditionFeasible_mergeSelectionSets_of_field_subselections
   · intro selection hselection
@@ -563,21 +555,21 @@ theorem selectionSetTypeConditionFeasible_mergeSelectionSets_fieldSelectionsWith
     exact hfields fieldName arguments directives subselections hselection
 
 theorem fieldSelectionsWithResponseNameInScope_field_child_branch_forObject
-    (schema : Schema) (parentType responseName : Name) :
-    schema.objectType parentType ->
-    objectSatisfiesTypeConditionStack schema parentType typeConditions ->
-    ∀ selectionSet,
-      selectionSetTypeConditionFeasible schema parentType typeConditions
-        .allFields selectionSet ->
-      ∀ fieldName arguments directives subselections fieldDefinition childType,
-        Selection.field responseName fieldName arguments directives subselections
-          ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
-            selectionSet ->
-        schema.lookupField parentType fieldName = some fieldDefinition ->
-        childType ∈ schema.getPossibleTypes
-          fieldDefinition.outputType.namedType ->
-          selectionSetTypeConditionFeasible schema childType [childType]
-            .allFields subselections
+    (schema : Schema) (parentType responseName : Name)
+    : schema.objectType parentType
+      -> objectSatisfiesTypeConditionStack schema parentType typeConditions
+      -> ∀ selectionSet,
+          selectionSetTypeConditionFeasible schema parentType typeConditions
+            .allFields selectionSet
+          -> ∀ fieldName arguments directives subselections fieldDefinition childType,
+              Selection.field responseName fieldName arguments directives subselections
+                ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
+                    selectionSet
+              -> schema.lookupField parentType fieldName = some fieldDefinition
+              -> childType
+                  ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType
+              -> selectionSetTypeConditionFeasible schema childType [childType]
+                  .allFields subselections
   | hobject, hstack, [], hfeasible, fieldName, arguments, directives,
       subselections, fieldDefinition, childType, hfield, _hlookup,
       _hchildType => by
@@ -678,11 +670,10 @@ theorem fieldSelectionsWithResponseNameInScope_field_child_branch_forObject
 
 mutual
   theorem typeConditionStackFeasible_of_selectionContains_forValidity
-      (schema : Schema) (typeConditions : List Name) :
-      ∀ selection,
-        selectionContainsTypeConditionFeasibleField schema typeConditions
-          selection ->
-          typeConditionStackFeasible schema typeConditions
+      (schema : Schema) (typeConditions : List Name)
+      : ∀ selection,
+          selectionContainsTypeConditionFeasibleField schema typeConditions selection
+          -> typeConditionStackFeasible schema typeConditions
     | .field _responseName _fieldName _arguments _directives _selectionSet,
       hfeasible => hfeasible
     | .inlineFragment none _directives selectionSet, hfeasible =>
@@ -698,11 +689,11 @@ mutual
             List.mem_cons_of_mem typeCondition hcandidate)
 
   theorem typeConditionStackFeasible_of_selectionSetContains_forValidity
-      (schema : Schema) (typeConditions : List Name) :
-      ∀ selectionSet,
-        selectionSetContainsTypeConditionFeasibleField schema typeConditions
-          selectionSet ->
-          typeConditionStackFeasible schema typeConditions
+      (schema : Schema) (typeConditions : List Name)
+      : ∀ selectionSet,
+          selectionSetContainsTypeConditionFeasibleField schema typeConditions
+            selectionSet
+          -> typeConditionStackFeasible schema typeConditions
     | [], hfeasible => by
         cases hfeasible
     | selection :: rest, hfeasible => by
@@ -717,15 +708,15 @@ mutual
   theorem selectionContainsTypeConditionFeasibleField_replace_base_with_object
       (schema : Schema)
       (hschema : SchemaWellFormedness.schemaWellFormed schema)
-      (baseType : Name) (conditions : List Name) :
-      ∀ selection,
-        selectionContainsTypeConditionFeasibleField schema
-          (conditions ++ [baseType]) selection ->
-          ∃ objectType,
-            objectType ∈ schema.getPossibleTypes baseType
+      (baseType : Name) (conditions : List Name)
+      : ∀ selection,
+          selectionContainsTypeConditionFeasibleField schema
+            (conditions ++ [baseType]) selection
+          -> ∃ objectType,
+              objectType ∈ schema.getPossibleTypes baseType
               ∧ schema.objectType objectType
               ∧ selectionContainsTypeConditionFeasibleField schema
-                (conditions ++ [objectType]) selection
+                  (conditions ++ [objectType]) selection
     | .field _responseName _fieldName _arguments _directives _selectionSet,
       hfeasible => by
         rcases hfeasible with ⟨objectType, hobjectType⟩
@@ -766,15 +757,15 @@ mutual
   theorem selectionSetContainsTypeConditionFeasibleField_replace_base_with_object
       (schema : Schema)
       (hschema : SchemaWellFormedness.schemaWellFormed schema)
-      (baseType : Name) (conditions : List Name) :
-      ∀ selectionSet,
-        selectionSetContainsTypeConditionFeasibleField schema
-          (conditions ++ [baseType]) selectionSet ->
-          ∃ objectType,
-            objectType ∈ schema.getPossibleTypes baseType
+      (baseType : Name) (conditions : List Name)
+      : ∀ selectionSet,
+          selectionSetContainsTypeConditionFeasibleField schema
+            (conditions ++ [baseType]) selectionSet
+          -> ∃ objectType,
+              objectType ∈ schema.getPossibleTypes baseType
               ∧ schema.objectType objectType
               ∧ selectionSetContainsTypeConditionFeasibleField schema
-                (conditions ++ [objectType]) selectionSet
+                  (conditions ++ [objectType]) selectionSet
     | [], hfeasible => by
         cases hfeasible
     | selection :: rest, hfeasible => by
@@ -793,11 +784,11 @@ end
 
 theorem typesOverlapBool_eq_true_of_object_stack_feasible_forValidity
     (schema : Schema) {parentType typeCondition : Name}
-    {typeConditions : List Name} :
-    schema.objectType parentType ->
-    typeConditionStackFeasible schema
-      (typeCondition :: parentType :: typeConditions) ->
-      schema.typesOverlapBool parentType typeCondition = true := by
+    {typeConditions : List Name}
+    : schema.objectType parentType
+      -> typeConditionStackFeasible schema
+          (typeCondition :: parentType :: typeConditions)
+      -> schema.typesOverlapBool parentType typeCondition = true := by
   intro hobject hfeasible
   rcases hfeasible with ⟨objectType, hobjectType⟩
   have hparentMem :
@@ -811,14 +802,13 @@ theorem typesOverlapBool_eq_true_of_object_stack_feasible_forValidity
     ⟨parentType, object_typeIncludesObject_self schema hobject,
       hobjectType typeCondition (by simp)⟩
 
-theorem normalizeSelectionSet_ne_nil_of_contains
-    (schema : Schema) :
-    ∀ parentType selectionSet,
-      schema.objectType parentType ->
-      selectionSetSemanticsReady schema parentType selectionSet ->
-      selectionSetContainsTypeConditionFeasibleField schema [parentType]
-        selectionSet ->
-        normalizeSelectionSet schema parentType selectionSet ≠ [] := by
+theorem normalizeSelectionSet_ne_nil_of_contains (schema : Schema)
+    : ∀ parentType selectionSet,
+        schema.objectType parentType
+        -> selectionSetSemanticsReady schema parentType selectionSet
+        -> selectionSetContainsTypeConditionFeasibleField schema [parentType]
+            selectionSet
+        -> normalizeSelectionSet schema parentType selectionSet ≠ [] := by
   intro parentType selectionSet
   induction parentType, selectionSet using normalizeSelectionSet.induct schema with
   | case1 parentType =>
@@ -938,13 +928,12 @@ theorem normalizeSelectionSet_ne_nil_of_contains
 
 theorem normalizeSelectionSet_ne_nil_of_everyNormalizerScope
     (schema : Schema)
-    (hfeasibleAll :
-      selectionSetsTypeConditionFeasibleInEveryNormalizerScope schema) :
-    ∀ parentType selectionSet,
-      schema.objectType parentType ->
-      selectionSetSemanticsReady schema parentType selectionSet ->
-      selectionSet ≠ [] ->
-        normalizeSelectionSet schema parentType selectionSet ≠ [] := by
+    (hfeasibleAll : selectionSetsTypeConditionFeasibleInEveryNormalizerScope schema)
+    : ∀ parentType selectionSet,
+        schema.objectType parentType
+        -> selectionSetSemanticsReady schema parentType selectionSet
+        -> selectionSet ≠ []
+        -> normalizeSelectionSet schema parentType selectionSet ≠ [] := by
   intro parentType selectionSet hobject hready hnonempty
   exact normalizeSelectionSet_ne_nil_of_contains schema parentType selectionSet
     hobject hready (hfeasibleAll parentType selectionSet hnonempty).1

@@ -12,8 +12,8 @@ open GraphQL.Execution
 
 variable {ObjectRef : Type}
 
-private theorem selectionSet_size_append_semantics (left right : List Selection) :
-    SelectionSet.size (left ++ right)
+private theorem selectionSet_size_append_semantics (left right : List Selection)
+    : SelectionSet.size (left ++ right)
       = SelectionSet.size left + SelectionSet.size right := by
   induction left with
   | nil => simp [SelectionSet.size]
@@ -27,18 +27,19 @@ theorem executablePrefixRawNormalizes_of_selectionSetSemanticsReady_object
     {parentType runtimeType : Name} {identity : ObjectIdentity}
     (prefixFields : List ExecutableField)
     (hparents : ExecutableFieldsParent parentType prefixFields)
-    (hprefixLookups :
-      ∀ field, field ∈ prefixFields ->
-        ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
-          some fieldDefinition) :
-    (selectionSet : List Selection) ->
-    schema.objectType parentType ->
-    ScopedParentRuntimeApplies schema runtimeType parentType ->
-    NormalForm.selectionSetSemanticsReady schema parentType selectionSet ->
-      ∃ normalized,
-        SelectionSetFreshPlanNormalizes schema resolvers variableValues
-          completionDepth parentType (.object runtimeType identity)
-          (executableFieldSelections prefixFields ++ selectionSet) normalized
+    (hprefixLookups
+      : ∀ field,
+          field ∈ prefixFields
+          -> ∃ fieldDefinition,
+              schema.lookupField parentType field.fieldName = some fieldDefinition)
+    : (selectionSet : List Selection)
+      -> schema.objectType parentType
+          -> ScopedParentRuntimeApplies schema runtimeType parentType
+          -> NormalForm.selectionSetSemanticsReady schema parentType selectionSet
+          -> ∃ normalized,
+              SelectionSetFreshPlanNormalizes schema resolvers variableValues
+                completionDepth parentType (.object runtimeType identity)
+                (executableFieldSelections prefixFields ++ selectionSet) normalized
   | [], _hobject, _hparentRuntime, _hready => by
       rcases
           SelectionSetFreshPlanNormalizes.executableFieldsNormalizes
@@ -316,13 +317,13 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_of_selectionSetSemanticsReady_ob
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (completionDepth : Nat)
     (parentType runtimeType : Name) (identity : ObjectIdentity)
-    (selectionSet : List Selection) :
-    schema.objectType parentType ->
-    ScopedParentRuntimeApplies schema runtimeType parentType ->
-    NormalForm.selectionSetSemanticsReady schema parentType selectionSet ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        (completionDepth + 1) parentType (.object runtimeType identity)
-        selectionSet := by
+    (selectionSet : List Selection)
+    : schema.objectType parentType
+      -> ScopedParentRuntimeApplies schema runtimeType parentType
+      -> NormalForm.selectionSetSemanticsReady schema parentType selectionSet
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          (completionDepth + 1) parentType (.object runtimeType identity)
+          selectionSet := by
   intro hobject hparentRuntime hready
   have hparents :
       ExecutableFieldsParent parentType ([] : List ExecutableField) := by
@@ -347,20 +348,24 @@ theorem executionCollectedFieldInvariant_of_collectedFieldCompatibility
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    CollectedGroupsFieldValidationMergeCompatible
-      (GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet) ->
-      ExecutionCollectedFieldInvariant
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := parentType
-            source := source
-            selectionSet := selectionSet }
-          initial := .object [] } := by
+    (selectionSet : List Selection)
+    : CollectedGroupsFieldValidationMergeCompatible
+        (GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet)
+      -> ExecutionCollectedFieldInvariant
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := depth
+                parentType := parentType
+                source := source
+                selectionSet := selectionSet
+              }
+            initial := .object []
+          } := by
   intro hcompatible
   constructor
   · exact PairKeysNodup_of_executableGroupNamesNodup

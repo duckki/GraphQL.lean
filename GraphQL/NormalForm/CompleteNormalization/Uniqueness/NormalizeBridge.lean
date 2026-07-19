@@ -17,9 +17,9 @@ theorem completeNormalizeOperation_boolVarsEquivalent
     (schema : Schema) (operation : Operation)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (hvalid : Validation.operationDefinitionValid schema operation)
-    (hboolFeasible : operationBoolTypeConditionFeasible schema operation) :
-    operationBoolVarsEquivalent operation
-      (completeNormalizeOperation schema operation) := by
+    (hboolFeasible : operationBoolTypeConditionFeasible schema operation)
+    : operationBoolVarsEquivalent operation
+        (completeNormalizeOperation schema operation) := by
   have hrootObject : objectTypeNameBool schema operation.rootType = true :=
     GroundTypeNormalization.operation_root_objectTypeNameBool_of_wf_valid
       hschema hvalid
@@ -79,8 +79,8 @@ theorem completeNormalizeOperation_boolVarsEquivalent
       simpa [hvariables] using hnormalizedOperationIff.symm
 
 theorem completeNormalizeOperation_uniqueUpToReordering
-    {schema : Schema} {left right : Operation} :
-    completeNormalizeOperationUniqueUpToReordering schema left right := by
+    {schema : Schema} {left right : Operation}
+    : completeNormalizeOperationUniqueUpToReordering schema left right := by
   intro hschema hleftValid hrightValid hleftFields hrightFields
     hleftBoolFeasible hrightBoolFeasible hvariables hsem
   have hleftNormalizedValid :

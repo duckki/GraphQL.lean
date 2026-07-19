@@ -13,11 +13,11 @@ namespace CompleteNormalization
 theorem fieldsInSetCanMerge_inline_none_head_clear_directives
     (schema : Schema) (parentType : Name)
     (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.inlineFragment none directives selectionSet :: rest) ->
-      FieldMerge.fieldsInSetCanMerge schema parentType
-        (Selection.inlineFragment none [] selectionSet :: rest) := by
+    (selectionSet rest : List Selection)
+    : FieldMerge.fieldsInSetCanMerge schema parentType
+        (Selection.inlineFragment none directives selectionSet :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.inlineFragment none [] selectionSet :: rest) := by
   intro hmerge
   unfold FieldMerge.fieldsInSetCanMerge
   refine FieldMerge.FieldsInSetCanMerge.intro parentType
@@ -38,13 +38,11 @@ theorem fieldsInSetCanMerge_inline_none_head_clear_directives
 theorem fieldsInSetCanMerge_inline_some_head_clear_directives
     (schema : Schema) (parentType typeCondition : Name)
     (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.inlineFragment (some typeCondition) directives selectionSet
-        :: rest) ->
-      FieldMerge.fieldsInSetCanMerge schema parentType
-        (Selection.inlineFragment (some typeCondition) [] selectionSet
-          :: rest) := by
+    (selectionSet rest : List Selection)
+    : FieldMerge.fieldsInSetCanMerge schema parentType
+        (Selection.inlineFragment (some typeCondition) directives selectionSet :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest) := by
   intro hmerge
   unfold FieldMerge.fieldsInSetCanMerge
   refine FieldMerge.FieldsInSetCanMerge.intro parentType
@@ -69,92 +67,104 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_of_field_cas
     (variableValues : Execution.VariableValues)
     (operation : Operation)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (hfieldCase :
-      ∀ depth execParent lookupParent groundType
-        boolCase
-        responseName fieldName arguments directives selectionSet
-        (rest : List CompleteScopedSelection),
-        schema.objectType execParent ->
-        schema.typeIncludesObjectBool execParent groundType = true ->
-        completeScopedSelectionSetSemanticsReady schema execParent
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.field responseName fieldName arguments directives
-                selectionSet }
-            :: rest) ->
-        completeScopedSelectionSetLookupValid schema
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.field responseName fieldName arguments directives
-                selectionSet }
-            :: rest) ->
-        completeScopedSelectionSetCanMerge schema execParent
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.field responseName fieldName arguments directives
-                selectionSet }
-            :: rest) ->
-        completeScopedSelectionSetGroundApplies schema groundType
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.field responseName fieldName arguments directives
-                selectionSet }
-            :: rest) ->
-        variableValuesAgreeWithCase variableValues boolCase
-          (operationBoolVars operation) ->
-        (∀ varName,
-          varName ∈ selectionSetBooleanVariables
-            (eraseCompleteScopedSelectionSet
-              ({ lookupParent := lookupParent,
-                 selection :=
-                  Selection.field responseName fieldName arguments directives
-                    selectionSet }
-                :: rest)) ->
-          varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-        directivesAllowIn boolCase directives = true ->
-          Execution.executeSelectionSet schema resolvers variableValues depth
+    (hfieldCase
+      : ∀ depth execParent lookupParent groundType
+            boolCase
+            responseName fieldName arguments directives selectionSet
+            (rest : List CompleteScopedSelection),
+          schema.objectType execParent
+          -> schema.typeIncludesObjectBool execParent groundType = true
+          -> completeScopedSelectionSetSemanticsReady schema execParent
+              ({
+                  lookupParent := lookupParent,
+                  selection :=
+                    Selection.field responseName fieldName arguments directives
+                      selectionSet
+                }
+                :: rest)
+          -> completeScopedSelectionSetLookupValid schema
+              ({
+                  lookupParent := lookupParent,
+                  selection :=
+                    Selection.field responseName fieldName arguments directives
+                      selectionSet
+                }
+                :: rest)
+          -> completeScopedSelectionSetCanMerge schema execParent
+              ({
+                  lookupParent := lookupParent,
+                  selection :=
+                    Selection.field responseName fieldName arguments directives
+                      selectionSet
+                }
+                :: rest)
+          -> completeScopedSelectionSetGroundApplies schema groundType
+              ({
+                  lookupParent := lookupParent,
+                  selection :=
+                    Selection.field responseName fieldName arguments directives
+                      selectionSet
+                }
+                :: rest)
+          -> variableValuesAgreeWithCase variableValues boolCase
+              (operationBoolVars operation)
+          -> (∀ varName,
+                varName
+                  ∈ selectionSetBooleanVariables
+                      (eraseCompleteScopedSelectionSet
+                        ({
+                            lookupParent := lookupParent,
+                            selection :=
+                              Selection.field responseName fieldName arguments
+                                directives selectionSet
+                          }
+                          :: rest))
+                -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+          -> directivesAllowIn boolCase directives = true
+          -> Execution.executeSelectionSet schema resolvers variableValues depth
+                execParent (.object groundType ())
+                (staticCollectCompleteScopedSelectionSet schema
+                  (operationBoolVars operation)
+                  groundType boolCase
+                  ({
+                      lookupParent := lookupParent,
+                      selection :=
+                        Selection.field responseName fieldName arguments
+                          directives selectionSet
+                    }
+                    :: rest))
+              = Execution.executeSelectionSet schema resolvers variableValues depth
+                  execParent (.object groundType ())
+                  (eraseCompleteScopedSelectionSet
+                    ({
+                        lookupParent := lookupParent,
+                        selection :=
+                          Selection.field responseName fieldName arguments directives
+                            selectionSet
+                      }
+                      :: rest)))
+    : ∀ depth execParent groundType boolCase scopedSelections,
+        schema.objectType execParent
+        -> schema.typeIncludesObjectBool execParent groundType = true
+        -> completeScopedSelectionSetSemanticsReady schema execParent scopedSelections
+        -> completeScopedSelectionSetLookupValid schema scopedSelections
+        -> completeScopedSelectionSetCanMerge schema execParent scopedSelections
+        -> completeScopedSelectionSetGroundApplies schema groundType scopedSelections
+        -> variableValuesAgreeWithCase variableValues boolCase
+            (operationBoolVars operation)
+        -> (∀ varName,
+              varName
+                ∈ selectionSetBooleanVariables
+                    (eraseCompleteScopedSelectionSet scopedSelections)
+              -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+        -> Execution.executeSelectionSet schema resolvers variableValues depth
               execParent (.object groundType ())
               (staticCollectCompleteScopedSelectionSet schema
                 (operationBoolVars operation)
-                groundType boolCase
-                ({ lookupParent := lookupParent,
-                   selection :=
-                    Selection.field responseName fieldName arguments
-                      directives selectionSet }
-                  :: rest))
-            =
-          Execution.executeSelectionSet schema resolvers variableValues depth
-            execParent (.object groundType ())
-            (eraseCompleteScopedSelectionSet
-              ({ lookupParent := lookupParent,
-                 selection :=
-                  Selection.field responseName fieldName arguments directives
-                    selectionSet }
-                :: rest))) :
-    ∀ depth execParent groundType boolCase scopedSelections,
-      schema.objectType execParent ->
-      schema.typeIncludesObjectBool execParent groundType = true ->
-      completeScopedSelectionSetSemanticsReady schema execParent
-        scopedSelections ->
-      completeScopedSelectionSetLookupValid schema scopedSelections ->
-      completeScopedSelectionSetCanMerge schema execParent scopedSelections ->
-      completeScopedSelectionSetGroundApplies schema groundType
-        scopedSelections ->
-      variableValuesAgreeWithCase variableValues boolCase
-        (operationBoolVars operation) ->
-      (∀ varName,
-        varName ∈ selectionSetBooleanVariables
-            (eraseCompleteScopedSelectionSet scopedSelections) ->
-          varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-        Execution.executeSelectionSet schema resolvers variableValues depth
-            execParent (.object groundType ())
-            (staticCollectCompleteScopedSelectionSet schema
-              (operationBoolVars operation)
-              groundType boolCase scopedSelections)
-          =
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          execParent (.object groundType ())
-          (eraseCompleteScopedSelectionSet scopedSelections)
+                groundType boolCase scopedSelections)
+            = Execution.executeSelectionSet schema resolvers variableValues depth
+                execParent (.object groundType ())
+                (eraseCompleteScopedSelectionSet scopedSelections)
   | depth, execParent, groundType, boolCase, [], _hobject,
     _hground, _hready, _hlookup, _hmerge, _happlies, _hagrees,
     _hsourceVars => by
@@ -668,23 +678,24 @@ theorem completeScopedFieldHead_lookupPair_of_semanticsReady_lookupValid
     (arguments : List Argument)
     (directives : List DirectiveApplication)
     (selectionSet : List Selection)
-    (rest : List CompleteScopedSelection) :
-    completeScopedSelectionSetSemanticsReady schema execParent
-      ({ lookupParent := lookupParent,
-         selection :=
-          Selection.field responseName fieldName arguments directives
-            selectionSet }
-        :: rest) ->
-    completeScopedSelectionSetLookupValid schema
-      ({ lookupParent := lookupParent,
-         selection :=
-          Selection.field responseName fieldName arguments directives
-            selectionSet }
-        :: rest) ->
-      ∃ execFieldDefinition lookupFieldDefinition,
-        schema.lookupField execParent fieldName = some execFieldDefinition
-          ∧ schema.lookupField lookupParent fieldName =
-            some lookupFieldDefinition := by
+    (rest : List CompleteScopedSelection)
+    : completeScopedSelectionSetSemanticsReady schema execParent
+        ({
+            lookupParent := lookupParent,
+            selection :=
+              Selection.field responseName fieldName arguments directives selectionSet
+          }
+          :: rest)
+      -> completeScopedSelectionSetLookupValid schema
+          ({
+              lookupParent := lookupParent,
+              selection :=
+                Selection.field responseName fieldName arguments directives selectionSet
+            }
+            :: rest)
+      -> ∃ execFieldDefinition lookupFieldDefinition,
+          schema.lookupField execParent fieldName = some execFieldDefinition
+          ∧ schema.lookupField lookupParent fieldName = some lookupFieldDefinition := by
   intro hready hlookup
   have hheadReady :
       selectionSemanticsReady schema execParent
@@ -719,8 +730,6 @@ theorem completeScopedFieldHead_lookupPair_of_semanticsReady_lookupValid
     ⟨lookupFieldDefinition, hlookupField⟩
   exact ⟨execFieldDefinition, lookupFieldDefinition, hexecLookup,
     hlookupField⟩
-
-
 
 end CompleteNormalization
 

@@ -16,14 +16,14 @@ namespace GroundTypeNormalization
 
 def focusedSelectionSetTargetChildrenSupported
     (targetField : Name) (leftArguments rightArguments : List Argument)
-    (selectionSet : List Selection) (support : List Selection -> Prop) :
-    Prop :=
+    (selectionSet : List Selection) (support : List Selection -> Prop)
+    : Prop :=
   ∀ responseName arguments directives childSelectionSet,
-    Selection.field responseName targetField arguments directives
-        childSelectionSet ∈ selectionSet ->
-    (Argument.argumentsEquivalent arguments leftArguments
-      ∨ Argument.argumentsEquivalent arguments rightArguments) ->
-      support childSelectionSet
+    Selection.field responseName targetField arguments directives childSelectionSet
+      ∈ selectionSet
+    -> (Argument.argumentsEquivalent arguments leftArguments
+        ∨ Argument.argumentsEquivalent arguments rightArguments)
+    -> support childSelectionSet
 
 noncomputable def focusedSelectionSetTargetChildSelectionSets
     (targetField : Name) (leftArguments rightArguments : List Argument) :
@@ -48,13 +48,13 @@ noncomputable def focusedSelectionSetTargetChildSelectionSets
 
 theorem focusedSelectionSetTargetChildrenSupported_targetChildSelectionSets
     {targetField : Name} {leftArguments rightArguments : List Argument}
-    {selectionSet : List Selection} :
-    focusedSelectionSetTargetChildrenSupported targetField leftArguments
-      rightArguments selectionSet
-      (fun childSelectionSet =>
-        childSelectionSet ∈
-          focusedSelectionSetTargetChildSelectionSets targetField
-            leftArguments rightArguments selectionSet) := by
+    {selectionSet : List Selection}
+    : focusedSelectionSetTargetChildrenSupported targetField leftArguments
+        rightArguments selectionSet
+        (fun childSelectionSet =>
+          childSelectionSet
+          ∈ focusedSelectionSetTargetChildSelectionSets targetField
+              leftArguments rightArguments selectionSet) := by
   intro responseName arguments directives childSelectionSet hmem harguments
   induction selectionSet with
   | nil =>
@@ -83,47 +83,48 @@ theorem focusedSelectionSetTargetChildrenSupported_targetChildSelectionSets
 
 noncomputable def focusedSplitTargetChildSelectionSets
     (targetField : Name) (leftArguments rightArguments : List Argument)
-    (leftPref rightPref leftSuffix rightSuffix : List Selection) :
-    List (List Selection) :=
+    (leftPref rightPref leftSuffix rightSuffix : List Selection)
+    : List (List Selection) :=
   focusedSelectionSetTargetChildSelectionSets targetField leftArguments
     rightArguments leftPref
   ++ focusedSelectionSetTargetChildSelectionSets targetField leftArguments
-    rightArguments rightPref
+      rightArguments rightPref
   ++ focusedSelectionSetTargetChildSelectionSets targetField leftArguments
-    rightArguments leftSuffix
+      rightArguments leftSuffix
   ++ focusedSelectionSetTargetChildSelectionSets targetField leftArguments
-    rightArguments rightSuffix
+      rightArguments rightSuffix
 
 noncomputable def focusedSupportTargetChildSelectionSets
-    (targetField : Name) (leftArguments rightArguments : List Argument) :
-    List (List Selection) -> List (List Selection)
+    (targetField : Name) (leftArguments rightArguments : List Argument)
+    : List (List Selection) -> List (List Selection)
   | [] => []
   | selectionSet :: rest =>
       focusedSelectionSetTargetChildSelectionSets targetField leftArguments
         rightArguments selectionSet
       ++ focusedSupportTargetChildSelectionSets targetField leftArguments
-        rightArguments rest
+          rightArguments rest
 
 noncomputable def focusedObjectChildSupportSelectionSets
     (targetField : Name) (leftArguments rightArguments : List Argument)
     (leftPref rightPref leftSuffix rightSuffix : List Selection)
-    (supportSelectionSets : List (List Selection)) : List (List Selection) :=
+    (supportSelectionSets : List (List Selection))
+    : List (List Selection) :=
   focusedSplitTargetChildSelectionSets targetField leftArguments
     rightArguments leftPref rightPref leftSuffix rightSuffix
   ++ focusedSupportTargetChildSelectionSets targetField leftArguments
-    rightArguments supportSelectionSets
+      rightArguments supportSelectionSets
 
 theorem focusedSelectionSetTargetChildSelectionSets_subset_supportTargetChildSelectionSets_of_mem
     {targetField : Name} {leftArguments rightArguments : List Argument}
     {supportSelectionSets : List (List Selection)}
-    {selectionSet childSelectionSet : List Selection} :
-    selectionSet ∈ supportSelectionSets ->
-    childSelectionSet ∈
-      focusedSelectionSetTargetChildSelectionSets targetField
-        leftArguments rightArguments selectionSet ->
-    childSelectionSet ∈
-      focusedSupportTargetChildSelectionSets targetField leftArguments
-        rightArguments supportSelectionSets := by
+    {selectionSet childSelectionSet : List Selection}
+    : selectionSet ∈ supportSelectionSets
+      -> childSelectionSet
+          ∈ focusedSelectionSetTargetChildSelectionSets targetField
+              leftArguments rightArguments selectionSet
+      -> childSelectionSet
+          ∈ focusedSupportTargetChildSelectionSets targetField leftArguments
+              rightArguments supportSelectionSets := by
   intro hselection hchild
   induction supportSelectionSets with
   | nil =>
@@ -139,14 +140,14 @@ theorem focusedSelectionSetTargetChildSelectionSets_subset_supportTargetChildSel
 theorem focusedSelectionSetTargetChildrenSupported_supportTargetChildSelectionSets
     {targetField : Name} {leftArguments rightArguments : List Argument}
     {supportSelectionSets : List (List Selection)}
-    {selectionSet : List Selection} :
-    selectionSet ∈ supportSelectionSets ->
-    focusedSelectionSetTargetChildrenSupported targetField leftArguments
-      rightArguments selectionSet
-      (fun childSelectionSet =>
-        childSelectionSet ∈
-          focusedSupportTargetChildSelectionSets targetField leftArguments
-            rightArguments supportSelectionSets) := by
+    {selectionSet : List Selection}
+    : selectionSet ∈ supportSelectionSets
+      -> focusedSelectionSetTargetChildrenSupported targetField leftArguments
+          rightArguments selectionSet
+          (fun childSelectionSet =>
+            childSelectionSet
+            ∈ focusedSupportTargetChildSelectionSets targetField leftArguments
+                rightArguments supportSelectionSets) := by
   intro hselection responseName arguments directives childSelectionSet hmem
     harguments
   have htarget :=
@@ -163,15 +164,16 @@ theorem focusedSelectionSetTargetChildrenSupported_supportTargetChildSelectionSe
 
 theorem focusedSelectionSetTargetChildSelectionSets_mem
     {targetField : Name} {leftArguments rightArguments : List Argument}
-    {selectionSet : List Selection} {childSelectionSet : List Selection} :
-    childSelectionSet ∈
-      focusedSelectionSetTargetChildSelectionSets targetField leftArguments
-        rightArguments selectionSet ->
-      ∃ responseName arguments directives,
-        Selection.field responseName targetField arguments directives
-          childSelectionSet ∈ selectionSet
-        ∧ (Argument.argumentsEquivalent arguments leftArguments
-          ∨ Argument.argumentsEquivalent arguments rightArguments) := by
+    {selectionSet : List Selection} {childSelectionSet : List Selection}
+    : childSelectionSet
+        ∈ focusedSelectionSetTargetChildSelectionSets targetField leftArguments
+            rightArguments selectionSet
+      -> ∃ responseName arguments directives,
+          Selection.field responseName targetField arguments directives
+              childSelectionSet
+            ∈ selectionSet
+          ∧ (Argument.argumentsEquivalent arguments leftArguments
+              ∨ Argument.argumentsEquivalent arguments rightArguments) := by
   intro hmem
   induction selectionSet with
   | nil =>
@@ -215,21 +217,20 @@ theorem focusedSelectionSetTargetChildSelectionSets_child_valid_free_normal
     {parentType targetField returnType : Name}
     {leftArguments rightArguments : List Argument}
     {selectionSet childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    schema.lookupField parentType targetField = some fieldDefinition ->
-    fieldDefinition.outputType.namedType = returnType ->
-    schema.isCompositeType fieldDefinition.outputType.namedType ->
-    childSelectionSet ∈
-      focusedSelectionSetTargetChildSelectionSets targetField leftArguments
-        rightArguments selectionSet ->
-      Validation.selectionSetValid schema variableDefinitions returnType
-        childSelectionSet
-        ∧ selectionSetDirectiveFree childSelectionSet
-        ∧ selectionSetNormal schema returnType childSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> schema.lookupField parentType targetField = some fieldDefinition
+      -> fieldDefinition.outputType.namedType = returnType
+      -> schema.isCompositeType fieldDefinition.outputType.namedType
+      -> childSelectionSet
+          ∈ focusedSelectionSetTargetChildSelectionSets targetField leftArguments
+              rightArguments selectionSet
+      -> Validation.selectionSetValid schema variableDefinitions returnType
+            childSelectionSet
+          ∧ selectionSetDirectiveFree childSelectionSet
+          ∧ selectionSetNormal schema returnType childSelectionSet := by
   intro hvalid hfree hnormal hlookup hreturnType hcomposite hmem
   rcases focusedSelectionSetTargetChildSelectionSets_mem hmem with
     ⟨responseName, arguments, directives, hfieldMem, _harguments⟩
@@ -264,25 +265,26 @@ theorem focusedSelectionSetTargetChildSelectionSets_child_valid_free_normal_of_f
     {parentType targetField returnType : Name}
     {leftArguments rightArguments : List Argument}
     {whole selectionSet childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    (∀ responseName arguments directives childSelectionSet,
-      Selection.field responseName targetField arguments directives
-        childSelectionSet ∈ selectionSet ->
-        Selection.field responseName targetField arguments directives
-          childSelectionSet ∈ whole) ->
-    Validation.selectionSetValid schema variableDefinitions parentType whole ->
-    selectionSetDirectiveFree whole ->
-    selectionSetNormal schema parentType whole ->
-    schema.lookupField parentType targetField = some fieldDefinition ->
-    fieldDefinition.outputType.namedType = returnType ->
-    schema.isCompositeType fieldDefinition.outputType.namedType ->
-    childSelectionSet ∈
-      focusedSelectionSetTargetChildSelectionSets targetField leftArguments
-        rightArguments selectionSet ->
-      Validation.selectionSetValid schema variableDefinitions returnType
-        childSelectionSet
-        ∧ selectionSetDirectiveFree childSelectionSet
-        ∧ selectionSetNormal schema returnType childSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : (∀ responseName arguments directives childSelectionSet,
+        Selection.field responseName targetField arguments directives childSelectionSet
+          ∈ selectionSet
+        -> Selection.field responseName targetField arguments directives
+              childSelectionSet
+            ∈ whole)
+      -> Validation.selectionSetValid schema variableDefinitions parentType whole
+      -> selectionSetDirectiveFree whole
+      -> selectionSetNormal schema parentType whole
+      -> schema.lookupField parentType targetField = some fieldDefinition
+      -> fieldDefinition.outputType.namedType = returnType
+      -> schema.isCompositeType fieldDefinition.outputType.namedType
+      -> childSelectionSet
+          ∈ focusedSelectionSetTargetChildSelectionSets targetField leftArguments
+              rightArguments selectionSet
+      -> Validation.selectionSetValid schema variableDefinitions returnType
+            childSelectionSet
+          ∧ selectionSetDirectiveFree childSelectionSet
+          ∧ selectionSetNormal schema returnType childSelectionSet := by
   intro hfieldSubset hvalid hfree hnormal hlookup hreturnType hcomposite
     hmem
   rcases focusedSelectionSetTargetChildSelectionSets_mem hmem with
@@ -324,25 +326,25 @@ theorem focusedSupportTargetChildSelectionSets_child_exists_valid_free_normal
     {leftArguments rightArguments : List Argument}
     {supportSelectionSets : List (List Selection)}
     {childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    (∀ supportSelectionSet,
-      supportSelectionSet ∈ supportSelectionSets ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            supportSelectionSet
-          ∧ selectionSetDirectiveFree supportSelectionSet
-          ∧ selectionSetNormal schema parentType supportSelectionSet) ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    fieldDefinition.outputType.namedType = returnType ->
-    schema.isCompositeType fieldDefinition.outputType.namedType ->
-    childSelectionSet ∈
-      focusedSupportTargetChildSelectionSets fieldName leftArguments
-        rightArguments supportSelectionSets ->
-      ∃ variableDefinitions,
-        Validation.selectionSetValid schema variableDefinitions returnType
-          childSelectionSet
-        ∧ selectionSetDirectiveFree childSelectionSet
-        ∧ selectionSetNormal schema returnType childSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : (∀ supportSelectionSet,
+        supportSelectionSet ∈ supportSelectionSets
+        -> ∃ variableDefinitions,
+            Validation.selectionSetValid schema variableDefinitions parentType
+              supportSelectionSet
+            ∧ selectionSetDirectiveFree supportSelectionSet
+            ∧ selectionSetNormal schema parentType supportSelectionSet)
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> fieldDefinition.outputType.namedType = returnType
+      -> schema.isCompositeType fieldDefinition.outputType.namedType
+      -> childSelectionSet
+          ∈ focusedSupportTargetChildSelectionSets fieldName leftArguments
+              rightArguments supportSelectionSets
+      -> ∃ variableDefinitions,
+          Validation.selectionSetValid schema variableDefinitions returnType
+            childSelectionSet
+          ∧ selectionSetDirectiveFree childSelectionSet
+          ∧ selectionSetNormal schema returnType childSelectionSet := by
   intro hsupportValid hlookup hreturnType hcomposite hmem
   induction supportSelectionSets with
   | nil =>
@@ -384,38 +386,50 @@ theorem focusedSplitTargetChildSelectionSets_child_exists_valid_free_normal
     {parentType returnType responseName fieldName : Name}
     {leftArguments rightArguments : List Argument}
     {leftChildSelectionSet rightChildSelectionSet
-      leftPref rightPref leftSuffix rightSuffix childSelectionSet :
-        List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetDirectiveFree
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetDirectiveFree
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetNormal schema parentType
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetNormal schema parentType
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    fieldDefinition.outputType.namedType = returnType ->
-    schema.isCompositeType fieldDefinition.outputType.namedType ->
-    childSelectionSet ∈
-      focusedSplitTargetChildSelectionSets fieldName leftArguments
-        rightArguments leftPref rightPref leftSuffix rightSuffix ->
-      ∃ variableDefinitions,
-        Validation.selectionSetValid schema variableDefinitions returnType
-          childSelectionSet
-        ∧ selectionSetDirectiveFree childSelectionSet
-        ∧ selectionSetNormal schema returnType childSelectionSet := by
+      leftPref rightPref leftSuffix rightSuffix childSelectionSet
+      : List Selection}
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema leftVariableDefinitions parentType
+        (leftPref
+          ++ Selection.field responseName fieldName leftArguments []
+                leftChildSelectionSet
+              :: leftSuffix)
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetDirectiveFree
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetDirectiveFree
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetNormal schema parentType
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetNormal schema parentType
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> fieldDefinition.outputType.namedType = returnType
+      -> schema.isCompositeType fieldDefinition.outputType.namedType
+      -> childSelectionSet
+          ∈ focusedSplitTargetChildSelectionSets fieldName leftArguments
+              rightArguments leftPref rightPref leftSuffix rightSuffix
+      -> ∃ variableDefinitions,
+          Validation.selectionSetValid schema variableDefinitions returnType
+            childSelectionSet
+          ∧ selectionSetDirectiveFree childSelectionSet
+          ∧ selectionSetNormal schema returnType childSelectionSet := by
   intro hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hlookup hreturnType hcomposite hmem
   simp [focusedSplitTargetChildSelectionSets] at hmem
@@ -521,47 +535,59 @@ theorem focusedObjectChildSupportSelectionSets_child_exists_valid_free_normal
     {parentType returnType responseName fieldName : Name}
     {leftArguments rightArguments : List Argument}
     {leftChildSelectionSet rightChildSelectionSet
-      leftPref rightPref leftSuffix rightSuffix childSelectionSet :
-        List Selection}
+      leftPref rightPref leftSuffix rightSuffix childSelectionSet
+      : List Selection}
     {supportSelectionSets : List (List Selection)}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetDirectiveFree
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetDirectiveFree
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetNormal schema parentType
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetNormal schema parentType
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    (∀ supportSelectionSet,
-      supportSelectionSet ∈ supportSelectionSets ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            supportSelectionSet
-          ∧ selectionSetDirectiveFree supportSelectionSet
-          ∧ selectionSetNormal schema parentType supportSelectionSet) ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    fieldDefinition.outputType.namedType = returnType ->
-    schema.isCompositeType fieldDefinition.outputType.namedType ->
-    childSelectionSet ∈
-      focusedObjectChildSupportSelectionSets fieldName leftArguments
-        rightArguments leftPref rightPref leftSuffix rightSuffix
-        supportSelectionSets ->
-      ∃ variableDefinitions,
-        Validation.selectionSetValid schema variableDefinitions returnType
-          childSelectionSet
-        ∧ selectionSetDirectiveFree childSelectionSet
-        ∧ selectionSetNormal schema returnType childSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema leftVariableDefinitions parentType
+        (leftPref
+          ++ Selection.field responseName fieldName leftArguments []
+                leftChildSelectionSet
+              :: leftSuffix)
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetDirectiveFree
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetDirectiveFree
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetNormal schema parentType
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetNormal schema parentType
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> (∀ supportSelectionSet,
+            supportSelectionSet ∈ supportSelectionSets
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  supportSelectionSet
+                ∧ selectionSetDirectiveFree supportSelectionSet
+                ∧ selectionSetNormal schema parentType supportSelectionSet)
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> fieldDefinition.outputType.namedType = returnType
+      -> schema.isCompositeType fieldDefinition.outputType.namedType
+      -> childSelectionSet
+          ∈ focusedObjectChildSupportSelectionSets fieldName leftArguments
+              rightArguments leftPref rightPref leftSuffix rightSuffix
+              supportSelectionSets
+      -> ∃ variableDefinitions,
+          Validation.selectionSetValid schema variableDefinitions returnType
+            childSelectionSet
+          ∧ selectionSetDirectiveFree childSelectionSet
+          ∧ selectionSetNormal schema returnType childSelectionSet := by
   intro hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hsupportValid hlookup hreturnType hcomposite hmem
   simp [focusedObjectChildSupportSelectionSets] at hmem
@@ -593,177 +619,197 @@ theorem focusedObjectChildSupportSelectionSets_child_exists_valid_free_normal
         hsupportValid hlookup hreturnType hcomposite hsupport
 
 theorem not_selectionSetsDataEquivalent_of_object_child_contextualRuntimeDiff_fieldCases_withFuelGe_focused
-    {schema : Schema}
-    (rootSelectionSet : List Selection)
+    {schema : Schema} (rootSelectionSet : List Selection)
     {parentType returnType responseName fieldName runtimeType : Name}
     {leftArguments rightArguments : List Argument}
     {leftChildSelectionSet rightChildSelectionSet
-      leftPref rightPref leftSuffix rightSuffix : List Selection}
-    {fieldDefinition : FieldDefinition}
-    {support : List Selection -> Prop} {minFuel : Nat} :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    fieldDefinition.outputType.namedType = returnType ->
-    selectionSetDirectiveFree
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetDirectiveFree
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetNormal schema parentType
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetNormal schema parentType
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    objectTypeNameBool schema parentType = true ->
-    focusedSelectionSetTargetChildrenSupported fieldName leftArguments
-      rightArguments leftPref support ->
-    focusedSelectionSetTargetChildrenSupported fieldName leftArguments
-      rightArguments rightPref support ->
-    focusedSelectionSetTargetChildrenSupported fieldName leftArguments
-      rightArguments leftSuffix support ->
-    focusedSelectionSetTargetChildrenSupported fieldName leftArguments
-      rightArguments rightSuffix support ->
-    (∀ {ObjectRef : Type} (base : Execution.Resolvers ObjectRef)
-        (variableValues : Execution.VariableValues) (fuel : Nat)
-        (childRuntimeType : Name) (ref : ObjectRef),
-      schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-          childRuntimeType = true ->
-      minFuel ≤ fuel ->
-      let resolvers :=
-        fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (parentObjectProbeFieldResolvers base parentType fieldName
-            childRuntimeType ref fieldDefinition.outputType)
-          parentType fieldName fieldName leftArguments rightArguments
-      let parentFuel := fuel + leafProbeFuel fieldDefinition.outputType + 1
-      let parentSource :=
-        projectionRootResolverValue
-          (.object parentType (none : Option ObjectRef))
-      ∀ otherResponseName otherFieldName arguments directives childSelectionSet,
-        Selection.field otherResponseName otherFieldName arguments directives
-            childSelectionSet ∈ leftPref ->
-        ¬ fieldPairProjectionTarget parentType fieldName fieldName
-            leftArguments rightArguments parentType otherFieldName
-            arguments ->
-          ∃ responseValue fieldErrors,
-            Execution.executeField schema resolvers variableValues parentFuel
-              parentSource otherResponseName
-              [{
-                parentType := parentType,
-                responseName := otherResponseName,
-                fieldName := otherFieldName,
-                arguments := arguments,
-                selectionSet := childSelectionSet
-              }]
-            =
-            .ok ([(otherResponseName, responseValue)], fieldErrors)) ->
-    (∀ {ObjectRef : Type} (base : Execution.Resolvers ObjectRef)
-        (variableValues : Execution.VariableValues) (fuel : Nat)
-        (childRuntimeType : Name) (ref : ObjectRef),
-      schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-          childRuntimeType = true ->
-      minFuel ≤ fuel ->
-      let resolvers :=
-        fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (parentObjectProbeFieldResolvers base parentType fieldName
-            childRuntimeType ref fieldDefinition.outputType)
-          parentType fieldName fieldName leftArguments rightArguments
-      let parentFuel := fuel + leafProbeFuel fieldDefinition.outputType + 1
-      let parentSource :=
-        projectionRootResolverValue
-          (.object parentType (none : Option ObjectRef))
-      ∀ otherResponseName otherFieldName arguments directives childSelectionSet,
-        Selection.field otherResponseName otherFieldName arguments directives
-            childSelectionSet ∈ rightPref ->
-        ¬ fieldPairProjectionTarget parentType fieldName fieldName
-            leftArguments rightArguments parentType otherFieldName
-            arguments ->
-          ∃ responseValue fieldErrors,
-            Execution.executeField schema resolvers variableValues parentFuel
-              parentSource otherResponseName
-              [{
-                parentType := parentType,
-                responseName := otherResponseName,
-                fieldName := otherFieldName,
-                arguments := arguments,
-                selectionSet := childSelectionSet
-              }]
-            =
-            .ok ([(otherResponseName, responseValue)], fieldErrors)) ->
-    (∀ {ObjectRef : Type} (base : Execution.Resolvers ObjectRef)
-        (variableValues : Execution.VariableValues) (fuel : Nat)
-        (childRuntimeType : Name) (ref : ObjectRef),
-      schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-          childRuntimeType = true ->
-      minFuel ≤ fuel ->
-      let resolvers :=
-        fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (parentObjectProbeFieldResolvers base parentType fieldName
-            childRuntimeType ref fieldDefinition.outputType)
-          parentType fieldName fieldName leftArguments rightArguments
-      let parentFuel := fuel + leafProbeFuel fieldDefinition.outputType + 1
-      let parentSource :=
-        projectionRootResolverValue
-          (.object parentType (none : Option ObjectRef))
-      ∀ otherResponseName otherFieldName arguments directives childSelectionSet,
-        Selection.field otherResponseName otherFieldName arguments directives
-            childSelectionSet ∈ leftSuffix ->
-        ¬ fieldPairProjectionTarget parentType fieldName fieldName
-            leftArguments rightArguments parentType otherFieldName
-            arguments ->
-          ∃ responseValue fieldErrors,
-            Execution.executeField schema resolvers variableValues parentFuel
-              parentSource otherResponseName
-              [{
-                parentType := parentType,
-                responseName := otherResponseName,
-                fieldName := otherFieldName,
-                arguments := arguments,
-                selectionSet := childSelectionSet
-              }]
-            =
-            .ok ([(otherResponseName, responseValue)], fieldErrors)) ->
-    (∀ {ObjectRef : Type} (base : Execution.Resolvers ObjectRef)
-        (variableValues : Execution.VariableValues) (fuel : Nat)
-        (childRuntimeType : Name) (ref : ObjectRef),
-      schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-          childRuntimeType = true ->
-      minFuel ≤ fuel ->
-      let resolvers :=
-        fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (parentObjectProbeFieldResolvers base parentType fieldName
-            childRuntimeType ref fieldDefinition.outputType)
-          parentType fieldName fieldName leftArguments rightArguments
-      let parentFuel := fuel + leafProbeFuel fieldDefinition.outputType + 1
-      let parentSource :=
-        projectionRootResolverValue
-          (.object parentType (none : Option ObjectRef))
-      ∀ otherResponseName otherFieldName arguments directives childSelectionSet,
-        Selection.field otherResponseName otherFieldName arguments directives
-            childSelectionSet ∈ rightSuffix ->
-        ¬ fieldPairProjectionTarget parentType fieldName fieldName
-            leftArguments rightArguments parentType otherFieldName
-            arguments ->
-          ∃ responseValue fieldErrors,
-            Execution.executeField schema resolvers variableValues parentFuel
-              parentSource otherResponseName
-              [{
-                parentType := parentType,
-                responseName := otherResponseName,
-                fieldName := otherFieldName,
-                arguments := arguments,
-                selectionSet := childSelectionSet
-              }]
-            =
-            .ok ([(otherResponseName, responseValue)], fieldErrors)) ->
-    selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema returnType
-      runtimeType leftChildSelectionSet rightChildSelectionSet support
-      minFuel ->
-      ¬ selectionSetsDataEquivalent schema parentType
-        (leftPref ++ Selection.field responseName fieldName leftArguments []
-          leftChildSelectionSet :: leftSuffix)
-        (rightPref ++ Selection.field responseName fieldName rightArguments []
-          rightChildSelectionSet :: rightSuffix) := by
+      leftPref rightPref leftSuffix rightSuffix
+      : List Selection}
+    {fieldDefinition : FieldDefinition} {support : List Selection -> Prop}
+    {minFuel : Nat}
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> fieldDefinition.outputType.namedType = returnType
+      -> selectionSetDirectiveFree
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetDirectiveFree
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetNormal schema parentType
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetNormal schema parentType
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> objectTypeNameBool schema parentType = true
+      -> focusedSelectionSetTargetChildrenSupported fieldName leftArguments
+          rightArguments leftPref support
+      -> focusedSelectionSetTargetChildrenSupported fieldName leftArguments
+          rightArguments rightPref support
+      -> focusedSelectionSetTargetChildrenSupported fieldName leftArguments
+          rightArguments leftSuffix support
+      -> focusedSelectionSetTargetChildrenSupported fieldName leftArguments
+          rightArguments rightSuffix support
+      -> (∀ {ObjectRef : Type} (base : Execution.Resolvers ObjectRef)
+              (variableValues : Execution.VariableValues) (fuel : Nat)
+              (childRuntimeType : Name) (ref : ObjectRef),
+            schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
+                childRuntimeType
+              = true
+            -> minFuel ≤ fuel
+            ->  let resolvers :=
+                  fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (parentObjectProbeFieldResolvers base parentType fieldName
+                      childRuntimeType ref fieldDefinition.outputType)
+                    parentType fieldName fieldName leftArguments rightArguments
+                let parentFuel := fuel + leafProbeFuel fieldDefinition.outputType + 1
+                let parentSource :=
+                  projectionRootResolverValue
+                    (.object parentType (none : Option ObjectRef))
+                ∀ otherResponseName otherFieldName arguments directives
+                    childSelectionSet,
+                  Selection.field otherResponseName otherFieldName arguments directives
+                      childSelectionSet
+                    ∈ leftPref
+                  -> ¬ fieldPairProjectionTarget parentType fieldName fieldName
+                        leftArguments rightArguments parentType otherFieldName
+                        arguments
+                  -> ∃ responseValue fieldErrors,
+                      Execution.executeField schema resolvers variableValues parentFuel
+                        parentSource otherResponseName
+                        [{
+                          parentType := parentType,
+                          responseName := otherResponseName,
+                          fieldName := otherFieldName,
+                          arguments := arguments,
+                          selectionSet := childSelectionSet
+                        }]
+                      = .ok ([(otherResponseName, responseValue)], fieldErrors))
+      -> (∀ {ObjectRef : Type} (base : Execution.Resolvers ObjectRef)
+              (variableValues : Execution.VariableValues) (fuel : Nat)
+              (childRuntimeType : Name) (ref : ObjectRef),
+            schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
+                childRuntimeType
+              = true
+            -> minFuel ≤ fuel
+            ->  let resolvers :=
+                  fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (parentObjectProbeFieldResolvers base parentType fieldName
+                      childRuntimeType ref fieldDefinition.outputType)
+                    parentType fieldName fieldName leftArguments rightArguments
+                let parentFuel := fuel + leafProbeFuel fieldDefinition.outputType + 1
+                let parentSource :=
+                  projectionRootResolverValue
+                    (.object parentType (none : Option ObjectRef))
+                ∀ otherResponseName otherFieldName arguments directives
+                    childSelectionSet,
+                  Selection.field otherResponseName otherFieldName arguments directives
+                      childSelectionSet
+                    ∈ rightPref
+                  -> ¬ fieldPairProjectionTarget parentType fieldName fieldName
+                        leftArguments rightArguments parentType otherFieldName
+                        arguments
+                  -> ∃ responseValue fieldErrors,
+                      Execution.executeField schema resolvers variableValues parentFuel
+                        parentSource otherResponseName
+                        [{
+                          parentType := parentType,
+                          responseName := otherResponseName,
+                          fieldName := otherFieldName,
+                          arguments := arguments,
+                          selectionSet := childSelectionSet
+                        }]
+                      = .ok ([(otherResponseName, responseValue)], fieldErrors))
+      -> (∀ {ObjectRef : Type} (base : Execution.Resolvers ObjectRef)
+              (variableValues : Execution.VariableValues) (fuel : Nat)
+              (childRuntimeType : Name) (ref : ObjectRef),
+            schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
+                childRuntimeType
+              = true
+            -> minFuel ≤ fuel
+            ->  let resolvers :=
+                  fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (parentObjectProbeFieldResolvers base parentType fieldName
+                      childRuntimeType ref fieldDefinition.outputType)
+                    parentType fieldName fieldName leftArguments rightArguments
+                let parentFuel := fuel + leafProbeFuel fieldDefinition.outputType + 1
+                let parentSource :=
+                  projectionRootResolverValue
+                    (.object parentType (none : Option ObjectRef))
+                ∀ otherResponseName otherFieldName arguments directives
+                    childSelectionSet,
+                  Selection.field otherResponseName otherFieldName arguments directives
+                      childSelectionSet
+                    ∈ leftSuffix
+                  -> ¬ fieldPairProjectionTarget parentType fieldName fieldName
+                        leftArguments rightArguments parentType otherFieldName
+                        arguments
+                  -> ∃ responseValue fieldErrors,
+                      Execution.executeField schema resolvers variableValues parentFuel
+                        parentSource otherResponseName
+                        [{
+                          parentType := parentType,
+                          responseName := otherResponseName,
+                          fieldName := otherFieldName,
+                          arguments := arguments,
+                          selectionSet := childSelectionSet
+                        }]
+                      = .ok ([(otherResponseName, responseValue)], fieldErrors))
+      -> (∀ {ObjectRef : Type} (base : Execution.Resolvers ObjectRef)
+              (variableValues : Execution.VariableValues) (fuel : Nat)
+              (childRuntimeType : Name) (ref : ObjectRef),
+            schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
+                childRuntimeType
+              = true
+            -> minFuel ≤ fuel
+            ->  let resolvers :=
+                  fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (parentObjectProbeFieldResolvers base parentType fieldName
+                      childRuntimeType ref fieldDefinition.outputType)
+                    parentType fieldName fieldName leftArguments rightArguments
+                let parentFuel := fuel + leafProbeFuel fieldDefinition.outputType + 1
+                let parentSource :=
+                  projectionRootResolverValue
+                    (.object parentType (none : Option ObjectRef))
+                ∀ otherResponseName otherFieldName arguments directives
+                    childSelectionSet,
+                  Selection.field otherResponseName otherFieldName arguments directives
+                      childSelectionSet
+                    ∈ rightSuffix
+                  -> ¬ fieldPairProjectionTarget parentType fieldName fieldName
+                        leftArguments rightArguments parentType otherFieldName
+                        arguments
+                  -> ∃ responseValue fieldErrors,
+                      Execution.executeField schema resolvers variableValues parentFuel
+                        parentSource otherResponseName
+                        [{
+                          parentType := parentType,
+                          responseName := otherResponseName,
+                          fieldName := otherFieldName,
+                          arguments := arguments,
+                          selectionSet := childSelectionSet
+                        }]
+                      = .ok ([(otherResponseName, responseValue)], fieldErrors))
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema returnType
+          runtimeType leftChildSelectionSet rightChildSelectionSet support
+          minFuel
+      -> ¬ selectionSetsDataEquivalent schema parentType
+            (leftPref
+              ++ Selection.field responseName fieldName leftArguments []
+                    leftChildSelectionSet
+                  :: leftSuffix)
+            (rightPref
+              ++ Selection.field responseName fieldName rightArguments []
+                    rightChildSelectionSet
+                  :: rightSuffix) := by
   intro hlookup hreturnType hleftFree hrightFree hleftNormal hrightNormal
     hparentObject hleftPrefSupported hrightPrefSupported
     hleftSuffixSupported hrightSuffixSupported hleftPrefOther
@@ -920,52 +966,72 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_child_contextualR
     {parentType returnType responseName fieldName runtimeType : Name}
     {leftArguments rightArguments : List Argument}
     {leftChildSelectionSet rightChildSelectionSet
-      leftPref rightPref leftSuffix rightSuffix : List Selection}
-    {fieldDefinition : FieldDefinition}
-    {support : List Selection -> Prop} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    fieldDefinition.outputType.namedType = returnType ->
-    selectionSetDirectiveFree
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetDirectiveFree
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetNormal schema parentType
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetNormal schema parentType
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    objectTypeNameBool schema parentType = true ->
-    focusedSelectionSetTargetChildrenSupported fieldName leftArguments
-      rightArguments leftPref support ->
-    focusedSelectionSetTargetChildrenSupported fieldName leftArguments
-      rightArguments rightPref support ->
-    focusedSelectionSetTargetChildrenSupported fieldName leftArguments
-      rightArguments leftSuffix support ->
-    focusedSelectionSetTargetChildrenSupported fieldName leftArguments
-      rightArguments rightSuffix support ->
-    selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema returnType
-      runtimeType leftChildSelectionSet rightChildSelectionSet support
-      (selectionSetDeepProbeFuel schema parentType
-        ((leftPref ++ Selection.field responseName fieldName leftArguments []
-            leftChildSelectionSet :: leftSuffix) ++
-          (rightPref ++ Selection.field responseName fieldName rightArguments []
-            rightChildSelectionSet :: rightSuffix))
-        - leafProbeFuel fieldDefinition.outputType) ->
-      ¬ selectionSetsDataEquivalent schema parentType
-        (leftPref ++ Selection.field responseName fieldName leftArguments []
-          leftChildSelectionSet :: leftSuffix)
-        (rightPref ++ Selection.field responseName fieldName rightArguments []
-          rightChildSelectionSet :: rightSuffix) := by
+      leftPref rightPref leftSuffix rightSuffix
+      : List Selection}
+    {fieldDefinition : FieldDefinition} {support : List Selection -> Prop}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> fieldDefinition.outputType.namedType = returnType
+      -> selectionSetDirectiveFree
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetDirectiveFree
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetNormal schema parentType
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetNormal schema parentType
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> objectTypeNameBool schema parentType = true
+      -> focusedSelectionSetTargetChildrenSupported fieldName leftArguments
+          rightArguments leftPref support
+      -> focusedSelectionSetTargetChildrenSupported fieldName leftArguments
+          rightArguments rightPref support
+      -> focusedSelectionSetTargetChildrenSupported fieldName leftArguments
+          rightArguments leftSuffix support
+      -> focusedSelectionSetTargetChildrenSupported fieldName leftArguments
+          rightArguments rightSuffix support
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema returnType
+          runtimeType leftChildSelectionSet rightChildSelectionSet support
+          (selectionSetDeepProbeFuel schema parentType
+              ((leftPref
+                  ++ Selection.field responseName fieldName leftArguments []
+                        leftChildSelectionSet
+                      :: leftSuffix)
+                ++ (rightPref
+                    ++ Selection.field responseName fieldName rightArguments []
+                          rightChildSelectionSet
+                        :: rightSuffix))
+            - leafProbeFuel fieldDefinition.outputType)
+      -> ¬ selectionSetsDataEquivalent schema parentType
+            (leftPref
+              ++ Selection.field responseName fieldName leftArguments []
+                    leftChildSelectionSet
+                  :: leftSuffix)
+            (rightPref
+              ++ Selection.field responseName fieldName rightArguments []
+                    rightChildSelectionSet
+                  :: rightSuffix) := by
   intro hschema hleftValid hrightValid hlookup hreturnType hleftFree
     hrightFree hleftNormal hrightNormal hparentObject hleftPrefSupported
     hrightPrefSupported hleftSuffixSupported hrightSuffixSupported hwitness
@@ -1202,47 +1268,68 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_child_contextualR
     {parentType returnType responseName fieldName runtimeType : Name}
     {leftArguments rightArguments : List Argument}
     {leftChildSelectionSet rightChildSelectionSet
-      leftPref rightPref leftSuffix rightSuffix : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    fieldDefinition.outputType.namedType = returnType ->
-    selectionSetDirectiveFree
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetDirectiveFree
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetNormal schema parentType
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetNormal schema parentType
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    objectTypeNameBool schema parentType = true ->
-    selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema returnType
-      runtimeType leftChildSelectionSet rightChildSelectionSet
-      (fun childSelectionSet =>
-        childSelectionSet ∈
-          focusedSplitTargetChildSelectionSets fieldName leftArguments
-            rightArguments leftPref rightPref leftSuffix rightSuffix)
-      (selectionSetDeepProbeFuel schema parentType
-        ((leftPref ++ Selection.field responseName fieldName leftArguments []
-            leftChildSelectionSet :: leftSuffix) ++
-          (rightPref ++ Selection.field responseName fieldName rightArguments []
-            rightChildSelectionSet :: rightSuffix))
-        - leafProbeFuel fieldDefinition.outputType) ->
-      ¬ selectionSetsDataEquivalent schema parentType
-        (leftPref ++ Selection.field responseName fieldName leftArguments []
-          leftChildSelectionSet :: leftSuffix)
-        (rightPref ++ Selection.field responseName fieldName rightArguments []
-          rightChildSelectionSet :: rightSuffix) := by
+      leftPref rightPref leftSuffix rightSuffix
+      : List Selection}
+    {fieldDefinition : FieldDefinition}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> fieldDefinition.outputType.namedType = returnType
+      -> selectionSetDirectiveFree
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetDirectiveFree
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetNormal schema parentType
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetNormal schema parentType
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> objectTypeNameBool schema parentType = true
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema returnType
+          runtimeType leftChildSelectionSet rightChildSelectionSet
+          (fun childSelectionSet =>
+            childSelectionSet
+            ∈ focusedSplitTargetChildSelectionSets fieldName leftArguments
+                rightArguments leftPref rightPref leftSuffix rightSuffix)
+          (selectionSetDeepProbeFuel schema parentType
+              ((leftPref
+                  ++ Selection.field responseName fieldName leftArguments []
+                        leftChildSelectionSet
+                      :: leftSuffix)
+                ++ (rightPref
+                    ++ Selection.field responseName fieldName rightArguments []
+                          rightChildSelectionSet
+                        :: rightSuffix))
+            - leafProbeFuel fieldDefinition.outputType)
+      -> ¬ selectionSetsDataEquivalent schema parentType
+            (leftPref
+              ++ Selection.field responseName fieldName leftArguments []
+                    leftChildSelectionSet
+                  :: leftSuffix)
+            (rightPref
+              ++ Selection.field responseName fieldName rightArguments []
+                    rightChildSelectionSet
+                  :: rightSuffix) := by
   intro hschema hleftValid hrightValid hlookup hreturnType hleftFree
     hrightFree hleftNormal hrightNormal hparentObject hwitness
   exact
@@ -1313,63 +1400,84 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_o
     {parentType returnType responseName fieldName runtimeType : Name}
     {leftArguments rightArguments : List Argument}
     {leftChildSelectionSet rightChildSelectionSet
-      leftPref rightPref leftSuffix rightSuffix : List Selection}
-    {supportSelectionSets : List (List Selection)}
-    {fieldDefinition : FieldDefinition} {minFuel : Nat} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    fieldDefinition.outputType.namedType = returnType ->
-    selectionSetDirectiveFree
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetDirectiveFree
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetNormal schema parentType
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetNormal schema parentType
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    objectTypeNameBool schema parentType = true ->
-    (∀ supportSelectionSet,
-      supportSelectionSet ∈ supportSelectionSets ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            supportSelectionSet
-          ∧ selectionSetDirectiveFree supportSelectionSet
-          ∧ selectionSetNormal schema parentType supportSelectionSet) ->
-    selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema returnType
-      runtimeType leftChildSelectionSet rightChildSelectionSet
-      (fun childSelectionSet =>
-        childSelectionSet ∈
-          focusedObjectChildSupportSelectionSets fieldName leftArguments
-            rightArguments leftPref rightPref leftSuffix rightSuffix
-            supportSelectionSets)
-      (max
-        (selectionSetDeepProbeFuel schema parentType
-          (List.flatten
-            ((leftPref ++ Selection.field responseName fieldName leftArguments []
-                leftChildSelectionSet :: leftSuffix)
-              :: (rightPref ++ Selection.field responseName fieldName
-                rightArguments [] rightChildSelectionSet :: rightSuffix)
-              :: supportSelectionSets))
-          - leafProbeFuel fieldDefinition.outputType)
-        (minFuel - leafProbeFuel fieldDefinition.outputType - 1)) ->
-      selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
-        parentType parentType
-        (leftPref ++ Selection.field responseName fieldName leftArguments []
-          leftChildSelectionSet :: leftSuffix)
-        (rightPref ++ Selection.field responseName fieldName rightArguments []
-          rightChildSelectionSet :: rightSuffix)
-        (fun selectionSet => selectionSet ∈ supportSelectionSets)
-        minFuel := by
+      leftPref rightPref leftSuffix rightSuffix
+      : List Selection}
+    {supportSelectionSets : List (List Selection)} {fieldDefinition : FieldDefinition}
+    {minFuel : Nat}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> fieldDefinition.outputType.namedType = returnType
+      -> selectionSetDirectiveFree
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetDirectiveFree
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetNormal schema parentType
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetNormal schema parentType
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> objectTypeNameBool schema parentType = true
+      -> (∀ supportSelectionSet,
+            supportSelectionSet ∈ supportSelectionSets
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  supportSelectionSet
+                ∧ selectionSetDirectiveFree supportSelectionSet
+                ∧ selectionSetNormal schema parentType supportSelectionSet)
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema returnType
+          runtimeType leftChildSelectionSet rightChildSelectionSet
+          (fun childSelectionSet =>
+            childSelectionSet
+            ∈ focusedObjectChildSupportSelectionSets fieldName leftArguments
+                rightArguments leftPref rightPref leftSuffix rightSuffix
+                supportSelectionSets)
+          (max
+            (selectionSetDeepProbeFuel schema parentType
+                (List.flatten
+                  ((leftPref
+                      ++ Selection.field responseName fieldName leftArguments []
+                            leftChildSelectionSet
+                          :: leftSuffix)
+                    :: (rightPref
+                        ++ Selection.field responseName fieldName
+                              rightArguments [] rightChildSelectionSet
+                            :: rightSuffix)
+                    :: supportSelectionSets))
+              - leafProbeFuel fieldDefinition.outputType)
+            (minFuel - leafProbeFuel fieldDefinition.outputType - 1))
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
+          parentType parentType
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+          (fun selectionSet => selectionSet ∈ supportSelectionSets)
+          minFuel := by
   intro hschema hleftValid hrightValid hlookup hreturnType hleftFree
     hrightFree hleftNormal hrightNormal hparentObject hsupportValid
     hwitness

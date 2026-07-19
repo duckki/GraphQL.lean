@@ -18,59 +18,58 @@ namespace GroundTypeNormalization
 
 def selectionSetObservableInScope
     (schema : Schema) (parentType : Name)
-    (selectionSet : List Selection) : Prop :=
-  selectionSet ≠ [] ->
-    selectionSetContainsTypeConditionFeasibleField schema [parentType]
-      selectionSet
+    (selectionSet : List Selection)
+    : Prop :=
+  selectionSet ≠ []
+  -> selectionSetContainsTypeConditionFeasibleField schema [parentType] selectionSet
 
 def selectionSetFeasibleInScope
     (schema : Schema) (parentType : Name)
-    (selectionSet : List Selection) : Prop :=
+    (selectionSet : List Selection)
+    : Prop :=
   selectionSetObservableInScope schema parentType selectionSet
-    ∧ selectionSetTypeConditionFeasible schema parentType [parentType]
+  ∧ selectionSetTypeConditionFeasible schema parentType [parentType]
       .allFields selectionSet
 
 theorem selectionSet_nonempty_of_containsTypeConditionFeasibleField
     {schema : Schema} {typeConditions : List Name}
-    {selectionSet : List Selection} :
-    selectionSetContainsTypeConditionFeasibleField schema typeConditions
-      selectionSet ->
-      selectionSet ≠ [] := by
+    {selectionSet : List Selection}
+    : selectionSetContainsTypeConditionFeasibleField schema typeConditions selectionSet
+      -> selectionSet ≠ [] := by
   intro hcontains hempty
   subst selectionSet
   cases hcontains
 
 theorem selectionSetContainsTypeConditionFeasibleField_of_feasible_nonempty
-    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
-    selectionSetFeasibleInScope schema parentType selectionSet ->
-    selectionSet ≠ [] ->
-      selectionSetContainsTypeConditionFeasibleField schema [parentType]
-        selectionSet := by
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    : selectionSetFeasibleInScope schema parentType selectionSet
+      -> selectionSet ≠ []
+      -> selectionSetContainsTypeConditionFeasibleField schema [parentType]
+          selectionSet := by
   intro hfeasible hnonempty
   exact hfeasible.1 hnonempty
 
 theorem selectionSetObservableInScope_of_contains
-    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
-    selectionSetContainsTypeConditionFeasibleField schema [parentType]
-      selectionSet ->
-      selectionSetObservableInScope schema parentType selectionSet := by
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    : selectionSetContainsTypeConditionFeasibleField schema [parentType] selectionSet
+      -> selectionSetObservableInScope schema parentType selectionSet := by
   intro hcontains _hnonempty
   exact hcontains
 
 theorem selectionSetObservableInScope_of_existsMode
-    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
-    selectionSetTypeConditionFeasible schema parentType [parentType]
-      .existsField selectionSet ->
-      selectionSetObservableInScope schema parentType selectionSet := by
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    : selectionSetTypeConditionFeasible schema parentType [parentType]
+        .existsField selectionSet
+      -> selectionSetObservableInScope schema parentType selectionSet := by
   intro hfeasible
   exact selectionSetObservableInScope_of_contains
     (selectionSetContainsTypeConditionFeasibleField_of_existsMode schema
       parentType [parentType] selectionSet hfeasible)
 
 theorem selectionSetFeasibleInScope_of_everyNormalizerScope
-    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
-    selectionSetsTypeConditionFeasibleInEveryNormalizerScope schema ->
-      selectionSetFeasibleInScope schema parentType selectionSet := by
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    : selectionSetsTypeConditionFeasibleInEveryNormalizerScope schema
+      -> selectionSetFeasibleInScope schema parentType selectionSet := by
   intro hfeasibleAll
   constructor
   · intro hnonempty
@@ -83,10 +82,10 @@ theorem selectionSetFeasibleInScope_of_everyNormalizerScope
       simp [selectionSetTypeConditionFeasible]
 
 theorem selectionSetFeasibleInScope_of_operationTypeConditionFeasible
-    {schema : Schema} {operation : Operation} :
-    operationTypeConditionFeasible schema operation ->
-      selectionSetFeasibleInScope schema operation.rootType
-        operation.selectionSet := by
+    {schema : Schema} {operation : Operation}
+    : operationTypeConditionFeasible schema operation
+      -> selectionSetFeasibleInScope schema operation.rootType
+          operation.selectionSet := by
   intro hfeasible
   exact
     ⟨selectionSetObservableInScope_of_existsMode hfeasible.1,
@@ -95,12 +94,12 @@ theorem selectionSetFeasibleInScope_of_operationTypeConditionFeasible
 theorem selectionSetTypeConditionFeasible_allFields_of_mem
     {schema : Schema} {parentType : Name}
     {typeConditions : List Name} {selectionSet : List Selection}
-    {selection : Selection} :
-    selectionSetTypeConditionFeasible schema parentType typeConditions
-      .allFields selectionSet ->
-    selection ∈ selectionSet ->
-      selectionTypeConditionFeasible schema parentType typeConditions
-        .allFields selection := by
+    {selection : Selection}
+    : selectionSetTypeConditionFeasible schema parentType typeConditions
+        .allFields selectionSet
+      -> selection ∈ selectionSet
+      -> selectionTypeConditionFeasible schema parentType typeConditions
+          .allFields selection := by
   intro hfeasible hmem
   induction selectionSet with
   | nil =>
@@ -118,17 +117,17 @@ theorem selectionSetTypeConditionFeasible_field_child_existsMode_of_mem
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    selectionSetTypeConditionFeasible schema parentType typeConditions
-      .allFields selectionSet ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ selectionSet ->
-    typeConditionStackFeasible schema typeConditions ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    childSelectionSet ≠ [] ->
-      selectionSetTypeConditionFeasible schema
-        fieldDefinition.outputType.namedType [fieldDefinition.outputType.namedType]
-        .existsField childSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : selectionSetTypeConditionFeasible schema parentType typeConditions
+        .allFields selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> typeConditionStackFeasible schema typeConditions
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> childSelectionSet ≠ []
+      -> selectionSetTypeConditionFeasible schema
+          fieldDefinition.outputType.namedType [fieldDefinition.outputType.namedType]
+          .existsField childSelectionSet := by
   intro hfeasible hmem hstack hlookup hnonempty
   have hfield :
       selectionTypeConditionFeasible schema parentType typeConditions
@@ -161,15 +160,15 @@ theorem selectionSetObservableInScope_field_child_of_mem
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    selectionSetTypeConditionFeasible schema parentType typeConditions
-      .allFields selectionSet ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ selectionSet ->
-    typeConditionStackFeasible schema typeConditions ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      selectionSetObservableInScope schema
-        fieldDefinition.outputType.namedType childSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : selectionSetTypeConditionFeasible schema parentType typeConditions
+        .allFields selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> typeConditionStackFeasible schema typeConditions
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> selectionSetObservableInScope schema
+          fieldDefinition.outputType.namedType childSelectionSet := by
   intro hfeasible hmem hstack hlookup hnonempty
   exact (selectionSetObservableInScope_of_existsMode
     (selectionSetTypeConditionFeasible_field_child_existsMode_of_mem
@@ -181,14 +180,14 @@ theorem selectionSetObservableInScope_field_child_of_feasible_mem
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    selectionSetFeasibleInScope schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    objectTypeNameBool schema parentType = true ->
-      selectionSetObservableInScope schema
-        fieldDefinition.outputType.namedType childSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : selectionSetFeasibleInScope schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> objectTypeNameBool schema parentType = true
+      -> selectionSetObservableInScope schema
+          fieldDefinition.outputType.namedType childSelectionSet := by
   intro hfeasible hmem hlookup hparentObject
   exact
     selectionSetObservableInScope_field_child_of_mem hfeasible.2 hmem
@@ -207,15 +206,15 @@ theorem selectionSetFeasibleInScope_object_field_child_of_mem
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    selectionSetFeasibleInScope schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    objectTypeNameBool schema parentType = true ->
-    objectTypeNameBool schema fieldDefinition.outputType.namedType = true ->
-      selectionSetFeasibleInScope schema fieldDefinition.outputType.namedType
-        childSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : selectionSetFeasibleInScope schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> objectTypeNameBool schema parentType = true
+      -> objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+      -> selectionSetFeasibleInScope schema fieldDefinition.outputType.namedType
+          childSelectionSet := by
   intro hfeasible hmem hlookup hparentObject hobject
   constructor
   · exact
@@ -254,16 +253,15 @@ theorem selectionSetTypeConditionFeasible_field_child_branch_of_feasible_mem
     {responseName fieldName runtimeType : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    selectionSetFeasibleInScope schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    objectTypeNameBool schema parentType = true ->
-    runtimeType ∈ schema.getPossibleTypes
-      fieldDefinition.outputType.namedType ->
-      selectionSetTypeConditionFeasible schema runtimeType [runtimeType]
-        .allFields childSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : selectionSetFeasibleInScope schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> objectTypeNameBool schema parentType = true
+      -> runtimeType ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType
+      -> selectionSetTypeConditionFeasible schema runtimeType [runtimeType]
+          .allFields childSelectionSet := by
   intro hfeasible hmem hlookup hparentObject hruntime
   have hfield :
       selectionTypeConditionFeasible schema parentType [parentType]
@@ -286,16 +284,16 @@ theorem selectionSetTypeConditionFeasible_field_child_branch_of_feasible_mem_boo
     {responseName fieldName runtimeType : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    selectionSetFeasibleInScope schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives childSelectionSet
-      ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    objectTypeNameBool schema parentType = true ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-      selectionSetTypeConditionFeasible schema runtimeType [runtimeType]
-        .allFields childSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : selectionSetFeasibleInScope schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> objectTypeNameBool schema parentType = true
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> selectionSetTypeConditionFeasible schema runtimeType [runtimeType]
+          .allFields childSelectionSet := by
   intro hfeasible hmem hlookup hparentObject hinclude
   exact
     selectionSetTypeConditionFeasible_field_child_branch_of_feasible_mem

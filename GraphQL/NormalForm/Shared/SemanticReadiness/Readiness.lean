@@ -9,41 +9,40 @@ namespace GraphQL
 
 namespace NormalForm
 
-
 mutual
-  def selectionSemanticsReady (schema : Schema)
-      (parentType : Name) : Selection -> Prop
+  def selectionSemanticsReady (schema : Schema) (parentType : Name) : Selection -> Prop
     | .field _responseName fieldName _arguments _directives selectionSet =>
         ∃ fieldDefinition,
           schema.lookupField parentType fieldName = some fieldDefinition
-            ∧ ∀ runtimeType,
+          ∧ ∀ runtimeType,
               schema.typeIncludesObjectBool
-                fieldDefinition.outputType.namedType runtimeType = true ->
-                selectionSetSemanticsReady schema runtimeType selectionSet
+                  fieldDefinition.outputType.namedType runtimeType
+                = true
+              -> selectionSetSemanticsReady schema runtimeType selectionSet
     | .inlineFragment none _directives selectionSet =>
         selectionSetSemanticsReady schema parentType selectionSet
     | .inlineFragment (some typeCondition) _directives selectionSet =>
         selectionSetLookupValid schema typeCondition selectionSet
-          ∧ (schema.typesOverlapBool parentType typeCondition = true ->
-            selectionSetSemanticsReady schema parentType selectionSet)
+        ∧ (schema.typesOverlapBool parentType typeCondition = true
+            -> selectionSetSemanticsReady schema parentType selectionSet)
 
   def selectionSetSemanticsReady (schema : Schema)
-      (parentType : Name) (selectionSet : List Selection) : Prop :=
-    ∀ selection, selection ∈ selectionSet ->
-      selectionSemanticsReady schema parentType selection
+      (parentType : Name) (selectionSet : List Selection)
+      : Prop :=
+    ∀ selection,
+      selection ∈ selectionSet -> selectionSemanticsReady schema parentType selection
 end
 
-theorem selectionSetSemanticsReady_nil (schema : Schema)
-    (parentType : Name) :
-    selectionSetSemanticsReady schema parentType [] := by
+theorem selectionSetSemanticsReady_nil (schema : Schema) (parentType : Name)
+    : selectionSetSemanticsReady schema parentType [] := by
   simp [selectionSetSemanticsReady]
 
 theorem selectionSetSemanticsReady_append
     {schema : Schema} {parentType : Name}
-    {left right : List Selection} :
-    selectionSetSemanticsReady schema parentType left ->
-      selectionSetSemanticsReady schema parentType right ->
-        selectionSetSemanticsReady schema parentType (left ++ right) := by
+    {left right : List Selection}
+    : selectionSetSemanticsReady schema parentType left
+      -> selectionSetSemanticsReady schema parentType right
+      -> selectionSetSemanticsReady schema parentType (left ++ right) := by
   intro hleft hright
   unfold selectionSetSemanticsReady at hleft hright ⊢
   intro selection hselection
@@ -53,9 +52,9 @@ theorem selectionSetSemanticsReady_append
 
 theorem selectionSetSemanticsReady_append_left
     {schema : Schema} {parentType : Name}
-    {left right : List Selection} :
-    selectionSetSemanticsReady schema parentType (left ++ right) ->
-      selectionSetSemanticsReady schema parentType left := by
+    {left right : List Selection}
+    : selectionSetSemanticsReady schema parentType (left ++ right)
+      -> selectionSetSemanticsReady schema parentType left := by
   intro hready
   unfold selectionSetSemanticsReady at hready ⊢
   intro selection hselection
@@ -63,9 +62,9 @@ theorem selectionSetSemanticsReady_append_left
 
 theorem selectionSetSemanticsReady_append_right
     {schema : Schema} {parentType : Name}
-    {left right : List Selection} :
-    selectionSetSemanticsReady schema parentType (left ++ right) ->
-      selectionSetSemanticsReady schema parentType right := by
+    {left right : List Selection}
+    : selectionSetSemanticsReady schema parentType (left ++ right)
+      -> selectionSetSemanticsReady schema parentType right := by
   intro hready
   unfold selectionSetSemanticsReady at hready ⊢
   intro selection hselection
@@ -73,9 +72,9 @@ theorem selectionSetSemanticsReady_append_right
 
 theorem selectionSetSemanticsReady_tail
     {schema : Schema} {parentType : Name}
-    {selection : Selection} {selectionSet : List Selection} :
-    selectionSetSemanticsReady schema parentType (selection :: selectionSet) ->
-      selectionSetSemanticsReady schema parentType selectionSet := by
+    {selection : Selection} {selectionSet : List Selection}
+    : selectionSetSemanticsReady schema parentType (selection :: selectionSet)
+      -> selectionSetSemanticsReady schema parentType selectionSet := by
   intro hready
   unfold selectionSetSemanticsReady at hready ⊢
   intro candidate hcandidate
@@ -83,10 +82,10 @@ theorem selectionSetSemanticsReady_tail
 
 mutual
   theorem selectionLookupValid_of_selectionSemanticsReady
-      {schema : Schema} {parentType : Name} :
-      ∀ selection,
-        selectionSemanticsReady schema parentType selection ->
-          selectionLookupValid schema parentType selection
+      {schema : Schema} {parentType : Name}
+      : ∀ selection,
+          selectionSemanticsReady schema parentType selection
+          -> selectionLookupValid schema parentType selection
     | .field _responseName fieldName _arguments _directives _selectionSet,
       hready => by
         simp [selectionSemanticsReady, selectionLookupValid] at hready ⊢
@@ -109,10 +108,10 @@ mutual
         simpa [selectionLookupValid] using hpair.1
 
   theorem selectionSetLookupValid_of_selectionSetSemanticsReady
-      {schema : Schema} {parentType : Name} :
-      ∀ selectionSet,
-        selectionSetSemanticsReady schema parentType selectionSet ->
-          selectionSetLookupValid schema parentType selectionSet
+      {schema : Schema} {parentType : Name}
+      : ∀ selectionSet,
+          selectionSetSemanticsReady schema parentType selectionSet
+          -> selectionSetLookupValid schema parentType selectionSet
     | [], _hready => by
         exact selectionSetLookupValid_nil schema parentType
     | selection :: rest, hready => by
@@ -131,12 +130,12 @@ mutual
 end
 
 theorem selectionSetSemanticsReady_mergeSelectionSets_of_subselections
-    {schema : Schema} {parentType : Name} :
-    ∀ selections,
-      (∀ selection, selection ∈ selections ->
-        selectionSetSemanticsReady schema parentType selection.subselections) ->
-        selectionSetSemanticsReady schema parentType
-          (mergeSelectionSets selections)
+    {schema : Schema} {parentType : Name}
+    : ∀ selections,
+        (∀ selection,
+          selection ∈ selections
+          -> selectionSetSemanticsReady schema parentType selection.subselections)
+        -> selectionSetSemanticsReady schema parentType (mergeSelectionSets selections)
   | [], _hready => by
       simp [mergeSelectionSets, selectionSetSemanticsReady]
   | selection :: rest, hready => by
@@ -150,18 +149,18 @@ theorem selectionSetSemanticsReady_mergeSelectionSets_of_subselections
 
 theorem selectionSetSemanticsReady_mergeSelectionSets_of_field_subselections
     {schema : Schema} {parentType responseName : Name}
-    (selections : List Selection) :
-    (∀ selection, selection ∈ selections ->
-      ∃ fieldName arguments directives subselections,
-        selection =
-          Selection.field responseName fieldName arguments directives
-            subselections) ->
-    (∀ fieldName arguments directives subselections,
-      Selection.field responseName fieldName arguments directives
-          subselections ∈ selections ->
-        selectionSetSemanticsReady schema parentType subselections) ->
-      selectionSetSemanticsReady schema parentType
-        (mergeSelectionSets selections) := by
+    (selections : List Selection)
+    : (∀ selection,
+        selection ∈ selections
+        -> ∃ fieldName arguments directives subselections,
+            selection
+            = Selection.field responseName fieldName arguments directives subselections)
+      -> (∀ fieldName arguments directives subselections,
+            Selection.field responseName fieldName arguments directives subselections
+              ∈ selections
+            -> selectionSetSemanticsReady schema parentType subselections)
+      -> selectionSetSemanticsReady schema parentType
+          (mergeSelectionSets selections) := by
   intro hshape hfields
   apply selectionSetSemanticsReady_mergeSelectionSets_of_subselections
   intro selection hselection
@@ -172,11 +171,11 @@ theorem selectionSetSemanticsReady_mergeSelectionSets_of_field_subselections
     hfields fieldName arguments directives subselections hselection
 
 theorem selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName
-    (schema : Schema) (responseName : Name) :
-    ∀ parentType selectionSet,
-      selectionSetSemanticsReady schema parentType selectionSet ->
-        selectionSetSemanticsReady schema parentType
-          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+    (schema : Schema) (responseName : Name)
+    : ∀ parentType selectionSet,
+        selectionSetSemanticsReady schema parentType selectionSet
+        -> selectionSetSemanticsReady schema parentType
+            (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
   | _parentType, [], _hready => by
       simp [withoutFieldSelectionsWithResponseName, selectionSetSemanticsReady]
   | parentType, selection :: rest, hready => by
@@ -253,18 +252,19 @@ theorem selectionSetSemanticsReady_withoutFieldSelectionsWithResponseName
                       schema responseName parentType rest htail
 
 theorem fieldSelectionsWithResponseNameInScope_field_semanticsReady
-    (schema : Schema) (parentType responseName : Name) :
-    ∀ selectionSet fieldName arguments directives subselections,
-      selectionSetSemanticsReady schema parentType selectionSet ->
-      Selection.field responseName fieldName arguments directives subselections
-        ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
-          selectionSet ->
-        ∃ fieldDefinition,
-          schema.lookupField parentType fieldName = some fieldDefinition
+    (schema : Schema) (parentType responseName : Name)
+    : ∀ selectionSet fieldName arguments directives subselections,
+        selectionSetSemanticsReady schema parentType selectionSet
+        -> Selection.field responseName fieldName arguments directives subselections
+            ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
+                selectionSet
+        -> ∃ fieldDefinition,
+            schema.lookupField parentType fieldName = some fieldDefinition
             ∧ ∀ runtimeType,
-              schema.typeIncludesObjectBool
-                fieldDefinition.outputType.namedType runtimeType = true ->
-                selectionSetSemanticsReady schema runtimeType subselections
+                schema.typeIncludesObjectBool
+                    fieldDefinition.outputType.namedType runtimeType
+                  = true
+                -> selectionSetSemanticsReady schema runtimeType subselections
   | [], fieldName, arguments, directives, subselections, _hready, hfield => by
       simp [fieldSelectionsWithResponseNameInScope] at hfield
   | selection :: rest, fieldName, arguments, directives, subselections,
@@ -358,13 +358,12 @@ theorem fieldSelectionsWithResponseNameInScope_field_semanticsReady
 mutual
   theorem selectionSemanticsReady_of_selectionValid_object
       (schema : Schema) (variableDefinitions : List VariableDefinition)
-      (parentType : Name) :
-      SchemaWellFormedness.schemaWellFormed schema ->
-        schema.objectType parentType ->
-          ∀ selection,
-            Validation.selectionValid schema variableDefinitions parentType
-              selection ->
-              selectionSemanticsReady schema parentType selection
+      (parentType : Name)
+      : SchemaWellFormedness.schemaWellFormed schema
+        -> schema.objectType parentType
+        -> ∀ selection,
+            Validation.selectionValid schema variableDefinitions parentType selection
+            -> selectionSemanticsReady schema parentType selection
     | hschema, hobject,
       .field _responseName fieldName _arguments _directives selectionSet,
       hvalid => by
@@ -413,13 +412,13 @@ mutual
 
   theorem selectionSetSemanticsReady_of_selectionSetValid_object
       (schema : Schema) (variableDefinitions : List VariableDefinition)
-      (parentType : Name) :
-      SchemaWellFormedness.schemaWellFormed schema ->
-        schema.objectType parentType ->
-          ∀ selectionSet,
+      (parentType : Name)
+      : SchemaWellFormedness.schemaWellFormed schema
+        -> schema.objectType parentType
+        -> ∀ selectionSet,
             Validation.selectionSetValid schema variableDefinitions parentType
-              selectionSet ->
-              selectionSetSemanticsReady schema parentType selectionSet
+              selectionSet
+            -> selectionSetSemanticsReady schema parentType selectionSet
     | _hschema, _hobject, [], _hvalid => by
         exact selectionSetSemanticsReady_nil schema parentType
     | hschema, hobject, selection :: rest, hvalid => by
@@ -442,13 +441,12 @@ mutual
 
   theorem selectionSemanticsReady_of_selectionValid_possibleObject
       (schema : Schema) (variableDefinitions : List VariableDefinition)
-      (parentType objectType : Name) :
-      SchemaWellFormedness.schemaWellFormed schema ->
-        objectType ∈ schema.getPossibleTypes parentType ->
-          ∀ selection,
-            Validation.selectionValid schema variableDefinitions parentType
-              selection ->
-              selectionSemanticsReady schema objectType selection
+      (parentType objectType : Name)
+      : SchemaWellFormedness.schemaWellFormed schema
+        -> objectType ∈ schema.getPossibleTypes parentType
+        -> ∀ selection,
+            Validation.selectionValid schema variableDefinitions parentType selection
+            -> selectionSemanticsReady schema objectType selection
     | hschema, hpossible,
       .field _responseName fieldName _arguments _directives selectionSet,
       hvalid => by
@@ -517,13 +515,13 @@ mutual
 
   theorem selectionSetSemanticsReady_of_selectionSetValid_possibleObject
       (schema : Schema) (variableDefinitions : List VariableDefinition)
-      (parentType objectType : Name) :
-      SchemaWellFormedness.schemaWellFormed schema ->
-        objectType ∈ schema.getPossibleTypes parentType ->
-          ∀ selectionSet,
+      (parentType objectType : Name)
+      : SchemaWellFormedness.schemaWellFormed schema
+        -> objectType ∈ schema.getPossibleTypes parentType
+        -> ∀ selectionSet,
             Validation.selectionSetValid schema variableDefinitions parentType
-              selectionSet ->
-              selectionSetSemanticsReady schema objectType selectionSet
+              selectionSet
+            -> selectionSetSemanticsReady schema objectType selectionSet
     | _hschema, _hpossible, [], _hvalid => by
         exact selectionSetSemanticsReady_nil schema objectType
     | hschema, hpossible, selection :: rest, hvalid => by
@@ -547,7 +545,6 @@ mutual
               schema variableDefinitions parentType objectType hschema
               hpossible rest htail
 end
-
 
 end NormalForm
 

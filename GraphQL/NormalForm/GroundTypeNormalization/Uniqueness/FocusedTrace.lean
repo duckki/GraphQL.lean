@@ -16,99 +16,96 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
-inductive NormalSelectionSetResponsePath
-    (schema : Schema) : Name -> List Selection -> List Name -> Prop where
+inductive NormalSelectionSetResponsePath (schema : Schema)
+    : Name -> List Selection -> List Name -> Prop where
   | objectHere
-      {parentType responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet selectionSet : List Selection} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      NormalSelectionSetResponsePath schema parentType selectionSet
-        [responseName]
+    {parentType responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> NormalSelectionSetResponsePath schema parentType selectionSet [responseName]
   | objectChild
-      {parentType responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet selectionSet : List Selection}
-      {fieldDefinition : FieldDefinition}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-      NormalSelectionSetResponsePath schema
-        fieldDefinition.outputType.namedType childSelectionSet childPath ->
-      NormalSelectionSetResponsePath schema parentType selectionSet
-        (responseName :: childPath)
+    {parentType responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection}
+    {fieldDefinition : FieldDefinition}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> NormalSelectionSetResponsePath schema
+          fieldDefinition.outputType.namedType childSelectionSet childPath
+      -> NormalSelectionSetResponsePath schema parentType selectionSet
+          (responseName :: childPath)
   | abstractInlineFragment
-      {parentType typeCondition : Name}
-      {directives : List DirectiveApplication}
-      {childSelectionSet selectionSet : List Selection}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = false ->
-      Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ selectionSet ->
-      NormalSelectionSetResponsePath schema typeCondition childSelectionSet
-        childPath ->
-      NormalSelectionSetResponsePath schema parentType selectionSet
-        childPath
+    {parentType typeCondition : Name}
+    {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = false
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet
+      -> NormalSelectionSetResponsePath schema typeCondition childSelectionSet childPath
+      -> NormalSelectionSetResponsePath schema parentType selectionSet childPath
 
-inductive NormalSelectionSetObservableResponsePath
-    (schema : Schema) : Name -> List Selection -> List Name -> Prop where
+inductive NormalSelectionSetObservableResponsePath (schema : Schema)
+    : Name -> List Selection -> List Name -> Prop where
   | objectLeaf
-      {parentType responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet selectionSet : List Selection}
-      {fieldDefinition : FieldDefinition} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-      (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-      NormalSelectionSetObservableResponsePath schema parentType
-        selectionSet [responseName]
+    {parentType responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection}
+    {fieldDefinition : FieldDefinition}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> NormalSelectionSetObservableResponsePath schema parentType
+          selectionSet [responseName]
   | objectChild
-      {parentType responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet selectionSet : List Selection}
-      {fieldDefinition : FieldDefinition}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-      (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-        schema = true ->
-      NormalSelectionSetObservableResponsePath schema
-        fieldDefinition.outputType.namedType childSelectionSet childPath ->
-      NormalSelectionSetObservableResponsePath schema parentType
-        selectionSet (responseName :: childPath)
+    {parentType responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection}
+    {fieldDefinition : FieldDefinition}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> NormalSelectionSetObservableResponsePath schema
+          fieldDefinition.outputType.namedType childSelectionSet childPath
+      -> NormalSelectionSetObservableResponsePath schema parentType
+          selectionSet (responseName :: childPath)
   | abstractInlineFragment
-      {parentType typeCondition : Name}
-      {directives : List DirectiveApplication}
-      {childSelectionSet selectionSet : List Selection}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = false ->
-      Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ selectionSet ->
-      NormalSelectionSetObservableResponsePath schema typeCondition
-        childSelectionSet childPath ->
-      NormalSelectionSetObservableResponsePath schema parentType
-        selectionSet childPath
+    {parentType typeCondition : Name}
+    {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = false
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet
+      -> NormalSelectionSetObservableResponsePath schema typeCondition
+          childSelectionSet childPath
+      -> NormalSelectionSetObservableResponsePath schema parentType
+          selectionSet childPath
 
 theorem NormalSelectionSetObservableResponsePath.to_responsePath
     {schema : Schema} {parentType : Name} {selectionSet : List Selection}
-    {responsePath : List Name} :
-    NormalSelectionSetObservableResponsePath schema parentType selectionSet
-      responsePath ->
-      NormalSelectionSetResponsePath schema parentType selectionSet
-        responsePath := by
+    {responsePath : List Name}
+    : NormalSelectionSetObservableResponsePath schema parentType selectionSet
+        responsePath
+      -> NormalSelectionSetResponsePath schema parentType selectionSet
+          responsePath := by
   intro hpath
   induction hpath with
   | objectLeaf hobject hmem _hlookup _hleaf =>
@@ -121,11 +118,11 @@ theorem NormalSelectionSetObservableResponsePath.to_responsePath
           ih
 
 theorem normalSelectionSetObservableResponsePath_of_observableLeaf
-    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
-    NormalSelectionSetObservableLeaf schema parentType selectionSet ->
-      ∃ responsePath,
-        NormalSelectionSetObservableResponsePath schema parentType
-          selectionSet responsePath := by
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    : NormalSelectionSetObservableLeaf schema parentType selectionSet
+      -> ∃ responsePath,
+          NormalSelectionSetObservableResponsePath schema parentType
+            selectionSet responsePath := by
   intro hpath
   induction hpath with
   | objectLeaf hobject hmem hlookup hleaf =>
@@ -160,88 +157,97 @@ structure NormalSelectionSetObservableFieldStep where
   arguments : List Argument
   childRuntime : Option Name
 
-inductive NormalSelectionSetObservableFieldSpine
-    (schema : Schema) :
-    Name -> List Selection ->
-      List NormalSelectionSetObservableFieldStep -> Prop where
+inductive NormalSelectionSetObservableFieldSpine (schema : Schema)
+    : Name -> List Selection -> List NormalSelectionSetObservableFieldStep -> Prop where
   | objectLeaf
-      {parentType responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet selectionSet : List Selection}
-      {fieldDefinition : FieldDefinition} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-      (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-      NormalSelectionSetObservableFieldSpine schema parentType
-        selectionSet
-        [{ responseName := responseName, fieldName := fieldName,
-           arguments := arguments, childRuntime := none }]
+    {parentType responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection}
+    {fieldDefinition : FieldDefinition}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> NormalSelectionSetObservableFieldSpine schema parentType
+          selectionSet
+          [{
+            responseName := responseName,
+            fieldName := fieldName,
+            arguments := arguments,
+            childRuntime := none
+          }]
   | objectChildObject
-      {parentType responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet selectionSet : List Selection}
-      {fieldDefinition : FieldDefinition}
-      {childSpine : List NormalSelectionSetObservableFieldStep} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-      objectTypeNameBool schema fieldDefinition.outputType.namedType = true ->
-      NormalSelectionSetObservableFieldSpine schema
-        fieldDefinition.outputType.namedType childSelectionSet childSpine ->
-      NormalSelectionSetObservableFieldSpine schema parentType
-        selectionSet
-        ({ responseName := responseName, fieldName := fieldName,
-           arguments := arguments,
-           childRuntime := some fieldDefinition.outputType.namedType } ::
-          childSpine)
+    {parentType responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection}
+    {fieldDefinition : FieldDefinition}
+    {childSpine : List NormalSelectionSetObservableFieldStep}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+      -> NormalSelectionSetObservableFieldSpine schema
+          fieldDefinition.outputType.namedType childSelectionSet childSpine
+      -> NormalSelectionSetObservableFieldSpine schema parentType
+          selectionSet
+          ({
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              childRuntime := some fieldDefinition.outputType.namedType
+            }
+            :: childSpine)
   | objectChildAbstract
-      {parentType responseName fieldName runtimeType : Name}
-      {arguments : List Argument}
-      {directives childDirectives : List DirectiveApplication}
-      {childSelectionSet childBodySelectionSet selectionSet : List Selection}
-      {fieldDefinition : FieldDefinition}
-      {childSpine : List NormalSelectionSetObservableFieldStep} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-      (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-        schema = true ->
-      objectTypeNameBool schema fieldDefinition.outputType.namedType = false ->
-      Selection.inlineFragment (some runtimeType) childDirectives
-        childBodySelectionSet ∈ childSelectionSet ->
-      NormalSelectionSetObservableFieldSpine schema
-        fieldDefinition.outputType.namedType childSelectionSet childSpine ->
-      NormalSelectionSetObservableFieldSpine schema parentType
-        selectionSet
-        ({ responseName := responseName, fieldName := fieldName,
-           arguments := arguments, childRuntime := some runtimeType } ::
-          childSpine)
+    {parentType responseName fieldName runtimeType : Name}
+    {arguments : List Argument}
+    {directives childDirectives : List DirectiveApplication}
+    {childSelectionSet childBodySelectionSet selectionSet : List Selection}
+    {fieldDefinition : FieldDefinition}
+    {childSpine : List NormalSelectionSetObservableFieldStep}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+      -> Selection.inlineFragment (some runtimeType) childDirectives
+            childBodySelectionSet
+          ∈ childSelectionSet
+      -> NormalSelectionSetObservableFieldSpine schema
+          fieldDefinition.outputType.namedType childSelectionSet childSpine
+      -> NormalSelectionSetObservableFieldSpine schema parentType
+          selectionSet
+          ({
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              childRuntime := some runtimeType
+            }
+            :: childSpine)
   | abstractInlineFragment
-      {parentType typeCondition : Name}
-      {directives : List DirectiveApplication}
-      {childSelectionSet selectionSet : List Selection}
-      {childSpine : List NormalSelectionSetObservableFieldStep} :
-      objectTypeNameBool schema parentType = false ->
-      Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ selectionSet ->
-      NormalSelectionSetObservableFieldSpine schema typeCondition
-        childSelectionSet childSpine ->
-      NormalSelectionSetObservableFieldSpine schema parentType
-        selectionSet childSpine
+    {parentType typeCondition : Name}
+    {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection}
+    {childSpine : List NormalSelectionSetObservableFieldStep}
+    : objectTypeNameBool schema parentType = false
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet
+      -> NormalSelectionSetObservableFieldSpine schema typeCondition
+          childSelectionSet childSpine
+      -> NormalSelectionSetObservableFieldSpine schema parentType
+          selectionSet childSpine
 
 theorem normalSelectionSetObservableFieldSpine_ne_nil
     {schema : Schema} {parentType : Name} {selectionSet : List Selection}
-    {fieldSpine : List NormalSelectionSetObservableFieldStep} :
-    NormalSelectionSetObservableFieldSpine schema parentType selectionSet
-      fieldSpine ->
-      fieldSpine ≠ [] := by
+    {fieldSpine : List NormalSelectionSetObservableFieldStep}
+    : NormalSelectionSetObservableFieldSpine schema parentType selectionSet fieldSpine
+      -> fieldSpine ≠ [] := by
   intro hspine
   induction hspine with
   | objectLeaf =>
@@ -255,10 +261,9 @@ theorem normalSelectionSetObservableFieldSpine_ne_nil
 
 theorem normalSelectionSetObservableFieldSpine_selectionSet_ne_nil
     {schema : Schema} {parentType : Name} {selectionSet : List Selection}
-    {fieldSpine : List NormalSelectionSetObservableFieldStep} :
-    NormalSelectionSetObservableFieldSpine schema parentType selectionSet
-      fieldSpine ->
-      selectionSet ≠ [] := by
+    {fieldSpine : List NormalSelectionSetObservableFieldStep}
+    : NormalSelectionSetObservableFieldSpine schema parentType selectionSet fieldSpine
+      -> selectionSet ≠ [] := by
   intro hspine
   cases hspine with
   | objectLeaf _hobject hmem _hlookup _hleaf =>
@@ -281,12 +286,12 @@ theorem normalSelectionSetObservableFieldSpine_selectionSet_ne_nil
 
 theorem normalSelectionSetObservableFieldSpine_of_observableResponsePath
     {schema : Schema} {parentType : Name} {selectionSet : List Selection}
-    {responsePath : List Name} :
-    NormalSelectionSetObservableResponsePath schema parentType selectionSet
-      responsePath ->
-      ∃ fieldSpine,
-        NormalSelectionSetObservableFieldSpine schema parentType
-          selectionSet fieldSpine := by
+    {responsePath : List Name}
+    : NormalSelectionSetObservableResponsePath schema parentType selectionSet
+        responsePath
+      -> ∃ fieldSpine,
+          NormalSelectionSetObservableFieldSpine schema parentType
+            selectionSet fieldSpine := by
   intro hpath
   induction hpath with
   | objectLeaf hobject hmem hlookup hleaf =>
@@ -336,325 +341,333 @@ theorem normalSelectionSetObservableFieldSpine_of_observableResponsePath
           NormalSelectionSetObservableFieldSpine.abstractInlineFragment
             hnonObject hmem hchildSpine⟩
 
-inductive NormalSelectionSetDiffTrace
-    (schema : Schema) : Name -> List Selection -> List Selection ->
-      List Name -> Prop where
+inductive NormalSelectionSetDiffTrace (schema : Schema)
+    : Name -> List Selection -> List Selection -> List Name -> Prop where
   | objectLeftResponseName
-      {parentType : Name} {left right : List Selection}
-      {responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-      responseName ∉ right.filterMap Selection.responseName? ->
-      NormalSelectionSetDiffTrace schema parentType left right
-        [responseName]
+    {parentType : Name} {left right : List Selection}
+    {responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ left
+      -> responseName ∉ right.filterMap Selection.responseName?
+      -> NormalSelectionSetDiffTrace schema parentType left right [responseName]
   | objectRightResponseName
-      {parentType : Name} {left right : List Selection}
-      {responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-      responseName ∉ left.filterMap Selection.responseName? ->
-      NormalSelectionSetDiffTrace schema parentType left right
-        [responseName]
+    {parentType : Name} {left right : List Selection}
+    {responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ right
+      -> responseName ∉ left.filterMap Selection.responseName?
+      -> NormalSelectionSetDiffTrace schema parentType left right [responseName]
   | objectFieldName
-      {parentType : Name} {left right : List Selection}
-      {responseName leftFieldName rightFieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName leftFieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName rightFieldName rightArguments
-        rightDirectives rightChildSelectionSet ∈ right ->
-      leftFieldName ≠ rightFieldName ->
-      NormalSelectionSetDiffTrace schema parentType left right
-        [responseName]
+    {parentType : Name} {left right : List Selection}
+    {responseName leftFieldName rightFieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments
+            rightDirectives rightChildSelectionSet
+          ∈ right
+      -> leftFieldName ≠ rightFieldName
+      -> NormalSelectionSetDiffTrace schema parentType left right [responseName]
   | objectArguments
-      {parentType : Name} {left right : List Selection}
-      {responseName fieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName fieldName rightArguments rightDirectives
-        rightChildSelectionSet ∈ right ->
-      ¬ Argument.argumentsEquivalent leftArguments rightArguments ->
-      NormalSelectionSetDiffTrace schema parentType left right
-        [responseName]
+    {parentType : Name} {left right : List Selection}
+    {responseName fieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName fieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> ¬ Argument.argumentsEquivalent leftArguments rightArguments
+      -> NormalSelectionSetDiffTrace schema parentType left right [responseName]
   | objectChild
-      {parentType returnType : Name} {left right : List Selection}
-      {responseName fieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = true ->
-      schema.fieldReturnType? parentType fieldName = some returnType ->
-      Selection.field responseName fieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName fieldName rightArguments rightDirectives
-        rightChildSelectionSet ∈ right ->
-      Argument.argumentsEquivalent leftArguments rightArguments ->
-      NormalSelectionSetDiffTrace schema returnType leftChildSelectionSet
-        rightChildSelectionSet childPath ->
-      NormalSelectionSetDiffTrace schema parentType left right
-        (responseName :: childPath)
+    {parentType returnType : Name} {left right : List Selection}
+    {responseName fieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = true
+      -> schema.fieldReturnType? parentType fieldName = some returnType
+      -> Selection.field responseName fieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName fieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> Argument.argumentsEquivalent leftArguments rightArguments
+      -> NormalSelectionSetDiffTrace schema returnType leftChildSelectionSet
+          rightChildSelectionSet childPath
+      -> NormalSelectionSetDiffTrace schema parentType left right
+          (responseName :: childPath)
   | abstractLeftTypeCondition
-      {parentType : Name} {left right : List Selection}
-      {typeCondition : Name}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = false ->
-      Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ left ->
-      typeCondition ∉ right.filterMap inlineFragmentTypeCondition? ->
-      NormalSelectionSetResponsePath schema typeCondition childSelectionSet
-        childPath ->
-      NormalSelectionSetDiffTrace schema parentType left right childPath
+    {parentType : Name} {left right : List Selection}
+    {typeCondition : Name}
+    {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = false
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ left
+      -> typeCondition ∉ right.filterMap inlineFragmentTypeCondition?
+      -> NormalSelectionSetResponsePath schema typeCondition childSelectionSet childPath
+      -> NormalSelectionSetDiffTrace schema parentType left right childPath
   | abstractRightTypeCondition
-      {parentType : Name} {left right : List Selection}
-      {typeCondition : Name}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = false ->
-      Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ right ->
-      typeCondition ∉ left.filterMap inlineFragmentTypeCondition? ->
-      NormalSelectionSetResponsePath schema typeCondition childSelectionSet
-        childPath ->
-      NormalSelectionSetDiffTrace schema parentType left right childPath
+    {parentType : Name} {left right : List Selection}
+    {typeCondition : Name}
+    {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = false
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ right
+      -> typeCondition ∉ left.filterMap inlineFragmentTypeCondition?
+      -> NormalSelectionSetResponsePath schema typeCondition childSelectionSet childPath
+      -> NormalSelectionSetDiffTrace schema parentType left right childPath
   | abstractChild
-      {parentType typeCondition : Name} {left right : List Selection}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = false ->
-      Selection.inlineFragment (some typeCondition) leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.inlineFragment (some typeCondition) rightDirectives
-        rightChildSelectionSet ∈ right ->
-      NormalSelectionSetDiffTrace schema typeCondition
-        leftChildSelectionSet rightChildSelectionSet childPath ->
-      NormalSelectionSetDiffTrace schema parentType left right childPath
+    {parentType typeCondition : Name} {left right : List Selection}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = false
+      -> Selection.inlineFragment (some typeCondition) leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.inlineFragment (some typeCondition) rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> NormalSelectionSetDiffTrace schema typeCondition
+          leftChildSelectionSet rightChildSelectionSet childPath
+      -> NormalSelectionSetDiffTrace schema parentType left right childPath
 
-inductive NormalSelectionSetDiffObservableTrace
-    (schema : Schema) : Name -> List Selection -> List Selection ->
-      List Name -> Prop where
+inductive NormalSelectionSetDiffObservableTrace (schema : Schema)
+    : Name -> List Selection -> List Selection -> List Name -> Prop where
   | objectLeftResponseName
-      {parentType : Name} {left right : List Selection}
-      {responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-      responseName ∉ right.filterMap Selection.responseName? ->
-      NormalSelectionSetDiffObservableTrace schema parentType left right
-        [responseName]
+    {parentType : Name} {left right : List Selection}
+    {responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ left
+      -> responseName ∉ right.filterMap Selection.responseName?
+      -> NormalSelectionSetDiffObservableTrace schema parentType left right
+          [responseName]
   | objectRightResponseName
-      {parentType : Name} {left right : List Selection}
-      {responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-      responseName ∉ left.filterMap Selection.responseName? ->
-      NormalSelectionSetDiffObservableTrace schema parentType left right
-        [responseName]
+    {parentType : Name} {left right : List Selection}
+    {responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ right
+      -> responseName ∉ left.filterMap Selection.responseName?
+      -> NormalSelectionSetDiffObservableTrace schema parentType left right
+          [responseName]
   | objectFieldNameLeaf
-      {parentType : Name} {left right : List Selection}
-      {responseName leftFieldName rightFieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection}
-      {leftFieldDefinition rightFieldDefinition : FieldDefinition} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName leftFieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName rightFieldName rightArguments
-        rightDirectives rightChildSelectionSet ∈ right ->
-      schema.lookupField parentType leftFieldName = some leftFieldDefinition ->
-      schema.lookupField parentType rightFieldName =
-        some rightFieldDefinition ->
-      (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-      (TypeRef.named
-        rightFieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-      leftFieldName ≠ rightFieldName ->
-      NormalSelectionSetDiffObservableTrace schema parentType left right
-        [responseName]
+    {parentType : Name} {left right : List Selection}
+    {responseName leftFieldName rightFieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    {leftFieldDefinition rightFieldDefinition : FieldDefinition}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments
+            rightDirectives rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
+      -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = false
+      -> leftFieldName ≠ rightFieldName
+      -> NormalSelectionSetDiffObservableTrace schema parentType left right
+          [responseName]
   | objectFieldNameCompositeLeft
-      {parentType : Name} {left right : List Selection}
-      {responseName leftFieldName rightFieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection}
-      {leftFieldDefinition rightFieldDefinition : FieldDefinition}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName leftFieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName rightFieldName rightArguments
-        rightDirectives rightChildSelectionSet ∈ right ->
-      schema.lookupField parentType leftFieldName = some leftFieldDefinition ->
-      schema.lookupField parentType rightFieldName =
-        some rightFieldDefinition ->
-      (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-        schema = true ->
-      NormalSelectionSetObservableResponsePath schema
-        leftFieldDefinition.outputType.namedType leftChildSelectionSet
-        childPath ->
-      leftFieldName ≠ rightFieldName ->
-      NormalSelectionSetDiffObservableTrace schema parentType left right
-        (responseName :: childPath)
+    {parentType : Name} {left right : List Selection}
+    {responseName leftFieldName rightFieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    {leftFieldDefinition rightFieldDefinition : FieldDefinition}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments
+            rightDirectives rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
+      -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> NormalSelectionSetObservableResponsePath schema
+          leftFieldDefinition.outputType.namedType leftChildSelectionSet
+          childPath
+      -> leftFieldName ≠ rightFieldName
+      -> NormalSelectionSetDiffObservableTrace schema parentType left right
+          (responseName :: childPath)
   | objectFieldNameCompositeRight
-      {parentType : Name} {left right : List Selection}
-      {responseName leftFieldName rightFieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection}
-      {leftFieldDefinition rightFieldDefinition : FieldDefinition}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName leftFieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName rightFieldName rightArguments
-        rightDirectives rightChildSelectionSet ∈ right ->
-      schema.lookupField parentType leftFieldName = some leftFieldDefinition ->
-      schema.lookupField parentType rightFieldName =
-        some rightFieldDefinition ->
-      (TypeRef.named
-        rightFieldDefinition.outputType.namedType).isCompositeBool
-        schema = true ->
-      NormalSelectionSetObservableResponsePath schema
-        rightFieldDefinition.outputType.namedType rightChildSelectionSet
-        childPath ->
-      leftFieldName ≠ rightFieldName ->
-      NormalSelectionSetDiffObservableTrace schema parentType left right
-        (responseName :: childPath)
+    {parentType : Name} {left right : List Selection}
+    {responseName leftFieldName rightFieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    {leftFieldDefinition rightFieldDefinition : FieldDefinition}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments
+            rightDirectives rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> NormalSelectionSetObservableResponsePath schema
+          rightFieldDefinition.outputType.namedType rightChildSelectionSet
+          childPath
+      -> leftFieldName ≠ rightFieldName
+      -> NormalSelectionSetDiffObservableTrace schema parentType left right
+          (responseName :: childPath)
   | objectArgumentsLeaf
-      {parentType : Name} {left right : List Selection}
-      {responseName fieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection}
-      {fieldDefinition : FieldDefinition} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName fieldName rightArguments rightDirectives
-        rightChildSelectionSet ∈ right ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-      (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-      ¬ Argument.argumentsEquivalent leftArguments rightArguments ->
-      NormalSelectionSetDiffObservableTrace schema parentType left right
-        [responseName]
+    {parentType : Name} {left right : List Selection}
+    {responseName fieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    {fieldDefinition : FieldDefinition}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName fieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> ¬ Argument.argumentsEquivalent leftArguments rightArguments
+      -> NormalSelectionSetDiffObservableTrace schema parentType left right
+          [responseName]
   | objectArgumentsCompositeLeft
-      {parentType : Name} {left right : List Selection}
-      {responseName fieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection}
-      {fieldDefinition : FieldDefinition}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName fieldName rightArguments rightDirectives
-        rightChildSelectionSet ∈ right ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-      (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-        schema = true ->
-      NormalSelectionSetObservableResponsePath schema
-        fieldDefinition.outputType.namedType leftChildSelectionSet
-        childPath ->
-      ¬ Argument.argumentsEquivalent leftArguments rightArguments ->
-      NormalSelectionSetDiffObservableTrace schema parentType left right
-        (responseName :: childPath)
+    {parentType : Name} {left right : List Selection}
+    {responseName fieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    {fieldDefinition : FieldDefinition}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName fieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> NormalSelectionSetObservableResponsePath schema
+          fieldDefinition.outputType.namedType leftChildSelectionSet
+          childPath
+      -> ¬ Argument.argumentsEquivalent leftArguments rightArguments
+      -> NormalSelectionSetDiffObservableTrace schema parentType left right
+          (responseName :: childPath)
   | objectChild
-      {parentType returnType : Name} {left right : List Selection}
-      {responseName fieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = true ->
-      schema.fieldReturnType? parentType fieldName = some returnType ->
-      Selection.field responseName fieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName fieldName rightArguments rightDirectives
-        rightChildSelectionSet ∈ right ->
-      Argument.argumentsEquivalent leftArguments rightArguments ->
-      NormalSelectionSetDiffObservableTrace schema returnType
-        leftChildSelectionSet rightChildSelectionSet childPath ->
-      NormalSelectionSetDiffObservableTrace schema parentType left right
-        (responseName :: childPath)
+    {parentType returnType : Name} {left right : List Selection}
+    {responseName fieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = true
+      -> schema.fieldReturnType? parentType fieldName = some returnType
+      -> Selection.field responseName fieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName fieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> Argument.argumentsEquivalent leftArguments rightArguments
+      -> NormalSelectionSetDiffObservableTrace schema returnType
+          leftChildSelectionSet rightChildSelectionSet childPath
+      -> NormalSelectionSetDiffObservableTrace schema parentType left right
+          (responseName :: childPath)
   | abstractLeftTypeCondition
-      {parentType : Name} {left right : List Selection}
-      {typeCondition : Name}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = false ->
-      Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ left ->
-      typeCondition ∉ right.filterMap inlineFragmentTypeCondition? ->
-      NormalSelectionSetObservableResponsePath schema typeCondition
-        childSelectionSet childPath ->
-      NormalSelectionSetDiffObservableTrace schema parentType left right
-        childPath
+    {parentType : Name} {left right : List Selection}
+    {typeCondition : Name}
+    {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = false
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ left
+      -> typeCondition ∉ right.filterMap inlineFragmentTypeCondition?
+      -> NormalSelectionSetObservableResponsePath schema typeCondition
+          childSelectionSet childPath
+      -> NormalSelectionSetDiffObservableTrace schema parentType left right childPath
   | abstractRightTypeCondition
-      {parentType : Name} {left right : List Selection}
-      {typeCondition : Name}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = false ->
-      Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ right ->
-      typeCondition ∉ left.filterMap inlineFragmentTypeCondition? ->
-      NormalSelectionSetObservableResponsePath schema typeCondition
-        childSelectionSet childPath ->
-      NormalSelectionSetDiffObservableTrace schema parentType left right
-        childPath
+    {parentType : Name} {left right : List Selection}
+    {typeCondition : Name}
+    {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = false
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ right
+      -> typeCondition ∉ left.filterMap inlineFragmentTypeCondition?
+      -> NormalSelectionSetObservableResponsePath schema typeCondition
+          childSelectionSet childPath
+      -> NormalSelectionSetDiffObservableTrace schema parentType left right childPath
   | abstractChild
-      {parentType typeCondition : Name} {left right : List Selection}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection}
-      {childPath : List Name} :
-      objectTypeNameBool schema parentType = false ->
-      Selection.inlineFragment (some typeCondition) leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.inlineFragment (some typeCondition) rightDirectives
-        rightChildSelectionSet ∈ right ->
-      NormalSelectionSetDiffObservableTrace schema typeCondition
-        leftChildSelectionSet rightChildSelectionSet childPath ->
-      NormalSelectionSetDiffObservableTrace schema parentType left right
-        childPath
+    {parentType typeCondition : Name} {left right : List Selection}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    {childPath : List Name}
+    : objectTypeNameBool schema parentType = false
+      -> Selection.inlineFragment (some typeCondition) leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.inlineFragment (some typeCondition) rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> NormalSelectionSetDiffObservableTrace schema typeCondition
+          leftChildSelectionSet rightChildSelectionSet childPath
+      -> NormalSelectionSetDiffObservableTrace schema parentType left right childPath
 
 theorem normalSelectionSetResponsePath_of_observableLeaf
-    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
-    NormalSelectionSetObservableLeaf schema parentType selectionSet ->
-      ∃ responsePath,
-        NormalSelectionSetResponsePath schema parentType selectionSet
-          responsePath := by
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    : NormalSelectionSetObservableLeaf schema parentType selectionSet
+      -> ∃ responsePath,
+          NormalSelectionSetResponsePath schema parentType selectionSet
+            responsePath := by
   intro hpath
   rcases normalSelectionSetObservableResponsePath_of_observableLeaf hpath with
     ⟨responsePath, hobservablePath⟩
@@ -662,14 +675,13 @@ theorem normalSelectionSetResponsePath_of_observableLeaf
 
 theorem normalSelectionSetResponsePath_of_valid_normal_nonempty
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType : Name} {selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    selectionSet ≠ [] ->
-      ∃ responsePath,
-        NormalSelectionSetResponsePath schema parentType selectionSet
-          responsePath := by
+    {parentType : Name} {selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> selectionSet ≠ []
+      -> ∃ responsePath,
+          NormalSelectionSetResponsePath schema parentType selectionSet
+            responsePath := by
   intro hvalid hnormal hnonempty
   exact
     normalSelectionSetResponsePath_of_observableLeaf
@@ -681,19 +693,18 @@ theorem normalSelectionSetResponsePath_of_valid_normal_composite_field_mem
     {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-      ∃ responsePath,
-        NormalSelectionSetResponsePath schema
-          fieldDefinition.outputType.namedType childSelectionSet
-          responsePath := by
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> ∃ responsePath,
+          NormalSelectionSetResponsePath schema
+            fieldDefinition.outputType.namedType childSelectionSet
+            responsePath := by
   intro hvalid hnormal hmem hlookup hcomposite
   rcases selectionSetValid_field_lookup_leaf_or_composite_child hvalid
       hmem with
@@ -718,19 +729,18 @@ theorem normalSelectionSetObservableResponsePath_of_valid_normal_composite_field
     {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-      ∃ responsePath,
-        NormalSelectionSetObservableResponsePath schema
-          fieldDefinition.outputType.namedType childSelectionSet
-          responsePath := by
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> ∃ responsePath,
+          NormalSelectionSetObservableResponsePath schema
+            fieldDefinition.outputType.namedType childSelectionSet
+            responsePath := by
   intro hvalid hnormal hmem hlookup hcomposite
   rcases selectionSetValid_field_lookup_leaf_or_composite_child hvalid
       hmem with
@@ -760,34 +770,33 @@ theorem normalSelectionSetResponsePath_of_valid_normal_fieldName_composite_mem
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
     {leftChildSelectionSet rightChildSelectionSet left right : List Selection}
-    {leftFieldDefinition rightFieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName rightFieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    schema.lookupField parentType leftFieldName = some leftFieldDefinition ->
-    schema.lookupField parentType rightFieldName = some rightFieldDefinition ->
-    ((TypeRef.named
-        leftFieldDefinition.outputType.namedType).isCompositeBool schema =
-        true
-      ∨ (TypeRef.named
-        rightFieldDefinition.outputType.namedType).isCompositeBool schema =
-        true) ->
-      (∃ responsePath,
-        NormalSelectionSetResponsePath schema
-          leftFieldDefinition.outputType.namedType leftChildSelectionSet
-          responsePath)
-      ∨
-      (∃ responsePath,
-        NormalSelectionSetResponsePath schema
-          rightFieldDefinition.outputType.namedType rightChildSelectionSet
-          responsePath) := by
+    {leftFieldDefinition rightFieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
+      -> ((TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
+              schema
+            = true
+          ∨ (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+              schema
+            = true)
+      -> (∃ responsePath,
+            NormalSelectionSetResponsePath schema
+              leftFieldDefinition.outputType.namedType leftChildSelectionSet
+              responsePath)
+          ∨ (∃ responsePath,
+              NormalSelectionSetResponsePath schema
+                rightFieldDefinition.outputType.namedType rightChildSelectionSet
+                responsePath) := by
   intro hleftValid hrightValid hleftNormal hrightNormal hleftMem hrightMem
     hleftLookup hrightLookup hcomposite
   rcases hcomposite with hleftComposite | hrightComposite
@@ -807,29 +816,28 @@ theorem normalSelectionSetResponsePath_pair_of_valid_normal_arguments_composite_
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
     {leftChildSelectionSet rightChildSelectionSet left right : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    Selection.field responseName fieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName fieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-      (∃ responsePath,
-        NormalSelectionSetResponsePath schema
-          fieldDefinition.outputType.namedType leftChildSelectionSet
-          responsePath)
-      ∧
-      (∃ responsePath,
-        NormalSelectionSetResponsePath schema
-          fieldDefinition.outputType.namedType rightChildSelectionSet
-          responsePath) := by
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> Selection.field responseName fieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName fieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> (∃ responsePath,
+            NormalSelectionSetResponsePath schema
+              fieldDefinition.outputType.namedType leftChildSelectionSet
+              responsePath)
+          ∧ (∃ responsePath,
+              NormalSelectionSetResponsePath schema
+                fieldDefinition.outputType.namedType rightChildSelectionSet
+                responsePath) := by
   intro hleftValid hrightValid hleftNormal hrightNormal hleftMem hrightMem
     hlookup hcomposite
   exact
@@ -841,11 +849,10 @@ theorem normalSelectionSetResponsePath_pair_of_valid_normal_arguments_composite_
 theorem NormalSelectionSetResponsePath.append_context
     {schema : Schema} {parentType : Name}
     {selectionSet pref suff : List Selection}
-    {responsePath : List Name} :
-    NormalSelectionSetResponsePath schema parentType selectionSet
-      responsePath ->
-      NormalSelectionSetResponsePath schema parentType
-        (pref ++ selectionSet ++ suff) responsePath := by
+    {responsePath : List Name}
+    : NormalSelectionSetResponsePath schema parentType selectionSet responsePath
+      -> NormalSelectionSetResponsePath schema parentType
+          (pref ++ selectionSet ++ suff) responsePath := by
   intro hpath
   cases hpath with
   | objectHere hobject hmem =>
@@ -875,11 +882,11 @@ theorem NormalSelectionSetResponsePath.append_context
 theorem NormalSelectionSetObservableResponsePath.append_context
     {schema : Schema} {parentType : Name}
     {selectionSet pref suff : List Selection}
-    {responsePath : List Name} :
-    NormalSelectionSetObservableResponsePath schema parentType selectionSet
-      responsePath ->
-      NormalSelectionSetObservableResponsePath schema parentType
-        (pref ++ selectionSet ++ suff) responsePath := by
+    {responsePath : List Name}
+    : NormalSelectionSetObservableResponsePath schema parentType selectionSet
+        responsePath
+      -> NormalSelectionSetObservableResponsePath schema parentType
+          (pref ++ selectionSet ++ suff) responsePath := by
   intro hpath
   cases hpath with
   | objectLeaf hobject hmem hlookup hleaf =>
@@ -910,10 +917,9 @@ theorem NormalSelectionSetObservableResponsePath.append_context
 
 theorem normalSelectionSetResponsePath_ne_nil
     {schema : Schema} {parentType : Name} {selectionSet : List Selection}
-    {responsePath : List Name} :
-    NormalSelectionSetResponsePath schema parentType selectionSet
-      responsePath ->
-      responsePath ≠ [] := by
+    {responsePath : List Name}
+    : NormalSelectionSetResponsePath schema parentType selectionSet responsePath
+      -> responsePath ≠ [] := by
   intro hpath
   induction hpath with
   | objectHere _hobject _hmem =>
@@ -925,10 +931,9 @@ theorem normalSelectionSetResponsePath_ne_nil
 
 theorem normalSelectionSetResponsePath_selectionSet_nonempty
     {schema : Schema} {parentType : Name} {selectionSet : List Selection}
-    {responsePath : List Name} :
-    NormalSelectionSetResponsePath schema parentType selectionSet
-      responsePath ->
-      selectionSet ≠ [] := by
+    {responsePath : List Name}
+    : NormalSelectionSetResponsePath schema parentType selectionSet responsePath
+      -> selectionSet ≠ [] := by
   intro hpath hempty
   cases hpath with
   | objectHere _hobject hmem =>
@@ -944,13 +949,11 @@ theorem normalSelectionSetResponsePath_selectionSet_nonempty
 theorem normalSelectionSetObservableLeaf_of_responsePath_valid_normal
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {selectionSet : List Selection}
-    {responsePath : List Name} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    NormalSelectionSetResponsePath schema parentType selectionSet
-      responsePath ->
-      NormalSelectionSetObservableLeaf schema parentType selectionSet := by
+    {responsePath : List Name}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> NormalSelectionSetResponsePath schema parentType selectionSet responsePath
+      -> NormalSelectionSetObservableLeaf schema parentType selectionSet := by
   intro hvalid hnormal hpath
   induction hpath with
   | objectHere hobject hmem =>
@@ -1023,9 +1026,9 @@ theorem normalSelectionSetObservableLeaf_of_responsePath_valid_normal
 
 theorem normalSelectionSetDiffTrace_ne_nil
     {schema : Schema} {parentType : Name} {left right : List Selection}
-    {responsePath : List Name} :
-    NormalSelectionSetDiffTrace schema parentType left right responsePath ->
-      responsePath ≠ [] := by
+    {responsePath : List Name}
+    : NormalSelectionSetDiffTrace schema parentType left right responsePath
+      -> responsePath ≠ [] := by
   intro htrace
   induction htrace with
   | objectLeftResponseName _hobject _hmem _hno =>
@@ -1048,9 +1051,9 @@ theorem normalSelectionSetDiffTrace_ne_nil
 
 theorem normalSelectionSetDiff_of_diffTrace
     {schema : Schema} {parentType : Name} {left right : List Selection}
-    {responsePath : List Name} :
-    NormalSelectionSetDiffTrace schema parentType left right responsePath ->
-      NormalSelectionSetDiff schema parentType left right := by
+    {responsePath : List Name}
+    : NormalSelectionSetDiffTrace schema parentType left right responsePath
+      -> NormalSelectionSetDiff schema parentType left right := by
   intro htrace
   induction htrace with
   | objectLeftResponseName hobject hmem hno =>
@@ -1079,10 +1082,10 @@ theorem normalSelectionSetDiff_of_diffTrace
 
 theorem normalSelectionSetResponsePath_left_or_right_of_diffTrace
     {schema : Schema} {parentType : Name} {left right : List Selection}
-    {responsePath : List Name} :
-    NormalSelectionSetDiffTrace schema parentType left right responsePath ->
-      NormalSelectionSetResponsePath schema parentType left responsePath
-        ∨ NormalSelectionSetResponsePath schema parentType right responsePath := by
+    {responsePath : List Name}
+    : NormalSelectionSetDiffTrace schema parentType left right responsePath
+      -> NormalSelectionSetResponsePath schema parentType left responsePath
+          ∨ NormalSelectionSetResponsePath schema parentType right responsePath := by
   intro htrace
   induction htrace with
   | objectLeftResponseName hobject hleftMem _hrightNoResponseName =>
@@ -1143,16 +1146,14 @@ theorem normalSelectionSetObservableLeaf_left_or_right_of_diffTrace_valid_normal
     {schema : Schema}
     {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType : Name} {left right : List Selection}
-    {responsePath : List Name} :
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    NormalSelectionSetDiffTrace schema parentType left right responsePath ->
-      NormalSelectionSetObservableLeaf schema parentType left
-        ∨ NormalSelectionSetObservableLeaf schema parentType right := by
+    {responsePath : List Name}
+    : Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> NormalSelectionSetDiffTrace schema parentType left right responsePath
+      -> NormalSelectionSetObservableLeaf schema parentType left
+          ∨ NormalSelectionSetObservableLeaf schema parentType right := by
   intro hleftValid hrightValid hleftNormal hrightNormal htrace
   rcases normalSelectionSetResponsePath_left_or_right_of_diffTrace htrace with
     hleftPath | hrightPath
@@ -1167,9 +1168,9 @@ theorem normalSelectionSetObservableLeaf_left_or_right_of_diffTrace_valid_normal
 
 theorem normalSelectionSetDiffTrace_left_or_right_nonempty
     {schema : Schema} {parentType : Name} {left right : List Selection}
-    {responsePath : List Name} :
-    NormalSelectionSetDiffTrace schema parentType left right responsePath ->
-      left ≠ [] ∨ right ≠ [] := by
+    {responsePath : List Name}
+    : NormalSelectionSetDiffTrace schema parentType left right responsePath
+      -> left ≠ [] ∨ right ≠ [] := by
   intro htrace
   rcases normalSelectionSetResponsePath_left_or_right_of_diffTrace htrace with
     hleftPath | hrightPath
@@ -1179,17 +1180,14 @@ theorem normalSelectionSetDiffTrace_left_or_right_nonempty
 theorem normalSelectionSetDiffTrace_of_valid_normal_diff
     {schema : Schema}
     {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
-    {parentType : Name} {left right : List Selection} :
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    NormalSelectionSetDiff schema parentType left right ->
-      ∃ responsePath,
-        NormalSelectionSetDiffTrace schema parentType left right
-          responsePath := by
+    {parentType : Name} {left right : List Selection}
+    : Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> NormalSelectionSetDiff schema parentType left right
+      -> ∃ responsePath,
+          NormalSelectionSetDiffTrace schema parentType left right responsePath := by
   intro hleftValid hrightValid hleftNormal hrightNormal hdiff
   revert leftVariableDefinitions rightVariableDefinitions
   induction hdiff with
@@ -1331,17 +1329,15 @@ theorem normalSelectionSetDiffTrace_of_valid_normal_diff
 theorem normalSelectionSetDiffObservableTrace_of_valid_normal_diff
     {schema : Schema}
     {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
-    {parentType : Name} {left right : List Selection} :
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    NormalSelectionSetDiff schema parentType left right ->
-      ∃ responsePath,
-        NormalSelectionSetDiffObservableTrace schema parentType left right
-          responsePath := by
+    {parentType : Name} {left right : List Selection}
+    : Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> NormalSelectionSetDiff schema parentType left right
+      -> ∃ responsePath,
+          NormalSelectionSetDiffObservableTrace schema parentType left right
+            responsePath := by
   intro hleftValid hrightValid hleftNormal hrightNormal hdiff
   revert leftVariableDefinitions rightVariableDefinitions
   induction hdiff with
@@ -1559,12 +1555,11 @@ theorem normalSelectionSetDiffObservableTrace_of_valid_normal_diff
 
 theorem normalSelectionSetDiffTrace_exists_of_observableTrace
     {schema : Schema} {parentType : Name} {left right : List Selection}
-    {responsePath : List Name} :
-    NormalSelectionSetDiffObservableTrace schema parentType left right
-      responsePath ->
-      ∃ collapsedResponsePath,
-        NormalSelectionSetDiffTrace schema parentType left right
-          collapsedResponsePath := by
+    {responsePath : List Name}
+    : NormalSelectionSetDiffObservableTrace schema parentType left right responsePath
+      -> ∃ collapsedResponsePath,
+          NormalSelectionSetDiffTrace schema parentType left right
+            collapsedResponsePath := by
   intro htrace
   induction htrace with
   | objectLeftResponseName hobject hleftMem hrightNoResponseName =>
@@ -1635,10 +1630,9 @@ theorem normalSelectionSetDiffTrace_exists_of_observableTrace
 
 theorem normalSelectionSetDiff_of_observableTrace
     {schema : Schema} {parentType : Name} {left right : List Selection}
-    {responsePath : List Name} :
-    NormalSelectionSetDiffObservableTrace schema parentType left right
-      responsePath ->
-      NormalSelectionSetDiff schema parentType left right := by
+    {responsePath : List Name}
+    : NormalSelectionSetDiffObservableTrace schema parentType left right responsePath
+      -> NormalSelectionSetDiff schema parentType left right := by
   intro htrace
   rcases normalSelectionSetDiffTrace_exists_of_observableTrace htrace with
     ⟨_collapsedResponsePath, hcollapsedTrace⟩

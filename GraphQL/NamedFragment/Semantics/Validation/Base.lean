@@ -7,8 +7,8 @@ namespace Semantics
 
 theorem inlineSelectionSet_nonempty
     {fragments : List FragmentDefinition} {selectionSet : List Selection}
-    (hnonempty : selectionSet ≠ []) :
-    Inline.inlineSelectionSet fragments selectionSet ≠ [] := by
+    (hnonempty : selectionSet ≠ [])
+    : Inline.inlineSelectionSet fragments selectionSet ≠ [] := by
   cases selectionSet with
   | nil =>
       exact False.elim (hnonempty rfl)
@@ -17,9 +17,9 @@ theorem inlineSelectionSet_nonempty
 
 theorem inlineOperation_selectionSet_nonempty_of_valid
     {schema : Schema} {operation : Operation}
-    (hvalid :
-      GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation) :
-    (Inline.inlineOperation operation).selectionSet ≠ [] := by
+    (hvalid
+      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    : (Inline.inlineOperation operation).selectionSet ≠ [] := by
   rcases hvalid with
     ⟨_hroot, _hrootComposite, _hvariables, _huniqueFragments,
       _hfragmentsAcyclic, _hfragmentDefinitionsValid, hselectionNonempty,
@@ -28,7 +28,6 @@ theorem inlineOperation_selectionSet_nonempty_of_valid
   | mk name rootType variableDefinitions fragmentDefinitions selectionSet =>
       simp [Inline.inlineOperation]
       exact inlineSelectionSet_nonempty hselectionNonempty
-
 
 end Semantics
 end NamedFragment

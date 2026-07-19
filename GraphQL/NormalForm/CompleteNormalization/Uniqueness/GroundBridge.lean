@@ -13,19 +13,19 @@ namespace CompleteNormalization
 
 variable {ObjectRef : Type}
 
-def executableFieldListDirectiveFree
-    (fields : List Execution.ExecutableField) : Prop :=
+def executableFieldListDirectiveFree (fields : List Execution.ExecutableField) : Prop :=
   ∀ field, field ∈ fields -> selectionSetDirectiveFree field.selectionSet
 
 def executableGroupsDirectiveFree
-    (groups : List (Name × List Execution.ExecutableField)) : Prop :=
+    (groups : List (Name × List Execution.ExecutableField))
+    : Prop :=
   ∀ group, group ∈ groups -> executableFieldListDirectiveFree group.2
 
 theorem executableFieldListDirectiveFree_append
-    {left right : List Execution.ExecutableField} :
-    executableFieldListDirectiveFree left ->
-    executableFieldListDirectiveFree right ->
-      executableFieldListDirectiveFree (left ++ right) := by
+    {left right : List Execution.ExecutableField}
+    : executableFieldListDirectiveFree left
+      -> executableFieldListDirectiveFree right
+      -> executableFieldListDirectiveFree (left ++ right) := by
   intro hleft hright field hmem
   simp only [List.mem_append] at hmem
   rcases hmem with hmem | hmem
@@ -34,11 +34,10 @@ theorem executableFieldListDirectiveFree_append
 
 theorem executableGroupsDirectiveFree_addExecutableGroup
     {group : Name × List Execution.ExecutableField}
-    {groups : List (Name × List Execution.ExecutableField)} :
-    executableFieldListDirectiveFree group.2 ->
-    executableGroupsDirectiveFree groups ->
-      executableGroupsDirectiveFree
-        (Execution.addExecutableGroup group groups) := by
+    {groups : List (Name × List Execution.ExecutableField)}
+    : executableFieldListDirectiveFree group.2
+      -> executableGroupsDirectiveFree groups
+      -> executableGroupsDirectiveFree (Execution.addExecutableGroup group groups) := by
   intro hgroup hgroups
   induction groups with
   | nil =>
@@ -66,11 +65,11 @@ theorem executableGroupsDirectiveFree_addExecutableGroup
         · exact hgroups candidate (by simp [hrest])
 
 theorem executableGroupsDirectiveFree_mergeExecutableGroups
-    {left right : List (Name × List Execution.ExecutableField)} :
-    executableGroupsDirectiveFree left ->
-    executableGroupsDirectiveFree right ->
-      executableGroupsDirectiveFree
-        (Execution.mergeExecutableGroups left right) := by
+    {left right : List (Name × List Execution.ExecutableField)}
+    : executableGroupsDirectiveFree left
+      -> executableGroupsDirectiveFree right
+      -> executableGroupsDirectiveFree
+          (Execution.mergeExecutableGroups left right) := by
   intro hleft hright
   unfold Execution.mergeExecutableGroups
   induction right generalizing left with
@@ -86,12 +85,12 @@ theorem executableGroupsDirectiveFree_mergeExecutableGroups
 mutual
   theorem collectSelection_eq_of_directiveFree
       (schema : Schema) (leftValues rightValues : Execution.VariableValues)
-      (parentType : Name) (source : Execution.ResolverValue ObjectRef) :
-      ∀ selection,
-        selectionDirectiveFree selection ->
-          Execution.collectSelection schema leftValues parentType source selection
-            =
-          Execution.collectSelection schema rightValues parentType source selection
+      (parentType : Name) (source : Execution.ResolverValue ObjectRef)
+      : ∀ selection,
+          selectionDirectiveFree selection
+          -> Execution.collectSelection schema leftValues parentType source selection
+              = Execution.collectSelection schema rightValues parentType source
+                  selection
     | .field responseName fieldName arguments directives selectionSet, hfree => by
         rcases hfree with ⟨hdirectives, _hchildren⟩
         subst directives
@@ -118,12 +117,12 @@ mutual
 
   theorem collectFields_eq_of_directiveFree
       (schema : Schema) (leftValues rightValues : Execution.VariableValues)
-      (parentType : Name) (source : Execution.ResolverValue ObjectRef) :
-      ∀ selectionSet,
-        selectionSetDirectiveFree selectionSet ->
-          Execution.collectFields schema leftValues parentType source selectionSet
-            =
-          Execution.collectFields schema rightValues parentType source selectionSet
+      (parentType : Name) (source : Execution.ResolverValue ObjectRef)
+      : ∀ selectionSet,
+          selectionSetDirectiveFree selectionSet
+          -> Execution.collectFields schema leftValues parentType source selectionSet
+              = Execution.collectFields schema rightValues parentType source
+                  selectionSet
     | [], _hfree => rfl
     | selection :: rest, hfree => by
         rw [Execution.collectFields, Execution.collectFields]
@@ -136,12 +135,12 @@ end
 mutual
   theorem collectSelection_executableGroupsDirectiveFree
       (schema : Schema) (variableValues : Execution.VariableValues)
-      (parentType : Name) (source : Execution.ResolverValue ObjectRef) :
-      ∀ selection,
-        selectionDirectiveFree selection ->
-          executableGroupsDirectiveFree
-            (Execution.collectSelection schema variableValues parentType source
-              selection)
+      (parentType : Name) (source : Execution.ResolverValue ObjectRef)
+      : ∀ selection,
+          selectionDirectiveFree selection
+          -> executableGroupsDirectiveFree
+              (Execution.collectSelection schema variableValues parentType source
+                selection)
     | .field responseName fieldName arguments directives selectionSet, hfree => by
         rcases hfree with ⟨hdirectives, hchildren⟩
         subst directives
@@ -173,12 +172,12 @@ mutual
 
   theorem collectFields_executableGroupsDirectiveFree
       (schema : Schema) (variableValues : Execution.VariableValues)
-      (parentType : Name) (source : Execution.ResolverValue ObjectRef) :
-      ∀ selectionSet,
-        selectionSetDirectiveFree selectionSet ->
-          executableGroupsDirectiveFree
-            (Execution.collectFields schema variableValues parentType source
-              selectionSet)
+      (parentType : Name) (source : Execution.ResolverValue ObjectRef)
+      : ∀ selectionSet,
+          selectionSetDirectiveFree selectionSet
+          -> executableGroupsDirectiveFree
+              (Execution.collectFields schema variableValues parentType source
+                selectionSet)
     | [], _hfree => by
         simp [Execution.collectFields, executableGroupsDirectiveFree]
     | selection :: rest, hfree => by
@@ -192,12 +191,12 @@ end
 
 theorem collectSubfields_eq_of_directiveFree
     (schema : Schema) (leftValues rightValues : Execution.VariableValues)
-    (objectType : Name) (objectValue : Execution.ResolverValue ObjectRef) :
-    ∀ fields : List Execution.ExecutableField,
-      executableFieldListDirectiveFree fields ->
-        Execution.collectSubfields schema leftValues objectType objectValue fields
-          =
-        Execution.collectSubfields schema rightValues objectType objectValue fields
+    (objectType : Name) (objectValue : Execution.ResolverValue ObjectRef)
+    : ∀ fields : List Execution.ExecutableField,
+        executableFieldListDirectiveFree fields
+        -> Execution.collectSubfields schema leftValues objectType objectValue fields
+            = Execution.collectSubfields schema rightValues objectType objectValue
+                fields
   | [], _hfree => rfl
   | field :: rest, hfree => by
       rw [Execution.collectSubfields, Execution.collectSubfields]
@@ -210,12 +209,12 @@ theorem collectSubfields_eq_of_directiveFree
 
 theorem collectSubfields_executableGroupsDirectiveFree
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (objectType : Name) (objectValue : Execution.ResolverValue ObjectRef) :
-    ∀ fields : List Execution.ExecutableField,
-      executableFieldListDirectiveFree fields ->
-        executableGroupsDirectiveFree
-          (Execution.collectSubfields schema variableValues objectType objectValue
-            fields)
+    (objectType : Name) (objectValue : Execution.ResolverValue ObjectRef)
+    : ∀ fields : List Execution.ExecutableField,
+        executableFieldListDirectiveFree fields
+        -> executableGroupsDirectiveFree
+            (Execution.collectSubfields schema variableValues objectType objectValue
+              fields)
   | [], _hfree => by
       simp [Execution.collectSubfields, executableGroupsDirectiveFree]
   | field :: rest, hfree => by
@@ -230,35 +229,31 @@ theorem collectSubfields_executableGroupsDirectiveFree
 
 def executionVariableValuesIndependentAtFuel
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
-    (leftValues rightValues : Execution.VariableValues) (fuel : Nat) : Prop :=
+    (leftValues rightValues : Execution.VariableValues) (fuel : Nat)
+    : Prop :=
   (∀ source groups,
-    executableGroupsDirectiveFree groups ->
-      Execution.executeCollectedFields schema resolvers leftValues fuel source
-          groups
-        =
-      Execution.executeCollectedFields schema resolvers rightValues fuel source
-          groups)
+    executableGroupsDirectiveFree groups
+    -> Execution.executeCollectedFields schema resolvers leftValues fuel source groups
+        = Execution.executeCollectedFields schema resolvers rightValues fuel source
+            groups)
   ∧ (∀ fieldType fields value,
-    executableFieldListDirectiveFree fields ->
-      Execution.completeValue schema resolvers leftValues fuel fieldType fields
-          value
-        =
-      Execution.completeValue schema resolvers rightValues fuel fieldType fields
-          value)
+      executableFieldListDirectiveFree fields
+      -> Execution.completeValue schema resolvers leftValues fuel fieldType fields value
+          = Execution.completeValue schema resolvers rightValues fuel fieldType fields
+              value)
   ∧ (∀ itemType fields values,
-    executableFieldListDirectiveFree fields ->
-      Execution.completeValueList schema resolvers leftValues fuel itemType
-          fields values
-        =
-      Execution.completeValueList schema resolvers rightValues fuel itemType
-          fields values)
+      executableFieldListDirectiveFree fields
+      -> Execution.completeValueList schema resolvers leftValues fuel itemType
+            fields values
+          = Execution.completeValueList schema resolvers rightValues fuel itemType
+              fields values)
 
 theorem executionVariableValuesIndependentAtFuel_all
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
-    (leftValues rightValues : Execution.VariableValues) :
-    ∀ fuel,
-      executionVariableValuesIndependentAtFuel schema resolvers leftValues
-        rightValues fuel := by
+    (leftValues rightValues : Execution.VariableValues)
+    : ∀ fuel,
+        executionVariableValuesIndependentAtFuel schema resolvers leftValues
+          rightValues fuel := by
   intro fuel
   induction fuel with
   | zero =>
@@ -416,13 +411,12 @@ theorem executeSelectionSet_eq_of_directiveFree_variableValues
     (leftValues rightValues : Execution.VariableValues)
     (fuel : Nat) (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    selectionSetDirectiveFree selectionSet ->
-      Execution.executeSelectionSet schema resolvers leftValues fuel parentType
-          source selectionSet
-        =
-      Execution.executeSelectionSet schema resolvers rightValues fuel parentType
-          source selectionSet := by
+    (selectionSet : List Selection)
+    : selectionSetDirectiveFree selectionSet
+      -> Execution.executeSelectionSet schema resolvers leftValues fuel parentType
+            source selectionSet
+          = Execution.executeSelectionSet schema resolvers rightValues fuel parentType
+              source selectionSet := by
   intro hfree
   have hcollect := collectFields_eq_of_directiveFree schema leftValues
     rightValues parentType source selectionSet hfree
@@ -439,22 +433,20 @@ theorem executeSelectionSet_eq_of_directiveFree_variableValues
 
 theorem validNormalObjectSelectionSets_semanticallyEquivalent_equalUpToReordering
     {schema : Schema}
-    {leftVariableDefinitions rightVariableDefinitions :
-      List VariableDefinition}
+    {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType : Name} {left right : List Selection}
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (hleftValid : Validation.selectionSetValid schema
-      leftVariableDefinitions parentType left)
-    (hrightValid : Validation.selectionSetValid schema
-      rightVariableDefinitions parentType right)
+    (hleftValid
+      : Validation.selectionSetValid schema leftVariableDefinitions parentType left)
+    (hrightValid
+      : Validation.selectionSetValid schema rightVariableDefinitions parentType right)
     (hleftFree : selectionSetDirectiveFree left)
     (hrightFree : selectionSetDirectiveFree right)
     (hleftNormal : selectionSetNormal schema parentType left)
     (hrightNormal : selectionSetNormal schema parentType right)
     (hobject : objectTypeNameBool schema parentType = true)
-    (hsem : selectionSetsSemanticallyEquivalent schema
-      parentType left right) :
-    SelectionSetEqualUpToReordering left right := by
+    (hsem : selectionSetsSemanticallyEquivalent schema parentType left right)
+    : SelectionSetEqualUpToReordering left right := by
   by_cases hequal : SelectionSetEqualUpToReordering left right
   · exact hequal
   · have hdiff :

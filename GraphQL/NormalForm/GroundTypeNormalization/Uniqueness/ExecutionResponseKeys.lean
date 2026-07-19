@@ -20,13 +20,13 @@ theorem executeSelectionSetAsResponse_eq_object_of_executeSelectionSet_ok
     {source : Execution.ResolverValue ObjectRef}
     {selectionSet : List Selection}
     {fields : List (Name × Execution.ResponseValue)}
-    {errors : Nat} :
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source selectionSet = .ok (fields, errors) ->
-      Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-        parentType source selectionSet =
-        ({ data := .object fields, errors := errors } :
-          Execution.Response) := by
+    {errors : Nat}
+    : Execution.executeSelectionSet schema resolvers variableValues fuel
+          parentType source selectionSet
+        = .ok (fields, errors)
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source selectionSet
+          = ({ data := .object fields, errors := errors } : Execution.Response) := by
   intro hok
   simp [Execution.executeSelectionSetAsResponse, Execution.selectionSetResultToResponse, hok]
 
@@ -36,13 +36,13 @@ theorem executeSelectionSetAsResponse_eq_null_of_executeSelectionSet_error
     {fuel : Nat} {parentType : Name}
     {source : Execution.ResolverValue ObjectRef}
     {selectionSet : List Selection}
-    {errors : Nat} :
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source selectionSet = .error errors ->
-      Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-        parentType source selectionSet =
-        ({ data := .null, errors := errors } :
-          Execution.Response) := by
+    {errors : Nat}
+    : Execution.executeSelectionSet schema resolvers variableValues fuel
+          parentType source selectionSet
+        = .error errors
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source selectionSet
+          = ({ data := .null, errors := errors } : Execution.Response) := by
   intro herror
   simp [Execution.executeSelectionSetAsResponse, Execution.selectionSetResultToResponse, herror]
 
@@ -52,10 +52,11 @@ theorem executeField_ok_keys
     (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
     (responseName : Name) (fields : List Execution.ExecutableField)
     {outputFields : List (Name × Execution.ResponseValue)}
-    {errors : Nat} :
-    Execution.executeField schema resolvers variableValues fuel source
-      responseName fields = .ok (outputFields, errors) ->
-      outputFields.map Prod.fst = [responseName] := by
+    {errors : Nat}
+    : Execution.executeField schema resolvers variableValues fuel source
+          responseName fields
+        = .ok (outputFields, errors)
+      -> outputFields.map Prod.fst = [responseName] := by
   intro hok
   cases fields with
   | nil =>
@@ -103,13 +104,14 @@ theorem executeField_ok_keys
 theorem executeCollectedFields_ok_keys
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (fuel : Nat) (source : Execution.ResolverValue ObjectRef) :
-    ∀ (groups : List (Name × List Execution.ExecutableField))
-      (outputFields : List (Name × Execution.ResponseValue))
-      (errors : Nat),
-      Execution.executeCollectedFields schema resolvers variableValues fuel
-        source groups = .ok (outputFields, errors) ->
-        outputFields.map Prod.fst = groups.map Prod.fst
+    (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
+    : ∀ (groups : List (Name × List Execution.ExecutableField))
+          (outputFields : List (Name × Execution.ResponseValue))
+          (errors : Nat),
+        Execution.executeCollectedFields schema resolvers variableValues fuel
+            source groups
+          = .ok (outputFields, errors)
+        -> outputFields.map Prod.fst = groups.map Prod.fst
   | [], outputFields, errors, hok => by
       simp [Execution.executeCollectedFields] at hok
       exact hok.1 ▸ rfl
@@ -159,13 +161,14 @@ theorem executeSelectionSetAsResponse_object_keys_eq_collectFields
     (source : Execution.ResolverValue ObjectRef)
     (selectionSet : List Selection)
     {fields : List (Name × Execution.ResponseValue)}
-    {errors : Nat} :
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source selectionSet =
-      ({ data := .object fields, errors := errors } : Execution.Response) ->
-      fields.map Prod.fst =
-        (Execution.collectFields schema variableValues parentType source
-          selectionSet).map Prod.fst := by
+    {errors : Nat}
+    : Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+          parentType source selectionSet
+        = ({ data := .object fields, errors := errors } : Execution.Response)
+      -> fields.map Prod.fst
+          = (Execution.collectFields schema variableValues parentType source
+              selectionSet).map
+              Prod.fst := by
   intro hresponse
   cases hresult :
       Execution.executeSelectionSet schema resolvers variableValues fuel

@@ -13,9 +13,8 @@ namespace NormalForm
 namespace GroundTypeNormalization
 
 theorem normal_operations_equalUpToReordering_semanticallyEquivalent
-    {schema : Schema} {left right : Operation} :
-    normalOperationsEqualUpToReorderingSemanticallyEquivalent schema
-      left right := by
+    {schema : Schema} {left right : Operation}
+    : normalOperationsEqualUpToReorderingSemanticallyEquivalent schema left right := by
   intro hleftFree hrightFree hleftNormal hrightNormal hequal
   rcases hequal with ⟨hroot, hselectionEqual⟩
   have hrightSelectionNormal :
@@ -52,9 +51,9 @@ theorem normal_operations_equalUpToReordering_semanticallyEquivalent
           hselectionSem resolvers variableValues fuel source hsource
 
 theorem normalizeOperations_equalUpToReordering_semanticallyEquivalent
-    {schema : Schema} {left right : Operation} :
-    normalizeOperationsEqualUpToReorderingSemanticallyEquivalent schema
-      left right := by
+    {schema : Schema} {left right : Operation}
+    : normalizeOperationsEqualUpToReorderingSemanticallyEquivalent schema
+        left right := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hequal
   have hleftNormalizedFree :
       operationDirectiveFree (normalizeOperation schema left) :=
@@ -94,9 +93,8 @@ theorem normalizeOperations_equalUpToReordering_semanticallyEquivalent
     hnormalizedSemantics resolvers variableValues fuel source
 
 theorem normal_operations_semanticallyEquivalent_equalUpToReordering
-    {schema : Schema} {left right : Operation} :
-    normalOperationsSemanticallyEquivalentEqualUpToReordering schema
-      left right := by
+    {schema : Schema} {left right : Operation}
+    : normalOperationsSemanticallyEquivalentEqualUpToReordering schema left right := by
   exact
     normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_object_diff_observable_trace_data_separates
       (fun hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
@@ -106,8 +104,8 @@ theorem normal_operations_semanticallyEquivalent_equalUpToReordering
           hrightNormal hobject htrace)
 
 theorem normalizeOperation_uniqueUpToReordering
-    {schema : Schema} {left right : Operation} :
-    normalizeOperationUniqueUpToReordering schema left right := by
+    {schema : Schema} {left right : Operation}
+    : normalizeOperationUniqueUpToReordering schema left right := by
   exact
     normalizeOperation_uniqueUpToReordering_of_normal_operations
       (normal_operations_semanticallyEquivalent_equalUpToReordering

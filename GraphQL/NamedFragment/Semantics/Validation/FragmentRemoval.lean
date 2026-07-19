@@ -10,19 +10,19 @@ mutual
   theorem selectionValid_after_fragment_removal
       {removedName : Name} {fragments : List FragmentDefinition}
       {removed : FragmentDefinition}
-      {remaining : { remaining : List FragmentDefinition //
-        remaining.length < fragments.length }}
-      (hremove :
-        lookupFragmentAndRestLt? removedName fragments =
-          some (removed, remaining)) :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {parentType : Name} {selection : Selection},
-        removedName ∉
-          GraphQL.NamedFragment.Validation.selectionFragmentSpreadNames selection ->
-        GraphQL.NamedFragment.Validation.selectionValid schema
-          variableDefinitions fragments parentType selection ->
-        GraphQL.NamedFragment.Validation.selectionValid schema
-          variableDefinitions remaining.val parentType selection
+      {remaining
+        : { remaining : List FragmentDefinition
+            // remaining.length < fragments.length }}
+      (hremove
+        : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {parentType : Name} {selection : Selection},
+          removedName
+            ∉ GraphQL.NamedFragment.Validation.selectionFragmentSpreadNames selection
+          -> GraphQL.NamedFragment.Validation.selectionValid schema
+              variableDefinitions fragments parentType selection
+          -> GraphQL.NamedFragment.Validation.selectionValid schema
+              variableDefinitions remaining.val parentType selection
     | schema, variableDefinitions, parentType,
         .field responseName fieldName arguments directives selectionSet,
         hnoSpread, hvalid => by
@@ -68,20 +68,20 @@ mutual
   theorem selectionSetValid_after_fragment_removal
       {removedName : Name} {fragments : List FragmentDefinition}
       {removed : FragmentDefinition}
-      {remaining : { remaining : List FragmentDefinition //
-        remaining.length < fragments.length }}
-      (hremove :
-        lookupFragmentAndRestLt? removedName fragments =
-          some (removed, remaining)) :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {parentType : Name} {selectionSet : List Selection},
-        removedName ∉
-          GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-            selectionSet ->
-        GraphQL.NamedFragment.Validation.selectionSetValid schema
-          variableDefinitions fragments parentType selectionSet ->
-        GraphQL.NamedFragment.Validation.selectionSetValid schema
-          variableDefinitions remaining.val parentType selectionSet
+      {remaining
+        : { remaining : List FragmentDefinition
+            // remaining.length < fragments.length }}
+      (hremove
+        : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {parentType : Name} {selectionSet : List Selection},
+          removedName
+            ∉ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+                selectionSet
+          -> GraphQL.NamedFragment.Validation.selectionSetValid schema
+              variableDefinitions fragments parentType selectionSet
+          -> GraphQL.NamedFragment.Validation.selectionSetValid schema
+              variableDefinitions remaining.val parentType selectionSet
     | _schema, _variableDefinitions, _parentType, [], _hnoSpread,
         _hvalid => by
         simp [GraphQL.NamedFragment.Validation.selectionSetValid]
@@ -123,20 +123,20 @@ mutual
   theorem fieldSelectionSetValid_after_fragment_removal
       {removedName : Name} {fragments : List FragmentDefinition}
       {removed : FragmentDefinition}
-      {remaining : { remaining : List FragmentDefinition //
-        remaining.length < fragments.length }}
-      (hremove :
-        lookupFragmentAndRestLt? removedName fragments =
-          some (removed, remaining)) :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {fieldDefinition : FieldDefinition} {selectionSet : List Selection},
-        removedName ∉
-          GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-            selectionSet ->
-        GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
-          variableDefinitions fragments fieldDefinition selectionSet ->
-        GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
-          variableDefinitions remaining.val fieldDefinition selectionSet
+      {remaining
+        : { remaining : List FragmentDefinition
+            // remaining.length < fragments.length }}
+      (hremove
+        : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {fieldDefinition : FieldDefinition} {selectionSet : List Selection},
+          removedName
+            ∉ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+                selectionSet
+          -> GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
+              variableDefinitions fragments fieldDefinition selectionSet
+          -> GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
+              variableDefinitions remaining.val fieldDefinition selectionSet
     | schema, variableDefinitions, fieldDefinition, selectionSet,
         hnoSpread, hvalid => by
         simp [GraphQL.NamedFragment.Validation.fieldSelectionSetValid] at hvalid ⊢
@@ -157,21 +157,20 @@ theorem fragmentSelectionSetValid_after_lookup_removal_of_no_spread
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {fragments : List FragmentDefinition}
     {fragmentName : Name} {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
-    (hfragmentValid :
-      GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
-        variableDefinitions fragments fragment)
-    (hnoRemoved :
-      fragmentName ∉
-        GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-          fragment.selectionSet)
-    (hlookup :
-      lookupFragmentAndRestLt? fragmentName fragments =
-        some (fragment, remaining)) :
-    GraphQL.NamedFragment.Validation.selectionSetValid schema
-      variableDefinitions remaining.val fragment.typeCondition
-      fragment.selectionSet := by
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    (hfragmentValid
+      : GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
+          variableDefinitions fragments fragment)
+    (hnoRemoved
+      : fragmentName
+        ∉ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+            fragment.selectionSet)
+    (hlookup
+      : lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining))
+    : GraphQL.NamedFragment.Validation.selectionSetValid schema
+        variableDefinitions remaining.val fragment.typeCondition
+        fragment.selectionSet := by
   rcases hfragmentValid with
     ⟨_hcomposite, _hnonempty, hselectionSetValid⟩
   exact selectionSetValid_after_fragment_removal hlookup hnoRemoved
@@ -181,21 +180,21 @@ theorem allFragmentDefinitionsValid_after_lookup_removal_of_no_spread
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {fragments : List FragmentDefinition}
     {fragmentName : Name} {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions fragments)
-    (hnoRemoved :
-      ∀ candidate, candidate ∈ remaining.val ->
-        fragmentName ∉
-          GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-            candidate.selectionSet)
-    (hlookup :
-      lookupFragmentAndRestLt? fragmentName fragments =
-        some (fragment, remaining)) :
-    GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-      variableDefinitions remaining.val := by
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions fragments)
+    (hnoRemoved
+      : ∀ candidate,
+          candidate ∈ remaining.val
+          -> fragmentName
+              ∉ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+                  candidate.selectionSet)
+    (hlookup
+      : lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining))
+    : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+        variableDefinitions remaining.val := by
   intro candidate hcandidate
   have hcandidateValid :
       GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
@@ -212,44 +211,40 @@ theorem allFragmentDefinitionsValid_after_lookup_removal_of_no_spread
 theorem lookupFragmentAndRestLt?_remaining_length_lt
     {fragmentName : Name} {fragments : List FragmentDefinition}
     {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }} :
-    lookupFragmentAndRestLt? fragmentName fragments =
-        some (fragment, remaining) ->
-      remaining.val.length < fragments.length := by
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    : lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining)
+      -> remaining.val.length < fragments.length := by
   intro _hlookup
   exact remaining.property
 
 inductive ReachableAncestorRemovals
     (original : List FragmentDefinition) (targetName : Name)
-    (final : List FragmentDefinition) :
-    List FragmentDefinition -> Prop where
-  | root :
-      ReachableAncestorRemovals original targetName final original
+    (final : List FragmentDefinition)
+    : List FragmentDefinition -> Prop where
+  | root : ReachableAncestorRemovals original targetName final original
   | remove
-      {current : List FragmentDefinition}
-      {ancestorName : Name} {ancestor : FragmentDefinition}
-      {remaining : { remaining : List FragmentDefinition //
-        remaining.length < current.length }}
-      {fuel : Nat}
-      (hprevious :
-        ReachableAncestorRemovals original targetName final current)
-      (hancestorMem : ancestor ∈ original)
-      (hlookup :
-        lookupFragmentAndRestLt? ancestorName current =
-          some (ancestor, remaining))
-      (hreachable :
-        GraphQL.NamedFragment.Validation.fragmentReachableBool original fuel
-          ancestor.name targetName = true)
-      (hfuel : fuel + final.length ≤ original.length) :
-      ReachableAncestorRemovals original targetName final remaining.val
+    {current : List FragmentDefinition}
+    {ancestorName : Name} {ancestor : FragmentDefinition}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < current.length }}
+    {fuel : Nat}
+    (hprevious : ReachableAncestorRemovals original targetName final current)
+    (hancestorMem : ancestor ∈ original)
+    (hlookup
+      : lookupFragmentAndRestLt? ancestorName current = some (ancestor, remaining))
+    (hreachable
+      : GraphQL.NamedFragment.Validation.fragmentReachableBool original fuel
+          ancestor.name targetName
+        = true)
+    (hfuel : fuel + final.length ≤ original.length)
+    : ReachableAncestorRemovals original targetName final remaining.val
 
 theorem ReachableAncestorRemovals.length_le_original
     {original final current : List FragmentDefinition}
     {targetName : Name}
-    (hremovals :
-      ReachableAncestorRemovals original targetName final current) :
-    current.length ≤ original.length := by
+    (hremovals : ReachableAncestorRemovals original targetName final current)
+    : current.length ≤ original.length := by
   induction hremovals with
   | root =>
       exact Nat.le_refl original.length
@@ -262,11 +257,10 @@ theorem ReachableAncestorRemovals.length_le_original
 theorem ReachableAncestorRemovals.mem_original
     {original final current : List FragmentDefinition}
     {targetName : Name}
-    (hremovals :
-      ReachableAncestorRemovals original targetName final current)
+    (hremovals : ReachableAncestorRemovals original targetName final current)
     {fragment : FragmentDefinition}
-    (hmem : fragment ∈ current) :
-    fragment ∈ original := by
+    (hmem : fragment ∈ current)
+    : fragment ∈ original := by
   induction hremovals with
   | root =>
       exact hmem
@@ -278,17 +272,15 @@ theorem ReachableAncestorRemovals.mem_original
 theorem ReachableAncestorRemovals.retarget_direct
     {original parentFinal childFinal current : List FragmentDefinition}
     {parentName childName : Name} {parent : FragmentDefinition}
-    (hremovals :
-      ReachableAncestorRemovals original parentName parentFinal current)
-    (hparentLookup :
-      GraphQL.NamedFragment.lookupFragment? original parentName =
-        some parent)
-    (hparentSpread :
-      childName ∈
-        GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-          parent.selectionSet)
-    (hfinalLength : childFinal.length + 1 ≤ parentFinal.length) :
-    ReachableAncestorRemovals original childName childFinal current := by
+    (hremovals : ReachableAncestorRemovals original parentName parentFinal current)
+    (hparentLookup
+      : GraphQL.NamedFragment.lookupFragment? original parentName = some parent)
+    (hparentSpread
+      : childName
+        ∈ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+            parent.selectionSet)
+    (hfinalLength : childFinal.length + 1 ≤ parentFinal.length)
+    : ReachableAncestorRemovals original childName childFinal current := by
   induction hremovals with
   | root =>
       exact ReachableAncestorRemovals.root
@@ -302,23 +294,21 @@ theorem ReachableAncestorRemovals.child
     {original current : List FragmentDefinition}
     {parentName childName : Name}
     {parent : FragmentDefinition}
-    {parentRemaining : { parentRemaining : List FragmentDefinition //
-      parentRemaining.length < current.length }}
-    (hremovals :
-      ReachableAncestorRemovals original parentName current current)
+    {parentRemaining
+      : { parentRemaining : List FragmentDefinition
+          // parentRemaining.length < current.length }}
+    (hremovals : ReachableAncestorRemovals original parentName current current)
     (hparentMem : parent ∈ original)
-    (hparentLookupOriginal :
-      GraphQL.NamedFragment.lookupFragment? original parentName =
-        some parent)
-    (hparentLookupCurrent :
-      lookupFragmentAndRestLt? parentName current =
-        some (parent, parentRemaining))
-    (hparentSpread :
-      childName ∈
-        GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-          parent.selectionSet) :
-    ReachableAncestorRemovals original childName parentRemaining.val
-      parentRemaining.val := by
+    (hparentLookupOriginal
+      : GraphQL.NamedFragment.lookupFragment? original parentName = some parent)
+    (hparentLookupCurrent
+      : lookupFragmentAndRestLt? parentName current = some (parent, parentRemaining))
+    (hparentSpread
+      : childName
+        ∈ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+            parent.selectionSet)
+    : ReachableAncestorRemovals original childName parentRemaining.val
+        parentRemaining.val := by
   have hretarget :
       ReachableAncestorRemovals original childName parentRemaining.val
         current :=
@@ -349,17 +339,15 @@ theorem selectionSetValid_after_reachable_ancestor_removals
     {original final current : List FragmentDefinition}
     {targetName : Name} {target : FragmentDefinition}
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic original)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions original)
-    (hremovals :
-      ReachableAncestorRemovals original targetName final current)
-    (htargetLookup :
-      GraphQL.NamedFragment.lookupFragment? original targetName =
-        some target)
-    (htargetFinal : target ∈ final) :
-    GraphQL.NamedFragment.Validation.selectionSetValid schema
-      variableDefinitions current target.typeCondition target.selectionSet := by
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions original)
+    (hremovals : ReachableAncestorRemovals original targetName final current)
+    (htargetLookup
+      : GraphQL.NamedFragment.lookupFragment? original targetName = some target)
+    (htargetFinal : target ∈ final)
+    : GraphQL.NamedFragment.Validation.selectionSetValid schema
+        variableDefinitions current target.typeCondition target.selectionSet := by
   induction hremovals with
   | root =>
       exact (hall target
@@ -388,17 +376,15 @@ theorem fragmentDefinitionValid_after_reachable_ancestor_removals
     {original final current : List FragmentDefinition}
     {targetName : Name} {target : FragmentDefinition}
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic original)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions original)
-    (hremovals :
-      ReachableAncestorRemovals original targetName final current)
-    (htargetLookup :
-      GraphQL.NamedFragment.lookupFragment? original targetName =
-        some target)
-    (htargetFinal : target ∈ final) :
-    GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
-      variableDefinitions current target := by
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions original)
+    (hremovals : ReachableAncestorRemovals original targetName final current)
+    (htargetLookup
+      : GraphQL.NamedFragment.lookupFragment? original targetName = some target)
+    (htargetFinal : target ∈ final)
+    : GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
+        variableDefinitions current target := by
   have htargetValidOriginal :
       GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
         variableDefinitions original target :=
@@ -416,26 +402,25 @@ theorem descendantSelectionSetValid_after_ancestor_lookup_removal
     {fragments : List FragmentDefinition}
     {ancestorName targetName : Name}
     {ancestor target : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
     {fuel : Nat}
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic fragments)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions fragments)
-    (hancestorLookup :
-      lookupFragmentAndRestLt? ancestorName fragments =
-        some (ancestor, remaining))
-    (hreachable :
-      GraphQL.NamedFragment.Validation.fragmentReachableBool fragments fuel
-        ancestor.name targetName = true)
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions fragments)
+    (hancestorLookup
+      : lookupFragmentAndRestLt? ancestorName fragments = some (ancestor, remaining))
+    (hreachable
+      : GraphQL.NamedFragment.Validation.fragmentReachableBool fragments fuel
+          ancestor.name targetName
+        = true)
     (hle : fuel + 1 ≤ fragments.length)
-    (htargetLookup :
-      GraphQL.NamedFragment.lookupFragment? fragments targetName =
-        some target) :
-    GraphQL.NamedFragment.Validation.selectionSetValid schema
-      variableDefinitions remaining.val target.typeCondition
-      target.selectionSet := by
+    (htargetLookup
+      : GraphQL.NamedFragment.lookupFragment? fragments targetName = some target)
+    : GraphQL.NamedFragment.Validation.selectionSetValid schema
+        variableDefinitions remaining.val target.typeCondition
+        target.selectionSet := by
   have hancestorMem : ancestor ∈ fragments :=
     GraphQL.NamedFragment.Validation.lookupFragmentAndRestLt?_found_mem
       hancestorLookup
@@ -470,28 +455,29 @@ theorem descendantFragmentDefinitionValid_after_ancestor_lookup_removal
     {fragments : List FragmentDefinition}
     {ancestorName targetName : Name}
     {ancestor target : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
-    {targetRemaining : { targetRemaining : List FragmentDefinition //
-      targetRemaining.length < remaining.val.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    {targetRemaining
+      : { targetRemaining : List FragmentDefinition
+          // targetRemaining.length < remaining.val.length }}
     {fuel : Nat}
     (hunique : GraphQL.NamedFragment.Validation.fragmentNamesUnique fragments)
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic fragments)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions fragments)
-    (hancestorLookup :
-      lookupFragmentAndRestLt? ancestorName fragments =
-        some (ancestor, remaining))
-    (hreachable :
-      GraphQL.NamedFragment.Validation.fragmentReachableBool fragments fuel
-        ancestor.name targetName = true)
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions fragments)
+    (hancestorLookup
+      : lookupFragmentAndRestLt? ancestorName fragments = some (ancestor, remaining))
+    (hreachable
+      : GraphQL.NamedFragment.Validation.fragmentReachableBool fragments fuel
+          ancestor.name targetName
+        = true)
     (hle : fuel + 1 ≤ fragments.length)
-    (htargetLookup :
-      lookupFragmentAndRestLt? targetName remaining.val =
-        some (target, targetRemaining)) :
-    GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
-      variableDefinitions remaining.val target := by
+    (htargetLookup
+      : lookupFragmentAndRestLt? targetName remaining.val
+        = some (target, targetRemaining))
+    : GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
+        variableDefinitions remaining.val target := by
   have htargetLookupOriginal :
       GraphQL.NamedFragment.lookupFragment? fragments targetName =
         some target :=
@@ -514,27 +500,27 @@ theorem childFragmentDefinitionValid_after_ancestor_lookup_removal
     {fragments : List FragmentDefinition}
     {ancestorName targetName : Name}
     {ancestor target : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
-    {targetRemaining : { targetRemaining : List FragmentDefinition //
-      targetRemaining.length < remaining.val.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    {targetRemaining
+      : { targetRemaining : List FragmentDefinition
+          // targetRemaining.length < remaining.val.length }}
     (hunique : GraphQL.NamedFragment.Validation.fragmentNamesUnique fragments)
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic fragments)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions fragments)
-    (hancestorLookup :
-      lookupFragmentAndRestLt? ancestorName fragments =
-        some (ancestor, remaining))
-    (hancestorSpread :
-      targetName ∈
-        GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-          ancestor.selectionSet)
-    (htargetLookup :
-      lookupFragmentAndRestLt? targetName remaining.val =
-        some (target, targetRemaining)) :
-    GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
-      variableDefinitions remaining.val target := by
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions fragments)
+    (hancestorLookup
+      : lookupFragmentAndRestLt? ancestorName fragments = some (ancestor, remaining))
+    (hancestorSpread
+      : targetName
+        ∈ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+            ancestor.selectionSet)
+    (htargetLookup
+      : lookupFragmentAndRestLt? targetName remaining.val
+        = some (target, targetRemaining))
+    : GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
+        variableDefinitions remaining.val target := by
   have hancestorName : ancestor.name = ancestorName :=
     GraphQL.NamedFragment.Validation.lookupFragmentAndRestLt?_found_name
       hancestorLookup
@@ -561,35 +547,36 @@ theorem descendantSelectionSetValid_after_two_ancestor_lookup_removals
     {fragments : List FragmentDefinition}
     {firstName secondName targetName : Name}
     {first second target : FragmentDefinition}
-    {afterFirst : { afterFirst : List FragmentDefinition //
-      afterFirst.length < fragments.length }}
-    {afterSecond : { afterSecond : List FragmentDefinition //
-      afterSecond.length < afterFirst.val.length }}
+    {afterFirst
+      : { afterFirst : List FragmentDefinition
+          // afterFirst.length < fragments.length }}
+    {afterSecond
+      : { afterSecond : List FragmentDefinition
+          // afterSecond.length < afterFirst.val.length }}
     {firstFuel secondFuel : Nat}
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic fragments)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions fragments)
-    (hfirstLookup :
-      lookupFragmentAndRestLt? firstName fragments =
-        some (first, afterFirst))
-    (hsecondLookup :
-      lookupFragmentAndRestLt? secondName afterFirst.val =
-        some (second, afterSecond))
-    (hfirstReachable :
-      GraphQL.NamedFragment.Validation.fragmentReachableBool fragments
-        firstFuel first.name targetName = true)
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions fragments)
+    (hfirstLookup
+      : lookupFragmentAndRestLt? firstName fragments = some (first, afterFirst))
+    (hsecondLookup
+      : lookupFragmentAndRestLt? secondName afterFirst.val = some (second, afterSecond))
+    (hfirstReachable
+      : GraphQL.NamedFragment.Validation.fragmentReachableBool fragments
+          firstFuel first.name targetName
+        = true)
     (hfirstFuel : firstFuel + 1 ≤ fragments.length)
-    (hsecondReachable :
-      GraphQL.NamedFragment.Validation.fragmentReachableBool fragments
-        secondFuel second.name targetName = true)
+    (hsecondReachable
+      : GraphQL.NamedFragment.Validation.fragmentReachableBool fragments
+          secondFuel second.name targetName
+        = true)
     (hsecondFuel : secondFuel + 1 ≤ fragments.length)
-    (htargetLookup :
-      GraphQL.NamedFragment.lookupFragment? fragments targetName =
-        some target) :
-    GraphQL.NamedFragment.Validation.selectionSetValid schema
-      variableDefinitions afterSecond.val target.typeCondition
-      target.selectionSet := by
+    (htargetLookup
+      : GraphQL.NamedFragment.lookupFragment? fragments targetName = some target)
+    : GraphQL.NamedFragment.Validation.selectionSetValid schema
+        variableDefinitions afterSecond.val target.typeCondition
+        target.selectionSet := by
   have htargetSelectionAfterFirst :
       GraphQL.NamedFragment.Validation.selectionSetValid schema
         variableDefinitions afterFirst.val target.typeCondition
@@ -625,37 +612,40 @@ theorem descendantFragmentDefinitionValid_after_two_ancestor_lookup_removals
     {fragments : List FragmentDefinition}
     {firstName secondName targetName : Name}
     {first second target : FragmentDefinition}
-    {afterFirst : { afterFirst : List FragmentDefinition //
-      afterFirst.length < fragments.length }}
-    {afterSecond : { afterSecond : List FragmentDefinition //
-      afterSecond.length < afterFirst.val.length }}
-    {targetRemaining : { targetRemaining : List FragmentDefinition //
-      targetRemaining.length < afterSecond.val.length }}
+    {afterFirst
+      : { afterFirst : List FragmentDefinition
+          // afterFirst.length < fragments.length }}
+    {afterSecond
+      : { afterSecond : List FragmentDefinition
+          // afterSecond.length < afterFirst.val.length }}
+    {targetRemaining
+      : { targetRemaining : List FragmentDefinition
+          // targetRemaining.length < afterSecond.val.length }}
     {firstFuel secondFuel : Nat}
     (hunique : GraphQL.NamedFragment.Validation.fragmentNamesUnique fragments)
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic fragments)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions fragments)
-    (hfirstLookup :
-      lookupFragmentAndRestLt? firstName fragments =
-        some (first, afterFirst))
-    (hsecondLookup :
-      lookupFragmentAndRestLt? secondName afterFirst.val =
-        some (second, afterSecond))
-    (hfirstReachable :
-      GraphQL.NamedFragment.Validation.fragmentReachableBool fragments
-        firstFuel first.name targetName = true)
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions fragments)
+    (hfirstLookup
+      : lookupFragmentAndRestLt? firstName fragments = some (first, afterFirst))
+    (hsecondLookup
+      : lookupFragmentAndRestLt? secondName afterFirst.val = some (second, afterSecond))
+    (hfirstReachable
+      : GraphQL.NamedFragment.Validation.fragmentReachableBool fragments
+          firstFuel first.name targetName
+        = true)
     (hfirstFuel : firstFuel + 1 ≤ fragments.length)
-    (hsecondReachable :
-      GraphQL.NamedFragment.Validation.fragmentReachableBool fragments
-        secondFuel second.name targetName = true)
+    (hsecondReachable
+      : GraphQL.NamedFragment.Validation.fragmentReachableBool fragments
+          secondFuel second.name targetName
+        = true)
     (hsecondFuel : secondFuel + 1 ≤ fragments.length)
-    (htargetLookup :
-      lookupFragmentAndRestLt? targetName afterSecond.val =
-        some (target, targetRemaining)) :
-    GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
-      variableDefinitions afterSecond.val target := by
+    (htargetLookup
+      : lookupFragmentAndRestLt? targetName afterSecond.val
+        = some (target, targetRemaining))
+    : GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
+        variableDefinitions afterSecond.val target := by
   have htargetMemAfterSecond : target ∈ afterSecond.val :=
     GraphQL.NamedFragment.Validation.lookupFragmentAndRestLt?_found_mem
       htargetLookup
@@ -692,19 +682,18 @@ theorem fragmentSelectionSetValid_after_lookup_removal
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {fragments : List FragmentDefinition}
     {fragmentName : Name} {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
     (hunique : GraphQL.NamedFragment.Validation.fragmentNamesUnique fragments)
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic fragments)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions fragments)
-    (hlookup :
-      lookupFragmentAndRestLt? fragmentName fragments =
-        some (fragment, remaining)) :
-    GraphQL.NamedFragment.Validation.selectionSetValid schema
-      variableDefinitions remaining.val fragment.typeCondition
-      fragment.selectionSet := by
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions fragments)
+    (hlookup
+      : lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining))
+    : GraphQL.NamedFragment.Validation.selectionSetValid schema
+        variableDefinitions remaining.val fragment.typeCondition
+        fragment.selectionSet := by
   have hfragmentValid :
       GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
         variableDefinitions fragments fragment :=
@@ -738,23 +727,22 @@ theorem fragmentInlineSelectionSetValid_after_reachable_removals_aux
     {original : List FragmentDefinition}
     (hunique : GraphQL.NamedFragment.Validation.fragmentNamesUnique original)
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic original)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions original) :
-    ∀ n {current : List FragmentDefinition}
-      {fragmentName : Name} {fragment : FragmentDefinition}
-      {remaining : { remaining : List FragmentDefinition //
-        remaining.length < current.length }},
-      current.length ≤ n ->
-      ReachableAncestorRemovals original fragmentName current current ->
-      GraphQL.NamedFragment.lookupFragment? original fragmentName =
-        some fragment ->
-      lookupFragmentAndRestLt? fragmentName current =
-        some (fragment, remaining) ->
-      fragment.selectionSet ≠ []
-        ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-          variableDefinitions [] fragment.typeCondition
-          (Inline.inlineSelectionSet remaining.val fragment.selectionSet) := by
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions original)
+    : ∀ n {current : List FragmentDefinition}
+          {fragmentName : Name} {fragment : FragmentDefinition}
+          {remaining
+            : { remaining : List FragmentDefinition
+                // remaining.length < current.length }},
+        current.length ≤ n
+        -> ReachableAncestorRemovals original fragmentName current current
+        -> GraphQL.NamedFragment.lookupFragment? original fragmentName = some fragment
+        -> lookupFragmentAndRestLt? fragmentName current = some (fragment, remaining)
+        -> fragment.selectionSet ≠ []
+            ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
+                variableDefinitions [] fragment.typeCondition
+                (Inline.inlineSelectionSet remaining.val fragment.selectionSet) := by
   intro n
   induction n with
   | zero =>
@@ -847,25 +835,22 @@ theorem fragmentInlineSelectionSetValid_after_reachable_removals
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {original current : List FragmentDefinition}
     {fragmentName : Name} {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < current.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < current.length }}
     (hunique : GraphQL.NamedFragment.Validation.fragmentNamesUnique original)
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic original)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions original)
-    (hremovals :
-      ReachableAncestorRemovals original fragmentName current current)
-    (hlookupOriginal :
-      GraphQL.NamedFragment.lookupFragment? original fragmentName =
-        some fragment)
-    (hlookup :
-      lookupFragmentAndRestLt? fragmentName current =
-        some (fragment, remaining)) :
-    fragment.selectionSet ≠ []
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions original)
+    (hremovals : ReachableAncestorRemovals original fragmentName current current)
+    (hlookupOriginal
+      : GraphQL.NamedFragment.lookupFragment? original fragmentName = some fragment)
+    (hlookup
+      : lookupFragmentAndRestLt? fragmentName current = some (fragment, remaining))
+    : fragment.selectionSet ≠ []
       ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-        variableDefinitions [] fragment.typeCondition
-        (Inline.inlineSelectionSet remaining.val fragment.selectionSet) := by
+          variableDefinitions [] fragment.typeCondition
+          (Inline.inlineSelectionSet remaining.val fragment.selectionSet) := by
   exact fragmentInlineSelectionSetValid_after_reachable_removals_aux
     hunique hacyclic hall current.length (Nat.le_refl current.length)
     hremovals hlookupOriginal hlookup
@@ -874,31 +859,31 @@ theorem fragmentInlineSelectionSetValid_after_lookup_removal_of_fragmentBodiesVa
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {fragments : List FragmentDefinition}
     {fragmentName : Name} {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
     (hunique : GraphQL.NamedFragment.Validation.fragmentNamesUnique fragments)
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic fragments)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions fragments)
-    (hlookup :
-      lookupFragmentAndRestLt? fragmentName fragments =
-        some (fragment, remaining))
-    (hremainingBodies :
-      ∀ {nextName : Name} {nextFragment : FragmentDefinition}
-        {nextRemaining : { nextRemaining : List FragmentDefinition //
-          nextRemaining.length < remaining.val.length }},
-        lookupFragmentAndRestLt? nextName remaining.val =
-            some (nextFragment, nextRemaining) ->
-          nextFragment.selectionSet ≠ []
-            ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-              variableDefinitions [] nextFragment.typeCondition
-              (Inline.inlineSelectionSet nextRemaining.val
-                nextFragment.selectionSet)) :
-    fragment.selectionSet ≠ []
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions fragments)
+    (hlookup
+      : lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining))
+    (hremainingBodies
+      : ∀ {nextName : Name} {nextFragment : FragmentDefinition}
+            {nextRemaining
+              : { nextRemaining : List FragmentDefinition
+                  // nextRemaining.length < remaining.val.length }},
+          lookupFragmentAndRestLt? nextName remaining.val
+            = some (nextFragment, nextRemaining)
+          -> nextFragment.selectionSet ≠ []
+              ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
+                  variableDefinitions [] nextFragment.typeCondition
+                  (Inline.inlineSelectionSet nextRemaining.val
+                    nextFragment.selectionSet))
+    : fragment.selectionSet ≠ []
       ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-        variableDefinitions [] fragment.typeCondition
-        (Inline.inlineSelectionSet remaining.val fragment.selectionSet) := by
+          variableDefinitions [] fragment.typeCondition
+          (Inline.inlineSelectionSet remaining.val fragment.selectionSet) := by
   have hfragmentValid :
       GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
         variableDefinitions fragments fragment :=
@@ -918,34 +903,34 @@ theorem fragmentInlineSelectionSetValid_after_lookup_removal_of_localFragmentBod
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {fragments : List FragmentDefinition}
     {fragmentName : Name} {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
     (hunique : GraphQL.NamedFragment.Validation.fragmentNamesUnique fragments)
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic fragments)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions fragments)
-    (hlookup :
-      lookupFragmentAndRestLt? fragmentName fragments =
-        some (fragment, remaining))
-    (hremainingBodies :
-      ∀ {nextName : Name} {nextFragment : FragmentDefinition}
-        {nextRemaining : { nextRemaining : List FragmentDefinition //
-          nextRemaining.length < remaining.val.length }},
-        nextName ∈
-            GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-              fragment.selectionSet ->
-        lookupFragmentAndRestLt? nextName remaining.val =
-            some (nextFragment, nextRemaining) ->
-          nextFragment.selectionSet ≠ []
-            ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-              variableDefinitions [] nextFragment.typeCondition
-              (Inline.inlineSelectionSet nextRemaining.val
-                nextFragment.selectionSet)) :
-    fragment.selectionSet ≠ []
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions fragments)
+    (hlookup
+      : lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining))
+    (hremainingBodies
+      : ∀ {nextName : Name} {nextFragment : FragmentDefinition}
+            {nextRemaining
+              : { nextRemaining : List FragmentDefinition
+                  // nextRemaining.length < remaining.val.length }},
+          nextName
+            ∈ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+                fragment.selectionSet
+          -> lookupFragmentAndRestLt? nextName remaining.val
+              = some (nextFragment, nextRemaining)
+          -> nextFragment.selectionSet ≠ []
+              ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
+                  variableDefinitions [] nextFragment.typeCondition
+                  (Inline.inlineSelectionSet nextRemaining.val
+                    nextFragment.selectionSet))
+    : fragment.selectionSet ≠ []
       ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-        variableDefinitions [] fragment.typeCondition
-        (Inline.inlineSelectionSet remaining.val fragment.selectionSet) := by
+          variableDefinitions [] fragment.typeCondition
+          (Inline.inlineSelectionSet remaining.val fragment.selectionSet) := by
   have hfragmentValid :
       GraphQL.NamedFragment.Validation.fragmentDefinitionValid schema
         variableDefinitions fragments fragment :=
@@ -963,32 +948,34 @@ theorem fragmentInlineSelectionSetValid_after_lookup_removal_of_localFragmentBod
 
 theorem operationFragmentInlineSelectionSetValid_after_lookup_removal
     {schema : Schema} {operation : Operation}
-    (hvalid :
-      GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid
+      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     {fragmentName : Name} {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < operation.fragmentDefinitions.length }}
-    (hlookup :
-      lookupFragmentAndRestLt? fragmentName operation.fragmentDefinitions =
-        some (fragment, remaining))
-    (hremainingBodies :
-      ∀ {nextName : Name} {nextFragment : FragmentDefinition}
-        {nextRemaining : { nextRemaining : List FragmentDefinition //
-          nextRemaining.length < remaining.val.length }},
-        nextName ∈
-            GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-              fragment.selectionSet ->
-        lookupFragmentAndRestLt? nextName remaining.val =
-            some (nextFragment, nextRemaining) ->
-          nextFragment.selectionSet ≠ []
-            ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-              operation.variableDefinitions [] nextFragment.typeCondition
-              (Inline.inlineSelectionSet nextRemaining.val
-                nextFragment.selectionSet)) :
-    fragment.selectionSet ≠ []
+    {remaining
+      : { remaining : List FragmentDefinition
+          // remaining.length < operation.fragmentDefinitions.length }}
+    (hlookup
+      : lookupFragmentAndRestLt? fragmentName operation.fragmentDefinitions
+        = some (fragment, remaining))
+    (hremainingBodies
+      : ∀ {nextName : Name} {nextFragment : FragmentDefinition}
+            {nextRemaining
+              : { nextRemaining : List FragmentDefinition
+                  // nextRemaining.length < remaining.val.length }},
+          nextName
+            ∈ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+                fragment.selectionSet
+          -> lookupFragmentAndRestLt? nextName remaining.val
+              = some (nextFragment, nextRemaining)
+          -> nextFragment.selectionSet ≠ []
+              ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
+                  operation.variableDefinitions [] nextFragment.typeCondition
+                  (Inline.inlineSelectionSet nextRemaining.val
+                    nextFragment.selectionSet))
+    : fragment.selectionSet ≠ []
       ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-        operation.variableDefinitions [] fragment.typeCondition
-        (Inline.inlineSelectionSet remaining.val fragment.selectionSet) := by
+          operation.variableDefinitions [] fragment.typeCondition
+          (Inline.inlineSelectionSet remaining.val fragment.selectionSet) := by
   rcases hvalid with
     ⟨_hroot, _hrootComposite, _hvariables, huniqueFragments,
       hfragmentsAcyclic, hfragmentDefinitionsValid, _hselectionNonempty,
@@ -999,46 +986,45 @@ theorem operationFragmentInlineSelectionSetValid_after_lookup_removal
 
 theorem childFragmentInlineSelectionSetValid_after_lookup_removals_of_localFragmentBodiesValid
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {fragments : List FragmentDefinition}
-    {sourceName childName : Name}
+    {fragments : List FragmentDefinition} {sourceName childName : Name}
     {source child : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
-    {childRemaining : { childRemaining : List FragmentDefinition //
-      childRemaining.length < remaining.val.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    {childRemaining
+      : { childRemaining : List FragmentDefinition
+          // childRemaining.length < remaining.val.length }}
     (hunique : GraphQL.NamedFragment.Validation.fragmentNamesUnique fragments)
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic fragments)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions fragments)
-    (hsourceLookup :
-      lookupFragmentAndRestLt? sourceName fragments =
-        some (source, remaining))
-    (hsourceSpread :
-      childName ∈
-        GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-          source.selectionSet)
-    (hchildLookup :
-      lookupFragmentAndRestLt? childName remaining.val =
-        some (child, childRemaining))
-    (hchildBodies :
-      ∀ {nextName : Name} {nextFragment : FragmentDefinition}
-        {nextRemaining : { nextRemaining : List FragmentDefinition //
-          nextRemaining.length < childRemaining.val.length }},
-        nextName ∈
-            GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-              child.selectionSet ->
-        lookupFragmentAndRestLt? nextName childRemaining.val =
-            some (nextFragment, nextRemaining) ->
-          nextFragment.selectionSet ≠ []
-            ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-              variableDefinitions [] nextFragment.typeCondition
-              (Inline.inlineSelectionSet nextRemaining.val
-                nextFragment.selectionSet)) :
-    child.selectionSet ≠ []
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions fragments)
+    (hsourceLookup
+      : lookupFragmentAndRestLt? sourceName fragments = some (source, remaining))
+    (hsourceSpread
+      : childName
+        ∈ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+            source.selectionSet)
+    (hchildLookup
+      : lookupFragmentAndRestLt? childName remaining.val = some (child, childRemaining))
+    (hchildBodies
+      : ∀ {nextName : Name} {nextFragment : FragmentDefinition}
+            {nextRemaining
+              : { nextRemaining : List FragmentDefinition
+                  // nextRemaining.length < childRemaining.val.length }},
+          nextName
+            ∈ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+                child.selectionSet
+          -> lookupFragmentAndRestLt? nextName childRemaining.val
+              = some (nextFragment, nextRemaining)
+          -> nextFragment.selectionSet ≠ []
+              ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
+                  variableDefinitions [] nextFragment.typeCondition
+                  (Inline.inlineSelectionSet nextRemaining.val
+                    nextFragment.selectionSet))
+    : child.selectionSet ≠ []
       ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-        variableDefinitions [] child.typeCondition
-        (Inline.inlineSelectionSet childRemaining.val child.selectionSet) := by
+          variableDefinitions [] child.typeCondition
+          (Inline.inlineSelectionSet childRemaining.val child.selectionSet) := by
   have hsourceMem : source ∈ fragments :=
     GraphQL.NamedFragment.Validation.lookupFragmentAndRestLt?_found_mem
       hsourceLookup
@@ -1111,47 +1097,48 @@ theorem childFragmentInlineSelectionSetValid_after_lookup_removals_of_localFragm
 
 theorem descendantFragmentInlineSelectionSetValid_after_lookup_removals_of_localFragmentBodiesValid
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {fragments : List FragmentDefinition}
-    {ancestorName targetName : Name}
+    {fragments : List FragmentDefinition} {ancestorName targetName : Name}
     {ancestor target : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
-    {targetRemaining : { targetRemaining : List FragmentDefinition //
-      targetRemaining.length < remaining.val.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    {targetRemaining
+      : { targetRemaining : List FragmentDefinition
+          // targetRemaining.length < remaining.val.length }}
     {fuel : Nat}
     (hunique : GraphQL.NamedFragment.Validation.fragmentNamesUnique fragments)
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic fragments)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions fragments)
-    (hancestorLookup :
-      lookupFragmentAndRestLt? ancestorName fragments =
-        some (ancestor, remaining))
-    (hreachable :
-      GraphQL.NamedFragment.Validation.fragmentReachableBool fragments fuel
-        ancestor.name targetName = true)
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions fragments)
+    (hancestorLookup
+      : lookupFragmentAndRestLt? ancestorName fragments = some (ancestor, remaining))
+    (hreachable
+      : GraphQL.NamedFragment.Validation.fragmentReachableBool fragments fuel
+          ancestor.name targetName
+        = true)
     (hle : fuel + 1 ≤ fragments.length)
-    (htargetLookup :
-      lookupFragmentAndRestLt? targetName remaining.val =
-        some (target, targetRemaining))
-    (htargetBodies :
-      ∀ {nextName : Name} {nextFragment : FragmentDefinition}
-        {nextRemaining : { nextRemaining : List FragmentDefinition //
-          nextRemaining.length < targetRemaining.val.length }},
-        nextName ∈
-            GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-              target.selectionSet ->
-        lookupFragmentAndRestLt? nextName targetRemaining.val =
-            some (nextFragment, nextRemaining) ->
-          nextFragment.selectionSet ≠ []
-            ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-              variableDefinitions [] nextFragment.typeCondition
-              (Inline.inlineSelectionSet nextRemaining.val
-                nextFragment.selectionSet)) :
-    target.selectionSet ≠ []
+    (htargetLookup
+      : lookupFragmentAndRestLt? targetName remaining.val
+        = some (target, targetRemaining))
+    (htargetBodies
+      : ∀ {nextName : Name} {nextFragment : FragmentDefinition}
+            {nextRemaining
+              : { nextRemaining : List FragmentDefinition
+                  // nextRemaining.length < targetRemaining.val.length }},
+          nextName
+            ∈ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+                target.selectionSet
+          -> lookupFragmentAndRestLt? nextName targetRemaining.val
+              = some (nextFragment, nextRemaining)
+          -> nextFragment.selectionSet ≠ []
+              ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
+                  variableDefinitions [] nextFragment.typeCondition
+                  (Inline.inlineSelectionSet nextRemaining.val
+                    nextFragment.selectionSet))
+    : target.selectionSet ≠ []
       ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-        variableDefinitions [] target.typeCondition
-        (Inline.inlineSelectionSet targetRemaining.val target.selectionSet) := by
+          variableDefinitions [] target.typeCondition
+          (Inline.inlineSelectionSet targetRemaining.val target.selectionSet) := by
   have htargetMemRemaining : target ∈ remaining.val :=
     GraphQL.NamedFragment.Validation.lookupFragmentAndRestLt?_found_mem
       htargetLookup
@@ -1206,56 +1193,59 @@ theorem descendantFragmentInlineSelectionSetValid_after_lookup_removals_of_local
 
 theorem descendantFragmentInlineSelectionSetValid_after_two_ancestor_lookup_removals_of_localFragmentBodiesValid
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {fragments : List FragmentDefinition}
-    {firstName secondName targetName : Name}
+    {fragments : List FragmentDefinition} {firstName secondName targetName : Name}
     {first second target : FragmentDefinition}
-    {afterFirst : { afterFirst : List FragmentDefinition //
-      afterFirst.length < fragments.length }}
-    {afterSecond : { afterSecond : List FragmentDefinition //
-      afterSecond.length < afterFirst.val.length }}
-    {targetRemaining : { targetRemaining : List FragmentDefinition //
-      targetRemaining.length < afterSecond.val.length }}
+    {afterFirst
+      : { afterFirst : List FragmentDefinition
+          // afterFirst.length < fragments.length }}
+    {afterSecond
+      : { afterSecond : List FragmentDefinition
+          // afterSecond.length < afterFirst.val.length }}
+    {targetRemaining
+      : { targetRemaining : List FragmentDefinition
+          // targetRemaining.length < afterSecond.val.length }}
     {firstFuel secondFuel : Nat}
     (hunique : GraphQL.NamedFragment.Validation.fragmentNamesUnique fragments)
     (hacyclic : GraphQL.NamedFragment.Validation.fragmentsAcyclic fragments)
-    (hall :
-      GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        variableDefinitions fragments)
-    (hfirstLookup :
-      lookupFragmentAndRestLt? firstName fragments =
-        some (first, afterFirst))
-    (hsecondLookup :
-      lookupFragmentAndRestLt? secondName afterFirst.val =
-        some (second, afterSecond))
-    (hfirstReachable :
-      GraphQL.NamedFragment.Validation.fragmentReachableBool fragments
-        firstFuel first.name targetName = true)
+    (hall
+      : GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
+          variableDefinitions fragments)
+    (hfirstLookup
+      : lookupFragmentAndRestLt? firstName fragments = some (first, afterFirst))
+    (hsecondLookup
+      : lookupFragmentAndRestLt? secondName afterFirst.val = some (second, afterSecond))
+    (hfirstReachable
+      : GraphQL.NamedFragment.Validation.fragmentReachableBool fragments
+          firstFuel first.name targetName
+        = true)
     (hfirstFuel : firstFuel + 1 ≤ fragments.length)
-    (hsecondReachable :
-      GraphQL.NamedFragment.Validation.fragmentReachableBool fragments
-        secondFuel second.name targetName = true)
+    (hsecondReachable
+      : GraphQL.NamedFragment.Validation.fragmentReachableBool fragments
+          secondFuel second.name targetName
+        = true)
     (hsecondFuel : secondFuel + 1 ≤ fragments.length)
-    (htargetLookup :
-      lookupFragmentAndRestLt? targetName afterSecond.val =
-        some (target, targetRemaining))
-    (htargetBodies :
-      ∀ {nextName : Name} {nextFragment : FragmentDefinition}
-        {nextRemaining : { nextRemaining : List FragmentDefinition //
-          nextRemaining.length < targetRemaining.val.length }},
-        nextName ∈
-            GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-              target.selectionSet ->
-        lookupFragmentAndRestLt? nextName targetRemaining.val =
-            some (nextFragment, nextRemaining) ->
-          nextFragment.selectionSet ≠ []
-            ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-              variableDefinitions [] nextFragment.typeCondition
-              (Inline.inlineSelectionSet nextRemaining.val
-                nextFragment.selectionSet)) :
-    target.selectionSet ≠ []
+    (htargetLookup
+      : lookupFragmentAndRestLt? targetName afterSecond.val
+        = some (target, targetRemaining))
+    (htargetBodies
+      : ∀ {nextName : Name} {nextFragment : FragmentDefinition}
+            {nextRemaining
+              : { nextRemaining : List FragmentDefinition
+                  // nextRemaining.length < targetRemaining.val.length }},
+          nextName
+            ∈ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+                target.selectionSet
+          -> lookupFragmentAndRestLt? nextName targetRemaining.val
+              = some (nextFragment, nextRemaining)
+          -> nextFragment.selectionSet ≠ []
+              ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
+                  variableDefinitions [] nextFragment.typeCondition
+                  (Inline.inlineSelectionSet nextRemaining.val
+                    nextFragment.selectionSet))
+    : target.selectionSet ≠ []
       ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-        variableDefinitions [] target.typeCondition
-        (Inline.inlineSelectionSet targetRemaining.val target.selectionSet) := by
+          variableDefinitions [] target.typeCondition
+          (Inline.inlineSelectionSet targetRemaining.val target.selectionSet) := by
   have htargetMemAfterSecond : target ∈ afterSecond.val :=
     GraphQL.NamedFragment.Validation.lookupFragmentAndRestLt?_found_mem
       htargetLookup

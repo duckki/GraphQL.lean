@@ -17,22 +17,21 @@ theorem collectedResponseSelectionSet_collectFields_staticScopedFieldsWithRespon
     (operation : Operation)
     (lookupParent groundType responseName : Name)
     (boolCase : BoolCase)
-    (ref : ObjectRef) :
-    ∀ selectionSet,
-      variableValuesAgreeWithCase variableValues boolCase
-        (operationBoolVars operation) ->
-      (∀ varName,
-        varName ∈ selectionSetBooleanVariables selectionSet ->
-        varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-        collectedResponseSelectionSet responseName
-            (Execution.collectFields schema variableValues lookupParent
-              (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
-              selectionSet)
-          =
-        mergeSelectionSets
-          (eraseCompleteScopedSelectionSet
-            (staticScopedFieldsWithResponseName schema boolCase lookupParent
-              groundType responseName selectionSet))
+    (ref : ObjectRef)
+    : ∀ selectionSet,
+        variableValuesAgreeWithCase variableValues boolCase
+          (operationBoolVars operation)
+        -> (∀ varName,
+              varName ∈ selectionSetBooleanVariables selectionSet
+              -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+        -> collectedResponseSelectionSet responseName
+              (Execution.collectFields schema variableValues lookupParent
+                (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
+                selectionSet)
+            = mergeSelectionSets
+                (eraseCompleteScopedSelectionSet
+                  (staticScopedFieldsWithResponseName schema boolCase lookupParent
+                    groundType responseName selectionSet))
   | [], _hagrees, _hsourceVars => by
       simp [Execution.collectFields,
         collectedResponseSelectionSet,
@@ -227,28 +226,24 @@ theorem collectedResponseSelectionSet_collectFields_staticScopedFieldsWithRespon
             (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref) rest
 
 theorem collectedResponseSelectionSet_collectFields_completeScopedSelectionSetStaticFieldsWithResponseName
-    (schema : Schema)
-    (variableValues : Execution.VariableValues)
-    (operation : Operation)
-    (execParent groundType responseName : Name)
-    (boolCase : BoolCase)
-    (scopedSelections : List CompleteScopedSelection)
-    (ref : ObjectRef) :
-    variableValuesAgreeWithCase variableValues boolCase
-      (operationBoolVars operation) ->
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables
-          (eraseCompleteScopedSelectionSet scopedSelections) ->
-        varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-      collectedResponseSelectionSet responseName
-          (Execution.collectFields schema variableValues execParent
-            (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
-            (eraseCompleteScopedSelectionSet scopedSelections))
-        =
-      mergeSelectionSets
-        (eraseCompleteScopedSelectionSet
-          (completeScopedSelectionSetStaticFieldsWithResponseName schema
-            boolCase groundType responseName scopedSelections)) := by
+    (schema : Schema) (variableValues : Execution.VariableValues)
+    (operation : Operation) (execParent groundType responseName : Name)
+    (boolCase : BoolCase) (scopedSelections : List CompleteScopedSelection)
+    (ref : ObjectRef)
+    : variableValuesAgreeWithCase variableValues boolCase (operationBoolVars operation)
+      -> (∀ varName,
+            varName
+              ∈ selectionSetBooleanVariables
+                  (eraseCompleteScopedSelectionSet scopedSelections)
+            -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> collectedResponseSelectionSet responseName
+            (Execution.collectFields schema variableValues execParent
+              (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
+              (eraseCompleteScopedSelectionSet scopedSelections))
+          = mergeSelectionSets
+              (eraseCompleteScopedSelectionSet
+                (completeScopedSelectionSetStaticFieldsWithResponseName schema
+                  boolCase groundType responseName scopedSelections)) := by
   intro hagrees hsourceVars
   have hprojection :
       collectedResponseSelectionSet responseName
@@ -281,41 +276,46 @@ theorem mergedFieldSelectionSet_source_field_head_eq_staticScopedFields
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection)
     (sourceFields : List Execution.ExecutableField)
-    (sourceTail : List (Name × List Execution.ExecutableField)) :
-    variableValuesAgreeWithCase variableValues boolCase
-      (operationBoolVars operation) ->
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    directivesAllowIn boolCase directives = true ->
-    Execution.collectFields schema variableValues lookupParent
-        (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest)
-      =
-      (responseName, {
-        parentType := lookupParent,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := selectionSet
-      } :: sourceFields) :: sourceTail ->
-      Execution.mergedFieldSelectionSet
-          ({
-            parentType := lookupParent,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := selectionSet
-          } :: sourceFields)
-        =
-      selectionSet
-        ++ mergeSelectionSets
-          (eraseCompleteScopedSelectionSet
-            (staticScopedFieldsWithResponseName schema boolCase lookupParent
-              groundType responseName rest)) := by
+    (sourceTail : List (Name × List Execution.ExecutableField))
+    : variableValuesAgreeWithCase variableValues boolCase (operationBoolVars operation)
+      -> (∀ varName,
+            varName
+              ∈ selectionSetBooleanVariables
+                  (Selection.field responseName fieldName arguments directives
+                      selectionSet
+                    :: rest)
+            -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> directivesAllowIn boolCase directives = true
+      -> Execution.collectFields schema variableValues lookupParent
+            (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
+            (Selection.field responseName fieldName arguments directives selectionSet
+              :: rest)
+          = (
+              responseName,
+              {
+                parentType := lookupParent,
+                responseName := responseName,
+                fieldName := fieldName,
+                arguments := arguments,
+                selectionSet := selectionSet
+              }
+              :: sourceFields
+            )
+            :: sourceTail
+      -> Execution.mergedFieldSelectionSet
+            ({
+                parentType := lookupParent,
+                responseName := responseName,
+                fieldName := fieldName,
+                arguments := arguments,
+                selectionSet := selectionSet
+              }
+              :: sourceFields)
+          = selectionSet
+            ++ mergeSelectionSets
+                (eraseCompleteScopedSelectionSet
+                  (staticScopedFieldsWithResponseName schema boolCase lookupParent
+                    groundType responseName rest)) := by
   intro hagrees hsourceVars hallow hcollect
   have hprojection :
       collectedResponseSelectionSet responseName
@@ -353,49 +353,57 @@ theorem mergedFieldSelectionSet_source_completeScoped_field_head_eq_staticFields
     (directives : List DirectiveApplication)
     (selectionSet : List Selection) (rest : List CompleteScopedSelection)
     (sourceFields : List Execution.ExecutableField)
-    (sourceTail : List (Name × List Execution.ExecutableField)) :
-    variableValuesAgreeWithCase variableValues boolCase
-      (operationBoolVars operation) ->
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables
-        (eraseCompleteScopedSelectionSet
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.field responseName fieldName arguments directives
-                selectionSet }
-            :: rest)) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    directivesAllowIn boolCase directives = true ->
-    Execution.collectFields schema variableValues execParent
-        (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
-        (eraseCompleteScopedSelectionSet
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.field responseName fieldName arguments directives
-                selectionSet }
-            :: rest))
-      =
-      (responseName, {
-        parentType := execParent,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := selectionSet
-      } :: sourceFields) :: sourceTail ->
-      Execution.mergedFieldSelectionSet
-          ({
-            parentType := execParent,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := selectionSet
-          } :: sourceFields)
-        =
-      selectionSet
-        ++ mergeSelectionSets
-          (eraseCompleteScopedSelectionSet
-            (completeScopedSelectionSetStaticFieldsWithResponseName schema
-              boolCase groundType responseName rest)) := by
+    (sourceTail : List (Name × List Execution.ExecutableField))
+    : variableValuesAgreeWithCase variableValues boolCase (operationBoolVars operation)
+      -> (∀ varName,
+            varName
+              ∈ selectionSetBooleanVariables
+                  (eraseCompleteScopedSelectionSet
+                    ({
+                        lookupParent := lookupParent,
+                        selection :=
+                          Selection.field responseName fieldName arguments directives
+                            selectionSet
+                      }
+                      :: rest))
+            -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> directivesAllowIn boolCase directives = true
+      -> Execution.collectFields schema variableValues execParent
+            (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
+            (eraseCompleteScopedSelectionSet
+              ({
+                  lookupParent := lookupParent,
+                  selection :=
+                    Selection.field responseName fieldName arguments directives
+                      selectionSet
+                }
+                :: rest))
+          = (
+              responseName,
+              {
+                parentType := execParent,
+                responseName := responseName,
+                fieldName := fieldName,
+                arguments := arguments,
+                selectionSet := selectionSet
+              }
+              :: sourceFields
+            )
+            :: sourceTail
+      -> Execution.mergedFieldSelectionSet
+            ({
+                parentType := execParent,
+                responseName := responseName,
+                fieldName := fieldName,
+                arguments := arguments,
+                selectionSet := selectionSet
+              }
+              :: sourceFields)
+          = selectionSet
+            ++ mergeSelectionSets
+                (eraseCompleteScopedSelectionSet
+                  (completeScopedSelectionSetStaticFieldsWithResponseName schema
+                    boolCase groundType responseName rest)) := by
   intro hagrees hsourceVars hallow hcollect
   have hprojection :
       collectedResponseSelectionSet responseName
@@ -452,15 +460,14 @@ theorem collectFields_withoutFieldSelectionsWithResponseName_directives
     (schema : Schema)
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (responseName : Name) :
-    ∀ selectionSet,
-      Execution.collectFields schema variableValues parentType source
+    (responseName : Name)
+    : ∀ selectionSet,
+        Execution.collectFields schema variableValues parentType source
           (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
-        =
-        withoutExecutableGroupsWithResponseName
-          responseName
-          (Execution.collectFields schema variableValues parentType source
-            selectionSet)
+        = withoutExecutableGroupsWithResponseName
+            responseName
+            (Execution.collectFields schema variableValues parentType source
+              selectionSet)
   | [] => by
       simp [Execution.collectFields, withoutFieldSelectionsWithResponseName,
         withoutExecutableGroupsWithResponseName]
@@ -628,20 +635,16 @@ theorem collectFields_withoutFieldSelectionsWithResponseName_directives
           rw [hselection, hrest]
 
 theorem collectFields_withoutFieldSelectionsWithResponseName_eq_sourceRest_of_cons_directives
-    (schema : Schema)
-    (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (responseName : Name) (fields : List Execution.ExecutableField)
+    (schema : Schema) (variableValues : Execution.VariableValues) (parentType : Name)
+    (source : Execution.ResolverValue ObjectRef) (responseName : Name)
+    (fields : List Execution.ExecutableField)
     (sourceRest : List (Name × List Execution.ExecutableField))
-    (selectionSet : List Selection) :
-    Execution.collectFields schema variableValues parentType source
-      selectionSet
-    =
-    (responseName, fields) :: sourceRest ->
-      Execution.collectFields schema variableValues parentType source
-        (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
-      =
-      sourceRest := by
+    (selectionSet : List Selection)
+    : Execution.collectFields schema variableValues parentType source selectionSet
+        = (responseName, fields) :: sourceRest
+      -> Execution.collectFields schema variableValues parentType source
+            (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+          = sourceRest := by
   intro hcollect
   have hfilter :=
     collectFields_withoutFieldSelectionsWithResponseName_directives schema
@@ -658,31 +661,27 @@ theorem collectFields_withoutFieldSelectionsWithResponseName_eq_sourceRest_of_co
       responseName fields sourceRest hnodup)
 
 theorem collectFields_withoutFieldSelectionsWithResponseName_fieldHead_rest_eq_sourceRest_directives
-    (schema : Schema)
-    (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (responseName fieldName : Name) (arguments : List Argument)
-    (directives : List DirectiveApplication)
+    (schema : Schema) (variableValues : Execution.VariableValues) (parentType : Name)
+    (source : Execution.ResolverValue ObjectRef) (responseName fieldName : Name)
+    (arguments : List Argument) (directives : List DirectiveApplication)
     (subselections rest : List Selection)
     (sourceFields : List Execution.ExecutableField)
-    (sourceRest : List (Name × List Execution.ExecutableField)) :
-    let sourceField : Execution.ExecutableField :=
-      {
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := subselections
-      }
-    Execution.collectFields schema variableValues parentType source
-      (Selection.field responseName fieldName arguments directives
-        subselections :: rest)
-    =
-    (responseName, sourceField :: sourceFields) :: sourceRest ->
+    (sourceRest : List (Name × List Execution.ExecutableField))
+    : let sourceField : Execution.ExecutableField :=
+        {
+          parentType := parentType,
+          responseName := responseName,
+          fieldName := fieldName,
+          arguments := arguments,
+          selectionSet := subselections
+        }
       Execution.collectFields schema variableValues parentType source
-        (withoutFieldSelectionsWithResponseName schema responseName rest)
-      =
-      sourceRest := by
+          (Selection.field responseName fieldName arguments directives subselections
+            :: rest)
+        = (responseName, sourceField :: sourceFields) :: sourceRest
+      -> Execution.collectFields schema variableValues parentType source
+            (withoutFieldSelectionsWithResponseName schema responseName rest)
+          = sourceRest := by
   intro sourceField hcollect
   have hfilteredAll :=
     collectFields_withoutFieldSelectionsWithResponseName_eq_sourceRest_of_cons_directives
@@ -706,41 +705,37 @@ theorem executeCollectedFields_staticCollect_fieldHead_filtered_tails_eq
     (selectionSet rest : List Selection)
     (normalizedField sourceField : Execution.ExecutableField)
     (normalizedFields sourceFields : List Execution.ExecutableField)
-    (normalizedTail sourceTail :
-      List (Name × List Execution.ExecutableField)) :
-    sourceField = {
-      parentType := lookupParent,
-      responseName := responseName,
-      fieldName := fieldName,
-      arguments := arguments,
-      selectionSet := selectionSet
-    } ->
-    Execution.collectFields schema variableValues lookupParent source
-        (staticCollectForGround schema variables lookupParent
-          groundType boolCase
-          (Selection.field responseName fieldName arguments directives
-            selectionSet :: rest))
-      =
-      (responseName, normalizedField :: normalizedFields) :: normalizedTail ->
-    Execution.collectFields schema variableValues lookupParent source
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest)
-      =
-      (responseName, sourceField :: sourceFields) :: sourceTail ->
-    Execution.executeSelectionSet schema resolvers variableValues depth
-        lookupParent source
-        (staticCollectForGround schema variables lookupParent
-          groundType boolCase
-          (withoutFieldSelectionsWithResponseName schema responseName rest))
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        lookupParent source
-        (withoutFieldSelectionsWithResponseName schema responseName rest) ->
-      Execution.executeCollectedFields schema resolvers variableValues depth
-          source normalizedTail
-        =
-      Execution.executeCollectedFields schema resolvers variableValues depth
-          source sourceTail := by
+    (normalizedTail sourceTail : List (Name × List Execution.ExecutableField))
+    : sourceField
+        = {
+            parentType := lookupParent,
+            responseName := responseName,
+            fieldName := fieldName,
+            arguments := arguments,
+            selectionSet := selectionSet
+          }
+      -> Execution.collectFields schema variableValues lookupParent source
+            (staticCollectForGround schema variables lookupParent
+              groundType boolCase
+              (Selection.field responseName fieldName arguments directives selectionSet
+                :: rest))
+          = (responseName, normalizedField :: normalizedFields) :: normalizedTail
+      -> Execution.collectFields schema variableValues lookupParent source
+            (Selection.field responseName fieldName arguments directives selectionSet
+              :: rest)
+          = (responseName, sourceField :: sourceFields) :: sourceTail
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            lookupParent source
+            (staticCollectForGround schema variables lookupParent
+              groundType boolCase
+              (withoutFieldSelectionsWithResponseName schema responseName rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              lookupParent source
+              (withoutFieldSelectionsWithResponseName schema responseName rest)
+      -> Execution.executeCollectedFields schema resolvers variableValues depth
+            source normalizedTail
+          = Execution.executeCollectedFields schema resolvers variableValues depth
+              source sourceTail := by
   intro hsourceField hnormalizedCollect hsourceCollect hfiltered
   have hnormalizedFiltered :
       Execution.collectFields schema variableValues lookupParent source
@@ -785,55 +780,25 @@ theorem executeCollectedFields_staticCollect_fieldHead_filtered_tails_eq
     using hfiltered
 
 theorem executeSelectionSet_filterSelectionSetBoolCase_field_allowed_lookup_some_duplicate_group_case
-    (schema : Schema)
-    (resolvers : Execution.Resolvers ObjectRef)
-    (variableValues : Execution.VariableValues)
-    (operation : Operation)
-    (depth : Nat)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
+    (variableValues : Execution.VariableValues) (operation : Operation) (depth : Nat)
     (lookupParent groundType : Name) (source : Execution.ResolverValue ObjectRef)
-    (boolCase : BoolCase)
-    (responseName fieldName : Name) (arguments : List Argument)
-    (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection)
+    (boolCase : BoolCase) (responseName fieldName : Name) (arguments : List Argument)
+    (directives : List DirectiveApplication) (selectionSet rest : List Selection)
     (fieldDefinition : FieldDefinition)
     (normalizedFields sourceFields : List Execution.ExecutableField)
-    (normalizedTail sourceTail :
-      List (Name × List Execution.ExecutableField)) :
-    directivesAllowIn boolCase directives = true ->
-    schema.lookupField lookupParent fieldName = some fieldDefinition ->
-    Execution.collectFields schema variableValues lookupParent source
-        (staticCollectForGround schema
-          (operationBoolVars operation) lookupParent
-          groundType boolCase
-          (Selection.field responseName fieldName arguments directives
-            selectionSet :: rest))
-      =
-      (responseName, {
-        parentType := lookupParent,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet :=
-          normalizeBoolCaseForType schema boolCase
-            fieldDefinition.outputType.namedType selectionSet
-      } :: normalizedFields) :: normalizedTail ->
-    Execution.collectFields schema variableValues lookupParent source
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest)
-      =
-      (responseName, {
-        parentType := lookupParent,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := selectionSet
-      } :: sourceFields) :: sourceTail ->
-    (match resolvers.resolve lookupParent fieldName arguments source with
-    | some value =>
-        Execution.completeValue schema resolvers variableValues (depth - 1)
-            fieldDefinition.outputType
-            (Execution.mergedFieldSelectionSet
-              ({
+    (normalizedTail sourceTail : List (Name × List Execution.ExecutableField))
+    : directivesAllowIn boolCase directives = true
+      -> schema.lookupField lookupParent fieldName = some fieldDefinition
+      -> Execution.collectFields schema variableValues lookupParent source
+            (staticCollectForGround schema
+              (operationBoolVars operation) lookupParent
+              groundType boolCase
+              (Selection.field responseName fieldName arguments directives selectionSet
+                :: rest))
+          = (
+              responseName,
+              {
                 parentType := lookupParent,
                 responseName := responseName,
                 fieldName := fieldName,
@@ -841,43 +806,74 @@ theorem executeSelectionSet_filterSelectionSetBoolCase_field_allowed_lookup_some
                 selectionSet :=
                   normalizeBoolCaseForType schema boolCase
                     fieldDefinition.outputType.namedType selectionSet
-              } :: normalizedFields))
-            value
-          =
-          Execution.completeValue schema resolvers variableValues (depth - 1)
-            fieldDefinition.outputType
-            (Execution.mergedFieldSelectionSet
-              ({
+              }
+              :: normalizedFields
+            )
+            :: normalizedTail
+      -> Execution.collectFields schema variableValues lookupParent source
+            (Selection.field responseName fieldName arguments directives selectionSet
+              :: rest)
+          = (
+              responseName,
+              {
                 parentType := lookupParent,
                 responseName := responseName,
                 fieldName := fieldName,
                 arguments := arguments,
                 selectionSet := selectionSet
-              } :: sourceFields))
-            value
-    | none => True) ->
-    Execution.executeSelectionSet schema resolvers variableValues depth
-        lookupParent source
-        (staticCollectForGround schema
-          (operationBoolVars operation) lookupParent
-          groundType boolCase
-          (withoutFieldSelectionsWithResponseName schema responseName rest))
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        lookupParent source
-        (withoutFieldSelectionsWithResponseName schema responseName rest) ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        lookupParent source
-        (staticCollectForGround schema
-          (operationBoolVars operation) lookupParent
-          groundType boolCase
-          (Selection.field responseName fieldName arguments directives
-            selectionSet :: rest))
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        lookupParent source
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest) := by
+              }
+              :: sourceFields
+            )
+            :: sourceTail
+      -> (match resolvers.resolve lookupParent fieldName arguments source with
+          | some value =>
+              Execution.completeValue schema resolvers variableValues (depth - 1)
+                fieldDefinition.outputType
+                (Execution.mergedFieldSelectionSet
+                  ({
+                      parentType := lookupParent,
+                      responseName := responseName,
+                      fieldName := fieldName,
+                      arguments := arguments,
+                      selectionSet :=
+                        normalizeBoolCaseForType schema boolCase
+                          fieldDefinition.outputType.namedType selectionSet
+                    }
+                    :: normalizedFields))
+                value
+              = Execution.completeValue schema resolvers variableValues (depth - 1)
+                  fieldDefinition.outputType
+                  (Execution.mergedFieldSelectionSet
+                    ({
+                        parentType := lookupParent,
+                        responseName := responseName,
+                        fieldName := fieldName,
+                        arguments := arguments,
+                        selectionSet := selectionSet
+                      }
+                      :: sourceFields))
+                  value
+          | none => True)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            lookupParent source
+            (staticCollectForGround schema
+              (operationBoolVars operation) lookupParent
+              groundType boolCase
+              (withoutFieldSelectionsWithResponseName schema responseName rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              lookupParent source
+              (withoutFieldSelectionsWithResponseName schema responseName rest)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            lookupParent source
+            (staticCollectForGround schema
+              (operationBoolVars operation) lookupParent
+              groundType boolCase
+              (Selection.field responseName fieldName arguments directives selectionSet
+                :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              lookupParent source
+              (Selection.field responseName fieldName arguments directives selectionSet
+                :: rest) := by
   intro hallow hlookup hnormalizedCollect hsourceCollect hcomplete hfiltered
   let normalizedField : Execution.ExecutableField := {
     parentType := lookupParent,
@@ -957,109 +953,109 @@ theorem executeSelectionSet_filterSelectionSetBoolCase_field_allowed_lookup_some
     hcompleteGrouped htail
 
 theorem executeSelectionSet_filterSelectionSetBoolCase_field_allowed_lookup_some_duplicate_group_projected_case
-    (schema : Schema)
-    (resolvers : Execution.Resolvers ObjectRef)
-    (variableValues : Execution.VariableValues)
-    (operation : Operation)
-    (depth : Nat)
-    (lookupParent groundType : Name)
-    (ref : ObjectRef)
-    (boolCase : BoolCase)
+    (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
+    (variableValues : Execution.VariableValues) (operation : Operation) (depth : Nat)
+    (lookupParent groundType : Name) (ref : ObjectRef) (boolCase : BoolCase)
     (responseName fieldName : Name) (arguments : List Argument)
-    (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection)
+    (directives : List DirectiveApplication) (selectionSet rest : List Selection)
     (fieldDefinition : FieldDefinition)
     (normalizedFields sourceFields : List Execution.ExecutableField)
-    (normalizedTail sourceTail :
-      List (Name × List Execution.ExecutableField)) :
-    variableValuesAgreeWithCase variableValues boolCase
-      (operationBoolVars operation) ->
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    directivesAllowIn boolCase directives = true ->
-    schema.lookupField lookupParent fieldName = some fieldDefinition ->
-    Execution.collectFields schema variableValues lookupParent
-        (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
-        (staticCollectForGround schema
-          (operationBoolVars operation) lookupParent
-          groundType boolCase
-          (Selection.field responseName fieldName arguments directives
-            selectionSet :: rest))
-      =
-      (responseName, {
-        parentType := lookupParent,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet :=
-          normalizeBoolCaseForType schema boolCase
-            fieldDefinition.outputType.namedType selectionSet
-      } :: normalizedFields) :: normalizedTail ->
-    Execution.collectFields schema variableValues lookupParent
-        (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest)
-      =
-      (responseName, {
-        parentType := lookupParent,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := selectionSet
-      } :: sourceFields) :: sourceTail ->
-    (match resolvers.resolve lookupParent fieldName arguments
-        (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref) with
-    | some value =>
-        Execution.completeValue schema resolvers variableValues (depth - 1)
-            fieldDefinition.outputType
-            (normalizeBoolCaseForType schema boolCase
-                fieldDefinition.outputType.namedType selectionSet
-              ++ mergeSelectionSets
-                (staticCollectCompleteScopedSelectionSet schema
-                  (operationBoolVars operation) groundType
-                  boolCase
-                  (staticScopedFieldsWithResponseName schema boolCase
-                    lookupParent groundType responseName rest)))
-            value
-          =
-          Execution.completeValue schema resolvers variableValues (depth - 1)
-            fieldDefinition.outputType
-            (selectionSet
-              ++ mergeSelectionSets
-                (eraseCompleteScopedSelectionSet
-                  (staticScopedFieldsWithResponseName schema boolCase
-                    lookupParent groundType responseName rest)))
-            value
-    | none => True) ->
-    Execution.executeSelectionSet schema resolvers variableValues depth
-        lookupParent
-        (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
-        (staticCollectForGround schema
-          (operationBoolVars operation) lookupParent
-          groundType boolCase
-          (withoutFieldSelectionsWithResponseName schema responseName rest))
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        lookupParent
-        (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
-        (withoutFieldSelectionsWithResponseName schema responseName rest) ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        lookupParent
-        (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
-        (staticCollectForGround schema
-          (operationBoolVars operation) lookupParent
-          groundType boolCase
-          (Selection.field responseName fieldName arguments directives
-            selectionSet :: rest))
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        lookupParent
-        (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest) := by
+    (normalizedTail sourceTail : List (Name × List Execution.ExecutableField))
+    : variableValuesAgreeWithCase variableValues boolCase (operationBoolVars operation)
+      -> (∀ varName,
+            varName
+              ∈ selectionSetBooleanVariables
+                  (Selection.field responseName fieldName arguments directives
+                      selectionSet
+                    :: rest)
+            -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> directivesAllowIn boolCase directives = true
+      -> schema.lookupField lookupParent fieldName = some fieldDefinition
+      -> Execution.collectFields schema variableValues lookupParent
+            (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
+            (staticCollectForGround schema
+              (operationBoolVars operation) lookupParent
+              groundType boolCase
+              (Selection.field responseName fieldName arguments directives selectionSet
+                :: rest))
+          = (
+              responseName,
+              {
+                parentType := lookupParent,
+                responseName := responseName,
+                fieldName := fieldName,
+                arguments := arguments,
+                selectionSet :=
+                  normalizeBoolCaseForType schema boolCase
+                    fieldDefinition.outputType.namedType selectionSet
+              }
+              :: normalizedFields
+            )
+            :: normalizedTail
+      -> Execution.collectFields schema variableValues lookupParent
+            (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
+            (Selection.field responseName fieldName arguments directives selectionSet
+              :: rest)
+          = (
+              responseName,
+              {
+                parentType := lookupParent,
+                responseName := responseName,
+                fieldName := fieldName,
+                arguments := arguments,
+                selectionSet := selectionSet
+              }
+              :: sourceFields
+            )
+            :: sourceTail
+      -> (match resolvers.resolve lookupParent fieldName arguments
+                  (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType
+                    ref) with
+          | some value =>
+              Execution.completeValue schema resolvers variableValues (depth - 1)
+                fieldDefinition.outputType
+                (normalizeBoolCaseForType schema boolCase
+                    fieldDefinition.outputType.namedType selectionSet
+                  ++ mergeSelectionSets
+                      (staticCollectCompleteScopedSelectionSet schema
+                        (operationBoolVars operation) groundType
+                        boolCase
+                        (staticScopedFieldsWithResponseName schema boolCase
+                          lookupParent groundType responseName rest)))
+                value
+              = Execution.completeValue schema resolvers variableValues (depth - 1)
+                  fieldDefinition.outputType
+                  (selectionSet
+                    ++ mergeSelectionSets
+                        (eraseCompleteScopedSelectionSet
+                          (staticScopedFieldsWithResponseName schema boolCase
+                            lookupParent groundType responseName rest)))
+                  value
+          | none => True)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            lookupParent
+            (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
+            (staticCollectForGround schema
+              (operationBoolVars operation) lookupParent
+              groundType boolCase
+              (withoutFieldSelectionsWithResponseName schema responseName rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              lookupParent
+              (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
+              (withoutFieldSelectionsWithResponseName schema responseName rest)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            lookupParent
+            (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
+            (staticCollectForGround schema
+              (operationBoolVars operation) lookupParent
+              groundType boolCase
+              (Selection.field responseName fieldName arguments directives selectionSet
+                :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              lookupParent
+              (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref)
+              (Selection.field responseName fieldName arguments directives selectionSet
+                :: rest) := by
   intro hagrees hsourceVars hallow hlookup hnormalizedCollect hsourceCollect
     hprojectedComplete hfiltered
   have hnormalizedProjection :=
@@ -1187,7 +1183,6 @@ theorem executeSelectionSet_filterSelectionSetBoolCase_field_allowed_lookup_some
       (by
         simpa [] using hsourceCollect)
       hcomplete hfiltered
-
 
 end CompleteNormalization
 

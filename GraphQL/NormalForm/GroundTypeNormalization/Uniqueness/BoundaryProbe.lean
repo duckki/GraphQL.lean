@@ -129,8 +129,8 @@ noncomputable def fieldPairRuntimeProbeResolvers
                       hlaterLeft, hfirstRight, hlaterRight]
 
 def fieldPairSideRuntimeProbeRoot
-    (leftChildRootSelectionSet rightChildRootSelectionSet : List Selection) :
-    FieldPairProbeTag -> List Selection
+    (leftChildRootSelectionSet rightChildRootSelectionSet : List Selection)
+    : FieldPairProbeTag -> List Selection
   | .left => leftChildRootSelectionSet
   | .right => rightChildRootSelectionSet
   | .filler => leftChildRootSelectionSet
@@ -260,17 +260,16 @@ theorem fieldPairSideRuntimeProbeResolvers_left_root
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (fieldDefinition : FieldDefinition) :
-    Argument.argumentsEquivalent arguments leftArguments ->
-    schema.lookupField targetParent leftField = some fieldDefinition ->
-      (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-        rightChildRootSelectionSet targetParent leftField rightField
-        leftArguments rightArguments leftRuntime rightRuntime).resolve
-        targetParent leftField arguments (.object targetParent none)
-      =
-      some
-        (objectProbeResolverValueWithRuntime leftRuntime
-          (some FieldPairProbeTag.left) fieldDefinition.outputType) := by
+    (fieldDefinition : FieldDefinition)
+    : Argument.argumentsEquivalent arguments leftArguments
+      -> schema.lookupField targetParent leftField = some fieldDefinition
+      -> (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+            rightChildRootSelectionSet targetParent leftField rightField
+            leftArguments rightArguments leftRuntime rightRuntime).resolve
+            targetParent leftField arguments (.object targetParent none)
+          = some
+              (objectProbeResolverValueWithRuntime leftRuntime
+                (some FieldPairProbeTag.left) fieldDefinition.outputType) := by
   intro harguments hlookup
   classical
   have htarget :
@@ -286,19 +285,18 @@ theorem fieldPairSideRuntimeProbeResolvers_right_root_of_not_left
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (fieldDefinition : FieldDefinition) :
-    ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
-      rightField arguments ->
-    Argument.argumentsEquivalent arguments rightArguments ->
-    schema.lookupField targetParent rightField = some fieldDefinition ->
-      (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-        rightChildRootSelectionSet targetParent leftField rightField
-        leftArguments rightArguments leftRuntime rightRuntime).resolve
-        targetParent rightField arguments (.object targetParent none)
-      =
-      some
-        (objectProbeResolverValueWithRuntime rightRuntime
-          (some FieldPairProbeTag.right) fieldDefinition.outputType) := by
+    (fieldDefinition : FieldDefinition)
+    : ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
+          rightField arguments
+      -> Argument.argumentsEquivalent arguments rightArguments
+      -> schema.lookupField targetParent rightField = some fieldDefinition
+      -> (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+            rightChildRootSelectionSet targetParent leftField rightField
+            leftArguments rightArguments leftRuntime rightRuntime).resolve
+            targetParent rightField arguments (.object targetParent none)
+          = some
+              (objectProbeResolverValueWithRuntime rightRuntime
+                (some FieldPairProbeTag.right) fieldDefinition.outputType) := by
   intro hnotLeft harguments hlookup
   classical
   have hright :
@@ -311,22 +309,20 @@ theorem fieldPairSideRuntimeProbeResolvers_right_root_of_not_left
 theorem fieldPairSideRuntimeProbeResolvers_tagged_object_left
     (schema : Schema)
     (leftChildRootSelectionSet rightChildRootSelectionSet : List Selection)
-    (targetParent leftField rightField parentType fieldName runtimeType :
-      Name)
+    (targetParent leftField rightField parentType fieldName runtimeType : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-        rightChildRootSelectionSet targetParent leftField rightField
-        leftArguments rightArguments leftRuntime rightRuntime).resolve
-        parentType fieldName arguments
-        (.object runtimeType (some FieldPairProbeTag.left))
-      =
-      some
-        (fieldPairProbeHeadResolverValue schema leftChildRootSelectionSet
-          parentType fieldName arguments FieldPairProbeTag.left
-          fieldDefinition.outputType) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+            rightChildRootSelectionSet targetParent leftField rightField
+            leftArguments rightArguments leftRuntime rightRuntime).resolve
+            parentType fieldName arguments
+            (.object runtimeType (some FieldPairProbeTag.left))
+          = some
+              (fieldPairProbeHeadResolverValue schema leftChildRootSelectionSet
+                parentType fieldName arguments FieldPairProbeTag.left
+                fieldDefinition.outputType) := by
   intro hlookup
   simp [fieldPairSideRuntimeProbeResolvers, fieldPairSideRuntimeProbeResolve,
     fieldPairSideRuntimeProbeRoot, hlookup]
@@ -334,22 +330,20 @@ theorem fieldPairSideRuntimeProbeResolvers_tagged_object_left
 theorem fieldPairSideRuntimeProbeResolvers_tagged_object_right
     (schema : Schema)
     (leftChildRootSelectionSet rightChildRootSelectionSet : List Selection)
-    (targetParent leftField rightField parentType fieldName runtimeType :
-      Name)
+    (targetParent leftField rightField parentType fieldName runtimeType : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-        rightChildRootSelectionSet targetParent leftField rightField
-        leftArguments rightArguments leftRuntime rightRuntime).resolve
-        parentType fieldName arguments
-        (.object runtimeType (some FieldPairProbeTag.right))
-      =
-      some
-        (fieldPairProbeHeadResolverValue schema rightChildRootSelectionSet
-          parentType fieldName arguments FieldPairProbeTag.right
-          fieldDefinition.outputType) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+            rightChildRootSelectionSet targetParent leftField rightField
+            leftArguments rightArguments leftRuntime rightRuntime).resolve
+            parentType fieldName arguments
+            (.object runtimeType (some FieldPairProbeTag.right))
+          = some
+              (fieldPairProbeHeadResolverValue schema rightChildRootSelectionSet
+                parentType fieldName arguments FieldPairProbeTag.right
+                fieldDefinition.outputType) := by
   intro hlookup
   simp [fieldPairSideRuntimeProbeResolvers, fieldPairSideRuntimeProbeResolve,
     fieldPairSideRuntimeProbeRoot, hlookup]
@@ -357,22 +351,20 @@ theorem fieldPairSideRuntimeProbeResolvers_tagged_object_right
 theorem fieldPairSideRuntimeProbeResolvers_tagged_object
     (schema : Schema)
     (leftChildRootSelectionSet rightChildRootSelectionSet : List Selection)
-    (targetParent leftField rightField parentType fieldName runtimeType :
-      Name)
+    (targetParent leftField rightField parentType fieldName runtimeType : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag) (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-        rightChildRootSelectionSet targetParent leftField rightField
-        leftArguments rightArguments leftRuntime rightRuntime).resolve
-        parentType fieldName arguments (.object runtimeType (some tag))
-      =
-      some
-        (fieldPairProbeHeadResolverValue schema
-          (fieldPairSideRuntimeProbeRoot leftChildRootSelectionSet
-            rightChildRootSelectionSet tag)
-          parentType fieldName arguments tag fieldDefinition.outputType) := by
+    (tag : FieldPairProbeTag) (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+            rightChildRootSelectionSet targetParent leftField rightField
+            leftArguments rightArguments leftRuntime rightRuntime).resolve
+            parentType fieldName arguments (.object runtimeType (some tag))
+          = some
+              (fieldPairProbeHeadResolverValue schema
+                (fieldPairSideRuntimeProbeRoot leftChildRootSelectionSet
+                  rightChildRootSelectionSet tag)
+                parentType fieldName arguments tag fieldDefinition.outputType) := by
   intro hlookup
   cases tag <;>
     simp [fieldPairSideRuntimeProbeResolvers,
@@ -384,8 +376,8 @@ inductive FieldPairPathLocalProbeRef where
   | target (tag : FieldPairProbeTag) (selectionSet : List Selection)
   | filler
 
-private def mergeFieldChildOptions :
-    Option (List Selection) -> Option (List Selection) -> Option (List Selection)
+private def mergeFieldChildOptions
+    : Option (List Selection) -> Option (List Selection) -> Option (List Selection)
   | none, none => none
   | some left, none => some left
   | none, some right => some right
@@ -447,10 +439,9 @@ decreasing_by
 
 theorem runtimePrunedSelectionSet_eq_self_of_allFields
     (schema : Schema) (runtimeType : Name)
-    {selectionSet : List Selection} :
-    selectionsAllFields selectionSet ->
-      runtimePrunedSelectionSet schema runtimeType selectionSet =
-        selectionSet := by
+    {selectionSet : List Selection}
+    : selectionsAllFields selectionSet
+      -> runtimePrunedSelectionSet schema runtimeType selectionSet = selectionSet := by
   intro hallFields
   induction selectionSet with
   | nil =>
@@ -515,25 +506,24 @@ decreasing_by
     simp [SelectionSet.size, Selection.size]
     omega
 
-private def selectionSetMembersOption :
-    List (List Selection) -> Option (List Selection)
+private def selectionSetMembersOption : List (List Selection) -> Option (List Selection)
   | [] => none
   | members => some (List.flatten members)
 
 private theorem mergeFieldChildOptions_membersOption
-    (left right : List (List Selection)) :
-    mergeFieldChildOptions (selectionSetMembersOption left)
-      (selectionSetMembersOption right) =
-      selectionSetMembersOption (left ++ right) := by
+    (left right : List (List Selection))
+    : mergeFieldChildOptions (selectionSetMembersOption left)
+        (selectionSetMembersOption right)
+      = selectionSetMembersOption (left ++ right) := by
   cases left <;> cases right <;>
     simp [selectionSetMembersOption, mergeFieldChildOptions]
 
 private theorem mergeFieldChildOptions_some_membersOption
     (childSelectionSet : List Selection)
-    (members : List (List Selection)) :
-    mergeFieldChildOptions (some childSelectionSet)
-      (selectionSetMembersOption members) =
-      selectionSetMembersOption (childSelectionSet :: members) := by
+    (members : List (List Selection))
+    : mergeFieldChildOptions (some childSelectionSet)
+        (selectionSetMembersOption members)
+      = selectionSetMembersOption (childSelectionSet :: members) := by
   cases members <;> simp [selectionSetMembersOption, mergeFieldChildOptions]
 
 noncomputable def fieldChildMembersByHeadAtRuntime
@@ -582,13 +572,13 @@ decreasing_by
 private theorem firstFieldChildByHeadAtRuntime?_eq_fieldChildMembersByHeadAtRuntime
     (schema : Schema)
     (currentRuntimeType childRuntimeType targetField : Name)
-    (targetArguments : List Argument) :
-    ∀ selectionSet,
-      firstFieldChildByHeadAtRuntime? schema currentRuntimeType
-        childRuntimeType targetField targetArguments selectionSet =
-      selectionSetMembersOption
-        (fieldChildMembersByHeadAtRuntime schema currentRuntimeType
-          childRuntimeType targetField targetArguments selectionSet)
+    (targetArguments : List Argument)
+    : ∀ selectionSet,
+        firstFieldChildByHeadAtRuntime? schema currentRuntimeType
+          childRuntimeType targetField targetArguments selectionSet
+        = selectionSetMembersOption
+            (fieldChildMembersByHeadAtRuntime schema currentRuntimeType
+              childRuntimeType targetField targetArguments selectionSet)
   | [] => by
       simp [firstFieldChildByHeadAtRuntime?,
         fieldChildMembersByHeadAtRuntime, selectionSetMembersOption]
@@ -649,13 +639,12 @@ decreasing_by
 theorem firstFieldChildByHeadAtRuntime?_eq_of_argumentsEquivalent
     (schema : Schema) (currentRuntimeType childRuntimeType targetField : Name)
     {firstArguments laterArguments : List Argument}
-    (hequivalent :
-      Argument.argumentsEquivalent firstArguments laterArguments) :
-    ∀ selectionSet,
-      firstFieldChildByHeadAtRuntime? schema currentRuntimeType
-        childRuntimeType targetField firstArguments selectionSet =
-      firstFieldChildByHeadAtRuntime? schema currentRuntimeType
-        childRuntimeType targetField laterArguments selectionSet
+    (hequivalent : Argument.argumentsEquivalent firstArguments laterArguments)
+    : ∀ selectionSet,
+        firstFieldChildByHeadAtRuntime? schema currentRuntimeType
+          childRuntimeType targetField firstArguments selectionSet
+        = firstFieldChildByHeadAtRuntime? schema currentRuntimeType
+            childRuntimeType targetField laterArguments selectionSet
   | [] => by
       simp [firstFieldChildByHeadAtRuntime?]
   | Selection.field responseName fieldName arguments directives
@@ -720,19 +709,20 @@ decreasing_by
 
 noncomputable def fieldPairPathLocalNextSelectionSet
     (schema : Schema) (currentRuntimeType childRuntimeType fieldName : Name)
-    (arguments : List Argument) (currentSelectionSet : List Selection) :
-    List Selection :=
+    (arguments : List Argument) (currentSelectionSet : List Selection)
+    : List Selection :=
   (firstFieldChildByHeadAtRuntime? schema currentRuntimeType childRuntimeType
-    fieldName arguments currentSelectionSet).getD []
+    fieldName arguments currentSelectionSet).getD
+    []
 
 theorem fieldPairPathLocalNextSelectionSet_eq_flatten_fieldChildMembersByHeadAtRuntime
     (schema : Schema) (currentRuntimeType childRuntimeType fieldName : Name)
-    (arguments : List Argument) (currentSelectionSet : List Selection) :
-    fieldPairPathLocalNextSelectionSet schema currentRuntimeType
-      childRuntimeType fieldName arguments currentSelectionSet =
-    List.flatten
-      (fieldChildMembersByHeadAtRuntime schema currentRuntimeType
-        childRuntimeType fieldName arguments currentSelectionSet) := by
+    (arguments : List Argument) (currentSelectionSet : List Selection)
+    : fieldPairPathLocalNextSelectionSet schema currentRuntimeType
+        childRuntimeType fieldName arguments currentSelectionSet
+      = List.flatten
+          (fieldChildMembersByHeadAtRuntime schema currentRuntimeType
+            childRuntimeType fieldName arguments currentSelectionSet) := by
   unfold fieldPairPathLocalNextSelectionSet
   rw [firstFieldChildByHeadAtRuntime?_eq_fieldChildMembersByHeadAtRuntime
     schema currentRuntimeType childRuntimeType fieldName arguments
@@ -745,24 +735,23 @@ theorem fieldPairPathLocalNextSelectionSet_eq_flatten_fieldChildMembersByHeadAtR
 theorem fieldPairPathLocalNextSelectionSet_eq_of_argumentsEquivalent
     (schema : Schema) (currentRuntimeType childRuntimeType fieldName : Name)
     {firstArguments laterArguments : List Argument}
-    (hequivalent :
-      Argument.argumentsEquivalent firstArguments laterArguments)
-    (currentSelectionSet : List Selection) :
-    fieldPairPathLocalNextSelectionSet schema currentRuntimeType
-      childRuntimeType fieldName firstArguments currentSelectionSet =
-    fieldPairPathLocalNextSelectionSet schema currentRuntimeType
-      childRuntimeType fieldName laterArguments currentSelectionSet := by
+    (hequivalent : Argument.argumentsEquivalent firstArguments laterArguments)
+    (currentSelectionSet : List Selection)
+    : fieldPairPathLocalNextSelectionSet schema currentRuntimeType
+        childRuntimeType fieldName firstArguments currentSelectionSet
+      = fieldPairPathLocalNextSelectionSet schema currentRuntimeType
+          childRuntimeType fieldName laterArguments currentSelectionSet := by
   unfold fieldPairPathLocalNextSelectionSet
   rw [firstFieldChildByHeadAtRuntime?_eq_of_argumentsEquivalent schema
     currentRuntimeType childRuntimeType fieldName hequivalent
     currentSelectionSet]
 
 theorem firstFieldChildByHead?_eq_of_argumentsEquivalent
-    (targetField : Name) {firstArguments laterArguments : List Argument} :
-    Argument.argumentsEquivalent firstArguments laterArguments ->
-    ∀ selectionSet,
-      firstFieldChildByHead? targetField firstArguments selectionSet =
-      firstFieldChildByHead? targetField laterArguments selectionSet
+    (targetField : Name) {firstArguments laterArguments : List Argument}
+    : Argument.argumentsEquivalent firstArguments laterArguments
+      -> ∀ selectionSet,
+          firstFieldChildByHead? targetField firstArguments selectionSet
+          = firstFieldChildByHead? targetField laterArguments selectionSet
   | hequivalent, [] => by
       simp [firstFieldChildByHead?]
   | hequivalent,
@@ -815,13 +804,13 @@ theorem firstFieldChildByHead?_field_mem_append_context
     {targetField responseName : Name}
     {targetArguments arguments : List Argument}
     {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    Selection.field responseName targetField arguments directives
-        childSelectionSet ∈ selectionSet ->
-    Argument.argumentsEquivalent arguments targetArguments ->
-      ∃ mergedSelectionSet pref suff,
-        firstFieldChildByHead? targetField targetArguments selectionSet =
-          some mergedSelectionSet
+    {childSelectionSet selectionSet : List Selection}
+    : Selection.field responseName targetField arguments directives childSelectionSet
+        ∈ selectionSet
+      -> Argument.argumentsEquivalent arguments targetArguments
+      -> ∃ mergedSelectionSet pref suff,
+          firstFieldChildByHead? targetField targetArguments selectionSet
+            = some mergedSelectionSet
           ∧ mergedSelectionSet = pref ++ childSelectionSet ++ suff := by
   intro hmem harguments
   induction selectionSet with
@@ -891,19 +880,18 @@ theorem firstFieldChildByHeadAtRuntime?_field_mem_append_context
     {currentRuntimeType childRuntimeType targetField responseName : Name}
     {targetArguments arguments : List Argument}
     {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    Selection.field responseName targetField arguments directives
-        childSelectionSet ∈ selectionSet ->
-    Argument.argumentsEquivalent arguments targetArguments ->
-      ∃ mergedSelectionSet pref suff,
-        firstFieldChildByHeadAtRuntime? schema currentRuntimeType
-            childRuntimeType targetField targetArguments selectionSet =
-          some mergedSelectionSet
-          ∧ mergedSelectionSet =
-            pref ++
-              runtimePrunedSelectionSet schema childRuntimeType
-                childSelectionSet ++
-            suff := by
+    {childSelectionSet selectionSet : List Selection}
+    : Selection.field responseName targetField arguments directives childSelectionSet
+        ∈ selectionSet
+      -> Argument.argumentsEquivalent arguments targetArguments
+      -> ∃ mergedSelectionSet pref suff,
+          firstFieldChildByHeadAtRuntime? schema currentRuntimeType
+              childRuntimeType targetField targetArguments selectionSet
+            = some mergedSelectionSet
+          ∧ mergedSelectionSet
+            = pref
+              ++ runtimePrunedSelectionSet schema childRuntimeType childSelectionSet
+              ++ suff := by
   intro hmem harguments
   induction selectionSet with
   | nil =>
@@ -1003,8 +991,8 @@ theorem firstFieldChildByHeadAtRuntime?_field_mem_append_context
 noncomputable def fieldPairPathLocalProbeHeadResolverValue
     (schema : Schema) (currentSelectionSet : List Selection)
     (parentType fieldName : Name) (arguments : List Argument)
-    (tag : FieldPairProbeTag) :
-    TypeRef -> Execution.ResolverValue FieldPairPathLocalProbeRef
+    (tag : FieldPairProbeTag)
+    : TypeRef -> Execution.ResolverValue FieldPairPathLocalProbeRef
   | .named typeName =>
       if (TypeRef.named typeName).isCompositeBool schema then
         if objectTypeNameBool schema typeName then
@@ -1013,17 +1001,15 @@ noncomputable def fieldPairPathLocalProbeHeadResolverValue
               (fieldPairPathLocalNextSelectionSet schema parentType
                 typeName fieldName arguments currentSelectionSet))
         else
-          match
-            abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-              arguments parentType currentSelectionSet with
+          match abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                  arguments parentType currentSelectionSet with
           | some runtimeType =>
               .object runtimeType
                 (FieldPairPathLocalProbeRef.target tag
                   (fieldPairPathLocalNextSelectionSet schema parentType
                     runtimeType fieldName arguments currentSelectionSet))
           | none =>
-              .object typeName
-                (FieldPairPathLocalProbeRef.target tag [])
+              .object typeName (FieldPairPathLocalProbeRef.target tag [])
       else
         .scalar tag.scalar
   | .list inner =>
@@ -1038,14 +1024,13 @@ theorem fieldPairPathLocalProbeHeadResolverValue_eq_of_argumentsEquivalent
     (schema : Schema) (currentSelectionSet : List Selection)
     (parentType fieldName : Name)
     {firstArguments laterArguments : List Argument}
-    (tag : FieldPairProbeTag) :
-    Argument.argumentsEquivalent firstArguments laterArguments ->
-    ∀ outputType,
-      fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
-        parentType fieldName firstArguments tag outputType
-      =
-      fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
-        parentType fieldName laterArguments tag outputType
+    (tag : FieldPairProbeTag)
+    : Argument.argumentsEquivalent firstArguments laterArguments
+      -> ∀ outputType,
+          fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
+            parentType fieldName firstArguments tag outputType
+          = fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
+              parentType fieldName laterArguments tag outputType
   | hequivalent, .named typeName => by
       have hruntime :=
         abstractRuntimeForFieldHeadDeep?_eq_of_argumentsEquivalent schema
@@ -1082,13 +1067,12 @@ theorem fieldPairPathLocalProbeHeadResolverValue_eq_of_argumentsEquivalent
 theorem fieldPairPathLocalProbeHeadResolverValue_leaf_eq_leafProbeResolverValue
     (schema : Schema) (currentSelectionSet : List Selection)
     (parentType fieldName : Name) (arguments : List Argument)
-    (tag : FieldPairProbeTag) :
-    ∀ outputType,
-      (TypeRef.named outputType.namedType).isCompositeBool schema = false ->
-        fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
-          parentType fieldName arguments tag outputType
-        =
-        leafProbeResolverValue outputType tag.scalar
+    (tag : FieldPairProbeTag)
+    : ∀ outputType,
+        (TypeRef.named outputType.namedType).isCompositeBool schema = false
+        -> fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
+              parentType fieldName arguments tag outputType
+            = leafProbeResolverValue outputType tag.scalar
   | .named typeName, hleaf => by
       have hleafNamed :
           (TypeRef.named typeName).isCompositeBool schema = false := by
@@ -1110,18 +1094,16 @@ theorem fieldPairPathLocalProbeHeadResolverValue_leaf_eq_leafProbeResolverValue
 
 theorem fieldPairPathLocalProbeHeadResolverValue_object_eq_objectProbeResolverValueWithRuntime
     (schema : Schema) (currentSelectionSet : List Selection)
-    (parentType fieldName : Name) (arguments : List Argument)
-    (tag : FieldPairProbeTag) :
-    ∀ outputType,
-      objectTypeNameBool schema outputType.namedType = true ->
-        fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
-          parentType fieldName arguments tag outputType
-        =
-        objectProbeResolverValueWithRuntime outputType.namedType
-          (FieldPairPathLocalProbeRef.target tag
-            (fieldPairPathLocalNextSelectionSet schema parentType
-              outputType.namedType fieldName arguments currentSelectionSet))
-          outputType
+    (parentType fieldName : Name) (arguments : List Argument) (tag : FieldPairProbeTag)
+    : ∀ outputType,
+        objectTypeNameBool schema outputType.namedType = true
+        -> fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
+              parentType fieldName arguments tag outputType
+            = objectProbeResolverValueWithRuntime outputType.namedType
+                (FieldPairPathLocalProbeRef.target tag
+                  (fieldPairPathLocalNextSelectionSet schema parentType
+                    outputType.namedType fieldName arguments currentSelectionSet))
+                outputType
   | .named typeName, hobject => by
       have hobjectNamed :
           objectTypeNameBool schema typeName = true := by
@@ -1154,20 +1136,20 @@ theorem fieldPairPathLocalProbeHeadResolverValue_object_eq_objectProbeResolverVa
 theorem fieldPairPathLocalProbeHeadResolverValue_abstract_eq_objectProbeResolverValueWithRuntime
     (schema : Schema) (currentSelectionSet : List Selection)
     (parentType fieldName runtimeType : Name) (arguments : List Argument)
-    (tag : FieldPairProbeTag) :
-    ∀ outputType,
-      (TypeRef.named outputType.namedType).isCompositeBool schema = true ->
-      objectTypeNameBool schema outputType.namedType = false ->
-      abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-        arguments parentType currentSelectionSet = some runtimeType ->
-        fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
-          parentType fieldName arguments tag outputType
-        =
-        objectProbeResolverValueWithRuntime runtimeType
-          (FieldPairPathLocalProbeRef.target tag
-            (fieldPairPathLocalNextSelectionSet schema parentType
-              runtimeType fieldName arguments currentSelectionSet))
-          outputType
+    (tag : FieldPairProbeTag)
+    : ∀ outputType,
+        (TypeRef.named outputType.namedType).isCompositeBool schema = true
+        -> objectTypeNameBool schema outputType.namedType = false
+        -> abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+              arguments parentType currentSelectionSet
+            = some runtimeType
+        -> fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
+              parentType fieldName arguments tag outputType
+            = objectProbeResolverValueWithRuntime runtimeType
+                (FieldPairPathLocalProbeRef.target tag
+                  (fieldPairPathLocalNextSelectionSet schema parentType
+                    runtimeType fieldName arguments currentSelectionSet))
+                outputType
   | .named typeName, hcomposite, hnonObject, hruntime => by
       have hcompositeNamed :
           (TypeRef.named typeName).isCompositeBool schema = true := by
@@ -1198,22 +1180,21 @@ theorem fieldPairPathLocalProbeHeadResolverValue_abstract_eq_objectProbeResolver
 theorem fieldPairPathLocalProbeHeadResolverValue_eq_objectProbeResolverValueWithRuntime
     (schema : Schema) (currentSelectionSet : List Selection)
     (parentType fieldName runtimeType : Name) (arguments : List Argument)
-    (tag : FieldPairProbeTag) (outputType : TypeRef) :
-    ((objectTypeNameBool schema outputType.namedType = true
-        ∧ runtimeType = outputType.namedType)
-      ∨
-      ((TypeRef.named outputType.namedType).isCompositeBool schema = true
-        ∧ objectTypeNameBool schema outputType.namedType = false
-        ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-          arguments parentType currentSelectionSet = some runtimeType)) ->
-      fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
-        parentType fieldName arguments tag outputType
-      =
-      objectProbeResolverValueWithRuntime runtimeType
-        (FieldPairPathLocalProbeRef.target tag
-          (fieldPairPathLocalNextSelectionSet schema parentType runtimeType
-            fieldName arguments currentSelectionSet))
-        outputType := by
+    (tag : FieldPairProbeTag) (outputType : TypeRef)
+    : ((objectTypeNameBool schema outputType.namedType = true
+          ∧ runtimeType = outputType.namedType)
+        ∨ ((TypeRef.named outputType.namedType).isCompositeBool schema = true
+            ∧ objectTypeNameBool schema outputType.namedType = false
+            ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                arguments parentType currentSelectionSet
+              = some runtimeType))
+      -> fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
+            parentType fieldName arguments tag outputType
+          = objectProbeResolverValueWithRuntime runtimeType
+              (FieldPairPathLocalProbeRef.target tag
+                (fieldPairPathLocalNextSelectionSet schema parentType runtimeType
+                  fieldName arguments currentSelectionSet))
+              outputType := by
   intro hcase
   rcases hcase with hobject | habstract
   · rcases hobject with ⟨hobject, hruntime⟩
@@ -1356,20 +1337,19 @@ theorem fieldPairPathLocalProbeResolvers_left_root
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (fieldDefinition : FieldDefinition) :
-    Argument.argumentsEquivalent arguments leftArguments ->
-    schema.lookupField targetParent leftField = some fieldDefinition ->
-      (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-        rightInitialSelectionSet targetParent leftField rightField
-        leftArguments rightArguments leftRuntime rightRuntime).resolve
-        targetParent leftField arguments
-        (.object targetParent FieldPairPathLocalProbeRef.root)
-      =
-      some
-        (objectProbeResolverValueWithRuntime leftRuntime
-          (FieldPairPathLocalProbeRef.target FieldPairProbeTag.left
-            leftInitialSelectionSet)
-          fieldDefinition.outputType) := by
+    (fieldDefinition : FieldDefinition)
+    : Argument.argumentsEquivalent arguments leftArguments
+      -> schema.lookupField targetParent leftField = some fieldDefinition
+      -> (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+            rightInitialSelectionSet targetParent leftField rightField
+            leftArguments rightArguments leftRuntime rightRuntime).resolve
+            targetParent leftField arguments
+            (.object targetParent FieldPairPathLocalProbeRef.root)
+          = some
+              (objectProbeResolverValueWithRuntime leftRuntime
+                (FieldPairPathLocalProbeRef.target FieldPairProbeTag.left
+                  leftInitialSelectionSet)
+                fieldDefinition.outputType) := by
   intro harguments hlookup
   classical
   have htarget :
@@ -1385,22 +1365,21 @@ theorem fieldPairPathLocalProbeResolvers_right_root_of_not_left
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (fieldDefinition : FieldDefinition) :
-    ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
-      rightField arguments ->
-    Argument.argumentsEquivalent arguments rightArguments ->
-    schema.lookupField targetParent rightField = some fieldDefinition ->
-      (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-        rightInitialSelectionSet targetParent leftField rightField
-        leftArguments rightArguments leftRuntime rightRuntime).resolve
-        targetParent rightField arguments
-        (.object targetParent FieldPairPathLocalProbeRef.root)
-      =
-      some
-        (objectProbeResolverValueWithRuntime rightRuntime
-          (FieldPairPathLocalProbeRef.target FieldPairProbeTag.right
-            rightInitialSelectionSet)
-          fieldDefinition.outputType) := by
+    (fieldDefinition : FieldDefinition)
+    : ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
+          rightField arguments
+      -> Argument.argumentsEquivalent arguments rightArguments
+      -> schema.lookupField targetParent rightField = some fieldDefinition
+      -> (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+            rightInitialSelectionSet targetParent leftField rightField
+            leftArguments rightArguments leftRuntime rightRuntime).resolve
+            targetParent rightField arguments
+            (.object targetParent FieldPairPathLocalProbeRef.root)
+          = some
+              (objectProbeResolverValueWithRuntime rightRuntime
+                (FieldPairPathLocalProbeRef.target FieldPairProbeTag.right
+                  rightInitialSelectionSet)
+                fieldDefinition.outputType) := by
   intro hnotLeft harguments hlookup
   classical
   have hright :
@@ -1412,61 +1391,63 @@ theorem fieldPairPathLocalProbeResolvers_right_root_of_not_left
 
 theorem fieldPairPathLocalProbeResolvers_tagged_object
     (schema : Schema)
-    (leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet :
-      List Selection)
-    (targetParent leftField rightField parentType fieldName runtimeType :
-      Name)
+    (leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
+      : List Selection)
+    (targetParent leftField rightField parentType fieldName runtimeType : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag) (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-        rightInitialSelectionSet targetParent leftField rightField
-        leftArguments rightArguments leftRuntime rightRuntime).resolve
-        parentType fieldName arguments
-        (.object runtimeType
-          (FieldPairPathLocalProbeRef.target tag currentSelectionSet))
-      =
-      some
-        (fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
-          parentType fieldName arguments tag fieldDefinition.outputType) := by
+    (tag : FieldPairProbeTag) (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+            rightInitialSelectionSet targetParent leftField rightField
+            leftArguments rightArguments leftRuntime rightRuntime).resolve
+            parentType fieldName arguments
+            (.object runtimeType
+              (FieldPairPathLocalProbeRef.target tag currentSelectionSet))
+          = some
+              (fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
+                parentType fieldName arguments tag fieldDefinition.outputType) := by
   intro hlookup
   simp [fieldPairPathLocalProbeResolvers, fieldPairPathLocalProbeResolve,
     hlookup]
 
-theorem executeField_fieldPairPathLocalProbe_tagged_object_leaf
-    (schema : Schema)
-    (leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet :
-      List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName : Name)
+theorem executeField_fieldPairPathLocalProbe_tagged_object_leaf (schema : Schema)
+    (leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField parentType fieldName
+      sourceRuntimeType responseName
+      : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = false ->
-      Execution.executeField schema
-        (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-          rightInitialSelectionSet targetParent leftField rightField
-          leftArguments rightArguments leftRuntime rightRuntime)
-        variableValues (fuel + 1)
-        (.object sourceRuntimeType
-          (FieldPairPathLocalProbeRef.target tag currentSelectionSet))
-        responseName
-        [{
-          parentType := parentType
-          responseName := responseName
-          fieldName := fieldName
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      .ok ([(responseName,
-        leafProbeResponseValue fieldDefinition.outputType tag.scalar)], 0) := by
+    (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
+    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> Execution.executeField schema
+            (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+              rightInitialSelectionSet targetParent leftField rightField
+              leftArguments rightArguments leftRuntime rightRuntime)
+            variableValues (fuel + 1)
+            (.object sourceRuntimeType
+              (FieldPairPathLocalProbeRef.target tag currentSelectionSet))
+            responseName
+            [{
+              parentType := parentType
+              responseName := responseName
+              fieldName := fieldName
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = .ok
+              (
+                [(
+                  responseName,
+                  leafProbeResponseValue fieldDefinition.outputType tag.scalar
+                )],
+                0
+              ) := by
   intro hlookup hfuel hleaf
   have hresolve :
       (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
@@ -1502,39 +1483,45 @@ theorem executeField_fieldPairPathLocalProbe_tagged_object_leaf
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_leaf
     (schema : Schema)
     (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName : Name)
+      currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField parentType fieldName
+      sourceRuntimeType responseName
+      : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = false ->
-      Execution.executeField schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-            rightInitialSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (fuel + 1)
-        (projectionTargetResolverValue
-          (.object sourceRuntimeType
-            (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
-        responseName
-        [{
-          parentType := parentType
-          responseName := responseName
-          fieldName := fieldName
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      .ok ([(responseName,
-        leafProbeResponseValue fieldDefinition.outputType tag.scalar)], 0) := by
+    (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
+    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                rightInitialSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (fuel + 1)
+            (projectionTargetResolverValue
+              (.object sourceRuntimeType
+                (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
+            responseName
+            [{
+              parentType := parentType
+              responseName := responseName
+              fieldName := fieldName
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = .ok
+              (
+                [(
+                  responseName,
+                  leafProbeResponseValue fieldDefinition.outputType tag.scalar
+                )],
+                0
+              ) := by
   intro hlookup hfuel hleaf
   let base :=
     fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
@@ -1565,59 +1552,57 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_leaf
 
 theorem executeField_fieldPairPathLocalProbe_tagged_object_objectProbe_response_of_fuel_ge
     (schema : Schema)
-    (leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet :
-      List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName : Name)
+    (leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField parentType fieldName
+      sourceRuntimeType responseName
+      : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
+    (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
     (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (runtimeType : Name) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-        ∧ runtimeType = fieldDefinition.outputType.namedType)
-      ∨
-      ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = true
-        ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-          false
-        ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-          arguments parentType currentSelectionSet = some runtimeType)) ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-      Execution.executeField schema
-        (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-          rightInitialSelectionSet targetParent leftField rightField
-          leftArguments rightArguments leftRuntime rightRuntime)
-        variableValues (fuel + 1)
-        (.object sourceRuntimeType
-          (FieldPairPathLocalProbeRef.target tag currentSelectionSet))
-        responseName
-        [{
-          parentType := parentType
-          responseName := responseName
-          fieldName := fieldName
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.singleFieldResult responseName
-        (wrapTypeRefSelectionSetResult fieldDefinition.outputType
-          (Execution.executeSelectionSetAsResponse schema
+    (runtimeType : Name)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+            ∧ runtimeType = fieldDefinition.outputType.namedType)
+          ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+                = true
+              ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+              ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                  arguments parentType currentSelectionSet
+                = some runtimeType))
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> Execution.executeField schema
             (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
               rightInitialSelectionSet targetParent leftField rightField
               leftArguments rightArguments leftRuntime rightRuntime)
-            variableValues
-            (fuel - leafProbeFuel fieldDefinition.outputType)
-            runtimeType
-            (.object runtimeType
-              (FieldPairPathLocalProbeRef.target tag
-                (fieldPairPathLocalNextSelectionSet schema parentType
-                  runtimeType fieldName arguments currentSelectionSet)))
-            childSelectionSet)) := by
+            variableValues (fuel + 1)
+            (.object sourceRuntimeType
+              (FieldPairPathLocalProbeRef.target tag currentSelectionSet))
+            responseName
+            [{
+              parentType := parentType
+              responseName := responseName
+              fieldName := fieldName
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = Execution.singleFieldResult responseName
+              (wrapTypeRefSelectionSetResult fieldDefinition.outputType
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                    rightInitialSelectionSet targetParent leftField rightField
+                    leftArguments rightArguments leftRuntime rightRuntime)
+                  variableValues
+                  (fuel - leafProbeFuel fieldDefinition.outputType)
+                  runtimeType
+                  (.object runtimeType
+                    (FieldPairPathLocalProbeRef.target tag
+                      (fieldPairPathLocalNextSelectionSet schema parentType
+                        runtimeType fieldName arguments currentSelectionSet)))
+                  childSelectionSet)) := by
   intro hlookup hruntime hinclude hfuel
   have hresolve :
       (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
@@ -1658,64 +1643,64 @@ theorem executeField_fieldPairPathLocalProbe_tagged_object_objectProbe_response_
 
 theorem executeField_fieldPairPathLocalProbe_tagged_object_objectProbe_ok_of_child_response
     (schema : Schema)
-    (leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet :
-      List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName : Name)
+    (leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField parentType fieldName
+      sourceRuntimeType responseName
+      : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
+    (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
     (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (runtimeType : Name)
-    (responseFields : List (Name × Execution.ResponseValue))
-    (childErrors : Nat) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-        ∧ runtimeType = fieldDefinition.outputType.namedType)
-      ∨
-      ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = true
-        ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-          false
-        ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-          arguments parentType currentSelectionSet = some runtimeType)) ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-          rightInitialSelectionSet targetParent leftField rightField
-          leftArguments rightArguments leftRuntime rightRuntime)
-        variableValues
-        (fuel - leafProbeFuel fieldDefinition.outputType)
-        runtimeType
-        (.object runtimeType
-          (FieldPairPathLocalProbeRef.target tag
-            (fieldPairPathLocalNextSelectionSet schema parentType
-              runtimeType fieldName arguments currentSelectionSet)))
-        childSelectionSet =
-      ({ data := Execution.ResponseValue.object responseFields,
-         errors := childErrors } : Execution.Response) ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema
-          (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-            rightInitialSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          variableValues (fuel + 1)
-          (.object sourceRuntimeType
-            (FieldPairPathLocalProbeRef.target tag currentSelectionSet))
-          responseName
-          [{
-            parentType := parentType
-            responseName := responseName
-            fieldName := fieldName
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)
-        ∧ responseValue ≠ Execution.ResponseValue.null := by
+    (runtimeType : Name) (responseFields : List (Name × Execution.ResponseValue))
+    (childErrors : Nat)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+            ∧ runtimeType = fieldDefinition.outputType.namedType)
+          ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+                = true
+              ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+              ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                  arguments parentType currentSelectionSet
+                = some runtimeType))
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> Execution.executeSelectionSetAsResponse schema
+            (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+              rightInitialSelectionSet targetParent leftField rightField
+              leftArguments rightArguments leftRuntime rightRuntime)
+            variableValues
+            (fuel - leafProbeFuel fieldDefinition.outputType)
+            runtimeType
+            (.object runtimeType
+              (FieldPairPathLocalProbeRef.target tag
+                (fieldPairPathLocalNextSelectionSet schema parentType
+                  runtimeType fieldName arguments currentSelectionSet)))
+            childSelectionSet
+          = ({
+                data := Execution.ResponseValue.object responseFields,
+                errors := childErrors
+              }
+              : Execution.Response)
+      -> ∃ responseValue fieldErrors,
+          Execution.executeField schema
+              (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                rightInitialSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              variableValues (fuel + 1)
+              (.object sourceRuntimeType
+                (FieldPairPathLocalProbeRef.target tag currentSelectionSet))
+              responseName
+              [{
+                parentType := parentType
+                responseName := responseName
+                fieldName := fieldName
+                arguments := arguments
+                selectionSet := childSelectionSet
+              }]
+            = .ok ([(responseName, responseValue)], fieldErrors)
+          ∧ responseValue ≠ Execution.ResponseValue.null := by
   intro hlookup hruntime hinclude hfuel hchildResponse
   have hfield :=
     executeField_fieldPairPathLocalProbe_tagged_object_objectProbe_response_of_fuel_ge
@@ -1736,64 +1721,63 @@ theorem executeField_fieldPairPathLocalProbe_tagged_object_objectProbe_ok_of_chi
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectProbe_response_of_fuel_ge
     (schema : Schema)
     (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName : Name)
+      currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField parentType fieldName
+      sourceRuntimeType responseName
+      : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
+    (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
     (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (runtimeType : Name) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-        ∧ runtimeType = fieldDefinition.outputType.namedType)
-      ∨
-      ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = true
-        ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-          false
-        ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-          arguments parentType currentSelectionSet = some runtimeType)) ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-      Execution.executeField schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-            rightInitialSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (fuel + 1)
-        (projectionTargetResolverValue
-          (.object sourceRuntimeType
-            (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
-        responseName
-        [{
-          parentType := parentType
-          responseName := responseName
-          fieldName := fieldName
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.singleFieldResult responseName
-        (wrapTypeRefSelectionSetResult fieldDefinition.outputType
-          (Execution.executeSelectionSetAsResponse schema
+    (runtimeType : Name)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+            ∧ runtimeType = fieldDefinition.outputType.namedType)
+          ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+                = true
+              ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+              ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                  arguments parentType currentSelectionSet
+                = some runtimeType))
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> Execution.executeField schema
             (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
               (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
                 rightInitialSelectionSet targetParent leftField rightField
                 leftArguments rightArguments leftRuntime rightRuntime)
               targetParent leftField rightField leftArguments rightArguments)
-            variableValues
-            (fuel - leafProbeFuel fieldDefinition.outputType)
-            runtimeType
+            variableValues (fuel + 1)
             (projectionTargetResolverValue
-              (.object runtimeType
-                (FieldPairPathLocalProbeRef.target tag
-                  (fieldPairPathLocalNextSelectionSet schema parentType
-                    runtimeType fieldName arguments currentSelectionSet))))
-            childSelectionSet)) := by
+              (.object sourceRuntimeType
+                (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
+            responseName
+            [{
+              parentType := parentType
+              responseName := responseName
+              fieldName := fieldName
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = Execution.singleFieldResult responseName
+              (wrapTypeRefSelectionSetResult fieldDefinition.outputType
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                      rightInitialSelectionSet targetParent leftField rightField
+                      leftArguments rightArguments leftRuntime rightRuntime)
+                    targetParent leftField rightField leftArguments rightArguments)
+                  variableValues
+                  (fuel - leafProbeFuel fieldDefinition.outputType)
+                  runtimeType
+                  (projectionTargetResolverValue
+                    (.object runtimeType
+                      (FieldPairPathLocalProbeRef.target tag
+                        (fieldPairPathLocalNextSelectionSet schema parentType
+                          runtimeType fieldName arguments currentSelectionSet))))
+                  childSelectionSet)) := by
   intro hlookup hruntime hinclude hfuel
   let base :=
     fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
@@ -1836,69 +1820,70 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectP
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectProbe_ok_of_child_response
     (schema : Schema)
     (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName : Name)
+      currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField parentType fieldName
+      sourceRuntimeType responseName
+      : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
+    (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
     (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (runtimeType : Name)
-    (responseFields : List (Name × Execution.ResponseValue))
-    (childErrors : Nat) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-        ∧ runtimeType = fieldDefinition.outputType.namedType)
-      ∨
-      ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = true
-        ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-          false
-        ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-          arguments parentType currentSelectionSet = some runtimeType)) ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-            rightInitialSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues
-        (fuel - leafProbeFuel fieldDefinition.outputType)
-        runtimeType
-        (projectionTargetResolverValue
-          (.object runtimeType
-            (FieldPairPathLocalProbeRef.target tag
-              (fieldPairPathLocalNextSelectionSet schema parentType
-                runtimeType fieldName arguments currentSelectionSet))))
-        childSelectionSet =
-      ({ data := Execution.ResponseValue.object responseFields,
-         errors := childErrors } : Execution.Response) ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-              rightInitialSelectionSet targetParent leftField rightField
-              leftArguments rightArguments leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1)
-          (projectionTargetResolverValue
-            (.object sourceRuntimeType
-              (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
-          responseName
-          [{
-            parentType := parentType
-            responseName := responseName
-            fieldName := fieldName
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)
-        ∧ responseValue ≠ Execution.ResponseValue.null := by
+    (runtimeType : Name) (responseFields : List (Name × Execution.ResponseValue))
+    (childErrors : Nat)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+            ∧ runtimeType = fieldDefinition.outputType.namedType)
+          ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+                = true
+              ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+              ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                  arguments parentType currentSelectionSet
+                = some runtimeType))
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                rightInitialSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues
+            (fuel - leafProbeFuel fieldDefinition.outputType)
+            runtimeType
+            (projectionTargetResolverValue
+              (.object runtimeType
+                (FieldPairPathLocalProbeRef.target tag
+                  (fieldPairPathLocalNextSelectionSet schema parentType
+                    runtimeType fieldName arguments currentSelectionSet))))
+            childSelectionSet
+          = ({
+                data := Execution.ResponseValue.object responseFields,
+                errors := childErrors
+              }
+              : Execution.Response)
+      -> ∃ responseValue fieldErrors,
+          Execution.executeField schema
+              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                  rightInitialSelectionSet targetParent leftField rightField
+                  leftArguments rightArguments leftRuntime rightRuntime)
+                targetParent leftField rightField leftArguments rightArguments)
+              variableValues (fuel + 1)
+              (projectionTargetResolverValue
+                (.object sourceRuntimeType
+                  (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
+              responseName
+              [{
+                parentType := parentType
+                responseName := responseName
+                fieldName := fieldName
+                arguments := arguments
+                selectionSet := childSelectionSet
+              }]
+            = .ok ([(responseName, responseValue)], fieldErrors)
+          ∧ responseValue ≠ Execution.ResponseValue.null := by
   intro hlookup hruntime hinclude hfuel hchildResponse
   have hfield :=
     executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectProbe_response_of_fuel_ge
@@ -1919,85 +1904,86 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectP
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_field_ok_of_field_children
     (schema : Schema)
     (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType
-      sourceRuntimeType : Name)
-    (leftArguments rightArguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
-    (selectionSet : List Selection) :
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-        ∃ fieldDefinition,
-          schema.lookupField parentType fieldName = some fieldDefinition
+      currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField parentType sourceRuntimeType : Name)
+    (leftArguments rightArguments : List Argument) (leftRuntime rightRuntime : Name)
+    (tag : FieldPairProbeTag) (selectionSet : List Selection)
+    : (∀ responseName fieldName arguments directives childSelectionSet,
+        Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+        -> ∃ fieldDefinition,
+            schema.lookupField parentType fieldName = some fieldDefinition
             ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
             ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                schema = false
-              ∨ ∃ childRuntimeType responseFields childErrors,
-                (((objectTypeNameBool schema
-                        fieldDefinition.outputType.namedType = true
-                      ∧ childRuntimeType =
-                        fieldDefinition.outputType.namedType)
-                    ∨
-                    ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                        schema = true
-                      ∧ objectTypeNameBool schema
-                          fieldDefinition.outputType.namedType = false
-                      ∧ abstractRuntimeForFieldHeadDeep? schema parentType
-                          fieldName arguments parentType currentSelectionSet =
-                        some childRuntimeType))
-                  ∧ schema.typeIncludesObjectBool
-                      fieldDefinition.outputType.namedType childRuntimeType =
-                    true
-                  ∧ Execution.executeSelectionSetAsResponse schema
-                      (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                        (fieldPairPathLocalProbeResolvers schema
-                          leftInitialSelectionSet rightInitialSelectionSet
-                          targetParent leftField rightField leftArguments
-                          rightArguments leftRuntime rightRuntime)
-                        targetParent leftField rightField leftArguments
-                        rightArguments)
-                      variableValues
-                      (fuel - leafProbeFuel fieldDefinition.outputType)
-                      childRuntimeType
-                      (projectionTargetResolverValue
-                        (.object childRuntimeType
-                          (FieldPairPathLocalProbeRef.target tag
-                            (fieldPairPathLocalNextSelectionSet schema
-                              parentType childRuntimeType fieldName
-                              arguments currentSelectionSet))))
-                      childSelectionSet =
-                    ({ data := Execution.ResponseValue.object responseFields,
-                       errors := childErrors } : Execution.Response)))) ->
-      ∀ responseName fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-            childSelectionSet ∈ selectionSet ->
-          ∃ responseValue fieldErrors,
-            Execution.executeField schema
-              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                (fieldPairPathLocalProbeResolvers schema
-                  leftInitialSelectionSet rightInitialSelectionSet
+                    schema
+                  = false
+                ∨ ∃ childRuntimeType responseFields childErrors,
+                    (((objectTypeNameBool schema fieldDefinition.outputType.namedType
+                            = true
+                          ∧ childRuntimeType = fieldDefinition.outputType.namedType)
+                        ∨ ((TypeRef.named
+                                fieldDefinition.outputType.namedType).isCompositeBool
+                                schema
+                              = true
+                            ∧ objectTypeNameBool schema
+                                fieldDefinition.outputType.namedType
+                              = false
+                            ∧ abstractRuntimeForFieldHeadDeep? schema parentType
+                                fieldName arguments parentType currentSelectionSet
+                              = some childRuntimeType))
+                      ∧ schema.typeIncludesObjectBool
+                          fieldDefinition.outputType.namedType childRuntimeType
+                        = true
+                      ∧ Execution.executeSelectionSetAsResponse schema
+                          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                            (fieldPairPathLocalProbeResolvers schema
+                              leftInitialSelectionSet rightInitialSelectionSet
+                              targetParent leftField rightField leftArguments
+                              rightArguments leftRuntime rightRuntime)
+                            targetParent leftField rightField leftArguments
+                            rightArguments)
+                          variableValues
+                          (fuel - leafProbeFuel fieldDefinition.outputType)
+                          childRuntimeType
+                          (projectionTargetResolverValue
+                            (.object childRuntimeType
+                              (FieldPairPathLocalProbeRef.target tag
+                                (fieldPairPathLocalNextSelectionSet schema
+                                  parentType childRuntimeType fieldName
+                                  arguments currentSelectionSet))))
+                          childSelectionSet
+                        = ({
+                              data := Execution.ResponseValue.object responseFields,
+                              errors := childErrors
+                            }
+                            : Execution.Response))))
+      -> ∀ responseName fieldName arguments directives childSelectionSet,
+          Selection.field responseName fieldName arguments directives childSelectionSet
+            ∈ selectionSet
+          -> ∃ responseValue fieldErrors,
+              Execution.executeField schema
+                (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                  (fieldPairPathLocalProbeResolvers schema
+                    leftInitialSelectionSet rightInitialSelectionSet
+                    targetParent leftField rightField leftArguments
+                    rightArguments leftRuntime rightRuntime)
                   targetParent leftField rightField leftArguments
-                  rightArguments leftRuntime rightRuntime)
-                targetParent leftField rightField leftArguments
-                rightArguments)
-              variableValues (fuel + 1)
-              (projectionTargetResolverValue
-                (.object sourceRuntimeType
-                  (FieldPairPathLocalProbeRef.target tag
-                    currentSelectionSet)))
-              responseName
-              [{
-                parentType := parentType
-                responseName := responseName
-                fieldName := fieldName
-                arguments := arguments
-                selectionSet := childSelectionSet
-              }]
-            =
-            .ok ([(responseName, responseValue)], fieldErrors) := by
+                  rightArguments)
+                variableValues (fuel + 1)
+                (projectionTargetResolverValue
+                  (.object sourceRuntimeType
+                    (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
+                responseName
+                [{
+                  parentType := parentType
+                  responseName := responseName
+                  fieldName := fieldName
+                  arguments := arguments
+                  selectionSet := childSelectionSet
+                }]
+              = .ok ([(responseName, responseValue)], fieldErrors) := by
   intro hchildren responseName fieldName arguments directives
     childSelectionSet hmem
   rcases hchildren responseName fieldName arguments directives
@@ -2033,76 +2019,81 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_field_o
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_of_field_children
     (schema : Schema)
     (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType
-      sourceRuntimeType : Name)
-    (leftArguments rightArguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
-    (selectionSet : List Selection) :
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = true ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-        ∃ fieldDefinition,
-          schema.lookupField parentType fieldName = some fieldDefinition
-            ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
-            ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                schema = false
-              ∨ ∃ childRuntimeType responseFields childErrors,
-                (((objectTypeNameBool schema
-                        fieldDefinition.outputType.namedType = true
-                      ∧ childRuntimeType =
-                        fieldDefinition.outputType.namedType)
-                    ∨
-                    ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                        schema = true
-                      ∧ objectTypeNameBool schema
-                          fieldDefinition.outputType.namedType = false
-                      ∧ abstractRuntimeForFieldHeadDeep? schema parentType
-                          fieldName arguments parentType currentSelectionSet =
-                        some childRuntimeType))
-                  ∧ schema.typeIncludesObjectBool
-                      fieldDefinition.outputType.namedType childRuntimeType =
-                    true
-                  ∧ Execution.executeSelectionSetAsResponse schema
-                      (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                        (fieldPairPathLocalProbeResolvers schema
-                          leftInitialSelectionSet rightInitialSelectionSet
-                          targetParent leftField rightField leftArguments
-                          rightArguments leftRuntime rightRuntime)
-                        targetParent leftField rightField leftArguments
-                        rightArguments)
-                      variableValues
-                      (fuel - leafProbeFuel fieldDefinition.outputType)
-                      childRuntimeType
-                      (projectionTargetResolverValue
-                        (.object childRuntimeType
-                          (FieldPairPathLocalProbeRef.target tag
-                            (fieldPairPathLocalNextSelectionSet schema
-                              parentType childRuntimeType fieldName
-                              arguments currentSelectionSet))))
-                      childSelectionSet =
-                    ({ data := Execution.ResponseValue.object responseFields,
-                       errors := childErrors } : Execution.Response)))) ->
-      ∃ responseFields errors,
-        Execution.executeSelectionSetAsResponse schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairPathLocalProbeResolvers schema
-              leftInitialSelectionSet rightInitialSelectionSet
-              targetParent leftField rightField leftArguments
-              rightArguments leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1) parentType
-          (projectionTargetResolverValue
-            (.object sourceRuntimeType
-              (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
-          selectionSet =
-        ({ data := Execution.ResponseValue.object responseFields,
-           errors := errors } : Execution.Response) := by
+      currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField parentType sourceRuntimeType : Name)
+    (leftArguments rightArguments : List Argument) (leftRuntime rightRuntime : Name)
+    (tag : FieldPairProbeTag) (selectionSet : List Selection)
+    : selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> ∃ fieldDefinition,
+                schema.lookupField parentType fieldName = some fieldDefinition
+                ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
+                ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                        schema
+                      = false
+                    ∨ ∃ childRuntimeType responseFields childErrors,
+                        (((objectTypeNameBool schema
+                                  fieldDefinition.outputType.namedType
+                                = true
+                              ∧ childRuntimeType = fieldDefinition.outputType.namedType)
+                            ∨ ((TypeRef.named
+                                    fieldDefinition.outputType.namedType).isCompositeBool
+                                    schema
+                                  = true
+                                ∧ objectTypeNameBool schema
+                                    fieldDefinition.outputType.namedType
+                                  = false
+                                ∧ abstractRuntimeForFieldHeadDeep? schema parentType
+                                    fieldName arguments parentType currentSelectionSet
+                                  = some childRuntimeType))
+                          ∧ schema.typeIncludesObjectBool
+                              fieldDefinition.outputType.namedType childRuntimeType
+                            = true
+                          ∧ Execution.executeSelectionSetAsResponse schema
+                              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                                (fieldPairPathLocalProbeResolvers schema
+                                  leftInitialSelectionSet rightInitialSelectionSet
+                                  targetParent leftField rightField leftArguments
+                                  rightArguments leftRuntime rightRuntime)
+                                targetParent leftField rightField leftArguments
+                                rightArguments)
+                              variableValues
+                              (fuel - leafProbeFuel fieldDefinition.outputType)
+                              childRuntimeType
+                              (projectionTargetResolverValue
+                                (.object childRuntimeType
+                                  (FieldPairPathLocalProbeRef.target tag
+                                    (fieldPairPathLocalNextSelectionSet schema
+                                      parentType childRuntimeType fieldName
+                                      arguments currentSelectionSet))))
+                              childSelectionSet
+                            = ({
+                                  data := Execution.ResponseValue.object responseFields,
+                                  errors := childErrors
+                                }
+                                : Execution.Response))))
+      -> ∃ responseFields errors,
+          Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairPathLocalProbeResolvers schema
+                leftInitialSelectionSet rightInitialSelectionSet
+                targetParent leftField rightField leftArguments
+                rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (fuel + 1) parentType
+            (projectionTargetResolverValue
+              (.object sourceRuntimeType
+                (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
+            selectionSet
+          = ({ data := Execution.ResponseValue.object responseFields, errors := errors }
+              : Execution.Response) := by
   intro hfree hnormal hobject hchildren
   let resolvers :=
     fieldPairOrDeepSuccessResolvers schema rootSelectionSet
@@ -2150,17 +2141,16 @@ theorem fieldPairRuntimeProbeResolvers_left_root
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (fieldDefinition : FieldDefinition) :
-    Argument.argumentsEquivalent arguments leftArguments ->
-    schema.lookupField targetParent leftField = some fieldDefinition ->
-      (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-        targetParent leftField rightField leftArguments rightArguments
-        leftRuntime rightRuntime).resolve targetParent leftField arguments
-          (.object targetParent none)
-      =
-      some
-        (objectProbeResolverValueWithRuntime leftRuntime
-          (some FieldPairProbeTag.left) fieldDefinition.outputType) := by
+    (fieldDefinition : FieldDefinition)
+    : Argument.argumentsEquivalent arguments leftArguments
+      -> schema.lookupField targetParent leftField = some fieldDefinition
+      -> (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+            targetParent leftField rightField leftArguments rightArguments
+            leftRuntime rightRuntime).resolve
+            targetParent leftField arguments (.object targetParent none)
+          = some
+              (objectProbeResolverValueWithRuntime leftRuntime
+                (some FieldPairProbeTag.left) fieldDefinition.outputType) := by
   intro harguments hlookup
   classical
   have htarget :
@@ -2175,19 +2165,18 @@ theorem fieldPairRuntimeProbeResolvers_right_root_of_not_left
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (fieldDefinition : FieldDefinition) :
-    ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
-      rightField arguments ->
-    Argument.argumentsEquivalent arguments rightArguments ->
-    schema.lookupField targetParent rightField = some fieldDefinition ->
-      (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-        targetParent leftField rightField leftArguments rightArguments
-        leftRuntime rightRuntime).resolve targetParent rightField arguments
-          (.object targetParent none)
-      =
-      some
-        (objectProbeResolverValueWithRuntime rightRuntime
-          (some FieldPairProbeTag.right) fieldDefinition.outputType) := by
+    (fieldDefinition : FieldDefinition)
+    : ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
+          rightField arguments
+      -> Argument.argumentsEquivalent arguments rightArguments
+      -> schema.lookupField targetParent rightField = some fieldDefinition
+      -> (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+            targetParent leftField rightField leftArguments rightArguments
+            leftRuntime rightRuntime).resolve
+            targetParent rightField arguments (.object targetParent none)
+          = some
+              (objectProbeResolverValueWithRuntime rightRuntime
+                (some FieldPairProbeTag.right) fieldDefinition.outputType) := by
   intro hnotLeft harguments hlookup
   classical
   have hright :
@@ -2199,20 +2188,18 @@ theorem fieldPairRuntimeProbeResolvers_right_root_of_not_left
 
 theorem fieldPairRuntimeProbeResolvers_tagged_object
     (schema : Schema) (childRootSelectionSet : List Selection)
-    (targetParent leftField rightField parentType fieldName runtimeType :
-      Name)
+    (targetParent leftField rightField parentType fieldName runtimeType : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag) (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-        targetParent leftField rightField leftArguments rightArguments
-        leftRuntime rightRuntime).resolve parentType fieldName arguments
-          (.object runtimeType (some tag))
-      =
-      some
-        (fieldPairProbeHeadResolverValue schema childRootSelectionSet
-          parentType fieldName arguments tag fieldDefinition.outputType) := by
+    (tag : FieldPairProbeTag) (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+            targetParent leftField rightField leftArguments rightArguments
+            leftRuntime rightRuntime).resolve
+            parentType fieldName arguments (.object runtimeType (some tag))
+          = some
+              (fieldPairProbeHeadResolverValue schema childRootSelectionSet
+                parentType fieldName arguments tag fieldDefinition.outputType) := by
   intro hlookup
   simp [fieldPairRuntimeProbeResolvers, fieldPairRuntimeProbeResolve,
     hlookup]
@@ -2223,37 +2210,36 @@ theorem executeField_fieldPairRuntimeProbe_left_root_objectProbe_response
     (fuel : Nat) (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition) :
-    Argument.argumentsEquivalent arguments leftArguments ->
-    schema.lookupField targetParent leftField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      leftRuntime = true ->
-      Execution.executeField schema
-        (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-          targetParent leftField rightField leftArguments rightArguments
-          leftRuntime rightRuntime)
-        variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-        (.object targetParent none) responseName
-        [{
-          parentType := targetParent
-          responseName := responseName
-          fieldName := leftField
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.singleFieldResult responseName
-        (wrapTypeRefSelectionSetResult fieldDefinition.outputType
-          (Execution.selectionSetResultToResponse
-            (Execution.executeCollectedFields schema
-              (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-                targetParent leftField rightField leftArguments
-                rightArguments leftRuntime rightRuntime)
-              variableValues fuel
-              (.object leftRuntime (some FieldPairProbeTag.left))
-              (Execution.collectFields schema variableValues leftRuntime
-                (.object leftRuntime (some FieldPairProbeTag.left))
-                childSelectionSet)))) := by
+    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
+    : Argument.argumentsEquivalent arguments leftArguments
+      -> schema.lookupField targetParent leftField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType leftRuntime
+          = true
+      -> Execution.executeField schema
+            (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+              targetParent leftField rightField leftArguments rightArguments
+              leftRuntime rightRuntime)
+            variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
+            (.object targetParent none) responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := leftField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = Execution.singleFieldResult responseName
+              (wrapTypeRefSelectionSetResult fieldDefinition.outputType
+                (Execution.selectionSetResultToResponse
+                  (Execution.executeCollectedFields schema
+                    (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                      targetParent leftField rightField leftArguments
+                      rightArguments leftRuntime rightRuntime)
+                    variableValues fuel
+                    (.object leftRuntime (some FieldPairProbeTag.left))
+                    (Execution.collectFields schema variableValues leftRuntime
+                      (.object leftRuntime (some FieldPairProbeTag.left))
+                      childSelectionSet)))) := by
   intro harguments hlookup hinclude
   have hresolve :
       (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
@@ -2282,39 +2268,38 @@ theorem executeField_fieldPairRuntimeProbe_right_root_objectProbe_response_of_no
     (fuel : Nat) (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition) :
-    ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
-      rightField arguments ->
-    Argument.argumentsEquivalent arguments rightArguments ->
-    schema.lookupField targetParent rightField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      rightRuntime = true ->
-      Execution.executeField schema
-        (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-          targetParent leftField rightField leftArguments rightArguments
-          leftRuntime rightRuntime)
-        variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-        (.object targetParent none) responseName
-        [{
-          parentType := targetParent
-          responseName := responseName
-          fieldName := rightField
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.singleFieldResult responseName
-        (wrapTypeRefSelectionSetResult fieldDefinition.outputType
-          (Execution.selectionSetResultToResponse
-            (Execution.executeCollectedFields schema
-              (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-                targetParent leftField rightField leftArguments
-                rightArguments leftRuntime rightRuntime)
-              variableValues fuel
-              (.object rightRuntime (some FieldPairProbeTag.right))
-              (Execution.collectFields schema variableValues rightRuntime
-                (.object rightRuntime (some FieldPairProbeTag.right))
-                childSelectionSet)))) := by
+    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
+    : ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
+          rightField arguments
+      -> Argument.argumentsEquivalent arguments rightArguments
+      -> schema.lookupField targetParent rightField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType rightRuntime
+          = true
+      -> Execution.executeField schema
+            (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+              targetParent leftField rightField leftArguments rightArguments
+              leftRuntime rightRuntime)
+            variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
+            (.object targetParent none) responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := rightField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = Execution.singleFieldResult responseName
+              (wrapTypeRefSelectionSetResult fieldDefinition.outputType
+                (Execution.selectionSetResultToResponse
+                  (Execution.executeCollectedFields schema
+                    (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                      targetParent leftField rightField leftArguments
+                      rightArguments leftRuntime rightRuntime)
+                    variableValues fuel
+                    (.object rightRuntime (some FieldPairProbeTag.right))
+                    (Execution.collectFields schema variableValues rightRuntime
+                      (.object rightRuntime (some FieldPairProbeTag.right))
+                      childSelectionSet)))) := by
   intro hnotLeft harguments hlookup hinclude
   have hresolve :
       (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
@@ -2340,12 +2325,11 @@ theorem executeField_fieldPairRuntimeProbe_right_root_objectProbe_response_of_no
 
 theorem projectionTargetResolverValue_objectProbeResolverValueWithRuntime
     {ObjectRef : Type} (runtimeType : Name) (ref : ObjectRef)
-    (typeRef : TypeRef) :
-    projectionTargetResolverValue
-      (objectProbeResolverValueWithRuntime runtimeType ref typeRef)
-    =
-    objectProbeResolverValueWithRuntime runtimeType
-      (ProjectionResolverRef.target ref) typeRef := by
+    (typeRef : TypeRef)
+    : projectionTargetResolverValue
+        (objectProbeResolverValueWithRuntime runtimeType ref typeRef)
+      = objectProbeResolverValueWithRuntime runtimeType
+          (ProjectionResolverRef.target ref) typeRef := by
   induction typeRef with
   | named typeName =>
       simp [projectionTargetResolverValue, projectionResolverValue,
@@ -2362,46 +2346,45 @@ theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_left_root_response
     (fuel : Nat) (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition) :
-    Argument.argumentsEquivalent arguments leftArguments ->
-    schema.lookupField targetParent leftField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      leftRuntime = true ->
-      Execution.executeField schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-            targetParent leftField rightField leftArguments rightArguments
-            leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-        (projectionRootResolverValue
-          (.object targetParent (none : Option FieldPairProbeTag)))
-        responseName
-        [{
-          parentType := targetParent
-          responseName := responseName
-          fieldName := leftField
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.singleFieldResult responseName
-        (wrapTypeRefSelectionSetResult fieldDefinition.outputType
-          (Execution.selectionSetResultToResponse
-            (Execution.executeCollectedFields schema
-              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-                  targetParent leftField rightField leftArguments
-                  rightArguments leftRuntime rightRuntime)
-                targetParent leftField rightField leftArguments
-                rightArguments)
-              variableValues fuel
-              (projectionTargetResolverValue
-                (.object leftRuntime (some FieldPairProbeTag.left)))
-              (Execution.collectFields schema variableValues leftRuntime
-                (projectionTargetResolverValue
-                  (.object leftRuntime (some FieldPairProbeTag.left)))
-                childSelectionSet)))) := by
+    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
+    : Argument.argumentsEquivalent arguments leftArguments
+      -> schema.lookupField targetParent leftField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType leftRuntime
+          = true
+      -> Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                targetParent leftField rightField leftArguments rightArguments
+                leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
+            (projectionRootResolverValue
+              (.object targetParent (none : Option FieldPairProbeTag)))
+            responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := leftField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = Execution.singleFieldResult responseName
+              (wrapTypeRefSelectionSetResult fieldDefinition.outputType
+                (Execution.selectionSetResultToResponse
+                  (Execution.executeCollectedFields schema
+                    (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                      (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                        targetParent leftField rightField leftArguments
+                        rightArguments leftRuntime rightRuntime)
+                      targetParent leftField rightField leftArguments
+                      rightArguments)
+                    variableValues fuel
+                    (projectionTargetResolverValue
+                      (.object leftRuntime (some FieldPairProbeTag.left)))
+                    (Execution.collectFields schema variableValues leftRuntime
+                      (projectionTargetResolverValue
+                        (.object leftRuntime (some FieldPairProbeTag.left)))
+                      childSelectionSet)))) := by
   intro harguments hlookup hinclude
   let base :=
     fieldPairRuntimeProbeResolvers schema childRootSelectionSet targetParent
@@ -2455,48 +2438,47 @@ theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_right_root_response_of_
     (fuel : Nat) (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition) :
-    ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
-      rightField arguments ->
-    Argument.argumentsEquivalent arguments rightArguments ->
-    schema.lookupField targetParent rightField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      rightRuntime = true ->
-      Execution.executeField schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-            targetParent leftField rightField leftArguments rightArguments
-            leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-        (projectionRootResolverValue
-          (.object targetParent (none : Option FieldPairProbeTag)))
-        responseName
-        [{
-          parentType := targetParent
-          responseName := responseName
-          fieldName := rightField
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.singleFieldResult responseName
-        (wrapTypeRefSelectionSetResult fieldDefinition.outputType
-          (Execution.selectionSetResultToResponse
-            (Execution.executeCollectedFields schema
-              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-                  targetParent leftField rightField leftArguments
-                  rightArguments leftRuntime rightRuntime)
-                targetParent leftField rightField leftArguments
-                rightArguments)
-              variableValues fuel
-              (projectionTargetResolverValue
-                (.object rightRuntime (some FieldPairProbeTag.right)))
-              (Execution.collectFields schema variableValues rightRuntime
-                (projectionTargetResolverValue
-                  (.object rightRuntime (some FieldPairProbeTag.right)))
-                childSelectionSet)))) := by
+    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
+    : ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
+          rightField arguments
+      -> Argument.argumentsEquivalent arguments rightArguments
+      -> schema.lookupField targetParent rightField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType rightRuntime
+          = true
+      -> Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                targetParent leftField rightField leftArguments rightArguments
+                leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
+            (projectionRootResolverValue
+              (.object targetParent (none : Option FieldPairProbeTag)))
+            responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := rightField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = Execution.singleFieldResult responseName
+              (wrapTypeRefSelectionSetResult fieldDefinition.outputType
+                (Execution.selectionSetResultToResponse
+                  (Execution.executeCollectedFields schema
+                    (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                      (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                        targetParent leftField rightField leftArguments
+                        rightArguments leftRuntime rightRuntime)
+                      targetParent leftField rightField leftArguments
+                      rightArguments)
+                    variableValues fuel
+                    (projectionTargetResolverValue
+                      (.object rightRuntime (some FieldPairProbeTag.right)))
+                    (Execution.collectFields schema variableValues rightRuntime
+                      (projectionTargetResolverValue
+                        (.object rightRuntime (some FieldPairProbeTag.right)))
+                      childSelectionSet)))) := by
   intro hnotLeft harguments hlookup hinclude
   let base :=
     fieldPairRuntimeProbeResolvers schema childRootSelectionSet targetParent
@@ -2547,51 +2529,51 @@ theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_right_root_response_of_
 
 theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_left_root_ok_of_child_object_response
     (schema : Schema) (rootSelectionSet childRootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField responseName : Name)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (childFields : List (Name × Execution.ResponseValue))
-    (childErrors : Nat) :
-    Argument.argumentsEquivalent arguments leftArguments ->
-    schema.lookupField targetParent leftField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      leftRuntime = true ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-            targetParent leftField rightField leftArguments rightArguments
-            leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues fuel leftRuntime
-        (projectionTargetResolverValue
-          (.object leftRuntime (some FieldPairProbeTag.left)))
-        childSelectionSet =
-      ({ data := Execution.ResponseValue.object childFields,
-         errors := childErrors } :
-        Execution.Response) ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-              targetParent leftField rightField leftArguments rightArguments
-              leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues
-          (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-          (projectionRootResolverValue
-            (.object targetParent (none : Option FieldPairProbeTag)))
-          responseName
-          [{
-            parentType := targetParent
-            responseName := responseName
-            fieldName := leftField
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors) := by
+    (leftRuntime rightRuntime : Name) (childSelectionSet : List Selection)
+    (fieldDefinition : FieldDefinition)
+    (childFields : List (Name × Execution.ResponseValue)) (childErrors : Nat)
+    : Argument.argumentsEquivalent arguments leftArguments
+      -> schema.lookupField targetParent leftField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType leftRuntime
+          = true
+      -> Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                targetParent leftField rightField leftArguments rightArguments
+                leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues fuel leftRuntime
+            (projectionTargetResolverValue
+              (.object leftRuntime (some FieldPairProbeTag.left)))
+            childSelectionSet
+          = ({
+                data := Execution.ResponseValue.object childFields,
+                errors := childErrors
+              }
+              : Execution.Response)
+      -> ∃ responseValue fieldErrors,
+          Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                targetParent leftField rightField leftArguments rightArguments
+                leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues
+            (fuel + leafProbeFuel fieldDefinition.outputType + 1)
+            (projectionRootResolverValue
+              (.object targetParent (none : Option FieldPairProbeTag)))
+            responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := leftField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = .ok ([(responseName, responseValue)], fieldErrors) := by
   intro harguments hlookup hinclude hchildResponse
   rcases
       wrapTypeRefSelectionSetResult_ok_nonNull_of_object_response
@@ -2629,53 +2611,53 @@ theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_left_root_ok_of_child_o
 
 theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_right_root_ok_of_child_object_response
     (schema : Schema) (rootSelectionSet childRootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField responseName : Name)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (childFields : List (Name × Execution.ResponseValue))
-    (childErrors : Nat) :
-    ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
-      rightField arguments ->
-    Argument.argumentsEquivalent arguments rightArguments ->
-    schema.lookupField targetParent rightField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      rightRuntime = true ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-            targetParent leftField rightField leftArguments rightArguments
-            leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues fuel rightRuntime
-        (projectionTargetResolverValue
-          (.object rightRuntime (some FieldPairProbeTag.right)))
-        childSelectionSet =
-      ({ data := Execution.ResponseValue.object childFields,
-         errors := childErrors } :
-        Execution.Response) ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-              targetParent leftField rightField leftArguments rightArguments
-              leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues
-          (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-          (projectionRootResolverValue
-            (.object targetParent (none : Option FieldPairProbeTag)))
-          responseName
-          [{
-            parentType := targetParent
-            responseName := responseName
-            fieldName := rightField
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors) := by
+    (leftRuntime rightRuntime : Name) (childSelectionSet : List Selection)
+    (fieldDefinition : FieldDefinition)
+    (childFields : List (Name × Execution.ResponseValue)) (childErrors : Nat)
+    : ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
+          rightField arguments
+      -> Argument.argumentsEquivalent arguments rightArguments
+      -> schema.lookupField targetParent rightField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType rightRuntime
+          = true
+      -> Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                targetParent leftField rightField leftArguments rightArguments
+                leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues fuel rightRuntime
+            (projectionTargetResolverValue
+              (.object rightRuntime (some FieldPairProbeTag.right)))
+            childSelectionSet
+          = ({
+                data := Execution.ResponseValue.object childFields,
+                errors := childErrors
+              }
+              : Execution.Response)
+      -> ∃ responseValue fieldErrors,
+          Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                targetParent leftField rightField leftArguments rightArguments
+                leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues
+            (fuel + leafProbeFuel fieldDefinition.outputType + 1)
+            (projectionRootResolverValue
+              (.object targetParent (none : Option FieldPairProbeTag)))
+            responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := rightField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = .ok ([(responseName, responseValue)], fieldErrors) := by
   intro hnotLeft harguments hlookup hinclude hchildResponse
   rcases
       wrapTypeRefSelectionSetResult_ok_nonNull_of_object_response
@@ -2713,52 +2695,52 @@ theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_right_root_ok_of_child_
 
 theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_left_root_ok_of_child_object_response_fuel_ge
     (schema : Schema) (rootSelectionSet childRootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (parentFuel : Nat) (targetParent leftField rightField responseName : Name)
+    (variableValues : Execution.VariableValues) (parentFuel : Nat)
+    (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (childFields : List (Name × Execution.ResponseValue))
-    (childErrors : Nat) :
-    Argument.argumentsEquivalent arguments leftArguments ->
-    schema.lookupField targetParent leftField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      leftRuntime = true ->
-    leafProbeFuel fieldDefinition.outputType ≤ parentFuel ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-            targetParent leftField rightField leftArguments rightArguments
-            leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (parentFuel - leafProbeFuel fieldDefinition.outputType)
-        leftRuntime
-        (projectionTargetResolverValue
-          (.object leftRuntime (some FieldPairProbeTag.left)))
-        childSelectionSet =
-      ({ data := Execution.ResponseValue.object childFields,
-         errors := childErrors } :
-        Execution.Response) ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-              targetParent leftField rightField leftArguments rightArguments
-              leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues (parentFuel + 1)
-          (projectionRootResolverValue
-            (.object targetParent (none : Option FieldPairProbeTag)))
-          responseName
-          [{
-            parentType := targetParent
-            responseName := responseName
-            fieldName := leftField
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors) := by
+    (leftRuntime rightRuntime : Name) (childSelectionSet : List Selection)
+    (fieldDefinition : FieldDefinition)
+    (childFields : List (Name × Execution.ResponseValue)) (childErrors : Nat)
+    : Argument.argumentsEquivalent arguments leftArguments
+      -> schema.lookupField targetParent leftField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType leftRuntime
+          = true
+      -> leafProbeFuel fieldDefinition.outputType ≤ parentFuel
+      -> Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                targetParent leftField rightField leftArguments rightArguments
+                leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (parentFuel - leafProbeFuel fieldDefinition.outputType)
+            leftRuntime
+            (projectionTargetResolverValue
+              (.object leftRuntime (some FieldPairProbeTag.left)))
+            childSelectionSet
+          = ({
+                data := Execution.ResponseValue.object childFields,
+                errors := childErrors
+              }
+              : Execution.Response)
+      -> ∃ responseValue fieldErrors,
+          Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                targetParent leftField rightField leftArguments rightArguments
+                leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (parentFuel + 1)
+            (projectionRootResolverValue
+              (.object targetParent (none : Option FieldPairProbeTag)))
+            responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := leftField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = .ok ([(responseName, responseValue)], fieldErrors) := by
   intro harguments hlookup hinclude hfuel hchildResponse
   have hfield :=
     executeField_fieldPairOrDeepSuccess_runtimeProbe_left_root_ok_of_child_object_response
@@ -2778,54 +2760,54 @@ theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_left_root_ok_of_child_o
 
 theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_right_root_ok_of_child_object_response_fuel_ge
     (schema : Schema) (rootSelectionSet childRootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (parentFuel : Nat) (targetParent leftField rightField responseName : Name)
+    (variableValues : Execution.VariableValues) (parentFuel : Nat)
+    (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (childFields : List (Name × Execution.ResponseValue))
-    (childErrors : Nat) :
-    ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
-      rightField arguments ->
-    Argument.argumentsEquivalent arguments rightArguments ->
-    schema.lookupField targetParent rightField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      rightRuntime = true ->
-    leafProbeFuel fieldDefinition.outputType ≤ parentFuel ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-            targetParent leftField rightField leftArguments rightArguments
-            leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (parentFuel - leafProbeFuel fieldDefinition.outputType)
-        rightRuntime
-        (projectionTargetResolverValue
-          (.object rightRuntime (some FieldPairProbeTag.right)))
-        childSelectionSet =
-      ({ data := Execution.ResponseValue.object childFields,
-         errors := childErrors } :
-        Execution.Response) ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-              targetParent leftField rightField leftArguments rightArguments
-              leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues (parentFuel + 1)
-          (projectionRootResolverValue
-            (.object targetParent (none : Option FieldPairProbeTag)))
-          responseName
-          [{
-            parentType := targetParent
-            responseName := responseName
-            fieldName := rightField
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors) := by
+    (leftRuntime rightRuntime : Name) (childSelectionSet : List Selection)
+    (fieldDefinition : FieldDefinition)
+    (childFields : List (Name × Execution.ResponseValue)) (childErrors : Nat)
+    : ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
+          rightField arguments
+      -> Argument.argumentsEquivalent arguments rightArguments
+      -> schema.lookupField targetParent rightField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType rightRuntime
+          = true
+      -> leafProbeFuel fieldDefinition.outputType ≤ parentFuel
+      -> Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                targetParent leftField rightField leftArguments rightArguments
+                leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (parentFuel - leafProbeFuel fieldDefinition.outputType)
+            rightRuntime
+            (projectionTargetResolverValue
+              (.object rightRuntime (some FieldPairProbeTag.right)))
+            childSelectionSet
+          = ({
+                data := Execution.ResponseValue.object childFields,
+                errors := childErrors
+              }
+              : Execution.Response)
+      -> ∃ responseValue fieldErrors,
+          Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                targetParent leftField rightField leftArguments rightArguments
+                leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (parentFuel + 1)
+            (projectionRootResolverValue
+              (.object targetParent (none : Option FieldPairProbeTag)))
+            responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := rightField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = .ok ([(responseName, responseValue)], fieldErrors) := by
   intro hnotLeft harguments hlookup hinclude hfuel hchildResponse
   have hfield :=
     executeField_fieldPairOrDeepSuccess_runtimeProbe_right_root_ok_of_child_object_response
@@ -2845,53 +2827,52 @@ theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_right_root_ok_of_child_
 
 theorem executeField_fieldPairOrDeepSuccess_sideRuntimeProbe_left_root_response
     (schema : Schema)
-    (rootSelectionSet leftChildRootSelectionSet rightChildRootSelectionSet :
-      List Selection)
+    (rootSelectionSet leftChildRootSelectionSet rightChildRootSelectionSet
+      : List Selection)
     (variableValues : Execution.VariableValues)
     (fuel : Nat) (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition) :
-    Argument.argumentsEquivalent arguments leftArguments ->
-    schema.lookupField targetParent leftField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      leftRuntime = true ->
-      Execution.executeField schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-            rightChildRootSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-        (projectionRootResolverValue
-          (.object targetParent (none : Option FieldPairProbeTag)))
-        responseName
-        [{
-          parentType := targetParent
-          responseName := responseName
-          fieldName := leftField
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.singleFieldResult responseName
-        (wrapTypeRefSelectionSetResult fieldDefinition.outputType
-          (Execution.selectionSetResultToResponse
-            (Execution.executeCollectedFields schema
-              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                (fieldPairSideRuntimeProbeResolvers schema
-                  leftChildRootSelectionSet rightChildRootSelectionSet
-                  targetParent leftField rightField leftArguments
-                  rightArguments leftRuntime rightRuntime)
-                targetParent leftField rightField leftArguments
-                rightArguments)
-              variableValues fuel
-              (projectionTargetResolverValue
-                (.object leftRuntime (some FieldPairProbeTag.left)))
-              (Execution.collectFields schema variableValues leftRuntime
-                (projectionTargetResolverValue
-                  (.object leftRuntime (some FieldPairProbeTag.left)))
-                childSelectionSet)))) := by
+    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
+    : Argument.argumentsEquivalent arguments leftArguments
+      -> schema.lookupField targetParent leftField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType leftRuntime
+          = true
+      -> Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+                rightChildRootSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
+            (projectionRootResolverValue
+              (.object targetParent (none : Option FieldPairProbeTag)))
+            responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := leftField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = Execution.singleFieldResult responseName
+              (wrapTypeRefSelectionSetResult fieldDefinition.outputType
+                (Execution.selectionSetResultToResponse
+                  (Execution.executeCollectedFields schema
+                    (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                      (fieldPairSideRuntimeProbeResolvers schema
+                        leftChildRootSelectionSet rightChildRootSelectionSet
+                        targetParent leftField rightField leftArguments
+                        rightArguments leftRuntime rightRuntime)
+                      targetParent leftField rightField leftArguments
+                      rightArguments)
+                    variableValues fuel
+                    (projectionTargetResolverValue
+                      (.object leftRuntime (some FieldPairProbeTag.left)))
+                    (Execution.collectFields schema variableValues leftRuntime
+                      (projectionTargetResolverValue
+                        (.object leftRuntime (some FieldPairProbeTag.left)))
+                      childSelectionSet)))) := by
   intro harguments hlookup hinclude
   let base :=
     fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
@@ -2942,55 +2923,54 @@ theorem executeField_fieldPairOrDeepSuccess_sideRuntimeProbe_left_root_response
 
 theorem executeField_fieldPairOrDeepSuccess_sideRuntimeProbe_right_root_response_of_not_left
     (schema : Schema)
-    (rootSelectionSet leftChildRootSelectionSet rightChildRootSelectionSet :
-      List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField responseName : Name)
+    (rootSelectionSet leftChildRootSelectionSet rightChildRootSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition) :
-    ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
-      rightField arguments ->
-    Argument.argumentsEquivalent arguments rightArguments ->
-    schema.lookupField targetParent rightField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      rightRuntime = true ->
-      Execution.executeField schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-            rightChildRootSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-        (projectionRootResolverValue
-          (.object targetParent (none : Option FieldPairProbeTag)))
-        responseName
-        [{
-          parentType := targetParent
-          responseName := responseName
-          fieldName := rightField
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.singleFieldResult responseName
-        (wrapTypeRefSelectionSetResult fieldDefinition.outputType
-          (Execution.selectionSetResultToResponse
-            (Execution.executeCollectedFields schema
-              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                (fieldPairSideRuntimeProbeResolvers schema
-                  leftChildRootSelectionSet rightChildRootSelectionSet
-                  targetParent leftField rightField leftArguments
-                  rightArguments leftRuntime rightRuntime)
-                targetParent leftField rightField leftArguments
-                rightArguments)
-              variableValues fuel
-              (projectionTargetResolverValue
-                (.object rightRuntime (some FieldPairProbeTag.right)))
-              (Execution.collectFields schema variableValues rightRuntime
-                (projectionTargetResolverValue
-                  (.object rightRuntime (some FieldPairProbeTag.right)))
-                childSelectionSet)))) := by
+    (leftRuntime rightRuntime : Name) (childSelectionSet : List Selection)
+    (fieldDefinition : FieldDefinition)
+    : ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
+          rightField arguments
+      -> Argument.argumentsEquivalent arguments rightArguments
+      -> schema.lookupField targetParent rightField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType rightRuntime
+          = true
+      -> Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+                rightChildRootSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
+            (projectionRootResolverValue
+              (.object targetParent (none : Option FieldPairProbeTag)))
+            responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := rightField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = Execution.singleFieldResult responseName
+              (wrapTypeRefSelectionSetResult fieldDefinition.outputType
+                (Execution.selectionSetResultToResponse
+                  (Execution.executeCollectedFields schema
+                    (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                      (fieldPairSideRuntimeProbeResolvers schema
+                        leftChildRootSelectionSet rightChildRootSelectionSet
+                        targetParent leftField rightField leftArguments
+                        rightArguments leftRuntime rightRuntime)
+                      targetParent leftField rightField leftArguments
+                      rightArguments)
+                    variableValues fuel
+                    (projectionTargetResolverValue
+                      (.object rightRuntime (some FieldPairProbeTag.right)))
+                    (Execution.collectFields schema variableValues rightRuntime
+                      (projectionTargetResolverValue
+                        (.object rightRuntime (some FieldPairProbeTag.right)))
+                      childSelectionSet)))) := by
   intro hnotLeft harguments hlookup hinclude
   let base :=
     fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
@@ -3041,56 +3021,54 @@ theorem executeField_fieldPairOrDeepSuccess_sideRuntimeProbe_right_root_response
 
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_left_root_response
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet :
-      List Selection)
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet : List Selection)
     (variableValues : Execution.VariableValues)
     (fuel : Nat) (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition) :
-    Argument.argumentsEquivalent arguments leftArguments ->
-    schema.lookupField targetParent leftField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      leftRuntime = true ->
-      Execution.executeField schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-            rightInitialSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-        (projectionRootResolverValue
-          (.object targetParent FieldPairPathLocalProbeRef.root))
-        responseName
-        [{
-          parentType := targetParent
-          responseName := responseName
-          fieldName := leftField
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.singleFieldResult responseName
-        (wrapTypeRefSelectionSetResult fieldDefinition.outputType
-          (Execution.selectionSetResultToResponse
-            (Execution.executeCollectedFields schema
-              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-                  rightInitialSelectionSet targetParent leftField rightField
-                  leftArguments rightArguments leftRuntime rightRuntime)
-                targetParent leftField rightField leftArguments
-                rightArguments)
-              variableValues fuel
-              (projectionTargetResolverValue
-                (.object leftRuntime
-                  (FieldPairPathLocalProbeRef.target FieldPairProbeTag.left
-                    leftInitialSelectionSet)))
-              (Execution.collectFields schema variableValues leftRuntime
-                (projectionTargetResolverValue
-                  (.object leftRuntime
-                    (FieldPairPathLocalProbeRef.target FieldPairProbeTag.left
-                      leftInitialSelectionSet)))
-                childSelectionSet)))) := by
+    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
+    : Argument.argumentsEquivalent arguments leftArguments
+      -> schema.lookupField targetParent leftField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType leftRuntime
+          = true
+      -> Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                rightInitialSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
+            (projectionRootResolverValue
+              (.object targetParent FieldPairPathLocalProbeRef.root))
+            responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := leftField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = Execution.singleFieldResult responseName
+              (wrapTypeRefSelectionSetResult fieldDefinition.outputType
+                (Execution.selectionSetResultToResponse
+                  (Execution.executeCollectedFields schema
+                    (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                      (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                        rightInitialSelectionSet targetParent leftField rightField
+                        leftArguments rightArguments leftRuntime rightRuntime)
+                      targetParent leftField rightField leftArguments
+                      rightArguments)
+                    variableValues fuel
+                    (projectionTargetResolverValue
+                      (.object leftRuntime
+                        (FieldPairPathLocalProbeRef.target FieldPairProbeTag.left
+                          leftInitialSelectionSet)))
+                    (Execution.collectFields schema variableValues leftRuntime
+                      (projectionTargetResolverValue
+                        (.object leftRuntime
+                          (FieldPairPathLocalProbeRef.target FieldPairProbeTag.left
+                            leftInitialSelectionSet)))
+                      childSelectionSet)))) := by
   intro harguments hlookup hinclude
   let base :=
     fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
@@ -3147,58 +3125,56 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_left_root_response
 
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_right_root_response_of_not_left
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet :
-      List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField responseName : Name)
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition) :
-    ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
-      rightField arguments ->
-    Argument.argumentsEquivalent arguments rightArguments ->
-    schema.lookupField targetParent rightField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      rightRuntime = true ->
-      Execution.executeField schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-            rightInitialSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-        (projectionRootResolverValue
-          (.object targetParent FieldPairPathLocalProbeRef.root))
-        responseName
-        [{
-          parentType := targetParent
-          responseName := responseName
-          fieldName := rightField
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.singleFieldResult responseName
-        (wrapTypeRefSelectionSetResult fieldDefinition.outputType
-          (Execution.selectionSetResultToResponse
-            (Execution.executeCollectedFields schema
-              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-                  rightInitialSelectionSet targetParent leftField rightField
-                  leftArguments rightArguments leftRuntime rightRuntime)
-                targetParent leftField rightField leftArguments
-                rightArguments)
-              variableValues fuel
-              (projectionTargetResolverValue
-                (.object rightRuntime
-                  (FieldPairPathLocalProbeRef.target FieldPairProbeTag.right
-                    rightInitialSelectionSet)))
-              (Execution.collectFields schema variableValues rightRuntime
-                (projectionTargetResolverValue
-                  (.object rightRuntime
-                    (FieldPairPathLocalProbeRef.target FieldPairProbeTag.right
-                      rightInitialSelectionSet)))
-                childSelectionSet)))) := by
+    (leftRuntime rightRuntime : Name) (childSelectionSet : List Selection)
+    (fieldDefinition : FieldDefinition)
+    : ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
+          rightField arguments
+      -> Argument.argumentsEquivalent arguments rightArguments
+      -> schema.lookupField targetParent rightField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType rightRuntime
+          = true
+      -> Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                rightInitialSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
+            (projectionRootResolverValue
+              (.object targetParent FieldPairPathLocalProbeRef.root))
+            responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := rightField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = Execution.singleFieldResult responseName
+              (wrapTypeRefSelectionSetResult fieldDefinition.outputType
+                (Execution.selectionSetResultToResponse
+                  (Execution.executeCollectedFields schema
+                    (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                      (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                        rightInitialSelectionSet targetParent leftField rightField
+                        leftArguments rightArguments leftRuntime rightRuntime)
+                      targetParent leftField rightField leftArguments
+                      rightArguments)
+                    variableValues fuel
+                    (projectionTargetResolverValue
+                      (.object rightRuntime
+                        (FieldPairPathLocalProbeRef.target FieldPairProbeTag.right
+                          rightInitialSelectionSet)))
+                    (Execution.collectFields schema variableValues rightRuntime
+                      (projectionTargetResolverValue
+                        (.object rightRuntime
+                          (FieldPairPathLocalProbeRef.target FieldPairProbeTag.right
+                            rightInitialSelectionSet)))
+                      childSelectionSet)))) := by
   intro hnotLeft harguments hlookup hinclude
   let base :=
     fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
@@ -3255,56 +3231,55 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_right_root_response_o
 
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_left_root_ok_of_child_object_response_fuel_ge
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet :
-      List Selection)
-    (variableValues : Execution.VariableValues)
-    (parentFuel : Nat) (targetParent leftField rightField responseName : Name)
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet : List Selection)
+    (variableValues : Execution.VariableValues) (parentFuel : Nat)
+    (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (childFields : List (Name × Execution.ResponseValue))
-    (childErrors : Nat) :
-    Argument.argumentsEquivalent arguments leftArguments ->
-    schema.lookupField targetParent leftField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      leftRuntime = true ->
-    leafProbeFuel fieldDefinition.outputType ≤ parentFuel ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-            rightInitialSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (parentFuel - leafProbeFuel fieldDefinition.outputType)
-        leftRuntime
-        (projectionTargetResolverValue
-          (.object leftRuntime
-            (FieldPairPathLocalProbeRef.target FieldPairProbeTag.left
-              leftInitialSelectionSet)))
-        childSelectionSet =
-      ({ data := Execution.ResponseValue.object childFields,
-         errors := childErrors } :
-        Execution.Response) ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-              rightInitialSelectionSet targetParent leftField rightField
-              leftArguments rightArguments leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues (parentFuel + 1)
-          (projectionRootResolverValue
-            (.object targetParent FieldPairPathLocalProbeRef.root))
-          responseName
-          [{
-            parentType := targetParent
-            responseName := responseName
-            fieldName := leftField
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors) := by
+    (leftRuntime rightRuntime : Name) (childSelectionSet : List Selection)
+    (fieldDefinition : FieldDefinition)
+    (childFields : List (Name × Execution.ResponseValue)) (childErrors : Nat)
+    : Argument.argumentsEquivalent arguments leftArguments
+      -> schema.lookupField targetParent leftField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType leftRuntime
+          = true
+      -> leafProbeFuel fieldDefinition.outputType ≤ parentFuel
+      -> Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                rightInitialSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (parentFuel - leafProbeFuel fieldDefinition.outputType)
+            leftRuntime
+            (projectionTargetResolverValue
+              (.object leftRuntime
+                (FieldPairPathLocalProbeRef.target FieldPairProbeTag.left
+                  leftInitialSelectionSet)))
+            childSelectionSet
+          = ({
+                data := Execution.ResponseValue.object childFields,
+                errors := childErrors
+              }
+              : Execution.Response)
+      -> ∃ responseValue fieldErrors,
+          Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                rightInitialSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (parentFuel + 1)
+            (projectionRootResolverValue
+              (.object targetParent FieldPairPathLocalProbeRef.root))
+            responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := leftField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = .ok ([(responseName, responseValue)], fieldErrors) := by
   intro harguments hlookup hinclude hfuel hchildResponse
   rcases
       wrapTypeRefSelectionSetResult_ok_nonNull_of_object_response
@@ -3356,58 +3331,57 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_left_root_ok_of_child
 
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_right_root_ok_of_child_object_response_fuel_ge
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet :
-      List Selection)
-    (variableValues : Execution.VariableValues)
-    (parentFuel : Nat) (targetParent leftField rightField responseName : Name)
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet : List Selection)
+    (variableValues : Execution.VariableValues) (parentFuel : Nat)
+    (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (childFields : List (Name × Execution.ResponseValue))
-    (childErrors : Nat) :
-    ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
-      rightField arguments ->
-    Argument.argumentsEquivalent arguments rightArguments ->
-    schema.lookupField targetParent rightField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      rightRuntime = true ->
-    leafProbeFuel fieldDefinition.outputType ≤ parentFuel ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-            rightInitialSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (parentFuel - leafProbeFuel fieldDefinition.outputType)
-        rightRuntime
-        (projectionTargetResolverValue
-          (.object rightRuntime
-            (FieldPairPathLocalProbeRef.target FieldPairProbeTag.right
-              rightInitialSelectionSet)))
-        childSelectionSet =
-      ({ data := Execution.ResponseValue.object childFields,
-         errors := childErrors } :
-        Execution.Response) ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-              rightInitialSelectionSet targetParent leftField rightField
-              leftArguments rightArguments leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues (parentFuel + 1)
-          (projectionRootResolverValue
-            (.object targetParent FieldPairPathLocalProbeRef.root))
-          responseName
-          [{
-            parentType := targetParent
-            responseName := responseName
-            fieldName := rightField
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors) := by
+    (leftRuntime rightRuntime : Name) (childSelectionSet : List Selection)
+    (fieldDefinition : FieldDefinition)
+    (childFields : List (Name × Execution.ResponseValue)) (childErrors : Nat)
+    : ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
+          rightField arguments
+      -> Argument.argumentsEquivalent arguments rightArguments
+      -> schema.lookupField targetParent rightField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType rightRuntime
+          = true
+      -> leafProbeFuel fieldDefinition.outputType ≤ parentFuel
+      -> Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                rightInitialSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (parentFuel - leafProbeFuel fieldDefinition.outputType)
+            rightRuntime
+            (projectionTargetResolverValue
+              (.object rightRuntime
+                (FieldPairPathLocalProbeRef.target FieldPairProbeTag.right
+                  rightInitialSelectionSet)))
+            childSelectionSet
+          = ({
+                data := Execution.ResponseValue.object childFields,
+                errors := childErrors
+              }
+              : Execution.Response)
+      -> ∃ responseValue fieldErrors,
+          Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                rightInitialSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (parentFuel + 1)
+            (projectionRootResolverValue
+              (.object targetParent FieldPairPathLocalProbeRef.root))
+            responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := rightField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = .ok ([(responseName, responseValue)], fieldErrors) := by
   intro hnotLeft harguments hlookup hinclude hfuel hchildResponse
   rcases
       wrapTypeRefSelectionSetResult_ok_nonNull_of_object_response
@@ -3459,54 +3433,54 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_right_root_ok_of_chil
 
 theorem executeField_fieldPairOrDeepSuccess_sideRuntimeProbe_left_root_ok_of_child_object_response_fuel_ge
     (schema : Schema)
-    (rootSelectionSet leftChildRootSelectionSet rightChildRootSelectionSet :
-      List Selection)
-    (variableValues : Execution.VariableValues)
-    (parentFuel : Nat) (targetParent leftField rightField responseName : Name)
+    (rootSelectionSet leftChildRootSelectionSet rightChildRootSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (parentFuel : Nat)
+    (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (childFields : List (Name × Execution.ResponseValue))
-    (childErrors : Nat) :
-    Argument.argumentsEquivalent arguments leftArguments ->
-    schema.lookupField targetParent leftField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      leftRuntime = true ->
-    leafProbeFuel fieldDefinition.outputType ≤ parentFuel ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-            rightChildRootSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (parentFuel - leafProbeFuel fieldDefinition.outputType)
-        leftRuntime
-        (projectionTargetResolverValue
-          (.object leftRuntime (some FieldPairProbeTag.left)))
-        childSelectionSet =
-      ({ data := Execution.ResponseValue.object childFields,
-         errors := childErrors } :
-        Execution.Response) ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-              rightChildRootSelectionSet targetParent leftField rightField
-              leftArguments rightArguments leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues (parentFuel + 1)
-          (projectionRootResolverValue
-            (.object targetParent (none : Option FieldPairProbeTag)))
-          responseName
-          [{
-            parentType := targetParent
-            responseName := responseName
-            fieldName := leftField
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors) := by
+    (leftRuntime rightRuntime : Name) (childSelectionSet : List Selection)
+    (fieldDefinition : FieldDefinition)
+    (childFields : List (Name × Execution.ResponseValue)) (childErrors : Nat)
+    : Argument.argumentsEquivalent arguments leftArguments
+      -> schema.lookupField targetParent leftField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType leftRuntime
+          = true
+      -> leafProbeFuel fieldDefinition.outputType ≤ parentFuel
+      -> Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+                rightChildRootSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (parentFuel - leafProbeFuel fieldDefinition.outputType)
+            leftRuntime
+            (projectionTargetResolverValue
+              (.object leftRuntime (some FieldPairProbeTag.left)))
+            childSelectionSet
+          = ({
+                data := Execution.ResponseValue.object childFields,
+                errors := childErrors
+              }
+              : Execution.Response)
+      -> ∃ responseValue fieldErrors,
+          Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+                rightChildRootSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (parentFuel + 1)
+            (projectionRootResolverValue
+              (.object targetParent (none : Option FieldPairProbeTag)))
+            responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := leftField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = .ok ([(responseName, responseValue)], fieldErrors) := by
   intro harguments hlookup hinclude hfuel hchildResponse
   rcases
       wrapTypeRefSelectionSetResult_ok_nonNull_of_object_response
@@ -3555,56 +3529,56 @@ theorem executeField_fieldPairOrDeepSuccess_sideRuntimeProbe_left_root_ok_of_chi
 
 theorem executeField_fieldPairOrDeepSuccess_sideRuntimeProbe_right_root_ok_of_child_object_response_fuel_ge
     (schema : Schema)
-    (rootSelectionSet leftChildRootSelectionSet rightChildRootSelectionSet :
-      List Selection)
-    (variableValues : Execution.VariableValues)
-    (parentFuel : Nat) (targetParent leftField rightField responseName : Name)
+    (rootSelectionSet leftChildRootSelectionSet rightChildRootSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (parentFuel : Nat)
+    (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (childFields : List (Name × Execution.ResponseValue))
-    (childErrors : Nat) :
-    ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
-      rightField arguments ->
-    Argument.argumentsEquivalent arguments rightArguments ->
-    schema.lookupField targetParent rightField = some fieldDefinition ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      rightRuntime = true ->
-    leafProbeFuel fieldDefinition.outputType ≤ parentFuel ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-            rightChildRootSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (parentFuel - leafProbeFuel fieldDefinition.outputType)
-        rightRuntime
-        (projectionTargetResolverValue
-          (.object rightRuntime (some FieldPairProbeTag.right)))
-        childSelectionSet =
-      ({ data := Execution.ResponseValue.object childFields,
-         errors := childErrors } :
-        Execution.Response) ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-              rightChildRootSelectionSet targetParent leftField rightField
-              leftArguments rightArguments leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues (parentFuel + 1)
-          (projectionRootResolverValue
-            (.object targetParent (none : Option FieldPairProbeTag)))
-          responseName
-          [{
-            parentType := targetParent
-            responseName := responseName
-            fieldName := rightField
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors) := by
+    (leftRuntime rightRuntime : Name) (childSelectionSet : List Selection)
+    (fieldDefinition : FieldDefinition)
+    (childFields : List (Name × Execution.ResponseValue)) (childErrors : Nat)
+    : ¬ fieldProbeTarget targetParent leftField leftArguments targetParent
+          rightField arguments
+      -> Argument.argumentsEquivalent arguments rightArguments
+      -> schema.lookupField targetParent rightField = some fieldDefinition
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType rightRuntime
+          = true
+      -> leafProbeFuel fieldDefinition.outputType ≤ parentFuel
+      -> Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+                rightChildRootSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (parentFuel - leafProbeFuel fieldDefinition.outputType)
+            rightRuntime
+            (projectionTargetResolverValue
+              (.object rightRuntime (some FieldPairProbeTag.right)))
+            childSelectionSet
+          = ({
+                data := Execution.ResponseValue.object childFields,
+                errors := childErrors
+              }
+              : Execution.Response)
+      -> ∃ responseValue fieldErrors,
+          Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+                rightChildRootSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (parentFuel + 1)
+            (projectionRootResolverValue
+              (.object targetParent (none : Option FieldPairProbeTag)))
+            responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := rightField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = .ok ([(responseName, responseValue)], fieldErrors) := by
   intro hnotLeft harguments hlookup hinclude hfuel hchildResponse
   rcases
       wrapTypeRefSelectionSetResult_ok_nonNull_of_object_response
@@ -3653,104 +3627,111 @@ theorem executeField_fieldPairOrDeepSuccess_sideRuntimeProbe_right_root_ok_of_ch
 
 theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_pathLocalProbe_of_field_cases
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet :
-      List Selection)
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet : List Selection)
     (variableValues : Execution.VariableValues) (parentFuel : Nat)
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments : List Argument)
     (leftRuntime rightRuntime : Name)
     (leftFieldDefinition rightFieldDefinition : FieldDefinition)
-    (selectionSet : List Selection) :
-    schema.lookupField targetParent leftField = some leftFieldDefinition ->
-    schema.lookupField targetParent rightField = some rightFieldDefinition ->
-    schema.typeIncludesObjectBool
-      leftFieldDefinition.outputType.namedType leftRuntime = true ->
-    schema.typeIncludesObjectBool
-      rightFieldDefinition.outputType.namedType rightRuntime = true ->
-    leafProbeFuel leftFieldDefinition.outputType ≤ parentFuel ->
-    leafProbeFuel rightFieldDefinition.outputType ≤ parentFuel ->
-    (∀ responseName arguments directives childSelectionSet,
-      Selection.field responseName leftField arguments directives
-          childSelectionSet ∈ selectionSet ->
-      Argument.argumentsEquivalent arguments leftArguments ->
-        ∃ childFields childErrors,
-          Execution.executeSelectionSetAsResponse schema
-              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-                  rightInitialSelectionSet targetParent leftField rightField
-                  leftArguments rightArguments leftRuntime rightRuntime)
-                targetParent leftField rightField leftArguments
-                rightArguments)
-              variableValues
-              (parentFuel - leafProbeFuel leftFieldDefinition.outputType)
-              leftRuntime
-              (projectionTargetResolverValue
-                (.object leftRuntime
-                  (FieldPairPathLocalProbeRef.target FieldPairProbeTag.left
-                    leftInitialSelectionSet)))
-              childSelectionSet =
-            ({ data := Execution.ResponseValue.object childFields,
-               errors := childErrors } :
-              Execution.Response)) ->
-    (∀ responseName arguments directives childSelectionSet,
-      Selection.field responseName rightField arguments directives
-          childSelectionSet ∈ selectionSet ->
-      Argument.argumentsEquivalent arguments rightArguments ->
-        ∃ childFields childErrors,
-          Execution.executeSelectionSetAsResponse schema
-              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-                  rightInitialSelectionSet targetParent leftField rightField
-                  leftArguments rightArguments leftRuntime rightRuntime)
-                targetParent leftField rightField leftArguments
-                rightArguments)
-              variableValues
-              (parentFuel - leafProbeFuel rightFieldDefinition.outputType)
-              rightRuntime
-              (projectionTargetResolverValue
-                (.object rightRuntime
-                  (FieldPairPathLocalProbeRef.target FieldPairProbeTag.right
-                    rightInitialSelectionSet)))
-              childSelectionSet =
-            ({ data := Execution.ResponseValue.object childFields,
-               errors := childErrors } :
-              Execution.Response)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-      ¬ fieldPairProjectionTarget targetParent leftField rightField
-          leftArguments rightArguments targetParent fieldName arguments ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema
-            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-              (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-                rightInitialSelectionSet targetParent leftField rightField
-                leftArguments rightArguments leftRuntime rightRuntime)
-              targetParent leftField rightField leftArguments
-              rightArguments)
-            variableValues (parentFuel + 1)
-            (projectionRootResolverValue
-              (.object targetParent FieldPairPathLocalProbeRef.root))
-            responseName
-            [{
-              parentType := targetParent
-              responseName := responseName
-              fieldName := fieldName
-              arguments := arguments
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      selectionSetFieldsExecuteOk schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-            rightInitialSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (parentFuel + 1) targetParent
-        (projectionRootResolverValue
-          (.object targetParent FieldPairPathLocalProbeRef.root))
-        selectionSet := by
+    (selectionSet : List Selection)
+    : schema.lookupField targetParent leftField = some leftFieldDefinition
+      -> schema.lookupField targetParent rightField = some rightFieldDefinition
+      -> schema.typeIncludesObjectBool
+            leftFieldDefinition.outputType.namedType leftRuntime
+          = true
+      -> schema.typeIncludesObjectBool
+            rightFieldDefinition.outputType.namedType rightRuntime
+          = true
+      -> leafProbeFuel leftFieldDefinition.outputType ≤ parentFuel
+      -> leafProbeFuel rightFieldDefinition.outputType ≤ parentFuel
+      -> (∀ responseName arguments directives childSelectionSet,
+            Selection.field responseName leftField arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> Argument.argumentsEquivalent arguments leftArguments
+            -> ∃ childFields childErrors,
+                Execution.executeSelectionSetAsResponse schema
+                  (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                      rightInitialSelectionSet targetParent leftField rightField
+                      leftArguments rightArguments leftRuntime rightRuntime)
+                    targetParent leftField rightField leftArguments
+                    rightArguments)
+                  variableValues
+                  (parentFuel - leafProbeFuel leftFieldDefinition.outputType)
+                  leftRuntime
+                  (projectionTargetResolverValue
+                    (.object leftRuntime
+                      (FieldPairPathLocalProbeRef.target FieldPairProbeTag.left
+                        leftInitialSelectionSet)))
+                  childSelectionSet
+                = ({
+                      data := Execution.ResponseValue.object childFields,
+                      errors := childErrors
+                    }
+                    : Execution.Response))
+      -> (∀ responseName arguments directives childSelectionSet,
+            Selection.field responseName rightField arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> Argument.argumentsEquivalent arguments rightArguments
+            -> ∃ childFields childErrors,
+                Execution.executeSelectionSetAsResponse schema
+                  (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                      rightInitialSelectionSet targetParent leftField rightField
+                      leftArguments rightArguments leftRuntime rightRuntime)
+                    targetParent leftField rightField leftArguments
+                    rightArguments)
+                  variableValues
+                  (parentFuel - leafProbeFuel rightFieldDefinition.outputType)
+                  rightRuntime
+                  (projectionTargetResolverValue
+                    (.object rightRuntime
+                      (FieldPairPathLocalProbeRef.target FieldPairProbeTag.right
+                        rightInitialSelectionSet)))
+                  childSelectionSet
+                = ({
+                      data := Execution.ResponseValue.object childFields,
+                      errors := childErrors
+                    }
+                    : Execution.Response))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> ¬ fieldPairProjectionTarget targetParent leftField rightField
+                  leftArguments rightArguments targetParent fieldName arguments
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema
+                  (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                      rightInitialSelectionSet targetParent leftField rightField
+                      leftArguments rightArguments leftRuntime rightRuntime)
+                    targetParent leftField rightField leftArguments
+                    rightArguments)
+                  variableValues (parentFuel + 1)
+                  (projectionRootResolverValue
+                    (.object targetParent FieldPairPathLocalProbeRef.root))
+                  responseName
+                  [{
+                    parentType := targetParent
+                    responseName := responseName
+                    fieldName := fieldName
+                    arguments := arguments
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> selectionSetFieldsExecuteOk schema
+          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+            (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+              rightInitialSelectionSet targetParent leftField rightField
+              leftArguments rightArguments leftRuntime rightRuntime)
+            targetParent leftField rightField leftArguments rightArguments)
+          variableValues (parentFuel + 1) targetParent
+          (projectionRootResolverValue
+            (.object targetParent FieldPairPathLocalProbeRef.root))
+          selectionSet := by
   intro hleftLookup hrightLookup hleftInclude hrightInclude hleftFuel
     hrightFuel hleftChildResponse hrightChildResponse hother
   intro responseName fieldName arguments directives childSelectionSet hmem
@@ -3807,103 +3788,110 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_pathLocalProbe_of_fie
 
 theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_sideRuntimeProbe_of_field_cases
     (schema : Schema)
-    (rootSelectionSet leftChildRootSelectionSet rightChildRootSelectionSet :
-      List Selection)
+    (rootSelectionSet leftChildRootSelectionSet rightChildRootSelectionSet
+      : List Selection)
     (variableValues : Execution.VariableValues) (parentFuel : Nat)
     (targetParent leftField rightField : Name)
-    (leftArguments rightArguments : List Argument)
-    (leftRuntime rightRuntime : Name)
+    (leftArguments rightArguments : List Argument) (leftRuntime rightRuntime : Name)
     (leftFieldDefinition rightFieldDefinition : FieldDefinition)
-    (selectionSet : List Selection) :
-    schema.lookupField targetParent leftField = some leftFieldDefinition ->
-    schema.lookupField targetParent rightField = some rightFieldDefinition ->
-    schema.typeIncludesObjectBool
-      leftFieldDefinition.outputType.namedType leftRuntime = true ->
-    schema.typeIncludesObjectBool
-      rightFieldDefinition.outputType.namedType rightRuntime = true ->
-    leafProbeFuel leftFieldDefinition.outputType ≤ parentFuel ->
-    leafProbeFuel rightFieldDefinition.outputType ≤ parentFuel ->
-    (∀ responseName arguments directives childSelectionSet,
-      Selection.field responseName leftField arguments directives
-          childSelectionSet ∈ selectionSet ->
-      Argument.argumentsEquivalent arguments leftArguments ->
-        ∃ childFields childErrors,
-          Execution.executeSelectionSetAsResponse schema
-              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                (fieldPairSideRuntimeProbeResolvers schema
-                  leftChildRootSelectionSet rightChildRootSelectionSet
-                  targetParent leftField rightField leftArguments
-                  rightArguments leftRuntime rightRuntime)
-                targetParent leftField rightField leftArguments
-                rightArguments)
-              variableValues
-              (parentFuel - leafProbeFuel leftFieldDefinition.outputType)
-              leftRuntime
-              (projectionTargetResolverValue
-                (.object leftRuntime (some FieldPairProbeTag.left)))
-              childSelectionSet =
-            ({ data := Execution.ResponseValue.object childFields,
-               errors := childErrors } :
-              Execution.Response)) ->
-    (∀ responseName arguments directives childSelectionSet,
-      Selection.field responseName rightField arguments directives
-          childSelectionSet ∈ selectionSet ->
-      Argument.argumentsEquivalent arguments rightArguments ->
-        ∃ childFields childErrors,
-          Execution.executeSelectionSetAsResponse schema
-              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                (fieldPairSideRuntimeProbeResolvers schema
-                  leftChildRootSelectionSet rightChildRootSelectionSet
-                  targetParent leftField rightField leftArguments
-                  rightArguments leftRuntime rightRuntime)
-                targetParent leftField rightField leftArguments
-                rightArguments)
-              variableValues
-              (parentFuel - leafProbeFuel rightFieldDefinition.outputType)
-              rightRuntime
-              (projectionTargetResolverValue
-                (.object rightRuntime (some FieldPairProbeTag.right)))
-              childSelectionSet =
-            ({ data := Execution.ResponseValue.object childFields,
-               errors := childErrors } :
-              Execution.Response)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-      ¬ fieldPairProjectionTarget targetParent leftField rightField
-          leftArguments rightArguments targetParent fieldName arguments ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema
-            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-              (fieldPairSideRuntimeProbeResolvers schema
-                leftChildRootSelectionSet rightChildRootSelectionSet
-                targetParent leftField rightField leftArguments
-                rightArguments leftRuntime rightRuntime)
-              targetParent leftField rightField leftArguments
-              rightArguments)
-            variableValues (parentFuel + 1)
-            (projectionRootResolverValue
-              (.object targetParent (none : Option FieldPairProbeTag)))
-            responseName
-            [{
-              parentType := targetParent
-              responseName := responseName
-              fieldName := fieldName
-              arguments := arguments
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      selectionSetFieldsExecuteOk schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-            rightChildRootSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (parentFuel + 1) targetParent
-        (projectionRootResolverValue
-          (.object targetParent (none : Option FieldPairProbeTag)))
-        selectionSet := by
+    (selectionSet : List Selection)
+    : schema.lookupField targetParent leftField = some leftFieldDefinition
+      -> schema.lookupField targetParent rightField = some rightFieldDefinition
+      -> schema.typeIncludesObjectBool
+            leftFieldDefinition.outputType.namedType leftRuntime
+          = true
+      -> schema.typeIncludesObjectBool
+            rightFieldDefinition.outputType.namedType rightRuntime
+          = true
+      -> leafProbeFuel leftFieldDefinition.outputType ≤ parentFuel
+      -> leafProbeFuel rightFieldDefinition.outputType ≤ parentFuel
+      -> (∀ responseName arguments directives childSelectionSet,
+            Selection.field responseName leftField arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> Argument.argumentsEquivalent arguments leftArguments
+            -> ∃ childFields childErrors,
+                Execution.executeSelectionSetAsResponse schema
+                  (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (fieldPairSideRuntimeProbeResolvers schema
+                      leftChildRootSelectionSet rightChildRootSelectionSet
+                      targetParent leftField rightField leftArguments
+                      rightArguments leftRuntime rightRuntime)
+                    targetParent leftField rightField leftArguments
+                    rightArguments)
+                  variableValues
+                  (parentFuel - leafProbeFuel leftFieldDefinition.outputType)
+                  leftRuntime
+                  (projectionTargetResolverValue
+                    (.object leftRuntime (some FieldPairProbeTag.left)))
+                  childSelectionSet
+                = ({
+                      data := Execution.ResponseValue.object childFields,
+                      errors := childErrors
+                    }
+                    : Execution.Response))
+      -> (∀ responseName arguments directives childSelectionSet,
+            Selection.field responseName rightField arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> Argument.argumentsEquivalent arguments rightArguments
+            -> ∃ childFields childErrors,
+                Execution.executeSelectionSetAsResponse schema
+                  (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (fieldPairSideRuntimeProbeResolvers schema
+                      leftChildRootSelectionSet rightChildRootSelectionSet
+                      targetParent leftField rightField leftArguments
+                      rightArguments leftRuntime rightRuntime)
+                    targetParent leftField rightField leftArguments
+                    rightArguments)
+                  variableValues
+                  (parentFuel - leafProbeFuel rightFieldDefinition.outputType)
+                  rightRuntime
+                  (projectionTargetResolverValue
+                    (.object rightRuntime (some FieldPairProbeTag.right)))
+                  childSelectionSet
+                = ({
+                      data := Execution.ResponseValue.object childFields,
+                      errors := childErrors
+                    }
+                    : Execution.Response))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> ¬ fieldPairProjectionTarget targetParent leftField rightField
+                  leftArguments rightArguments targetParent fieldName arguments
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema
+                  (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (fieldPairSideRuntimeProbeResolvers schema
+                      leftChildRootSelectionSet rightChildRootSelectionSet
+                      targetParent leftField rightField leftArguments
+                      rightArguments leftRuntime rightRuntime)
+                    targetParent leftField rightField leftArguments
+                    rightArguments)
+                  variableValues (parentFuel + 1)
+                  (projectionRootResolverValue
+                    (.object targetParent (none : Option FieldPairProbeTag)))
+                  responseName
+                  [{
+                    parentType := targetParent
+                    responseName := responseName
+                    fieldName := fieldName
+                    arguments := arguments
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> selectionSetFieldsExecuteOk schema
+          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+            (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+              rightChildRootSelectionSet targetParent leftField rightField
+              leftArguments rightArguments leftRuntime rightRuntime)
+            targetParent leftField rightField leftArguments rightArguments)
+          variableValues (parentFuel + 1) targetParent
+          (projectionRootResolverValue
+            (.object targetParent (none : Option FieldPairProbeTag)))
+          selectionSet := by
   intro hleftLookup hrightLookup hleftInclude hrightInclude hleftFuel
     hrightFuel hleftChildResponse hrightChildResponse hother
   intro responseName fieldName arguments directives childSelectionSet hmem
@@ -3965,93 +3953,101 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_runtimeProbe_of_field
     (leftArguments rightArguments : List Argument)
     (leftRuntime rightRuntime : Name)
     (leftFieldDefinition rightFieldDefinition : FieldDefinition)
-    (selectionSet : List Selection) :
-    schema.lookupField targetParent leftField = some leftFieldDefinition ->
-    schema.lookupField targetParent rightField = some rightFieldDefinition ->
-    schema.typeIncludesObjectBool
-      leftFieldDefinition.outputType.namedType leftRuntime = true ->
-    schema.typeIncludesObjectBool
-      rightFieldDefinition.outputType.namedType rightRuntime = true ->
-    leafProbeFuel leftFieldDefinition.outputType ≤ parentFuel ->
-    leafProbeFuel rightFieldDefinition.outputType ≤ parentFuel ->
-    (∀ responseName arguments directives childSelectionSet,
-      Selection.field responseName leftField arguments directives
-          childSelectionSet ∈ selectionSet ->
-      Argument.argumentsEquivalent arguments leftArguments ->
-        ∃ childFields childErrors,
-          Execution.executeSelectionSetAsResponse schema
-              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-                  targetParent leftField rightField leftArguments
-                  rightArguments leftRuntime rightRuntime)
-                targetParent leftField rightField leftArguments
-                rightArguments)
-              variableValues
-              (parentFuel - leafProbeFuel leftFieldDefinition.outputType)
-              leftRuntime
-              (projectionTargetResolverValue
-                (.object leftRuntime (some FieldPairProbeTag.left)))
-              childSelectionSet =
-            ({ data := Execution.ResponseValue.object childFields,
-               errors := childErrors } :
-              Execution.Response)) ->
-    (∀ responseName arguments directives childSelectionSet,
-      Selection.field responseName rightField arguments directives
-          childSelectionSet ∈ selectionSet ->
-      Argument.argumentsEquivalent arguments rightArguments ->
-        ∃ childFields childErrors,
-          Execution.executeSelectionSetAsResponse schema
-              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-                  targetParent leftField rightField leftArguments
-                  rightArguments leftRuntime rightRuntime)
-                targetParent leftField rightField leftArguments
-                rightArguments)
-              variableValues
-              (parentFuel - leafProbeFuel rightFieldDefinition.outputType)
-              rightRuntime
-              (projectionTargetResolverValue
-                (.object rightRuntime (some FieldPairProbeTag.right)))
-              childSelectionSet =
-            ({ data := Execution.ResponseValue.object childFields,
-               errors := childErrors } :
-              Execution.Response)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-      ¬ fieldPairProjectionTarget targetParent leftField rightField
-          leftArguments rightArguments targetParent fieldName arguments ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema
-            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-              (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-                targetParent leftField rightField leftArguments
-                rightArguments leftRuntime rightRuntime)
-              targetParent leftField rightField leftArguments
-              rightArguments)
-            variableValues (parentFuel + 1)
-            (projectionRootResolverValue
-              (.object targetParent (none : Option FieldPairProbeTag)))
-            responseName
-            [{
-              parentType := targetParent
-              responseName := responseName
-              fieldName := fieldName
-              arguments := arguments
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      selectionSetFieldsExecuteOk schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-            targetParent leftField rightField leftArguments rightArguments
-            leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (parentFuel + 1) targetParent
-        (projectionRootResolverValue
-          (.object targetParent (none : Option FieldPairProbeTag)))
-        selectionSet := by
+    (selectionSet : List Selection)
+    : schema.lookupField targetParent leftField = some leftFieldDefinition
+      -> schema.lookupField targetParent rightField = some rightFieldDefinition
+      -> schema.typeIncludesObjectBool
+            leftFieldDefinition.outputType.namedType leftRuntime
+          = true
+      -> schema.typeIncludesObjectBool
+            rightFieldDefinition.outputType.namedType rightRuntime
+          = true
+      -> leafProbeFuel leftFieldDefinition.outputType ≤ parentFuel
+      -> leafProbeFuel rightFieldDefinition.outputType ≤ parentFuel
+      -> (∀ responseName arguments directives childSelectionSet,
+            Selection.field responseName leftField arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> Argument.argumentsEquivalent arguments leftArguments
+            -> ∃ childFields childErrors,
+                Execution.executeSelectionSetAsResponse schema
+                  (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                      targetParent leftField rightField leftArguments
+                      rightArguments leftRuntime rightRuntime)
+                    targetParent leftField rightField leftArguments
+                    rightArguments)
+                  variableValues
+                  (parentFuel - leafProbeFuel leftFieldDefinition.outputType)
+                  leftRuntime
+                  (projectionTargetResolverValue
+                    (.object leftRuntime (some FieldPairProbeTag.left)))
+                  childSelectionSet
+                = ({
+                      data := Execution.ResponseValue.object childFields,
+                      errors := childErrors
+                    }
+                    : Execution.Response))
+      -> (∀ responseName arguments directives childSelectionSet,
+            Selection.field responseName rightField arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> Argument.argumentsEquivalent arguments rightArguments
+            -> ∃ childFields childErrors,
+                Execution.executeSelectionSetAsResponse schema
+                  (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                      targetParent leftField rightField leftArguments
+                      rightArguments leftRuntime rightRuntime)
+                    targetParent leftField rightField leftArguments
+                    rightArguments)
+                  variableValues
+                  (parentFuel - leafProbeFuel rightFieldDefinition.outputType)
+                  rightRuntime
+                  (projectionTargetResolverValue
+                    (.object rightRuntime (some FieldPairProbeTag.right)))
+                  childSelectionSet
+                = ({
+                      data := Execution.ResponseValue.object childFields,
+                      errors := childErrors
+                    }
+                    : Execution.Response))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> ¬ fieldPairProjectionTarget targetParent leftField rightField
+                  leftArguments rightArguments targetParent fieldName arguments
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema
+                  (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                      targetParent leftField rightField leftArguments
+                      rightArguments leftRuntime rightRuntime)
+                    targetParent leftField rightField leftArguments
+                    rightArguments)
+                  variableValues (parentFuel + 1)
+                  (projectionRootResolverValue
+                    (.object targetParent (none : Option FieldPairProbeTag)))
+                  responseName
+                  [{
+                    parentType := targetParent
+                    responseName := responseName
+                    fieldName := fieldName
+                    arguments := arguments
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> selectionSetFieldsExecuteOk schema
+          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+            (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+              targetParent leftField rightField leftArguments rightArguments
+              leftRuntime rightRuntime)
+            targetParent leftField rightField leftArguments rightArguments)
+          variableValues (parentFuel + 1) targetParent
+          (projectionRootResolverValue
+            (.object targetParent (none : Option FieldPairProbeTag)))
+          selectionSet := by
   intro hleftLookup hrightLookup hleftInclude hrightInclude hleftFuel
     hrightFuel hleftChildResponse hrightChildResponse hother
   intro responseName fieldName arguments directives childSelectionSet hmem
@@ -4111,19 +4107,18 @@ mutual
       (targetParent leftField rightField : Name)
       (leftArguments rightArguments : List Argument)
       (leftRuntime rightRuntime : Name)
-      (variableValues : Execution.VariableValues) :
-      ∀ (fuel : Nat) (runtimeType : Name) (tag : FieldPairProbeTag)
-        (fields : List (Name × List Execution.ExecutableField)),
-        Execution.executeCollectedFields schema
-          (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-            targetParent leftField rightField leftArguments rightArguments
-            leftRuntime rightRuntime)
-          variableValues fuel (.object runtimeType (some tag)) fields
-        =
-        Execution.executeCollectedFields schema
-          (fieldPairProbeResolvers schema childRootSelectionSet targetParent
-            leftField rightField leftArguments rightArguments)
-          variableValues fuel (.object runtimeType (some tag)) fields
+      (variableValues : Execution.VariableValues)
+      : ∀ (fuel : Nat) (runtimeType : Name) (tag : FieldPairProbeTag)
+            (fields : List (Name × List Execution.ExecutableField)),
+          Execution.executeCollectedFields schema
+            (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+              targetParent leftField rightField leftArguments rightArguments
+              leftRuntime rightRuntime)
+            variableValues fuel (.object runtimeType (some tag)) fields
+          = Execution.executeCollectedFields schema
+              (fieldPairProbeResolvers schema childRootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues fuel (.object runtimeType (some tag)) fields
     | fuel, runtimeType, tag, [] => by
         simp [Execution.executeCollectedFields]
     | fuel, runtimeType, tag, (responseName, fields) :: rest => by
@@ -4142,21 +4137,20 @@ mutual
       (targetParent leftField rightField : Name)
       (leftArguments rightArguments : List Argument)
       (leftRuntime rightRuntime : Name)
-      (variableValues : Execution.VariableValues) :
-      ∀ (fuel : Nat) (runtimeType : Name) (tag : FieldPairProbeTag)
-        (responseName : Name) (fields : List Execution.ExecutableField),
-        Execution.executeField schema
-          (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-            targetParent leftField rightField leftArguments rightArguments
-            leftRuntime rightRuntime)
-          variableValues fuel (.object runtimeType (some tag)) responseName
-          fields
-        =
-        Execution.executeField schema
-          (fieldPairProbeResolvers schema childRootSelectionSet targetParent
-            leftField rightField leftArguments rightArguments)
-          variableValues fuel (.object runtimeType (some tag)) responseName
-          fields
+      (variableValues : Execution.VariableValues)
+      : ∀ (fuel : Nat) (runtimeType : Name) (tag : FieldPairProbeTag)
+            (responseName : Name) (fields : List Execution.ExecutableField),
+          Execution.executeField schema
+            (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+              targetParent leftField rightField leftArguments rightArguments
+              leftRuntime rightRuntime)
+            variableValues fuel (.object runtimeType (some tag)) responseName
+            fields
+          = Execution.executeField schema
+              (fieldPairProbeResolvers schema childRootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues fuel (.object runtimeType (some tag)) responseName
+              fields
     | fuel, runtimeType, tag, responseName, [] => by
         simp [Execution.executeField]
     | 0, runtimeType, tag, responseName, field :: fields => by
@@ -4192,25 +4186,24 @@ mutual
       (targetParent leftField rightField : Name)
       (leftArguments rightArguments : List Argument)
       (leftRuntime rightRuntime : Name)
-      (variableValues : Execution.VariableValues) :
-      ∀ (fuel : Nat) (fieldType : TypeRef)
-        (fields : List Execution.ExecutableField)
-        (parentType fieldName : Name) (arguments : List Argument)
-        (tag : FieldPairProbeTag),
-        Execution.completeValue schema
-          (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-            targetParent leftField rightField leftArguments rightArguments
-            leftRuntime rightRuntime)
-          variableValues fuel fieldType fields
-          (fieldPairProbeHeadResolverValue schema childRootSelectionSet
-            parentType fieldName arguments tag fieldType)
-        =
-        Execution.completeValue schema
-          (fieldPairProbeResolvers schema childRootSelectionSet targetParent
-            leftField rightField leftArguments rightArguments)
-          variableValues fuel fieldType fields
-          (fieldPairProbeHeadResolverValue schema childRootSelectionSet
-            parentType fieldName arguments tag fieldType)
+      (variableValues : Execution.VariableValues)
+      : ∀ (fuel : Nat) (fieldType : TypeRef)
+            (fields : List Execution.ExecutableField)
+            (parentType fieldName : Name) (arguments : List Argument)
+            (tag : FieldPairProbeTag),
+          Execution.completeValue schema
+            (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+              targetParent leftField rightField leftArguments rightArguments
+              leftRuntime rightRuntime)
+            variableValues fuel fieldType fields
+            (fieldPairProbeHeadResolverValue schema childRootSelectionSet
+              parentType fieldName arguments tag fieldType)
+          = Execution.completeValue schema
+              (fieldPairProbeResolvers schema childRootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues fuel fieldType fields
+              (fieldPairProbeHeadResolverValue schema childRootSelectionSet
+                parentType fieldName arguments tag fieldType)
     | 0, fieldType, fields, parentType, fieldName, arguments, tag => by
         simp [Execution.completeValue, Execution.outOfFuel]
     | fuel + 1, .nonNull inner, fields, parentType, fieldName, arguments,
@@ -4309,19 +4302,18 @@ theorem executeSelectionSetAsResponse_fieldPairRuntimeProbe_tagged_eq_fieldPairP
     (leftRuntime rightRuntime : Name)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (parentType runtimeType : Name) (tag : FieldPairProbeTag)
-    (selectionSet : List Selection) :
-    Execution.executeSelectionSetAsResponse schema
-      (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-        targetParent leftField rightField leftArguments rightArguments
-        leftRuntime rightRuntime)
-      variableValues fuel parentType (.object runtimeType (some tag))
-      selectionSet
-    =
-    Execution.executeSelectionSetAsResponse schema
-      (fieldPairProbeResolvers schema childRootSelectionSet targetParent
-        leftField rightField leftArguments rightArguments)
-      variableValues fuel parentType (.object runtimeType (some tag))
-      selectionSet := by
+    (selectionSet : List Selection)
+    : Execution.executeSelectionSetAsResponse schema
+        (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+          targetParent leftField rightField leftArguments rightArguments
+          leftRuntime rightRuntime)
+        variableValues fuel parentType (.object runtimeType (some tag))
+        selectionSet
+      = Execution.executeSelectionSetAsResponse schema
+          (fieldPairProbeResolvers schema childRootSelectionSet targetParent
+            leftField rightField leftArguments rightArguments)
+          variableValues fuel parentType (.object runtimeType (some tag))
+          selectionSet := by
   simp [Execution.executeSelectionSetAsResponse, Execution.executeSelectionSet,
     Execution.executeRootSelectionSet]
   rw [
@@ -4339,21 +4331,20 @@ mutual
       (targetParent leftField rightField : Name)
       (leftArguments rightArguments : List Argument)
       (leftRuntime rightRuntime : Name)
-      (variableValues : Execution.VariableValues) :
-      ∀ (fuel : Nat) (runtimeType : Name) (tag : FieldPairProbeTag)
-        (fields : List (Name × List Execution.ExecutableField)),
-        Execution.executeCollectedFields schema
-          (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-            rightChildRootSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          variableValues fuel (.object runtimeType (some tag)) fields
-        =
-        Execution.executeCollectedFields schema
-          (fieldPairProbeResolvers schema
-            (fieldPairSideRuntimeProbeRoot leftChildRootSelectionSet
-              rightChildRootSelectionSet tag)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues fuel (.object runtimeType (some tag)) fields
+      (variableValues : Execution.VariableValues)
+      : ∀ (fuel : Nat) (runtimeType : Name) (tag : FieldPairProbeTag)
+            (fields : List (Name × List Execution.ExecutableField)),
+          Execution.executeCollectedFields schema
+            (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+              rightChildRootSelectionSet targetParent leftField rightField
+              leftArguments rightArguments leftRuntime rightRuntime)
+            variableValues fuel (.object runtimeType (some tag)) fields
+          = Execution.executeCollectedFields schema
+              (fieldPairProbeResolvers schema
+                (fieldPairSideRuntimeProbeRoot leftChildRootSelectionSet
+                  rightChildRootSelectionSet tag)
+                targetParent leftField rightField leftArguments rightArguments)
+              variableValues fuel (.object runtimeType (some tag)) fields
     | fuel, runtimeType, tag, [] => by
         simp [Execution.executeCollectedFields]
     | fuel, runtimeType, tag, (responseName, fields) :: rest => by
@@ -4374,23 +4365,22 @@ mutual
       (targetParent leftField rightField : Name)
       (leftArguments rightArguments : List Argument)
       (leftRuntime rightRuntime : Name)
-      (variableValues : Execution.VariableValues) :
-      ∀ (fuel : Nat) (runtimeType : Name) (tag : FieldPairProbeTag)
-        (responseName : Name) (fields : List Execution.ExecutableField),
-        Execution.executeField schema
-          (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-            rightChildRootSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          variableValues fuel (.object runtimeType (some tag)) responseName
-          fields
-        =
-        Execution.executeField schema
-          (fieldPairProbeResolvers schema
-            (fieldPairSideRuntimeProbeRoot leftChildRootSelectionSet
-              rightChildRootSelectionSet tag)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues fuel (.object runtimeType (some tag)) responseName
-          fields
+      (variableValues : Execution.VariableValues)
+      : ∀ (fuel : Nat) (runtimeType : Name) (tag : FieldPairProbeTag)
+            (responseName : Name) (fields : List Execution.ExecutableField),
+          Execution.executeField schema
+            (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+              rightChildRootSelectionSet targetParent leftField rightField
+              leftArguments rightArguments leftRuntime rightRuntime)
+            variableValues fuel (.object runtimeType (some tag)) responseName
+            fields
+          = Execution.executeField schema
+              (fieldPairProbeResolvers schema
+                (fieldPairSideRuntimeProbeRoot leftChildRootSelectionSet
+                  rightChildRootSelectionSet tag)
+                targetParent leftField rightField leftArguments rightArguments)
+              variableValues fuel (.object runtimeType (some tag)) responseName
+              fields
     | fuel, runtimeType, tag, responseName, [] => by
         simp [Execution.executeField]
     | 0, runtimeType, tag, responseName, field :: fields => by
@@ -4430,31 +4420,30 @@ mutual
       (targetParent leftField rightField : Name)
       (leftArguments rightArguments : List Argument)
       (leftRuntime rightRuntime : Name)
-      (variableValues : Execution.VariableValues) :
-      ∀ (fuel : Nat) (fieldType : TypeRef)
-        (fields : List Execution.ExecutableField)
-        (parentType fieldName : Name) (arguments : List Argument)
-        (tag : FieldPairProbeTag),
-        Execution.completeValue schema
-          (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-            rightChildRootSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          variableValues fuel fieldType fields
-          (fieldPairProbeHeadResolverValue schema
-            (fieldPairSideRuntimeProbeRoot leftChildRootSelectionSet
-              rightChildRootSelectionSet tag)
-            parentType fieldName arguments tag fieldType)
-        =
-        Execution.completeValue schema
-          (fieldPairProbeResolvers schema
-            (fieldPairSideRuntimeProbeRoot leftChildRootSelectionSet
-              rightChildRootSelectionSet tag)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues fuel fieldType fields
-          (fieldPairProbeHeadResolverValue schema
-            (fieldPairSideRuntimeProbeRoot leftChildRootSelectionSet
-              rightChildRootSelectionSet tag)
-            parentType fieldName arguments tag fieldType)
+      (variableValues : Execution.VariableValues)
+      : ∀ (fuel : Nat) (fieldType : TypeRef)
+            (fields : List Execution.ExecutableField)
+            (parentType fieldName : Name) (arguments : List Argument)
+            (tag : FieldPairProbeTag),
+          Execution.completeValue schema
+            (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+              rightChildRootSelectionSet targetParent leftField rightField
+              leftArguments rightArguments leftRuntime rightRuntime)
+            variableValues fuel fieldType fields
+            (fieldPairProbeHeadResolverValue schema
+              (fieldPairSideRuntimeProbeRoot leftChildRootSelectionSet
+                rightChildRootSelectionSet tag)
+              parentType fieldName arguments tag fieldType)
+          = Execution.completeValue schema
+              (fieldPairProbeResolvers schema
+                (fieldPairSideRuntimeProbeRoot leftChildRootSelectionSet
+                  rightChildRootSelectionSet tag)
+                targetParent leftField rightField leftArguments rightArguments)
+              variableValues fuel fieldType fields
+              (fieldPairProbeHeadResolverValue schema
+                (fieldPairSideRuntimeProbeRoot leftChildRootSelectionSet
+                  rightChildRootSelectionSet tag)
+                parentType fieldName arguments tag fieldType)
     | 0, fieldType, fields, parentType, fieldName, arguments, tag => by
         simp [Execution.completeValue, Execution.outOfFuel]
     | fuel + 1, .nonNull inner, fields, parentType, fieldName, arguments,
@@ -4559,21 +4548,20 @@ theorem executeSelectionSetAsResponse_fieldPairSideRuntimeProbe_tagged_eq_fieldP
     (leftRuntime rightRuntime : Name)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (parentType runtimeType : Name) (tag : FieldPairProbeTag)
-    (selectionSet : List Selection) :
-    Execution.executeSelectionSetAsResponse schema
-      (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-        rightChildRootSelectionSet targetParent leftField rightField
-        leftArguments rightArguments leftRuntime rightRuntime)
-      variableValues fuel parentType (.object runtimeType (some tag))
-      selectionSet
-    =
-    Execution.executeSelectionSetAsResponse schema
-      (fieldPairProbeResolvers schema
-        (fieldPairSideRuntimeProbeRoot leftChildRootSelectionSet
-          rightChildRootSelectionSet tag)
-        targetParent leftField rightField leftArguments rightArguments)
-      variableValues fuel parentType (.object runtimeType (some tag))
-      selectionSet := by
+    (selectionSet : List Selection)
+    : Execution.executeSelectionSetAsResponse schema
+        (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+          rightChildRootSelectionSet targetParent leftField rightField
+          leftArguments rightArguments leftRuntime rightRuntime)
+        variableValues fuel parentType (.object runtimeType (some tag))
+        selectionSet
+      = Execution.executeSelectionSetAsResponse schema
+          (fieldPairProbeResolvers schema
+            (fieldPairSideRuntimeProbeRoot leftChildRootSelectionSet
+              rightChildRootSelectionSet tag)
+            targetParent leftField rightField leftArguments rightArguments)
+          variableValues fuel parentType (.object runtimeType (some tag))
+          selectionSet := by
   simp [Execution.executeSelectionSetAsResponse, Execution.executeSelectionSet,
     Execution.executeRootSelectionSet]
   rw [
@@ -4588,33 +4576,32 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_runtimePro
     {schema : Schema} {rootSelectionSet childRootSelectionSet : List Selection}
     {variableValues : Execution.VariableValues} {fuel : Nat}
     {parentType runtimeType targetParent leftField rightField : Name}
-    {leftArguments rightArguments : List Argument}
-    {selectionSet : List Selection}
-    (leftRuntime rightRuntime : Name) :
-    taggedSelectionSetResponseDiffWitness schema childRootSelectionSet
-      variableValues fuel parentType runtimeType targetParent leftField
-      rightField leftArguments rightArguments selectionSet ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-              targetParent leftField rightField leftArguments rightArguments
-              leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues fuel runtimeType
-          (projectionTargetResolverValue
-            (.object runtimeType (some FieldPairProbeTag.left)))
-          selectionSet).data
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-              targetParent leftField rightField leftArguments rightArguments
-              leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues fuel runtimeType
-          (projectionTargetResolverValue
-            (.object runtimeType (some FieldPairProbeTag.right)))
-          selectionSet).data := by
+    {leftArguments rightArguments : List Argument} {selectionSet : List Selection}
+    (leftRuntime rightRuntime : Name)
+    : taggedSelectionSetResponseDiffWitness schema childRootSelectionSet
+        variableValues fuel parentType runtimeType targetParent leftField
+        rightField leftArguments rightArguments selectionSet
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                  targetParent leftField rightField leftArguments rightArguments
+                  leftRuntime rightRuntime)
+                targetParent leftField rightField leftArguments rightArguments)
+              variableValues fuel runtimeType
+              (projectionTargetResolverValue
+                (.object runtimeType (some FieldPairProbeTag.left)))
+              selectionSet).data
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                  targetParent leftField rightField leftArguments rightArguments
+                  leftRuntime rightRuntime)
+                targetParent leftField rightField leftArguments rightArguments)
+              variableValues fuel runtimeType
+              (projectionTargetResolverValue
+                (.object runtimeType (some FieldPairProbeTag.right)))
+              selectionSet).data := by
   intro hwitness hsemantic
   have hraw :
       ¬ Execution.ResponseValue.semanticEquivalent
@@ -4668,43 +4655,43 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_runtimePro
     {schema : Schema} {rootSelectionSet childRootSelectionSet : List Selection}
     {variableValues : Execution.VariableValues} {leftFuel rightFuel : Nat}
     {leftParentType rightParentType leftRuntime rightRuntime targetParent
-      leftField rightField : Name}
-    {leftArguments rightArguments : List Argument}
-    {left right : List Selection} :
-    ¬ Execution.ResponseValue.semanticEquivalent
-      (Execution.executeSelectionSetAsResponse schema
-        (fieldPairProbeResolvers schema childRootSelectionSet targetParent
-          leftField rightField leftArguments rightArguments)
-        variableValues leftFuel leftParentType
-        (.object leftRuntime (some FieldPairProbeTag.left))
-        left).data
-      (Execution.executeSelectionSetAsResponse schema
-        (fieldPairProbeResolvers schema childRootSelectionSet targetParent
-          leftField rightField leftArguments rightArguments)
-        variableValues rightFuel rightParentType
-        (.object rightRuntime (some FieldPairProbeTag.right))
-        right).data ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-              targetParent leftField rightField leftArguments rightArguments
-              leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues leftFuel leftParentType
-          (projectionTargetResolverValue
-            (.object leftRuntime (some FieldPairProbeTag.left)))
-          left).data
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
-              targetParent leftField rightField leftArguments rightArguments
-              leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues rightFuel rightParentType
-          (projectionTargetResolverValue
-            (.object rightRuntime (some FieldPairProbeTag.right)))
-          right).data := by
+      leftField rightField
+      : Name}
+    {leftArguments rightArguments : List Argument} {left right : List Selection}
+    : ¬ Execution.ResponseValue.semanticEquivalent
+          (Execution.executeSelectionSetAsResponse schema
+            (fieldPairProbeResolvers schema childRootSelectionSet targetParent
+              leftField rightField leftArguments rightArguments)
+            variableValues leftFuel leftParentType
+            (.object leftRuntime (some FieldPairProbeTag.left))
+            left).data
+          (Execution.executeSelectionSetAsResponse schema
+            (fieldPairProbeResolvers schema childRootSelectionSet targetParent
+              leftField rightField leftArguments rightArguments)
+            variableValues rightFuel rightParentType
+            (.object rightRuntime (some FieldPairProbeTag.right))
+            right).data
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                  targetParent leftField rightField leftArguments rightArguments
+                  leftRuntime rightRuntime)
+                targetParent leftField rightField leftArguments rightArguments)
+              variableValues leftFuel leftParentType
+              (projectionTargetResolverValue
+                (.object leftRuntime (some FieldPairProbeTag.left)))
+              left).data
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                (fieldPairRuntimeProbeResolvers schema childRootSelectionSet
+                  targetParent leftField rightField leftArguments rightArguments
+                  leftRuntime rightRuntime)
+                targetParent leftField rightField leftArguments rightArguments)
+              variableValues rightFuel rightParentType
+              (projectionTargetResolverValue
+                (.object rightRuntime (some FieldPairProbeTag.right)))
+              right).data := by
   intro hraw hsemantic
   have hleftProjection :=
     executeSelectionSetAsResponse_fieldPairOrDeepSuccessResolvers_projectionTargetResolverValue
@@ -4740,47 +4727,47 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_runtimePro
 
 theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_sideRuntimeProbe_taggedPair
     {schema : Schema}
-    {rootSelectionSet leftChildRootSelectionSet rightChildRootSelectionSet :
-      List Selection}
+    {rootSelectionSet leftChildRootSelectionSet rightChildRootSelectionSet
+      : List Selection}
     {variableValues : Execution.VariableValues} {leftFuel rightFuel : Nat}
     {leftParentType rightParentType leftRuntime rightRuntime targetParent
-      leftField rightField : Name}
-    {leftArguments rightArguments : List Argument}
-    {left right : List Selection} :
-    ¬ Execution.ResponseValue.semanticEquivalent
-      (Execution.executeSelectionSetAsResponse schema
-        (fieldPairProbeResolvers schema leftChildRootSelectionSet
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues leftFuel leftParentType
-        (.object leftRuntime (some FieldPairProbeTag.left))
-        left).data
-      (Execution.executeSelectionSetAsResponse schema
-        (fieldPairProbeResolvers schema rightChildRootSelectionSet
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues rightFuel rightParentType
-        (.object rightRuntime (some FieldPairProbeTag.right))
-        right).data ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-              rightChildRootSelectionSet targetParent leftField rightField
-              leftArguments rightArguments leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues leftFuel leftParentType
-          (projectionTargetResolverValue
-            (.object leftRuntime (some FieldPairProbeTag.left)))
-          left).data
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
-              rightChildRootSelectionSet targetParent leftField rightField
-              leftArguments rightArguments leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues rightFuel rightParentType
-          (projectionTargetResolverValue
-            (.object rightRuntime (some FieldPairProbeTag.right)))
-          right).data := by
+      leftField rightField
+      : Name}
+    {leftArguments rightArguments : List Argument} {left right : List Selection}
+    : ¬ Execution.ResponseValue.semanticEquivalent
+          (Execution.executeSelectionSetAsResponse schema
+            (fieldPairProbeResolvers schema leftChildRootSelectionSet
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues leftFuel leftParentType
+            (.object leftRuntime (some FieldPairProbeTag.left))
+            left).data
+          (Execution.executeSelectionSetAsResponse schema
+            (fieldPairProbeResolvers schema rightChildRootSelectionSet
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues rightFuel rightParentType
+            (.object rightRuntime (some FieldPairProbeTag.right))
+            right).data
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+                  rightChildRootSelectionSet targetParent leftField rightField
+                  leftArguments rightArguments leftRuntime rightRuntime)
+                targetParent leftField rightField leftArguments rightArguments)
+              variableValues leftFuel leftParentType
+              (projectionTargetResolverValue
+                (.object leftRuntime (some FieldPairProbeTag.left)))
+              left).data
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                (fieldPairSideRuntimeProbeResolvers schema leftChildRootSelectionSet
+                  rightChildRootSelectionSet targetParent leftField rightField
+                  leftArguments rightArguments leftRuntime rightRuntime)
+                targetParent leftField rightField leftArguments rightArguments)
+              variableValues rightFuel rightParentType
+              (projectionTargetResolverValue
+                (.object rightRuntime (some FieldPairProbeTag.right)))
+              right).data := by
   intro hraw hsemantic
   have hleftProjection :=
     executeSelectionSetAsResponse_fieldPairOrDeepSuccessResolvers_projectionTargetResolverValue

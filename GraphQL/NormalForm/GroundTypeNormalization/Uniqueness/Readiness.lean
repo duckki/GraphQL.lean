@@ -14,9 +14,9 @@ namespace NormalForm
 namespace GroundTypeNormalization
 
 theorem typeRef_named_isCompositeBool_false_of_isLeafType
-    {schema : Schema} {typeName : Name} :
-    schema.isLeafType typeName ->
-      (TypeRef.named typeName).isCompositeBool schema = false := by
+    {schema : Schema} {typeName : Name}
+    : schema.isLeafType typeName
+      -> (TypeRef.named typeName).isCompositeBool schema = false := by
   intro hleaf
   rcases hleaf with ⟨typeDefinition, hlookup, htypeLeaf⟩
   cases typeDefinition <;>
@@ -25,10 +25,10 @@ theorem typeRef_named_isCompositeBool_false_of_isLeafType
     simp [TypeRef.isCompositeBool, TypeRef.namedType, hlookup]
 
 theorem objectTypeNameBool_of_typeIncludesObjectBool
-    {schema : Schema} {typeName runtimeType : Name} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    schema.typeIncludesObjectBool typeName runtimeType = true ->
-      objectTypeNameBool schema runtimeType = true := by
+    {schema : Schema} {typeName runtimeType : Name}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> schema.typeIncludesObjectBool typeName runtimeType = true
+      -> objectTypeNameBool schema runtimeType = true := by
   intro hschema hinclude
   have hmem : runtimeType ∈ schema.getPossibleTypes typeName :=
     List.contains_iff_mem.mp hinclude
@@ -42,12 +42,12 @@ theorem leafProbeFuel_le_selectionSetDeepProbeFuel_of_field_mem
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      leafProbeFuel fieldDefinition.outputType
-        ≤ selectionSetDeepProbeFuel schema parentType selectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : Selection.field responseName fieldName arguments directives childSelectionSet
+        ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> leafProbeFuel fieldDefinition.outputType
+          ≤ selectionSetDeepProbeFuel schema parentType selectionSet := by
   intro hmem hlookup
   have hdeep :=
     selectionSetDeepProbeFuel_field_mem schema parentType selectionSet
@@ -55,10 +55,9 @@ theorem leafProbeFuel_le_selectionSetDeepProbeFuel_of_field_mem
       fieldDefinition hmem hlookup
   omega
 
-theorem selectionSetDeepProbeFuel_le_append_left
-    (schema : Schema) (parentType : Name) :
-    ∀ left right,
-      selectionSetDeepProbeFuel schema parentType left
+theorem selectionSetDeepProbeFuel_le_append_left (schema : Schema) (parentType : Name)
+    : ∀ left right,
+        selectionSetDeepProbeFuel schema parentType left
         ≤ selectionSetDeepProbeFuel schema parentType (left ++ right)
   | [], right => by
       simpa [selectionSetDeepProbeFuel] using
@@ -90,10 +89,9 @@ theorem selectionSetDeepProbeFuel_le_append_left
       simp [selectionSetDeepProbeFuel]
       omega
 
-theorem selectionSetDeepProbeFuel_le_append_right
-    (schema : Schema) (parentType : Name) :
-    ∀ left right,
-      selectionSetDeepProbeFuel schema parentType right
+theorem selectionSetDeepProbeFuel_le_append_right (schema : Schema) (parentType : Name)
+    : ∀ left right,
+        selectionSetDeepProbeFuel schema parentType right
         ≤ selectionSetDeepProbeFuel schema parentType (left ++ right)
   | [], right => by
       simp
@@ -125,11 +123,10 @@ theorem selectionSetDeepProbeFuel_le_append_right
 
 theorem selectionSetDeepProbeFuel_le_flatten_member
     (schema : Schema) (parentType : Name)
-    {members : List (List Selection)} {selectionSet : List Selection} :
-    selectionSet ∈ members ->
-      selectionSetDeepProbeFuel schema parentType selectionSet
-        ≤ selectionSetDeepProbeFuel schema parentType
-          (List.flatten members) := by
+    {members : List (List Selection)} {selectionSet : List Selection}
+    : selectionSet ∈ members
+      -> selectionSetDeepProbeFuel schema parentType selectionSet
+          ≤ selectionSetDeepProbeFuel schema parentType (List.flatten members) := by
   intro hmem
   induction members with
   | nil =>
@@ -150,19 +147,19 @@ theorem selectionSetValid_field_lookup_leaf_or_composite_child
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      ∃ fieldDefinition,
-        schema.lookupField parentType fieldName = some fieldDefinition
-          ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-              schema = false ∧ childSelectionSet = []
-            ∨ schema.isCompositeType fieldDefinition.outputType.namedType
-              ∧ childSelectionSet ≠ []
-              ∧ Validation.selectionSetValid schema variableDefinitions
-                fieldDefinition.outputType.namedType childSelectionSet) := by
+    {childSelectionSet selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> ∃ fieldDefinition,
+          schema.lookupField parentType fieldName = some fieldDefinition
+          ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+                  = false
+                ∧ childSelectionSet = []
+              ∨ schema.isCompositeType fieldDefinition.outputType.namedType
+                ∧ childSelectionSet ≠ []
+                ∧ Validation.selectionSetValid schema variableDefinitions
+                    fieldDefinition.outputType.namedType childSelectionSet) := by
   intro hvalid hmem
   rcases selectionSetValid_field_lookup_of_mem hvalid hmem with
     ⟨fieldDefinition, hlookup, _harguments, hfieldValid⟩
@@ -179,15 +176,14 @@ theorem selectionSetValid_field_child_of_mem_lookup
     {parentType responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-    childSelectionSet ≠ [] ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      Validation.selectionSetValid schema variableDefinitions
-        fieldDefinition.outputType.namedType childSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> childSelectionSet ≠ []
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> Validation.selectionSetValid schema variableDefinitions
+          fieldDefinition.outputType.namedType childSelectionSet := by
   intro hvalid hmem hnonempty hlookup
   rcases selectionSetValid_field_child_of_mem hvalid hmem hnonempty with
     ⟨candidateDefinition, hcandidateLookup, _hcomposite, hchildValid⟩
@@ -202,15 +198,14 @@ theorem selectionSetValid_object_field_child_of_mem_lookup
     {parentType responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    objectTypeNameBool schema fieldDefinition.outputType.namedType = true ->
-      Validation.selectionSetValid schema variableDefinitions
-        fieldDefinition.outputType.namedType childSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+      -> Validation.selectionSetValid schema variableDefinitions
+          fieldDefinition.outputType.namedType childSelectionSet := by
   intro hvalid hmem hlookup hobject
   rcases selectionSetValid_field_lookup_of_mem hvalid hmem with
     ⟨candidateDefinition, hcandidateLookup, _harguments, hfieldValid⟩
@@ -229,13 +224,13 @@ theorem selectionSetNormal_field_child_of_mem_lookup
     {schema : Schema} {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      selectionSetNormal schema fieldDefinition.outputType.namedType
-        childSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : selectionSetNormal schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> selectionSetNormal schema fieldDefinition.outputType.namedType
+          childSelectionSet := by
   intro hnormal hmem hlookup
   rcases selectionSetNormal_field_child_of_mem_with_returnType hnormal hmem
     with ⟨returnType, hreturnType, hchildNormal⟩
@@ -249,20 +244,20 @@ theorem firstInlineFragmentTypeCondition?_some_of_valid_normal_abstract_field_me
     {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    objectTypeNameBool schema fieldDefinition.outputType.namedType = false ->
-      ∃ runtimeType,
-        firstInlineFragmentTypeCondition? childSelectionSet = some runtimeType
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+      -> ∃ runtimeType,
+          firstInlineFragmentTypeCondition? childSelectionSet = some runtimeType
           ∧ schema.typeIncludesObjectBool
-            fieldDefinition.outputType.namedType runtimeType = true := by
+              fieldDefinition.outputType.namedType runtimeType
+            = true := by
   intro hvalid hnormal hmem hlookup hcomposite hnonObject
   have hchildNonempty : childSelectionSet ≠ [] := by
     rcases selectionSetValid_field_lookup_leaf_or_composite_child hvalid hmem
@@ -345,21 +340,22 @@ theorem abstractRuntimeForFieldDeep?_some_of_valid_normal_abstract_mem_lookup
     {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    objectTypeNameBool schema fieldDefinition.outputType.namedType = false ->
-      ∃ runtimeType,
-        abstractRuntimeForFieldDeep? schema parentType fieldName parentType
-          selectionSet = some runtimeType
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+      -> ∃ runtimeType,
+          abstractRuntimeForFieldDeep? schema parentType fieldName parentType
+              selectionSet
+            = some runtimeType
           ∧ schema.typeIncludesObjectBool
-            fieldDefinition.outputType.namedType runtimeType = true := by
+              fieldDefinition.outputType.namedType runtimeType
+            = true := by
   intro hvalid hnormal hmem hlookup hcomposite hnonObject
   induction selectionSet with
   | nil =>
@@ -420,21 +416,22 @@ theorem abstractRuntimeForFieldHeadDeep?_some_of_valid_normal_abstract_mem_looku
     {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    objectTypeNameBool schema fieldDefinition.outputType.namedType = false ->
-      ∃ runtimeType,
-        abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-          arguments parentType selectionSet = some runtimeType
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+      -> ∃ runtimeType,
+          abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+              arguments parentType selectionSet
+            = some runtimeType
           ∧ schema.typeIncludesObjectBool
-            fieldDefinition.outputType.namedType runtimeType = true := by
+              fieldDefinition.outputType.namedType runtimeType
+            = true := by
   intro hvalid hnormal hmem hlookup hcomposite hnonObject
   induction selectionSet with
   | nil =>
@@ -533,22 +530,24 @@ theorem abstractRuntimeForFieldDeep?_some_include_of_valid_normal_size
     (schema : Schema)
     {variableDefinitions : List VariableDefinition}
     {targetParent targetField : Name}
-    {targetFieldDefinition : FieldDefinition} :
-    schema.lookupField targetParent targetField = some targetFieldDefinition ->
-    (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    objectTypeNameBool schema targetFieldDefinition.outputType.namedType =
-      false ->
-    ∀ n currentParent (selectionSet : List Selection) runtimeType,
-      SelectionSet.size selectionSet < n ->
-      Validation.selectionSetValid schema variableDefinitions currentParent
-        selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetNormal schema currentParent selectionSet ->
-      abstractRuntimeForFieldDeep? schema targetParent targetField
-        currentParent selectionSet = some runtimeType ->
-        schema.typeIncludesObjectBool
-          targetFieldDefinition.outputType.namedType runtimeType = true := by
+    {targetFieldDefinition : FieldDefinition}
+    : schema.lookupField targetParent targetField = some targetFieldDefinition
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
+      -> ∀ n currentParent (selectionSet : List Selection) runtimeType,
+          SelectionSet.size selectionSet < n
+          -> Validation.selectionSetValid schema variableDefinitions currentParent
+              selectionSet
+          -> selectionSetDirectiveFree selectionSet
+          -> selectionSetNormal schema currentParent selectionSet
+          -> abstractRuntimeForFieldDeep? schema targetParent targetField
+                currentParent selectionSet
+              = some runtimeType
+          -> schema.typeIncludesObjectBool
+                targetFieldDefinition.outputType.namedType runtimeType
+              = true := by
   intro htargetLookup htargetComposite htargetNonObject n
   induction n with
   | zero =>
@@ -881,20 +880,21 @@ theorem abstractRuntimeForFieldDeep?_some_include_of_valid_normal
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {currentParent targetParent targetField runtimeType : Name}
     {selectionSet : List Selection}
-    {targetFieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions currentParent
-      selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema currentParent selectionSet ->
-    schema.lookupField targetParent targetField = some targetFieldDefinition ->
-    (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    objectTypeNameBool schema targetFieldDefinition.outputType.namedType =
-      false ->
-    abstractRuntimeForFieldDeep? schema targetParent targetField currentParent
-      selectionSet = some runtimeType ->
-      schema.typeIncludesObjectBool
-        targetFieldDefinition.outputType.namedType runtimeType = true := by
+    {targetFieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions currentParent selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema currentParent selectionSet
+      -> schema.lookupField targetParent targetField = some targetFieldDefinition
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
+      -> abstractRuntimeForFieldDeep? schema targetParent targetField currentParent
+            selectionSet
+          = some runtimeType
+      -> schema.typeIncludesObjectBool
+            targetFieldDefinition.outputType.namedType runtimeType
+          = true := by
   intro hvalid hfree hnormal htargetLookup htargetComposite htargetNonObject
     hruntime
   exact
@@ -908,22 +908,24 @@ theorem abstractRuntimeForFieldHeadDeep?_some_include_of_valid_normal_size
     {variableDefinitions : List VariableDefinition}
     {targetParent targetField : Name}
     {targetArguments : List Argument}
-    {targetFieldDefinition : FieldDefinition} :
-    schema.lookupField targetParent targetField = some targetFieldDefinition ->
-    (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    objectTypeNameBool schema targetFieldDefinition.outputType.namedType =
-      false ->
-    ∀ n currentParent (selectionSet : List Selection) runtimeType,
-      SelectionSet.size selectionSet < n ->
-      Validation.selectionSetValid schema variableDefinitions currentParent
-        selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetNormal schema currentParent selectionSet ->
-      abstractRuntimeForFieldHeadDeep? schema targetParent targetField
-        targetArguments currentParent selectionSet = some runtimeType ->
-        schema.typeIncludesObjectBool
-          targetFieldDefinition.outputType.namedType runtimeType = true := by
+    {targetFieldDefinition : FieldDefinition}
+    : schema.lookupField targetParent targetField = some targetFieldDefinition
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
+      -> ∀ n currentParent (selectionSet : List Selection) runtimeType,
+          SelectionSet.size selectionSet < n
+          -> Validation.selectionSetValid schema variableDefinitions currentParent
+              selectionSet
+          -> selectionSetDirectiveFree selectionSet
+          -> selectionSetNormal schema currentParent selectionSet
+          -> abstractRuntimeForFieldHeadDeep? schema targetParent targetField
+                targetArguments currentParent selectionSet
+              = some runtimeType
+          -> schema.typeIncludesObjectBool
+                targetFieldDefinition.outputType.namedType runtimeType
+              = true := by
   intro htargetLookup htargetComposite htargetNonObject n
   induction n with
   | zero =>
@@ -1265,20 +1267,21 @@ theorem abstractRuntimeForFieldHeadDeep?_some_include_of_valid_normal
     {currentParent targetParent targetField runtimeType : Name}
     {targetArguments : List Argument}
     {selectionSet : List Selection}
-    {targetFieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions currentParent
-      selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema currentParent selectionSet ->
-    schema.lookupField targetParent targetField = some targetFieldDefinition ->
-    (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    objectTypeNameBool schema targetFieldDefinition.outputType.namedType =
-      false ->
-    abstractRuntimeForFieldHeadDeep? schema targetParent targetField
-      targetArguments currentParent selectionSet = some runtimeType ->
-      schema.typeIncludesObjectBool
-        targetFieldDefinition.outputType.namedType runtimeType = true := by
+    {targetFieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions currentParent selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema currentParent selectionSet
+      -> schema.lookupField targetParent targetField = some targetFieldDefinition
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
+      -> abstractRuntimeForFieldHeadDeep? schema targetParent targetField
+            targetArguments currentParent selectionSet
+          = some runtimeType
+      -> schema.typeIncludesObjectBool
+            targetFieldDefinition.outputType.namedType runtimeType
+          = true := by
   intro hvalid hfree hnormal htargetLookup htargetComposite htargetNonObject
     hruntime
   exact
@@ -1293,27 +1296,28 @@ theorem abstractRuntimeForFieldDeep?_object_field_child_promote_some_of_valid_no
     {arguments : List Argument} {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
     {fieldDefinition targetFieldDefinition : FieldDefinition}
-    {targetParent targetField targetRuntimeType : Name} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    schema.lookupField targetParent targetField = some targetFieldDefinition ->
-    (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    objectTypeNameBool schema targetFieldDefinition.outputType.namedType =
-      false ->
-    abstractRuntimeForFieldDeep? schema targetParent targetField
-      fieldDefinition.outputType.namedType childSelectionSet =
-        some targetRuntimeType ->
-      ∃ runtimeType,
-        abstractRuntimeForFieldDeep? schema targetParent targetField
-          parentType selectionSet = some runtimeType
+    {targetParent targetField targetRuntimeType : Name}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> schema.lookupField targetParent targetField = some targetFieldDefinition
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
+      -> abstractRuntimeForFieldDeep? schema targetParent targetField
+            fieldDefinition.outputType.namedType childSelectionSet
+          = some targetRuntimeType
+      -> ∃ runtimeType,
+          abstractRuntimeForFieldDeep? schema targetParent targetField
+              parentType selectionSet
+            = some runtimeType
           ∧ schema.typeIncludesObjectBool
-            targetFieldDefinition.outputType.namedType runtimeType = true := by
+              targetFieldDefinition.outputType.namedType runtimeType
+            = true := by
   intro hvalid hfree hnormal hmem hlookup htargetLookup htargetComposite
     htargetNonObject hchildRuntime
   have hsome :
@@ -1414,25 +1418,27 @@ theorem abstractRuntimeForFieldDeep?_inlineFragment_child_promote_some_of_valid_
     {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
     {targetFieldDefinition : FieldDefinition}
-    {targetParent targetField targetRuntimeType : Name} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ selectionSet ->
-    schema.lookupField targetParent targetField = some targetFieldDefinition ->
-    (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    objectTypeNameBool schema targetFieldDefinition.outputType.namedType =
-      false ->
-    abstractRuntimeForFieldDeep? schema targetParent targetField
-      typeCondition childSelectionSet = some targetRuntimeType ->
-      ∃ runtimeType,
-        abstractRuntimeForFieldDeep? schema targetParent targetField
-          parentType selectionSet = some runtimeType
+    {targetParent targetField targetRuntimeType : Name}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField targetParent targetField = some targetFieldDefinition
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
+      -> abstractRuntimeForFieldDeep? schema targetParent targetField
+            typeCondition childSelectionSet
+          = some targetRuntimeType
+      -> ∃ runtimeType,
+          abstractRuntimeForFieldDeep? schema targetParent targetField
+              parentType selectionSet
+            = some runtimeType
           ∧ schema.typeIncludesObjectBool
-            targetFieldDefinition.outputType.namedType runtimeType = true := by
+              targetFieldDefinition.outputType.namedType runtimeType
+            = true := by
   intro hvalid hfree hnormal hmem htargetLookup htargetComposite
     htargetNonObject hchildRuntime
   have hsome :
@@ -1517,20 +1523,20 @@ theorem abstractRuntimeForFieldHeadDeep?_object_field_child_promote_some_of_vali
     {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
     {fieldDefinition : FieldDefinition}
-    {targetParent targetField targetRuntimeType : Name} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    abstractRuntimeForFieldHeadDeep? schema targetParent targetField
-      targetArguments fieldDefinition.outputType.namedType childSelectionSet =
-        some targetRuntimeType ->
-      ∃ runtimeType,
-        abstractRuntimeForFieldHeadDeep? schema targetParent targetField
-          targetArguments parentType selectionSet = some runtimeType := by
+    {targetParent targetField targetRuntimeType : Name}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> abstractRuntimeForFieldHeadDeep? schema targetParent targetField
+            targetArguments fieldDefinition.outputType.namedType childSelectionSet
+          = some targetRuntimeType
+      -> ∃ runtimeType,
+          abstractRuntimeForFieldHeadDeep? schema targetParent targetField
+            targetArguments parentType selectionSet
+          = some runtimeType := by
   intro hvalid hfree hnormal hmem hlookup hchildRuntime
   induction selectionSet with
   | nil =>
@@ -1629,22 +1635,21 @@ theorem abstractRuntimeForFieldHeadDeep?_object_field_child_promote_some_of_vali
 
 theorem abstractRuntimeForFieldHeadDeep?_inlineFragment_child_promote_some_of_valid_normal
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType typeCondition : Name}
-    {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection}
-    {targetArguments : List Argument}
-    {targetParent targetField targetRuntimeType : Name} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ selectionSet ->
-    abstractRuntimeForFieldHeadDeep? schema targetParent targetField
-      targetArguments typeCondition childSelectionSet = some targetRuntimeType ->
-      ∃ runtimeType,
-        abstractRuntimeForFieldHeadDeep? schema targetParent targetField
-          targetArguments parentType selectionSet = some runtimeType := by
+    {parentType typeCondition : Name} {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection} {targetArguments : List Argument}
+    {targetParent targetField targetRuntimeType : Name}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet
+      -> abstractRuntimeForFieldHeadDeep? schema targetParent targetField
+            targetArguments typeCondition childSelectionSet
+          = some targetRuntimeType
+      -> ∃ runtimeType,
+          abstractRuntimeForFieldHeadDeep? schema targetParent targetField
+            targetArguments parentType selectionSet
+          = some runtimeType := by
   intro hvalid hfree hnormal hmem hchildRuntime
   induction selectionSet with
   | nil =>
@@ -1710,10 +1715,8 @@ theorem abstractRuntimeForFieldHeadDeep?_inlineFragment_child_promote_some_of_va
                 cases headTypeCondition <;>
                   simp [abstractRuntimeForFieldHeadDeep?, htailRuntime]⟩
 
-theorem selectionSetDirectiveFree_append_left
-    {left right : List Selection} :
-    selectionSetDirectiveFree (left ++ right) ->
-      selectionSetDirectiveFree left := by
+theorem selectionSetDirectiveFree_append_left {left right : List Selection}
+    : selectionSetDirectiveFree (left ++ right) -> selectionSetDirectiveFree left := by
   induction left with
   | nil =>
       intro _hfree
@@ -1724,10 +1727,8 @@ theorem selectionSetDirectiveFree_append_left
         ⟨selectionSetDirectiveFree_head hfree,
           ih (selectionSetDirectiveFree_tail hfree)⟩
 
-theorem selectionSetDirectiveFree_append_right
-    {left right : List Selection} :
-    selectionSetDirectiveFree (left ++ right) ->
-      selectionSetDirectiveFree right := by
+theorem selectionSetDirectiveFree_append_right {left right : List Selection}
+    : selectionSetDirectiveFree (left ++ right) -> selectionSetDirectiveFree right := by
   induction left with
   | nil =>
       intro hfree
@@ -1737,9 +1738,9 @@ theorem selectionSetDirectiveFree_append_right
       exact ih (selectionSetDirectiveFree_tail hfree)
 
 theorem selectionSetGroundTyped_append_left
-    {schema : Schema} {parentType : Name} {left right : List Selection} :
-    selectionSetGroundTyped schema parentType (left ++ right) ->
-      selectionSetGroundTyped schema parentType left := by
+    {schema : Schema} {parentType : Name} {left right : List Selection}
+    : selectionSetGroundTyped schema parentType (left ++ right)
+      -> selectionSetGroundTyped schema parentType left := by
   intro hground
   unfold selectionSetGroundTyped at hground ⊢
   constructor
@@ -1754,9 +1755,9 @@ theorem selectionSetGroundTyped_append_left
     exact hground.2 selection (List.mem_append_left right hselection)
 
 theorem selectionSetGroundTyped_append_right
-    {schema : Schema} {parentType : Name} {left right : List Selection} :
-    selectionSetGroundTyped schema parentType (left ++ right) ->
-      selectionSetGroundTyped schema parentType right := by
+    {schema : Schema} {parentType : Name} {left right : List Selection}
+    : selectionSetGroundTyped schema parentType (left ++ right)
+      -> selectionSetGroundTyped schema parentType right := by
   intro hground
   unfold selectionSetGroundTyped at hground ⊢
   constructor
@@ -1770,10 +1771,8 @@ theorem selectionSetGroundTyped_append_right
   · intro selection hselection
     exact hground.2 selection (List.mem_append_right left hselection)
 
-theorem responseNamesNodup_append_left
-    {left right : List Selection} :
-    responseNamesNodup (left ++ right) ->
-      responseNamesNodup left := by
+theorem responseNamesNodup_append_left {left right : List Selection}
+    : responseNamesNodup (left ++ right) -> responseNamesNodup left := by
   intro hnodup
   unfold responseNamesNodup at hnodup ⊢
   have hnames :
@@ -1782,10 +1781,8 @@ theorem responseNamesNodup_append_left
     simpa [List.filterMap_append] using hnodup
   exact (List.nodup_append.mp hnames).1
 
-theorem responseNamesNodup_append_right
-    {left right : List Selection} :
-    responseNamesNodup (left ++ right) ->
-      responseNamesNodup right := by
+theorem responseNamesNodup_append_right {left right : List Selection}
+    : responseNamesNodup (left ++ right) -> responseNamesNodup right := by
   intro hnodup
   unfold responseNamesNodup at hnodup ⊢
   have hnames :
@@ -1794,10 +1791,9 @@ theorem responseNamesNodup_append_right
     simpa [List.filterMap_append] using hnodup
   exact (List.nodup_append.mp hnames).2.1
 
-theorem inlineFragmentTypeConditionsNodup_append_left
-    {left right : List Selection} :
-    inlineFragmentTypeConditionsNodup (left ++ right) ->
-      inlineFragmentTypeConditionsNodup left := by
+theorem inlineFragmentTypeConditionsNodup_append_left {left right : List Selection}
+    : inlineFragmentTypeConditionsNodup (left ++ right)
+      -> inlineFragmentTypeConditionsNodup left := by
   intro hnodup
   unfold inlineFragmentTypeConditionsNodup at hnodup ⊢
   have hconditions :
@@ -1806,10 +1802,9 @@ theorem inlineFragmentTypeConditionsNodup_append_left
     simpa [List.filterMap_append] using hnodup
   exact (List.nodup_append.mp hconditions).1
 
-theorem inlineFragmentTypeConditionsNodup_append_right
-    {left right : List Selection} :
-    inlineFragmentTypeConditionsNodup (left ++ right) ->
-      inlineFragmentTypeConditionsNodup right := by
+theorem inlineFragmentTypeConditionsNodup_append_right {left right : List Selection}
+    : inlineFragmentTypeConditionsNodup (left ++ right)
+      -> inlineFragmentTypeConditionsNodup right := by
   intro hnodup
   unfold inlineFragmentTypeConditionsNodup at hnodup ⊢
   have hconditions :
@@ -1818,10 +1813,8 @@ theorem inlineFragmentTypeConditionsNodup_append_right
     simpa [List.filterMap_append] using hnodup
   exact (List.nodup_append.mp hconditions).2.1
 
-theorem selectionSetNonRedundant_append_left
-    {left right : List Selection} :
-    selectionSetNonRedundant (left ++ right) ->
-      selectionSetNonRedundant left := by
+theorem selectionSetNonRedundant_append_left {left right : List Selection}
+    : selectionSetNonRedundant (left ++ right) -> selectionSetNonRedundant left := by
   intro hnonRedundant
   unfold selectionSetNonRedundant at hnonRedundant ⊢
   exact
@@ -1832,10 +1825,8 @@ theorem selectionSetNonRedundant_append_left
         exact hnonRedundant.2.2 selection
           (List.mem_append_left right hselection)⟩
 
-theorem selectionSetNonRedundant_append_right
-    {left right : List Selection} :
-    selectionSetNonRedundant (left ++ right) ->
-      selectionSetNonRedundant right := by
+theorem selectionSetNonRedundant_append_right {left right : List Selection}
+    : selectionSetNonRedundant (left ++ right) -> selectionSetNonRedundant right := by
   intro hnonRedundant
   unfold selectionSetNonRedundant at hnonRedundant ⊢
   exact
@@ -1847,18 +1838,18 @@ theorem selectionSetNonRedundant_append_right
           (List.mem_append_right left hselection)⟩
 
 theorem selectionSetNormal_append_left
-    {schema : Schema} {parentType : Name} {left right : List Selection} :
-    selectionSetNormal schema parentType (left ++ right) ->
-      selectionSetNormal schema parentType left := by
+    {schema : Schema} {parentType : Name} {left right : List Selection}
+    : selectionSetNormal schema parentType (left ++ right)
+      -> selectionSetNormal schema parentType left := by
   intro hnormal
   exact
     ⟨selectionSetGroundTyped_append_left hnormal.1,
       selectionSetNonRedundant_append_left hnormal.2⟩
 
 theorem selectionSetNormal_append_right
-    {schema : Schema} {parentType : Name} {left right : List Selection} :
-    selectionSetNormal schema parentType (left ++ right) ->
-      selectionSetNormal schema parentType right := by
+    {schema : Schema} {parentType : Name} {left right : List Selection}
+    : selectionSetNormal schema parentType (left ++ right)
+      -> selectionSetNormal schema parentType right := by
   intro hnormal
   exact
     ⟨selectionSetGroundTyped_append_right hnormal.1,
@@ -1866,14 +1857,14 @@ theorem selectionSetNormal_append_right
 
 theorem selectionSetNormal_inlineFragment_some_of_nonObject_mem
     {schema : Schema} {parentType : Name}
-    {selectionSet : List Selection} {selection : Selection} :
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = false ->
-    selection ∈ selectionSet ->
-      ∃ typeCondition directives childSelectionSet,
-        selection =
-          Selection.inlineFragment (some typeCondition) directives
-            childSelectionSet := by
+    {selectionSet : List Selection} {selection : Selection}
+    : selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = false
+      -> selection ∈ selectionSet
+      -> ∃ typeCondition directives childSelectionSet,
+          selection
+          = Selection.inlineFragment (some typeCondition) directives
+              childSelectionSet := by
   intro hnormal habstract hmem
   have hall :
       selectionsAllInlineFragments selectionSet :=
@@ -1901,11 +1892,12 @@ theorem selectionSetNormal_inlineFragment_some_of_nonObject_mem
 
 theorem doesFragmentTypeApplyBool_object_condition_other_false
     {ObjectRef : Type} (schema : Schema)
-    {parentType runtimeType typeCondition : Name} (ref : ObjectRef) :
-    objectTypeNameBool schema typeCondition = true ->
-    typeCondition ≠ runtimeType ->
-      Execution.doesFragmentTypeApplyBool schema parentType
-        (.object runtimeType ref) typeCondition = false := by
+    {parentType runtimeType typeCondition : Name} (ref : ObjectRef)
+    : objectTypeNameBool schema typeCondition = true
+      -> typeCondition ≠ runtimeType
+      -> Execution.doesFragmentTypeApplyBool schema parentType
+            (.object runtimeType ref) typeCondition
+          = false := by
   intro hobject hne
   have hinclude :
       schema.typeIncludesObjectBool typeCondition runtimeType = false := by
@@ -1924,17 +1916,18 @@ theorem collectFields_other_object_inlineFragments_eq_nil_at_runtime_parent
     {ObjectRef : Type} (schema : Schema)
     (variableValues : Execution.VariableValues)
     {executionParentType runtimeType : Name} (ref : ObjectRef)
-    {selectionSet : List Selection} :
-    selectionSetDirectiveFree selectionSet ->
-    (∀ selection, selection ∈ selectionSet ->
-      ∃ typeCondition childSelectionSet,
-        selection =
-          Selection.inlineFragment (some typeCondition) []
-            childSelectionSet
-          ∧ objectTypeNameBool schema typeCondition = true
-          ∧ typeCondition ≠ runtimeType) ->
-      Execution.collectFields schema variableValues executionParentType
-        (.object runtimeType ref) selectionSet = [] := by
+    {selectionSet : List Selection}
+    : selectionSetDirectiveFree selectionSet
+      -> (∀ selection,
+            selection ∈ selectionSet
+            -> ∃ typeCondition childSelectionSet,
+                selection
+                  = Selection.inlineFragment (some typeCondition) [] childSelectionSet
+                ∧ objectTypeNameBool schema typeCondition = true
+                ∧ typeCondition ≠ runtimeType)
+      -> Execution.collectFields schema variableValues executionParentType
+            (.object runtimeType ref) selectionSet
+          = [] := by
   intro hfree hother
   induction selectionSet with
   | nil =>
@@ -1974,13 +1967,14 @@ theorem collectFields_inlineFragments_without_typeCondition_eq_nil_at_runtime_pa
     (variableValues : Execution.VariableValues)
     {normalParentType executionParentType runtimeType : Name}
     (ref : ObjectRef)
-    {selectionSet : List Selection} :
-    objectTypeNameBool schema normalParentType = false ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema normalParentType selectionSet ->
-    runtimeType ∉ selectionSet.filterMap inlineFragmentTypeCondition? ->
-      Execution.collectFields schema variableValues executionParentType
-        (.object runtimeType ref) selectionSet = [] := by
+    {selectionSet : List Selection}
+    : objectTypeNameBool schema normalParentType = false
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema normalParentType selectionSet
+      -> runtimeType ∉ selectionSet.filterMap inlineFragmentTypeCondition?
+      -> Execution.collectFields schema variableValues executionParentType
+            (.object runtimeType ref) selectionSet
+          = [] := by
   intro hnonObject hfree hnormal hnotMem
   induction selectionSet with
   | nil =>
@@ -2041,24 +2035,25 @@ theorem executeSelectionSet_middle_inlineFragment_only_eq_singleton_at_runtime_p
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     {normalParentType runtimeType : Name} (ref : ObjectRef)
-    {pref childSelectionSet suffix : List Selection} :
-    objectTypeNameBool schema normalParentType = false ->
-    objectTypeNameBool schema runtimeType = true ->
-    selectionSetDirectiveFree
-      (pref ++ Selection.inlineFragment (some runtimeType) []
-        childSelectionSet :: suffix) ->
-    selectionSetNormal schema normalParentType
-      (pref ++ Selection.inlineFragment (some runtimeType) []
-        childSelectionSet :: suffix) ->
-      Execution.executeSelectionSet schema resolvers variableValues
-        fuel runtimeType (.object runtimeType ref)
-        (pref ++ Selection.inlineFragment (some runtimeType) []
-          childSelectionSet :: suffix)
-      =
-      Execution.executeSelectionSet schema resolvers variableValues
-        fuel runtimeType (.object runtimeType ref)
-        [Selection.inlineFragment (some runtimeType) []
-          childSelectionSet] := by
+    {pref childSelectionSet suffix : List Selection}
+    : objectTypeNameBool schema normalParentType = false
+      -> objectTypeNameBool schema runtimeType = true
+      -> selectionSetDirectiveFree
+          (pref
+            ++ Selection.inlineFragment (some runtimeType) [] childSelectionSet
+                :: suffix)
+      -> selectionSetNormal schema normalParentType
+          (pref
+            ++ Selection.inlineFragment (some runtimeType) [] childSelectionSet
+                :: suffix)
+      -> Execution.executeSelectionSet schema resolvers variableValues
+            fuel runtimeType (.object runtimeType ref)
+            (pref
+              ++ Selection.inlineFragment (some runtimeType) [] childSelectionSet
+                  :: suffix)
+          = Execution.executeSelectionSet schema resolvers variableValues
+              fuel runtimeType (.object runtimeType ref)
+              [Selection.inlineFragment (some runtimeType) [] childSelectionSet] := by
   intro hnonObject hruntimeObject hfree hnormal
   let matched :=
     Selection.inlineFragment (some runtimeType) [] childSelectionSet
@@ -2181,28 +2176,28 @@ theorem executeSelectionSet_middle_inlineFragment_only_eq_singleton_at_runtime_p
     hfullCollect]
 
 theorem executeSelectionSet_middle_inlineFragment_only_eq_singleton_at_object_runtime_source
-    {ObjectRef : Type} (schema : Schema)
-    (resolvers : Execution.Resolvers ObjectRef)
+    {ObjectRef : Type} (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     {normalParentType runtimeType : Name} (ref : ObjectRef)
-    {pref childSelectionSet suffix : List Selection} :
-    objectTypeNameBool schema normalParentType = false ->
-    objectTypeNameBool schema runtimeType = true ->
-    selectionSetDirectiveFree
-      (pref ++ Selection.inlineFragment (some runtimeType) []
-        childSelectionSet :: suffix) ->
-    selectionSetNormal schema normalParentType
-      (pref ++ Selection.inlineFragment (some runtimeType) []
-        childSelectionSet :: suffix) ->
-      Execution.executeSelectionSet schema resolvers variableValues
-        fuel normalParentType (.object runtimeType ref)
-        (pref ++ Selection.inlineFragment (some runtimeType) []
-          childSelectionSet :: suffix)
-      =
-      Execution.executeSelectionSet schema resolvers variableValues
-        fuel normalParentType (.object runtimeType ref)
-        [Selection.inlineFragment (some runtimeType) []
-          childSelectionSet] := by
+    {pref childSelectionSet suffix : List Selection}
+    : objectTypeNameBool schema normalParentType = false
+      -> objectTypeNameBool schema runtimeType = true
+      -> selectionSetDirectiveFree
+          (pref
+            ++ Selection.inlineFragment (some runtimeType) [] childSelectionSet
+                :: suffix)
+      -> selectionSetNormal schema normalParentType
+          (pref
+            ++ Selection.inlineFragment (some runtimeType) [] childSelectionSet
+                :: suffix)
+      -> Execution.executeSelectionSet schema resolvers variableValues
+            fuel normalParentType (.object runtimeType ref)
+            (pref
+              ++ Selection.inlineFragment (some runtimeType) [] childSelectionSet
+                  :: suffix)
+          = Execution.executeSelectionSet schema resolvers variableValues
+              fuel normalParentType (.object runtimeType ref)
+              [Selection.inlineFragment (some runtimeType) [] childSelectionSet] := by
   intro hnonObject hruntimeObject hfree hnormal
   let matched :=
     Selection.inlineFragment (some runtimeType) [] childSelectionSet
@@ -2328,39 +2323,36 @@ theorem executeSelectionSet_middle_inlineFragment_only_eq_singleton_at_object_ru
     hfullCollect]
 
 theorem executeSelectionSet_deepSelectionSetSuccessWithRef_abstract_of_inlineFragment_body_deepFieldReady
-    {ObjectRef : Type} (schema : Schema)
-    (rootSelectionSet : List Selection) (objectRef : ObjectRef)
-    (variableValues : Execution.VariableValues) (fuel : Nat)
-    {normalParentType runtimeType : Name}
-    {selectionSet : List Selection} :
-    objectTypeNameBool schema normalParentType = false ->
-    objectTypeNameBool schema runtimeType = true ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema normalParentType selectionSet ->
-    (∀ typeCondition bodySelectionSet,
-      Selection.inlineFragment (some typeCondition) [] bodySelectionSet ∈
-        selectionSet ->
-        ∀ bodyResponseName bodyFieldName bodyArguments bodyDirectives
-            bodyChildSelectionSet,
-          Selection.field bodyResponseName bodyFieldName bodyArguments
-            bodyDirectives bodyChildSelectionSet ∈ bodySelectionSet ->
-          ∃ bodyFieldDefinition,
-            schema.lookupField typeCondition bodyFieldName =
-              some bodyFieldDefinition
-              ∧ leafProbeFuel bodyFieldDefinition.outputType ≤ fuel
-              ∧ deepFieldSelectionSetExecutionReadyWithRef schema
-                rootSelectionSet objectRef variableValues
-                (fuel - leafProbeFuel bodyFieldDefinition.outputType)
-                typeCondition bodyResponseName bodyFieldName bodyArguments
-                bodyChildSelectionSet bodyFieldDefinition) ->
-      ∃ responseFields errors,
-        Execution.executeSelectionSet schema
-          (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-            objectRef)
-          variableValues (fuel + 1) runtimeType (.object runtimeType objectRef)
-          selectionSet
-        =
-        .ok (responseFields, errors) := by
+    {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
+    (objectRef : ObjectRef) (variableValues : Execution.VariableValues) (fuel : Nat)
+    {normalParentType runtimeType : Name} {selectionSet : List Selection}
+    : objectTypeNameBool schema normalParentType = false
+      -> objectTypeNameBool schema runtimeType = true
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema normalParentType selectionSet
+      -> (∀ typeCondition bodySelectionSet,
+            Selection.inlineFragment (some typeCondition) [] bodySelectionSet
+              ∈ selectionSet
+            -> ∀ bodyResponseName bodyFieldName bodyArguments bodyDirectives
+                  bodyChildSelectionSet,
+                Selection.field bodyResponseName bodyFieldName bodyArguments
+                    bodyDirectives bodyChildSelectionSet
+                  ∈ bodySelectionSet
+                -> ∃ bodyFieldDefinition,
+                    schema.lookupField typeCondition bodyFieldName
+                      = some bodyFieldDefinition
+                    ∧ leafProbeFuel bodyFieldDefinition.outputType ≤ fuel
+                    ∧ deepFieldSelectionSetExecutionReadyWithRef schema
+                        rootSelectionSet objectRef variableValues
+                        (fuel - leafProbeFuel bodyFieldDefinition.outputType)
+                        typeCondition bodyResponseName bodyFieldName bodyArguments
+                        bodyChildSelectionSet bodyFieldDefinition)
+      -> ∃ responseFields errors,
+          Execution.executeSelectionSet schema
+            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet objectRef)
+            variableValues (fuel + 1) runtimeType (.object runtimeType objectRef)
+            selectionSet
+          = .ok (responseFields, errors) := by
   intro hnonObject hruntimeObject hfree hnormal hbodyReady
   by_cases hruntimeMem :
       runtimeType ∈ selectionSet.filterMap inlineFragmentTypeCondition?
@@ -2508,43 +2500,46 @@ theorem executeSelectionSet_deepSelectionSetSuccessWithRef_abstract_of_inlineFra
 theorem deepFieldSelectionSetReadyWithRef_of_valid_normal_object_promoted_fuel_ge_size
     {ObjectRef : Type} (schema : Schema)
     (rootSelectionSet : List Selection) (objectRef : ObjectRef)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ n parentType variableDefinitions (selectionSet : List Selection) fuel,
-      SelectionSet.size selectionSet < n ->
-      selectionSetDeepProbeFuel schema parentType selectionSet ≤ fuel ->
-      Validation.selectionSetValid schema variableDefinitions parentType
-        selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetNormal schema parentType selectionSet ->
-      objectTypeNameBool schema parentType = true ->
-      (∀ targetParent targetField targetRuntimeType targetFieldDefinition,
-        schema.lookupField targetParent targetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema targetParent targetField
-          parentType selectionSet = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema targetParent targetField
-              targetParent rootSelectionSet = some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      ∀ responseName fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-        ∃ fieldDefinition,
-          schema.lookupField parentType fieldName = some fieldDefinition
-            ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
-            ∧ deepFieldSelectionSetExecutionReadyWithRef schema
-              rootSelectionSet objectRef variableValues
-              (fuel - leafProbeFuel fieldDefinition.outputType)
-              parentType responseName fieldName arguments childSelectionSet
-              fieldDefinition := by
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ n parentType variableDefinitions (selectionSet : List Selection) fuel,
+          SelectionSet.size selectionSet < n
+          -> selectionSetDeepProbeFuel schema parentType selectionSet ≤ fuel
+          -> Validation.selectionSetValid schema variableDefinitions parentType
+              selectionSet
+          -> selectionSetDirectiveFree selectionSet
+          -> selectionSetNormal schema parentType selectionSet
+          -> objectTypeNameBool schema parentType = true
+          -> (∀ targetParent targetField targetRuntimeType targetFieldDefinition,
+                schema.lookupField targetParent targetField = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema targetParent targetField
+                      parentType selectionSet
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema targetParent targetField
+                        targetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> ∀ responseName fieldName arguments directives childSelectionSet,
+              Selection.field responseName fieldName arguments directives
+                  childSelectionSet
+                ∈ selectionSet
+              -> ∃ fieldDefinition,
+                  schema.lookupField parentType fieldName = some fieldDefinition
+                  ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
+                  ∧ deepFieldSelectionSetExecutionReadyWithRef schema
+                      rootSelectionSet objectRef variableValues
+                      (fuel - leafProbeFuel fieldDefinition.outputType)
+                      parentType responseName fieldName arguments childSelectionSet
+                      fieldDefinition := by
   intro hschema n
   induction n with
   | zero =>
@@ -2871,43 +2866,46 @@ theorem deepFieldSelectionSetReadyWithRef_of_valid_normal_object_promoted_fuel_g
 theorem deepFieldSelectionSetReadyWithRef_of_valid_normal_object_promoted_deepProbeFuel
     {ObjectRef : Type} (schema : Schema)
     (rootSelectionSet : List Selection) (objectRef : ObjectRef)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ parentType variableDefinitions (selectionSet : List Selection),
-      Validation.selectionSetValid schema variableDefinitions parentType
-        selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetNormal schema parentType selectionSet ->
-      objectTypeNameBool schema parentType = true ->
-      (∀ targetParent targetField targetRuntimeType targetFieldDefinition,
-        schema.lookupField targetParent targetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema targetParent targetField
-          parentType selectionSet = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema targetParent targetField
-              targetParent rootSelectionSet = some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      ∀ responseName fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-        ∃ fieldDefinition,
-          schema.lookupField parentType fieldName = some fieldDefinition
-            ∧ leafProbeFuel fieldDefinition.outputType ≤
-              selectionSetDeepProbeFuel schema parentType selectionSet
-            ∧ deepFieldSelectionSetExecutionReadyWithRef schema
-              rootSelectionSet objectRef variableValues
-              (selectionSetDeepProbeFuel schema parentType selectionSet -
-                leafProbeFuel fieldDefinition.outputType)
-              parentType responseName fieldName arguments childSelectionSet
-              fieldDefinition := by
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ parentType variableDefinitions (selectionSet : List Selection),
+          Validation.selectionSetValid schema variableDefinitions parentType
+            selectionSet
+          -> selectionSetDirectiveFree selectionSet
+          -> selectionSetNormal schema parentType selectionSet
+          -> objectTypeNameBool schema parentType = true
+          -> (∀ targetParent targetField targetRuntimeType targetFieldDefinition,
+                schema.lookupField targetParent targetField = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema targetParent targetField
+                      parentType selectionSet
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema targetParent targetField
+                        targetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> ∀ responseName fieldName arguments directives childSelectionSet,
+              Selection.field responseName fieldName arguments directives
+                  childSelectionSet
+                ∈ selectionSet
+              -> ∃ fieldDefinition,
+                  schema.lookupField parentType fieldName = some fieldDefinition
+                  ∧ leafProbeFuel fieldDefinition.outputType
+                    ≤ selectionSetDeepProbeFuel schema parentType selectionSet
+                  ∧ deepFieldSelectionSetExecutionReadyWithRef schema
+                      rootSelectionSet objectRef variableValues
+                      (selectionSetDeepProbeFuel schema parentType selectionSet
+                        - leafProbeFuel fieldDefinition.outputType)
+                      parentType responseName fieldName arguments childSelectionSet
+                      fieldDefinition := by
   intro hschema parentType variableDefinitions selectionSet hvalid hfree
     hnormal hobject hpromote responseName fieldName arguments directives
     childSelectionSet hmem
@@ -2920,45 +2918,48 @@ theorem deepFieldSelectionSetReadyWithRef_of_valid_normal_object_promoted_deepPr
       responseName fieldName arguments directives childSelectionSet hmem
 
 theorem executeSelectionSetAsResponse_deepSelectionSetSuccessWithRef_valid_normal_object_promoted_fuel_ge
-    {ObjectRef : Type} (schema : Schema)
-    (rootSelectionSet : List Selection) (objectRef : ObjectRef)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ parentType variableDefinitions (selectionSet : List Selection)
-      fuel (source : Execution.ResolverValue ObjectRef),
-      Validation.selectionSetValid schema variableDefinitions parentType
-        selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetNormal schema parentType selectionSet ->
-      objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-      (∀ targetParent targetField targetRuntimeType targetFieldDefinition,
-        schema.lookupField targetParent targetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema targetParent targetField
-          parentType selectionSet = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema targetParent targetField
-              targetParent rootSelectionSet = some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepProbeFuel schema parentType selectionSet ≤ fuel ->
-        ∃ responseFields errors,
-          Execution.executeSelectionSetAsResponse schema
-            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-              objectRef)
-            variableValues (fuel + 1) parentType source selectionSet =
-          ({ data := Execution.ResponseValue.object responseFields,
-             errors := errors } :
-            Execution.Response) := by
+    {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
+    (objectRef : ObjectRef) (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ parentType variableDefinitions (selectionSet : List Selection)
+            fuel (source : Execution.ResolverValue ObjectRef),
+          Validation.selectionSetValid schema variableDefinitions parentType
+            selectionSet
+          -> selectionSetDirectiveFree selectionSet
+          -> selectionSetNormal schema parentType selectionSet
+          -> objectTypeNameBool schema parentType = true
+          -> (∃ runtimeType ref,
+                source = Execution.ResolverValue.object runtimeType ref
+                ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+          -> (∀ targetParent targetField targetRuntimeType targetFieldDefinition,
+                schema.lookupField targetParent targetField = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema targetParent targetField
+                      parentType selectionSet
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema targetParent targetField
+                        targetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepProbeFuel schema parentType selectionSet ≤ fuel
+          -> ∃ responseFields errors,
+              Execution.executeSelectionSetAsResponse schema
+                (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                  objectRef)
+                variableValues (fuel + 1) parentType source selectionSet
+              = ({
+                    data := Execution.ResponseValue.object responseFields,
+                    errors := errors
+                  }
+                  : Execution.Response) := by
   intro hschema parentType variableDefinitions selectionSet fuel source
     hvalid hfree hnormal hobject hsource hpromote hfuel
   have hready :
@@ -2990,7 +2991,6 @@ theorem executeSelectionSetAsResponse_deepSelectionSetSuccessWithRef_valid_norma
     ⟨responseFields, errors, by
       simp [Execution.executeSelectionSetAsResponse, Execution.selectionSetResultToResponse,
         hexecute]⟩
-
 
 end GroundTypeNormalization
 

@@ -10,8 +10,8 @@ namespace ExecutionUngrouped
 
 open GraphQL.Execution
 
-local instance groupListFreshPrefixesResponseVisitStatusCoe :
-    Coe (ResponseValue × VisitStatus) ResponseValue where
+local instance groupListFreshPrefixesResponseVisitStatusCoe
+    : Coe (ResponseValue × VisitStatus) ResponseValue where
   coe := Prod.fst
 
 def VisitSubfieldsFlatCollectsFreshPrefixes
@@ -19,27 +19,28 @@ def VisitSubfieldsFlatCollectsFreshPrefixes
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) : Prop :=
+    (selectionSet : List Selection)
+    : Prop :=
   ∀ fields,
     (∀ field,
-      field ∈
-        collectedExecutableFields
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source selectionSet) ->
-      field.responseName ∉ fields.map Prod.fst) ->
-    VisitSubfieldsFlatCollects schema resolvers variableValues depth parentType
-      source selectionSet (.object fields)
+      field
+        ∈ collectedExecutableFields
+            (GraphQL.Execution.collectFields schema variableValues parentType
+              source selectionSet)
+      -> field.responseName ∉ fields.map Prod.fst)
+    -> VisitSubfieldsFlatCollects schema resolvers variableValues depth parentType
+        source selectionSet (.object fields)
 
 theorem VisitSubfieldsFlatCollectsFreshPrefixes.empty
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
-    {selectionSet : List Selection} :
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source selectionSet ->
-    VisitSubfieldsFlatCollects schema resolvers variableValues depth parentType
-      source selectionSet (.object []) := by
+    {selectionSet : List Selection}
+    : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+        depth parentType source selectionSet
+      -> VisitSubfieldsFlatCollects schema resolvers variableValues depth parentType
+          source selectionSet (.object []) := by
   intro hfresh
   exact hfresh [] (by simp)
 
@@ -47,9 +48,9 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_nil
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source [] := by
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+        depth parentType source [] := by
   intro fields _hfresh
   exact VisitSubfieldsFlatCollects_nil schema resolvers variableValues depth
     parentType source (.object fields)
@@ -59,26 +60,24 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes.of_allOutputs
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    VisitSubfieldsFlatCollectsAllOutputs schema resolvers variableValues depth
-      parentType source selectionSet ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source selectionSet := by
+    (selectionSet : List Selection)
+    : VisitSubfieldsFlatCollectsAllOutputs schema resolvers variableValues depth
+        parentType source selectionSet
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source selectionSet := by
   intro hflat fields _hfresh
   exact hflat (.object fields)
 
 theorem VisitSubfieldsFlatCollectsFreshPrefixes_executableFieldSelections_collectedCollectFields
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      (executableFieldSelections
-        (collectedExecutableFields
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source selectionSet))) := by
+    {ObjectIdentity : Type} (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat) (parentType : Name)
+    (source : ResolverValue ObjectIdentity) (selectionSet : List Selection)
+    : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+        depth parentType source
+        (executableFieldSelections
+          (collectedExecutableFields
+            (GraphQL.Execution.collectFields schema variableValues parentType
+              source selectionSet))) := by
   intro fields _hfresh
   exact
     VisitSubfieldsFlatCollects_executableFieldSelections_collectedCollectFields
@@ -91,12 +90,10 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_executableFieldSelections_same_g
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (fields : List ExecutableField)
-    (hresponse :
-      ∀ field, field ∈ fields -> field.responseName = responseName)
-    (hparent :
-      ∀ field, field ∈ fields -> field.parentType = parentType) :
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source (executableFieldSelections fields) :=
+    (hresponse : ∀ field, field ∈ fields -> field.responseName = responseName)
+    (hparent : ∀ field, field ∈ fields -> field.parentType = parentType)
+    : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+        depth parentType source (executableFieldSelections fields) :=
   VisitSubfieldsFlatCollectsFreshPrefixes.of_allOutputs schema resolvers
     variableValues depth parentType source (executableFieldSelections fields)
     (by
@@ -111,23 +108,21 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_single
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selection : Selection)
-    (hbody :
-      match selection with
-      | .field _responseName _fieldName _arguments _directives
-          _selectionSet =>
-          True
-      | .inlineFragment none directives selectionSet =>
-          selectionDirectivesAllowBool variableValues directives = true ->
-            VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers
-              variableValues depth parentType source selectionSet
-      | .inlineFragment (some typeCondition) directives selectionSet =>
-          selectionDirectivesAllowBool variableValues directives = true ->
-          doesFragmentTypeApplyBool schema parentType source typeCondition =
-            true ->
-            VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers
-              variableValues depth parentType source selectionSet) :
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source [selection] := by
+    (hbody
+      : match selection with
+        | .field _responseName _fieldName _arguments _directives _selectionSet =>
+            True
+        | .inlineFragment none directives selectionSet =>
+            selectionDirectivesAllowBool variableValues directives = true
+            -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers
+                variableValues depth parentType source selectionSet
+        | .inlineFragment (some typeCondition) directives selectionSet =>
+            selectionDirectivesAllowBool variableValues directives = true
+            -> doesFragmentTypeApplyBool schema parentType source typeCondition = true
+            -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers
+                variableValues depth parentType source selectionSet)
+    : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+        depth parentType source [selection] := by
   intro fields hfresh
   apply VisitSubfieldsFlatCollects_single schema resolvers variableValues depth
     parentType source selection (.object fields)
@@ -160,10 +155,10 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_field_single
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName fieldName : Name) (arguments : List Argument)
-    (directives : List DirectiveApplication) (selectionSet : List Selection) :
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      [.field responseName fieldName arguments directives selectionSet] := by
+    (directives : List DirectiveApplication) (selectionSet : List Selection)
+    : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+        depth parentType source
+        [.field responseName fieldName arguments directives selectionSet] := by
   apply VisitSubfieldsFlatCollectsFreshPrefixes_single
   trivial
 
@@ -173,13 +168,13 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_inline_none_single
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (directives : List DirectiveApplication) (selectionSet : List Selection)
-    (hbody :
-      selectionDirectivesAllowBool variableValues directives = true ->
-        VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-          depth parentType source selectionSet) :
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      [.inlineFragment none directives selectionSet] := by
+    (hbody
+      : selectionDirectivesAllowBool variableValues directives = true
+        -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+            depth parentType source selectionSet)
+    : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+        depth parentType source
+        [.inlineFragment none directives selectionSet] := by
   apply VisitSubfieldsFlatCollectsFreshPrefixes_single
   exact hbody
 
@@ -190,15 +185,14 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_inline_some_single
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (typeCondition : Name) (directives : List DirectiveApplication)
     (selectionSet : List Selection)
-    (hbody :
-      selectionDirectivesAllowBool variableValues directives = true ->
-      doesFragmentTypeApplyBool schema parentType source typeCondition =
-        true ->
-        VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-          depth parentType source selectionSet) :
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      [.inlineFragment (some typeCondition) directives selectionSet] := by
+    (hbody
+      : selectionDirectivesAllowBool variableValues directives = true
+        -> doesFragmentTypeApplyBool schema parentType source typeCondition = true
+        -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+            depth parentType source selectionSet)
+    : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+        depth parentType source
+        [.inlineFragment (some typeCondition) directives selectionSet] := by
   apply VisitSubfieldsFlatCollectsFreshPrefixes_single
   exact hbody
 
@@ -208,13 +202,13 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_inline_none_cons_allowed
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues directives = true ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source (selectionSet ++ rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (Selection.inlineFragment none directives selectionSet :: rest) := by
+    (selectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues directives = true
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source (selectionSet ++ rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.inlineFragment none directives selectionSet :: rest) := by
   intro hallows hflat fields hfresh
   have hflatFields :
       ∀ field,
@@ -242,13 +236,13 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_inline_none_cons_skipped
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues directives = false ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source rest ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (Selection.inlineFragment none directives selectionSet :: rest) := by
+    (selectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues directives = false
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source rest
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.inlineFragment none directives selectionSet :: rest) := by
   intro hskip hflat fields hfresh
   have hmergeNil :
       GraphQL.Execution.mergeExecutableGroups []
@@ -284,16 +278,16 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_inline_none_cons
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    (selectionDirectivesAllowBool variableValues directives = true ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source (selectionSet ++ rest)) ->
-    (selectionDirectivesAllowBool variableValues directives = false ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (Selection.inlineFragment none directives selectionSet :: rest) := by
+    (selectionSet rest : List Selection)
+    : (selectionDirectivesAllowBool variableValues directives = true
+        -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+            depth parentType source (selectionSet ++ rest))
+      -> (selectionDirectivesAllowBool variableValues directives = false
+          -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+              depth parentType source rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.inlineFragment none directives selectionSet :: rest) := by
   intro hallowed hskipped
   by_cases hallows : selectionDirectivesAllowBool variableValues directives = true
   · exact
@@ -316,15 +310,15 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_inline_some_cons_allowed_apply
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (typeCondition : Name) (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues directives = true ->
-    doesFragmentTypeApplyBool schema parentType source typeCondition = true ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source (selectionSet ++ rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (Selection.inlineFragment (some typeCondition) directives selectionSet
-          :: rest) := by
+    (selectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues directives = true
+      -> doesFragmentTypeApplyBool schema parentType source typeCondition = true
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source (selectionSet ++ rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.inlineFragment (some typeCondition) directives selectionSet
+            :: rest) := by
   intro hallows happly hflat fields hfresh
   have hflatFields :
       ∀ field,
@@ -352,14 +346,14 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_inline_some_cons_skipped
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (typeCondition : Name) (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues directives = false ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source rest ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (Selection.inlineFragment (some typeCondition) directives selectionSet
-          :: rest) := by
+    (selectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues directives = false
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source rest
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.inlineFragment (some typeCondition) directives selectionSet
+            :: rest) := by
   intro hskip hflat fields hfresh
   have hmergeNil :
       GraphQL.Execution.mergeExecutableGroups []
@@ -395,15 +389,15 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_inline_some_cons_not_apply
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (typeCondition : Name) (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues directives = true ->
-    doesFragmentTypeApplyBool schema parentType source typeCondition = false ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source rest ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (Selection.inlineFragment (some typeCondition) directives selectionSet
-          :: rest) := by
+    (selectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues directives = true
+      -> doesFragmentTypeApplyBool schema parentType source typeCondition = false
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source rest
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.inlineFragment (some typeCondition) directives selectionSet
+            :: rest) := by
   intro hallows hnotApply hflat fields hfresh
   have hmergeNil :
       GraphQL.Execution.mergeExecutableGroups []
@@ -441,22 +435,22 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_inline_some_cons
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (typeCondition : Name) (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    (selectionDirectivesAllowBool variableValues directives = true ->
-      doesFragmentTypeApplyBool schema parentType source typeCondition = true ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source (selectionSet ++ rest)) ->
-    (selectionDirectivesAllowBool variableValues directives = false ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source rest) ->
-    (selectionDirectivesAllowBool variableValues directives = true ->
-      doesFragmentTypeApplyBool schema parentType source typeCondition = false ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (Selection.inlineFragment (some typeCondition) directives selectionSet
-          :: rest) := by
+    (selectionSet rest : List Selection)
+    : (selectionDirectivesAllowBool variableValues directives = true
+        -> doesFragmentTypeApplyBool schema parentType source typeCondition = true
+        -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+            depth parentType source (selectionSet ++ rest))
+      -> (selectionDirectivesAllowBool variableValues directives = false
+          -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+              depth parentType source rest)
+      -> (selectionDirectivesAllowBool variableValues directives = true
+          -> doesFragmentTypeApplyBool schema parentType source typeCondition = false
+          -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+              depth parentType source rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.inlineFragment (some typeCondition) directives selectionSet
+            :: rest) := by
   intro hallowedApply hskipped hnotApply
   by_cases hallows : selectionDirectivesAllowBool variableValues directives = true
   · by_cases happly :
@@ -495,19 +489,20 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_field_inline_none_cons_allowed
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName fieldName : Name) (arguments : List Argument)
     (fieldDirectives inlineDirectives : List DirectiveApplication)
-    (fieldSelectionSet inlineSelectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues inlineDirectives = true ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      (Selection.field responseName fieldName arguments fieldDirectives
-          fieldSelectionSet ::
-        inlineSelectionSet ++ rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (Selection.field responseName fieldName arguments fieldDirectives
-            fieldSelectionSet ::
-          Selection.inlineFragment none inlineDirectives inlineSelectionSet ::
-          rest) := by
+    (fieldSelectionSet inlineSelectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues inlineDirectives = true
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.field responseName fieldName arguments fieldDirectives
+                fieldSelectionSet
+              :: inlineSelectionSet
+            ++ rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.field responseName fieldName arguments fieldDirectives
+              fieldSelectionSet
+            :: Selection.inlineFragment none inlineDirectives inlineSelectionSet
+            :: rest) := by
   intro hallows hflat prefixFields hfresh
   have hflatFields :
       ∀ executable,
@@ -542,18 +537,19 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_field_inline_none_cons_skipped
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName fieldName : Name) (arguments : List Argument)
     (fieldDirectives inlineDirectives : List DirectiveApplication)
-    (fieldSelectionSet inlineSelectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues inlineDirectives = false ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      (Selection.field responseName fieldName arguments fieldDirectives
-          fieldSelectionSet :: rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (Selection.field responseName fieldName arguments fieldDirectives
-            fieldSelectionSet ::
-          Selection.inlineFragment none inlineDirectives inlineSelectionSet ::
-          rest) := by
+    (fieldSelectionSet inlineSelectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues inlineDirectives = false
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.field responseName fieldName arguments fieldDirectives
+              fieldSelectionSet
+            :: rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.field responseName fieldName arguments fieldDirectives
+              fieldSelectionSet
+            :: Selection.inlineFragment none inlineDirectives inlineSelectionSet
+            :: rest) := by
   intro hskip hflat prefixFields hfresh
   have hmergeNil :
       GraphQL.Execution.mergeExecutableGroups []
@@ -592,21 +588,22 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_field_inline_some_cons_allowed_a
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName fieldName typeCondition : Name) (arguments : List Argument)
     (fieldDirectives inlineDirectives : List DirectiveApplication)
-    (fieldSelectionSet inlineSelectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues inlineDirectives = true ->
-    doesFragmentTypeApplyBool schema parentType source typeCondition = true ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      (Selection.field responseName fieldName arguments fieldDirectives
-          fieldSelectionSet ::
-        inlineSelectionSet ++ rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (Selection.field responseName fieldName arguments fieldDirectives
-            fieldSelectionSet ::
-          Selection.inlineFragment (some typeCondition) inlineDirectives
-            inlineSelectionSet ::
-          rest) := by
+    (fieldSelectionSet inlineSelectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues inlineDirectives = true
+      -> doesFragmentTypeApplyBool schema parentType source typeCondition = true
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.field responseName fieldName arguments fieldDirectives
+                fieldSelectionSet
+              :: inlineSelectionSet
+            ++ rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.field responseName fieldName arguments fieldDirectives
+              fieldSelectionSet
+            :: Selection.inlineFragment (some typeCondition) inlineDirectives
+                inlineSelectionSet
+            :: rest) := by
   intro hallows happly hflat prefixFields hfresh
   have hflatFields :
       ∀ executable,
@@ -641,19 +638,20 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_field_inline_some_cons_skipped
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName fieldName typeCondition : Name) (arguments : List Argument)
     (fieldDirectives inlineDirectives : List DirectiveApplication)
-    (fieldSelectionSet inlineSelectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues inlineDirectives = false ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      (Selection.field responseName fieldName arguments fieldDirectives
-          fieldSelectionSet :: rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (Selection.field responseName fieldName arguments fieldDirectives
-            fieldSelectionSet ::
-          Selection.inlineFragment (some typeCondition) inlineDirectives
-            inlineSelectionSet ::
-          rest) := by
+    (fieldSelectionSet inlineSelectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues inlineDirectives = false
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.field responseName fieldName arguments fieldDirectives
+              fieldSelectionSet
+            :: rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.field responseName fieldName arguments fieldDirectives
+              fieldSelectionSet
+            :: Selection.inlineFragment (some typeCondition) inlineDirectives
+                inlineSelectionSet
+            :: rest) := by
   intro hskip hflat prefixFields hfresh
   have hmergeNil :
       GraphQL.Execution.mergeExecutableGroups []
@@ -692,20 +690,21 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_field_inline_some_cons_not_apply
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName fieldName typeCondition : Name) (arguments : List Argument)
     (fieldDirectives inlineDirectives : List DirectiveApplication)
-    (fieldSelectionSet inlineSelectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues inlineDirectives = true ->
-    doesFragmentTypeApplyBool schema parentType source typeCondition = false ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      (Selection.field responseName fieldName arguments fieldDirectives
-          fieldSelectionSet :: rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (Selection.field responseName fieldName arguments fieldDirectives
-            fieldSelectionSet ::
-          Selection.inlineFragment (some typeCondition) inlineDirectives
-            inlineSelectionSet ::
-          rest) := by
+    (fieldSelectionSet inlineSelectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues inlineDirectives = true
+      -> doesFragmentTypeApplyBool schema parentType source typeCondition = false
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.field responseName fieldName arguments fieldDirectives
+              fieldSelectionSet
+            :: rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (Selection.field responseName fieldName arguments fieldDirectives
+              fieldSelectionSet
+            :: Selection.inlineFragment (some typeCondition) inlineDirectives
+                inlineSelectionSet
+            :: rest) := by
   intro hallows hnotApply hflat prefixFields hfresh
   have hmergeNil :
       GraphQL.Execution.mergeExecutableGroups []
@@ -746,21 +745,20 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_prefix_field_cons_allowed
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (prefixFields : List ExecutableField)
     (responseName fieldName : Name) (arguments : List Argument)
-    (directives : List DirectiveApplication) (selectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues directives = true ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      (executableFieldSelections prefixFields ++
-        executableFieldSelections
-          [executableField parentType responseName fieldName arguments
-            selectionSet] ++
-        rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (executableFieldSelections prefixFields ++
-          Selection.field responseName fieldName arguments directives
-            selectionSet ::
-          rest) := by
+    (directives : List DirectiveApplication) (selectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues directives = true
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (executableFieldSelections prefixFields
+            ++ executableFieldSelections
+                [executableField parentType responseName fieldName arguments
+                  selectionSet]
+            ++ rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (executableFieldSelections prefixFields
+            ++ Selection.field responseName fieldName arguments directives selectionSet
+                :: rest) := by
   intro hallows hflat prefixOutput hfresh
   have hflatFields :
       ∀ executable,
@@ -822,17 +820,16 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_prefix_field_cons_skipped
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (prefixFields : List ExecutableField)
     (responseName fieldName : Name) (arguments : List Argument)
-    (directives : List DirectiveApplication) (selectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues directives = false ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      (executableFieldSelections prefixFields ++ rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (executableFieldSelections prefixFields ++
-          Selection.field responseName fieldName arguments directives
-            selectionSet ::
-          rest) := by
+    (directives : List DirectiveApplication) (selectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues directives = false
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (executableFieldSelections prefixFields ++ rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (executableFieldSelections prefixFields
+            ++ Selection.field responseName fieldName arguments directives selectionSet
+                :: rest) := by
   intro hskip hflat prefixOutput hfresh
   have hmergeNil :
       GraphQL.Execution.mergeExecutableGroups []
@@ -879,17 +876,16 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_prefix_inline_none_cons_allowed
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (prefixFields : List ExecutableField)
     (inlineDirectives : List DirectiveApplication)
-    (inlineSelectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues inlineDirectives = true ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      (executableFieldSelections prefixFields ++
-        inlineSelectionSet ++ rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (executableFieldSelections prefixFields ++
-          Selection.inlineFragment none inlineDirectives inlineSelectionSet ::
-          rest) := by
+    (inlineSelectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues inlineDirectives = true
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (executableFieldSelections prefixFields ++ inlineSelectionSet ++ rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (executableFieldSelections prefixFields
+            ++ Selection.inlineFragment none inlineDirectives inlineSelectionSet
+                :: rest) := by
   intro hallows hflat prefixOutput hfresh
   have hflatFields :
       ∀ executable,
@@ -929,16 +925,16 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_prefix_inline_none_cons_skipped
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (prefixFields : List ExecutableField)
     (inlineDirectives : List DirectiveApplication)
-    (inlineSelectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues inlineDirectives = false ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      (executableFieldSelections prefixFields ++ rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (executableFieldSelections prefixFields ++
-          Selection.inlineFragment none inlineDirectives inlineSelectionSet ::
-          rest) := by
+    (inlineSelectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues inlineDirectives = false
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (executableFieldSelections prefixFields ++ rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (executableFieldSelections prefixFields
+            ++ Selection.inlineFragment none inlineDirectives inlineSelectionSet
+                :: rest) := by
   intro hskip hflat prefixOutput hfresh
   have hmergeNil :
       GraphQL.Execution.mergeExecutableGroups []
@@ -985,19 +981,18 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_prefix_inline_some_cons_allowed_
     (prefixFields : List ExecutableField)
     (typeCondition : Name)
     (inlineDirectives : List DirectiveApplication)
-    (inlineSelectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues inlineDirectives = true ->
-    doesFragmentTypeApplyBool schema parentType source typeCondition = true ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      (executableFieldSelections prefixFields ++
-        inlineSelectionSet ++ rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (executableFieldSelections prefixFields ++
-          Selection.inlineFragment (some typeCondition) inlineDirectives
-            inlineSelectionSet ::
-          rest) := by
+    (inlineSelectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues inlineDirectives = true
+      -> doesFragmentTypeApplyBool schema parentType source typeCondition = true
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (executableFieldSelections prefixFields ++ inlineSelectionSet ++ rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (executableFieldSelections prefixFields
+            ++ Selection.inlineFragment (some typeCondition) inlineDirectives
+                  inlineSelectionSet
+                :: rest) := by
   intro hallows happly hflat prefixOutput hfresh
   have hflatFields :
       ∀ executable,
@@ -1038,17 +1033,17 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_prefix_inline_some_cons_skipped
     (prefixFields : List ExecutableField)
     (typeCondition : Name)
     (inlineDirectives : List DirectiveApplication)
-    (inlineSelectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues inlineDirectives = false ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      (executableFieldSelections prefixFields ++ rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (executableFieldSelections prefixFields ++
-          Selection.inlineFragment (some typeCondition) inlineDirectives
-            inlineSelectionSet ::
-          rest) := by
+    (inlineSelectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues inlineDirectives = false
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (executableFieldSelections prefixFields ++ rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (executableFieldSelections prefixFields
+            ++ Selection.inlineFragment (some typeCondition) inlineDirectives
+                  inlineSelectionSet
+                :: rest) := by
   intro hskip hflat prefixOutput hfresh
   have hmergeNil :
       GraphQL.Execution.mergeExecutableGroups []
@@ -1095,18 +1090,18 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_prefix_inline_some_cons_not_appl
     (prefixFields : List ExecutableField)
     (typeCondition : Name)
     (inlineDirectives : List DirectiveApplication)
-    (inlineSelectionSet rest : List Selection) :
-    selectionDirectivesAllowBool variableValues inlineDirectives = true ->
-    doesFragmentTypeApplyBool schema parentType source typeCondition = false ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      (executableFieldSelections prefixFields ++ rest) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source
-        (executableFieldSelections prefixFields ++
-          Selection.inlineFragment (some typeCondition) inlineDirectives
-            inlineSelectionSet ::
-          rest) := by
+    (inlineSelectionSet rest : List Selection)
+    : selectionDirectivesAllowBool variableValues inlineDirectives = true
+      -> doesFragmentTypeApplyBool schema parentType source typeCondition = false
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (executableFieldSelections prefixFields ++ rest)
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source
+          (executableFieldSelections prefixFields
+            ++ Selection.inlineFragment (some typeCondition) inlineDirectives
+                  inlineSelectionSet
+                :: rest) := by
   intro hallows hnotApply hflat prefixOutput hfresh
   have hmergeNil :
       GraphQL.Execution.mergeExecutableGroups []
@@ -1151,20 +1146,19 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_append_of_namesDisjoint
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (left right : List Selection)
-    (hdisjoint :
-      GraphQL.NormalForm.executableGroupNamesDisjoint
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source left)
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source right))
-    (hleft :
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source left)
-    (hright :
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source right) :
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source (left ++ right) := by
+    (hdisjoint
+      : GraphQL.NormalForm.executableGroupNamesDisjoint
+          (GraphQL.Execution.collectFields schema variableValues parentType source left)
+          (GraphQL.Execution.collectFields schema variableValues parentType
+            source right))
+    (hleft
+      : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source left)
+    (hright
+      : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source right)
+    : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+        depth parentType source (left ++ right) := by
   intro prefixFields hfresh
   have hrightNodup :
       GraphQL.NormalForm.executableGroupNamesNodup
@@ -1284,20 +1278,20 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_cons_of_namesDisjoint
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selection : Selection) (rest : List Selection)
-    (hdisjoint :
-      GraphQL.NormalForm.executableGroupNamesDisjoint
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source [selection])
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source rest))
-    (hselection :
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source [selection])
-    (hrest :
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source rest) :
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source (selection :: rest) := by
+    (hdisjoint
+      : GraphQL.NormalForm.executableGroupNamesDisjoint
+          (GraphQL.Execution.collectFields schema variableValues parentType
+            source [selection])
+          (GraphQL.Execution.collectFields schema variableValues parentType
+            source rest))
+    (hselection
+      : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source [selection])
+    (hrest
+      : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source rest)
+    : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+        depth parentType source (selection :: rest) := by
   simpa using
     VisitSubfieldsFlatCollectsFreshPrefixes_append_of_namesDisjoint schema
       resolvers variableValues depth parentType source [selection] rest
@@ -1310,18 +1304,18 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_field_cons_of_responseName_fresh
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication) (selectionSet rest : List Selection)
-    (hfresh :
-      selectionDirectivesAllowBool variableValues directives = true ->
-        responseName ∉
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source rest).map Prod.fst)
-    (hrest :
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source rest) :
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      depth parentType source
-      (.field responseName fieldName arguments directives selectionSet ::
-        rest) := by
+    (hfresh
+      : selectionDirectivesAllowBool variableValues directives = true
+        -> responseName
+            ∉ (GraphQL.Execution.collectFields schema variableValues parentType
+                source rest).map
+                Prod.fst)
+    (hrest
+      : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          depth parentType source rest)
+    : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+        depth parentType source
+        (.field responseName fieldName arguments directives selectionSet :: rest) := by
   apply VisitSubfieldsFlatCollectsFreshPrefixes_cons_of_namesDisjoint
   · intro candidate hleft hright
     by_cases hallowed :
@@ -1347,34 +1341,33 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_field_cons_of_responseName_fresh
 def SelectionSetCollectFieldsHeadDisjoint
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    List Selection -> Prop
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : List Selection -> Prop
   | [] => True
   | selection :: rest =>
       GraphQL.NormalForm.executableGroupNamesDisjoint
         (GraphQL.Execution.collectFields schema variableValues parentType source
           [selection])
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          rest)
+        (GraphQL.Execution.collectFields schema variableValues parentType source rest)
       ∧ SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
-        source rest
+          source rest
 
 theorem SelectionSetCollectFieldsHeadDisjoint_append_of_namesDisjoint
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    ∀ left right,
-      SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
-        source left ->
-      SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
-        source right ->
-      GraphQL.NormalForm.executableGroupNamesDisjoint
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          left)
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          right) ->
-      SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
-        source (left ++ right)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : ∀ left right,
+        SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
+          source left
+        -> SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
+            source right
+        -> GraphQL.NormalForm.executableGroupNamesDisjoint
+            (GraphQL.Execution.collectFields schema variableValues parentType source
+              left)
+            (GraphQL.Execution.collectFields schema variableValues parentType source
+              right)
+        -> SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
+            source (left ++ right)
   | [], right, _hleft, hright, _hdisjoint => by
       simpa [SelectionSetCollectFieldsHeadDisjoint] using hright
   | selection :: rest, right, hleft, hright, hdisjoint => by
@@ -1438,16 +1431,16 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_of_headDisjoint
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    ∀ selectionSet,
-      SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
-        source selectionSet ->
-      (∀ selection,
-        selection ∈ selectionSet ->
-          VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers
-            variableValues depth parentType source [selection]) ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        depth parentType source selectionSet
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : ∀ selectionSet,
+        SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
+          source selectionSet
+        -> (∀ selection,
+              selection ∈ selectionSet
+              -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers
+                  variableValues depth parentType source [selection])
+        -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+            depth parentType source selectionSet
   | [], _hdisjoint, _hsingle =>
       VisitSubfieldsFlatCollectsFreshPrefixes_nil schema resolvers
         variableValues depth parentType source
@@ -1469,8 +1462,8 @@ mutual
   def SelectionCollectFieldsHeadDisjointTree
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
-      (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      Selection -> Prop
+      (parentType : Name) (source : ResolverValue ObjectIdentity)
+      : Selection -> Prop
     | .field _responseName _fieldName _arguments _directives _selectionSet =>
         True
     | .inlineFragment _typeCondition _directives selectionSet =>
@@ -1481,12 +1474,14 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
       (parentType : Name) (source : ResolverValue ObjectIdentity)
-      (selectionSet : List Selection) : Prop :=
+      (selectionSet : List Selection)
+      : Prop :=
     SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
       source selectionSet
-    ∧ ∀ selection, selection ∈ selectionSet ->
-        SelectionCollectFieldsHeadDisjointTree schema variableValues parentType
-          source selection
+    ∧ ∀ selection,
+        selection ∈ selectionSet
+        -> SelectionCollectFieldsHeadDisjointTree schema variableValues parentType
+            source selection
 end
 
 mutual
@@ -1494,12 +1489,12 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues) (depth : Nat)
-      (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ selection,
-        SelectionCollectFieldsHeadDisjointTree schema variableValues parentType
-          source selection ->
-        VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-          depth parentType source [selection]
+      (parentType : Name) (source : ResolverValue ObjectIdentity)
+      : ∀ selection,
+          SelectionCollectFieldsHeadDisjointTree schema variableValues parentType
+            source selection
+          -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+              depth parentType source [selection]
     | .field responseName fieldName arguments directives selectionSet, _htree =>
         VisitSubfieldsFlatCollectsFreshPrefixes_field_single schema resolvers
           variableValues depth parentType source responseName fieldName
@@ -1533,12 +1528,12 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues) (depth : Nat)
-      (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ selectionSet,
-        SelectionSetCollectFieldsHeadDisjointTree schema variableValues
-          parentType source selectionSet ->
-        VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-          depth parentType source selectionSet
+      (parentType : Name) (source : ResolverValue ObjectIdentity)
+      : ∀ selectionSet,
+          SelectionSetCollectFieldsHeadDisjointTree schema variableValues
+            parentType source selectionSet
+          -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+              depth parentType source selectionSet
     | selectionSet, htree => by
         have htree' :
             SelectionSetCollectFieldsHeadDisjoint schema variableValues

@@ -21,10 +21,11 @@ theorem executeField_ok_responseFields_singleton
     (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
     (responseName : Name) (fields : List Execution.ExecutableField)
     (responseFields : List (Name × Execution.ResponseValue))
-    (errors : Nat) :
-    Execution.executeField schema resolvers variableValues fuel source
-      responseName fields = .ok (responseFields, errors) ->
-      ∃ responseValue, responseFields = [(responseName, responseValue)] := by
+    (errors : Nat)
+    : Execution.executeField schema resolvers variableValues fuel source
+          responseName fields
+        = .ok (responseFields, errors)
+      -> ∃ responseValue, responseFields = [(responseName, responseValue)] := by
   intro hok
   cases fields with
   | nil =>
@@ -73,21 +74,20 @@ theorem executeSelectionSetAsResponse_singleton_field_eq_executeField
     (fuel : Nat) (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
-    (childSelectionSet : List Selection) :
-    Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-      parentType source
-      [Selection.field responseName fieldName arguments [] childSelectionSet]
-    =
-    Execution.selectionSetResultToResponse
-      (Execution.executeField schema resolvers variableValues fuel source
-        responseName
-        [{
-          parentType := parentType,
-          responseName := responseName,
-          fieldName := fieldName,
-          arguments := arguments,
-          selectionSet := childSelectionSet
-        }]) := by
+    (childSelectionSet : List Selection)
+    : Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+        parentType source
+        [Selection.field responseName fieldName arguments [] childSelectionSet]
+      = Execution.selectionSetResultToResponse
+          (Execution.executeField schema resolvers variableValues fuel source
+            responseName
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := childSelectionSet
+            }]) := by
   cases hfield :
       Execution.executeField schema resolvers variableValues fuel source
         responseName
@@ -121,31 +121,29 @@ theorem executeSelectionSet_normal_object_field_head_eq_combine
     (fuel : Nat) (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
-    (childSelectionSet rest : List Selection) :
-    selectionSetDirectiveFree
-      (Selection.field responseName fieldName arguments [] childSelectionSet
-        :: rest) ->
-    selectionSetNormal schema parentType
-      (Selection.field responseName fieldName arguments [] childSelectionSet
-        :: rest) ->
-    objectTypeNameBool schema parentType = true ->
-      Execution.executeSelectionSet schema resolvers variableValues fuel
-        parentType source
-        (Selection.field responseName fieldName arguments [] childSelectionSet
-          :: rest)
-      =
-      Execution.Result.combine List.append
-        (Execution.executeField schema resolvers variableValues fuel source
-          responseName
-          [{
-            parentType := parentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }])
-        (Execution.executeSelectionSet schema resolvers variableValues fuel
-          parentType source rest) := by
+    (childSelectionSet rest : List Selection)
+    : selectionSetDirectiveFree
+        (Selection.field responseName fieldName arguments [] childSelectionSet :: rest)
+      -> selectionSetNormal schema parentType
+          (Selection.field responseName fieldName arguments [] childSelectionSet
+            :: rest)
+      -> objectTypeNameBool schema parentType = true
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source
+            (Selection.field responseName fieldName arguments [] childSelectionSet
+              :: rest)
+          = Execution.Result.combine List.append
+              (Execution.executeField schema resolvers variableValues fuel source
+                responseName
+                [{
+                  parentType := parentType,
+                  responseName := responseName,
+                  fieldName := fieldName,
+                  arguments := arguments,
+                  selectionSet := childSelectionSet
+                }])
+              (Execution.executeSelectionSet schema resolvers variableValues fuel
+                parentType source rest) := by
   intro hfree hnormal hobject
   have hcollect :
       Execution.collectFields schema variableValues parentType source
@@ -168,13 +166,11 @@ theorem executeSelectionSet_normal_object_field_head_eq_combine
     hcollect, Execution.executeCollectedFields]
 
 theorem result_combine_responseFields_append_assoc
-    (left middle right :
-      Execution.Result (List (Name × Execution.ResponseValue))) :
-    Execution.Result.combine List.append left
+    (left middle right : Execution.Result (List (Name × Execution.ResponseValue)))
+    : Execution.Result.combine List.append left
         (Execution.Result.combine List.append middle right)
-      =
-      Execution.Result.combine List.append
-        (Execution.Result.combine List.append left middle) right := by
+      = Execution.Result.combine List.append
+          (Execution.Result.combine List.append left middle) right := by
   cases left with
   | error leftErrors =>
       cases middle with
@@ -214,8 +210,8 @@ theorem result_combine_responseFields_append_assoc
                 Nat.add_assoc]
 
 theorem result_combine_responseFields_append_nil_left
-    (result : Execution.Result (List (Name × Execution.ResponseValue))) :
-    Execution.Result.combine List.append (.ok ([], 0)) result = result := by
+    (result : Execution.Result (List (Name × Execution.ResponseValue)))
+    : Execution.Result.combine List.append (.ok ([], 0)) result = result := by
   cases result with
   | error errors =>
       simp [Execution.Result.combine]
@@ -231,34 +227,36 @@ theorem executeSelectionSet_normal_object_field_split_eq_context_combine
     (source : Execution.ResolverValue ObjectRef)
     (pref : List Selection)
     (responseName fieldName : Name) (arguments : List Argument)
-    (childSelectionSet suffix : List Selection) :
-    selectionSetDirectiveFree
-      (pref ++ Selection.field responseName fieldName arguments []
-        childSelectionSet :: suffix) ->
-    selectionSetNormal schema parentType
-      (pref ++ Selection.field responseName fieldName arguments []
-        childSelectionSet :: suffix) ->
-    objectTypeNameBool schema parentType = true ->
-      Execution.executeSelectionSet schema resolvers variableValues fuel
-        parentType source
-        (pref ++ Selection.field responseName fieldName arguments []
-          childSelectionSet :: suffix)
-      =
-      Execution.Result.combine List.append
-        (Execution.executeSelectionSet schema resolvers variableValues fuel
-          parentType source pref)
-        (Execution.Result.combine List.append
-          (Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }])
-          (Execution.executeSelectionSet schema resolvers variableValues fuel
-            parentType source suffix)) := by
+    (childSelectionSet suffix : List Selection)
+    : selectionSetDirectiveFree
+        (pref
+          ++ Selection.field responseName fieldName arguments [] childSelectionSet
+              :: suffix)
+      -> selectionSetNormal schema parentType
+          (pref
+            ++ Selection.field responseName fieldName arguments [] childSelectionSet
+                :: suffix)
+      -> objectTypeNameBool schema parentType = true
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source
+            (pref
+              ++ Selection.field responseName fieldName arguments [] childSelectionSet
+                  :: suffix)
+          = Execution.Result.combine List.append
+              (Execution.executeSelectionSet schema resolvers variableValues fuel
+                parentType source pref)
+              (Execution.Result.combine List.append
+                (Execution.executeField schema resolvers variableValues fuel source
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }])
+                (Execution.executeSelectionSet schema resolvers variableValues fuel
+                  parentType source suffix)) := by
   induction pref with
   | nil =>
       intro hfree hnormal hobject
@@ -469,17 +467,18 @@ theorem executeSelectionSet_ok_head_cons_tail_responseFields_nodup_of_normal_obj
     (childSelectionSet rest : List Selection)
     (headValue : Execution.ResponseValue)
     (tailFields : List (Name × Execution.ResponseValue))
-    (tailErrors : Nat) :
-    selectionSetDirectiveFree
-      (Selection.field responseName fieldName arguments directives
-        childSelectionSet :: rest) ->
-    selectionSetNormal schema parentType
-      (Selection.field responseName fieldName arguments directives
-        childSelectionSet :: rest) ->
-    objectTypeNameBool schema parentType = true ->
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source rest = .ok (tailFields, tailErrors) ->
-      (((responseName, headValue) :: tailFields).map Prod.fst).Nodup := by
+    (tailErrors : Nat)
+    : selectionSetDirectiveFree
+        (Selection.field responseName fieldName arguments directives childSelectionSet
+          :: rest)
+      -> selectionSetNormal schema parentType
+          (Selection.field responseName fieldName arguments directives childSelectionSet
+            :: rest)
+      -> objectTypeNameBool schema parentType = true
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source rest
+          = .ok (tailFields, tailErrors)
+      -> (((responseName, headValue) :: tailFields).map Prod.fst).Nodup := by
   intro hfree hnormal hobject htail
   have htailKeys :
       tailFields.map Prod.fst =
@@ -534,31 +533,34 @@ theorem executeSelectionSet_ok_field_split_responseFields_nodup_of_normal_object
     (childSelectionSet suffix : List Selection)
     (prefixFields suffixFields : List (Name × Execution.ResponseValue))
     (prefixErrors suffixErrors : Nat)
-    (headValue : Execution.ResponseValue) (headErrors : Nat) :
-    selectionSetDirectiveFree
-      (pref ++ Selection.field responseName fieldName arguments []
-        childSelectionSet :: suffix) ->
-    selectionSetNormal schema parentType
-      (pref ++ Selection.field responseName fieldName arguments []
-        childSelectionSet :: suffix) ->
-    objectTypeNameBool schema parentType = true ->
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source pref = .ok (prefixFields, prefixErrors) ->
-    Execution.executeField schema resolvers variableValues fuel source
-      responseName
-      [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := childSelectionSet
-      }]
-    =
-    .ok ([(responseName, headValue)], headErrors) ->
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source suffix = .ok (suffixFields, suffixErrors) ->
-      ((prefixFields ++ [(responseName, headValue)] ++
-        suffixFields).map Prod.fst).Nodup := by
+    (headValue : Execution.ResponseValue) (headErrors : Nat)
+    : selectionSetDirectiveFree
+        (pref
+          ++ Selection.field responseName fieldName arguments [] childSelectionSet
+              :: suffix)
+      -> selectionSetNormal schema parentType
+          (pref
+            ++ Selection.field responseName fieldName arguments [] childSelectionSet
+                :: suffix)
+      -> objectTypeNameBool schema parentType = true
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source pref
+          = .ok (prefixFields, prefixErrors)
+      -> Execution.executeField schema resolvers variableValues fuel source
+            responseName
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := childSelectionSet
+            }]
+          = .ok ([(responseName, headValue)], headErrors)
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source suffix
+          = .ok (suffixFields, suffixErrors)
+      -> ((prefixFields ++ [(responseName, headValue)] ++ suffixFields).map
+            Prod.fst).Nodup := by
   intro hfree hnormal hobject hprefix hhead hsuffix
   let fullSelectionSet :=
     pref ++ Selection.field responseName fieldName arguments []
@@ -602,12 +604,11 @@ theorem executeSelectionSet_ok_field_split_responseFields_nodup_of_normal_object
       variableValues parentType source fullSelectionSet hfree hnormal hobject
 
 theorem responseValue_semanticEquivalent_singleton_object_field_of_canonical_eq
-    {responseName : Name} {left right : Execution.ResponseValue} :
-    Execution.ResponseValue.canonical left =
-      Execution.ResponseValue.canonical right ->
-      Execution.ResponseValue.semanticEquivalent
-        (.object [(responseName, left)])
-        (.object [(responseName, right)]) := by
+    {responseName : Name} {left right : Execution.ResponseValue}
+    : Execution.ResponseValue.canonical left = Execution.ResponseValue.canonical right
+      -> Execution.ResponseValue.semanticEquivalent
+          (.object [(responseName, left)])
+          (.object [(responseName, right)]) := by
   intro hcanonical
   simp [Execution.ResponseValue.semanticEquivalent,
     Execution.ResponseValue.canonical,
@@ -617,15 +618,15 @@ theorem responseValue_semanticEquivalent_singleton_object_field_of_canonical_eq
 
 theorem responseValue_semanticEquivalent_of_singleFieldResult_data
     (responseName : Name)
-    (left right : Execution.Result Execution.ResponseValue) :
-    Execution.ResponseValue.semanticEquivalent
-      (Execution.selectionSetResultToResponse
-        (Execution.singleFieldResult responseName left)).data
-      (Execution.selectionSetResultToResponse
-        (Execution.singleFieldResult responseName right)).data ->
-      Execution.ResponseValue.semanticEquivalent
-        (Execution.Result.getD .null left)
-        (Execution.Result.getD .null right) := by
+    (left right : Execution.Result Execution.ResponseValue)
+    : Execution.ResponseValue.semanticEquivalent
+        (Execution.selectionSetResultToResponse
+          (Execution.singleFieldResult responseName left)).data
+        (Execution.selectionSetResultToResponse
+          (Execution.singleFieldResult responseName right)).data
+      -> Execution.ResponseValue.semanticEquivalent
+          (Execution.Result.getD .null left)
+          (Execution.Result.getD .null right) := by
   intro hsemantic
   cases hleft : left with
   | error leftErrors =>
@@ -663,11 +664,11 @@ theorem responseValue_semanticEquivalent_of_singleFieldResult_data
 
 theorem not_wrapTypeRefSelectionSetResponse_data_semanticEquivalent_of_child
     (responseName : Name) (outputType : TypeRef)
-    {left right : Execution.Response} :
-    ¬ Execution.ResponseValue.semanticEquivalent left.data right.data ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (wrapTypeRefSelectionSetResponse responseName outputType left).data
-        (wrapTypeRefSelectionSetResponse responseName outputType right).data := by
+    {left right : Execution.Response}
+    : ¬ Execution.ResponseValue.semanticEquivalent left.data right.data
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (wrapTypeRefSelectionSetResponse responseName outputType left).data
+            (wrapTypeRefSelectionSetResponse responseName outputType right).data := by
   intro hchild hwrapped
   apply hchild
   exact
@@ -681,33 +682,30 @@ theorem not_wrapTypeRefSelectionSetResponse_data_semanticEquivalent_of_child
 
 theorem dataEquivalent_singleton_response_of_combine_ok_tail
     (responseName : Name)
-    (leftHead rightHead :
-      Execution.Result (List (Name × Execution.ResponseValue)))
-    (leftTailFields rightTailFields :
-      List (Name × Execution.ResponseValue))
-    (leftTailErrors rightTailErrors : Nat) :
-    (∀ fields errors,
-      leftHead = .ok (fields, errors) ->
-        ∃ value, fields = [(responseName, value)]) ->
-    (∀ fields errors,
-      rightHead = .ok (fields, errors) ->
-        ∃ value, fields = [(responseName, value)]) ->
-    (∀ value errors,
-      leftHead = .ok ([(responseName, value)], errors) ->
-        (((responseName, value) :: leftTailFields).map Prod.fst).Nodup) ->
-    (∀ value errors,
-      rightHead = .ok ([(responseName, value)], errors) ->
-        (((responseName, value) :: rightTailFields).map Prod.fst).Nodup) ->
-    Execution.ResponseValue.semanticEquivalent
-      (Execution.selectionSetResultToResponse
-        (Execution.Result.combine List.append leftHead
-          (.ok (leftTailFields, leftTailErrors)))).data
-      (Execution.selectionSetResultToResponse
-        (Execution.Result.combine List.append rightHead
-          (.ok (rightTailFields, rightTailErrors)))).data ->
-      Execution.ResponseValue.semanticEquivalent
-        (Execution.selectionSetResultToResponse leftHead).data
-        (Execution.selectionSetResultToResponse rightHead).data := by
+    (leftHead rightHead : Execution.Result (List (Name × Execution.ResponseValue)))
+    (leftTailFields rightTailFields : List (Name × Execution.ResponseValue))
+    (leftTailErrors rightTailErrors : Nat)
+    : (∀ fields errors,
+        leftHead = .ok (fields, errors) -> ∃ value, fields = [(responseName, value)])
+      -> (∀ fields errors,
+            rightHead = .ok (fields, errors)
+            -> ∃ value, fields = [(responseName, value)])
+      -> (∀ value errors,
+            leftHead = .ok ([(responseName, value)], errors)
+            -> (((responseName, value) :: leftTailFields).map Prod.fst).Nodup)
+      -> (∀ value errors,
+            rightHead = .ok ([(responseName, value)], errors)
+            -> (((responseName, value) :: rightTailFields).map Prod.fst).Nodup)
+      -> Execution.ResponseValue.semanticEquivalent
+          (Execution.selectionSetResultToResponse
+            (Execution.Result.combine List.append leftHead
+              (.ok (leftTailFields, leftTailErrors)))).data
+          (Execution.selectionSetResultToResponse
+            (Execution.Result.combine List.append rightHead
+              (.ok (rightTailFields, rightTailErrors)))).data
+      -> Execution.ResponseValue.semanticEquivalent
+          (Execution.selectionSetResultToResponse leftHead).data
+          (Execution.selectionSetResultToResponse rightHead).data := by
   intro hleftSingleton hrightSingleton hleftNodup hrightNodup hdata
   cases hleftHead : leftHead with
   | error leftErrors =>
@@ -764,9 +762,9 @@ theorem dataEquivalent_singleton_response_of_combine_ok_tail
 
 theorem responseValue_null_not_semanticEquivalent_object_append_singleton
     {pref suffix : List (Name × Execution.ResponseValue)}
-    {responseName : Name} {value : Execution.ResponseValue} :
-    ¬ Execution.ResponseValue.semanticEquivalent .null
-      (.object (pref ++ [(responseName, value)] ++ suffix)) := by
+    {responseName : Name} {value : Execution.ResponseValue}
+    : ¬ Execution.ResponseValue.semanticEquivalent .null
+          (.object (pref ++ [(responseName, value)] ++ suffix)) := by
   intro hsemantic
   cases pref with
   | nil =>
@@ -780,9 +778,9 @@ theorem responseValue_null_not_semanticEquivalent_object_append_singleton
 
 theorem responseValue_object_append_singleton_not_semanticEquivalent_null
     {pref suffix : List (Name × Execution.ResponseValue)}
-    {responseName : Name} {value : Execution.ResponseValue} :
-    ¬ Execution.ResponseValue.semanticEquivalent
-      (.object (pref ++ [(responseName, value)] ++ suffix)) .null := by
+    {responseName : Name} {value : Execution.ResponseValue}
+    : ¬ Execution.ResponseValue.semanticEquivalent
+          (.object (pref ++ [(responseName, value)] ++ suffix)) .null := by
   intro hsemantic
   cases pref with
   | nil =>
@@ -796,41 +794,37 @@ theorem responseValue_object_append_singleton_not_semanticEquivalent_null
 
 theorem dataEquivalent_singleton_response_of_context_ok
     (responseName : Name)
-    (leftHead rightHead :
-      Execution.Result (List (Name × Execution.ResponseValue)))
-    (leftPrefixFields rightPrefixFields
-      leftSuffixFields rightSuffixFields :
-      List (Name × Execution.ResponseValue))
-    (leftPrefixErrors rightPrefixErrors
-      leftSuffixErrors rightSuffixErrors : Nat) :
-    (∀ fields errors,
-      leftHead = .ok (fields, errors) ->
-        ∃ value, fields = [(responseName, value)]) ->
-    (∀ fields errors,
-      rightHead = .ok (fields, errors) ->
-        ∃ value, fields = [(responseName, value)]) ->
-    (∀ value errors,
-      leftHead = .ok ([(responseName, value)], errors) ->
-        ((leftPrefixFields ++ [(responseName, value)] ++
-          leftSuffixFields).map Prod.fst).Nodup) ->
-    (∀ value errors,
-      rightHead = .ok ([(responseName, value)], errors) ->
-        ((rightPrefixFields ++ [(responseName, value)] ++
-          rightSuffixFields).map Prod.fst).Nodup) ->
-    Execution.ResponseValue.semanticEquivalent
-      (Execution.selectionSetResultToResponse
-        (Execution.Result.combine List.append
-          (.ok (leftPrefixFields, leftPrefixErrors))
-          (Execution.Result.combine List.append leftHead
-            (.ok (leftSuffixFields, leftSuffixErrors))))).data
-      (Execution.selectionSetResultToResponse
-        (Execution.Result.combine List.append
-          (.ok (rightPrefixFields, rightPrefixErrors))
-          (Execution.Result.combine List.append rightHead
-            (.ok (rightSuffixFields, rightSuffixErrors))))).data ->
-      Execution.ResponseValue.semanticEquivalent
-        (Execution.selectionSetResultToResponse leftHead).data
-        (Execution.selectionSetResultToResponse rightHead).data := by
+    (leftHead rightHead : Execution.Result (List (Name × Execution.ResponseValue)))
+    (leftPrefixFields rightPrefixFields leftSuffixFields rightSuffixFields
+      : List (Name × Execution.ResponseValue))
+    (leftPrefixErrors rightPrefixErrors leftSuffixErrors rightSuffixErrors : Nat)
+    : (∀ fields errors,
+        leftHead = .ok (fields, errors) -> ∃ value, fields = [(responseName, value)])
+      -> (∀ fields errors,
+            rightHead = .ok (fields, errors)
+            -> ∃ value, fields = [(responseName, value)])
+      -> (∀ value errors,
+            leftHead = .ok ([(responseName, value)], errors)
+            -> ((leftPrefixFields ++ [(responseName, value)] ++ leftSuffixFields).map
+                  Prod.fst).Nodup)
+      -> (∀ value errors,
+            rightHead = .ok ([(responseName, value)], errors)
+            -> ((rightPrefixFields ++ [(responseName, value)] ++ rightSuffixFields).map
+                  Prod.fst).Nodup)
+      -> Execution.ResponseValue.semanticEquivalent
+          (Execution.selectionSetResultToResponse
+            (Execution.Result.combine List.append
+              (.ok (leftPrefixFields, leftPrefixErrors))
+              (Execution.Result.combine List.append leftHead
+                (.ok (leftSuffixFields, leftSuffixErrors))))).data
+          (Execution.selectionSetResultToResponse
+            (Execution.Result.combine List.append
+              (.ok (rightPrefixFields, rightPrefixErrors))
+              (Execution.Result.combine List.append rightHead
+                (.ok (rightSuffixFields, rightSuffixErrors))))).data
+      -> Execution.ResponseValue.semanticEquivalent
+          (Execution.selectionSetResultToResponse leftHead).data
+          (Execution.selectionSetResultToResponse rightHead).data := by
   intro hleftSingleton hrightSingleton hleftNodup hrightNodup hdata
   cases hleftHead : leftHead with
   | error leftErrors =>
@@ -898,74 +892,83 @@ theorem dataEquivalent_singleton_response_of_context_ok
               hvalueCanonical
 
 theorem target_split_singleton_response_dataEquivalent_of_selectionSetsDataEquivalent_context_ok
-    {ObjectRef : Type} {schema : Schema}
-    (resolvers : Execution.Resolvers ObjectRef)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (parentType : Name)
+    {ObjectRef : Type} {schema : Schema} (resolvers : Execution.Resolvers ObjectRef)
+    (variableValues : Execution.VariableValues) (fuel : Nat) (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
     (responseName leftField rightField : Name)
     (leftArguments rightArguments : List Argument)
     (leftChildSelectionSet rightChildSelectionSet
-      leftPref rightPref leftSuffix rightSuffix : List Selection)
-    (leftPrefixFields rightPrefixFields
-      leftSuffixFields rightSuffixFields :
-      List (Name × Execution.ResponseValue))
-    (leftPrefixErrors rightPrefixErrors
-      leftSuffixErrors rightSuffixErrors : Nat) :
-    (∃ runtimeType ref,
-      source = Execution.ResolverValue.object runtimeType ref
-        ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-    selectionSetDirectiveFree
-      (leftPref ++ Selection.field responseName leftField leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetDirectiveFree
-      (rightPref ++ Selection.field responseName rightField rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetNormal schema parentType
-      (leftPref ++ Selection.field responseName leftField leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetNormal schema parentType
-      (rightPref ++ Selection.field responseName rightField rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    objectTypeNameBool schema parentType = true ->
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source leftPref =
-      .ok (leftPrefixFields, leftPrefixErrors) ->
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source rightPref =
-      .ok (rightPrefixFields, rightPrefixErrors) ->
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source leftSuffix =
-      .ok (leftSuffixFields, leftSuffixErrors) ->
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source rightSuffix =
-      .ok (rightSuffixFields, rightSuffixErrors) ->
-    selectionSetsDataEquivalent schema parentType
-      (leftPref ++ Selection.field responseName leftField leftArguments []
-        leftChildSelectionSet :: leftSuffix)
-      (rightPref ++ Selection.field responseName rightField rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-      Execution.ResponseValue.semanticEquivalent
-        (Execution.selectionSetResultToResponse
-          (Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := leftField,
-              arguments := leftArguments,
-              selectionSet := leftChildSelectionSet
-            }])).data
-        (Execution.selectionSetResultToResponse
-          (Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := rightField,
-              arguments := rightArguments,
-              selectionSet := rightChildSelectionSet
-            }])).data := by
+      leftPref rightPref leftSuffix rightSuffix
+      : List Selection)
+    (leftPrefixFields rightPrefixFields leftSuffixFields rightSuffixFields
+      : List (Name × Execution.ResponseValue))
+    (leftPrefixErrors rightPrefixErrors leftSuffixErrors rightSuffixErrors : Nat)
+    : (∃ runtimeType ref,
+        source = Execution.ResolverValue.object runtimeType ref
+        ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+      -> selectionSetDirectiveFree
+          (leftPref
+            ++ Selection.field responseName leftField leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetDirectiveFree
+          (rightPref
+            ++ Selection.field responseName rightField rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetNormal schema parentType
+          (leftPref
+            ++ Selection.field responseName leftField leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetNormal schema parentType
+          (rightPref
+            ++ Selection.field responseName rightField rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> objectTypeNameBool schema parentType = true
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source leftPref
+          = .ok (leftPrefixFields, leftPrefixErrors)
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source rightPref
+          = .ok (rightPrefixFields, rightPrefixErrors)
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source leftSuffix
+          = .ok (leftSuffixFields, leftSuffixErrors)
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source rightSuffix
+          = .ok (rightSuffixFields, rightSuffixErrors)
+      -> selectionSetsDataEquivalent schema parentType
+          (leftPref
+            ++ Selection.field responseName leftField leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+          (rightPref
+            ++ Selection.field responseName rightField rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> Execution.ResponseValue.semanticEquivalent
+          (Execution.selectionSetResultToResponse
+            (Execution.executeField schema resolvers variableValues fuel source
+              responseName
+              [{
+                parentType := parentType,
+                responseName := responseName,
+                fieldName := leftField,
+                arguments := leftArguments,
+                selectionSet := leftChildSelectionSet
+              }])).data
+          (Execution.selectionSetResultToResponse
+            (Execution.executeField schema resolvers variableValues fuel source
+              responseName
+              [{
+                parentType := parentType,
+                responseName := responseName,
+                fieldName := rightField,
+                arguments := rightArguments,
+                selectionSet := rightChildSelectionSet
+              }])).data := by
   intro hsource hleftFree hrightFree hleftNormal hrightNormal hobject
     hleftPrefix hrightPrefix hleftSuffix hrightSuffix hdata
   let leftHead :=
@@ -1075,70 +1078,81 @@ theorem target_split_singleton_response_dataEquivalent_of_responseData_context_o
     (responseName leftField rightField : Name)
     (leftArguments rightArguments : List Argument)
     (leftChildSelectionSet rightChildSelectionSet
-      leftPref rightPref leftSuffix rightSuffix : List Selection)
-    (leftPrefixFields rightPrefixFields
-      leftSuffixFields rightSuffixFields :
-      List (Name × Execution.ResponseValue))
-    (leftPrefixErrors rightPrefixErrors
-      leftSuffixErrors rightSuffixErrors : Nat) :
-    (∃ runtimeType ref,
-      source = Execution.ResolverValue.object runtimeType ref
-        ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-    selectionSetDirectiveFree
-      (leftPref ++ Selection.field responseName leftField leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetDirectiveFree
-      (rightPref ++ Selection.field responseName rightField rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetNormal schema parentType
-      (leftPref ++ Selection.field responseName leftField leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetNormal schema parentType
-      (rightPref ++ Selection.field responseName rightField rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    objectTypeNameBool schema parentType = true ->
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source leftPref =
-      .ok (leftPrefixFields, leftPrefixErrors) ->
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source rightPref =
-      .ok (rightPrefixFields, rightPrefixErrors) ->
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source leftSuffix =
-      .ok (leftSuffixFields, leftSuffixErrors) ->
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source rightSuffix =
-      .ok (rightSuffixFields, rightSuffixErrors) ->
-    Execution.ResponseValue.semanticEquivalent
-      (Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-        parentType source
-        (leftPref ++ Selection.field responseName leftField leftArguments []
-          leftChildSelectionSet :: leftSuffix)).data
-      (Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-        parentType source
-        (rightPref ++ Selection.field responseName rightField rightArguments []
-          rightChildSelectionSet :: rightSuffix)).data ->
-      Execution.ResponseValue.semanticEquivalent
-        (Execution.selectionSetResultToResponse
-          (Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := leftField,
-              arguments := leftArguments,
-              selectionSet := leftChildSelectionSet
-            }])).data
-        (Execution.selectionSetResultToResponse
-          (Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := rightField,
-              arguments := rightArguments,
-              selectionSet := rightChildSelectionSet
-            }])).data := by
+      leftPref rightPref leftSuffix rightSuffix
+      : List Selection)
+    (leftPrefixFields rightPrefixFields leftSuffixFields rightSuffixFields
+      : List (Name × Execution.ResponseValue))
+    (leftPrefixErrors rightPrefixErrors leftSuffixErrors rightSuffixErrors : Nat)
+    : (∃ runtimeType ref,
+        source = Execution.ResolverValue.object runtimeType ref
+        ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+      -> selectionSetDirectiveFree
+          (leftPref
+            ++ Selection.field responseName leftField leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetDirectiveFree
+          (rightPref
+            ++ Selection.field responseName rightField rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetNormal schema parentType
+          (leftPref
+            ++ Selection.field responseName leftField leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetNormal schema parentType
+          (rightPref
+            ++ Selection.field responseName rightField rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> objectTypeNameBool schema parentType = true
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source leftPref
+          = .ok (leftPrefixFields, leftPrefixErrors)
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source rightPref
+          = .ok (rightPrefixFields, rightPrefixErrors)
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source leftSuffix
+          = .ok (leftSuffixFields, leftSuffixErrors)
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source rightSuffix
+          = .ok (rightSuffixFields, rightSuffixErrors)
+      -> Execution.ResponseValue.semanticEquivalent
+          (Execution.executeSelectionSetAsResponse schema resolvers variableValues
+            fuel parentType source
+            (leftPref
+              ++ Selection.field responseName leftField leftArguments []
+                    leftChildSelectionSet
+                  :: leftSuffix)).data
+          (Execution.executeSelectionSetAsResponse schema resolvers variableValues
+            fuel parentType source
+            (rightPref
+              ++ Selection.field responseName rightField rightArguments []
+                    rightChildSelectionSet
+                  :: rightSuffix)).data
+      -> Execution.ResponseValue.semanticEquivalent
+          (Execution.selectionSetResultToResponse
+            (Execution.executeField schema resolvers variableValues fuel source
+              responseName
+              [{
+                parentType := parentType,
+                responseName := responseName,
+                fieldName := leftField,
+                arguments := leftArguments,
+                selectionSet := leftChildSelectionSet
+              }])).data
+          (Execution.selectionSetResultToResponse
+            (Execution.executeField schema resolvers variableValues fuel source
+              responseName
+              [{
+                parentType := parentType,
+                responseName := responseName,
+                fieldName := rightField,
+                arguments := rightArguments,
+                selectionSet := rightChildSelectionSet
+              }])).data := by
   intro hsource hleftFree hrightFree hleftNormal hrightNormal hobject
     hleftPrefix hrightPrefix hleftSuffix hrightSuffix hdata
   let leftHead :=
@@ -1238,66 +1252,65 @@ theorem target_split_singleton_response_dataEquivalent_of_responseData_context_o
       hcontextData
 
 theorem target_head_singleton_response_dataEquivalent_of_selectionSetsDataEquivalent_tail_ok
-    {ObjectRef : Type} {schema : Schema}
-    (resolvers : Execution.Resolvers ObjectRef)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (parentType : Name)
+    {ObjectRef : Type} {schema : Schema} (resolvers : Execution.Resolvers ObjectRef)
+    (variableValues : Execution.VariableValues) (fuel : Nat) (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
     (responseName leftField rightField : Name)
     (leftArguments rightArguments : List Argument)
-    (leftChildSelectionSet rightChildSelectionSet
-      leftRest rightRest : List Selection)
-    (leftTailFields rightTailFields :
-      List (Name × Execution.ResponseValue))
-    (leftTailErrors rightTailErrors : Nat) :
-    (∃ runtimeType ref,
-      source = Execution.ResolverValue.object runtimeType ref
-        ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-    selectionSetDirectiveFree
-      (Selection.field responseName leftField leftArguments []
-        leftChildSelectionSet :: leftRest) ->
-    selectionSetDirectiveFree
-      (Selection.field responseName rightField rightArguments []
-        rightChildSelectionSet :: rightRest) ->
-    selectionSetNormal schema parentType
-      (Selection.field responseName leftField leftArguments []
-        leftChildSelectionSet :: leftRest) ->
-    selectionSetNormal schema parentType
-      (Selection.field responseName rightField rightArguments []
-        rightChildSelectionSet :: rightRest) ->
-    objectTypeNameBool schema parentType = true ->
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source leftRest =
-      .ok (leftTailFields, leftTailErrors) ->
-    Execution.executeSelectionSet schema resolvers variableValues fuel
-      parentType source rightRest =
-      .ok (rightTailFields, rightTailErrors) ->
-    selectionSetsDataEquivalent schema parentType
-      (Selection.field responseName leftField leftArguments []
-        leftChildSelectionSet :: leftRest)
-      (Selection.field responseName rightField rightArguments []
-        rightChildSelectionSet :: rightRest) ->
-      Execution.ResponseValue.semanticEquivalent
-        (Execution.selectionSetResultToResponse
-          (Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := leftField,
-              arguments := leftArguments,
-              selectionSet := leftChildSelectionSet
-            }])).data
-        (Execution.selectionSetResultToResponse
-          (Execution.executeField schema resolvers variableValues fuel source
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := rightField,
-              arguments := rightArguments,
-              selectionSet := rightChildSelectionSet
-            }])).data := by
+    (leftChildSelectionSet rightChildSelectionSet leftRest rightRest : List Selection)
+    (leftTailFields rightTailFields : List (Name × Execution.ResponseValue))
+    (leftTailErrors rightTailErrors : Nat)
+    : (∃ runtimeType ref,
+        source = Execution.ResolverValue.object runtimeType ref
+        ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+      -> selectionSetDirectiveFree
+          (Selection.field responseName leftField leftArguments [] leftChildSelectionSet
+            :: leftRest)
+      -> selectionSetDirectiveFree
+          (Selection.field responseName rightField rightArguments []
+              rightChildSelectionSet
+            :: rightRest)
+      -> selectionSetNormal schema parentType
+          (Selection.field responseName leftField leftArguments [] leftChildSelectionSet
+            :: leftRest)
+      -> selectionSetNormal schema parentType
+          (Selection.field responseName rightField rightArguments []
+              rightChildSelectionSet
+            :: rightRest)
+      -> objectTypeNameBool schema parentType = true
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source leftRest
+          = .ok (leftTailFields, leftTailErrors)
+      -> Execution.executeSelectionSet schema resolvers variableValues fuel
+            parentType source rightRest
+          = .ok (rightTailFields, rightTailErrors)
+      -> selectionSetsDataEquivalent schema parentType
+          (Selection.field responseName leftField leftArguments [] leftChildSelectionSet
+            :: leftRest)
+          (Selection.field responseName rightField rightArguments []
+              rightChildSelectionSet
+            :: rightRest)
+      -> Execution.ResponseValue.semanticEquivalent
+          (Execution.selectionSetResultToResponse
+            (Execution.executeField schema resolvers variableValues fuel source
+              responseName
+              [{
+                parentType := parentType,
+                responseName := responseName,
+                fieldName := leftField,
+                arguments := leftArguments,
+                selectionSet := leftChildSelectionSet
+              }])).data
+          (Execution.selectionSetResultToResponse
+            (Execution.executeField schema resolvers variableValues fuel source
+              responseName
+              [{
+                parentType := parentType,
+                responseName := responseName,
+                fieldName := rightField,
+                arguments := rightArguments,
+                selectionSet := rightChildSelectionSet
+              }])).data := by
   intro hsource hleftFree hrightFree hleftNormal hrightNormal hobject
     hleftTail hrightTail hdata
   have hwhole :
@@ -1420,30 +1433,32 @@ theorem executeSelectionSetAsResponse_normal_object_field_split_error_data_null
     (source : Execution.ResolverValue ObjectRef)
     (pref : List Selection)
     (responseName fieldName : Name) (arguments : List Argument)
-    (childSelectionSet suffix : List Selection) {errors : Nat} :
-    selectionSetDirectiveFree
-      (pref ++ Selection.field responseName fieldName arguments []
-        childSelectionSet :: suffix) ->
-    selectionSetNormal schema parentType
-      (pref ++ Selection.field responseName fieldName arguments []
-        childSelectionSet :: suffix) ->
-    objectTypeNameBool schema parentType = true ->
-    Execution.executeField schema resolvers variableValues fuel source
-      responseName
-      [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := childSelectionSet
-      }]
-    =
-    .error errors ->
-      (Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-        parentType source
-        (pref ++ Selection.field responseName fieldName arguments []
-          childSelectionSet :: suffix)).data =
-      Execution.ResponseValue.null := by
+    (childSelectionSet suffix : List Selection) {errors : Nat}
+    : selectionSetDirectiveFree
+        (pref
+          ++ Selection.field responseName fieldName arguments [] childSelectionSet
+              :: suffix)
+      -> selectionSetNormal schema parentType
+          (pref
+            ++ Selection.field responseName fieldName arguments [] childSelectionSet
+                :: suffix)
+      -> objectTypeNameBool schema parentType = true
+      -> Execution.executeField schema resolvers variableValues fuel source
+            responseName
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := childSelectionSet
+            }]
+          = .error errors
+      -> (Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source
+            (pref
+              ++ Selection.field responseName fieldName arguments [] childSelectionSet
+                  :: suffix)).data
+          = Execution.ResponseValue.null := by
   intro hfree hnormal hobject htarget
   have hsplit :=
     executeSelectionSet_normal_object_field_split_eq_context_combine schema
@@ -1467,26 +1482,25 @@ theorem executeSelectionSetAsResponse_normal_object_field_mem_error_data_null
     (selectionSet : List Selection)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
-    (childSelectionSet : List Selection) {errors : Nat} :
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = true ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    Execution.executeField schema resolvers variableValues fuel source
-      responseName
-      [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := childSelectionSet
-      }]
-    =
-    .error errors ->
-      (Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-        parentType source selectionSet).data =
-      Execution.ResponseValue.null := by
+    (childSelectionSet : List Selection) {errors : Nat}
+    : selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> Execution.executeField schema resolvers variableValues fuel source
+            responseName
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := childSelectionSet
+            }]
+          = .error errors
+      -> (Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
+            parentType source selectionSet).data
+          = Execution.ResponseValue.null := by
   intro hfree hnormal hobject hmem htarget
   have hdirectives :
       directives = [] :=

@@ -18,21 +18,19 @@ theorem executeRootSelectionSet_single_field_succ_eq_spec_of_completeValue
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication) (selectionSet : List Selection)
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (hcomplete :
-      GraphQL.Execution.singleFieldResult responseName
-        (executeField schema resolvers variableValues depth source none
-          (executableField parentType responseName fieldName arguments
-            selectionSet)) =
-      GraphQL.Execution.executeField schema resolvers variableValues (depth + 1)
-        source responseName
-        [executableField parentType responseName fieldName arguments
-          selectionSet]) :
-    executeRootSelectionSet schema resolvers variableValues (depth + 1)
-      parentType source
-      [.field responseName fieldName arguments directives selectionSet] =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      (depth + 1) parentType source
-      [.field responseName fieldName arguments directives selectionSet] := by
+    (hcomplete
+      : GraphQL.Execution.singleFieldResult responseName
+          (executeField schema resolvers variableValues depth source none
+            (executableField parentType responseName fieldName arguments selectionSet))
+        = GraphQL.Execution.executeField schema resolvers variableValues (depth + 1)
+            source responseName
+            [executableField parentType responseName fieldName arguments selectionSet])
+    : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+        parentType source
+        [.field responseName fieldName arguments directives selectionSet]
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (depth + 1) parentType source
+          [.field responseName fieldName arguments directives selectionSet] := by
   have hleft :
       executeRootSelectionSet schema resolvers variableValues (depth + 1)
           parentType source
@@ -85,23 +83,22 @@ theorem executeRootSelectionSet_single_field_succ_aligned_of_completeValue
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication) (selectionSet : List Selection)
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (haligned :
-      RootSelectionResultAlignedEquivalent
-        (GraphQL.Execution.singleFieldResult responseName
-          (executeField schema resolvers variableValues depth source none
-            (executableField parentType responseName fieldName arguments
-              selectionSet)))
-        (GraphQL.Execution.executeField schema resolvers variableValues (depth + 1)
-          source responseName
-          [executableField parentType responseName fieldName arguments
-            selectionSet])) :
-    RootSelectionResultAlignedEquivalent
-      (executeRootSelectionSet schema resolvers variableValues (depth + 1)
-        parentType source
-        [.field responseName fieldName arguments directives selectionSet])
-      (GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-        (depth + 1) parentType source
-        [.field responseName fieldName arguments directives selectionSet]) := by
+    (haligned
+      : RootSelectionResultAlignedEquivalent
+          (GraphQL.Execution.singleFieldResult responseName
+            (executeField schema resolvers variableValues depth source none
+              (executableField parentType responseName fieldName arguments
+                selectionSet)))
+          (GraphQL.Execution.executeField schema resolvers variableValues (depth + 1)
+            source responseName
+            [executableField parentType responseName fieldName arguments selectionSet]))
+    : RootSelectionResultAlignedEquivalent
+        (executeRootSelectionSet schema resolvers variableValues (depth + 1)
+          parentType source
+          [.field responseName fieldName arguments directives selectionSet])
+        (GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (depth + 1) parentType source
+          [.field responseName fieldName arguments directives selectionSet]) := by
   have hleft :
       executeRootSelectionSet schema resolvers variableValues (depth + 1)
           parentType source
@@ -156,22 +153,26 @@ theorem completeValue_object_group_eq_spec_of_merged_child_state
     (variableValues : VariableValues) (childDepth : Nat)
     (parentType runtimeType : Name) (identity : ObjectIdentity)
     (fields : List ExecutableField)
-    (hchild :
-      ExecutionStateEquivalent
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := childDepth
-            parentType := runtimeType
-            source := .object runtimeType identity
-            selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields }
-          initial := .object [] }) :
-    completeValue schema resolvers variableValues (childDepth + 1)
-      parentType (GraphQL.Execution.mergedFieldSelectionSet fields)
-      (.object runtimeType identity) none =
-    GraphQL.Execution.completeValue schema resolvers variableValues
-      (childDepth + 1) parentType fields (.object runtimeType identity) := by
+    (hchild
+      : ExecutionStateEquivalent
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := childDepth
+                parentType := runtimeType
+                source := .object runtimeType identity
+                selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields
+              }
+            initial := .object []
+          })
+    : completeValue schema resolvers variableValues (childDepth + 1)
+        parentType (GraphQL.Execution.mergedFieldSelectionSet fields)
+        (.object runtimeType identity) none
+      = GraphQL.Execution.completeValue schema resolvers variableValues
+          (childDepth + 1) parentType fields (.object runtimeType identity) := by
   cases hincludes :
       schema.typeIncludesObjectBool parentType runtimeType with
   | false =>
@@ -237,23 +238,27 @@ theorem completeValue_object_group_eq_spec_of_guarded_merged_child_state
     (variableValues : VariableValues) (childDepth : Nat)
     (parentType runtimeType : Name) (identity : ObjectIdentity)
     (fields : List ExecutableField)
-    (hchild :
-      schema.typeIncludesObjectBool parentType runtimeType = true ->
-        ExecutionStateEquivalent
-          { window :=
-            { schema := schema
-              resolvers := resolvers
-              variableValues := variableValues
-              depth := childDepth
-              parentType := runtimeType
-              source := .object runtimeType identity
-              selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields }
-            initial := .object [] }) :
-    completeValue schema resolvers variableValues (childDepth + 1)
-      parentType (GraphQL.Execution.mergedFieldSelectionSet fields)
-      (.object runtimeType identity) none =
-    GraphQL.Execution.completeValue schema resolvers variableValues
-      (childDepth + 1) parentType fields (.object runtimeType identity) := by
+    (hchild
+      : schema.typeIncludesObjectBool parentType runtimeType = true
+        -> ExecutionStateEquivalent
+            {
+              window :=
+                {
+                  schema := schema
+                  resolvers := resolvers
+                  variableValues := variableValues
+                  depth := childDepth
+                  parentType := runtimeType
+                  source := .object runtimeType identity
+                  selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields
+                }
+              initial := .object []
+            })
+    : completeValue schema resolvers variableValues (childDepth + 1)
+        parentType (GraphQL.Execution.mergedFieldSelectionSet fields)
+        (.object runtimeType identity) none
+      = GraphQL.Execution.completeValue schema resolvers variableValues
+          (childDepth + 1) parentType fields (.object runtimeType identity) := by
   cases hincludes :
       schema.typeIncludesObjectBool parentType runtimeType with
   | false =>
@@ -271,21 +276,21 @@ theorem completeValue_object_group_aligned_of_merged_child_state
     (variableValues : VariableValues) (childDepth : Nat)
     (parentType runtimeType : Name) (identity : ObjectIdentity)
     (fields : List ExecutableField)
-    (hchild :
-      RootSelectionResultAlignedEquivalent
-        (executeRootSelectionSet schema resolvers variableValues childDepth
-          runtimeType (.object runtimeType identity)
-          (GraphQL.Execution.mergedFieldSelectionSet fields))
-        (GraphQL.Execution.executeRootSelectionSet schema resolvers
-          variableValues childDepth runtimeType (.object runtimeType identity)
-          (GraphQL.Execution.mergedFieldSelectionSet fields))) :
-    ResponseValueResultAlignedEquivalent
-      (completeValue schema resolvers variableValues (childDepth + 1)
-        (.named parentType) (GraphQL.Execution.mergedFieldSelectionSet fields)
-        (.object runtimeType identity) none)
-      (GraphQL.Execution.completeValue schema resolvers variableValues
-        (childDepth + 1) (.named parentType) fields
-        (.object runtimeType identity)) := by
+    (hchild
+      : RootSelectionResultAlignedEquivalent
+          (executeRootSelectionSet schema resolvers variableValues childDepth
+            runtimeType (.object runtimeType identity)
+            (GraphQL.Execution.mergedFieldSelectionSet fields))
+          (GraphQL.Execution.executeRootSelectionSet schema resolvers
+            variableValues childDepth runtimeType (.object runtimeType identity)
+            (GraphQL.Execution.mergedFieldSelectionSet fields)))
+    : ResponseValueResultAlignedEquivalent
+        (completeValue schema resolvers variableValues (childDepth + 1)
+          (.named parentType) (GraphQL.Execution.mergedFieldSelectionSet fields)
+          (.object runtimeType identity) none)
+        (GraphQL.Execution.completeValue schema resolvers variableValues
+          (childDepth + 1) (.named parentType) fields
+          (.object runtimeType identity)) := by
   cases hincludes :
       schema.typeIncludesObjectBool parentType runtimeType with
   | false =>
@@ -350,22 +355,22 @@ theorem completeValue_object_group_aligned_of_guarded_merged_child_state
     (variableValues : VariableValues) (childDepth : Nat)
     (parentType runtimeType : Name) (identity : ObjectIdentity)
     (fields : List ExecutableField)
-    (hchild :
-      schema.typeIncludesObjectBool parentType runtimeType = true ->
-        RootSelectionResultAlignedEquivalent
-          (executeRootSelectionSet schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity)
-            (GraphQL.Execution.mergedFieldSelectionSet fields))
-          (GraphQL.Execution.executeRootSelectionSet schema resolvers
-            variableValues childDepth runtimeType (.object runtimeType identity)
-            (GraphQL.Execution.mergedFieldSelectionSet fields))) :
-    ResponseValueResultAlignedEquivalent
-      (completeValue schema resolvers variableValues (childDepth + 1)
-        (.named parentType) (GraphQL.Execution.mergedFieldSelectionSet fields)
-        (.object runtimeType identity) none)
-      (GraphQL.Execution.completeValue schema resolvers variableValues
-        (childDepth + 1) (.named parentType) fields
-        (.object runtimeType identity)) := by
+    (hchild
+      : schema.typeIncludesObjectBool parentType runtimeType = true
+        -> RootSelectionResultAlignedEquivalent
+            (executeRootSelectionSet schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet fields))
+            (GraphQL.Execution.executeRootSelectionSet schema resolvers
+              variableValues childDepth runtimeType (.object runtimeType identity)
+              (GraphQL.Execution.mergedFieldSelectionSet fields)))
+    : ResponseValueResultAlignedEquivalent
+        (completeValue schema resolvers variableValues (childDepth + 1)
+          (.named parentType) (GraphQL.Execution.mergedFieldSelectionSet fields)
+          (.object runtimeType identity) none)
+        (GraphQL.Execution.completeValue schema resolvers variableValues
+          (childDepth + 1) (.named parentType) fields
+          (.object runtimeType identity)) := by
   cases hincludes :
       schema.typeIncludesObjectBool parentType runtimeType with
   | false =>
@@ -381,23 +386,23 @@ theorem completeValue_object_group_aligned_of_guarded_merged_child_state
 theorem completeValue_named_group_aligned_of_guarded_merged_child_states
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (fields : List ExecutableField) :
-    ∀ (depth : Nat) (parentType : Name) (value : ResolverValue ObjectIdentity),
-      (∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-        schema.typeIncludesObjectBool parentType runtimeType = true ->
-          RootSelectionResultAlignedEquivalent
-            (executeRootSelectionSet schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity)
-              (GraphQL.Execution.mergedFieldSelectionSet fields))
-            (GraphQL.Execution.executeRootSelectionSet schema resolvers
-              variableValues childDepth runtimeType (.object runtimeType identity)
-              (GraphQL.Execution.mergedFieldSelectionSet fields))) ->
-        ResponseValueResultAlignedEquivalent
-          (completeValue schema resolvers variableValues depth (.named parentType)
-            (GraphQL.Execution.mergedFieldSelectionSet fields) value none)
-          (GraphQL.Execution.completeValue schema resolvers variableValues depth
-            (.named parentType) fields value) := by
+    (variableValues : VariableValues) (fields : List ExecutableField)
+    : ∀ (depth : Nat) (parentType : Name) (value : ResolverValue ObjectIdentity),
+        (∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> schema.typeIncludesObjectBool parentType runtimeType = true
+          -> RootSelectionResultAlignedEquivalent
+              (executeRootSelectionSet schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity)
+                (GraphQL.Execution.mergedFieldSelectionSet fields))
+              (GraphQL.Execution.executeRootSelectionSet schema resolvers
+                variableValues childDepth runtimeType (.object runtimeType identity)
+                (GraphQL.Execution.mergedFieldSelectionSet fields)))
+        -> ResponseValueResultAlignedEquivalent
+            (completeValue schema resolvers variableValues depth (.named parentType)
+              (GraphQL.Execution.mergedFieldSelectionSet fields) value none)
+            (GraphQL.Execution.completeValue schema resolvers variableValues depth
+              (.named parentType) fields value) := by
   intro depth parentType value hchildren
   cases depth with
   | zero =>
@@ -437,24 +442,23 @@ theorem completeValue_named_group_aligned_of_guarded_merged_child_states
 theorem completeValue_group_aligned_of_guarded_merged_child_states
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (fields : List ExecutableField) :
-    ∀ (fieldType : TypeRef) (depth : Nat)
-      (value : ResolverValue ObjectIdentity),
-      (∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-        schema.typeIncludesObjectBool fieldType.namedType runtimeType = true ->
-          RootSelectionResultAlignedEquivalent
-            (executeRootSelectionSet schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity)
-              (GraphQL.Execution.mergedFieldSelectionSet fields))
-            (GraphQL.Execution.executeRootSelectionSet schema resolvers
-              variableValues childDepth runtimeType (.object runtimeType identity)
-              (GraphQL.Execution.mergedFieldSelectionSet fields))) ->
-        ResponseValueResultAlignedEquivalent
-          (completeValue schema resolvers variableValues depth fieldType
-            (GraphQL.Execution.mergedFieldSelectionSet fields) value none)
-          (GraphQL.Execution.completeValue schema resolvers variableValues depth
-            fieldType fields value) := by
+    (variableValues : VariableValues) (fields : List ExecutableField)
+    : ∀ (fieldType : TypeRef) (depth : Nat) (value : ResolverValue ObjectIdentity),
+        (∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> schema.typeIncludesObjectBool fieldType.namedType runtimeType = true
+          -> RootSelectionResultAlignedEquivalent
+              (executeRootSelectionSet schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity)
+                (GraphQL.Execution.mergedFieldSelectionSet fields))
+              (GraphQL.Execution.executeRootSelectionSet schema resolvers
+                variableValues childDepth runtimeType (.object runtimeType identity)
+                (GraphQL.Execution.mergedFieldSelectionSet fields)))
+        -> ResponseValueResultAlignedEquivalent
+            (completeValue schema resolvers variableValues depth fieldType
+              (GraphQL.Execution.mergedFieldSelectionSet fields) value none)
+            (GraphQL.Execution.completeValue schema resolvers variableValues depth
+              fieldType fields value) := by
   intro fieldType
   induction fieldType with
   | named typeName =>
@@ -559,25 +563,24 @@ theorem completeValue_group_aligned_of_guarded_merged_child_states
 theorem completeValue_group_aligned_of_contained_child_states
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (fields : List ExecutableField) :
-    ∀ (fieldType : TypeRef) (depth : Nat)
-      (value : ResolverValue ObjectIdentity),
-      (∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-        ValueContainsObject value runtimeType identity ->
-        schema.typeIncludesObjectBool fieldType.namedType runtimeType = true ->
-          RootSelectionResultAlignedEquivalent
-            (executeRootSelectionSet schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity)
-              (GraphQL.Execution.mergedFieldSelectionSet fields))
-            (GraphQL.Execution.executeRootSelectionSet schema resolvers
-              variableValues childDepth runtimeType (.object runtimeType identity)
-              (GraphQL.Execution.mergedFieldSelectionSet fields))) ->
-        ResponseValueResultAlignedEquivalent
-          (completeValue schema resolvers variableValues depth fieldType
-            (GraphQL.Execution.mergedFieldSelectionSet fields) value none)
-          (GraphQL.Execution.completeValue schema resolvers variableValues depth
-            fieldType fields value) := by
+    (variableValues : VariableValues) (fields : List ExecutableField)
+    : ∀ (fieldType : TypeRef) (depth : Nat) (value : ResolverValue ObjectIdentity),
+        (∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> ValueContainsObject value runtimeType identity
+          -> schema.typeIncludesObjectBool fieldType.namedType runtimeType = true
+          -> RootSelectionResultAlignedEquivalent
+              (executeRootSelectionSet schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity)
+                (GraphQL.Execution.mergedFieldSelectionSet fields))
+              (GraphQL.Execution.executeRootSelectionSet schema resolvers
+                variableValues childDepth runtimeType (.object runtimeType identity)
+                (GraphQL.Execution.mergedFieldSelectionSet fields)))
+        -> ResponseValueResultAlignedEquivalent
+            (completeValue schema resolvers variableValues depth fieldType
+              (GraphQL.Execution.mergedFieldSelectionSet fields) value none)
+            (GraphQL.Execution.completeValue schema resolvers variableValues depth
+              fieldType fields value) := by
   intro fieldType
   induction fieldType with
   | named typeName =>
@@ -722,28 +725,35 @@ theorem completeValueList_object_group_eq_spec_of_merged_child_states
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (childDepth : Nat)
-    (parentType : Name) (fields : List ExecutableField) :
-    ∀ (objects : List (Name × ObjectIdentity)),
-      (∀ object, object ∈ objects ->
-        ExecutionStateEquivalent
-          { window :=
-            { schema := schema
-              resolvers := resolvers
-              variableValues := variableValues
-              depth := childDepth
-              parentType := object.fst
-              source := .object object.fst object.snd
-              selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields }
-            initial := .object [] }) ->
-      completeValueList schema resolvers variableValues (childDepth + 1)
-        parentType (GraphQL.Execution.mergedFieldSelectionSet fields)
-        (objects.map
-          (fun object => (.object object.fst object.snd : ResolverValue ObjectIdentity)))
-        [] =
-      GraphQL.Execution.completeValueList schema resolvers variableValues
-        (childDepth + 1) parentType fields
-        (objects.map
-          (fun object => (.object object.fst object.snd : ResolverValue ObjectIdentity)))
+    (parentType : Name) (fields : List ExecutableField)
+    : ∀ (objects : List (Name × ObjectIdentity)),
+        (∀ object,
+          object ∈ objects
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := object.fst
+                    source := .object object.fst object.snd
+                    selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields
+                  }
+                initial := .object []
+              })
+        -> completeValueList schema resolvers variableValues (childDepth + 1)
+              parentType (GraphQL.Execution.mergedFieldSelectionSet fields)
+              (objects.map
+                (fun object =>
+                  (.object object.fst object.snd : ResolverValue ObjectIdentity)))
+              []
+            = GraphQL.Execution.completeValueList schema resolvers variableValues
+                (childDepth + 1) parentType fields
+                (objects.map
+                  (fun object =>
+                    (.object object.fst object.snd : ResolverValue ObjectIdentity)))
   | [], _hchildren => by
       simp [completeValueList, GraphQL.Execution.completeValueList]
   | object :: rest, hchildren => by
@@ -782,29 +792,36 @@ theorem completeValueList_object_group_eq_spec_of_guarded_merged_child_states
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (childDepth : Nat)
-    (parentType : Name) (fields : List ExecutableField) :
-    ∀ (objects : List (Name × ObjectIdentity)),
-      (∀ object, object ∈ objects ->
-        schema.typeIncludesObjectBool parentType object.fst = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := object.fst
-                source := .object object.fst object.snd
-                selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields }
-              initial := .object [] }) ->
-      completeValueList schema resolvers variableValues (childDepth + 1)
-        parentType (GraphQL.Execution.mergedFieldSelectionSet fields)
-        (objects.map
-          (fun object => (.object object.fst object.snd : ResolverValue ObjectIdentity)))
-        [] =
-      GraphQL.Execution.completeValueList schema resolvers variableValues
-        (childDepth + 1) parentType fields
-        (objects.map
-          (fun object => (.object object.fst object.snd : ResolverValue ObjectIdentity)))
+    (parentType : Name) (fields : List ExecutableField)
+    : ∀ (objects : List (Name × ObjectIdentity)),
+        (∀ object,
+          object ∈ objects
+          -> schema.typeIncludesObjectBool parentType object.fst = true
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := object.fst
+                    source := .object object.fst object.snd
+                    selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields
+                  }
+                initial := .object []
+              })
+        -> completeValueList schema resolvers variableValues (childDepth + 1)
+              parentType (GraphQL.Execution.mergedFieldSelectionSet fields)
+              (objects.map
+                (fun object =>
+                  (.object object.fst object.snd : ResolverValue ObjectIdentity)))
+              []
+            = GraphQL.Execution.completeValueList schema resolvers variableValues
+                (childDepth + 1) parentType fields
+                (objects.map
+                  (fun object =>
+                    (.object object.fst object.snd : ResolverValue ObjectIdentity)))
   | [], _hchildren => by
       simp [completeValueList, GraphQL.Execution.completeValueList]
   | object :: rest, hchildren => by
@@ -848,29 +865,36 @@ theorem completeValue_object_list_group_eq_spec_of_merged_child_states
     (variableValues : VariableValues) (childDepth : Nat)
     (parentType : Name) (fields : List ExecutableField)
     (objects : List (Name × ObjectIdentity))
-    (_hchildren :
-      ∀ object, object ∈ objects ->
-        ExecutionStateEquivalent
-          { window :=
-            { schema := schema
-              resolvers := resolvers
-              variableValues := variableValues
-              depth := childDepth
-              parentType := object.fst
-              source := .object object.fst object.snd
-              selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields }
-            initial := .object [] }) :
-    completeValue schema resolvers variableValues (childDepth + 2)
-      parentType (GraphQL.Execution.mergedFieldSelectionSet fields)
-      (.list
-        (objects.map
-          (fun object => (.object object.fst object.snd : ResolverValue ObjectIdentity))))
-      none =
-    GraphQL.Execution.completeValue schema resolvers variableValues
-      (childDepth + 2) parentType fields
-      (.list
-        (objects.map
-          (fun object => (.object object.fst object.snd : ResolverValue ObjectIdentity)))) := by
+    (_hchildren
+      : ∀ object,
+          object ∈ objects
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := object.fst
+                    source := .object object.fst object.snd
+                    selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields
+                  }
+                initial := .object []
+              })
+    : completeValue schema resolvers variableValues (childDepth + 2)
+        parentType (GraphQL.Execution.mergedFieldSelectionSet fields)
+        (.list
+          (objects.map
+            (fun object =>
+              (.object object.fst object.snd : ResolverValue ObjectIdentity))))
+        none
+      = GraphQL.Execution.completeValue schema resolvers variableValues
+          (childDepth + 2) parentType fields
+          (.list
+            (objects.map
+              (fun object =>
+                (.object object.fst object.snd : ResolverValue ObjectIdentity)))) := by
   simp [GraphQL.Algorithms.ExecutionUngrouped.completeValue,
     GraphQL.Execution.completeValue]
 
@@ -880,54 +904,65 @@ theorem completeValue_object_list_group_eq_spec_of_guarded_merged_child_states
     (variableValues : VariableValues) (childDepth : Nat)
     (parentType : Name) (fields : List ExecutableField)
     (objects : List (Name × ObjectIdentity))
-    (_hchildren :
-      ∀ object, object ∈ objects ->
-        schema.typeIncludesObjectBool parentType object.fst = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := object.fst
-                source := .object object.fst object.snd
-                selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields }
-              initial := .object [] }) :
-    completeValue schema resolvers variableValues (childDepth + 2)
-      parentType (GraphQL.Execution.mergedFieldSelectionSet fields)
-      (.list
-        (objects.map
-          (fun object => (.object object.fst object.snd : ResolverValue ObjectIdentity))))
-      none =
-    GraphQL.Execution.completeValue schema resolvers variableValues
-      (childDepth + 2) parentType fields
-      (.list
-        (objects.map
-          (fun object => (.object object.fst object.snd : ResolverValue ObjectIdentity)))) := by
+    (_hchildren
+      : ∀ object,
+          object ∈ objects
+          -> schema.typeIncludesObjectBool parentType object.fst = true
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := object.fst
+                    source := .object object.fst object.snd
+                    selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields
+                  }
+                initial := .object []
+              })
+    : completeValue schema resolvers variableValues (childDepth + 2)
+        parentType (GraphQL.Execution.mergedFieldSelectionSet fields)
+        (.list
+          (objects.map
+            (fun object =>
+              (.object object.fst object.snd : ResolverValue ObjectIdentity))))
+        none
+      = GraphQL.Execution.completeValue schema resolvers variableValues
+          (childDepth + 2) parentType fields
+          (.list
+            (objects.map
+              (fun object =>
+                (.object object.fst object.snd : ResolverValue ObjectIdentity)))) := by
   simp [GraphQL.Algorithms.ExecutionUngrouped.completeValue,
     GraphQL.Execution.completeValue]
 
 theorem completeValue_group_eq_spec_of_merged_child_states
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (fields : List ExecutableField) :
-    ∀ (depth : Nat) (parentType : Name) (value : ResolverValue ObjectIdentity),
-      (∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields }
-              initial := .object [] }) ->
-        completeValue schema resolvers variableValues depth parentType
-          (GraphQL.Execution.mergedFieldSelectionSet fields) value none =
-        GraphQL.Execution.completeValue schema resolvers variableValues depth
-          parentType fields value := by
+    (variableValues : VariableValues) (fields : List ExecutableField)
+    : ∀ (depth : Nat) (parentType : Name) (value : ResolverValue ObjectIdentity),
+        (∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields
+                  }
+                initial := .object []
+              })
+        -> completeValue schema resolvers variableValues depth parentType
+              (GraphQL.Execution.mergedFieldSelectionSet fields) value none
+            = GraphQL.Execution.completeValue schema resolvers variableValues depth
+                parentType fields value := by
   intro depth parentType value hchildren
   cases depth with
   | zero =>
@@ -956,25 +991,29 @@ theorem completeValue_group_eq_spec_of_merged_child_states
 theorem completeValue_group_eq_spec_of_guarded_merged_child_states
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (fields : List ExecutableField) :
-    ∀ (depth : Nat) (parentType : Name) (value : ResolverValue ObjectIdentity),
-      (∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-        schema.typeIncludesObjectBool parentType runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields }
-              initial := .object [] }) ->
-        completeValue schema resolvers variableValues depth parentType
-          (GraphQL.Execution.mergedFieldSelectionSet fields) value none =
-        GraphQL.Execution.completeValue schema resolvers variableValues depth
-          parentType fields value := by
+    (variableValues : VariableValues) (fields : List ExecutableField)
+    : ∀ (depth : Nat) (parentType : Name) (value : ResolverValue ObjectIdentity),
+        (∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> schema.typeIncludesObjectBool parentType runtimeType = true
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields
+                  }
+                initial := .object []
+              })
+        -> completeValue schema resolvers variableValues depth parentType
+              (GraphQL.Execution.mergedFieldSelectionSet fields) value none
+            = GraphQL.Execution.completeValue schema resolvers variableValues depth
+                parentType fields value := by
   intro depth parentType value hchildren
   cases depth with
   | zero =>
@@ -1005,26 +1044,30 @@ theorem completeValue_group_eq_spec_of_guarded_merged_child_states
 theorem completeValue_group_eq_spec_of_contained_child_states
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (fields : List ExecutableField) :
-    ∀ (depth : Nat) (parentType : Name) (value : ResolverValue ObjectIdentity),
-      (∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-        ValueContainsObject value runtimeType identity ->
-        schema.typeIncludesObjectBool parentType runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields }
-              initial := .object [] }) ->
-        completeValue schema resolvers variableValues depth parentType
-          (GraphQL.Execution.mergedFieldSelectionSet fields) value none =
-        GraphQL.Execution.completeValue schema resolvers variableValues depth
-          parentType fields value := by
+    (variableValues : VariableValues) (fields : List ExecutableField)
+    : ∀ (depth : Nat) (parentType : Name) (value : ResolverValue ObjectIdentity),
+        (∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> ValueContainsObject value runtimeType identity
+          -> schema.typeIncludesObjectBool parentType runtimeType = true
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := GraphQL.Execution.mergedFieldSelectionSet fields
+                  }
+                initial := .object []
+              })
+        -> completeValue schema resolvers variableValues depth parentType
+              (GraphQL.Execution.mergedFieldSelectionSet fields) value none
+            = GraphQL.Execution.completeValue schema resolvers variableValues depth
+                parentType fields value := by
   intro depth parentType value hchildren
   cases depth with
   | zero =>
@@ -1056,26 +1099,29 @@ theorem completeValue_group_eq_spec_of_contained_child_states
 theorem completeValue_single_field_eq_spec_of_guarded_child_states
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (field : ExecutableField) :
-    ∀ (fieldType : TypeRef) (depth : Nat)
-      (value : ResolverValue ObjectIdentity),
-      (∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-        schema.typeIncludesObjectBool fieldType.namedType runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := field.selectionSet }
-              initial := .object [] }) ->
-        completeValue schema resolvers variableValues depth fieldType
-          field.selectionSet value none =
-        GraphQL.Execution.completeValue schema resolvers variableValues depth
-          fieldType [field] value := by
+    (variableValues : VariableValues) (field : ExecutableField)
+    : ∀ (fieldType : TypeRef) (depth : Nat) (value : ResolverValue ObjectIdentity),
+        (∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> schema.typeIncludesObjectBool fieldType.namedType runtimeType = true
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := field.selectionSet
+                  }
+                initial := .object []
+              })
+        -> completeValue schema resolvers variableValues depth fieldType
+              field.selectionSet value none
+            = GraphQL.Execution.completeValue schema resolvers variableValues depth
+                fieldType [field] value := by
   intro fieldType
   induction fieldType with
   | named typeName =>
@@ -1180,27 +1226,30 @@ theorem completeValue_single_field_eq_spec_of_guarded_child_states
 theorem completeValue_single_field_eq_spec_of_contained_child_states
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (field : ExecutableField) :
-    ∀ (fieldType : TypeRef) (depth : Nat)
-      (value : ResolverValue ObjectIdentity),
-      (∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-        ValueContainsObject value runtimeType identity ->
-        schema.typeIncludesObjectBool fieldType.namedType runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := field.selectionSet }
-              initial := .object [] }) ->
-        completeValue schema resolvers variableValues depth fieldType
-          field.selectionSet value none =
-        GraphQL.Execution.completeValue schema resolvers variableValues depth
-          fieldType [field] value := by
+    (variableValues : VariableValues) (field : ExecutableField)
+    : ∀ (fieldType : TypeRef) (depth : Nat) (value : ResolverValue ObjectIdentity),
+        (∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> ValueContainsObject value runtimeType identity
+          -> schema.typeIncludesObjectBool fieldType.namedType runtimeType = true
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := field.selectionSet
+                  }
+                initial := .object []
+              })
+        -> completeValue schema resolvers variableValues depth fieldType
+              field.selectionSet value none
+            = GraphQL.Execution.completeValue schema resolvers variableValues depth
+                fieldType [field] value := by
   intro fieldType
   induction fieldType with
   | named typeName =>
@@ -1325,27 +1374,30 @@ theorem executeRootSelectionSet_single_field_succ_eq_spec_of_child_states
     (directives : List DirectiveApplication) (selectionSet : List Selection)
     (resolved : Option (ResolverValue ObjectIdentity))
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (hresolve :
-      resolvers.resolve parentType fieldName arguments source = resolved)
-    (hchildren :
-      ∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := selectionSet }
-              initial := .object [] }) :
-    executeRootSelectionSet schema resolvers variableValues (depth + 1)
-      parentType source
-      [.field responseName fieldName arguments directives selectionSet] =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      (depth + 1) parentType source
-      [.field responseName fieldName arguments directives selectionSet] := by
+    (hresolve : resolvers.resolve parentType fieldName arguments source = resolved)
+    (hchildren
+      : ∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := selectionSet
+                  }
+                initial := .object []
+              })
+    : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+        parentType source
+        [.field responseName fieldName arguments directives selectionSet]
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (depth + 1) parentType source
+          [.field responseName fieldName arguments directives selectionSet] := by
   apply executeRootSelectionSet_single_field_succ_eq_spec_of_completeValue
     schema resolvers variableValues depth parentType source responseName
     fieldName arguments directives selectionSet hallowed
@@ -1392,30 +1444,34 @@ theorem executeRootSelectionSet_single_field_succ_eq_spec_of_guarded_child_state
     (directives : List DirectiveApplication) (selectionSet : List Selection)
     (resolved : Option (ResolverValue ObjectIdentity))
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (hresolve :
-      resolvers.resolve parentType fieldName arguments source = resolved)
-    (hchildren :
-      ∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-        schema.typeIncludesObjectBool
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := selectionSet }
-              initial := .object [] }) :
-    executeRootSelectionSet schema resolvers variableValues (depth + 1)
-      parentType source
-      [.field responseName fieldName arguments directives selectionSet] =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      (depth + 1) parentType source
-      [.field responseName fieldName arguments directives selectionSet] := by
+    (hresolve : resolvers.resolve parentType fieldName arguments source = resolved)
+    (hchildren
+      : ∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> schema.typeIncludesObjectBool
+                ((schema.fieldReturnType? parentType fieldName).getD fieldName)
+                runtimeType
+              = true
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := selectionSet
+                  }
+                initial := .object []
+              })
+    : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+        parentType source
+        [.field responseName fieldName arguments directives selectionSet]
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (depth + 1) parentType source
+          [.field responseName fieldName arguments directives selectionSet] := by
   apply executeRootSelectionSet_single_field_succ_eq_spec_of_completeValue
     schema resolvers variableValues depth parentType source responseName
     fieldName arguments directives selectionSet hallowed
@@ -1463,31 +1519,35 @@ theorem executeRootSelectionSet_single_field_succ_eq_spec_of_contained_child_sta
     (directives : List DirectiveApplication) (selectionSet : List Selection)
     (resolved : Option (ResolverValue ObjectIdentity))
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (hresolve :
-      resolvers.resolve parentType fieldName arguments source = resolved)
-    (hchildren :
-      ∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-        ValueContainsObject resolved runtimeType identity ->
-        schema.typeIncludesObjectBool
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          runtimeType = true ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet := selectionSet }
-              initial := .object [] }) :
-    executeRootSelectionSet schema resolvers variableValues (depth + 1)
-      parentType source
-      [.field responseName fieldName arguments directives selectionSet] =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      (depth + 1) parentType source
-      [.field responseName fieldName arguments directives selectionSet] := by
+    (hresolve : resolvers.resolve parentType fieldName arguments source = resolved)
+    (hchildren
+      : ∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> ValueContainsObject resolved runtimeType identity
+          -> schema.typeIncludesObjectBool
+                ((schema.fieldReturnType? parentType fieldName).getD fieldName)
+                runtimeType
+              = true
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
+                    resolvers := resolvers
+                    variableValues := variableValues
+                    depth := childDepth
+                    parentType := runtimeType
+                    source := .object runtimeType identity
+                    selectionSet := selectionSet
+                  }
+                initial := .object []
+              })
+    : executeRootSelectionSet schema resolvers variableValues (depth + 1)
+        parentType source
+        [.field responseName fieldName arguments directives selectionSet]
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (depth + 1) parentType source
+          [.field responseName fieldName arguments directives selectionSet] := by
   apply executeRootSelectionSet_single_field_succ_eq_spec_of_completeValue
     schema resolvers variableValues depth parentType source responseName
     fieldName arguments directives selectionSet hallowed
@@ -1535,28 +1595,28 @@ theorem executeRootSelectionSet_single_field_succ_aligned_of_contained_child_sta
     (directives : List DirectiveApplication) (selectionSet : List Selection)
     (resolved : Option (ResolverValue ObjectIdentity))
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (hresolve :
-      resolvers.resolve parentType fieldName arguments source = resolved)
-    (hchildren :
-      ∀ childDepth runtimeType (identity : ObjectIdentity),
-        childDepth < depth ->
-        ValueContainsObject resolved runtimeType identity ->
-        schema.typeIncludesObjectBool
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          runtimeType = true ->
-          RootSelectionResultAlignedEquivalent
-            (executeRootSelectionSet schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) selectionSet)
-            (GraphQL.Execution.executeRootSelectionSet schema resolvers
-              variableValues childDepth runtimeType (.object runtimeType identity)
-              selectionSet)) :
-    RootSelectionResultAlignedEquivalent
-      (executeRootSelectionSet schema resolvers variableValues (depth + 1)
-        parentType source
-        [.field responseName fieldName arguments directives selectionSet])
-      (GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-        (depth + 1) parentType source
-        [.field responseName fieldName arguments directives selectionSet]) := by
+    (hresolve : resolvers.resolve parentType fieldName arguments source = resolved)
+    (hchildren
+      : ∀ childDepth runtimeType (identity : ObjectIdentity),
+          childDepth < depth
+          -> ValueContainsObject resolved runtimeType identity
+          -> schema.typeIncludesObjectBool
+                ((schema.fieldReturnType? parentType fieldName).getD fieldName)
+                runtimeType
+              = true
+          -> RootSelectionResultAlignedEquivalent
+              (executeRootSelectionSet schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) selectionSet)
+              (GraphQL.Execution.executeRootSelectionSet schema resolvers
+                variableValues childDepth runtimeType (.object runtimeType identity)
+                selectionSet))
+    : RootSelectionResultAlignedEquivalent
+        (executeRootSelectionSet schema resolvers variableValues (depth + 1)
+          parentType source
+          [.field responseName fieldName arguments directives selectionSet])
+        (GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (depth + 1) parentType source
+          [.field responseName fieldName arguments directives selectionSet]) := by
   apply executeRootSelectionSet_single_field_succ_aligned_of_completeValue
     schema resolvers variableValues depth parentType source responseName
     fieldName arguments directives selectionSet hallowed

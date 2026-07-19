@@ -58,10 +58,12 @@ mutual
 end
 
 def inlineOperation (operation : Operation) : Operation :=
-  { operation with
-    fragmentDefinitions := []
-    selectionSet :=
-      inlineSelectionSet operation.fragmentDefinitions operation.selectionSet }
+  {
+    operation with
+      fragmentDefinitions := []
+      selectionSet :=
+        inlineSelectionSet operation.fragmentDefinitions operation.selectionSet
+  }
 
 end Inline
 
@@ -92,18 +94,16 @@ def inlineOperationInlined (operation : Operation) : Prop :=
 
 -- Inlining preserves fragment-aware execution semantics.
 -- Witness: `GraphQL.NamedFragment.Semantics.fragmentAwareExecutionEquivalentToInline_holds`.
-def fragmentAwareExecutionEquivalentToInline
-    (schema : Schema) (operation : Operation) : Prop :=
+def fragmentAwareExecutionEquivalentToInline (schema : Schema) (operation : Operation)
+    : Prop :=
   SchemaWellFormedness.schemaWellFormed schema
   -> GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation
-  -> operationsEquivalent schema
-      operation
-      (Inline.inlineOperation operation)
+  -> operationsEquivalent schema operation (Inline.inlineOperation operation)
 
 -- Inlining preserves named-fragment operation validity.
 -- Witness: `GraphQL.NamedFragment.Semantics.fragmentAwareValidityPreservedToInline_holds`.
-def fragmentAwareValidityPreservedToInline
-    (schema : Schema) (operation : Operation) : Prop :=
+def fragmentAwareValidityPreservedToInline (schema : Schema) (operation : Operation)
+    : Prop :=
   GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation
   -> GraphQL.NamedFragment.Validation.operationDefinitionValid schema
       (Inline.inlineOperation operation)

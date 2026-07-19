@@ -7,23 +7,24 @@ namespace Semantics
 
 namespace FieldMergeInline
 
-def inlineScopedField
-    (field : GraphQL.NamedFragment.Validation.FieldMerge.ScopedField) :
-    GraphQL.NamedFragment.Validation.FieldMerge.ScopedField :=
-  { field with
-    selectionSet :=
-      Inline.inlineSelectionSet field.availableFragments field.selectionSet
-    availableFragments := [] }
+def inlineScopedField (field : GraphQL.NamedFragment.Validation.FieldMerge.ScopedField)
+    : GraphQL.NamedFragment.Validation.FieldMerge.ScopedField :=
+  {
+    field with
+      selectionSet :=
+        Inline.inlineSelectionSet field.availableFragments field.selectionSet
+      availableFragments := []
+  }
 
 mutual
-  theorem collectSelection_inlineSelection_eq_map :
-      ∀ (schema : Schema) (fragments : List FragmentDefinition)
-        (parentType : Name) (selection : Selection),
-        GraphQL.NamedFragment.Validation.FieldMerge.collectSelection schema []
+  theorem collectSelection_inlineSelection_eq_map
+      : ∀ (schema : Schema) (fragments : List FragmentDefinition)
+            (parentType : Name) (selection : Selection),
+          GraphQL.NamedFragment.Validation.FieldMerge.collectSelection schema []
             parentType (Inline.inlineSelection fragments selection)
-          =
-        (GraphQL.NamedFragment.Validation.FieldMerge.collectSelection schema
-          fragments parentType selection).map inlineScopedField
+          = (GraphQL.NamedFragment.Validation.FieldMerge.collectSelection schema
+              fragments parentType selection).map
+              inlineScopedField
     | schema, fragments, parentType,
         .field responseName fieldName arguments directives selectionSet => by
         simp [Inline.inlineSelection,
@@ -74,14 +75,14 @@ mutual
           apply Prod.Lex.right
           omega
 
-  theorem collectFields_inlineSelectionSet_eq_map :
-      ∀ (schema : Schema) (fragments : List FragmentDefinition)
-        (parentType : Name) (selectionSet : List Selection),
-        GraphQL.NamedFragment.Validation.FieldMerge.collectFields schema []
+  theorem collectFields_inlineSelectionSet_eq_map
+      : ∀ (schema : Schema) (fragments : List FragmentDefinition)
+            (parentType : Name) (selectionSet : List Selection),
+          GraphQL.NamedFragment.Validation.FieldMerge.collectFields schema []
             parentType (Inline.inlineSelectionSet fragments selectionSet)
-          =
-        (GraphQL.NamedFragment.Validation.FieldMerge.collectFields schema
-          fragments parentType selectionSet).map inlineScopedField
+          = (GraphQL.NamedFragment.Validation.FieldMerge.collectFields schema
+              fragments parentType selectionSet).map
+              inlineScopedField
     | schema, fragments, parentType, [] => by
         simp [GraphQL.NamedFragment.Validation.FieldMerge.collectFields]
     | schema, fragments, parentType, selection :: rest => by
@@ -108,11 +109,11 @@ end
 theorem fieldsInSetCanMerge_inlineSelectionSet_inductive
     {schema : Schema} {fragments : List FragmentDefinition}
     {parentType : Name} {selectionSet : List Selection}
-    (hmerge :
-      GraphQL.NamedFragment.Validation.FieldMerge.FieldsInSetCanMerge schema
-        fragments parentType selectionSet) :
-    GraphQL.NamedFragment.Validation.FieldMerge.FieldsInSetCanMerge schema []
-      parentType (Inline.inlineSelectionSet fragments selectionSet) := by
+    (hmerge
+      : GraphQL.NamedFragment.Validation.FieldMerge.FieldsInSetCanMerge schema
+          fragments parentType selectionSet)
+    : GraphQL.NamedFragment.Validation.FieldMerge.FieldsInSetCanMerge schema []
+        parentType (Inline.inlineSelectionSet fragments selectionSet) := by
   refine GraphQL.NamedFragment.Validation.FieldMerge.FieldsInSetCanMerge.rec
     (motive_1 := fun parentType selectionSet _ =>
       GraphQL.NamedFragment.Validation.FieldMerge.FieldsInSetCanMerge schema []
@@ -204,23 +205,23 @@ theorem fieldsInSetCanMerge_inlineSelectionSet_inductive
 theorem fieldsInSetCanMerge_inlineSelectionSet
     {schema : Schema} {fragments : List FragmentDefinition}
     {parentType : Name} {selectionSet : List Selection}
-    (hmerge :
-      GraphQL.NamedFragment.Validation.FieldMerge.fieldsInSetCanMerge schema
-        fragments parentType selectionSet) :
-    GraphQL.NamedFragment.Validation.FieldMerge.fieldsInSetCanMerge schema []
-      parentType (Inline.inlineSelectionSet fragments selectionSet) := by
+    (hmerge
+      : GraphQL.NamedFragment.Validation.FieldMerge.fieldsInSetCanMerge schema
+          fragments parentType selectionSet)
+    : GraphQL.NamedFragment.Validation.FieldMerge.fieldsInSetCanMerge schema []
+        parentType (Inline.inlineSelectionSet fragments selectionSet) := by
   exact fieldsInSetCanMerge_inlineSelectionSet_inductive hmerge
 
 end FieldMergeInline
 
 theorem inlineOperation_fieldMerge_of_valid
     {schema : Schema} {operation : Operation}
-    (hvalid :
-      GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation) :
-    GraphQL.NamedFragment.Validation.FieldMerge.fieldsInSetCanMerge schema
-      (Inline.inlineOperation operation).fragmentDefinitions
-      (Inline.inlineOperation operation).rootType
-      (Inline.inlineOperation operation).selectionSet := by
+    (hvalid
+      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    : GraphQL.NamedFragment.Validation.FieldMerge.fieldsInSetCanMerge schema
+        (Inline.inlineOperation operation).fragmentDefinitions
+        (Inline.inlineOperation operation).rootType
+        (Inline.inlineOperation operation).selectionSet := by
   rcases hvalid with
     ⟨_hroot, _hrootComposite, _hvariables, _huniqueFragments,
       _hfragmentsAcyclic, _hfragmentDefinitionsValid, _hselectionNonempty,
@@ -230,15 +231,14 @@ theorem inlineOperation_fieldMerge_of_valid
       simp [Inline.inlineOperation]
       exact FieldMergeInline.fieldsInSetCanMerge_inlineSelectionSet hmerge
 
-theorem inlineOperation_fragmentSideConditions
-    (schema : Schema) (operation : Operation) :
-    GraphQL.NamedFragment.Validation.fragmentNamesUnique
+theorem inlineOperation_fragmentSideConditions (schema : Schema) (operation : Operation)
+    : GraphQL.NamedFragment.Validation.fragmentNamesUnique
         (Inline.inlineOperation operation).fragmentDefinitions
       ∧ GraphQL.NamedFragment.Validation.fragmentsAcyclic
-        (Inline.inlineOperation operation).fragmentDefinitions
+          (Inline.inlineOperation operation).fragmentDefinitions
       ∧ GraphQL.NamedFragment.Validation.allFragmentDefinitionsValid schema
-        (Inline.inlineOperation operation).variableDefinitions
-        (Inline.inlineOperation operation).fragmentDefinitions := by
+          (Inline.inlineOperation operation).variableDefinitions
+          (Inline.inlineOperation operation).fragmentDefinitions := by
   cases operation with
   | mk name rootType variableDefinitions fragmentDefinitions selectionSet =>
       simp [Inline.inlineOperation,
@@ -249,16 +249,16 @@ theorem inlineOperation_fragmentSideConditions
 
 theorem inlineOperation_valid_of_selectionSetValid
     {schema : Schema} {operation : Operation}
-    (hvalid :
-      GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
-    (hselectionValid :
-      GraphQL.NamedFragment.Validation.selectionSetValid schema
-        (Inline.inlineOperation operation).variableDefinitions
-        (Inline.inlineOperation operation).fragmentDefinitions
-        (Inline.inlineOperation operation).rootType
-        (Inline.inlineOperation operation).selectionSet) :
-    GraphQL.NamedFragment.Validation.operationDefinitionValid schema
-      (Inline.inlineOperation operation) := by
+    (hvalid
+      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hselectionValid
+      : GraphQL.NamedFragment.Validation.selectionSetValid schema
+          (Inline.inlineOperation operation).variableDefinitions
+          (Inline.inlineOperation operation).fragmentDefinitions
+          (Inline.inlineOperation operation).rootType
+          (Inline.inlineOperation operation).selectionSet)
+    : GraphQL.NamedFragment.Validation.operationDefinitionValid schema
+        (Inline.inlineOperation operation) := by
   have hvalidOriginal := hvalid
   rcases hvalid with
     ⟨hroot, hrootComposite, hvariables, _huniqueFragments,

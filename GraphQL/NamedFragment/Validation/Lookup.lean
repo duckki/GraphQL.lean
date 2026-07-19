@@ -8,10 +8,10 @@ namespace Validation
 theorem lookupFragmentAndRestLt?_found_mem
     {fragmentName : Name} {fragments : List FragmentDefinition}
     {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }} :
-    lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining) ->
-      fragment ∈ fragments := by
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    : lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining)
+      -> fragment ∈ fragments := by
   induction fragments generalizing fragment with
   | nil =>
       intro hlookup
@@ -39,10 +39,10 @@ theorem lookupFragmentAndRestLt?_found_mem
 theorem lookupFragmentAndRestLt?_remaining_mem
     {fragmentName : Name} {fragments : List FragmentDefinition}
     {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }} :
-    lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining) ->
-      ∀ candidate, candidate ∈ remaining.val -> candidate ∈ fragments := by
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    : lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining)
+      -> ∀ candidate, candidate ∈ remaining.val -> candidate ∈ fragments := by
   induction fragments generalizing fragment with
   | nil =>
       intro hlookup
@@ -76,10 +76,10 @@ theorem lookupFragmentAndRestLt?_remaining_mem
 theorem lookupFragmentAndRestLt?_found_name
     {fragmentName : Name} {fragments : List FragmentDefinition}
     {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }} :
-    lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining) ->
-      fragment.name = fragmentName := by
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    : lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining)
+      -> fragment.name = fragmentName := by
   induction fragments generalizing fragment with
   | nil =>
       intro hlookup
@@ -105,9 +105,9 @@ theorem lookupFragmentAndRestLt?_found_name
 
 theorem lookupFragment?_found_mem
     {fragmentName : Name} {fragments : List FragmentDefinition}
-    {fragment : FragmentDefinition} :
-    lookupFragment? fragments fragmentName = some fragment ->
-      fragment ∈ fragments := by
+    {fragment : FragmentDefinition}
+    : lookupFragment? fragments fragmentName = some fragment
+      -> fragment ∈ fragments := by
   induction fragments generalizing fragment with
   | nil =>
       intro hlookup
@@ -135,9 +135,9 @@ theorem lookupFragment?_found_mem
 
 theorem lookupFragment?_found_name
     {fragmentName : Name} {fragments : List FragmentDefinition}
-    {fragment : FragmentDefinition} :
-    lookupFragment? fragments fragmentName = some fragment ->
-      fragment.name = fragmentName := by
+    {fragment : FragmentDefinition}
+    : lookupFragment? fragments fragmentName = some fragment
+      -> fragment.name = fragmentName := by
   induction fragments generalizing fragment with
   | nil =>
       intro hlookup
@@ -165,11 +165,10 @@ theorem lookupFragment?_found_name
 theorem lookupFragment?_of_lookupFragmentAndRestLt?
     {fragmentName : Name} {fragments : List FragmentDefinition}
     {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }} :
-    lookupFragmentAndRestLt? fragmentName fragments =
-        some (fragment, remaining) ->
-      lookupFragment? fragments fragmentName = some fragment := by
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    : lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining)
+      -> lookupFragment? fragments fragmentName = some fragment := by
   induction fragments generalizing fragment with
   | nil =>
       intro hlookup
@@ -206,13 +205,12 @@ theorem lookupFragment?_of_lookupFragmentAndRestLt?
 theorem fragmentNamesUnique_of_lookupFragmentAndRestLt?_remaining
     {fragmentName : Name} {fragments : List FragmentDefinition}
     {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
     (hunique : fragmentNamesUnique fragments)
-    (hlookup :
-      lookupFragmentAndRestLt? fragmentName fragments =
-        some (fragment, remaining)) :
-    fragmentNamesUnique remaining.val := by
+    (hlookup
+      : lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining))
+    : fragmentNamesUnique remaining.val := by
   induction fragments generalizing fragment with
   | nil =>
       simp [lookupFragmentAndRestLt?] at hlookup
@@ -244,12 +242,13 @@ theorem fragmentNamesUnique_of_lookupFragmentAndRestLt?_remaining
 
 theorem lookupFragmentAndRestLt?_some_of_lookupFragment?
     {fragmentName : Name} {fragments : List FragmentDefinition}
-    {fragment : FragmentDefinition} :
-    lookupFragment? fragments fragmentName = some fragment ->
-      ∃ remaining : { remaining : List FragmentDefinition //
-        remaining.length < fragments.length },
-        lookupFragmentAndRestLt? fragmentName fragments =
-          some (fragment, remaining) := by
+    {fragment : FragmentDefinition}
+    : lookupFragment? fragments fragmentName = some fragment
+      -> ∃ remaining
+            : { remaining : List FragmentDefinition
+                // remaining.length < fragments.length },
+          lookupFragmentAndRestLt? fragmentName fragments
+          = some (fragment, remaining) := by
   induction fragments generalizing fragment with
   | nil =>
       intro hlookup
@@ -283,15 +282,13 @@ theorem lookupFragmentAndRestLt?_some_of_lookupFragment?
 theorem lookupFragment?_remaining_of_ne
     {removedName otherName : Name} {fragments : List FragmentDefinition}
     {removed other : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
-    (hremove :
-      lookupFragmentAndRestLt? removedName fragments =
-        some (removed, remaining))
-    (hlookup :
-      lookupFragment? fragments otherName = some other)
-    (hne : removedName ≠ otherName) :
-    lookupFragment? remaining.val otherName = some other := by
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    (hremove
+      : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
+    (hlookup : lookupFragment? fragments otherName = some other)
+    (hne : removedName ≠ otherName)
+    : lookupFragment? remaining.val otherName = some other := by
   induction fragments generalizing removed other with
   | nil =>
       simp [lookupFragmentAndRestLt?] at hremove
@@ -346,8 +343,8 @@ theorem lookupFragment?_remaining_of_ne
 theorem lookupFragment?_eq_some_of_mem_unique
     {fragments : List FragmentDefinition} {fragment : FragmentDefinition}
     (hunique : fragmentNamesUnique fragments)
-    (hmem : fragment ∈ fragments) :
-    lookupFragment? fragments fragment.name = some fragment := by
+    (hmem : fragment ∈ fragments)
+    : lookupFragment? fragments fragment.name = some fragment := by
   induction fragments with
   | nil =>
       simp at hmem
@@ -380,18 +377,18 @@ theorem lookupFragment?_of_lookupFragmentAndRestLt?_remaining_original
     {removedName targetName : Name}
     {fragments : List FragmentDefinition}
     {removed target : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
-    {targetRemaining : { targetRemaining : List FragmentDefinition //
-      targetRemaining.length < remaining.val.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    {targetRemaining
+      : { targetRemaining : List FragmentDefinition
+          // targetRemaining.length < remaining.val.length }}
     (hunique : fragmentNamesUnique fragments)
-    (hremove :
-      lookupFragmentAndRestLt? removedName fragments =
-        some (removed, remaining))
-    (htarget :
-      lookupFragmentAndRestLt? targetName remaining.val =
-        some (target, targetRemaining)) :
-    lookupFragment? fragments targetName = some target := by
+    (hremove
+      : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
+    (htarget
+      : lookupFragmentAndRestLt? targetName remaining.val
+        = some (target, targetRemaining))
+    : lookupFragment? fragments targetName = some target := by
   have htargetMemRemaining : target ∈ remaining.val :=
     lookupFragmentAndRestLt?_found_mem htarget
   have htargetMem : target ∈ fragments :=
@@ -408,27 +405,24 @@ theorem lookupFragmentAndRestLt?_remaining_lift
     {removedName targetName : Name}
     {fragments : List FragmentDefinition}
     {removed target : FragmentDefinition}
-    {remaining : { xs : List FragmentDefinition //
-      xs.length < fragments.length }}
-    {targetRemaining : { xs : List FragmentDefinition //
-      xs.length < remaining.val.length }}
+    {remaining : { xs : List FragmentDefinition // xs.length < fragments.length }}
+    {targetRemaining
+      : { xs : List FragmentDefinition // xs.length < remaining.val.length }}
     (hne : removedName ≠ targetName)
-    (hremove :
-      lookupFragmentAndRestLt? removedName fragments =
-        some (removed, remaining))
-    (htarget :
-      lookupFragmentAndRestLt? targetName remaining.val =
-        some (target, targetRemaining)) :
-    ∃ sourceRemaining : { xs : List FragmentDefinition //
-        xs.length < fragments.length },
-      lookupFragmentAndRestLt? targetName fragments =
-        some (target, sourceRemaining)
-        ∧
-      ∃ liftedRemaining : { xs : List FragmentDefinition //
-          xs.length < sourceRemaining.val.length },
-        liftedRemaining.val = targetRemaining.val
-          ∧ lookupFragmentAndRestLt? removedName sourceRemaining.val =
-            some (removed, liftedRemaining) := by
+    (hremove
+      : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
+    (htarget
+      : lookupFragmentAndRestLt? targetName remaining.val
+        = some (target, targetRemaining))
+    : ∃ sourceRemaining
+          : { xs : List FragmentDefinition // xs.length < fragments.length },
+        lookupFragmentAndRestLt? targetName fragments = some (target, sourceRemaining)
+        ∧ ∃ liftedRemaining
+              : { xs : List FragmentDefinition
+                  // xs.length < sourceRemaining.val.length },
+            liftedRemaining.val = targetRemaining.val
+            ∧ lookupFragmentAndRestLt? removedName sourceRemaining.val
+              = some (removed, liftedRemaining) := by
   induction fragments generalizing removed target with
   | nil =>
       simp [lookupFragmentAndRestLt?] at hremove
@@ -510,16 +504,14 @@ theorem allFragmentDefinitionsValid_of_remaining_mem
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {fragments : List FragmentDefinition}
     {fragmentName : Name} {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
     {candidate : FragmentDefinition}
-    (hall :
-      allFragmentDefinitionsValid schema variableDefinitions fragments)
-    (hlookup :
-      lookupFragmentAndRestLt? fragmentName fragments =
-        some (fragment, remaining))
-    (hcandidate : candidate ∈ remaining.val) :
-    fragmentDefinitionValid schema variableDefinitions fragments candidate := by
+    (hall : allFragmentDefinitionsValid schema variableDefinitions fragments)
+    (hlookup
+      : lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining))
+    (hcandidate : candidate ∈ remaining.val)
+    : fragmentDefinitionValid schema variableDefinitions fragments candidate := by
   exact hall candidate
     (lookupFragmentAndRestLt?_remaining_mem hlookup candidate hcandidate)
 
@@ -527,30 +519,29 @@ theorem allFragmentDefinitionsValid_of_lookupFragmentAndRestLt?
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {fragments : List FragmentDefinition}
     {fragmentName : Name} {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
-    (hall :
-      allFragmentDefinitionsValid schema variableDefinitions fragments)
-    (hlookup :
-      lookupFragmentAndRestLt? fragmentName fragments =
-        some (fragment, remaining)) :
-    fragmentDefinitionValid schema variableDefinitions fragments fragment := by
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    (hall : allFragmentDefinitionsValid schema variableDefinitions fragments)
+    (hlookup
+      : lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining))
+    : fragmentDefinitionValid schema variableDefinitions fragments fragment := by
   exact hall fragment (lookupFragmentAndRestLt?_found_mem hlookup)
 
 theorem selectionValid_fragmentSpread_lookupFragmentAndRestLt?
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {fragments : List FragmentDefinition} {parentType fragmentName : Name}
     {directives : List DirectiveApplication}
-    (hvalid :
-      selectionValid schema variableDefinitions fragments parentType
-        (.fragmentSpread fragmentName directives)) :
-    GraphQL.Validation.directivesValid schema variableDefinitions directives
-      ∧ ∃ fragment, ∃ remaining : { remaining : List FragmentDefinition //
-            remaining.length < fragments.length },
-          lookupFragmentAndRestLt? fragmentName fragments =
-              some (fragment, remaining)
-            ∧ schema.isCompositeType fragment.typeCondition
-            ∧ schema.typesOverlap parentType fragment.typeCondition := by
+    (hvalid
+      : selectionValid schema variableDefinitions fragments parentType
+          (.fragmentSpread fragmentName directives))
+    : GraphQL.Validation.directivesValid schema variableDefinitions directives
+      ∧ ∃ fragment,
+        ∃ remaining
+            : { remaining : List FragmentDefinition
+                // remaining.length < fragments.length },
+          lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining)
+          ∧ schema.isCompositeType fragment.typeCondition
+          ∧ schema.typesOverlap parentType fragment.typeCondition := by
   simp [selectionValid] at hvalid
   rcases hvalid with
     ⟨hdirectives, fragment, hlookup, hcomposite, hoverlap⟩

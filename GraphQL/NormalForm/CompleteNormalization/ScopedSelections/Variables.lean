@@ -9,13 +9,14 @@ namespace CompleteNormalization
 
 theorem selectionSetBooleanVariables_erase_staticScopedFieldsWithResponseName_mem
     (schema : Schema) (boolCase : BoolCase)
-    (lookupParent groundType responseName : Name) (varName : BoolVar) :
-    ∀ selectionSet,
-      varName ∈ selectionSetBooleanVariables
-          (eraseCompleteScopedSelectionSet
-            (staticScopedFieldsWithResponseName schema boolCase lookupParent
-              groundType responseName selectionSet)) ->
-        varName ∈ selectionSetBooleanVariables selectionSet
+    (lookupParent groundType responseName : Name) (varName : BoolVar)
+    : ∀ selectionSet,
+        varName
+          ∈ selectionSetBooleanVariables
+              (eraseCompleteScopedSelectionSet
+                (staticScopedFieldsWithResponseName schema boolCase lookupParent
+                  groundType responseName selectionSet))
+        -> varName ∈ selectionSetBooleanVariables selectionSet
   | [], hmem => by
       simp [staticScopedFieldsWithResponseName,
         eraseCompleteScopedSelectionSet, selectionSetBooleanVariables] at hmem
@@ -171,16 +172,17 @@ theorem selectionSetBooleanVariables_erase_staticScopedFieldsWithResponseName_me
 theorem sourceSelectionSetVariables_erase_staticScopedFieldsWithResponseName
     (operation : Operation) (schema : Schema) (boolCase : BoolCase)
     (lookupParent groundType responseName : Name)
-    (selectionSet : List Selection) :
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables selectionSet ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    ∀ varName,
-      varName ∈ selectionSetBooleanVariables
-          (eraseCompleteScopedSelectionSet
-            (staticScopedFieldsWithResponseName schema boolCase lookupParent
-              groundType responseName selectionSet)) ->
-        varName ∈ selectionSetBooleanVariables operation.selectionSet := by
+    (selectionSet : List Selection)
+    : (∀ varName,
+        varName ∈ selectionSetBooleanVariables selectionSet
+        -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> ∀ varName,
+          varName
+            ∈ selectionSetBooleanVariables
+                (eraseCompleteScopedSelectionSet
+                  (staticScopedFieldsWithResponseName schema boolCase lookupParent
+                    groundType responseName selectionSet))
+          -> varName ∈ selectionSetBooleanVariables operation.selectionSet := by
   intro hsourceVars varName hmem
   exact hsourceVars varName
     (selectionSetBooleanVariables_erase_staticScopedFieldsWithResponseName_mem
@@ -190,17 +192,18 @@ theorem sourceSelectionSetVariables_erase_staticScopedFieldsWithResponseName
 theorem sourceSelectionSetVariables_merge_erase_staticScopedFieldsWithResponseName
     (operation : Operation) (schema : Schema) (boolCase : BoolCase)
     (lookupParent groundType responseName : Name)
-    (selectionSet : List Selection) :
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables selectionSet ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    ∀ varName,
-      varName ∈ selectionSetBooleanVariables
-          (mergeSelectionSets
-            (eraseCompleteScopedSelectionSet
-              (staticScopedFieldsWithResponseName schema boolCase
-                lookupParent groundType responseName selectionSet))) ->
-        varName ∈ selectionSetBooleanVariables operation.selectionSet := by
+    (selectionSet : List Selection)
+    : (∀ varName,
+        varName ∈ selectionSetBooleanVariables selectionSet
+        -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> ∀ varName,
+          varName
+            ∈ selectionSetBooleanVariables
+                (mergeSelectionSets
+                  (eraseCompleteScopedSelectionSet
+                    (staticScopedFieldsWithResponseName schema boolCase
+                      lookupParent groundType responseName selectionSet)))
+          -> varName ∈ selectionSetBooleanVariables operation.selectionSet := by
   intro hsourceVars varName hmem
   exact
     sourceSelectionSetVariables_erase_staticScopedFieldsWithResponseName
@@ -218,20 +221,22 @@ theorem sourceSelectionSetVariables_field_staticScoped_merged
     (schema : Schema) (boolCase : BoolCase)
     (lookupParent groundType responseName fieldName : Name)
     (arguments : List Argument) (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    ∀ varName,
-      varName ∈ selectionSetBooleanVariables
-          (selectionSet ++
-            mergeSelectionSets
-              (eraseCompleteScopedSelectionSet
-                (staticScopedFieldsWithResponseName schema boolCase
-                  lookupParent groundType responseName rest))) ->
-        varName ∈ selectionSetBooleanVariables operation.selectionSet := by
+    (selectionSet rest : List Selection)
+    : (∀ varName,
+        varName
+          ∈ selectionSetBooleanVariables
+              (Selection.field responseName fieldName arguments directives selectionSet
+                :: rest)
+        -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> ∀ varName,
+          varName
+            ∈ selectionSetBooleanVariables
+                (selectionSet
+                  ++ mergeSelectionSets
+                      (eraseCompleteScopedSelectionSet
+                        (staticScopedFieldsWithResponseName schema boolCase
+                          lookupParent groundType responseName rest)))
+          -> varName ∈ selectionSetBooleanVariables operation.selectionSet := by
   intro hsourceVars varName hmem
   have hmem' :
       varName ∈ selectionSetBooleanVariables selectionSet

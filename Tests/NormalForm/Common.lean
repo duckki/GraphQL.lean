@@ -15,45 +15,64 @@ def objectFieldDefinition (name typeName : Name) : FieldDefinition :=
   { name := name, outputType := .named typeName, arguments := [] }
 
 def groundTypingSchema : Schema :=
-  { queryType := rootType
+  {
+    queryType := rootType
     types :=
-      [ .object
-          { name := rootType
+      [
+        .object
+          {
+            name := rootType
             fields :=
-              [ objectFieldDefinition "hero" "Human"
-              , objectFieldDefinition "search" "Character" ]
-            interfaces := [] }
-      , .interface
-          { name := "Character"
+              [
+                objectFieldDefinition "hero" "Human",
+                objectFieldDefinition "search" "Character"
+              ]
+            interfaces := []
+          },
+        .interface
+          {
+            name := "Character"
             fields :=
-              [ stringFieldDefinition "id"
-              , stringFieldDefinition "name" ]
-            interfaces := [] }
-      , .object
-          { name := "Human"
+              [stringFieldDefinition "id", stringFieldDefinition "name"]
+            interfaces := []
+          },
+        .object
+          {
+            name := "Human"
             fields :=
-              [ stringFieldDefinition "id"
-              , stringFieldDefinition "name"
-              , stringFieldDefinition "homePlanet"
-              , objectFieldDefinition "companion" "Character" ]
-            interfaces := ["Character"] }
-      , .object
-          { name := "Droid"
+              [
+                stringFieldDefinition "id",
+                stringFieldDefinition "name",
+                stringFieldDefinition "homePlanet",
+                objectFieldDefinition "companion" "Character"
+              ]
+            interfaces := ["Character"]
+          },
+        .object
+          {
+            name := "Droid"
             fields :=
-              [ stringFieldDefinition "id"
-              , stringFieldDefinition "name"
-              , stringFieldDefinition "primaryFunction" ]
-            interfaces := ["Character"] } ] }
+              [
+                stringFieldDefinition "id",
+                stringFieldDefinition "name",
+                stringFieldDefinition "primaryFunction"
+              ]
+            interfaces := ["Character"]
+          }
+      ]
+  }
 
 def booleanVariableDefinition (name : Name) : VariableDefinition :=
   { name := name, typeRef := .nonNull (.named "Boolean") }
 
 def operationWith (selectionSet : List Selection) : Operation :=
-  { name := some "NormalFormSmoke"
+  {
+    name := some "NormalFormSmoke"
     rootType := rootType
     variableDefinitions :=
       [booleanVariableDefinition "x", booleanVariableDefinition "y"]
-    selectionSet := selectionSet }
+    selectionSet := selectionSet
+  }
 
 mutual
   def selectionWellFormedBool : Selection -> Bool
@@ -65,13 +84,11 @@ mutual
   def selectionSetWellFormedBool : List Selection -> Bool
     | [] => true
     | selection :: rest =>
-        selectionWellFormedBool selection
-          && selectionSetWellFormedBool rest
+        selectionWellFormedBool selection && selectionSetWellFormedBool rest
 end
 
 def operationWellFormedBool (operation : Operation) : Bool :=
-  !operation.selectionSet.isEmpty
-    && selectionSetWellFormedBool operation.selectionSet
+  !operation.selectionSet.isEmpty && selectionSetWellFormedBool operation.selectionSet
 
 def listEqBool (eq : α -> α -> Bool) : List α -> List α -> Bool
   | [], [] => true
@@ -109,13 +126,13 @@ mutual
         inputValueEqBool left right && inputValueListEqBool lefts rights
     | _, _ => false
 
-  def inputObjectFieldsEqBool :
-      List (Name × InputValue) -> List (Name × InputValue) -> Bool
+  def inputObjectFieldsEqBool
+      : List (Name × InputValue) -> List (Name × InputValue) -> Bool
     | [], [] => true
     | (leftName, leftValue) :: lefts, (rightName, rightValue) :: rights =>
         (leftName == rightName)
-          && inputValueEqBool leftValue rightValue
-          && inputObjectFieldsEqBool lefts rights
+        && inputValueEqBool leftValue rightValue
+        && inputObjectFieldsEqBool lefts rights
     | _, _ => false
 end
 
@@ -131,42 +148,37 @@ mutual
     | .object left, .object right => constInputObjectFieldsEqBool left right
     | _, _ => false
 
-  def constInputValueListEqBool :
-      List ConstInputValue -> List ConstInputValue -> Bool
+  def constInputValueListEqBool : List ConstInputValue -> List ConstInputValue -> Bool
     | [], [] => true
     | left :: lefts, right :: rights =>
-        constInputValueEqBool left right
-          && constInputValueListEqBool lefts rights
+        constInputValueEqBool left right && constInputValueListEqBool lefts rights
     | _, _ => false
 
-  def constInputObjectFieldsEqBool :
-      List (Name × ConstInputValue) -> List (Name × ConstInputValue) -> Bool
+  def constInputObjectFieldsEqBool
+      : List (Name × ConstInputValue) -> List (Name × ConstInputValue) -> Bool
     | [], [] => true
     | (leftName, leftValue) :: lefts, (rightName, rightValue) :: rights =>
         (leftName == rightName)
-          && constInputValueEqBool leftValue rightValue
-          && constInputObjectFieldsEqBool lefts rights
+        && constInputValueEqBool leftValue rightValue
+        && constInputObjectFieldsEqBool lefts rights
     | _, _ => false
 end
 
-def optionConstInputValueEqBool :
-    Option ConstInputValue -> Option ConstInputValue -> Bool
+def optionConstInputValueEqBool
+    : Option ConstInputValue -> Option ConstInputValue -> Bool
   | none, none => true
   | some left, some right => constInputValueEqBool left right
   | _, _ => false
 
 def argumentEqBool (left right : Argument) : Bool :=
-  (left.name == right.name)
-    && inputValueEqBool left.value right.value
+  (left.name == right.name) && inputValueEqBool left.value right.value
 
-def variableDefinitionEqBool
-    (left right : VariableDefinition) : Bool :=
+def variableDefinitionEqBool (left right : VariableDefinition) : Bool :=
   (left.name == right.name)
-    && typeRefEqBool left.typeRef right.typeRef
-    && optionConstInputValueEqBool left.defaultValue right.defaultValue
+  && typeRefEqBool left.typeRef right.typeRef
+  && optionConstInputValueEqBool left.defaultValue right.defaultValue
 
-def directiveEqBool :
-    DirectiveApplication -> DirectiveApplication -> Bool
+def directiveEqBool : DirectiveApplication -> DirectiveApplication -> Bool
   | .skip left, .skip right => inputValueEqBool left right
   | .include left, .include right => inputValueEqBool left right
   | _, _ => false
@@ -178,15 +190,15 @@ mutual
       .field rightResponseName rightFieldName rightArguments rightDirectives
         rightSelectionSet =>
         (leftResponseName == rightResponseName)
-          && (leftFieldName == rightFieldName)
-          && listEqBool argumentEqBool leftArguments rightArguments
-          && listEqBool directiveEqBool leftDirectives rightDirectives
-          && selectionSetEqBool leftSelectionSet rightSelectionSet
+        && (leftFieldName == rightFieldName)
+        && listEqBool argumentEqBool leftArguments rightArguments
+        && listEqBool directiveEqBool leftDirectives rightDirectives
+        && selectionSetEqBool leftSelectionSet rightSelectionSet
     | .inlineFragment leftTypeCondition leftDirectives leftSelectionSet,
       .inlineFragment rightTypeCondition rightDirectives rightSelectionSet =>
         optionNameEqBool leftTypeCondition rightTypeCondition
-          && listEqBool directiveEqBool leftDirectives rightDirectives
-          && selectionSetEqBool leftSelectionSet rightSelectionSet
+        && listEqBool directiveEqBool leftDirectives rightDirectives
+        && selectionSetEqBool leftSelectionSet rightSelectionSet
     | _, _ => false
 
   def selectionSetEqBool : List Selection -> List Selection -> Bool
@@ -198,10 +210,10 @@ end
 
 def operationEqBool (left right : Operation) : Bool :=
   optionNameEqBool left.name right.name
-    && (left.rootType == right.rootType)
-    && listEqBool variableDefinitionEqBool
+  && (left.rootType == right.rootType)
+  && listEqBool variableDefinitionEqBool
       left.variableDefinitions right.variableDefinitions
-    && selectionSetEqBool left.selectionSet right.selectionSet
+  && selectionSetEqBool left.selectionSet right.selectionSet
 
 def optionOperationEqBool : Option Operation -> Option Operation -> Bool
   | none, none => true
@@ -216,21 +228,21 @@ mutual
     | .list left, .list right => responseListEqBool left right
     | _, _ => false
 
-  def responseListEqBool :
-      List Execution.ResponseValue -> List Execution.ResponseValue -> Bool
+  def responseListEqBool
+      : List Execution.ResponseValue -> List Execution.ResponseValue -> Bool
     | [], [] => true
     | left :: lefts, right :: rights =>
         responseEqBool left right && responseListEqBool lefts rights
     | _, _ => false
 
-  def responseFieldsEqBool :
-      List (Name × Execution.ResponseValue) ->
-        List (Name × Execution.ResponseValue) -> Bool
+  def responseFieldsEqBool
+      : List (Name × Execution.ResponseValue) -> List (Name × Execution.ResponseValue)
+        -> Bool
     | [], [] => true
     | (leftName, leftValue) :: lefts, (rightName, rightValue) :: rights =>
         (leftName == rightName)
-          && responseEqBool leftValue rightValue
-          && responseFieldsEqBool lefts rights
+        && responseEqBool leftValue rightValue
+        && responseFieldsEqBool lefts rights
     | _, _ => false
 end
 
@@ -259,14 +271,15 @@ macro_rules
 
 def completeNormalizationRootBoolCaseBranchesFor
     (variables : List BoolVar)
-    (selectionSetForCase : BoolCase -> List Selection) :
-    List Selection :=
-  List.flatten ((allBoolCases variables).map
-    (fun boolCase =>
-      match selectionSetForCase boolCase with
-      | [] => []
-      | selection :: rest =>
-          wrapWithBoolCase boolCase (selection :: rest)))
+    (selectionSetForCase : BoolCase -> List Selection)
+    : List Selection :=
+  List.flatten
+    ((allBoolCases variables).map
+      (fun boolCase =>
+        match selectionSetForCase boolCase with
+        | [] => []
+        | selection :: rest =>
+            wrapWithBoolCase boolCase (selection :: rest)))
 
 end NormalForm
 end Tests

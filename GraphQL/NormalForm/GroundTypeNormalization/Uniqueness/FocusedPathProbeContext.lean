@@ -13,63 +13,64 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
-def PathLocalCurrentRuntimeSound (schema : Schema)
-    (current : Name × List Selection) : Prop :=
+def PathLocalCurrentRuntimeSound (schema : Schema) (current : Name × List Selection)
+    : Prop :=
   ∀ targetParent targetField runtimeType targetArguments
       (targetFieldDefinition : FieldDefinition),
-    schema.lookupField targetParent targetField = some targetFieldDefinition ->
-    (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    objectTypeNameBool schema targetFieldDefinition.outputType.namedType =
-      false ->
-    abstractRuntimeForFieldHeadDeep? schema targetParent targetField
-      targetArguments current.1 current.2 =
-        some runtimeType ->
-      schema.typeIncludesObjectBool
-        targetFieldDefinition.outputType.namedType runtimeType = true
+    schema.lookupField targetParent targetField = some targetFieldDefinition
+    -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool schema
+        = true
+    -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
+    -> abstractRuntimeForFieldHeadDeep? schema targetParent targetField
+          targetArguments current.1 current.2
+        = some runtimeType
+    -> schema.typeIncludesObjectBool
+          targetFieldDefinition.outputType.namedType runtimeType
+        = true
 
 def PathLocalSelectionSetHeadReady (schema : Schema)
-    (parentType : Name) (currentSelectionSet selectionSet : List Selection) :
-    Prop :=
+    (parentType : Name) (currentSelectionSet selectionSet : List Selection)
+    : Prop :=
   ∀ responseName fieldName arguments directives childSelectionSet
       (fieldDefinition : FieldDefinition),
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    objectTypeNameBool schema fieldDefinition.outputType.namedType = false ->
-      ∃ runtimeType,
+    Selection.field responseName fieldName arguments directives childSelectionSet
+      ∈ selectionSet
+    -> schema.lookupField parentType fieldName = some fieldDefinition
+    -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+        = true
+    -> objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+    -> ∃ runtimeType,
         abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-          arguments parentType currentSelectionSet = some runtimeType
-          ∧ schema.typeIncludesObjectBool
-            fieldDefinition.outputType.namedType runtimeType = true
+            arguments parentType currentSelectionSet
+          = some runtimeType
+        ∧ schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
 
 def PathLocalSupportValidNormal (schema : Schema)
-    (parentType : Name) (currentSelectionSet : List Selection) : Prop :=
+    (parentType : Name) (currentSelectionSet : List Selection)
+    : Prop :=
   ∃ members : List (List Selection),
     currentSelectionSet = List.flatten members
-      ∧ ∀ memberSelectionSet,
-        memberSelectionSet ∈ members ->
-          ∃ variableDefinitions,
+    ∧ ∀ memberSelectionSet,
+        memberSelectionSet ∈ members
+        -> ∃ variableDefinitions,
             Validation.selectionSetValid schema variableDefinitions
               parentType memberSelectionSet
             ∧ selectionSetDirectiveFree memberSelectionSet
             ∧ selectionSetNormal schema parentType memberSelectionSet
 
 def PathLocalSelectionSetCurrentContext
-    (selectionSet currentSelectionSet : List Selection) : Prop :=
-  ∃ pref suff : List Selection,
-    currentSelectionSet = pref ++ selectionSet ++ suff
+    (selectionSet currentSelectionSet : List Selection)
+    : Prop :=
+  ∃ pref suff : List Selection, currentSelectionSet = pref ++ selectionSet ++ suff
 
 theorem PathLocalCurrentRuntimeSound.of_valid_normal
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType : Name} {selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-      PathLocalCurrentRuntimeSound schema (parentType, selectionSet) := by
+    {parentType : Name} {selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> PathLocalCurrentRuntimeSound schema (parentType, selectionSet) := by
   intro hvalid hfree hnormal targetParent targetField runtimeType
     targetArguments targetFieldDefinition hlookup hcomposite hnonObject
     hruntime
@@ -79,12 +80,11 @@ theorem PathLocalCurrentRuntimeSound.of_valid_normal
 
 theorem PathLocalSelectionSetHeadReady.of_valid_normal_self
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType : Name} {selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-      PathLocalSelectionSetHeadReady schema parentType selectionSet
-        selectionSet := by
+    {parentType : Name} {selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> PathLocalSelectionSetHeadReady schema parentType selectionSet
+          selectionSet := by
   intro hvalid hnormal responseName fieldName arguments directives
     childSelectionSet fieldDefinition hmem hlookup hcomposite hnonObject
   exact
@@ -92,33 +92,32 @@ theorem PathLocalSelectionSetHeadReady.of_valid_normal_self
       hvalid hnormal hmem hlookup hcomposite hnonObject
 
 theorem abstractRuntimeForFieldHeadDeep?_member_flatten_promote_some_of_valid_normal_members
-    {schema : Schema}
-    {currentParent targetField targetRuntimeType : Name}
-    {targetArguments : List Argument}
-    {selectionSet : List Selection} {members : List (List Selection)}
-    {targetFieldDefinition : FieldDefinition} :
-    (∀ memberSelectionSet,
-      memberSelectionSet ∈ members ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions
-            currentParent memberSelectionSet
-          ∧ selectionSetDirectiveFree memberSelectionSet
-          ∧ selectionSetNormal schema currentParent memberSelectionSet) ->
-    selectionSet ∈ members ->
-    schema.lookupField currentParent targetField =
-      some targetFieldDefinition ->
-    (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    objectTypeNameBool schema targetFieldDefinition.outputType.namedType =
-      false ->
-    abstractRuntimeForFieldHeadDeep? schema currentParent targetField
-      targetArguments currentParent selectionSet = some targetRuntimeType ->
-      ∃ runtimeType,
-        abstractRuntimeForFieldHeadDeep? schema currentParent targetField
-          targetArguments currentParent (List.flatten members) =
-            some runtimeType
-        ∧ schema.typeIncludesObjectBool
-          targetFieldDefinition.outputType.namedType runtimeType = true := by
+    {schema : Schema} {currentParent targetField targetRuntimeType : Name}
+    {targetArguments : List Argument} {selectionSet : List Selection}
+    {members : List (List Selection)} {targetFieldDefinition : FieldDefinition}
+    : (∀ memberSelectionSet,
+        memberSelectionSet ∈ members
+        -> ∃ variableDefinitions,
+            Validation.selectionSetValid schema variableDefinitions
+              currentParent memberSelectionSet
+            ∧ selectionSetDirectiveFree memberSelectionSet
+            ∧ selectionSetNormal schema currentParent memberSelectionSet)
+      -> selectionSet ∈ members
+      -> schema.lookupField currentParent targetField = some targetFieldDefinition
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
+      -> abstractRuntimeForFieldHeadDeep? schema currentParent targetField
+            targetArguments currentParent selectionSet
+          = some targetRuntimeType
+      -> ∃ runtimeType,
+          abstractRuntimeForFieldHeadDeep? schema currentParent targetField
+              targetArguments currentParent (List.flatten members)
+            = some runtimeType
+          ∧ schema.typeIncludesObjectBool
+              targetFieldDefinition.outputType.namedType runtimeType
+            = true := by
   intro hmembers hmem htargetLookup htargetComposite htargetNonObject
     hlocalRuntime
   have hconcatRuntimeExists :
@@ -182,14 +181,15 @@ theorem abstractRuntimeForFieldHeadDeep?_member_flatten_some
     {schema : Schema}
     {currentParent targetField targetRuntimeType : Name}
     {targetArguments : List Argument}
-    {selectionSet : List Selection} {members : List (List Selection)} :
-    selectionSet ∈ members ->
-    abstractRuntimeForFieldHeadDeep? schema currentParent targetField
-      targetArguments currentParent selectionSet = some targetRuntimeType ->
-      ∃ runtimeType,
-        abstractRuntimeForFieldHeadDeep? schema currentParent targetField
-          targetArguments currentParent (List.flatten members) =
-            some runtimeType := by
+    {selectionSet : List Selection} {members : List (List Selection)}
+    : selectionSet ∈ members
+      -> abstractRuntimeForFieldHeadDeep? schema currentParent targetField
+            targetArguments currentParent selectionSet
+          = some targetRuntimeType
+      -> ∃ runtimeType,
+          abstractRuntimeForFieldHeadDeep? schema currentParent targetField
+            targetArguments currentParent (List.flatten members)
+          = some runtimeType := by
   intro hmem hlocalRuntime
   induction members with
   | nil =>
@@ -218,14 +218,12 @@ theorem abstractRuntimeForFieldHeadDeep?_member_flatten_some
 
 theorem PathLocalSelectionSetHeadReady.member_flatten_of_sound
     {schema : Schema} {currentParent : Name}
-    {selectionSet : List Selection} {members : List (List Selection)} :
-    PathLocalCurrentRuntimeSound schema
-      (currentParent, List.flatten members) ->
-    selectionSet ∈ members ->
-    PathLocalSelectionSetHeadReady schema currentParent selectionSet
-      selectionSet ->
-      PathLocalSelectionSetHeadReady schema currentParent
-        (List.flatten members) selectionSet := by
+    {selectionSet : List Selection} {members : List (List Selection)}
+    : PathLocalCurrentRuntimeSound schema (currentParent, List.flatten members)
+      -> selectionSet ∈ members
+      -> PathLocalSelectionSetHeadReady schema currentParent selectionSet selectionSet
+      -> PathLocalSelectionSetHeadReady schema currentParent
+          (List.flatten members) selectionSet := by
   intro hsound hmember hlocalReady responseName fieldName arguments
     directives childSelectionSet fieldDefinition hfieldMem hlookup
     hcomposite hnonObject
@@ -249,14 +247,12 @@ theorem PathLocalSelectionSetHeadReady.member_flatten_of_sound
 theorem PathLocalSelectionSetHeadReady.selection_in_member_flatten_of_sound
     {schema : Schema} {currentParent : Name}
     {memberRoot selectionSet : List Selection}
-    {members : List (List Selection)} :
-    PathLocalCurrentRuntimeSound schema
-      (currentParent, List.flatten members) ->
-    memberRoot ∈ members ->
-    PathLocalSelectionSetHeadReady schema currentParent memberRoot
-      selectionSet ->
-      PathLocalSelectionSetHeadReady schema currentParent
-        (List.flatten members) selectionSet := by
+    {members : List (List Selection)}
+    : PathLocalCurrentRuntimeSound schema (currentParent, List.flatten members)
+      -> memberRoot ∈ members
+      -> PathLocalSelectionSetHeadReady schema currentParent memberRoot selectionSet
+      -> PathLocalSelectionSetHeadReady schema currentParent
+          (List.flatten members) selectionSet := by
   intro hsound hmember hlocalReady responseName fieldName arguments
     directives childSelectionSet fieldDefinition hfieldMem hlookup
     hcomposite hnonObject
@@ -281,13 +277,14 @@ theorem abstractRuntimeForFieldHeadDeep?_append_context_some
     {schema : Schema}
     {currentParent targetField targetRuntimeType : Name}
     {targetArguments : List Argument}
-    {pref selectionSet suff : List Selection} :
-    abstractRuntimeForFieldHeadDeep? schema currentParent targetField
-      targetArguments currentParent selectionSet = some targetRuntimeType ->
-      ∃ runtimeType,
-        abstractRuntimeForFieldHeadDeep? schema currentParent targetField
-          targetArguments currentParent (pref ++ selectionSet ++ suff) =
-            some runtimeType := by
+    {pref selectionSet suff : List Selection}
+    : abstractRuntimeForFieldHeadDeep? schema currentParent targetField
+          targetArguments currentParent selectionSet
+        = some targetRuntimeType
+      -> ∃ runtimeType,
+          abstractRuntimeForFieldHeadDeep? schema currentParent targetField
+            targetArguments currentParent (pref ++ selectionSet ++ suff)
+          = some runtimeType := by
   intro hlocalRuntime
   rcases
       abstractRuntimeForFieldHeadDeep?_append_some_left_exists
@@ -311,13 +308,11 @@ theorem abstractRuntimeForFieldHeadDeep?_append_context_some
 
 theorem PathLocalSelectionSetHeadReady.append_context_of_sound
     {schema : Schema} {currentParent : Name}
-    {pref selectionSet suff : List Selection} :
-    PathLocalCurrentRuntimeSound schema
-      (currentParent, pref ++ selectionSet ++ suff) ->
-    PathLocalSelectionSetHeadReady schema currentParent selectionSet
-      selectionSet ->
-      PathLocalSelectionSetHeadReady schema currentParent
-        (pref ++ selectionSet ++ suff) selectionSet := by
+    {pref selectionSet suff : List Selection}
+    : PathLocalCurrentRuntimeSound schema (currentParent, pref ++ selectionSet ++ suff)
+      -> PathLocalSelectionSetHeadReady schema currentParent selectionSet selectionSet
+      -> PathLocalSelectionSetHeadReady schema currentParent
+          (pref ++ selectionSet ++ suff) selectionSet := by
   intro hsound hlocalReady responseName fieldName arguments directives
     childSelectionSet fieldDefinition hfieldMem hlookup hcomposite
     hnonObject
@@ -338,22 +333,20 @@ theorem PathLocalSelectionSetHeadReady.append_context_of_sound
       hsound currentParent fieldName runtimeType arguments fieldDefinition
         hlookup hcomposite hnonObject hruntime⟩
 
-theorem PathLocalSelectionSetCurrentContext.self
-    {selectionSet : List Selection} :
-    PathLocalSelectionSetCurrentContext selectionSet selectionSet := by
+theorem PathLocalSelectionSetCurrentContext.self {selectionSet : List Selection}
+    : PathLocalSelectionSetCurrentContext selectionSet selectionSet := by
   exact ⟨[], [], by simp⟩
 
 theorem PathLocalSelectionSetCurrentContext.headReady_of_valid_normal
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name}
-    {selectionSet currentSelectionSet : List Selection} :
-    PathLocalCurrentRuntimeSound schema (parentType, currentSelectionSet) ->
-    PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet ->
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-      PathLocalSelectionSetHeadReady schema parentType currentSelectionSet
-        selectionSet := by
+    {selectionSet currentSelectionSet : List Selection}
+    : PathLocalCurrentRuntimeSound schema (parentType, currentSelectionSet)
+      -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet
+      -> Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> PathLocalSelectionSetHeadReady schema parentType currentSelectionSet
+          selectionSet := by
   intro hsound hcontext hvalid hnormal
   rcases hcontext with ⟨pref, suff, hcurrent⟩
   subst currentSelectionSet
@@ -362,11 +355,10 @@ theorem PathLocalSelectionSetCurrentContext.headReady_of_valid_normal
       (by simpa using hsound)
       (PathLocalSelectionSetHeadReady.of_valid_normal_self hvalid hnormal)
 
-theorem PathLocalSelectionSetCurrentContext.trans
-    {inner middle outer : List Selection} :
-    PathLocalSelectionSetCurrentContext inner middle ->
-    PathLocalSelectionSetCurrentContext middle outer ->
-      PathLocalSelectionSetCurrentContext inner outer := by
+theorem PathLocalSelectionSetCurrentContext.trans {inner middle outer : List Selection}
+    : PathLocalSelectionSetCurrentContext inner middle
+      -> PathLocalSelectionSetCurrentContext middle outer
+      -> PathLocalSelectionSetCurrentContext inner outer := by
   intro hinner houter
   rcases hinner with ⟨innerPref, innerSuff, hmiddle⟩
   rcases houter with ⟨outerPref, outerSuff, houterEq⟩
@@ -381,23 +373,27 @@ theorem abstractRuntimeForFieldHeadDeep?_append_some_include_of_sound
     {currentParent targetParent targetField runtimeType : Name}
     {targetArguments : List Argument}
     {left right : List Selection}
-    {targetFieldDefinition : FieldDefinition} :
-    (∀ leftRuntimeType,
-      abstractRuntimeForFieldHeadDeep? schema targetParent targetField
-        targetArguments currentParent left = some leftRuntimeType ->
-        schema.typeIncludesObjectBool
-          targetFieldDefinition.outputType.namedType leftRuntimeType =
-          true) ->
-    (∀ rightRuntimeType,
-      abstractRuntimeForFieldHeadDeep? schema targetParent targetField
-        targetArguments currentParent right = some rightRuntimeType ->
-        schema.typeIncludesObjectBool
-          targetFieldDefinition.outputType.namedType rightRuntimeType =
-          true) ->
-    abstractRuntimeForFieldHeadDeep? schema targetParent targetField
-      targetArguments currentParent (left ++ right) = some runtimeType ->
-      schema.typeIncludesObjectBool
-        targetFieldDefinition.outputType.namedType runtimeType = true := by
+    {targetFieldDefinition : FieldDefinition}
+    : (∀ leftRuntimeType,
+        abstractRuntimeForFieldHeadDeep? schema targetParent targetField
+            targetArguments currentParent left
+          = some leftRuntimeType
+        -> schema.typeIncludesObjectBool
+              targetFieldDefinition.outputType.namedType leftRuntimeType
+            = true)
+      -> (∀ rightRuntimeType,
+            abstractRuntimeForFieldHeadDeep? schema targetParent targetField
+                targetArguments currentParent right
+              = some rightRuntimeType
+            -> schema.typeIncludesObjectBool
+                  targetFieldDefinition.outputType.namedType rightRuntimeType
+                = true)
+      -> abstractRuntimeForFieldHeadDeep? schema targetParent targetField
+            targetArguments currentParent (left ++ right)
+          = some runtimeType
+      -> schema.typeIncludesObjectBool
+            targetFieldDefinition.outputType.namedType runtimeType
+          = true := by
   intro hleftInclude hrightInclude happendedRuntime
   induction left generalizing currentParent runtimeType with
   | nil =>
@@ -603,10 +599,10 @@ theorem abstractRuntimeForFieldHeadDeep?_append_some_include_of_sound
 
 theorem PathLocalCurrentRuntimeSound.append
     {schema : Schema} {currentParent : Name}
-    {left right : List Selection} :
-    PathLocalCurrentRuntimeSound schema (currentParent, left) ->
-    PathLocalCurrentRuntimeSound schema (currentParent, right) ->
-      PathLocalCurrentRuntimeSound schema (currentParent, left ++ right) := by
+    {left right : List Selection}
+    : PathLocalCurrentRuntimeSound schema (currentParent, left)
+      -> PathLocalCurrentRuntimeSound schema (currentParent, right)
+      -> PathLocalCurrentRuntimeSound schema (currentParent, left ++ right) := by
   intro hleft hright targetParent targetField runtimeType targetArguments
     targetFieldDefinition hlookup hcomposite hnonObject hruntime
   exact
@@ -626,13 +622,11 @@ theorem PathLocalCurrentRuntimeSound.append
 
 theorem PathLocalCurrentRuntimeSound.flatten
     {schema : Schema} {currentParent : Name}
-    {members : List (List Selection)} :
-    (∀ memberSelectionSet,
-      memberSelectionSet ∈ members ->
-        PathLocalCurrentRuntimeSound schema
-          (currentParent, memberSelectionSet)) ->
-      PathLocalCurrentRuntimeSound schema
-        (currentParent, List.flatten members) := by
+    {members : List (List Selection)}
+    : (∀ memberSelectionSet,
+        memberSelectionSet ∈ members
+        -> PathLocalCurrentRuntimeSound schema (currentParent, memberSelectionSet))
+      -> PathLocalCurrentRuntimeSound schema (currentParent, List.flatten members) := by
   intro hmembers
   induction members with
   | nil =>
@@ -655,14 +649,12 @@ theorem PathLocalCurrentRuntimeSound.flatten
 
 theorem PathLocalCurrentRuntimeSound.append_valid_normal_left
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {currentParent : Name} {left right : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions currentParent
-      left ->
-    selectionSetDirectiveFree left ->
-    selectionSetNormal schema currentParent left ->
-    PathLocalCurrentRuntimeSound schema (currentParent, right) ->
-      PathLocalCurrentRuntimeSound schema
-        (currentParent, left ++ right) := by
+    {currentParent : Name} {left right : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions currentParent left
+      -> selectionSetDirectiveFree left
+      -> selectionSetNormal schema currentParent left
+      -> PathLocalCurrentRuntimeSound schema (currentParent, right)
+      -> PathLocalCurrentRuntimeSound schema (currentParent, left ++ right) := by
   intro hleftValid hleftFree hleftNormal hrightSound targetParent
     targetField runtimeType targetArguments targetFieldDefinition hlookup
     hcomposite hnonObject hruntime
@@ -679,16 +671,15 @@ theorem PathLocalCurrentRuntimeSound.append_valid_normal_left
 
 theorem PathLocalCurrentRuntimeSound.flatten_valid_normal_members
     {schema : Schema} {currentParent : Name}
-    {members : List (List Selection)} :
-    (∀ memberSelectionSet,
-      memberSelectionSet ∈ members ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions
-            currentParent memberSelectionSet
-          ∧ selectionSetDirectiveFree memberSelectionSet
-          ∧ selectionSetNormal schema currentParent memberSelectionSet) ->
-      PathLocalCurrentRuntimeSound schema
-        (currentParent, List.flatten members) := by
+    {members : List (List Selection)}
+    : (∀ memberSelectionSet,
+        memberSelectionSet ∈ members
+        -> ∃ variableDefinitions,
+            Validation.selectionSetValid schema variableDefinitions
+              currentParent memberSelectionSet
+            ∧ selectionSetDirectiveFree memberSelectionSet
+            ∧ selectionSetNormal schema currentParent memberSelectionSet)
+      -> PathLocalCurrentRuntimeSound schema (currentParent, List.flatten members) := by
   intro hmembers targetParent targetField runtimeType targetArguments
     targetFieldDefinition hlookup hcomposite hnonObject hruntime
   exact
@@ -701,12 +692,11 @@ theorem PathLocalCurrentRuntimeSound.flatten_valid_normal_members
 
 theorem PathLocalSupportValidNormal.of_valid_normal_self
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType : Name} {selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-      PathLocalSupportValidNormal schema parentType selectionSet := by
+    {parentType : Name} {selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> PathLocalSupportValidNormal schema parentType selectionSet := by
   intro hvalid hfree hnormal
   refine ⟨[selectionSet], by simp, ?_⟩
   intro memberSelectionSet hmember
@@ -716,10 +706,9 @@ theorem PathLocalSupportValidNormal.of_valid_normal_self
 
 theorem PathLocalSupportValidNormal.sound
     {schema : Schema} {parentType : Name}
-    {currentSelectionSet : List Selection} :
-    PathLocalSupportValidNormal schema parentType currentSelectionSet ->
-      PathLocalCurrentRuntimeSound schema
-        (parentType, currentSelectionSet) := by
+    {currentSelectionSet : List Selection}
+    : PathLocalSupportValidNormal schema parentType currentSelectionSet
+      -> PathLocalCurrentRuntimeSound schema (parentType, currentSelectionSet) := by
   intro hsupport
   rcases hsupport with ⟨members, hcurrent, hmembers⟩
   subst currentSelectionSet
@@ -732,32 +721,30 @@ theorem pathLocalCompositeFieldRuntime_of_valid_normal_support_context
     {arguments : List Argument}
     {directives : List DirectiveApplication}
     {selectionSet currentSelectionSet childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    PathLocalSupportValidNormal schema parentType currentSelectionSet ->
-    PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-      ∃ runtimeType,
-        (((objectTypeNameBool schema fieldDefinition.outputType.namedType =
-              true
-            ∧ runtimeType = fieldDefinition.outputType.namedType)
-          ∨
-          ((TypeRef.named
-                fieldDefinition.outputType.namedType).isCompositeBool
-              schema = true
-            ∧ objectTypeNameBool schema
-                fieldDefinition.outputType.namedType = false
-            ∧ abstractRuntimeForFieldHeadDeep? schema parentType
-                fieldName arguments parentType currentSelectionSet =
-              some runtimeType))
-        ∧ schema.typeIncludesObjectBool
-            fieldDefinition.outputType.namedType runtimeType = true) := by
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> PathLocalSupportValidNormal schema parentType currentSelectionSet
+      -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> ∃ runtimeType,
+          (((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+                ∧ runtimeType = fieldDefinition.outputType.namedType)
+              ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
+                    = false
+                  ∧ abstractRuntimeForFieldHeadDeep? schema parentType
+                      fieldName arguments parentType currentSelectionSet
+                    = some runtimeType))
+            ∧ schema.typeIncludesObjectBool
+                fieldDefinition.outputType.namedType runtimeType
+              = true) := by
   intro hvalid hnormal hsupport hcontext hmem hlookup hcomposite
   by_cases hobject :
       objectTypeNameBool schema fieldDefinition.outputType.namedType = true
@@ -786,10 +773,10 @@ theorem pathLocalCompositeFieldRuntime_of_valid_normal_support_context
 
 theorem PathLocalSupportValidNormal.allFields_of_object
     {schema : Schema} {parentType : Name}
-    {currentSelectionSet : List Selection} :
-    PathLocalSupportValidNormal schema parentType currentSelectionSet ->
-    objectTypeNameBool schema parentType = true ->
-      selectionsAllFields currentSelectionSet := by
+    {currentSelectionSet : List Selection}
+    : PathLocalSupportValidNormal schema parentType currentSelectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> selectionsAllFields currentSelectionSet := by
   intro hsupport hobject selection hselectionMem
   rcases hsupport with ⟨members, hcurrent, hmembers⟩
   subst currentSelectionSet
@@ -803,13 +790,12 @@ theorem PathLocalSupportValidNormal.allFields_of_object
 
 theorem PathLocalSupportValidNormal.append_valid_normal_left
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType : Name} {left right : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      left ->
-    selectionSetDirectiveFree left ->
-    selectionSetNormal schema parentType left ->
-    PathLocalSupportValidNormal schema parentType right ->
-      PathLocalSupportValidNormal schema parentType (left ++ right) := by
+    {parentType : Name} {left right : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType left
+      -> selectionSetDirectiveFree left
+      -> selectionSetNormal schema parentType left
+      -> PathLocalSupportValidNormal schema parentType right
+      -> PathLocalSupportValidNormal schema parentType (left ++ right) := by
   intro hleftValid hleftFree hleftNormal hrightSupport
   rcases hrightSupport with ⟨rightMembers, hright, hrightMembers⟩
   subst right
@@ -822,10 +808,10 @@ theorem PathLocalSupportValidNormal.append_valid_normal_left
 
 theorem PathLocalSupportValidNormal.append
     {schema : Schema} {parentType : Name}
-    {left right : List Selection} :
-    PathLocalSupportValidNormal schema parentType left ->
-    PathLocalSupportValidNormal schema parentType right ->
-      PathLocalSupportValidNormal schema parentType (left ++ right) := by
+    {left right : List Selection}
+    : PathLocalSupportValidNormal schema parentType left
+      -> PathLocalSupportValidNormal schema parentType right
+      -> PathLocalSupportValidNormal schema parentType (left ++ right) := by
   intro hleftSupport hrightSupport
   rcases hleftSupport with ⟨leftMembers, hleft, hleftMembers⟩
   rcases hrightSupport with ⟨rightMembers, hright, hrightMembers⟩
@@ -839,11 +825,11 @@ theorem PathLocalSupportValidNormal.append
 
 theorem PathLocalSupportValidNormal.flatten
     {schema : Schema} {parentType : Name}
-    {members : List (List Selection)} :
-    (∀ memberSelectionSet,
-      memberSelectionSet ∈ members ->
-        PathLocalSupportValidNormal schema parentType memberSelectionSet) ->
-      PathLocalSupportValidNormal schema parentType (List.flatten members) := by
+    {members : List (List Selection)}
+    : (∀ memberSelectionSet,
+        memberSelectionSet ∈ members
+        -> PathLocalSupportValidNormal schema parentType memberSelectionSet)
+      -> PathLocalSupportValidNormal schema parentType (List.flatten members) := by
   intro hmembers
   induction members with
   | nil =>
@@ -861,15 +847,14 @@ theorem PathLocalSupportValidNormal.flatten
 
 theorem PathLocalSupportValidNormal.runtimePruned_of_valid_normal_runtime
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType runtimeType : Name} {selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    schema.typeIncludesObjectBool parentType runtimeType = true ->
-    objectTypeNameBool schema runtimeType = true ->
-      PathLocalSupportValidNormal schema runtimeType
-        (runtimePrunedSelectionSet schema runtimeType selectionSet) := by
+    {parentType runtimeType : Name} {selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> schema.typeIncludesObjectBool parentType runtimeType = true
+      -> objectTypeNameBool schema runtimeType = true
+      -> PathLocalSupportValidNormal schema runtimeType
+          (runtimePrunedSelectionSet schema runtimeType selectionSet) := by
   revert parentType runtimeType variableDefinitions
   induction selectionSet with
   | nil =>
@@ -1001,16 +986,14 @@ theorem PathLocalSupportValidNormal.runtimePruned_of_valid_normal_runtime
 
 theorem PathLocalCurrentRuntimeSound.runtimePruned_of_valid_normal_runtime
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType runtimeType : Name} {selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    schema.typeIncludesObjectBool parentType runtimeType = true ->
-    objectTypeNameBool schema runtimeType = true ->
-      PathLocalCurrentRuntimeSound schema
-        (runtimeType, runtimePrunedSelectionSet schema runtimeType
-          selectionSet) := by
+    {parentType runtimeType : Name} {selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> schema.typeIncludesObjectBool parentType runtimeType = true
+      -> objectTypeNameBool schema runtimeType = true
+      -> PathLocalCurrentRuntimeSound schema
+          (runtimeType, runtimePrunedSelectionSet schema runtimeType selectionSet) := by
   revert parentType runtimeType variableDefinitions
   induction selectionSet with
   | nil =>
@@ -1147,22 +1130,22 @@ theorem fieldChildMembersByHeadAtRuntime_sound_of_valid_normal_object
     {currentRuntimeType childRuntimeType targetField : Name}
     {targetArguments : List Argument}
     {currentSelectionSet memberSelectionSet : List Selection}
-    {targetFieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions currentRuntimeType
-      currentSelectionSet ->
-    selectionSetDirectiveFree currentSelectionSet ->
-    selectionSetNormal schema currentRuntimeType currentSelectionSet ->
-    objectTypeNameBool schema currentRuntimeType = true ->
-    objectTypeNameBool schema childRuntimeType = true ->
-    schema.lookupField currentRuntimeType targetField =
-      some targetFieldDefinition ->
-    schema.typeIncludesObjectBool
-      targetFieldDefinition.outputType.namedType childRuntimeType = true ->
-    memberSelectionSet ∈
-      fieldChildMembersByHeadAtRuntime schema currentRuntimeType
-        childRuntimeType targetField targetArguments currentSelectionSet ->
-      PathLocalCurrentRuntimeSound schema
-        (childRuntimeType, memberSelectionSet) := by
+    {targetFieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions currentRuntimeType
+        currentSelectionSet
+      -> selectionSetDirectiveFree currentSelectionSet
+      -> selectionSetNormal schema currentRuntimeType currentSelectionSet
+      -> objectTypeNameBool schema currentRuntimeType = true
+      -> objectTypeNameBool schema childRuntimeType = true
+      -> schema.lookupField currentRuntimeType targetField = some targetFieldDefinition
+      -> schema.typeIncludesObjectBool
+            targetFieldDefinition.outputType.namedType childRuntimeType
+          = true
+      -> memberSelectionSet
+          ∈ fieldChildMembersByHeadAtRuntime schema currentRuntimeType
+              childRuntimeType targetField targetArguments currentSelectionSet
+      -> PathLocalCurrentRuntimeSound schema
+          (childRuntimeType, memberSelectionSet) := by
   intro hvalid hfree hnormal hcurrentObject hchildObject htargetLookup
     hinclude hmember
   induction currentSelectionSet with
@@ -1253,24 +1236,25 @@ theorem fieldChildMembersByHeadAtRuntime_sound_of_valid_normal_object
 theorem PathLocalCurrentRuntimeSound.fieldPairPathLocalNextSelectionSet_of_valid_normal_object
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {currentRuntimeType childRuntimeType targetField : Name}
-    {targetArguments : List Argument}
-    {currentSelectionSet : List Selection}
-    {targetFieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions currentRuntimeType
-      currentSelectionSet ->
-    selectionSetDirectiveFree currentSelectionSet ->
-    selectionSetNormal schema currentRuntimeType currentSelectionSet ->
-    objectTypeNameBool schema currentRuntimeType = true ->
-    objectTypeNameBool schema childRuntimeType = true ->
-    schema.lookupField currentRuntimeType targetField =
-      some targetFieldDefinition ->
-    schema.typeIncludesObjectBool
-      targetFieldDefinition.outputType.namedType childRuntimeType = true ->
-      PathLocalCurrentRuntimeSound schema
-        (childRuntimeType,
-          fieldPairPathLocalNextSelectionSet schema currentRuntimeType
-            childRuntimeType targetField targetArguments
-            currentSelectionSet) := by
+    {targetArguments : List Argument} {currentSelectionSet : List Selection}
+    {targetFieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions currentRuntimeType
+        currentSelectionSet
+      -> selectionSetDirectiveFree currentSelectionSet
+      -> selectionSetNormal schema currentRuntimeType currentSelectionSet
+      -> objectTypeNameBool schema currentRuntimeType = true
+      -> objectTypeNameBool schema childRuntimeType = true
+      -> schema.lookupField currentRuntimeType targetField = some targetFieldDefinition
+      -> schema.typeIncludesObjectBool
+            targetFieldDefinition.outputType.namedType childRuntimeType
+          = true
+      -> PathLocalCurrentRuntimeSound schema
+          (
+            childRuntimeType,
+            fieldPairPathLocalNextSelectionSet schema currentRuntimeType
+              childRuntimeType targetField targetArguments
+              currentSelectionSet
+          ) := by
   intro hvalid hfree hnormal hcurrentObject hchildObject htargetLookup
     hinclude
   rw [fieldPairPathLocalNextSelectionSet_eq_flatten_fieldChildMembersByHeadAtRuntime]
@@ -1288,13 +1272,13 @@ theorem runtimePrunedSelectionSet_mem_fieldChildMembersByHeadAtRuntime_of_field_
     {currentRuntimeType childRuntimeType targetField responseName : Name}
     {targetArguments arguments : List Argument}
     {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    Selection.field responseName targetField arguments directives
-        childSelectionSet ∈ selectionSet ->
-    Argument.argumentsEquivalent arguments targetArguments ->
-      runtimePrunedSelectionSet schema childRuntimeType childSelectionSet ∈
-        fieldChildMembersByHeadAtRuntime schema currentRuntimeType
-          childRuntimeType targetField targetArguments selectionSet := by
+    {childSelectionSet selectionSet : List Selection}
+    : Selection.field responseName targetField arguments directives childSelectionSet
+        ∈ selectionSet
+      -> Argument.argumentsEquivalent arguments targetArguments
+      -> runtimePrunedSelectionSet schema childRuntimeType childSelectionSet
+          ∈ fieldChildMembersByHeadAtRuntime schema currentRuntimeType
+              childRuntimeType targetField targetArguments selectionSet := by
   intro hmem harguments
   induction selectionSet with
   | nil =>
@@ -1344,18 +1328,18 @@ theorem fieldChildMembersByHeadAtRuntime_mem_exists_field_of_allFields
     {schema : Schema}
     {currentRuntimeType childRuntimeType targetField : Name}
     {targetArguments : List Argument}
-    {currentSelectionSet memberSelectionSet : List Selection} :
-    selectionsAllFields currentSelectionSet ->
-    memberSelectionSet ∈
-      fieldChildMembersByHeadAtRuntime schema currentRuntimeType
-        childRuntimeType targetField targetArguments currentSelectionSet ->
-      ∃ responseName arguments directives childSelectionSet,
-        Selection.field responseName targetField arguments directives
-            childSelectionSet ∈ currentSelectionSet
+    {currentSelectionSet memberSelectionSet : List Selection}
+    : selectionsAllFields currentSelectionSet
+      -> memberSelectionSet
+          ∈ fieldChildMembersByHeadAtRuntime schema currentRuntimeType
+              childRuntimeType targetField targetArguments currentSelectionSet
+      -> ∃ responseName arguments directives childSelectionSet,
+          Selection.field responseName targetField arguments directives
+              childSelectionSet
+            ∈ currentSelectionSet
           ∧ Argument.argumentsEquivalent arguments targetArguments
-          ∧ memberSelectionSet =
-            runtimePrunedSelectionSet schema childRuntimeType
-              childSelectionSet := by
+          ∧ memberSelectionSet
+            = runtimePrunedSelectionSet schema childRuntimeType childSelectionSet := by
   intro hallFields hmember
   induction currentSelectionSet with
   | nil =>
@@ -1417,25 +1401,22 @@ theorem fieldChildMembersByHeadAtRuntime_mem_exists_field_of_allFields
           simp [Selection.isField] at hheadField
 
 theorem PathLocalSupportValidNormal.field_child_object_valid_normal_of_mem
-    {schema : Schema} {currentRuntimeType childRuntimeType targetField
-      responseName : Name}
-    {arguments : List Argument}
-    {directives : List DirectiveApplication}
+    {schema : Schema}
+    {currentRuntimeType childRuntimeType targetField responseName : Name}
+    {arguments : List Argument} {directives : List DirectiveApplication}
     {childSelectionSet currentSelectionSet : List Selection}
-    {targetFieldDefinition : FieldDefinition} :
-    PathLocalSupportValidNormal schema currentRuntimeType
-      currentSelectionSet ->
-    Selection.field responseName targetField arguments directives
-      childSelectionSet ∈ currentSelectionSet ->
-    schema.lookupField currentRuntimeType targetField =
-      some targetFieldDefinition ->
-    objectTypeNameBool schema childRuntimeType = true ->
-    targetFieldDefinition.outputType.namedType = childRuntimeType ->
-      ∃ variableDefinitions,
-        Validation.selectionSetValid schema variableDefinitions
-          childRuntimeType childSelectionSet
-        ∧ selectionSetDirectiveFree childSelectionSet
-        ∧ selectionSetNormal schema childRuntimeType childSelectionSet := by
+    {targetFieldDefinition : FieldDefinition}
+    : PathLocalSupportValidNormal schema currentRuntimeType currentSelectionSet
+      -> Selection.field responseName targetField arguments directives childSelectionSet
+          ∈ currentSelectionSet
+      -> schema.lookupField currentRuntimeType targetField = some targetFieldDefinition
+      -> objectTypeNameBool schema childRuntimeType = true
+      -> targetFieldDefinition.outputType.namedType = childRuntimeType
+      -> ∃ variableDefinitions,
+          Validation.selectionSetValid schema variableDefinitions
+            childRuntimeType childSelectionSet
+          ∧ selectionSetDirectiveFree childSelectionSet
+          ∧ selectionSetNormal schema childRuntimeType childSelectionSet := by
   intro hsupport hfieldMem htargetLookup hchildObject houtputEq
   subst childRuntimeType
   rcases hsupport with ⟨members, hcurrent, hmembers⟩
@@ -1463,21 +1444,20 @@ theorem PathLocalSupportValidNormal.field_child_valid_normal_of_mem_lookup
     {arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet currentSelectionSet : List Selection}
-    {targetFieldDefinition : FieldDefinition} :
-    PathLocalSupportValidNormal schema currentRuntimeType
-      currentSelectionSet ->
-    Selection.field responseName targetField arguments directives
-      childSelectionSet ∈ currentSelectionSet ->
-    schema.lookupField currentRuntimeType targetField =
-      some targetFieldDefinition ->
-    (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-      ∃ variableDefinitions,
-        Validation.selectionSetValid schema variableDefinitions
-          targetFieldDefinition.outputType.namedType childSelectionSet
-        ∧ selectionSetDirectiveFree childSelectionSet
-        ∧ selectionSetNormal schema
-          targetFieldDefinition.outputType.namedType childSelectionSet := by
+    {targetFieldDefinition : FieldDefinition}
+    : PathLocalSupportValidNormal schema currentRuntimeType currentSelectionSet
+      -> Selection.field responseName targetField arguments directives childSelectionSet
+          ∈ currentSelectionSet
+      -> schema.lookupField currentRuntimeType targetField = some targetFieldDefinition
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> ∃ variableDefinitions,
+          Validation.selectionSetValid schema variableDefinitions
+            targetFieldDefinition.outputType.namedType childSelectionSet
+          ∧ selectionSetDirectiveFree childSelectionSet
+          ∧ selectionSetNormal schema
+              targetFieldDefinition.outputType.namedType childSelectionSet := by
   intro hsupport hfieldMem htargetLookup hcomposite
   rcases hsupport with ⟨members, hcurrent, hmembers⟩
   subst currentSelectionSet
@@ -1511,18 +1491,16 @@ theorem PathLocalSupportValidNormal.fieldPairPathLocalNextSelectionSet_of_object
     {schema : Schema} {currentRuntimeType childRuntimeType targetField : Name}
     {targetArguments : List Argument}
     {currentSelectionSet : List Selection}
-    {targetFieldDefinition : FieldDefinition} :
-    PathLocalSupportValidNormal schema currentRuntimeType
-      currentSelectionSet ->
-    objectTypeNameBool schema currentRuntimeType = true ->
-    objectTypeNameBool schema childRuntimeType = true ->
-    schema.lookupField currentRuntimeType targetField =
-      some targetFieldDefinition ->
-    targetFieldDefinition.outputType.namedType = childRuntimeType ->
-      PathLocalSupportValidNormal schema childRuntimeType
-        (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
-          childRuntimeType targetField targetArguments
-          currentSelectionSet) := by
+    {targetFieldDefinition : FieldDefinition}
+    : PathLocalSupportValidNormal schema currentRuntimeType currentSelectionSet
+      -> objectTypeNameBool schema currentRuntimeType = true
+      -> objectTypeNameBool schema childRuntimeType = true
+      -> schema.lookupField currentRuntimeType targetField = some targetFieldDefinition
+      -> targetFieldDefinition.outputType.namedType = childRuntimeType
+      -> PathLocalSupportValidNormal schema childRuntimeType
+          (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
+            childRuntimeType targetField targetArguments
+            currentSelectionSet) := by
   intro hsupport hcurrentObject hchildObject htargetLookup houtputEq
   subst childRuntimeType
   rw [fieldPairPathLocalNextSelectionSet_eq_flatten_fieldChildMembersByHeadAtRuntime]
@@ -1567,23 +1545,22 @@ theorem PathLocalSupportValidNormal.fieldPairPathLocalNextSelectionSet_of_object
 
 theorem PathLocalSupportValidNormal.fieldPairPathLocalNextSelectionSet_of_abstract_output
     {schema : Schema} {currentRuntimeType childRuntimeType targetField : Name}
-    {targetArguments : List Argument}
-    {currentSelectionSet : List Selection}
-    {targetFieldDefinition : FieldDefinition} :
-    PathLocalSupportValidNormal schema currentRuntimeType
-      currentSelectionSet ->
-    objectTypeNameBool schema currentRuntimeType = true ->
-    objectTypeNameBool schema childRuntimeType = true ->
-    schema.lookupField currentRuntimeType targetField =
-      some targetFieldDefinition ->
-    (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    schema.typeIncludesObjectBool
-      targetFieldDefinition.outputType.namedType childRuntimeType = true ->
-      PathLocalSupportValidNormal schema childRuntimeType
-        (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
-          childRuntimeType targetField targetArguments
-          currentSelectionSet) := by
+    {targetArguments : List Argument} {currentSelectionSet : List Selection}
+    {targetFieldDefinition : FieldDefinition}
+    : PathLocalSupportValidNormal schema currentRuntimeType currentSelectionSet
+      -> objectTypeNameBool schema currentRuntimeType = true
+      -> objectTypeNameBool schema childRuntimeType = true
+      -> schema.lookupField currentRuntimeType targetField = some targetFieldDefinition
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> schema.typeIncludesObjectBool
+            targetFieldDefinition.outputType.namedType childRuntimeType
+          = true
+      -> PathLocalSupportValidNormal schema childRuntimeType
+          (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
+            childRuntimeType targetField targetArguments
+            currentSelectionSet) := by
   intro hsupport hcurrentObject hchildObject htargetLookup htargetComposite
     hinclude
   rw [fieldPairPathLocalNextSelectionSet_eq_flatten_fieldChildMembersByHeadAtRuntime]
@@ -1617,26 +1594,24 @@ theorem PathLocalSupportValidNormal.fieldPairPathLocalNextSelectionSet_of_abstra
 theorem PathLocalSelectionSetHeadReady.fieldPairPathLocalNextSelectionSet_field_child_of_valid_normal_object_output
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {currentRuntimeType childRuntimeType targetField responseName : Name}
-    {targetArguments arguments : List Argument}
-    {directives : List DirectiveApplication}
+    {targetArguments arguments : List Argument} {directives : List DirectiveApplication}
     {childSelectionSet currentSelectionSet : List Selection}
-    {targetFieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions currentRuntimeType
-      currentSelectionSet ->
-    selectionSetDirectiveFree currentSelectionSet ->
-    selectionSetNormal schema currentRuntimeType currentSelectionSet ->
-    objectTypeNameBool schema currentRuntimeType = true ->
-    objectTypeNameBool schema childRuntimeType = true ->
-    Selection.field responseName targetField arguments directives
-      childSelectionSet ∈ currentSelectionSet ->
-    Argument.argumentsEquivalent arguments targetArguments ->
-    schema.lookupField currentRuntimeType targetField =
-      some targetFieldDefinition ->
-    targetFieldDefinition.outputType.namedType = childRuntimeType ->
-      PathLocalSelectionSetHeadReady schema childRuntimeType
-        (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
-          childRuntimeType targetField targetArguments currentSelectionSet)
-        childSelectionSet := by
+    {targetFieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions currentRuntimeType
+        currentSelectionSet
+      -> selectionSetDirectiveFree currentSelectionSet
+      -> selectionSetNormal schema currentRuntimeType currentSelectionSet
+      -> objectTypeNameBool schema currentRuntimeType = true
+      -> objectTypeNameBool schema childRuntimeType = true
+      -> Selection.field responseName targetField arguments directives childSelectionSet
+          ∈ currentSelectionSet
+      -> Argument.argumentsEquivalent arguments targetArguments
+      -> schema.lookupField currentRuntimeType targetField = some targetFieldDefinition
+      -> targetFieldDefinition.outputType.namedType = childRuntimeType
+      -> PathLocalSelectionSetHeadReady schema childRuntimeType
+          (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
+            childRuntimeType targetField targetArguments currentSelectionSet)
+          childSelectionSet := by
   intro hvalid hfree hnormal hcurrentObject hchildObject hmem harguments
     htargetLookup houtputEq
   subst childRuntimeType
@@ -1706,18 +1681,18 @@ theorem PathLocalSelectionSetHeadReady.runtimePruned_inlineFragment_body_of_vali
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {normalParentType runtimeType : Name}
     {directives : List DirectiveApplication}
-    {bodySelectionSet selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions normalParentType
-      selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema normalParentType selectionSet ->
-    schema.typeIncludesObjectBool normalParentType runtimeType = true ->
-    objectTypeNameBool schema runtimeType = true ->
-    Selection.inlineFragment (some runtimeType) directives bodySelectionSet ∈
-      selectionSet ->
-      PathLocalSelectionSetHeadReady schema runtimeType
-        (runtimePrunedSelectionSet schema runtimeType selectionSet)
-        bodySelectionSet := by
+    {bodySelectionSet selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions normalParentType
+        selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema normalParentType selectionSet
+      -> schema.typeIncludesObjectBool normalParentType runtimeType = true
+      -> objectTypeNameBool schema runtimeType = true
+      -> Selection.inlineFragment (some runtimeType) directives bodySelectionSet
+          ∈ selectionSet
+      -> PathLocalSelectionSetHeadReady schema runtimeType
+          (runtimePrunedSelectionSet schema runtimeType selectionSet)
+          bodySelectionSet := by
   intro hvalid hfree hnormal hinclude hruntimeObject hmem
   have hbodyValid :
       Validation.selectionSetValid schema variableDefinitions runtimeType
@@ -1777,16 +1752,15 @@ theorem PathLocalSelectionSetHeadReady.runtimePruned_inlineFragment_body_of_vali
   simpa [hprunedContext] using hreadyContext
 
 theorem PathLocalSelectionSetCurrentContext.runtimePruned_inlineFragment_body_of_valid_normal
-    {schema : Schema}
-    {normalParentType runtimeType : Name}
+    {schema : Schema} {normalParentType runtimeType : Name}
     {directives : List DirectiveApplication}
-    {bodySelectionSet selectionSet : List Selection} :
-    selectionSetNormal schema normalParentType selectionSet ->
-    objectTypeNameBool schema runtimeType = true ->
-    Selection.inlineFragment (some runtimeType) directives
-      bodySelectionSet ∈ selectionSet ->
-      PathLocalSelectionSetCurrentContext bodySelectionSet
-        (runtimePrunedSelectionSet schema runtimeType selectionSet) := by
+    {bodySelectionSet selectionSet : List Selection}
+    : selectionSetNormal schema normalParentType selectionSet
+      -> objectTypeNameBool schema runtimeType = true
+      -> Selection.inlineFragment (some runtimeType) directives bodySelectionSet
+          ∈ selectionSet
+      -> PathLocalSelectionSetCurrentContext bodySelectionSet
+          (runtimePrunedSelectionSet schema runtimeType selectionSet) := by
   intro hnormal hruntimeObject hbodyMem
   rcases selectionSetNormal_inlineFragment_child_of_mem hnormal
       hbodyMem with
@@ -1816,35 +1790,35 @@ theorem PathLocalSelectionSetHeadReady.fieldPairPathLocalNextSelectionSet_abstra
     {currentRuntimeType childRuntimeType targetField responseName : Name}
     {targetArguments arguments : List Argument}
     {directives bodyDirectives : List DirectiveApplication}
-    {childSelectionSet bodySelectionSet currentSelectionSet :
-      List Selection}
-    {targetFieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions currentRuntimeType
-      currentSelectionSet ->
-    selectionSetDirectiveFree currentSelectionSet ->
-    selectionSetNormal schema currentRuntimeType currentSelectionSet ->
-    objectTypeNameBool schema currentRuntimeType = true ->
-    objectTypeNameBool schema childRuntimeType = true ->
-    Selection.field responseName targetField arguments directives
-      childSelectionSet ∈ currentSelectionSet ->
-    Selection.inlineFragment (some childRuntimeType) bodyDirectives
-      bodySelectionSet ∈ childSelectionSet ->
-    Argument.argumentsEquivalent arguments targetArguments ->
-    schema.lookupField currentRuntimeType targetField =
-      some targetFieldDefinition ->
-    (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    objectTypeNameBool schema targetFieldDefinition.outputType.namedType =
-      false ->
-    abstractRuntimeForFieldHeadDeep? schema currentRuntimeType targetField
-      arguments currentRuntimeType currentSelectionSet =
-        some childRuntimeType ->
-    schema.typeIncludesObjectBool targetFieldDefinition.outputType.namedType
-      childRuntimeType = true ->
-      PathLocalSelectionSetHeadReady schema childRuntimeType
-        (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
-          childRuntimeType targetField targetArguments currentSelectionSet)
-        bodySelectionSet := by
+    {childSelectionSet bodySelectionSet currentSelectionSet : List Selection}
+    {targetFieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions currentRuntimeType
+        currentSelectionSet
+      -> selectionSetDirectiveFree currentSelectionSet
+      -> selectionSetNormal schema currentRuntimeType currentSelectionSet
+      -> objectTypeNameBool schema currentRuntimeType = true
+      -> objectTypeNameBool schema childRuntimeType = true
+      -> Selection.field responseName targetField arguments directives childSelectionSet
+          ∈ currentSelectionSet
+      -> Selection.inlineFragment (some childRuntimeType) bodyDirectives
+            bodySelectionSet
+          ∈ childSelectionSet
+      -> Argument.argumentsEquivalent arguments targetArguments
+      -> schema.lookupField currentRuntimeType targetField = some targetFieldDefinition
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
+      -> abstractRuntimeForFieldHeadDeep? schema currentRuntimeType targetField
+            arguments currentRuntimeType currentSelectionSet
+          = some childRuntimeType
+      -> schema.typeIncludesObjectBool targetFieldDefinition.outputType.namedType
+            childRuntimeType
+          = true
+      -> PathLocalSelectionSetHeadReady schema childRuntimeType
+          (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
+            childRuntimeType targetField targetArguments currentSelectionSet)
+          bodySelectionSet := by
   intro hvalid hfree hnormal hcurrentObject hchildObject hfieldMem
     hbodyMem harguments htargetLookup htargetComposite htargetNonObject
     hruntime hinclude
@@ -1902,63 +1876,62 @@ theorem PathLocalSelectionSetHeadReady.fieldPairPathLocalNextSelectionSet_abstra
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectProbe_response_of_sound_fuel_ge
     (schema : Schema)
     (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName : Name)
+      currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField parentType fieldName
+      sourceRuntimeType responseName
+      : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
+    (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
     (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (runtimeType : Name) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-        ∧ runtimeType = fieldDefinition.outputType.namedType)
-      ∨
-      ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = true
-        ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-          false
-        ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-          arguments parentType currentSelectionSet = some runtimeType)) ->
-    PathLocalCurrentRuntimeSound schema (parentType, currentSelectionSet) ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-      Execution.executeField schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-            rightInitialSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues (fuel + 1)
-        (projectionTargetResolverValue
-          (.object sourceRuntimeType
-            (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
-        responseName
-        [{
-          parentType := parentType
-          responseName := responseName
-          fieldName := fieldName
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.singleFieldResult responseName
-        (wrapTypeRefSelectionSetResult fieldDefinition.outputType
-          (Execution.executeSelectionSetAsResponse schema
+    (runtimeType : Name)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+            ∧ runtimeType = fieldDefinition.outputType.namedType)
+          ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+                = true
+              ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+              ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                  arguments parentType currentSelectionSet
+                = some runtimeType))
+      -> PathLocalCurrentRuntimeSound schema (parentType, currentSelectionSet)
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> Execution.executeField schema
             (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
               (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
                 rightInitialSelectionSet targetParent leftField rightField
                 leftArguments rightArguments leftRuntime rightRuntime)
               targetParent leftField rightField leftArguments rightArguments)
-            variableValues
-            (fuel - leafProbeFuel fieldDefinition.outputType)
-            runtimeType
+            variableValues (fuel + 1)
             (projectionTargetResolverValue
-              (.object runtimeType
-                (FieldPairPathLocalProbeRef.target tag
-                  (fieldPairPathLocalNextSelectionSet schema parentType
-                    runtimeType fieldName arguments currentSelectionSet))))
-            childSelectionSet)) := by
+              (.object sourceRuntimeType
+                (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
+            responseName
+            [{
+              parentType := parentType
+              responseName := responseName
+              fieldName := fieldName
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = Execution.singleFieldResult responseName
+              (wrapTypeRefSelectionSetResult fieldDefinition.outputType
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                      rightInitialSelectionSet targetParent leftField rightField
+                      leftArguments rightArguments leftRuntime rightRuntime)
+                    targetParent leftField rightField leftArguments rightArguments)
+                  variableValues
+                  (fuel - leafProbeFuel fieldDefinition.outputType)
+                  runtimeType
+                  (projectionTargetResolverValue
+                    (.object runtimeType
+                      (FieldPairPathLocalProbeRef.target tag
+                        (fieldPairPathLocalNextSelectionSet schema parentType
+                          runtimeType fieldName arguments currentSelectionSet))))
+                  childSelectionSet)) := by
   intro hlookup hruntime hsound hfuel
   have hinclude :
       schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
@@ -1982,68 +1955,69 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectP
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectProbe_ok_of_child_response_of_sound
     (schema : Schema)
     (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName : Name)
+      currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField parentType fieldName
+      sourceRuntimeType responseName
+      : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
+    (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
     (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (runtimeType : Name)
-    (responseFields : List (Name × Execution.ResponseValue))
-    (childErrors : Nat) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-        ∧ runtimeType = fieldDefinition.outputType.namedType)
-      ∨
-      ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = true
-        ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-          false
-        ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-          arguments parentType currentSelectionSet = some runtimeType)) ->
-    PathLocalCurrentRuntimeSound schema (parentType, currentSelectionSet) ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-          (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-            rightInitialSelectionSet targetParent leftField rightField
-            leftArguments rightArguments leftRuntime rightRuntime)
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues
-        (fuel - leafProbeFuel fieldDefinition.outputType)
-        runtimeType
-        (projectionTargetResolverValue
-          (.object runtimeType
-            (FieldPairPathLocalProbeRef.target tag
-              (fieldPairPathLocalNextSelectionSet schema parentType
-                runtimeType fieldName arguments currentSelectionSet))))
-        childSelectionSet =
-      ({ data := Execution.ResponseValue.object responseFields,
-         errors := childErrors } : Execution.Response) ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-              rightInitialSelectionSet targetParent leftField rightField
-              leftArguments rightArguments leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1)
-          (projectionTargetResolverValue
-            (.object sourceRuntimeType
-              (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
-          responseName
-          [{
-            parentType := parentType
-            responseName := responseName
-            fieldName := fieldName
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors)
-        ∧ responseValue ≠ Execution.ResponseValue.null := by
+    (runtimeType : Name) (responseFields : List (Name × Execution.ResponseValue))
+    (childErrors : Nat)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+            ∧ runtimeType = fieldDefinition.outputType.namedType)
+          ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+                = true
+              ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+              ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                  arguments parentType currentSelectionSet
+                = some runtimeType))
+      -> PathLocalCurrentRuntimeSound schema (parentType, currentSelectionSet)
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                rightInitialSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues
+            (fuel - leafProbeFuel fieldDefinition.outputType)
+            runtimeType
+            (projectionTargetResolverValue
+              (.object runtimeType
+                (FieldPairPathLocalProbeRef.target tag
+                  (fieldPairPathLocalNextSelectionSet schema parentType
+                    runtimeType fieldName arguments currentSelectionSet))))
+            childSelectionSet
+          = ({
+                data := Execution.ResponseValue.object responseFields,
+                errors := childErrors
+              }
+              : Execution.Response)
+      -> ∃ responseValue fieldErrors,
+          Execution.executeField schema
+              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                  rightInitialSelectionSet targetParent leftField rightField
+                  leftArguments rightArguments leftRuntime rightRuntime)
+                targetParent leftField rightField leftArguments rightArguments)
+              variableValues (fuel + 1)
+              (projectionTargetResolverValue
+                (.object sourceRuntimeType
+                  (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
+              responseName
+              [{
+                parentType := parentType
+                responseName := responseName
+                fieldName := fieldName
+                arguments := arguments
+                selectionSet := childSelectionSet
+              }]
+            = .ok ([(responseName, responseValue)], fieldErrors)
+          ∧ responseValue ≠ Execution.ResponseValue.null := by
   intro hlookup hruntime hsound hfuel hchildResponse
   have hinclude :
       schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
@@ -2068,83 +2042,86 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectP
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_field_ok_of_field_children_of_sound
     (schema : Schema)
     (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType
-      sourceRuntimeType : Name)
-    (leftArguments rightArguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
-    (selectionSet : List Selection) :
-    PathLocalCurrentRuntimeSound schema (parentType, currentSelectionSet) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-        ∃ fieldDefinition,
-          schema.lookupField parentType fieldName = some fieldDefinition
-            ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
-            ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                schema = false
-              ∨ ∃ childRuntimeType responseFields childErrors,
-                (((objectTypeNameBool schema
-                        fieldDefinition.outputType.namedType = true
-                      ∧ childRuntimeType =
-                        fieldDefinition.outputType.namedType)
-                    ∨
-                    ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                        schema = true
-                      ∧ objectTypeNameBool schema
-                          fieldDefinition.outputType.namedType = false
-                      ∧ abstractRuntimeForFieldHeadDeep? schema parentType
-                          fieldName arguments parentType currentSelectionSet =
-                        some childRuntimeType))
-                  ∧ Execution.executeSelectionSetAsResponse schema
-                      (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                        (fieldPairPathLocalProbeResolvers schema
-                          leftInitialSelectionSet rightInitialSelectionSet
-                          targetParent leftField rightField leftArguments
-                          rightArguments leftRuntime rightRuntime)
-                        targetParent leftField rightField leftArguments
-                        rightArguments)
-                      variableValues
-                      (fuel - leafProbeFuel fieldDefinition.outputType)
-                      childRuntimeType
-                      (projectionTargetResolverValue
-                        (.object childRuntimeType
-                          (FieldPairPathLocalProbeRef.target tag
-                            (fieldPairPathLocalNextSelectionSet schema
-                              parentType childRuntimeType fieldName
-                              arguments currentSelectionSet))))
-                      childSelectionSet =
-                    ({ data := Execution.ResponseValue.object responseFields,
-                       errors := childErrors } : Execution.Response)))) ->
-      ∀ responseName fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-            childSelectionSet ∈ selectionSet ->
-          ∃ responseValue fieldErrors,
-            Execution.executeField schema
-              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                (fieldPairPathLocalProbeResolvers schema
-                  leftInitialSelectionSet rightInitialSelectionSet
+      currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField parentType sourceRuntimeType : Name)
+    (leftArguments rightArguments : List Argument) (leftRuntime rightRuntime : Name)
+    (tag : FieldPairProbeTag) (selectionSet : List Selection)
+    : PathLocalCurrentRuntimeSound schema (parentType, currentSelectionSet)
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> ∃ fieldDefinition,
+                schema.lookupField parentType fieldName = some fieldDefinition
+                ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
+                ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                        schema
+                      = false
+                    ∨ ∃ childRuntimeType responseFields childErrors,
+                        (((objectTypeNameBool schema
+                                  fieldDefinition.outputType.namedType
+                                = true
+                              ∧ childRuntimeType = fieldDefinition.outputType.namedType)
+                            ∨ ((TypeRef.named
+                                    fieldDefinition.outputType.namedType).isCompositeBool
+                                    schema
+                                  = true
+                                ∧ objectTypeNameBool schema
+                                    fieldDefinition.outputType.namedType
+                                  = false
+                                ∧ abstractRuntimeForFieldHeadDeep? schema parentType
+                                    fieldName arguments parentType currentSelectionSet
+                                  = some childRuntimeType))
+                          ∧ Execution.executeSelectionSetAsResponse schema
+                              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                                (fieldPairPathLocalProbeResolvers schema
+                                  leftInitialSelectionSet rightInitialSelectionSet
+                                  targetParent leftField rightField leftArguments
+                                  rightArguments leftRuntime rightRuntime)
+                                targetParent leftField rightField leftArguments
+                                rightArguments)
+                              variableValues
+                              (fuel - leafProbeFuel fieldDefinition.outputType)
+                              childRuntimeType
+                              (projectionTargetResolverValue
+                                (.object childRuntimeType
+                                  (FieldPairPathLocalProbeRef.target tag
+                                    (fieldPairPathLocalNextSelectionSet schema
+                                      parentType childRuntimeType fieldName
+                                      arguments currentSelectionSet))))
+                              childSelectionSet
+                            = ({
+                                  data := Execution.ResponseValue.object responseFields,
+                                  errors := childErrors
+                                }
+                                : Execution.Response))))
+      -> ∀ responseName fieldName arguments directives childSelectionSet,
+          Selection.field responseName fieldName arguments directives childSelectionSet
+            ∈ selectionSet
+          -> ∃ responseValue fieldErrors,
+              Execution.executeField schema
+                (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                  (fieldPairPathLocalProbeResolvers schema
+                    leftInitialSelectionSet rightInitialSelectionSet
+                    targetParent leftField rightField leftArguments
+                    rightArguments leftRuntime rightRuntime)
                   targetParent leftField rightField leftArguments
-                  rightArguments leftRuntime rightRuntime)
-                targetParent leftField rightField leftArguments
-                rightArguments)
-              variableValues (fuel + 1)
-              (projectionTargetResolverValue
-                (.object sourceRuntimeType
-                  (FieldPairPathLocalProbeRef.target tag
-                    currentSelectionSet)))
-              responseName
-              [{
-                parentType := parentType
-                responseName := responseName
-                fieldName := fieldName
-                arguments := arguments
-                selectionSet := childSelectionSet
-              }]
-            =
-            .ok ([(responseName, responseValue)], fieldErrors) := by
+                  rightArguments)
+                variableValues (fuel + 1)
+                (projectionTargetResolverValue
+                  (.object sourceRuntimeType
+                    (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
+                responseName
+                [{
+                  parentType := parentType
+                  responseName := responseName
+                  fieldName := fieldName
+                  arguments := arguments
+                  selectionSet := childSelectionSet
+                }]
+              = .ok ([(responseName, responseValue)], fieldErrors) := by
   intro hsound hchildren
   refine
     executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_field_ok_of_field_children
@@ -2182,74 +2159,79 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_field_o
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_of_field_children_of_sound
     (schema : Schema)
     (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType
-      sourceRuntimeType : Name)
-    (leftArguments rightArguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
-    (selectionSet : List Selection) :
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = true ->
-    PathLocalCurrentRuntimeSound schema (parentType, currentSelectionSet) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-        ∃ fieldDefinition,
-          schema.lookupField parentType fieldName = some fieldDefinition
-            ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
-            ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                schema = false
-              ∨ ∃ childRuntimeType responseFields childErrors,
-                (((objectTypeNameBool schema
-                        fieldDefinition.outputType.namedType = true
-                      ∧ childRuntimeType =
-                        fieldDefinition.outputType.namedType)
-                    ∨
-                    ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                        schema = true
-                      ∧ objectTypeNameBool schema
-                          fieldDefinition.outputType.namedType = false
-                      ∧ abstractRuntimeForFieldHeadDeep? schema parentType
-                          fieldName arguments parentType currentSelectionSet =
-                        some childRuntimeType))
-                  ∧ Execution.executeSelectionSetAsResponse schema
-                      (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-                        (fieldPairPathLocalProbeResolvers schema
-                          leftInitialSelectionSet rightInitialSelectionSet
-                          targetParent leftField rightField leftArguments
-                          rightArguments leftRuntime rightRuntime)
-                        targetParent leftField rightField leftArguments
-                        rightArguments)
-                      variableValues
-                      (fuel - leafProbeFuel fieldDefinition.outputType)
-                      childRuntimeType
-                      (projectionTargetResolverValue
-                        (.object childRuntimeType
-                          (FieldPairPathLocalProbeRef.target tag
-                            (fieldPairPathLocalNextSelectionSet schema
-                              parentType childRuntimeType fieldName
-                              arguments currentSelectionSet))))
-                      childSelectionSet =
-                    ({ data := Execution.ResponseValue.object responseFields,
-                       errors := childErrors } : Execution.Response)))) ->
-      ∃ responseFields errors,
-        Execution.executeSelectionSetAsResponse schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairPathLocalProbeResolvers schema
-              leftInitialSelectionSet rightInitialSelectionSet
-              targetParent leftField rightField leftArguments
-              rightArguments leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1) parentType
-          (projectionTargetResolverValue
-            (.object sourceRuntimeType
-              (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
-          selectionSet =
-        ({ data := Execution.ResponseValue.object responseFields,
-           errors := errors } : Execution.Response) := by
+      currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField parentType sourceRuntimeType : Name)
+    (leftArguments rightArguments : List Argument) (leftRuntime rightRuntime : Name)
+    (tag : FieldPairProbeTag) (selectionSet : List Selection)
+    : selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> PathLocalCurrentRuntimeSound schema (parentType, currentSelectionSet)
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> ∃ fieldDefinition,
+                schema.lookupField parentType fieldName = some fieldDefinition
+                ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
+                ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                        schema
+                      = false
+                    ∨ ∃ childRuntimeType responseFields childErrors,
+                        (((objectTypeNameBool schema
+                                  fieldDefinition.outputType.namedType
+                                = true
+                              ∧ childRuntimeType = fieldDefinition.outputType.namedType)
+                            ∨ ((TypeRef.named
+                                    fieldDefinition.outputType.namedType).isCompositeBool
+                                    schema
+                                  = true
+                                ∧ objectTypeNameBool schema
+                                    fieldDefinition.outputType.namedType
+                                  = false
+                                ∧ abstractRuntimeForFieldHeadDeep? schema parentType
+                                    fieldName arguments parentType currentSelectionSet
+                                  = some childRuntimeType))
+                          ∧ Execution.executeSelectionSetAsResponse schema
+                              (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                                (fieldPairPathLocalProbeResolvers schema
+                                  leftInitialSelectionSet rightInitialSelectionSet
+                                  targetParent leftField rightField leftArguments
+                                  rightArguments leftRuntime rightRuntime)
+                                targetParent leftField rightField leftArguments
+                                rightArguments)
+                              variableValues
+                              (fuel - leafProbeFuel fieldDefinition.outputType)
+                              childRuntimeType
+                              (projectionTargetResolverValue
+                                (.object childRuntimeType
+                                  (FieldPairPathLocalProbeRef.target tag
+                                    (fieldPairPathLocalNextSelectionSet schema
+                                      parentType childRuntimeType fieldName
+                                      arguments currentSelectionSet))))
+                              childSelectionSet
+                            = ({
+                                  data := Execution.ResponseValue.object responseFields,
+                                  errors := childErrors
+                                }
+                                : Execution.Response))))
+      -> ∃ responseFields errors,
+          Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairPathLocalProbeResolvers schema
+                leftInitialSelectionSet rightInitialSelectionSet
+                targetParent leftField rightField leftArguments
+                rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (fuel + 1) parentType
+            (projectionTargetResolverValue
+              (.object sourceRuntimeType
+                (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
+            selectionSet
+          = ({ data := Execution.ResponseValue.object responseFields, errors := errors }
+              : Execution.Response) := by
   intro hfree hnormal hobject hsound hchildren
   refine
     executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_of_field_children
@@ -2289,87 +2271,90 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagg
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagged_abstract_of_inlineFragment_body_children_of_sound
     (schema : Schema)
     (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField normalParentType
-      runtimeType : Name)
-    (leftArguments rightArguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
-    {selectionSet : List Selection} :
-    objectTypeNameBool schema normalParentType = false ->
-    objectTypeNameBool schema runtimeType = true ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema normalParentType selectionSet ->
-    PathLocalCurrentRuntimeSound schema (runtimeType, currentSelectionSet) ->
-    (∀ typeCondition bodySelectionSet,
-      Selection.inlineFragment (some typeCondition) [] bodySelectionSet ∈
-          selectionSet ->
-        ∀ bodyResponseName bodyFieldName bodyArguments bodyDirectives
-            bodyChildSelectionSet,
-          Selection.field bodyResponseName bodyFieldName bodyArguments
-              bodyDirectives bodyChildSelectionSet ∈ bodySelectionSet ->
-            ∃ bodyFieldDefinition,
-              schema.lookupField typeCondition bodyFieldName =
-                  some bodyFieldDefinition
-                ∧ leafProbeFuel bodyFieldDefinition.outputType ≤ fuel
-                ∧ ((TypeRef.named
-                        bodyFieldDefinition.outputType.namedType).isCompositeBool
-                    schema = false
-                  ∨ ∃ childRuntimeType responseFields childErrors,
-                    (((objectTypeNameBool schema
-                            bodyFieldDefinition.outputType.namedType = true
-                          ∧ childRuntimeType =
-                            bodyFieldDefinition.outputType.namedType)
-                        ∨
-                        ((TypeRef.named
+      currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField normalParentType runtimeType : Name)
+    (leftArguments rightArguments : List Argument) (leftRuntime rightRuntime : Name)
+    (tag : FieldPairProbeTag) {selectionSet : List Selection}
+    : objectTypeNameBool schema normalParentType = false
+      -> objectTypeNameBool schema runtimeType = true
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema normalParentType selectionSet
+      -> PathLocalCurrentRuntimeSound schema (runtimeType, currentSelectionSet)
+      -> (∀ typeCondition bodySelectionSet,
+            Selection.inlineFragment (some typeCondition) [] bodySelectionSet
+              ∈ selectionSet
+            -> ∀ bodyResponseName bodyFieldName bodyArguments bodyDirectives
+                  bodyChildSelectionSet,
+                Selection.field bodyResponseName bodyFieldName bodyArguments
+                    bodyDirectives bodyChildSelectionSet
+                  ∈ bodySelectionSet
+                -> ∃ bodyFieldDefinition,
+                    schema.lookupField typeCondition bodyFieldName
+                      = some bodyFieldDefinition
+                    ∧ leafProbeFuel bodyFieldDefinition.outputType ≤ fuel
+                    ∧ ((TypeRef.named
                             bodyFieldDefinition.outputType.namedType).isCompositeBool
-                            schema = true
-                          ∧ objectTypeNameBool schema
-                              bodyFieldDefinition.outputType.namedType =
-                            false
-                          ∧ abstractRuntimeForFieldHeadDeep? schema
-                              typeCondition bodyFieldName bodyArguments
-                              typeCondition currentSelectionSet =
-                            some childRuntimeType))
-                      ∧ Execution.executeSelectionSetAsResponse schema
-                          (fieldPairOrDeepSuccessResolvers schema
-                            rootSelectionSet
-                            (fieldPairPathLocalProbeResolvers schema
-                              leftInitialSelectionSet rightInitialSelectionSet
-                              targetParent leftField rightField leftArguments
-                              rightArguments leftRuntime rightRuntime)
-                            targetParent leftField rightField leftArguments
-                            rightArguments)
-                          variableValues
-                          (fuel -
-                            leafProbeFuel bodyFieldDefinition.outputType)
-                          childRuntimeType
-                          (projectionTargetResolverValue
-                            (.object childRuntimeType
-                              (FieldPairPathLocalProbeRef.target tag
-                                (fieldPairPathLocalNextSelectionSet schema
-                                  typeCondition childRuntimeType
-                                  bodyFieldName bodyArguments
-                                  currentSelectionSet))))
-                          bodyChildSelectionSet =
-                        ({ data := Execution.ResponseValue.object responseFields,
-                           errors := childErrors } :
-                          Execution.Response)))) ->
-      ∃ responseFields errors,
-        Execution.executeSelectionSetAsResponse schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-              rightInitialSelectionSet targetParent leftField rightField
-              leftArguments rightArguments leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1) runtimeType
-          (projectionTargetResolverValue
-            (.object runtimeType
-              (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
-          selectionSet =
-        ({ data := Execution.ResponseValue.object responseFields,
-           errors := errors } : Execution.Response) := by
+                            schema
+                          = false
+                        ∨ ∃ childRuntimeType responseFields childErrors,
+                            (((objectTypeNameBool schema
+                                      bodyFieldDefinition.outputType.namedType
+                                    = true
+                                  ∧ childRuntimeType
+                                    = bodyFieldDefinition.outputType.namedType)
+                                ∨ ((TypeRef.named
+                                        bodyFieldDefinition.outputType.namedType).isCompositeBool
+                                        schema
+                                      = true
+                                    ∧ objectTypeNameBool schema
+                                        bodyFieldDefinition.outputType.namedType
+                                      = false
+                                    ∧ abstractRuntimeForFieldHeadDeep? schema
+                                        typeCondition bodyFieldName bodyArguments
+                                        typeCondition currentSelectionSet
+                                      = some childRuntimeType))
+                              ∧ Execution.executeSelectionSetAsResponse schema
+                                  (fieldPairOrDeepSuccessResolvers schema
+                                    rootSelectionSet
+                                    (fieldPairPathLocalProbeResolvers schema
+                                      leftInitialSelectionSet rightInitialSelectionSet
+                                      targetParent leftField rightField leftArguments
+                                      rightArguments leftRuntime rightRuntime)
+                                    targetParent leftField rightField leftArguments
+                                    rightArguments)
+                                  variableValues
+                                  (fuel - leafProbeFuel bodyFieldDefinition.outputType)
+                                  childRuntimeType
+                                  (projectionTargetResolverValue
+                                    (.object childRuntimeType
+                                      (FieldPairPathLocalProbeRef.target tag
+                                        (fieldPairPathLocalNextSelectionSet schema
+                                          typeCondition childRuntimeType
+                                          bodyFieldName bodyArguments
+                                          currentSelectionSet))))
+                                  bodyChildSelectionSet
+                                = ({
+                                      data :=
+                                        Execution.ResponseValue.object responseFields,
+                                      errors := childErrors
+                                    }
+                                    : Execution.Response))))
+      -> ∃ responseFields errors,
+          Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                rightInitialSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (fuel + 1) runtimeType
+            (projectionTargetResolverValue
+              (.object runtimeType
+                (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
+            selectionSet
+          = ({ data := Execution.ResponseValue.object responseFields, errors := errors }
+              : Execution.Response) := by
   intro hnonObject hruntimeObject hfree hnormal hsound hbodyChildren
   let resolvers :=
     fieldPairOrDeepSuccessResolvers schema rootSelectionSet
@@ -2523,87 +2508,90 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagg
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagged_abstract_of_runtime_inlineFragment_body_children_of_sound
     (schema : Schema)
     (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField normalParentType
-      runtimeType : Name)
-    (leftArguments rightArguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
-    {selectionSet : List Selection} :
-    objectTypeNameBool schema normalParentType = false ->
-    objectTypeNameBool schema runtimeType = true ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema normalParentType selectionSet ->
-    PathLocalCurrentRuntimeSound schema (runtimeType, currentSelectionSet) ->
-    (∀ bodySelectionSet,
-      Selection.inlineFragment (some runtimeType) [] bodySelectionSet ∈
-          selectionSet ->
-        ∀ bodyResponseName bodyFieldName bodyArguments bodyDirectives
-            bodyChildSelectionSet,
-          Selection.field bodyResponseName bodyFieldName bodyArguments
-              bodyDirectives bodyChildSelectionSet ∈ bodySelectionSet ->
-            ∃ bodyFieldDefinition,
-              schema.lookupField runtimeType bodyFieldName =
-                  some bodyFieldDefinition
-                ∧ leafProbeFuel bodyFieldDefinition.outputType ≤ fuel
-                ∧ ((TypeRef.named
-                        bodyFieldDefinition.outputType.namedType).isCompositeBool
-                    schema = false
-                  ∨ ∃ childRuntimeType responseFields childErrors,
-                    (((objectTypeNameBool schema
-                            bodyFieldDefinition.outputType.namedType = true
-                          ∧ childRuntimeType =
-                            bodyFieldDefinition.outputType.namedType)
-                        ∨
-                        ((TypeRef.named
+      currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField normalParentType runtimeType : Name)
+    (leftArguments rightArguments : List Argument) (leftRuntime rightRuntime : Name)
+    (tag : FieldPairProbeTag) {selectionSet : List Selection}
+    : objectTypeNameBool schema normalParentType = false
+      -> objectTypeNameBool schema runtimeType = true
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema normalParentType selectionSet
+      -> PathLocalCurrentRuntimeSound schema (runtimeType, currentSelectionSet)
+      -> (∀ bodySelectionSet,
+            Selection.inlineFragment (some runtimeType) [] bodySelectionSet
+              ∈ selectionSet
+            -> ∀ bodyResponseName bodyFieldName bodyArguments bodyDirectives
+                  bodyChildSelectionSet,
+                Selection.field bodyResponseName bodyFieldName bodyArguments
+                    bodyDirectives bodyChildSelectionSet
+                  ∈ bodySelectionSet
+                -> ∃ bodyFieldDefinition,
+                    schema.lookupField runtimeType bodyFieldName
+                      = some bodyFieldDefinition
+                    ∧ leafProbeFuel bodyFieldDefinition.outputType ≤ fuel
+                    ∧ ((TypeRef.named
                             bodyFieldDefinition.outputType.namedType).isCompositeBool
-                            schema = true
-                          ∧ objectTypeNameBool schema
-                              bodyFieldDefinition.outputType.namedType =
-                            false
-                          ∧ abstractRuntimeForFieldHeadDeep? schema
-                              runtimeType bodyFieldName bodyArguments
-                              runtimeType currentSelectionSet =
-                            some childRuntimeType))
-                      ∧ Execution.executeSelectionSetAsResponse schema
-                          (fieldPairOrDeepSuccessResolvers schema
-                            rootSelectionSet
-                            (fieldPairPathLocalProbeResolvers schema
-                              leftInitialSelectionSet rightInitialSelectionSet
-                              targetParent leftField rightField leftArguments
-                              rightArguments leftRuntime rightRuntime)
-                            targetParent leftField rightField leftArguments
-                            rightArguments)
-                          variableValues
-                          (fuel -
-                            leafProbeFuel bodyFieldDefinition.outputType)
-                          childRuntimeType
-                          (projectionTargetResolverValue
-                            (.object childRuntimeType
-                              (FieldPairPathLocalProbeRef.target tag
-                                (fieldPairPathLocalNextSelectionSet schema
-                                  runtimeType childRuntimeType
-                                  bodyFieldName bodyArguments
-                                  currentSelectionSet))))
-                          bodyChildSelectionSet =
-                        ({ data := Execution.ResponseValue.object responseFields,
-                           errors := childErrors } :
-                          Execution.Response)))) ->
-      ∃ responseFields errors,
-        Execution.executeSelectionSetAsResponse schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-              rightInitialSelectionSet targetParent leftField rightField
-              leftArguments rightArguments leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1) runtimeType
-          (projectionTargetResolverValue
-            (.object runtimeType
-              (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
-          selectionSet =
-        ({ data := Execution.ResponseValue.object responseFields,
-           errors := errors } : Execution.Response) := by
+                            schema
+                          = false
+                        ∨ ∃ childRuntimeType responseFields childErrors,
+                            (((objectTypeNameBool schema
+                                      bodyFieldDefinition.outputType.namedType
+                                    = true
+                                  ∧ childRuntimeType
+                                    = bodyFieldDefinition.outputType.namedType)
+                                ∨ ((TypeRef.named
+                                        bodyFieldDefinition.outputType.namedType).isCompositeBool
+                                        schema
+                                      = true
+                                    ∧ objectTypeNameBool schema
+                                        bodyFieldDefinition.outputType.namedType
+                                      = false
+                                    ∧ abstractRuntimeForFieldHeadDeep? schema
+                                        runtimeType bodyFieldName bodyArguments
+                                        runtimeType currentSelectionSet
+                                      = some childRuntimeType))
+                              ∧ Execution.executeSelectionSetAsResponse schema
+                                  (fieldPairOrDeepSuccessResolvers schema
+                                    rootSelectionSet
+                                    (fieldPairPathLocalProbeResolvers schema
+                                      leftInitialSelectionSet rightInitialSelectionSet
+                                      targetParent leftField rightField leftArguments
+                                      rightArguments leftRuntime rightRuntime)
+                                    targetParent leftField rightField leftArguments
+                                    rightArguments)
+                                  variableValues
+                                  (fuel - leafProbeFuel bodyFieldDefinition.outputType)
+                                  childRuntimeType
+                                  (projectionTargetResolverValue
+                                    (.object childRuntimeType
+                                      (FieldPairPathLocalProbeRef.target tag
+                                        (fieldPairPathLocalNextSelectionSet schema
+                                          runtimeType childRuntimeType
+                                          bodyFieldName bodyArguments
+                                          currentSelectionSet))))
+                                  bodyChildSelectionSet
+                                = ({
+                                      data :=
+                                        Execution.ResponseValue.object responseFields,
+                                      errors := childErrors
+                                    }
+                                    : Execution.Response))))
+      -> ∃ responseFields errors,
+          Execution.executeSelectionSetAsResponse schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+              (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                rightInitialSelectionSet targetParent leftField rightField
+                leftArguments rightArguments leftRuntime rightRuntime)
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues (fuel + 1) runtimeType
+            (projectionTargetResolverValue
+              (.object runtimeType
+                (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
+            selectionSet
+          = ({ data := Execution.ResponseValue.object responseFields, errors := errors }
+              : Execution.Response) := by
   intro hnonObject hruntimeObject hfree hnormal hsound hbodyChildren
   let resolvers :=
     fieldPairOrDeepSuccessResolvers schema rootSelectionSet
@@ -2757,22 +2745,37 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagg
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagged_abstract_of_runtime_inlineFragment_body_response
     (schema : Schema)
     (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField normalParentType
-      runtimeType : Name)
-    (leftArguments rightArguments : List Argument)
-    (leftRuntime rightRuntime : Name)
-    (tag : FieldPairProbeTag)
-    {selectionSet : List Selection} :
-    objectTypeNameBool schema normalParentType = false ->
-    objectTypeNameBool schema runtimeType = true ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema normalParentType selectionSet ->
-    (∀ bodySelectionSet,
-      Selection.inlineFragment (some runtimeType) [] bodySelectionSet ∈
-          selectionSet ->
-        ∃ responseFields errors,
+      currentSelectionSet
+      : List Selection)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField normalParentType runtimeType : Name)
+    (leftArguments rightArguments : List Argument) (leftRuntime rightRuntime : Name)
+    (tag : FieldPairProbeTag) {selectionSet : List Selection}
+    : objectTypeNameBool schema normalParentType = false
+      -> objectTypeNameBool schema runtimeType = true
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema normalParentType selectionSet
+      -> (∀ bodySelectionSet,
+            Selection.inlineFragment (some runtimeType) [] bodySelectionSet
+              ∈ selectionSet
+            -> ∃ responseFields errors,
+                Execution.executeSelectionSetAsResponse schema
+                  (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
+                    (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
+                      rightInitialSelectionSet targetParent leftField rightField
+                      leftArguments rightArguments leftRuntime rightRuntime)
+                    targetParent leftField rightField leftArguments rightArguments)
+                  variableValues (fuel + 1) runtimeType
+                  (projectionTargetResolverValue
+                    (.object runtimeType
+                      (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
+                  bodySelectionSet
+                = ({
+                      data := Execution.ResponseValue.object responseFields,
+                      errors := errors
+                    }
+                    : Execution.Response))
+      -> ∃ responseFields errors,
           Execution.executeSelectionSetAsResponse schema
             (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
               (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
@@ -2783,23 +2786,9 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagg
             (projectionTargetResolverValue
               (.object runtimeType
                 (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
-            bodySelectionSet =
-          ({ data := Execution.ResponseValue.object responseFields,
-             errors := errors } : Execution.Response)) ->
-      ∃ responseFields errors,
-        Execution.executeSelectionSetAsResponse schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
-            (fieldPairPathLocalProbeResolvers schema leftInitialSelectionSet
-              rightInitialSelectionSet targetParent leftField rightField
-              leftArguments rightArguments leftRuntime rightRuntime)
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1) runtimeType
-          (projectionTargetResolverValue
-            (.object runtimeType
-              (FieldPairPathLocalProbeRef.target tag currentSelectionSet)))
-          selectionSet =
-        ({ data := Execution.ResponseValue.object responseFields,
-           errors := errors } : Execution.Response) := by
+            selectionSet
+          = ({ data := Execution.ResponseValue.object responseFields, errors := errors }
+              : Execution.Response) := by
   intro hnonObject hruntimeObject hfree hnormal hbodyResponse
   let resolvers :=
     fieldPairOrDeepSuccessResolvers schema rootSelectionSet
@@ -2934,17 +2923,17 @@ theorem normalSelectionSetResponsePath_of_firstFieldChildByHead?_field_mem
     {targetArguments arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
-    {responsePath : List Name} :
-    Selection.field responseName targetField arguments directives
-        childSelectionSet ∈ selectionSet ->
-    Argument.argumentsEquivalent arguments targetArguments ->
-    NormalSelectionSetResponsePath schema childParentType childSelectionSet
-      responsePath ->
-      ∃ mergedSelectionSet,
-        firstFieldChildByHead? targetField targetArguments selectionSet =
-          some mergedSelectionSet
+    {responsePath : List Name}
+    : Selection.field responseName targetField arguments directives childSelectionSet
+        ∈ selectionSet
+      -> Argument.argumentsEquivalent arguments targetArguments
+      -> NormalSelectionSetResponsePath schema childParentType childSelectionSet
+          responsePath
+      -> ∃ mergedSelectionSet,
+          firstFieldChildByHead? targetField targetArguments selectionSet
+            = some mergedSelectionSet
           ∧ NormalSelectionSetResponsePath schema childParentType
-            mergedSelectionSet responsePath := by
+              mergedSelectionSet responsePath := by
   intro hmem harguments hpath
   rcases
       firstFieldChildByHead?_field_mem_append_context
@@ -2961,19 +2950,19 @@ theorem normalSelectionSetResponsePath_of_firstFieldChildByHeadAtRuntime?_field_
     {targetArguments arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
-    {responsePath : List Name} :
-    Selection.field responseName targetField arguments directives
-        childSelectionSet ∈ selectionSet ->
-    Argument.argumentsEquivalent arguments targetArguments ->
-    NormalSelectionSetResponsePath schema childRuntimeType
-      (runtimePrunedSelectionSet schema childRuntimeType childSelectionSet)
-      responsePath ->
-      ∃ mergedSelectionSet,
-        firstFieldChildByHeadAtRuntime? schema currentRuntimeType
-          childRuntimeType targetField targetArguments selectionSet =
-          some mergedSelectionSet
+    {responsePath : List Name}
+    : Selection.field responseName targetField arguments directives childSelectionSet
+        ∈ selectionSet
+      -> Argument.argumentsEquivalent arguments targetArguments
+      -> NormalSelectionSetResponsePath schema childRuntimeType
+          (runtimePrunedSelectionSet schema childRuntimeType childSelectionSet)
+          responsePath
+      -> ∃ mergedSelectionSet,
+          firstFieldChildByHeadAtRuntime? schema currentRuntimeType
+              childRuntimeType targetField targetArguments selectionSet
+            = some mergedSelectionSet
           ∧ NormalSelectionSetResponsePath schema childRuntimeType
-            mergedSelectionSet responsePath := by
+              mergedSelectionSet responsePath := by
   intro hmem harguments hpath
   rcases
       firstFieldChildByHeadAtRuntime?_field_mem_append_context
@@ -2992,17 +2981,17 @@ theorem normalSelectionSetResponsePath_of_fieldPairPathLocalNextSelectionSet_fie
     {targetArguments arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet selectionSet : List Selection}
-    {responsePath : List Name} :
-    Selection.field responseName targetField arguments directives
-        childSelectionSet ∈ selectionSet ->
-    Argument.argumentsEquivalent arguments targetArguments ->
-    NormalSelectionSetResponsePath schema childRuntimeType
-      (runtimePrunedSelectionSet schema childRuntimeType childSelectionSet)
-      responsePath ->
-      NormalSelectionSetResponsePath schema childRuntimeType
-        (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
-          childRuntimeType targetField targetArguments selectionSet)
-        responsePath := by
+    {responsePath : List Name}
+    : Selection.field responseName targetField arguments directives childSelectionSet
+        ∈ selectionSet
+      -> Argument.argumentsEquivalent arguments targetArguments
+      -> NormalSelectionSetResponsePath schema childRuntimeType
+          (runtimePrunedSelectionSet schema childRuntimeType childSelectionSet)
+          responsePath
+      -> NormalSelectionSetResponsePath schema childRuntimeType
+          (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
+            childRuntimeType targetField targetArguments selectionSet)
+          responsePath := by
   intro hmem harguments hpath
   rcases
       normalSelectionSetResponsePath_of_firstFieldChildByHeadAtRuntime?_field_mem
@@ -3020,27 +3009,25 @@ theorem normalSelectionSetResponsePath_of_fieldPairPathLocalNextSelectionSet_fie
 theorem normalSelectionSetResponsePath_runtime_of_fieldPairPathLocalNextSelectionSet_field_mem
     {schema : Schema}
     {currentRuntimeType childParentType targetField responseName : Name}
-    {targetArguments arguments : List Argument}
-    {directives : List DirectiveApplication}
+    {targetArguments arguments : List Argument} {directives : List DirectiveApplication}
     {variableDefinitions : List VariableDefinition}
-    {childSelectionSet currentSelectionSet : List Selection}
-    {responsePath : List Name} :
-    Validation.selectionSetValid schema variableDefinitions childParentType
-      childSelectionSet ->
-    selectionSetNormal schema childParentType childSelectionSet ->
-    NormalSelectionSetResponsePath schema childParentType childSelectionSet
-      responsePath ->
-    Selection.field responseName targetField arguments directives
-        childSelectionSet ∈ currentSelectionSet ->
-    Argument.argumentsEquivalent arguments targetArguments ->
-      ∃ childRuntimeType,
-        selectionSetRuntimeActive schema childParentType childRuntimeType
-          childSelectionSet
-        ∧ schema.typeIncludesObjectBool childParentType childRuntimeType = true
-        ∧ NormalSelectionSetResponsePath schema childRuntimeType
-          (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
-            childRuntimeType targetField targetArguments currentSelectionSet)
-          responsePath := by
+    {childSelectionSet currentSelectionSet : List Selection} {responsePath : List Name}
+    : Validation.selectionSetValid schema variableDefinitions childParentType
+        childSelectionSet
+      -> selectionSetNormal schema childParentType childSelectionSet
+      -> NormalSelectionSetResponsePath schema childParentType childSelectionSet
+          responsePath
+      -> Selection.field responseName targetField arguments directives childSelectionSet
+          ∈ currentSelectionSet
+      -> Argument.argumentsEquivalent arguments targetArguments
+      -> ∃ childRuntimeType,
+          selectionSetRuntimeActive schema childParentType childRuntimeType
+            childSelectionSet
+          ∧ schema.typeIncludesObjectBool childParentType childRuntimeType = true
+          ∧ NormalSelectionSetResponsePath schema childRuntimeType
+              (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
+                childRuntimeType targetField targetArguments currentSelectionSet)
+              responsePath := by
   intro hchildValid hchildNormal hpath hmem harguments
   rcases
       NormalSelectionSetResponsePath.runtimePruned_of_normal hchildValid
@@ -3056,22 +3043,20 @@ theorem normalSelectionSetResponsePath_runtime_of_fieldPairPathLocalNextSelectio
 theorem normalSelectionSetObservableResponsePath_of_firstFieldChildByHeadAtRuntime?_field_mem
     {schema : Schema}
     {currentRuntimeType childRuntimeType targetField responseName : Name}
-    {targetArguments arguments : List Argument}
-    {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection}
-    {responsePath : List Name} :
-    Selection.field responseName targetField arguments directives
-        childSelectionSet ∈ selectionSet ->
-    Argument.argumentsEquivalent arguments targetArguments ->
-    NormalSelectionSetObservableResponsePath schema childRuntimeType
-      (runtimePrunedSelectionSet schema childRuntimeType childSelectionSet)
-      responsePath ->
-      ∃ mergedSelectionSet,
-        firstFieldChildByHeadAtRuntime? schema currentRuntimeType
-          childRuntimeType targetField targetArguments selectionSet =
-          some mergedSelectionSet
+    {targetArguments arguments : List Argument} {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection} {responsePath : List Name}
+    : Selection.field responseName targetField arguments directives childSelectionSet
+        ∈ selectionSet
+      -> Argument.argumentsEquivalent arguments targetArguments
+      -> NormalSelectionSetObservableResponsePath schema childRuntimeType
+          (runtimePrunedSelectionSet schema childRuntimeType childSelectionSet)
+          responsePath
+      -> ∃ mergedSelectionSet,
+          firstFieldChildByHeadAtRuntime? schema currentRuntimeType
+              childRuntimeType targetField targetArguments selectionSet
+            = some mergedSelectionSet
           ∧ NormalSelectionSetObservableResponsePath schema childRuntimeType
-            mergedSelectionSet responsePath := by
+              mergedSelectionSet responsePath := by
   intro hmem harguments hpath
   rcases
       firstFieldChildByHeadAtRuntime?_field_mem_append_context
@@ -3087,20 +3072,18 @@ theorem normalSelectionSetObservableResponsePath_of_firstFieldChildByHeadAtRunti
 theorem normalSelectionSetObservableResponsePath_of_fieldPairPathLocalNextSelectionSet_field_mem
     {schema : Schema}
     {currentRuntimeType childRuntimeType targetField responseName : Name}
-    {targetArguments arguments : List Argument}
-    {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection}
-    {responsePath : List Name} :
-    Selection.field responseName targetField arguments directives
-        childSelectionSet ∈ selectionSet ->
-    Argument.argumentsEquivalent arguments targetArguments ->
-    NormalSelectionSetObservableResponsePath schema childRuntimeType
-      (runtimePrunedSelectionSet schema childRuntimeType childSelectionSet)
-      responsePath ->
-      NormalSelectionSetObservableResponsePath schema childRuntimeType
-        (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
-          childRuntimeType targetField targetArguments selectionSet)
-        responsePath := by
+    {targetArguments arguments : List Argument} {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection} {responsePath : List Name}
+    : Selection.field responseName targetField arguments directives childSelectionSet
+        ∈ selectionSet
+      -> Argument.argumentsEquivalent arguments targetArguments
+      -> NormalSelectionSetObservableResponsePath schema childRuntimeType
+          (runtimePrunedSelectionSet schema childRuntimeType childSelectionSet)
+          responsePath
+      -> NormalSelectionSetObservableResponsePath schema childRuntimeType
+          (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
+            childRuntimeType targetField targetArguments selectionSet)
+          responsePath := by
   intro hmem harguments hpath
   rcases
       normalSelectionSetObservableResponsePath_of_firstFieldChildByHeadAtRuntime?_field_mem
@@ -3118,27 +3101,25 @@ theorem normalSelectionSetObservableResponsePath_of_fieldPairPathLocalNextSelect
 theorem normalSelectionSetObservableResponsePath_runtime_of_fieldPairPathLocalNextSelectionSet_field_mem
     {schema : Schema}
     {currentRuntimeType childParentType targetField responseName : Name}
-    {targetArguments arguments : List Argument}
-    {directives : List DirectiveApplication}
+    {targetArguments arguments : List Argument} {directives : List DirectiveApplication}
     {variableDefinitions : List VariableDefinition}
-    {childSelectionSet currentSelectionSet : List Selection}
-    {responsePath : List Name} :
-    Validation.selectionSetValid schema variableDefinitions childParentType
-      childSelectionSet ->
-    selectionSetNormal schema childParentType childSelectionSet ->
-    NormalSelectionSetObservableResponsePath schema childParentType
-      childSelectionSet responsePath ->
-    Selection.field responseName targetField arguments directives
-        childSelectionSet ∈ currentSelectionSet ->
-    Argument.argumentsEquivalent arguments targetArguments ->
-      ∃ childRuntimeType,
-        selectionSetRuntimeActive schema childParentType childRuntimeType
-          childSelectionSet
-        ∧ schema.typeIncludesObjectBool childParentType childRuntimeType = true
-        ∧ NormalSelectionSetObservableResponsePath schema childRuntimeType
-          (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
-            childRuntimeType targetField targetArguments currentSelectionSet)
-          responsePath := by
+    {childSelectionSet currentSelectionSet : List Selection} {responsePath : List Name}
+    : Validation.selectionSetValid schema variableDefinitions childParentType
+        childSelectionSet
+      -> selectionSetNormal schema childParentType childSelectionSet
+      -> NormalSelectionSetObservableResponsePath schema childParentType
+          childSelectionSet responsePath
+      -> Selection.field responseName targetField arguments directives childSelectionSet
+          ∈ currentSelectionSet
+      -> Argument.argumentsEquivalent arguments targetArguments
+      -> ∃ childRuntimeType,
+          selectionSetRuntimeActive schema childParentType childRuntimeType
+            childSelectionSet
+          ∧ schema.typeIncludesObjectBool childParentType childRuntimeType = true
+          ∧ NormalSelectionSetObservableResponsePath schema childRuntimeType
+              (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
+                childRuntimeType targetField targetArguments currentSelectionSet)
+              responsePath := by
   intro hchildValid hchildNormal hpath hmem harguments
   rcases
       NormalSelectionSetObservableResponsePath.runtimePruned_of_normal
@@ -3154,19 +3135,18 @@ theorem normalSelectionSetObservableResponsePath_runtime_of_fieldPairPathLocalNe
 theorem PathLocalSelectionSetCurrentContext.fieldPairPathLocalNextSelectionSet_field_child
     {schema : Schema}
     {currentRuntimeType childRuntimeType targetField responseName : Name}
-    {targetArguments arguments : List Argument}
-    {directives : List DirectiveApplication}
-    {selectionSet childSelectionSet currentSelectionSet : List Selection} :
-    PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet ->
-    Selection.field responseName targetField arguments directives
-      childSelectionSet ∈ selectionSet ->
-    Argument.argumentsEquivalent arguments targetArguments ->
-    runtimePrunedSelectionSet schema childRuntimeType childSelectionSet =
-      childSelectionSet ->
-      PathLocalSelectionSetCurrentContext childSelectionSet
-        (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
-          childRuntimeType targetField targetArguments
-          currentSelectionSet) := by
+    {targetArguments arguments : List Argument} {directives : List DirectiveApplication}
+    {selectionSet childSelectionSet currentSelectionSet : List Selection}
+    : PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet
+      -> Selection.field responseName targetField arguments directives childSelectionSet
+          ∈ selectionSet
+      -> Argument.argumentsEquivalent arguments targetArguments
+      -> runtimePrunedSelectionSet schema childRuntimeType childSelectionSet
+          = childSelectionSet
+      -> PathLocalSelectionSetCurrentContext childSelectionSet
+          (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
+            childRuntimeType targetField targetArguments
+            currentSelectionSet) := by
   intro hcontext hfieldMem harguments hpruned
   rcases hcontext with ⟨currentPref, currentSuff, hcurrent⟩
   subst currentSelectionSet
@@ -3202,24 +3182,25 @@ theorem PathLocalSelectionSetCurrentContext.fieldPairPathLocalNextSelectionSet_f
 
 theorem PathLocalSelectionSetCurrentContext.fieldPairPathLocalNextSelectionSet_inlineFragment_body
     {schema : Schema}
-    {currentRuntimeType childRuntimeType childParentType targetField
-      responseName : Name}
+    {currentRuntimeType childRuntimeType childParentType targetField responseName
+      : Name}
     {targetArguments arguments : List Argument}
     {directives bodyDirectives : List DirectiveApplication}
-    {selectionSet childSelectionSet bodySelectionSet currentSelectionSet :
-      List Selection} :
-    PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet ->
-    Selection.field responseName targetField arguments directives
-      childSelectionSet ∈ selectionSet ->
-    Selection.inlineFragment (some childRuntimeType) bodyDirectives
-      bodySelectionSet ∈ childSelectionSet ->
-    Argument.argumentsEquivalent arguments targetArguments ->
-    selectionSetNormal schema childParentType childSelectionSet ->
-    objectTypeNameBool schema childRuntimeType = true ->
-      PathLocalSelectionSetCurrentContext bodySelectionSet
-        (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
-          childRuntimeType targetField targetArguments
-          currentSelectionSet) := by
+    {selectionSet childSelectionSet bodySelectionSet currentSelectionSet
+      : List Selection}
+    : PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet
+      -> Selection.field responseName targetField arguments directives childSelectionSet
+          ∈ selectionSet
+      -> Selection.inlineFragment (some childRuntimeType) bodyDirectives
+            bodySelectionSet
+          ∈ childSelectionSet
+      -> Argument.argumentsEquivalent arguments targetArguments
+      -> selectionSetNormal schema childParentType childSelectionSet
+      -> objectTypeNameBool schema childRuntimeType = true
+      -> PathLocalSelectionSetCurrentContext bodySelectionSet
+          (fieldPairPathLocalNextSelectionSet schema currentRuntimeType
+            childRuntimeType targetField targetArguments
+            currentSelectionSet) := by
   intro hcontext hfieldMem hbodyMem harguments hchildNormal hchildObject
   rcases hcontext with ⟨currentPref, currentSuff, hcurrent⟩
   subst currentSelectionSet
@@ -3270,50 +3251,47 @@ theorem pathLocalCompositeFieldChildReady_of_valid_normal_support_context
     {arguments : List Argument}
     {directives : List DirectiveApplication}
     {selectionSet currentSelectionSet childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = true ->
-    PathLocalSupportValidNormal schema parentType currentSelectionSet ->
-    PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-      ∃ childRuntime,
-        (((objectTypeNameBool schema
-              fieldDefinition.outputType.namedType = true
-            ∧ childRuntime = fieldDefinition.outputType.namedType)
-          ∨
-          ((TypeRef.named
-                fieldDefinition.outputType.namedType).isCompositeBool
-              schema = true
-            ∧ objectTypeNameBool schema
-                fieldDefinition.outputType.namedType = false
-            ∧ abstractRuntimeForFieldHeadDeep? schema parentType
-                fieldName arguments parentType currentSelectionSet =
-              some childRuntime))
-        ∧ schema.typeIncludesObjectBool
-            fieldDefinition.outputType.namedType childRuntime = true
-        ∧ PathLocalSupportValidNormal schema childRuntime
-            (fieldPairPathLocalNextSelectionSet schema parentType
-              childRuntime fieldName arguments currentSelectionSet)
-        ∧ (objectTypeNameBool schema
-              fieldDefinition.outputType.namedType = true ->
-            PathLocalSelectionSetCurrentContext childSelectionSet
-              (fieldPairPathLocalNextSelectionSet schema parentType
-                childRuntime fieldName arguments currentSelectionSet))
-        ∧ (objectTypeNameBool schema
-              fieldDefinition.outputType.namedType = false ->
-            ∀ {bodyDirectives bodySelectionSet},
-              Selection.inlineFragment (some childRuntime) bodyDirectives
-                bodySelectionSet ∈ childSelectionSet ->
-              PathLocalSelectionSetCurrentContext bodySelectionSet
+    {fieldDefinition : FieldDefinition}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> PathLocalSupportValidNormal schema parentType currentSelectionSet
+      -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> ∃ childRuntime,
+          (((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+                ∧ childRuntime = fieldDefinition.outputType.namedType)
+              ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
+                    = false
+                  ∧ abstractRuntimeForFieldHeadDeep? schema parentType
+                      fieldName arguments parentType currentSelectionSet
+                    = some childRuntime))
+            ∧ schema.typeIncludesObjectBool
+                fieldDefinition.outputType.namedType childRuntime
+              = true
+            ∧ PathLocalSupportValidNormal schema childRuntime
                 (fieldPairPathLocalNextSelectionSet schema parentType
-                  childRuntime fieldName arguments currentSelectionSet))) := by
+                  childRuntime fieldName arguments currentSelectionSet)
+            ∧ (objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+                -> PathLocalSelectionSetCurrentContext childSelectionSet
+                    (fieldPairPathLocalNextSelectionSet schema parentType
+                      childRuntime fieldName arguments currentSelectionSet))
+            ∧ (objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+                -> ∀ {bodyDirectives bodySelectionSet},
+                    Selection.inlineFragment (some childRuntime) bodyDirectives
+                        bodySelectionSet
+                      ∈ childSelectionSet
+                    -> PathLocalSelectionSetCurrentContext bodySelectionSet
+                        (fieldPairPathLocalNextSelectionSet schema parentType
+                          childRuntime fieldName arguments currentSelectionSet))) := by
   intro hschema hvalid hnormal hobject hsupport hcontext hmem hlookup
     hcomposite
   rcases
@@ -3407,45 +3385,44 @@ theorem pathLocalCompositeFieldResponsePathReady_of_valid_normal_support_context
     {directives : List DirectiveApplication}
     {variableDefinitions : List VariableDefinition}
     {selectionSet currentSelectionSet childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} {responsePath : List Name} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = true ->
-    PathLocalSupportValidNormal schema parentType currentSelectionSet ->
-    PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    NormalSelectionSetResponsePath schema
-      fieldDefinition.outputType.namedType childSelectionSet responsePath ->
-      ∃ childRuntime,
-        selectionSetRuntimeActive schema fieldDefinition.outputType.namedType
-          childRuntime childSelectionSet
-        ∧ schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-          childRuntime = true
-        ∧ PathLocalSupportValidNormal schema childRuntime
-          (fieldPairPathLocalNextSelectionSet schema parentType childRuntime
-            fieldName arguments currentSelectionSet)
-        ∧ NormalSelectionSetResponsePath schema childRuntime
-          (fieldPairPathLocalNextSelectionSet schema parentType childRuntime
-            fieldName arguments currentSelectionSet) responsePath
-        ∧ (objectTypeNameBool schema
-              fieldDefinition.outputType.namedType = true ->
-            PathLocalSelectionSetCurrentContext childSelectionSet
-              (fieldPairPathLocalNextSelectionSet schema parentType
-                childRuntime fieldName arguments currentSelectionSet))
-        ∧ (objectTypeNameBool schema
-              fieldDefinition.outputType.namedType = false ->
-            ∀ {bodyDirectives bodySelectionSet},
-              Selection.inlineFragment (some childRuntime) bodyDirectives
-                bodySelectionSet ∈ childSelectionSet ->
-              PathLocalSelectionSetCurrentContext bodySelectionSet
-                (fieldPairPathLocalNextSelectionSet schema parentType
-                  childRuntime fieldName arguments currentSelectionSet)) := by
+    {fieldDefinition : FieldDefinition} {responsePath : List Name}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> PathLocalSupportValidNormal schema parentType currentSelectionSet
+      -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> NormalSelectionSetResponsePath schema
+          fieldDefinition.outputType.namedType childSelectionSet responsePath
+      -> ∃ childRuntime,
+          selectionSetRuntimeActive schema fieldDefinition.outputType.namedType
+            childRuntime childSelectionSet
+          ∧ schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
+              childRuntime
+            = true
+          ∧ PathLocalSupportValidNormal schema childRuntime
+              (fieldPairPathLocalNextSelectionSet schema parentType childRuntime
+                fieldName arguments currentSelectionSet)
+          ∧ NormalSelectionSetResponsePath schema childRuntime
+              (fieldPairPathLocalNextSelectionSet schema parentType childRuntime
+                fieldName arguments currentSelectionSet) responsePath
+          ∧ (objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+              -> PathLocalSelectionSetCurrentContext childSelectionSet
+                  (fieldPairPathLocalNextSelectionSet schema parentType
+                    childRuntime fieldName arguments currentSelectionSet))
+          ∧ (objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+              -> ∀ {bodyDirectives bodySelectionSet},
+                  Selection.inlineFragment (some childRuntime) bodyDirectives
+                      bodySelectionSet
+                    ∈ childSelectionSet
+                  -> PathLocalSelectionSetCurrentContext bodySelectionSet
+                      (fieldPairPathLocalNextSelectionSet schema parentType
+                        childRuntime fieldName arguments currentSelectionSet)) := by
   intro hschema hvalid hnormal hparentObject hsupport hcontext hmem hlookup
     hcomposite hpath
   have hchildNormal :

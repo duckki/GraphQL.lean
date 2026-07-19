@@ -13,10 +13,9 @@ open GraphQL.Execution
 
 variable {ObjectRef : Type}
 
-theorem responseNamesNodup_tail
-    {selection : Selection} {selectionSet : List Selection} :
-    NormalForm.responseNamesNodup (selection :: selectionSet) ->
-      NormalForm.responseNamesNodup selectionSet := by
+theorem responseNamesNodup_tail {selection : Selection} {selectionSet : List Selection}
+    : NormalForm.responseNamesNodup (selection :: selectionSet)
+      -> NormalForm.responseNamesNodup selectionSet := by
   intro hnodup
   unfold NormalForm.responseNamesNodup at hnodup ⊢
   cases selection with
@@ -26,9 +25,9 @@ theorem responseNamesNodup_tail
       simpa [Selection.responseName?] using hnodup
 
 theorem inlineFragmentTypeConditionsNodup_tail
-    {selection : Selection} {selectionSet : List Selection} :
-    NormalForm.inlineFragmentTypeConditionsNodup (selection :: selectionSet) ->
-      NormalForm.inlineFragmentTypeConditionsNodup selectionSet := by
+    {selection : Selection} {selectionSet : List Selection}
+    : NormalForm.inlineFragmentTypeConditionsNodup (selection :: selectionSet)
+      -> NormalForm.inlineFragmentTypeConditionsNodup selectionSet := by
   intro hnodup
   unfold NormalForm.inlineFragmentTypeConditionsNodup at hnodup ⊢
   cases selection with
@@ -45,9 +44,9 @@ theorem inlineFragmentTypeConditionsNodup_tail
           simpa [NormalForm.inlineFragmentTypeCondition?] using hnodup.tail
 
 theorem selectionSetNonRedundant_tail
-    {selection : Selection} {selectionSet : List Selection} :
-    NormalForm.selectionSetNonRedundant (selection :: selectionSet) ->
-      NormalForm.selectionSetNonRedundant selectionSet := by
+    {selection : Selection} {selectionSet : List Selection}
+    : NormalForm.selectionSetNonRedundant (selection :: selectionSet)
+      -> NormalForm.selectionSetNonRedundant selectionSet := by
   intro hnonRedundant
   unfold NormalForm.selectionSetNonRedundant at hnonRedundant ⊢
   exact ⟨responseNamesNodup_tail hnonRedundant.1,
@@ -58,10 +57,9 @@ theorem selectionSetNonRedundant_tail
 
 theorem selectionSetGroundTyped_tail
     {schema : Schema} {parentType : Name} {selection : Selection}
-    {selectionSet : List Selection} :
-    NormalForm.selectionSetGroundTyped schema parentType
-      (selection :: selectionSet) ->
-      NormalForm.selectionSetGroundTyped schema parentType selectionSet := by
+    {selectionSet : List Selection}
+    : NormalForm.selectionSetGroundTyped schema parentType (selection :: selectionSet)
+      -> NormalForm.selectionSetGroundTyped schema parentType selectionSet := by
   intro hground
   unfold NormalForm.selectionSetGroundTyped at hground ⊢
   constructor
@@ -75,10 +73,9 @@ theorem selectionSetGroundTyped_tail
 
 theorem selectionSetNormal_tail
     {schema : Schema} {parentType : Name} {selection : Selection}
-    {selectionSet : List Selection} :
-    NormalForm.selectionSetNormal schema parentType
-      (selection :: selectionSet) ->
-      NormalForm.selectionSetNormal schema parentType selectionSet := by
+    {selectionSet : List Selection}
+    : NormalForm.selectionSetNormal schema parentType (selection :: selectionSet)
+      -> NormalForm.selectionSetNormal schema parentType selectionSet := by
   intro hnormal
   exact ⟨selectionSetGroundTyped_tail hnormal.1,
     selectionSetNonRedundant_tail hnormal.2⟩
@@ -87,13 +84,13 @@ theorem selectionSetNormal_field_child
     {schema : Schema} {parentType : Name}
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
-    {selectionSet rest : List Selection} :
-    NormalForm.selectionSetNormal schema parentType
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest) ->
-      NormalForm.selectionSetNormal schema
-        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        selectionSet := by
+    {selectionSet rest : List Selection}
+    : NormalForm.selectionSetNormal schema parentType
+        (Selection.field responseName fieldName arguments directives selectionSet
+          :: rest)
+      -> NormalForm.selectionSetNormal schema
+          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
+          selectionSet := by
   intro hnormal
   unfold NormalForm.selectionSetNormal at hnormal
   rcases hnormal with ⟨hground, hnonRedundant⟩
@@ -119,11 +116,10 @@ theorem selectionSetNormal_field_child
 theorem selectionSetNormal_inline_child
     {schema : Schema} {parentType typeCondition : Name}
     {directives : List DirectiveApplication}
-    {selectionSet rest : List Selection} :
-    NormalForm.selectionSetNormal schema parentType
-        (Selection.inlineFragment (some typeCondition) directives selectionSet ::
-          rest) ->
-      NormalForm.selectionSetNormal schema typeCondition selectionSet := by
+    {selectionSet rest : List Selection}
+    : NormalForm.selectionSetNormal schema parentType
+        (Selection.inlineFragment (some typeCondition) directives selectionSet :: rest)
+      -> NormalForm.selectionSetNormal schema typeCondition selectionSet := by
   intro hnormal
   unfold NormalForm.selectionSetNormal at hnormal
   rcases hnormal with ⟨hground, hnonRedundant⟩
@@ -142,12 +138,12 @@ theorem selectionSetNormal_inline_child
   exact ⟨hselectionGround.2, hselectionNonRedundant⟩
 
 theorem selectionSetResponseNameFree_of_allFields_responseNamesNodup
-    (schema : Schema) (parentType responseName : Name) :
-    ∀ selectionSet,
-      NormalForm.selectionsAllFields selectionSet ->
-      responseName ∉ selectionSet.filterMap Selection.responseName? ->
-        NormalForm.selectionSetResponseNameFree schema parentType
-          responseName selectionSet
+    (schema : Schema) (parentType responseName : Name)
+    : ∀ selectionSet,
+        NormalForm.selectionsAllFields selectionSet
+        -> responseName ∉ selectionSet.filterMap Selection.responseName?
+        -> NormalForm.selectionSetResponseNameFree schema parentType
+            responseName selectionSet
   | [], _hall, _hnotMem => by
       exact NormalForm.selectionSetResponseNameFree_nil schema parentType
         responseName
@@ -177,26 +173,28 @@ theorem selectionSetResponseNameFree_of_allFields_responseNamesNodup
 def outputNamesFreeForSelectionSet
     (schema : Schema) (parentType : Name)
     (outputFields : List (Name × Execution.ResponseValue))
-    (selectionSet : List Selection) : Prop :=
-  ∀ responseName, responseName ∈ outputFields.map Prod.fst ->
-    NormalForm.selectionSetResponseNameFree schema parentType responseName
-      selectionSet
+    (selectionSet : List Selection)
+    : Prop :=
+  ∀ responseName,
+    responseName ∈ outputFields.map Prod.fst
+    -> NormalForm.selectionSetResponseNameFree schema parentType responseName
+        selectionSet
 
 theorem outputNamesFreeForSelectionSet_nil
     (schema : Schema) (parentType : Name)
-    (selectionSet : List Selection) :
-    outputNamesFreeForSelectionSet schema parentType [] selectionSet := by
+    (selectionSet : List Selection)
+    : outputNamesFreeForSelectionSet schema parentType [] selectionSet := by
   intro responseName hmem
   simp at hmem
 
 theorem outputNamesFreeForSelectionSet_tail
     {schema : Schema} {parentType : Name}
     {selection : Selection} {selectionSet : List Selection}
-    {outputFields : List (Name × Execution.ResponseValue)} :
-    outputNamesFreeForSelectionSet schema parentType outputFields
-      (selection :: selectionSet) ->
-      outputNamesFreeForSelectionSet schema parentType outputFields
-        selectionSet := by
+    {outputFields : List (Name × Execution.ResponseValue)}
+    : outputNamesFreeForSelectionSet schema parentType outputFields
+        (selection :: selectionSet)
+      -> outputNamesFreeForSelectionSet schema parentType outputFields
+          selectionSet := by
   intro hfree responseName hmem
   exact NormalForm.selectionSetResponseNameFree_tail
     (hfree responseName hmem)
@@ -205,13 +203,12 @@ theorem outputNamesFreeForSelectionSet_cons_output
     {schema : Schema} {parentType responseName : Name}
     {response : Execution.ResponseValue}
     {outputFields : List (Name × Execution.ResponseValue)}
-    {selectionSet : List Selection} :
-    outputNamesFreeForSelectionSet schema parentType outputFields
-      selectionSet ->
-    NormalForm.selectionSetResponseNameFree schema parentType responseName
-      selectionSet ->
-      outputNamesFreeForSelectionSet schema parentType
-        (outputFields ++ [(responseName, response)]) selectionSet := by
+    {selectionSet : List Selection}
+    : outputNamesFreeForSelectionSet schema parentType outputFields selectionSet
+      -> NormalForm.selectionSetResponseNameFree schema parentType responseName
+          selectionSet
+      -> outputNamesFreeForSelectionSet schema parentType
+          (outputFields ++ [(responseName, response)]) selectionSet := by
   intro houtput hresponse candidate hmem
   have hcases :
       candidate ∈ outputFields.map Prod.fst ∨ candidate = responseName := by
@@ -227,11 +224,11 @@ theorem responseName_not_mem_output_of_field_head_outputNamesFree
     {schema : Schema} {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
     {selectionSet rest : List Selection}
-    {outputFields : List (Name × Execution.ResponseValue)} :
-    outputNamesFreeForSelectionSet schema parentType outputFields
-      (Selection.field responseName fieldName arguments directives
-        selectionSet :: rest) ->
-      responseName ∉ outputFields.map Prod.fst := by
+    {outputFields : List (Name × Execution.ResponseValue)}
+    : outputNamesFreeForSelectionSet schema parentType outputFields
+        (Selection.field responseName fieldName arguments directives selectionSet
+          :: rest)
+      -> responseName ∉ outputFields.map Prod.fst := by
   intro houtput hmem
   have hfree := houtput responseName hmem
   have hhead :=
@@ -242,15 +239,16 @@ theorem collectFields_responseName_not_mem_of_allFields_responseNameFree
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (responseName : Name) :
-    ∀ selectionSet,
-      NormalForm.selectionsAllFields selectionSet ->
-      NormalForm.selectionSetDirectiveFree selectionSet ->
-      NormalForm.selectionSetResponseNameFree schema parentType responseName
-        selectionSet ->
-        responseName ∉
-          (Execution.collectFields schema variableValues parentType source
-            selectionSet).map Prod.fst
+    (responseName : Name)
+    : ∀ selectionSet,
+        NormalForm.selectionsAllFields selectionSet
+        -> NormalForm.selectionSetDirectiveFree selectionSet
+        -> NormalForm.selectionSetResponseNameFree schema parentType responseName
+            selectionSet
+        -> responseName
+            ∉ (Execution.collectFields schema variableValues parentType source
+                selectionSet).map
+                Prod.fst
   | [], _hall, _hfree, _hresponseFree => by
       simp [Execution.collectFields]
   | Selection.field fieldResponseName fieldName arguments directives
@@ -312,18 +310,18 @@ theorem visitSubfields_possibleTypeNormalizations_not_mem_eq_self
     (variableValues : Execution.VariableValues)
     (depth : Nat)
     (runtimeType : Name) (ref : ObjectRef)
-    (possibleTypes : List Name) (selectionSet : List Selection) :
-    (∀ objectType, objectType ∈ possibleTypes ->
-      NormalForm.objectTypeNameBool schema objectType = true) ->
-    runtimeType ∉ possibleTypes ->
-      ∀ output,
-        (visitSubfields schema resolvers variableValues
+    (possibleTypes : List Name) (selectionSet : List Selection)
+    : (∀ objectType,
+        objectType ∈ possibleTypes
+        -> NormalForm.objectTypeNameBool schema objectType = true)
+      -> runtimeType ∉ possibleTypes
+      -> ∀ output,
+          (visitSubfields schema resolvers variableValues
             depth runtimeType (Execution.ResolverValue.object runtimeType ref)
             (NormalForm.GroundTypeNormalization.possibleTypeNormalizations
               schema possibleTypes selectionSet)
             output).fst
-          =
-          output := by
+          = output := by
   intro hobjects hnotin output
   induction possibleTypes with
   | nil =>
@@ -372,22 +370,22 @@ theorem visitSubfields_possibleTypeNormalizations_runtime_branch
     (variableValues : Execution.VariableValues)
     (depth : Nat)
     (runtimeType : Name) (ref : ObjectRef)
-    (possibleTypes : List Name) (selectionSet : List Selection) :
-    (∀ objectType, objectType ∈ possibleTypes ->
-      NormalForm.objectTypeNameBool schema objectType = true) ->
-    possibleTypes.Nodup ->
-    runtimeType ∈ possibleTypes ->
-    ∀ output,
-      (visitSubfields schema resolvers variableValues
-          depth runtimeType (Execution.ResolverValue.object runtimeType ref)
-          (NormalForm.GroundTypeNormalization.possibleTypeNormalizations
-            schema possibleTypes selectionSet)
-          output).fst
-        =
-      (visitSubfields schema resolvers variableValues
-        depth runtimeType (Execution.ResolverValue.object runtimeType ref)
-        (NormalForm.normalizeSelectionSet schema runtimeType selectionSet)
-        output).fst := by
+    (possibleTypes : List Name) (selectionSet : List Selection)
+    : (∀ objectType,
+        objectType ∈ possibleTypes
+        -> NormalForm.objectTypeNameBool schema objectType = true)
+      -> possibleTypes.Nodup
+      -> runtimeType ∈ possibleTypes
+      -> ∀ output,
+          (visitSubfields schema resolvers variableValues
+            depth runtimeType (Execution.ResolverValue.object runtimeType ref)
+            (NormalForm.GroundTypeNormalization.possibleTypeNormalizations
+              schema possibleTypes selectionSet)
+            output).fst
+          = (visitSubfields schema resolvers variableValues
+              depth runtimeType (Execution.ResolverValue.object runtimeType ref)
+              (NormalForm.normalizeSelectionSet schema runtimeType selectionSet)
+              output).fst := by
   intro hobjects hnodup hmem output
   induction possibleTypes with
   | nil =>
@@ -503,19 +501,19 @@ theorem executeSelectionSet_possibleTypeNormalizations_runtime_normalized_branch
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (runtimeType : Name) (ref : ObjectRef)
-    (possibleTypes : List Name) (selectionSet : List Selection) :
-    (∀ objectType, objectType ∈ possibleTypes ->
-      NormalForm.objectTypeNameBool schema objectType = true) ->
-    possibleTypes.Nodup ->
-    runtimeType ∈ possibleTypes ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        runtimeType (Execution.ResolverValue.object runtimeType ref)
-        (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
-          possibleTypes selectionSet)
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        runtimeType (Execution.ResolverValue.object runtimeType ref)
-        (NormalForm.normalizeSelectionSet schema runtimeType selectionSet) := by
+    (possibleTypes : List Name) (selectionSet : List Selection)
+    : (∀ objectType,
+        objectType ∈ possibleTypes
+        -> NormalForm.objectTypeNameBool schema objectType = true)
+      -> possibleTypes.Nodup
+      -> runtimeType ∈ possibleTypes
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            runtimeType (Execution.ResolverValue.object runtimeType ref)
+            (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
+              possibleTypes selectionSet)
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              runtimeType (Execution.ResolverValue.object runtimeType ref)
+              (NormalForm.normalizeSelectionSet schema runtimeType selectionSet) := by
   intro hobjects hnodup hmem
   induction possibleTypes with
   | nil =>
@@ -621,33 +619,32 @@ theorem visitSubfields_possibleTypeNormalizations_eq_spec_of_runtime_normalized
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (depth : Nat) (runtimeType : Name) (ref : ObjectRef)
-    (possibleTypes : List Name) (selectionSet : List Selection) :
-    (∀ objectType, objectType ∈ possibleTypes ->
-      NormalForm.objectTypeNameBool schema objectType = true) ->
-    possibleTypes.Nodup ->
-    runtimeType ∈ possibleTypes ->
-    (visitSubfields schema resolvers variableValues depth runtimeType
-        (Execution.ResolverValue.object runtimeType ref)
-        (NormalForm.normalizeSelectionSet schema runtimeType selectionSet)
-        (Execution.ResponseValue.object [])).fst
-      =
-      Execution.ResponseValue.object
-        (Execution.Result.getD []
-          (Execution.executeSelectionSet schema resolvers variableValues depth
-            runtimeType (Execution.ResolverValue.object runtimeType ref)
-            (NormalForm.normalizeSelectionSet schema runtimeType selectionSet))) ->
-      (visitSubfields schema resolvers variableValues depth runtimeType
-          (Execution.ResolverValue.object runtimeType ref)
-          (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
-            possibleTypes selectionSet)
-          (Execution.ResponseValue.object [])).fst
-        =
-      Execution.ResponseValue.object
-        (Execution.Result.getD []
-          (Execution.executeSelectionSet schema resolvers variableValues depth
-            runtimeType (Execution.ResolverValue.object runtimeType ref)
+    (possibleTypes : List Name) (selectionSet : List Selection)
+    : (∀ objectType,
+        objectType ∈ possibleTypes
+        -> NormalForm.objectTypeNameBool schema objectType = true)
+      -> possibleTypes.Nodup
+      -> runtimeType ∈ possibleTypes
+      -> (visitSubfields schema resolvers variableValues depth runtimeType
+            (Execution.ResolverValue.object runtimeType ref)
+            (NormalForm.normalizeSelectionSet schema runtimeType selectionSet)
+            (Execution.ResponseValue.object [])).fst
+          = Execution.ResponseValue.object
+              (Execution.Result.getD []
+                (Execution.executeSelectionSet schema resolvers variableValues depth
+                  runtimeType (Execution.ResolverValue.object runtimeType ref)
+                  (NormalForm.normalizeSelectionSet schema runtimeType selectionSet)))
+      -> (visitSubfields schema resolvers variableValues depth runtimeType
+            (Execution.ResolverValue.object runtimeType ref)
             (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
-              possibleTypes selectionSet))) := by
+              possibleTypes selectionSet)
+            (Execution.ResponseValue.object [])).fst
+          = Execution.ResponseValue.object
+              (Execution.Result.getD []
+                (Execution.executeSelectionSet schema resolvers variableValues depth
+                  runtimeType (Execution.ResolverValue.object runtimeType ref)
+                  (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
+                    possibleTypes selectionSet))) := by
   intro hobjects hnodup hmem hnormalized
   have hvisit :=
     visitSubfields_possibleTypeNormalizations_runtime_branch schema resolvers
@@ -666,30 +663,28 @@ theorem visitSubfields_getPossibleTypesNormalizations_eq_spec_of_runtime_normali
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (depth : Nat) (childType runtimeType : Name)
     (ref : ObjectRef)
-    (selectionSet : List Selection) :
-    schema.typeIncludesObjectBool childType runtimeType = true ->
-    (visitSubfields schema resolvers variableValues depth runtimeType
-        (Execution.ResolverValue.object runtimeType ref)
-        (NormalForm.normalizeSelectionSet schema runtimeType selectionSet)
-        (Execution.ResponseValue.object [])).fst
-      =
-      Execution.ResponseValue.object
-        (Execution.Result.getD []
-          (Execution.executeSelectionSet schema resolvers variableValues depth
-            runtimeType (Execution.ResolverValue.object runtimeType ref)
-            (NormalForm.normalizeSelectionSet schema runtimeType selectionSet))) ->
-      (visitSubfields schema resolvers variableValues depth runtimeType
-          (Execution.ResolverValue.object runtimeType ref)
-          (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
-            (schema.getPossibleTypes childType) selectionSet)
-          (Execution.ResponseValue.object [])).fst
-        =
-      Execution.ResponseValue.object
-        (Execution.Result.getD []
-          (Execution.executeSelectionSet schema resolvers variableValues depth
-            runtimeType (Execution.ResolverValue.object runtimeType ref)
+    (selectionSet : List Selection)
+    : schema.typeIncludesObjectBool childType runtimeType = true
+      -> (visitSubfields schema resolvers variableValues depth runtimeType
+            (Execution.ResolverValue.object runtimeType ref)
+            (NormalForm.normalizeSelectionSet schema runtimeType selectionSet)
+            (Execution.ResponseValue.object [])).fst
+          = Execution.ResponseValue.object
+              (Execution.Result.getD []
+                (Execution.executeSelectionSet schema resolvers variableValues depth
+                  runtimeType (Execution.ResolverValue.object runtimeType ref)
+                  (NormalForm.normalizeSelectionSet schema runtimeType selectionSet)))
+      -> (visitSubfields schema resolvers variableValues depth runtimeType
+            (Execution.ResolverValue.object runtimeType ref)
             (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
-              (schema.getPossibleTypes childType) selectionSet))) := by
+              (schema.getPossibleTypes childType) selectionSet)
+            (Execution.ResponseValue.object [])).fst
+          = Execution.ResponseValue.object
+              (Execution.Result.getD []
+                (Execution.executeSelectionSet schema resolvers variableValues depth
+                  runtimeType (Execution.ResolverValue.object runtimeType ref)
+                  (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
+                    (schema.getPossibleTypes childType) selectionSet))) := by
   intro hinclude hnormalized
   have hmem : runtimeType ∈ schema.getPossibleTypes childType :=
     List.contains_iff_mem.mp hinclude
@@ -716,36 +711,34 @@ theorem visitSubfields_normalizedFieldSubselections_eq_spec_of_runtime
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (depth : Nat) (childType runtimeType : Name)
     (ref : ObjectRef)
-    (selectionSet : List Selection) :
-    schema.typeIncludesObjectBool childType runtimeType = true ->
-    (visitSubfields schema resolvers variableValues depth runtimeType
-        (Execution.ResolverValue.object runtimeType ref)
-        (NormalForm.normalizeSelectionSet schema runtimeType selectionSet)
-        (Execution.ResponseValue.object [])).fst
-      =
-      Execution.ResponseValue.object
-        (Execution.Result.getD []
-          (Execution.executeSelectionSet schema resolvers variableValues depth
-            runtimeType (Execution.ResolverValue.object runtimeType ref)
-            (NormalForm.normalizeSelectionSet schema runtimeType selectionSet))) ->
-      (visitSubfields schema resolvers variableValues depth runtimeType
-          (Execution.ResolverValue.object runtimeType ref)
-          (if NormalForm.objectTypeNameBool schema childType then
-            NormalForm.normalizeSelectionSet schema childType selectionSet
-          else
-            NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
-              (schema.getPossibleTypes childType) selectionSet)
-          (Execution.ResponseValue.object [])).fst
-        =
-      Execution.ResponseValue.object
-        (Execution.Result.getD []
-          (Execution.executeSelectionSet schema resolvers variableValues depth
-            runtimeType (Execution.ResolverValue.object runtimeType ref)
-            (if NormalForm.objectTypeNameBool schema childType then
-              NormalForm.normalizeSelectionSet schema childType selectionSet
-            else
-              NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
-                (schema.getPossibleTypes childType) selectionSet))) := by
+    (selectionSet : List Selection)
+    : schema.typeIncludesObjectBool childType runtimeType = true
+      -> (visitSubfields schema resolvers variableValues depth runtimeType
+            (Execution.ResolverValue.object runtimeType ref)
+            (NormalForm.normalizeSelectionSet schema runtimeType selectionSet)
+            (Execution.ResponseValue.object [])).fst
+          = Execution.ResponseValue.object
+              (Execution.Result.getD []
+                (Execution.executeSelectionSet schema resolvers variableValues depth
+                  runtimeType (Execution.ResolverValue.object runtimeType ref)
+                  (NormalForm.normalizeSelectionSet schema runtimeType selectionSet)))
+      -> (visitSubfields schema resolvers variableValues depth runtimeType
+            (Execution.ResolverValue.object runtimeType ref)
+            ( if NormalForm.objectTypeNameBool schema childType then
+                NormalForm.normalizeSelectionSet schema childType selectionSet
+              else
+                NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
+                  (schema.getPossibleTypes childType) selectionSet)
+            (Execution.ResponseValue.object [])).fst
+          = Execution.ResponseValue.object
+              (Execution.Result.getD []
+                (Execution.executeSelectionSet schema resolvers variableValues depth
+                  runtimeType (Execution.ResolverValue.object runtimeType ref)
+                  ( if NormalForm.objectTypeNameBool schema childType then
+                      NormalForm.normalizeSelectionSet schema childType selectionSet
+                    else
+                      NormalForm.GroundTypeNormalization.possibleTypeNormalizations
+                        schema (schema.getPossibleTypes childType) selectionSet))) := by
   intro hinclude hnormalized
   by_cases hobject : NormalForm.objectTypeNameBool schema childType = true
   · have hruntimeEq : runtimeType = childType :=
@@ -764,21 +757,22 @@ theorem visitSubfields_normalizedFieldSubselections_eq_spec_of_runtime
 
 def generatedNormalizedFieldChild
     (schema : Schema) (childType : Name)
-    (childSelectionSet : List Selection) : Prop :=
+    (childSelectionSet : List Selection)
+    : Prop :=
   ∃ sourceSelectionSet,
-    NormalForm.selectionSetDirectiveFree sourceSelectionSet ∧
-    childSelectionSet =
-      if NormalForm.objectTypeNameBool schema childType then
-        NormalForm.normalizeSelectionSet schema childType sourceSelectionSet
-      else
-        NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
-          (schema.getPossibleTypes childType) sourceSelectionSet
+    NormalForm.selectionSetDirectiveFree sourceSelectionSet
+    ∧ childSelectionSet
+      = if NormalForm.objectTypeNameBool schema childType then
+          NormalForm.normalizeSelectionSet schema childType sourceSelectionSet
+        else
+          NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
+            (schema.getPossibleTypes childType) sourceSelectionSet
 
 theorem generatedNormalizedFieldChild_selectionSetDirectiveFree
     (schema : Schema) (childType : Name)
-    (childSelectionSet : List Selection) :
-    generatedNormalizedFieldChild schema childType childSelectionSet ->
-      NormalForm.selectionSetDirectiveFree childSelectionSet := by
+    (childSelectionSet : List Selection)
+    : generatedNormalizedFieldChild schema childType childSelectionSet
+      -> NormalForm.selectionSetDirectiveFree childSelectionSet := by
   intro hgenerated
   rcases hgenerated with ⟨sourceSelectionSet, hsourceFree, hchild⟩
   by_cases hobject : NormalForm.objectTypeNameBool schema childType = true
@@ -810,10 +804,10 @@ theorem generatedNormalizedFieldChild_selectionSetDirectiveFree
 
 theorem generatedNormalizedFieldChild_selectionSetNormal
     (schema : Schema) (childType : Name)
-    (childSelectionSet : List Selection) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    generatedNormalizedFieldChild schema childType childSelectionSet ->
-      NormalForm.selectionSetNormal schema childType childSelectionSet := by
+    (childSelectionSet : List Selection)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> generatedNormalizedFieldChild schema childType childSelectionSet
+      -> NormalForm.selectionSetNormal schema childType childSelectionSet := by
   intro hschema hgenerated
   rcases hgenerated with ⟨sourceSelectionSet, _hsourceFree, hchild⟩
   by_cases hobject : NormalForm.objectTypeNameBool schema childType = true
@@ -879,19 +873,19 @@ theorem generatedNormalizedFieldChild_selectionSetNormal
 theorem collectFields_possibleTypeNormalizations_runtime_branch
     (schema : Schema) (variableValues : Execution.VariableValues)
     (runtimeType : Name) (ref : ObjectRef)
-    (possibleTypes : List Name) (selectionSet : List Selection) :
-    (∀ objectType, objectType ∈ possibleTypes ->
-      NormalForm.objectTypeNameBool schema objectType = true) ->
-    possibleTypes.Nodup ->
-    runtimeType ∈ possibleTypes ->
-      GraphQL.Execution.collectFields schema variableValues runtimeType
-        (.object runtimeType ref)
-        (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
-          possibleTypes selectionSet)
-        =
-      GraphQL.Execution.collectFields schema variableValues runtimeType
-        (.object runtimeType ref)
-        (NormalForm.normalizeSelectionSet schema runtimeType selectionSet) := by
+    (possibleTypes : List Name) (selectionSet : List Selection)
+    : (∀ objectType,
+        objectType ∈ possibleTypes
+        -> NormalForm.objectTypeNameBool schema objectType = true)
+      -> possibleTypes.Nodup
+      -> runtimeType ∈ possibleTypes
+      -> GraphQL.Execution.collectFields schema variableValues runtimeType
+            (.object runtimeType ref)
+            (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
+              possibleTypes selectionSet)
+          = GraphQL.Execution.collectFields schema variableValues runtimeType
+              (.object runtimeType ref)
+              (NormalForm.normalizeSelectionSet schema runtimeType selectionSet) := by
   intro hobjects hnodup hmem
   induction possibleTypes with
   | nil =>
@@ -983,13 +977,13 @@ theorem collectFields_possibleTypeNormalizations_runtime_branch
 
 theorem selectionSetLookupValid_possibleTypeNormalizations_runtime_branch
     (schema : Schema) (runtimeType : Name)
-    (possibleTypes : List Name) (selectionSet : List Selection) :
-    runtimeType ∈ possibleTypes ->
-    NormalForm.selectionSetLookupValid schema runtimeType
-      (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
-        possibleTypes selectionSet) ->
-      NormalForm.selectionSetLookupValid schema runtimeType
-        (NormalForm.normalizeSelectionSet schema runtimeType selectionSet) := by
+    (possibleTypes : List Name) (selectionSet : List Selection)
+    : runtimeType ∈ possibleTypes
+      -> NormalForm.selectionSetLookupValid schema runtimeType
+          (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
+            possibleTypes selectionSet)
+      -> NormalForm.selectionSetLookupValid schema runtimeType
+          (NormalForm.normalizeSelectionSet schema runtimeType selectionSet) := by
   intro hmem
   induction possibleTypes with
   | nil =>
@@ -1073,13 +1067,15 @@ theorem selectionSetLookupValid_possibleTypeNormalizations_runtime_branch
 theorem fieldMerge_collectFields_possibleTypeNormalizations_runtime_branch_mem
     (schema : Schema) (runtimeType : Name)
     (possibleTypes : List Name) (selectionSet : List Selection)
-    (scopedField : FieldMerge.ScopedField) :
-    runtimeType ∈ possibleTypes ->
-    scopedField ∈ FieldMerge.collectFields schema runtimeType
-      (NormalForm.normalizeSelectionSet schema runtimeType selectionSet) ->
-      scopedField ∈ FieldMerge.collectFields schema runtimeType
-        (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
-          possibleTypes selectionSet) := by
+    (scopedField : FieldMerge.ScopedField)
+    : runtimeType ∈ possibleTypes
+      -> scopedField
+          ∈ FieldMerge.collectFields schema runtimeType
+              (NormalForm.normalizeSelectionSet schema runtimeType selectionSet)
+      -> scopedField
+          ∈ FieldMerge.collectFields schema runtimeType
+              (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
+                possibleTypes selectionSet) := by
   intro hmem hscoped
   induction possibleTypes with
   | nil =>
@@ -1134,13 +1130,13 @@ theorem fieldMerge_collectFields_possibleTypeNormalizations_runtime_branch_mem
 
 theorem fieldsInSetCanMerge_possibleTypeNormalizations_runtime_branch
     (schema : Schema) (runtimeType : Name)
-    (possibleTypes : List Name) (selectionSet : List Selection) :
-    runtimeType ∈ possibleTypes ->
-    FieldMerge.fieldsInSetCanMerge schema runtimeType
-      (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
-        possibleTypes selectionSet) ->
-      FieldMerge.fieldsInSetCanMerge schema runtimeType
-        (NormalForm.normalizeSelectionSet schema runtimeType selectionSet) := by
+    (possibleTypes : List Name) (selectionSet : List Selection)
+    : runtimeType ∈ possibleTypes
+      -> FieldMerge.fieldsInSetCanMerge schema runtimeType
+          (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
+            possibleTypes selectionSet)
+      -> FieldMerge.fieldsInSetCanMerge schema runtimeType
+          (NormalForm.normalizeSelectionSet schema runtimeType selectionSet) := by
   intro hmem hmerge
   apply FieldMerge.fieldsInSetCanMerge_mono schema runtimeType
     (NormalForm.normalizeSelectionSet schema runtimeType selectionSet)
@@ -1155,16 +1151,16 @@ theorem fieldsInSetCanMerge_possibleTypeNormalizations_runtime_branch
 theorem selectionSetValidInPossibleTypes_possibleTypeNormalizations_runtime_branch
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (runtimeType : Name)
-    (possibleTypes : List Name) (selectionSet : List Selection) :
-    (∀ objectType, objectType ∈ possibleTypes -> schema.objectType objectType) ->
-    runtimeType ∈ possibleTypes ->
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions runtimeType
-      (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
-        possibleTypes selectionSet) ->
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions runtimeType
-        (NormalForm.normalizeSelectionSet schema runtimeType selectionSet) := by
+    (possibleTypes : List Name) (selectionSet : List Selection)
+    : (∀ objectType, objectType ∈ possibleTypes -> schema.objectType objectType)
+      -> runtimeType ∈ possibleTypes
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions runtimeType
+          (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
+            possibleTypes selectionSet)
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions runtimeType
+          (NormalForm.normalizeSelectionSet schema runtimeType selectionSet) := by
   intro hobjects hmem
   induction possibleTypes with
   | nil =>
@@ -1255,19 +1251,21 @@ theorem selectionSetValidInPossibleTypes_possibleTypeNormalizations_runtime_bran
 theorem freshPrefixSelectionDerivation_possibleTypeNormalizations_runtime
     (schema : Schema) (variableValues : Execution.VariableValues)
     (runtimeType : Name) (ref : ObjectRef)
-    (possibleTypes : List Name) (selectionSet : List Selection) :
-    (∀ objectType, objectType ∈ possibleTypes ->
-      NormalForm.objectTypeNameBool schema objectType = true) ->
-    possibleTypes.Nodup ->
-    (∀ objectType, objectType ∈ possibleTypes ->
-      objectType = runtimeType ->
-      FreshPrefixSelectionDerivation schema variableValues runtimeType
-        (.object runtimeType ref)
-        (NormalForm.normalizeSelectionSet schema objectType selectionSet)) ->
-      FreshPrefixSelectionDerivation schema variableValues runtimeType
-        (.object runtimeType ref)
-        (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
-          possibleTypes selectionSet) := by
+    (possibleTypes : List Name) (selectionSet : List Selection)
+    : (∀ objectType,
+        objectType ∈ possibleTypes
+        -> NormalForm.objectTypeNameBool schema objectType = true)
+      -> possibleTypes.Nodup
+      -> (∀ objectType,
+            objectType ∈ possibleTypes
+            -> objectType = runtimeType
+            -> FreshPrefixSelectionDerivation schema variableValues runtimeType
+                (.object runtimeType ref)
+                (NormalForm.normalizeSelectionSet schema objectType selectionSet))
+      -> FreshPrefixSelectionDerivation schema variableValues runtimeType
+          (.object runtimeType ref)
+          (NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
+            possibleTypes selectionSet) := by
   intro hobjects hnodup hnormalized
   induction possibleTypes with
   | nil =>
@@ -1377,12 +1375,12 @@ theorem freshPrefixSelectionDerivation_possibleTypeNormalizations_runtime
 theorem freshPrefixSelectionDerivation_generatedNormalizedFieldChild_runtime
     (schema : Schema) (variableValues : Execution.VariableValues)
     (childType childRuntime : Name) (ref : ObjectRef)
-    (childSelectionSet : List Selection) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    schema.typeIncludesObjectBool childType childRuntime = true ->
-    generatedNormalizedFieldChild schema childType childSelectionSet ->
-      FreshPrefixSelectionDerivation schema variableValues childRuntime
-        (.object childRuntime ref) childSelectionSet := by
+    (childSelectionSet : List Selection)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> schema.typeIncludesObjectBool childType childRuntime = true
+      -> generatedNormalizedFieldChild schema childType childSelectionSet
+      -> FreshPrefixSelectionDerivation schema variableValues childRuntime
+          (.object childRuntime ref) childSelectionSet := by
   intro hschema hinclude hgenerated
   rcases hgenerated with ⟨sourceSelectionSet, hsourceFree, hchild⟩
   by_cases hobject : NormalForm.objectTypeNameBool schema childType = true
@@ -1441,23 +1439,23 @@ theorem generatedNormalizedFieldChild_of_collectFields_field_layer
     (hall : NormalForm.selectionsAllFields selectionSet)
     (hfree : NormalForm.selectionSetDirectiveFree selectionSet)
     (hnodup : NormalForm.responseNamesNodup selectionSet)
-    (hchildren :
-      ∀ responseName fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-        generatedNormalizedFieldChild schema
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          childSelectionSet) :
-    ∀ {responseName : Name} {field : Execution.ExecutableField}
-      {fields prefixTail : List Execution.ExecutableField},
-      (responseName, field :: fields) ∈
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          selectionSet ->
-      (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        generatedNormalizedFieldChild schema
-          ((schema.fieldReturnType? field.parentType field.fieldName).getD
-            field.fieldName)
-          field.selectionSet := by
+    (hchildren
+      : ∀ responseName fieldName arguments directives childSelectionSet,
+          Selection.field responseName fieldName arguments directives childSelectionSet
+            ∈ selectionSet
+          -> generatedNormalizedFieldChild schema
+              ((schema.fieldReturnType? parentType fieldName).getD fieldName)
+              childSelectionSet)
+    : ∀ {responseName : Name} {field : Execution.ExecutableField}
+          {fields prefixTail : List Execution.ExecutableField},
+        (responseName, field :: fields)
+          ∈ GraphQL.Execution.collectFields schema variableValues parentType source
+              selectionSet
+        -> (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields)
+        -> generatedNormalizedFieldChild schema
+            ((schema.fieldReturnType? field.parentType field.fieldName).getD
+              field.fieldName)
+            field.selectionSet := by
   intro responseName field fields prefixTail hgroup hprefix
   rcases
       FreshPrefixSelectionDerivation.collectFields_allFields_directiveFree_responseNamesNodup_field_mem_prefix_empty
@@ -1485,17 +1483,15 @@ theorem generatedNormalizedFieldChild_of_collectFields_field_layer
   | inlineFragment typeCondition directives selectionSet =>
       simp [Selection.isField] at hselectionField
 
-theorem normalizeSelectionSet_field_child_generated
-    (schema : Schema) :
-    ∀ parentType selectionSet responseName fieldName arguments directives
-      childSelectionSet,
-      NormalForm.selectionSetDirectiveFree selectionSet ->
-      Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈
-        NormalForm.normalizeSelectionSet schema parentType selectionSet ->
-        generatedNormalizedFieldChild schema
-          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-          childSelectionSet := by
+theorem normalizeSelectionSet_field_child_generated (schema : Schema)
+    : ∀ parentType selectionSet responseName fieldName arguments directives
+          childSelectionSet,
+        NormalForm.selectionSetDirectiveFree selectionSet
+        -> Selection.field responseName fieldName arguments directives childSelectionSet
+            ∈ NormalForm.normalizeSelectionSet schema parentType selectionSet
+        -> generatedNormalizedFieldChild schema
+            ((schema.fieldReturnType? parentType fieldName).getD fieldName)
+            childSelectionSet := by
   intro parentType selectionSet
   induction parentType, selectionSet using
     NormalForm.normalizeSelectionSet.induct schema with
@@ -1621,20 +1617,20 @@ theorem normalizeSelectionSet_field_child_generated
 theorem generatedNormalizedFieldChild_of_generatedNormalizedFieldChild_collectFields
     (schema : Schema) (variableValues : Execution.VariableValues)
     (childType childRuntime : Name) (ref : ObjectRef)
-    (childSelectionSet : List Selection) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    schema.typeIncludesObjectBool childType childRuntime = true ->
-    generatedNormalizedFieldChild schema childType childSelectionSet ->
-    ∀ {responseName : Name} {field : Execution.ExecutableField}
-      {fields prefixTail : List Execution.ExecutableField},
-      (responseName, field :: fields) ∈
-        GraphQL.Execution.collectFields schema variableValues childRuntime
-          (.object childRuntime ref) childSelectionSet ->
-      (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        generatedNormalizedFieldChild schema
-          ((schema.fieldReturnType? field.parentType field.fieldName).getD
-            field.fieldName)
-          field.selectionSet := by
+    (childSelectionSet : List Selection)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> schema.typeIncludesObjectBool childType childRuntime = true
+      -> generatedNormalizedFieldChild schema childType childSelectionSet
+      -> ∀ {responseName : Name} {field : Execution.ExecutableField}
+            {fields prefixTail : List Execution.ExecutableField},
+          (responseName, field :: fields)
+            ∈ GraphQL.Execution.collectFields schema variableValues childRuntime
+                (.object childRuntime ref) childSelectionSet
+          -> (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields)
+          -> generatedNormalizedFieldChild schema
+              ((schema.fieldReturnType? field.parentType field.fieldName).getD
+                field.fieldName)
+              field.selectionSet := by
   intro hschema hinclude hgenerated responseName field fields prefixTail hgroup
     hprefix
   rcases hgenerated with ⟨sourceSelectionSet, hsourceFree, hchild⟩
@@ -1745,17 +1741,17 @@ theorem generatedNormalizedFieldChild_of_generatedNormalizedFieldChild_collectFi
 theorem collectFields_generatedNormalizedFieldChild_prefix_empty
     (schema : Schema) (variableValues : Execution.VariableValues)
     (childType childRuntime : Name) (ref : ObjectRef)
-    (childSelectionSet : List Selection) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    schema.typeIncludesObjectBool childType childRuntime = true ->
-    generatedNormalizedFieldChild schema childType childSelectionSet ->
-    ∀ {responseName : Name} {field : Execution.ExecutableField}
-      {fields prefixTail : List Execution.ExecutableField},
-      (responseName, field :: fields) ∈
-        GraphQL.Execution.collectFields schema variableValues childRuntime
-          (.object childRuntime ref) childSelectionSet ->
-      (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields) ->
-        fields = [] ∧ prefixTail = [] := by
+    (childSelectionSet : List Selection)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> schema.typeIncludesObjectBool childType childRuntime = true
+      -> generatedNormalizedFieldChild schema childType childSelectionSet
+      -> ∀ {responseName : Name} {field : Execution.ExecutableField}
+            {fields prefixTail : List Execution.ExecutableField},
+          (responseName, field :: fields)
+            ∈ GraphQL.Execution.collectFields schema variableValues childRuntime
+                (.object childRuntime ref) childSelectionSet
+          -> (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields)
+          -> fields = [] ∧ prefixTail = [] := by
   intro hschema hinclude hgenerated responseName field fields prefixTail hgroup
     hprefix
   rcases hgenerated with ⟨sourceSelectionSet, hsourceFree, hchild⟩
@@ -1861,31 +1857,28 @@ theorem collectFields_fieldNormal_childLocalFacts_object
     (selectionSet : List Selection)
     (responseName childRuntime : Name)
     (field : Execution.ExecutableField)
-    (fields : List Execution.ExecutableField) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ScopedParentRuntimeApplies schema runtimeType parentType ->
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    NormalForm.selectionSetLookupValid schema parentType selectionSet ->
-    Validation.selectionSetValidInPossibleTypes schema variableDefinitions
-      parentType selectionSet ->
-    FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-    NormalForm.selectionsAllFields selectionSet ->
-    (responseName, field :: fields) ∈
-      GraphQL.Execution.collectFields schema variableValues parentType
-        (.object runtimeType ref) selectionSet ->
-    schema.typeIncludesObjectBool
-      ((schema.fieldReturnType? field.parentType field.fieldName).getD
-        field.fieldName)
-      childRuntime = true ->
-      NormalForm.selectionSetLookupValid schema childRuntime field.selectionSet
-        ∧
-        Validation.selectionSetValidInPossibleTypes schema
-          variableDefinitions childRuntime field.selectionSet
-        ∧
-        (∀ objectType,
-          FieldMerge.fieldsInSetCanMerge schema objectType
-            field.selectionSet) := by
+    (fields : List Execution.ExecutableField)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ScopedParentRuntimeApplies schema runtimeType parentType
+      -> Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> NormalForm.selectionSetLookupValid schema parentType selectionSet
+      -> Validation.selectionSetValidInPossibleTypes schema variableDefinitions
+          parentType selectionSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+      -> NormalForm.selectionsAllFields selectionSet
+      -> (responseName, field :: fields)
+          ∈ GraphQL.Execution.collectFields schema variableValues parentType
+              (.object runtimeType ref) selectionSet
+      -> schema.typeIncludesObjectBool
+            ((schema.fieldReturnType? field.parentType field.fieldName).getD
+              field.fieldName)
+            childRuntime
+          = true
+      -> NormalForm.selectionSetLookupValid schema childRuntime field.selectionSet
+          ∧ Validation.selectionSetValidInPossibleTypes schema
+              variableDefinitions childRuntime field.selectionSet
+          ∧ (∀ objectType,
+              FieldMerge.fieldsInSetCanMerge schema objectType field.selectionSet) := by
   intro hschema hparentRuntime hvalid hlookupValid himplementation hmerge
     hall hgroup hinclude
   have hcompatible :
@@ -1950,31 +1943,28 @@ theorem collectFields_generatedNormalizedFieldChild_childLocalFacts
     (childSelectionSet : List Selection)
     (responseName grandchildRuntime : Name)
     (field : Execution.ExecutableField)
-    (fields : List Execution.ExecutableField) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    schema.typeIncludesObjectBool childType childRuntime = true ->
-    generatedNormalizedFieldChild schema childType childSelectionSet ->
-    NormalForm.selectionSetLookupValid schema childRuntime childSelectionSet ->
-    Validation.selectionSetValidInPossibleTypes schema variableDefinitions
-      childRuntime childSelectionSet ->
-    (∀ objectType,
-      FieldMerge.fieldsInSetCanMerge schema objectType childSelectionSet) ->
-    (responseName, field :: fields) ∈
-      GraphQL.Execution.collectFields schema variableValues childRuntime
-        (.object childRuntime ref) childSelectionSet ->
-    schema.typeIncludesObjectBool
-      ((schema.fieldReturnType? field.parentType field.fieldName).getD
-        field.fieldName)
-      grandchildRuntime = true ->
-      NormalForm.selectionSetLookupValid schema grandchildRuntime
-          field.selectionSet
-        ∧
-        Validation.selectionSetValidInPossibleTypes schema
-          variableDefinitions grandchildRuntime field.selectionSet
-        ∧
-        (∀ objectType,
-          FieldMerge.fieldsInSetCanMerge schema objectType
-            field.selectionSet) := by
+    (fields : List Execution.ExecutableField)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> schema.typeIncludesObjectBool childType childRuntime = true
+      -> generatedNormalizedFieldChild schema childType childSelectionSet
+      -> NormalForm.selectionSetLookupValid schema childRuntime childSelectionSet
+      -> Validation.selectionSetValidInPossibleTypes schema variableDefinitions
+          childRuntime childSelectionSet
+      -> (∀ objectType,
+            FieldMerge.fieldsInSetCanMerge schema objectType childSelectionSet)
+      -> (responseName, field :: fields)
+          ∈ GraphQL.Execution.collectFields schema variableValues childRuntime
+              (.object childRuntime ref) childSelectionSet
+      -> schema.typeIncludesObjectBool
+            ((schema.fieldReturnType? field.parentType field.fieldName).getD
+              field.fieldName)
+            grandchildRuntime
+          = true
+      -> NormalForm.selectionSetLookupValid schema grandchildRuntime field.selectionSet
+          ∧ Validation.selectionSetValidInPossibleTypes schema
+              variableDefinitions grandchildRuntime field.selectionSet
+          ∧ (∀ objectType,
+              FieldMerge.fieldsInSetCanMerge schema objectType field.selectionSet) := by
   intro hschema hinclude hgenerated hlookupValid himplementation hmerge
     hgroup hgrandchild
   have hchildObject : schema.objectType childRuntime :=
@@ -2133,8 +2123,8 @@ theorem collectFields_generatedNormalizedFieldChild_childLocalFacts
         hgrandchild
 
 theorem executableFieldsFieldValidationMergeCompatible_singleton
-    (field : Execution.ExecutableField) :
-    ExecutableFieldsFieldValidationMergeCompatible [field] := by
+    (field : Execution.ExecutableField)
+    : ExecutableFieldsFieldValidationMergeCompatible [field] := by
   intro first later hfirst hlater _hresponse
   have hfirstEq : first = field := by
     simpa using hfirst
@@ -2148,8 +2138,8 @@ theorem executableFieldsFieldValidationMergeCompatible_singleton
 theorem executableFieldsResolveStable_singleton
     (resolvers : Execution.Resolvers ObjectRef)
     (source : Execution.ResolverValue ObjectRef)
-    (field : Execution.ExecutableField) :
-    ExecutableFieldsResolveStable resolvers source [field] := by
+    (field : Execution.ExecutableField)
+    : ExecutableFieldsResolveStable resolvers source [field] := by
   intro first later hfirst hlater _hresponse
   have hfirstEq : first = field := by
     simpa using hfirst
@@ -2159,12 +2149,11 @@ theorem executableFieldsResolveStable_singleton
   subst later
   rfl
 
-theorem selectionDirectiveFree_of_mem
-    {selection : Selection} :
-    ∀ {selectionSet : List Selection},
-      NormalForm.selectionSetDirectiveFree selectionSet ->
-      selection ∈ selectionSet ->
-        NormalForm.selectionDirectiveFree selection
+theorem selectionDirectiveFree_of_mem {selection : Selection}
+    : ∀ {selectionSet : List Selection},
+        NormalForm.selectionSetDirectiveFree selectionSet
+        -> selection ∈ selectionSet
+        -> NormalForm.selectionDirectiveFree selection
   | [], _hfree, hmem => by
       simp at hmem
   | head :: rest, hfree, hmem => by
@@ -2177,11 +2166,11 @@ theorem selectionDirectiveFree_of_mem
 theorem selectionSetDirectiveFree_field_child_of_mem
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    NormalForm.selectionSetDirectiveFree selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      NormalForm.selectionSetDirectiveFree childSelectionSet := by
+    {childSelectionSet selectionSet : List Selection}
+    : NormalForm.selectionSetDirectiveFree selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> NormalForm.selectionSetDirectiveFree childSelectionSet := by
   intro hfree hmem
   have hselectionFree :
       NormalForm.selectionDirectiveFree
@@ -2194,13 +2183,13 @@ theorem selectionSetNormal_field_child_of_mem
     {schema : Schema} {parentType : Name}
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    NormalForm.selectionSetNormal schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      NormalForm.selectionSetNormal schema
-        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        childSelectionSet := by
+    {childSelectionSet selectionSet : List Selection}
+    : NormalForm.selectionSetNormal schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> NormalForm.selectionSetNormal schema
+          ((schema.fieldReturnType? parentType fieldName).getD fieldName)
+          childSelectionSet := by
   intro hnormal hmem
   rcases hnormal with ⟨hground, hnonRedundant⟩
   have hselectionGround :
@@ -2225,9 +2214,9 @@ theorem selectionSetNormal_field_child_of_mem
       NormalForm.selectionSetNormal schema returnType childSelectionSet)
 
 theorem allFieldsNormal_responseNamesNodup
-    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
-    NormalForm.selectionSetNormal schema parentType selectionSet ->
-      NormalForm.responseNamesNodup selectionSet := by
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    : NormalForm.selectionSetNormal schema parentType selectionSet
+      -> NormalForm.responseNamesNodup selectionSet := by
   intro hnormal
   rcases hnormal with ⟨_hground, hnonRedundant⟩
   unfold NormalForm.selectionSetNonRedundant at hnonRedundant
@@ -2236,13 +2225,13 @@ theorem allFieldsNormal_responseNamesNodup
 theorem collectedGroupsFieldValidationMergeCompatible_of_allFieldsNormal
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    NormalForm.selectionsAllFields selectionSet ->
-    NormalForm.selectionSetDirectiveFree selectionSet ->
-    NormalForm.selectionSetNormal schema parentType selectionSet ->
-      CollectedGroupsFieldValidationMergeCompatible
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          selectionSet) := by
+    (selectionSet : List Selection)
+    : NormalForm.selectionsAllFields selectionSet
+      -> NormalForm.selectionSetDirectiveFree selectionSet
+      -> NormalForm.selectionSetNormal schema parentType selectionSet
+      -> CollectedGroupsFieldValidationMergeCompatible
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            selectionSet) := by
   intro hall hfree hnormal responseName fields hgroup
   have hnodup : NormalForm.responseNamesNodup selectionSet :=
     allFieldsNormal_responseNamesNodup hnormal
@@ -2275,20 +2264,24 @@ theorem executionCollectedFieldInvariant_of_allFieldsNormal
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    NormalForm.selectionsAllFields selectionSet ->
-    NormalForm.selectionSetDirectiveFree selectionSet ->
-    NormalForm.selectionSetNormal schema parentType selectionSet ->
-      ExecutionCollectedFieldInvariant
-        { window :=
-          { schema := schema
-            resolvers := resolvers
-            variableValues := variableValues
-            depth := depth
-            parentType := parentType
-            source := source
-            selectionSet := selectionSet }
-          initial := .object [] } := by
+    (selectionSet : List Selection)
+    : NormalForm.selectionsAllFields selectionSet
+      -> NormalForm.selectionSetDirectiveFree selectionSet
+      -> NormalForm.selectionSetNormal schema parentType selectionSet
+      -> ExecutionCollectedFieldInvariant
+          {
+            window :=
+              {
+                schema := schema
+                resolvers := resolvers
+                variableValues := variableValues
+                depth := depth
+                parentType := parentType
+                source := source
+                selectionSet := selectionSet
+              }
+            initial := .object []
+          } := by
   intro hall hfree hnormal
   have hnodup : NormalForm.responseNamesNodup selectionSet :=
     allFieldsNormal_responseNamesNodup hnormal
@@ -2330,34 +2323,34 @@ theorem collectedFieldGroupLocalAppendInvariant_of_allFieldsNormal
     (source : Execution.ResolverValue ObjectRef)
     (selectionSet : List Selection)
     (childReady : Name -> List Selection -> Prop)
-    (hchild :
-      ∀ childDepth childType runtimeType (ref : ObjectRef) childSelectionSet,
-        childDepth < depth + 1 ->
-        schema.typeIncludesObjectBool childType runtimeType = true ->
-        childReady childType childSelectionSet ->
-        NormalForm.selectionSetNormal schema childType childSelectionSet ->
-        NormalForm.selectionSetDirectiveFree childSelectionSet ->
-            executeRootSelectionSet schema resolvers variableValues childDepth
+    (hchild
+      : ∀ childDepth childType runtimeType (ref : ObjectRef) childSelectionSet,
+          childDepth < depth + 1
+          -> schema.typeIncludesObjectBool childType runtimeType = true
+          -> childReady childType childSelectionSet
+          -> NormalForm.selectionSetNormal schema childType childSelectionSet
+          -> NormalForm.selectionSetDirectiveFree childSelectionSet
+          -> executeRootSelectionSet schema resolvers variableValues childDepth
                 runtimeType (Execution.ResolverValue.object runtimeType ref)
                 childSelectionSet
-              =
-              Execution.executeRootSelectionSet schema resolvers variableValues
-                childDepth runtimeType
-                (Execution.ResolverValue.object runtimeType ref)
-                childSelectionSet) :
-    NormalForm.selectionsAllFields selectionSet ->
-    NormalForm.selectionSetDirectiveFree selectionSet ->
-    NormalForm.selectionSetNormal schema parentType selectionSet ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      childReady
-        ((schema.fieldReturnType? parentType fieldName).getD fieldName)
-        childSelectionSet) ->
-      CollectedFieldGroupLocalAppendInvariant schema resolvers variableValues
-        depth
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          selectionSet) := by
+              = Execution.executeRootSelectionSet schema resolvers variableValues
+                  childDepth runtimeType
+                  (Execution.ResolverValue.object runtimeType ref)
+                  childSelectionSet)
+    : NormalForm.selectionsAllFields selectionSet
+      -> NormalForm.selectionSetDirectiveFree selectionSet
+      -> NormalForm.selectionSetNormal schema parentType selectionSet
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> childReady
+                ((schema.fieldReturnType? parentType fieldName).getD fieldName)
+                childSelectionSet)
+      -> CollectedFieldGroupLocalAppendInvariant schema resolvers variableValues
+          depth
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            selectionSet) := by
   intro hall hfree hnormal hchildren
   have hnodup : NormalForm.responseNamesNodup selectionSet :=
     allFieldsNormal_responseNamesNodup hnormal

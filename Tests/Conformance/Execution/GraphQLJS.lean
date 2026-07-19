@@ -9,31 +9,29 @@ namespace GraphQLJS
 
 -- Source: src/execution/__tests__/directives-test.ts
 def directives_scalar_include_falseSchema : GraphQL.Schema :=
-  { queryType := "Query",
+  {
+    queryType := "Query",
     types :=
-      [ .object
-        { name := "Query",
+      [.object
+        {
+          name := "Query",
           fields :=
-            [ { name := "a", outputType := .named "String", arguments := [] }
-                  , { name := "b", outputType := .named "String", arguments := [] } ],
+            [
+              { name := "a", outputType := .named "String", arguments := [] },
+              { name := "b", outputType := .named "String", arguments := [] }
+            ],
           interfaces := []
-        } ]
+        }]
   }
 
 def directives_scalar_include_falseOperation : GraphQL.Operation :=
-  { name := none,
+  {
+    name := none,
     rootType := "Query",
     variableDefinitions :=
       [],
     selectionSet :=
-      [ .field "a" "a"
-        []
-        []
-        []
-          , .field "b" "b"
-        []
-        [ .include (.boolean false) ]
-        [] ]
+      [.field "a" "a" [] [] [], .field "b" "b" [] [.include (.boolean false)] []]
   }
 
 def directives_scalar_include_falseVariables : GraphQL.Execution.VariableValues :=
@@ -54,52 +52,57 @@ def directives_scalar_include_falseResolvers : GraphQL.Execution.Resolvers Strin
   }
 
 def directives_scalar_include_falseExpectedData : GraphQL.Execution.ResponseValue :=
-  .object ([ ("a", .scalar "a") ])
+  .object ([("a", .scalar "a")])
 
-theorem directives_scalar_include_false_matches_graphql_js_projection :
-    let response :=
-      GraphQL.Execution.executeQueryWithFuel directives_scalar_include_falseSchema
-        directives_scalar_include_falseResolvers directives_scalar_include_falseVariables directives_scalar_include_falseOperation 100
-        directives_scalar_include_falseSource
-    response.errors = 0
-      ∧ responseEqBool response.data directives_scalar_include_falseExpectedData = true := by
+theorem directives_scalar_include_false_matches_graphql_js_projection
+    : let response :=
+        GraphQL.Execution.executeQueryWithFuel directives_scalar_include_falseSchema
+          directives_scalar_include_falseResolvers
+          directives_scalar_include_falseVariables
+          directives_scalar_include_falseOperation 100
+          directives_scalar_include_falseSource
+      response.errors = 0
+      ∧ responseEqBool response.data directives_scalar_include_falseExpectedData
+        = true := by
   native_decide
 
 -- Source: src/execution/__tests__/directives-test.ts
 def directives_inline_fragment_skip_falseSchema : GraphQL.Schema :=
-  { queryType := "Query",
+  {
+    queryType := "Query",
     types :=
-      [ .object
-        { name := "Query",
+      [.object
+        {
+          name := "Query",
           fields :=
-            [ { name := "a", outputType := .named "String", arguments := [] }
-                  , { name := "b", outputType := .named "String", arguments := [] } ],
+            [
+              { name := "a", outputType := .named "String", arguments := [] },
+              { name := "b", outputType := .named "String", arguments := [] }
+            ],
           interfaces := []
-        } ]
+        }]
   }
 
 def directives_inline_fragment_skip_falseOperation : GraphQL.Operation :=
-  { name := none,
+  {
+    name := none,
     rootType := "Query",
     variableDefinitions :=
       [],
     selectionSet :=
-      [ .field "a" "a"
-        []
-        []
-        []
-          , .inlineFragment (some "Query")
-        [ .skip (.boolean false) ]
-        [ .field "b" "b"
-          []
-          []
-          [] ] ]
+      [
+        .field "a" "a" [] [] [],
+        .inlineFragment (some "Query")
+          [.skip (.boolean false)]
+          [.field "b" "b" [] [] []]
+      ]
   }
 
 def directives_inline_fragment_skip_falseVariables : GraphQL.Execution.VariableValues :=
   []
 
-def directives_inline_fragment_skip_falseSource : GraphQL.Execution.ResolverValue String :=
+def directives_inline_fragment_skip_falseSource
+    : GraphQL.Execution.ResolverValue String :=
   .object "Query" "root"
 
 def directives_inline_fragment_skip_falseResolvers : GraphQL.Execution.Resolvers String :=
@@ -113,54 +116,62 @@ def directives_inline_fragment_skip_falseResolvers : GraphQL.Execution.Resolvers
       rfl
   }
 
-def directives_inline_fragment_skip_falseExpectedData : GraphQL.Execution.ResponseValue :=
-  .object ([ ("a", .scalar "a")
-    , ("b", .scalar "b") ])
+def directives_inline_fragment_skip_falseExpectedData
+    : GraphQL.Execution.ResponseValue :=
+  .object ([("a", .scalar "a"), ("b", .scalar "b")])
 
-theorem directives_inline_fragment_skip_false_matches_graphql_js_projection :
-    let response :=
-      GraphQL.Execution.executeQueryWithFuel directives_inline_fragment_skip_falseSchema
-        directives_inline_fragment_skip_falseResolvers directives_inline_fragment_skip_falseVariables directives_inline_fragment_skip_falseOperation 100
-        directives_inline_fragment_skip_falseSource
-    response.errors = 0
-      ∧ responseEqBool response.data directives_inline_fragment_skip_falseExpectedData = true := by
+theorem directives_inline_fragment_skip_false_matches_graphql_js_projection
+    : let response :=
+        GraphQL.Execution.executeQueryWithFuel
+          directives_inline_fragment_skip_falseSchema
+          directives_inline_fragment_skip_falseResolvers
+          directives_inline_fragment_skip_falseVariables
+          directives_inline_fragment_skip_falseOperation 100
+          directives_inline_fragment_skip_falseSource
+      response.errors = 0
+      ∧ responseEqBool response.data directives_inline_fragment_skip_falseExpectedData
+        = true := by
   native_decide
 
 -- Source: src/execution/__tests__/directives-test.ts
 def directives_anonymous_inline_fragment_include_variableSchema : GraphQL.Schema :=
-  { queryType := "Query",
+  {
+    queryType := "Query",
     types :=
-      [ .object
-        { name := "Query",
+      [.object
+        {
+          name := "Query",
           fields :=
-            [ { name := "a", outputType := .named "String", arguments := [] }
-                  , { name := "b", outputType := .named "String", arguments := [] } ],
+            [
+              { name := "a", outputType := .named "String", arguments := [] },
+              { name := "b", outputType := .named "String", arguments := [] }
+            ],
           interfaces := []
-        } ]
+        }]
   }
 
-def directives_anonymous_inline_fragment_include_variableOperation : GraphQL.Operation :=
-  { name := none,
+def directives_anonymous_inline_fragment_include_variableOperation
+    : GraphQL.Operation :=
+  {
+    name := none,
     rootType := "Query",
     variableDefinitions :=
-      [ { name := "withB", typeRef := .nonNull (.named "Boolean"), defaultValue := none } ],
+      [{
+        name := "withB", typeRef := .nonNull (.named "Boolean"), defaultValue := none
+      }],
     selectionSet :=
-      [ .field "a" "a"
-        []
-        []
-        []
-          , .inlineFragment none
-        [ .include (.variable "withB") ]
-        [ .field "b" "b"
-          []
-          []
-          [] ] ]
+      [
+        .field "a" "a" [] [] [],
+        .inlineFragment none [.include (.variable "withB")] [.field "b" "b" [] [] []]
+      ]
   }
 
-def directives_anonymous_inline_fragment_include_variableVariables : GraphQL.Execution.VariableValues :=
-  [ ("withB", .boolean true) ]
+def directives_anonymous_inline_fragment_include_variableVariables
+    : GraphQL.Execution.VariableValues :=
+  [("withB", .boolean true)]
 
-def directives_anonymous_inline_fragment_include_variableSource : GraphQL.Execution.ResolverValue String :=
+def directives_anonymous_inline_fragment_include_variableSource
+    : GraphQL.Execution.ResolverValue String :=
   .object "Query" "root"
 
 def directives_anonymous_inline_fragment_include_variableResolvers : GraphQL.Execution.Resolvers String :=
@@ -174,92 +185,87 @@ def directives_anonymous_inline_fragment_include_variableResolvers : GraphQL.Exe
       rfl
   }
 
-def directives_anonymous_inline_fragment_include_variableExpectedData : GraphQL.Execution.ResponseValue :=
-  .object ([ ("a", .scalar "a")
-    , ("b", .scalar "b") ])
+def directives_anonymous_inline_fragment_include_variableExpectedData
+    : GraphQL.Execution.ResponseValue :=
+  .object ([("a", .scalar "a"), ("b", .scalar "b")])
 
-theorem directives_anonymous_inline_fragment_include_variable_matches_graphql_js_projection :
-    let response :=
-      GraphQL.Execution.executeQueryWithFuel directives_anonymous_inline_fragment_include_variableSchema
-        directives_anonymous_inline_fragment_include_variableResolvers directives_anonymous_inline_fragment_include_variableVariables directives_anonymous_inline_fragment_include_variableOperation 100
-        directives_anonymous_inline_fragment_include_variableSource
-    response.errors = 0
-      ∧ responseEqBool response.data directives_anonymous_inline_fragment_include_variableExpectedData = true := by
+theorem directives_anonymous_inline_fragment_include_variable_matches_graphql_js_projection
+    : let response :=
+        GraphQL.Execution.executeQueryWithFuel
+          directives_anonymous_inline_fragment_include_variableSchema
+          directives_anonymous_inline_fragment_include_variableResolvers
+          directives_anonymous_inline_fragment_include_variableVariables
+          directives_anonymous_inline_fragment_include_variableOperation 100
+          directives_anonymous_inline_fragment_include_variableSource
+      response.errors = 0
+      ∧ responseEqBool response.data
+          directives_anonymous_inline_fragment_include_variableExpectedData
+        = true := by
   native_decide
 
 -- Source: src/execution/__tests__/executor-test.ts
 def nested_objects_aliases_and_listsSchema : GraphQL.Schema :=
-  { queryType := "DataType",
+  {
+    queryType := "DataType",
     types :=
-      [ .object
-        { name := "DataType",
-          fields :=
-            [ { name := "a", outputType := .named "String", arguments := [] }
-                  , { name := "b", outputType := .named "String", arguments := [] }
-                  , { name := "c", outputType := .named "String", arguments := [] }
-                  , { name := "f", outputType := .named "String", arguments := [] }
-                  , { name := "deep", outputType := .named "DeepDataType", arguments := [] } ],
-          interfaces := []
-        }
-          , .object
-        { name := "DeepDataType",
-          fields :=
-            [ { name := "a", outputType := .named "String", arguments := [] }
-                  , { name := "b", outputType := .named "String", arguments := [] }
-                  , { name := "c", outputType := .list (.named "String"), arguments := [] }
-                  , { name := "deeper", outputType := .list (.named "DataType"), arguments := [] } ],
-          interfaces := []
-        } ]
+      [
+        .object
+          {
+            name := "DataType",
+            fields :=
+              [
+                { name := "a", outputType := .named "String", arguments := [] },
+                { name := "b", outputType := .named "String", arguments := [] },
+                { name := "c", outputType := .named "String", arguments := [] },
+                { name := "f", outputType := .named "String", arguments := [] },
+                { name := "deep", outputType := .named "DeepDataType", arguments := [] }
+              ],
+            interfaces := []
+          },
+        .object
+          {
+            name := "DeepDataType",
+            fields :=
+              [
+                { name := "a", outputType := .named "String", arguments := [] },
+                { name := "b", outputType := .named "String", arguments := [] },
+                { name := "c", outputType := .list (.named "String"), arguments := [] },
+                {
+                  name := "deeper",
+                  outputType := .list (.named "DataType"),
+                  arguments := []
+                }
+              ],
+            interfaces := []
+          }
+      ]
   }
 
 def nested_objects_aliases_and_listsOperation : GraphQL.Operation :=
-  { name := none,
+  {
+    name := none,
     rootType := "DataType",
     variableDefinitions :=
       [],
     selectionSet :=
-      [ .field "a" "a"
-        []
-        []
-        []
-          , .field "b" "b"
-        []
-        []
-        []
-          , .field "x" "c"
-        []
-        []
-        []
-          , .field "f" "f"
-        []
-        []
-        []
-          , .field "deep" "deep"
-        []
-        []
-        [ .field "a" "a"
+      [
+        .field "a" "a" [] [] [],
+        .field "b" "b" [] [] [],
+        .field "x" "c" [] [] [],
+        .field "f" "f" [] [] [],
+        .field "deep" "deep"
           []
           []
-          []
-          , .field "b" "b"
-          []
-          []
-          []
-          , .field "c" "c"
-          []
-          []
-          []
-          , .field "deeper" "deeper"
-          []
-          []
-          [ .field "a" "a"
-            []
-            []
-            []
-            , .field "b" "b"
-            []
-            []
-            [] ] ] ]
+          [
+            .field "a" "a" [] [] [],
+            .field "b" "b" [] [] [],
+            .field "c" "c" [] [] [],
+            .field "deeper" "deeper"
+              []
+              []
+              [.field "a" "a" [] [] [], .field "b" "b" [] [] []]
+          ]
+      ]
   }
 
 def nested_objects_aliases_and_listsVariables : GraphQL.Execution.VariableValues :=
@@ -291,67 +297,87 @@ def nested_objects_aliases_and_listsResolvers : GraphQL.Execution.Resolvers Stri
   }
 
 def nested_objects_aliases_and_listsExpectedData : GraphQL.Execution.ResponseValue :=
-  .object ([ ("a", .scalar "Apple")
-    , ("b", .scalar "Banana")
-    , ("x", .scalar "Cookie")
-    , ("f", .scalar "Fish")
-    , ("deep", .object ([ ("a", .scalar "Already Been Done")
-    , ("b", .scalar "Boring")
-    , ("c", .list ([ .scalar "Contrived"
-    , .null
-    , .scalar "Confusing" ]))
-    , ("deeper", .list ([ .object ([ ("a", .scalar "Apple")
-    , ("b", .scalar "Banana") ])
-    , .null
-    , .object ([ ("a", .scalar "Apple")
-    , ("b", .scalar "Banana") ]) ])) ])) ])
+  .object
+    ([
+      ("a", .scalar "Apple"),
+      ("b", .scalar "Banana"),
+      ("x", .scalar "Cookie"),
+      ("f", .scalar "Fish"),
+      (
+        "deep",
+        .object
+          ([
+            ("a", .scalar "Already Been Done"),
+            ("b", .scalar "Boring"),
+            ("c", .list ([.scalar "Contrived", .null, .scalar "Confusing"])),
+            (
+              "deeper",
+              .list
+                ([
+                  .object ([("a", .scalar "Apple"), ("b", .scalar "Banana")]),
+                  .null,
+                  .object ([("a", .scalar "Apple"), ("b", .scalar "Banana")])
+                ])
+            )
+          ])
+      )
+    ])
 
-theorem nested_objects_aliases_and_lists_matches_graphql_js_projection :
-    let response :=
-      GraphQL.Execution.executeQueryWithFuel nested_objects_aliases_and_listsSchema
-        nested_objects_aliases_and_listsResolvers nested_objects_aliases_and_listsVariables nested_objects_aliases_and_listsOperation 100
-        nested_objects_aliases_and_listsSource
-    response.errors = 0
-      ∧ responseEqBool response.data nested_objects_aliases_and_listsExpectedData = true := by
+theorem nested_objects_aliases_and_lists_matches_graphql_js_projection
+    : let response :=
+        GraphQL.Execution.executeQueryWithFuel nested_objects_aliases_and_listsSchema
+          nested_objects_aliases_and_listsResolvers
+          nested_objects_aliases_and_listsVariables
+          nested_objects_aliases_and_listsOperation 100
+          nested_objects_aliases_and_listsSource
+      response.errors = 0
+      ∧ responseEqBool response.data nested_objects_aliases_and_listsExpectedData
+        = true := by
   native_decide
 
 -- Source: src/execution/__tests__/nonnull-test.ts
 def non_null_nested_null_bubbles_to_nullable_parentSchema : GraphQL.Schema :=
-  { queryType := "Query",
+  {
+    queryType := "Query",
     types :=
-      [ .object
-        { name := "Query",
-          fields :=
-            [ { name := "hero", outputType := .named "Character", arguments := [] } ],
-          interfaces := []
-        }
-          , .object
-        { name := "Character",
-          fields :=
-            [ { name := "name", outputType := .nonNull (.named "String"), arguments := [] } ],
-          interfaces := []
-        } ]
+      [
+        .object
+          {
+            name := "Query",
+            fields :=
+              [{ name := "hero", outputType := .named "Character", arguments := [] }],
+            interfaces := []
+          },
+        .object
+          {
+            name := "Character",
+            fields :=
+              [{
+                name := "name",
+                outputType := .nonNull (.named "String"),
+                arguments := []
+              }],
+            interfaces := []
+          }
+      ]
   }
 
 def non_null_nested_null_bubbles_to_nullable_parentOperation : GraphQL.Operation :=
-  { name := none,
+  {
+    name := none,
     rootType := "Query",
     variableDefinitions :=
       [],
     selectionSet :=
-      [ .field "hero" "hero"
-        []
-        []
-        [ .field "name" "name"
-          []
-          []
-          [] ] ]
+      [.field "hero" "hero" [] [] [.field "name" "name" [] [] []]]
   }
 
-def non_null_nested_null_bubbles_to_nullable_parentVariables : GraphQL.Execution.VariableValues :=
+def non_null_nested_null_bubbles_to_nullable_parentVariables
+    : GraphQL.Execution.VariableValues :=
   []
 
-def non_null_nested_null_bubbles_to_nullable_parentSource : GraphQL.Execution.ResolverValue String :=
+def non_null_nested_null_bubbles_to_nullable_parentSource
+    : GraphQL.Execution.ResolverValue String :=
   .object "Query" "root"
 
 def non_null_nested_null_bubbles_to_nullable_parentResolvers : GraphQL.Execution.Resolvers String :=
@@ -365,49 +391,63 @@ def non_null_nested_null_bubbles_to_nullable_parentResolvers : GraphQL.Execution
       rfl
   }
 
-def non_null_nested_null_bubbles_to_nullable_parentExpectedData : GraphQL.Execution.ResponseValue :=
-  .object ([ ("hero", .null) ])
+def non_null_nested_null_bubbles_to_nullable_parentExpectedData
+    : GraphQL.Execution.ResponseValue :=
+  .object ([("hero", .null)])
 
-theorem non_null_nested_null_bubbles_to_nullable_parent_matches_graphql_js_projection :
-    let response :=
-      GraphQL.Execution.executeQueryWithFuel non_null_nested_null_bubbles_to_nullable_parentSchema
-        non_null_nested_null_bubbles_to_nullable_parentResolvers non_null_nested_null_bubbles_to_nullable_parentVariables non_null_nested_null_bubbles_to_nullable_parentOperation 100
-        non_null_nested_null_bubbles_to_nullable_parentSource
-    response.errors = 1
-      ∧ responseEqBool response.data non_null_nested_null_bubbles_to_nullable_parentExpectedData = true := by
+theorem non_null_nested_null_bubbles_to_nullable_parent_matches_graphql_js_projection
+    : let response :=
+        GraphQL.Execution.executeQueryWithFuel
+          non_null_nested_null_bubbles_to_nullable_parentSchema
+          non_null_nested_null_bubbles_to_nullable_parentResolvers
+          non_null_nested_null_bubbles_to_nullable_parentVariables
+          non_null_nested_null_bubbles_to_nullable_parentOperation 100
+          non_null_nested_null_bubbles_to_nullable_parentSource
+      response.errors = 1
+      ∧ responseEqBool response.data
+          non_null_nested_null_bubbles_to_nullable_parentExpectedData
+        = true := by
   native_decide
 
 -- Source: src/execution/__tests__/nonnull-test.ts
 def non_null_root_bubbles_to_data_nullSchema : GraphQL.Schema :=
-  { queryType := "Query",
+  {
+    queryType := "Query",
     types :=
-      [ .object
-        { name := "Query",
-          fields :=
-            [ { name := "hero", outputType := .nonNull (.named "Character"), arguments := [] } ],
-          interfaces := []
-        }
-          , .object
-        { name := "Character",
-          fields :=
-            [ { name := "name", outputType := .nonNull (.named "String"), arguments := [] } ],
-          interfaces := []
-        } ]
+      [
+        .object
+          {
+            name := "Query",
+            fields :=
+              [{
+                name := "hero",
+                outputType := .nonNull (.named "Character"),
+                arguments := []
+              }],
+            interfaces := []
+          },
+        .object
+          {
+            name := "Character",
+            fields :=
+              [{
+                name := "name",
+                outputType := .nonNull (.named "String"),
+                arguments := []
+              }],
+            interfaces := []
+          }
+      ]
   }
 
 def non_null_root_bubbles_to_data_nullOperation : GraphQL.Operation :=
-  { name := none,
+  {
+    name := none,
     rootType := "Query",
     variableDefinitions :=
       [],
     selectionSet :=
-      [ .field "hero" "hero"
-        []
-        []
-        [ .field "name" "name"
-          []
-          []
-          [] ] ]
+      [.field "hero" "hero" [] [] [.field "name" "name" [] [] []]]
   }
 
 def non_null_root_bubbles_to_data_nullVariables : GraphQL.Execution.VariableValues :=
@@ -430,37 +470,42 @@ def non_null_root_bubbles_to_data_nullResolvers : GraphQL.Execution.Resolvers St
 def non_null_root_bubbles_to_data_nullExpectedData : GraphQL.Execution.ResponseValue :=
   .null
 
-theorem non_null_root_bubbles_to_data_null_matches_graphql_js_projection :
-    let response :=
-      GraphQL.Execution.executeQueryWithFuel non_null_root_bubbles_to_data_nullSchema
-        non_null_root_bubbles_to_data_nullResolvers non_null_root_bubbles_to_data_nullVariables non_null_root_bubbles_to_data_nullOperation 100
-        non_null_root_bubbles_to_data_nullSource
-    response.errors = 1
-      ∧ responseEqBool response.data non_null_root_bubbles_to_data_nullExpectedData = true := by
+theorem non_null_root_bubbles_to_data_null_matches_graphql_js_projection
+    : let response :=
+        GraphQL.Execution.executeQueryWithFuel non_null_root_bubbles_to_data_nullSchema
+          non_null_root_bubbles_to_data_nullResolvers
+          non_null_root_bubbles_to_data_nullVariables
+          non_null_root_bubbles_to_data_nullOperation 100
+          non_null_root_bubbles_to_data_nullSource
+      response.errors = 1
+      ∧ responseEqBool response.data non_null_root_bubbles_to_data_nullExpectedData
+        = true := by
   native_decide
 
 -- Source: src/execution/__tests__/lists-test.ts
 def list_nullable_items_contains_nullSchema : GraphQL.Schema :=
-  { queryType := "Query",
+  {
+    queryType := "Query",
     types :=
-      [ .object
-        { name := "Query",
+      [.object
+        {
+          name := "Query",
           fields :=
-            [ { name := "listField", outputType := .list (.named "Int"), arguments := [] } ],
+            [{
+              name := "listField", outputType := .list (.named "Int"), arguments := []
+            }],
           interfaces := []
-        } ]
+        }]
   }
 
 def list_nullable_items_contains_nullOperation : GraphQL.Operation :=
-  { name := none,
+  {
+    name := none,
     rootType := "Query",
     variableDefinitions :=
       [],
     selectionSet :=
-      [ .field "listField" "listField"
-        []
-        []
-        [] ]
+      [.field "listField" "listField" [] [] []]
   }
 
 def list_nullable_items_contains_nullVariables : GraphQL.Execution.VariableValues :=
@@ -482,41 +527,46 @@ def list_nullable_items_contains_nullResolvers : GraphQL.Execution.Resolvers Str
   }
 
 def list_nullable_items_contains_nullExpectedData : GraphQL.Execution.ResponseValue :=
-  .object ([ ("listField", .list ([ .scalar "1"
-    , .null
-    , .scalar "2" ])) ])
+  .object ([("listField", .list ([.scalar "1", .null, .scalar "2"]))])
 
-theorem list_nullable_items_contains_null_matches_graphql_js_projection :
-    let response :=
-      GraphQL.Execution.executeQueryWithFuel list_nullable_items_contains_nullSchema
-        list_nullable_items_contains_nullResolvers list_nullable_items_contains_nullVariables list_nullable_items_contains_nullOperation 100
-        list_nullable_items_contains_nullSource
-    response.errors = 0
-      ∧ responseEqBool response.data list_nullable_items_contains_nullExpectedData = true := by
+theorem list_nullable_items_contains_null_matches_graphql_js_projection
+    : let response :=
+        GraphQL.Execution.executeQueryWithFuel list_nullable_items_contains_nullSchema
+          list_nullable_items_contains_nullResolvers
+          list_nullable_items_contains_nullVariables
+          list_nullable_items_contains_nullOperation 100
+          list_nullable_items_contains_nullSource
+      response.errors = 0
+      ∧ responseEqBool response.data list_nullable_items_contains_nullExpectedData
+        = true := by
   native_decide
 
 -- Source: src/execution/__tests__/lists-test.ts
 def list_non_null_items_contains_nullSchema : GraphQL.Schema :=
-  { queryType := "Query",
+  {
+    queryType := "Query",
     types :=
-      [ .object
-        { name := "Query",
+      [.object
+        {
+          name := "Query",
           fields :=
-            [ { name := "listField", outputType := .list (.nonNull (.named "Int")), arguments := [] } ],
+            [{
+              name := "listField",
+              outputType := .list (.nonNull (.named "Int")),
+              arguments := []
+            }],
           interfaces := []
-        } ]
+        }]
   }
 
 def list_non_null_items_contains_nullOperation : GraphQL.Operation :=
-  { name := none,
+  {
+    name := none,
     rootType := "Query",
     variableDefinitions :=
       [],
     selectionSet :=
-      [ .field "listField" "listField"
-        []
-        []
-        [] ]
+      [.field "listField" "listField" [] [] []]
   }
 
 def list_non_null_items_contains_nullVariables : GraphQL.Execution.VariableValues :=
@@ -538,39 +588,46 @@ def list_non_null_items_contains_nullResolvers : GraphQL.Execution.Resolvers Str
   }
 
 def list_non_null_items_contains_nullExpectedData : GraphQL.Execution.ResponseValue :=
-  .object ([ ("listField", .null) ])
+  .object ([("listField", .null)])
 
-theorem list_non_null_items_contains_null_matches_graphql_js_projection :
-    let response :=
-      GraphQL.Execution.executeQueryWithFuel list_non_null_items_contains_nullSchema
-        list_non_null_items_contains_nullResolvers list_non_null_items_contains_nullVariables list_non_null_items_contains_nullOperation 100
-        list_non_null_items_contains_nullSource
-    response.errors = 1
-      ∧ responseEqBool response.data list_non_null_items_contains_nullExpectedData = true := by
+theorem list_non_null_items_contains_null_matches_graphql_js_projection
+    : let response :=
+        GraphQL.Execution.executeQueryWithFuel list_non_null_items_contains_nullSchema
+          list_non_null_items_contains_nullResolvers
+          list_non_null_items_contains_nullVariables
+          list_non_null_items_contains_nullOperation 100
+          list_non_null_items_contains_nullSource
+      response.errors = 1
+      ∧ responseEqBool response.data list_non_null_items_contains_nullExpectedData
+        = true := by
   native_decide
 
 -- Source: src/execution/__tests__/lists-test.ts
 def list_non_null_list_contains_nullSchema : GraphQL.Schema :=
-  { queryType := "Query",
+  {
+    queryType := "Query",
     types :=
-      [ .object
-        { name := "Query",
+      [.object
+        {
+          name := "Query",
           fields :=
-            [ { name := "listField", outputType := .nonNull (.list (.nonNull (.named "Int"))), arguments := [] } ],
+            [{
+              name := "listField",
+              outputType := .nonNull (.list (.nonNull (.named "Int"))),
+              arguments := []
+            }],
           interfaces := []
-        } ]
+        }]
   }
 
 def list_non_null_list_contains_nullOperation : GraphQL.Operation :=
-  { name := none,
+  {
+    name := none,
     rootType := "Query",
     variableDefinitions :=
       [],
     selectionSet :=
-      [ .field "listField" "listField"
-        []
-        []
-        [] ]
+      [.field "listField" "listField" [] [] []]
   }
 
 def list_non_null_list_contains_nullVariables : GraphQL.Execution.VariableValues :=
@@ -594,78 +651,83 @@ def list_non_null_list_contains_nullResolvers : GraphQL.Execution.Resolvers Stri
 def list_non_null_list_contains_nullExpectedData : GraphQL.Execution.ResponseValue :=
   .null
 
-theorem list_non_null_list_contains_null_matches_graphql_js_projection :
-    let response :=
-      GraphQL.Execution.executeQueryWithFuel list_non_null_list_contains_nullSchema
-        list_non_null_list_contains_nullResolvers list_non_null_list_contains_nullVariables list_non_null_list_contains_nullOperation 100
-        list_non_null_list_contains_nullSource
-    response.errors = 1
-      ∧ responseEqBool response.data list_non_null_list_contains_nullExpectedData = true := by
+theorem list_non_null_list_contains_null_matches_graphql_js_projection
+    : let response :=
+        GraphQL.Execution.executeQueryWithFuel list_non_null_list_contains_nullSchema
+          list_non_null_list_contains_nullResolvers
+          list_non_null_list_contains_nullVariables
+          list_non_null_list_contains_nullOperation 100
+          list_non_null_list_contains_nullSource
+      response.errors = 1
+      ∧ responseEqBool response.data list_non_null_list_contains_nullExpectedData
+        = true := by
   native_decide
 
 -- Source: src/execution/__tests__/abstract-test.ts
 def abstract_interface_inline_fragmentsSchema : GraphQL.Schema :=
-  { queryType := "Query",
+  {
+    queryType := "Query",
     types :=
-      [ .interface
-        { name := "Pet",
-          fields :=
-            [ { name := "name", outputType := .named "String", arguments := [] } ],
-          interfaces := []
-        }
-          , .object
-        { name := "Dog",
-          fields :=
-            [ { name := "name", outputType := .named "String", arguments := [] }
-                  , { name := "woofs", outputType := .named "String", arguments := [] } ],
-          interfaces := [ "Pet" ]
-        }
-          , .object
-        { name := "Cat",
-          fields :=
-            [ { name := "name", outputType := .named "String", arguments := [] }
-                  , { name := "meows", outputType := .named "String", arguments := [] } ],
-          interfaces := [ "Pet" ]
-        }
-          , .object
-        { name := "Query",
-          fields :=
-            [ { name := "pets", outputType := .list (.named "Pet"), arguments := [] } ],
-          interfaces := []
-        } ]
+      [
+        .interface
+          {
+            name := "Pet",
+            fields :=
+              [{ name := "name", outputType := .named "String", arguments := [] }],
+            interfaces := []
+          },
+        .object
+          {
+            name := "Dog",
+            fields :=
+              [
+                { name := "name", outputType := .named "String", arguments := [] },
+                { name := "woofs", outputType := .named "String", arguments := [] }
+              ],
+            interfaces := ["Pet"]
+          },
+        .object
+          {
+            name := "Cat",
+            fields :=
+              [
+                { name := "name", outputType := .named "String", arguments := [] },
+                { name := "meows", outputType := .named "String", arguments := [] }
+              ],
+            interfaces := ["Pet"]
+          },
+        .object
+          {
+            name := "Query",
+            fields :=
+              [{ name := "pets", outputType := .list (.named "Pet"), arguments := [] }],
+            interfaces := []
+          }
+      ]
   }
 
 def abstract_interface_inline_fragmentsOperation : GraphQL.Operation :=
-  { name := none,
+  {
+    name := none,
     rootType := "Query",
     variableDefinitions :=
       [],
     selectionSet :=
-      [ .field "pets" "pets"
+      [.field "pets" "pets"
         []
         []
-        [ .field "name" "name"
-          []
-          []
-          []
-          , .inlineFragment (some "Dog")
-          []
-          [ .field "woofs" "woofs"
-            []
-            []
-            [] ]
-          , .inlineFragment (some "Cat")
-          []
-          [ .field "meows" "meows"
-            []
-            []
-            [] ] ] ]
+        [
+          .field "name" "name" [] [] [],
+          .inlineFragment (some "Dog") [] [.field "woofs" "woofs" [] [] []],
+          .inlineFragment (some "Cat") [] [.field "meows" "meows" [] [] []]
+        ]]
   }
 
 def abstract_interface_inline_fragmentsVariables : GraphQL.Execution.VariableValues :=
   []
 
-def abstract_interface_inline_fragmentsSource : GraphQL.Execution.ResolverValue String :=
+def abstract_interface_inline_fragmentsSource
+    : GraphQL.Execution.ResolverValue String :=
   .object "Query" "root"
 
 def abstract_interface_inline_fragmentsResolvers : GraphQL.Execution.Resolvers String :=
@@ -684,18 +746,26 @@ def abstract_interface_inline_fragmentsResolvers : GraphQL.Execution.Resolvers S
   }
 
 def abstract_interface_inline_fragmentsExpectedData : GraphQL.Execution.ResponseValue :=
-  .object ([ ("pets", .list ([ .object ([ ("name", .scalar "Odie")
-    , ("woofs", .scalar "true") ])
-    , .object ([ ("name", .scalar "Garfield")
-    , ("meows", .scalar "false") ]) ])) ])
+  .object
+    ([(
+        "pets",
+        .list
+          ([
+            .object ([("name", .scalar "Odie"), ("woofs", .scalar "true")]),
+            .object ([("name", .scalar "Garfield"), ("meows", .scalar "false")])
+          ])
+      )])
 
-theorem abstract_interface_inline_fragments_matches_graphql_js_projection :
-    let response :=
-      GraphQL.Execution.executeQueryWithFuel abstract_interface_inline_fragmentsSchema
-        abstract_interface_inline_fragmentsResolvers abstract_interface_inline_fragmentsVariables abstract_interface_inline_fragmentsOperation 100
-        abstract_interface_inline_fragmentsSource
-    response.errors = 0
-      ∧ responseEqBool response.data abstract_interface_inline_fragmentsExpectedData = true := by
+theorem abstract_interface_inline_fragments_matches_graphql_js_projection
+    : let response :=
+        GraphQL.Execution.executeQueryWithFuel abstract_interface_inline_fragmentsSchema
+          abstract_interface_inline_fragmentsResolvers
+          abstract_interface_inline_fragmentsVariables
+          abstract_interface_inline_fragmentsOperation 100
+          abstract_interface_inline_fragmentsSource
+      response.errors = 0
+      ∧ responseEqBool response.data abstract_interface_inline_fragmentsExpectedData
+        = true := by
   native_decide
 
 end GraphQLJS

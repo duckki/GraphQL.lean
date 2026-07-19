@@ -16,13 +16,13 @@ namespace GroundTypeNormalization
 
 theorem fieldSelectionSetValid_child_of_nonempty
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {fieldDefinition : FieldDefinition} {selectionSet : List Selection} :
-    Validation.fieldSelectionSetValid schema variableDefinitions
-      fieldDefinition selectionSet ->
-    selectionSet ≠ [] ->
-      schema.isCompositeType fieldDefinition.outputType.namedType
-        ∧ Validation.selectionSetValid schema variableDefinitions
-          fieldDefinition.outputType.namedType selectionSet := by
+    {fieldDefinition : FieldDefinition} {selectionSet : List Selection}
+    : Validation.fieldSelectionSetValid schema variableDefinitions
+        fieldDefinition selectionSet
+      -> selectionSet ≠ []
+      -> schema.isCompositeType fieldDefinition.outputType.namedType
+          ∧ Validation.selectionSetValid schema variableDefinitions
+              fieldDefinition.outputType.namedType selectionSet := by
   intro hvalid hnonempty
   simp [Validation.fieldSelectionSetValid] at hvalid
   rcases hvalid with ⟨_houtput, hleaf | hcomposite⟩
@@ -31,13 +31,13 @@ theorem fieldSelectionSetValid_child_of_nonempty
 
 theorem fieldSelectionSetValid_child_of_composite
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {fieldDefinition : FieldDefinition} {selectionSet : List Selection} :
-    Validation.fieldSelectionSetValid schema variableDefinitions
-      fieldDefinition selectionSet ->
-    schema.isCompositeType fieldDefinition.outputType.namedType ->
-      selectionSet ≠ []
-        ∧ Validation.selectionSetValid schema variableDefinitions
-          fieldDefinition.outputType.namedType selectionSet := by
+    {fieldDefinition : FieldDefinition} {selectionSet : List Selection}
+    : Validation.fieldSelectionSetValid schema variableDefinitions
+        fieldDefinition selectionSet
+      -> schema.isCompositeType fieldDefinition.outputType.namedType
+      -> selectionSet ≠ []
+          ∧ Validation.selectionSetValid schema variableDefinitions
+              fieldDefinition.outputType.namedType selectionSet := by
   intro hvalid hcomposite
   simp [Validation.fieldSelectionSetValid] at hvalid
   rcases hvalid with ⟨_houtput, hleaf | hchild⟩
@@ -46,18 +46,18 @@ theorem fieldSelectionSetValid_child_of_composite
 
 theorem fieldDefinition_namedType_eq_of_fieldReturnType?
     {schema : Schema} {parentType fieldName returnType : Name}
-    {fieldDefinition : FieldDefinition} :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    schema.fieldReturnType? parentType fieldName = some returnType ->
-      fieldDefinition.outputType.namedType = returnType := by
+    {fieldDefinition : FieldDefinition}
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> schema.fieldReturnType? parentType fieldName = some returnType
+      -> fieldDefinition.outputType.namedType = returnType := by
   intro hlookup hreturnType
   simp [Schema.fieldReturnType?, hlookup] at hreturnType
   exact hreturnType
 
 theorem normalSelectionSetDiff_left_or_right_nonempty
-    {schema : Schema} {parentType : Name} {left right : List Selection} :
-    NormalSelectionSetDiff schema parentType left right ->
-      left ≠ [] ∨ right ≠ [] := by
+    {schema : Schema} {parentType : Name} {left right : List Selection}
+    : NormalSelectionSetDiff schema parentType left right
+      -> left ≠ [] ∨ right ≠ [] := by
   intro hdiff
   cases hdiff with
   | objectLeftResponseName hobject hmem hrightNo =>
@@ -80,12 +80,10 @@ theorem normalSelectionSetDiff_left_or_right_nonempty
 theorem selectionSetValid_selectionValid_of_mem
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {selectionSet : List Selection}
-    {selection : Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selection ∈ selectionSet ->
-      Validation.selectionValid schema variableDefinitions parentType
-        selection := by
+    {selection : Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selection ∈ selectionSet
+      -> Validation.selectionValid schema variableDefinitions parentType selection := by
   intro hvalid hmem
   simp [Validation.selectionSetValid] at hvalid
   exact hvalid selection hmem
@@ -94,17 +92,16 @@ theorem selectionSetValid_field_lookup_of_mem
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      ∃ fieldDefinition,
-        schema.lookupField parentType fieldName = some fieldDefinition
+    {childSelectionSet selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> ∃ fieldDefinition,
+          schema.lookupField parentType fieldName = some fieldDefinition
           ∧ Validation.argumentsValid schema fieldDefinition.arguments
-            variableDefinitions arguments
+              variableDefinitions arguments
           ∧ Validation.fieldSelectionSetValid schema variableDefinitions
-            fieldDefinition childSelectionSet := by
+              fieldDefinition childSelectionSet := by
   intro hvalid hmem
   exact Validation.selectionValid_field_lookup
     (selectionSetValid_selectionValid_of_mem hvalid hmem)
@@ -113,17 +110,16 @@ theorem selectionSetValid_field_child_of_mem
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-    childSelectionSet ≠ [] ->
-      ∃ fieldDefinition,
-        schema.lookupField parentType fieldName = some fieldDefinition
+    {childSelectionSet selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> childSelectionSet ≠ []
+      -> ∃ fieldDefinition,
+          schema.lookupField parentType fieldName = some fieldDefinition
           ∧ schema.isCompositeType fieldDefinition.outputType.namedType
           ∧ Validation.selectionSetValid schema variableDefinitions
-            fieldDefinition.outputType.namedType childSelectionSet := by
+              fieldDefinition.outputType.namedType childSelectionSet := by
   intro hvalid hmem hnonempty
   rcases selectionSetValid_field_lookup_of_mem hvalid hmem with
     ⟨fieldDefinition, hlookup, _harguments, hfieldSelectionSet⟩
@@ -132,32 +128,30 @@ theorem selectionSetValid_field_child_of_mem
     ⟨hcomposite, hchildValid⟩
   exact ⟨fieldDefinition, hlookup, hcomposite, hchildValid⟩
 
-theorem selectionSetValid_field_children_of_diff
-    {schema : Schema} {leftVariableDefinitions rightVariableDefinitions :
-      List VariableDefinition}
+theorem selectionSetValid_field_children_of_diff {schema : Schema}
+    {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType returnType responseName fieldName : Name}
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
-    {leftChildSelectionSet rightChildSelectionSet left right :
-      List Selection} :
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    Selection.field responseName fieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName fieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    schema.fieldReturnType? parentType fieldName = some returnType ->
-    NormalSelectionSetDiff schema returnType leftChildSelectionSet
-      rightChildSelectionSet ->
-      ∃ fieldDefinition,
-        schema.lookupField parentType fieldName = some fieldDefinition
+    {leftChildSelectionSet rightChildSelectionSet left right : List Selection}
+    : Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> Selection.field responseName fieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName fieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> schema.fieldReturnType? parentType fieldName = some returnType
+      -> NormalSelectionSetDiff schema returnType leftChildSelectionSet
+          rightChildSelectionSet
+      -> ∃ fieldDefinition,
+          schema.lookupField parentType fieldName = some fieldDefinition
           ∧ fieldDefinition.outputType.namedType = returnType
           ∧ Validation.selectionSetValid schema leftVariableDefinitions
-            returnType leftChildSelectionSet
+              returnType leftChildSelectionSet
           ∧ Validation.selectionSetValid schema rightVariableDefinitions
-            returnType rightChildSelectionSet := by
+              returnType rightChildSelectionSet := by
   intro hleftValid hrightValid hleftMem hrightMem hreturnType hdiff
   rcases selectionSetValid_field_lookup_of_mem hleftValid hleftMem with
     ⟨fieldDefinition, hlookup, _hleftArguments, hleftFieldValid⟩
@@ -195,13 +189,11 @@ theorem selectionSetValid_field_children_of_diff
 theorem selectionSetValid_inlineFragment_none_child_of_mem
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    Selection.inlineFragment none directives childSelectionSet ∈
-      selectionSet ->
-      Validation.selectionSetValid schema variableDefinitions parentType
-        childSelectionSet := by
+    {childSelectionSet selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> Selection.inlineFragment none directives childSelectionSet ∈ selectionSet
+      -> Validation.selectionSetValid schema variableDefinitions parentType
+          childSelectionSet := by
   intro hvalid hmem
   exact Validation.selectionValid_inlineFragment_none_selectionSetValid
     (selectionSetValid_selectionValid_of_mem hvalid hmem)
@@ -210,13 +202,12 @@ theorem selectionSetValid_inlineFragment_some_child_of_mem
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType typeCondition : Name}
     {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ selectionSet ->
-      Validation.selectionSetValid schema variableDefinitions typeCondition
-        childSelectionSet := by
+    {childSelectionSet selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet
+      -> Validation.selectionSetValid schema variableDefinitions typeCondition
+          childSelectionSet := by
   intro hvalid hmem
   exact Validation.selectionValid_inlineFragment_some_selectionSetValid
     (selectionSetValid_selectionValid_of_mem hvalid hmem)
@@ -225,12 +216,11 @@ theorem selectionSetValid_inlineFragment_some_child_nonempty_of_mem
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType typeCondition : Name}
     {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ selectionSet ->
-      childSelectionSet ≠ [] := by
+    {childSelectionSet selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet
+      -> childSelectionSet ≠ [] := by
   intro hvalid hmem
   have hselectionValid :=
     selectionSetValid_selectionValid_of_mem hvalid hmem
@@ -241,12 +231,11 @@ theorem selectionSetValid_inlineFragment_some_typesOverlap_of_mem
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType typeCondition : Name}
     {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ selectionSet ->
-      schema.typesOverlap parentType typeCondition := by
+    {childSelectionSet selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet
+      -> schema.typesOverlap parentType typeCondition := by
   intro hvalid hmem
   have hselectionValid :=
     selectionSetValid_selectionValid_of_mem hvalid hmem
@@ -254,10 +243,10 @@ theorem selectionSetValid_inlineFragment_some_typesOverlap_of_mem
   exact hselectionValid.2.2.1
 
 theorem typeIncludesObjectBool_of_typesOverlap_object
-    (schema : Schema) {parentType objectType : Name} :
-    schema.typesOverlap parentType objectType ->
-    schema.objectType objectType ->
-      schema.typeIncludesObjectBool parentType objectType = true := by
+    (schema : Schema) {parentType objectType : Name}
+    : schema.typesOverlap parentType objectType
+      -> schema.objectType objectType
+      -> schema.typeIncludesObjectBool parentType objectType = true := by
   intro hoverlap hobject
   rcases hoverlap with ⟨overlapObject, hparentIncludes, hobjectIncludes⟩
   have hoverlapEq : overlapObject = objectType :=
@@ -272,24 +261,24 @@ theorem field_child_inlineFragment_child_valid_free_normal
     {arguments : List Argument}
     {directives inlineDirectives : List DirectiveApplication}
     {childSelectionSet inlineChildSelectionSet selectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    fieldDefinition.outputType.namedType = returnType ->
-    Selection.inlineFragment (some typeCondition) inlineDirectives
-      inlineChildSelectionSet ∈ childSelectionSet ->
-      inlineDirectives = []
-        ∧ Validation.selectionSetValid schema variableDefinitions
-          typeCondition inlineChildSelectionSet
-        ∧ selectionSetDirectiveFree inlineChildSelectionSet
-        ∧ objectTypeNameBool schema typeCondition = true
-        ∧ schema.typeIncludesObjectBool returnType typeCondition = true
-        ∧ selectionSetNormal schema typeCondition inlineChildSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> fieldDefinition.outputType.namedType = returnType
+      -> Selection.inlineFragment (some typeCondition) inlineDirectives
+            inlineChildSelectionSet
+          ∈ childSelectionSet
+      -> inlineDirectives = []
+          ∧ Validation.selectionSetValid schema variableDefinitions
+              typeCondition inlineChildSelectionSet
+          ∧ selectionSetDirectiveFree inlineChildSelectionSet
+          ∧ objectTypeNameBool schema typeCondition = true
+          ∧ schema.typeIncludesObjectBool returnType typeCondition = true
+          ∧ selectionSetNormal schema typeCondition inlineChildSelectionSet := by
   intro hvalid hfree hnormal hfieldMem hlookup hreturnType hinlineMem
   rcases selectionSetValid_field_lookup_of_mem hvalid hfieldMem with
     ⟨candidateFieldDefinition, hcandidateLookup, _hargumentsValid,

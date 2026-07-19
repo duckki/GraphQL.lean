@@ -14,13 +14,13 @@ theorem fieldsInSetCanMerge_groupSource_rawChildSource_self
     (parentType objectType : Name)
     {selectionSet : List Selection}
     {field : FieldMerge.ScopedField}
-    (hgroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        selectionSet field) :
-    schema.objectType parentType ->
-    FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-      FieldMerge.fieldsInSetCanMerge schema objectType
-        (hgroup.childSource ++ hgroup.childSource) := by
+    (hgroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          selectionSet field)
+    : schema.objectType parentType
+      -> FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+      -> FieldMerge.fieldsInSetCanMerge schema objectType
+          (hgroup.childSource ++ hgroup.childSource) := by
   intro hobject hmerge
   exact fieldsInSetCanMerge_groupSources_rawChildSource_pair schema
     variableDefinitions parentType objectType hgroup hgroup hobject
@@ -34,16 +34,16 @@ theorem normalizedFieldGroup_childBranchNormalizedValid
     (parentType : Name)
     {selectionSet : List Selection}
     {field : FieldMerge.ScopedField}
-    (hgroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        selectionSet field) :
-    schema.objectType parentType ->
-    FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-      ∀ objectType,
-        objectType ∈ schema.getPossibleTypes field.outputType.namedType ->
-          GroundTypeNormalization.NormalizedSelectionSetValid schema
-            variableDefinitions objectType
-            (normalizeSelectionSet schema objectType hgroup.childSource) := by
+    (hgroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          selectionSet field)
+    : schema.objectType parentType
+      -> FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+      -> ∀ objectType,
+          objectType ∈ schema.getPossibleTypes field.outputType.namedType
+          -> GroundTypeNormalization.NormalizedSelectionSetValid schema
+              variableDefinitions objectType
+              (normalizeSelectionSet schema objectType hgroup.childSource) := by
   intro hparentObject hsourceMerge objectType hpossible
   have hobject :
       schema.objectType objectType :=
@@ -77,36 +77,38 @@ theorem normalizedFields_childSources_canMerge
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (parentType objectType : Name)
     (leftSet rightSet : List Selection)
-    (leftField rightField : FieldMerge.ScopedField) :
-    schema.objectType parentType ->
-    selectionSetSemanticsReady schema parentType leftSet ->
-    selectionSetSemanticsReady schema parentType rightSet ->
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType leftSet ->
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType rightSet ->
-    FieldMerge.fieldsInSetCanMerge schema parentType leftSet ->
-    FieldMerge.fieldsInSetCanMerge schema parentType rightSet ->
-    FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet) ->
-    selectionSetDirectiveFree leftSet ->
-    selectionSetDirectiveFree rightSet ->
-    selectionSetTypeConditionFeasible schema parentType [parentType]
-      .allFields leftSet ->
-    selectionSetTypeConditionFeasible schema parentType [parentType]
-      .allFields rightSet ->
-    leftField ∈ FieldMerge.collectFields schema parentType
-      (normalizeSelectionSet schema parentType leftSet) ->
-    rightField ∈ FieldMerge.collectFields schema parentType
-      (normalizeSelectionSet schema parentType rightSet) ->
-    leftField.responseName = rightField.responseName ->
-      ∃ leftGroup :
-          NormalizedFieldGroupSource schema variableDefinitions parentType
-            leftSet leftField,
-      ∃ rightGroup :
-          NormalizedFieldGroupSource schema variableDefinitions parentType
-            rightSet rightField,
-        FieldMerge.fieldsInSetCanMerge schema objectType
-          (leftGroup.childSource ++ rightGroup.childSource) := by
+    (leftField rightField : FieldMerge.ScopedField)
+    : schema.objectType parentType
+      -> selectionSetSemanticsReady schema parentType leftSet
+      -> selectionSetSemanticsReady schema parentType rightSet
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType leftSet
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType rightSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType leftSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType rightSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet)
+      -> selectionSetDirectiveFree leftSet
+      -> selectionSetDirectiveFree rightSet
+      -> selectionSetTypeConditionFeasible schema parentType [parentType]
+          .allFields leftSet
+      -> selectionSetTypeConditionFeasible schema parentType [parentType]
+          .allFields rightSet
+      -> leftField
+          ∈ FieldMerge.collectFields schema parentType
+              (normalizeSelectionSet schema parentType leftSet)
+      -> rightField
+          ∈ FieldMerge.collectFields schema parentType
+              (normalizeSelectionSet schema parentType rightSet)
+      -> leftField.responseName = rightField.responseName
+      -> ∃ leftGroup
+            : NormalizedFieldGroupSource schema variableDefinitions parentType
+                leftSet leftField,
+          ∃ rightGroup
+              : NormalizedFieldGroupSource schema variableDefinitions parentType
+                  rightSet rightField,
+            FieldMerge.fieldsInSetCanMerge schema objectType
+              (leftGroup.childSource ++ rightGroup.childSource) := by
   intro hobject hleftReady hrightReady hleftImplementation
     hrightImplementation hleftMerge hrightMerge hsourcePair hleftFree
     hrightFree hleftFeasible hrightFeasible hleftField hrightField
@@ -135,21 +137,19 @@ theorem normalizedFieldGroupSources_identity_of_sourcePair
     (parentType : Name)
     {leftSet rightSet : List Selection}
     {leftField rightField : FieldMerge.ScopedField}
-    (hleftGroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        leftSet leftField)
-    (hrightGroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        rightSet rightField) :
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (leftSet ++ rightSet) ->
-    leftField.responseName = rightField.responseName ->
-    (leftField.parentType = rightField.parentType
-        ∨ ¬ schema.objectType leftField.parentType
-        ∨ ¬ schema.objectType rightField.parentType) ->
-      leftField.fieldName = rightField.fieldName
-        ∧ Argument.argumentsEquivalent leftField.arguments
-          rightField.arguments := by
+    (hleftGroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          leftSet leftField)
+    (hrightGroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          rightSet rightField)
+    : FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet)
+      -> leftField.responseName = rightField.responseName
+      -> (leftField.parentType = rightField.parentType
+          ∨ ¬ schema.objectType leftField.parentType
+          ∨ ¬ schema.objectType rightField.parentType)
+      -> leftField.fieldName = rightField.fieldName
+          ∧ Argument.argumentsEquivalent leftField.arguments rightField.arguments := by
   intro hsourcePair hresponse hparents
   have hsourceResponse :
       hleftGroup.source.responseName = hrightGroup.source.responseName :=
@@ -215,23 +215,24 @@ theorem normalizedFieldGroupSources_outputType_eq_of_sourcePair
     (parentType : Name)
     {leftSet rightSet : List Selection}
     {leftField rightField : FieldMerge.ScopedField}
-    (hleftGroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        leftSet leftField)
-    (hrightGroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        rightSet rightField) :
-    leftField ∈ FieldMerge.collectFields schema parentType
-      (normalizeSelectionSet schema parentType leftSet) ->
-    rightField ∈ FieldMerge.collectFields schema parentType
-      (normalizeSelectionSet schema parentType rightSet) ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (leftSet ++ rightSet) ->
-    leftField.responseName = rightField.responseName ->
-    (leftField.parentType = rightField.parentType
-        ∨ ¬ schema.objectType leftField.parentType
-        ∨ ¬ schema.objectType rightField.parentType) ->
-      leftField.outputType = rightField.outputType := by
+    (hleftGroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          leftSet leftField)
+    (hrightGroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          rightSet rightField)
+    : leftField
+        ∈ FieldMerge.collectFields schema parentType
+            (normalizeSelectionSet schema parentType leftSet)
+      -> rightField
+          ∈ FieldMerge.collectFields schema parentType
+              (normalizeSelectionSet schema parentType rightSet)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet)
+      -> leftField.responseName = rightField.responseName
+      -> (leftField.parentType = rightField.parentType
+          ∨ ¬ schema.objectType leftField.parentType
+          ∨ ¬ schema.objectType rightField.parentType)
+      -> leftField.outputType = rightField.outputType := by
   intro hleftMem hrightMem hsourcePair hresponse hparents
   have hidentity :=
     normalizedFieldGroupSources_identity_of_sourcePair schema
@@ -263,22 +264,21 @@ theorem fieldsForNameCanMerge_of_normalizedFieldGroupSources
     (parentType : Name)
     {leftSet rightSet : List Selection}
     {leftField rightField : FieldMerge.ScopedField}
-    (hleftGroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        leftSet leftField)
-    (hrightGroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        rightSet rightField) :
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (leftSet ++ rightSet) ->
-    leftField.responseName = rightField.responseName ->
-    ((leftField.parentType = rightField.parentType
-        ∨ ¬ schema.objectType leftField.parentType
-        ∨ ¬ schema.objectType rightField.parentType) ->
-      ∀ objectType,
-        FieldMerge.fieldsInSetCanMerge schema objectType
-          (leftField.selectionSet ++ rightField.selectionSet)) ->
-      FieldMerge.fieldsForNameCanMerge schema leftField rightField := by
+    (hleftGroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          leftSet leftField)
+    (hrightGroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          rightSet rightField)
+    : FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet)
+      -> leftField.responseName = rightField.responseName
+      -> ((leftField.parentType = rightField.parentType
+            ∨ ¬ schema.objectType leftField.parentType
+            ∨ ¬ schema.objectType rightField.parentType)
+          -> ∀ objectType,
+              FieldMerge.fieldsInSetCanMerge schema objectType
+                (leftField.selectionSet ++ rightField.selectionSet))
+      -> FieldMerge.fieldsForNameCanMerge schema leftField rightField := by
   intro hsourcePair hresponse hsubfields
   have hsourceResponse :
       hleftGroup.source.responseName = hrightGroup.source.responseName :=
@@ -313,36 +313,34 @@ theorem fieldsForNameCanMerge_of_normalizedFieldGroupSources_childSources
     (parentType : Name)
     {leftSet rightSet : List Selection}
     {leftField rightField : FieldMerge.ScopedField}
-    (hleftGroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        leftSet leftField)
-    (hrightGroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        rightSet rightField) :
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (leftSet ++ rightSet) ->
-    leftField.responseName = rightField.responseName ->
-    ((leftField.parentType = rightField.parentType
-        ∨ ¬ schema.objectType leftField.parentType
-        ∨ ¬ schema.objectType rightField.parentType) ->
-      ∀ objectType,
-        FieldMerge.fieldsInSetCanMerge schema objectType
-          ((if objectTypeNameBool schema leftField.outputType.namedType then
-              normalizeSelectionSet schema leftField.outputType.namedType
-                hleftGroup.childSource
-            else
-              GroundTypeNormalization.possibleTypeNormalizations schema
-                (schema.getPossibleTypes leftField.outputType.namedType)
-                hleftGroup.childSource)
-            ++
-            (if objectTypeNameBool schema rightField.outputType.namedType then
-              normalizeSelectionSet schema rightField.outputType.namedType
-                hrightGroup.childSource
-            else
-              GroundTypeNormalization.possibleTypeNormalizations schema
-                (schema.getPossibleTypes rightField.outputType.namedType)
-                hrightGroup.childSource))) ->
-      FieldMerge.fieldsForNameCanMerge schema leftField rightField := by
+    (hleftGroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          leftSet leftField)
+    (hrightGroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          rightSet rightField)
+    : FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet)
+      -> leftField.responseName = rightField.responseName
+      -> ((leftField.parentType = rightField.parentType
+            ∨ ¬ schema.objectType leftField.parentType
+            ∨ ¬ schema.objectType rightField.parentType)
+          -> ∀ objectType,
+              FieldMerge.fieldsInSetCanMerge schema objectType
+                ((if objectTypeNameBool schema leftField.outputType.namedType then
+                    normalizeSelectionSet schema leftField.outputType.namedType
+                      hleftGroup.childSource
+                  else
+                    GroundTypeNormalization.possibleTypeNormalizations schema
+                      (schema.getPossibleTypes leftField.outputType.namedType)
+                      hleftGroup.childSource)
+                  ++ (if objectTypeNameBool schema rightField.outputType.namedType then
+                        normalizeSelectionSet schema rightField.outputType.namedType
+                          hrightGroup.childSource
+                      else
+                        GroundTypeNormalization.possibleTypeNormalizations schema
+                          (schema.getPossibleTypes rightField.outputType.namedType)
+                          hrightGroup.childSource)))
+      -> FieldMerge.fieldsForNameCanMerge schema leftField rightField := by
   intro hsourcePair hresponse hchildPairs
   apply fieldsForNameCanMerge_of_normalizedFieldGroupSources
       schema variableDefinitions parentType hleftGroup hrightGroup
@@ -357,55 +355,55 @@ theorem normalizedFields_fieldsForNameCanMerge_of_childPairs
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (parentType : Name)
     (leftSet rightSet : List Selection)
-    (leftField rightField : FieldMerge.ScopedField) :
-    schema.objectType parentType ->
-    selectionSetSemanticsReady schema parentType leftSet ->
-    selectionSetSemanticsReady schema parentType rightSet ->
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType leftSet ->
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType rightSet ->
-    FieldMerge.fieldsInSetCanMerge schema parentType leftSet ->
-    FieldMerge.fieldsInSetCanMerge schema parentType rightSet ->
-    FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet) ->
-    selectionSetDirectiveFree leftSet ->
-    selectionSetDirectiveFree rightSet ->
-    selectionSetTypeConditionFeasible schema parentType [parentType]
-      .allFields leftSet ->
-    selectionSetTypeConditionFeasible schema parentType [parentType]
-      .allFields rightSet ->
-    leftField ∈ FieldMerge.collectFields schema parentType
-      (normalizeSelectionSet schema parentType leftSet) ->
-    rightField ∈ FieldMerge.collectFields schema parentType
-      (normalizeSelectionSet schema parentType rightSet) ->
-    leftField.responseName = rightField.responseName ->
-    (∀ leftGroup :
-        NormalizedFieldGroupSource schema variableDefinitions parentType
-          leftSet leftField,
-      ∀ rightGroup :
-        NormalizedFieldGroupSource schema variableDefinitions parentType
-          rightSet rightField,
-      (leftField.parentType = rightField.parentType
-          ∨ ¬ schema.objectType leftField.parentType
-          ∨ ¬ schema.objectType rightField.parentType) ->
-        ∀ objectType,
-          FieldMerge.fieldsInSetCanMerge schema objectType
-            ((if objectTypeNameBool schema leftField.outputType.namedType then
-                normalizeSelectionSet schema leftField.outputType.namedType
-                  leftGroup.childSource
-              else
-                GroundTypeNormalization.possibleTypeNormalizations schema
-                  (schema.getPossibleTypes leftField.outputType.namedType)
-                  leftGroup.childSource)
-              ++
-              (if objectTypeNameBool schema rightField.outputType.namedType then
-                normalizeSelectionSet schema rightField.outputType.namedType
-                  rightGroup.childSource
-              else
-                GroundTypeNormalization.possibleTypeNormalizations schema
-                  (schema.getPossibleTypes rightField.outputType.namedType)
-                  rightGroup.childSource))) ->
-      FieldMerge.fieldsForNameCanMerge schema leftField rightField := by
+    (leftField rightField : FieldMerge.ScopedField)
+    : schema.objectType parentType
+      -> selectionSetSemanticsReady schema parentType leftSet
+      -> selectionSetSemanticsReady schema parentType rightSet
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType leftSet
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType rightSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType leftSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType rightSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet)
+      -> selectionSetDirectiveFree leftSet
+      -> selectionSetDirectiveFree rightSet
+      -> selectionSetTypeConditionFeasible schema parentType [parentType]
+          .allFields leftSet
+      -> selectionSetTypeConditionFeasible schema parentType [parentType]
+          .allFields rightSet
+      -> leftField
+          ∈ FieldMerge.collectFields schema parentType
+              (normalizeSelectionSet schema parentType leftSet)
+      -> rightField
+          ∈ FieldMerge.collectFields schema parentType
+              (normalizeSelectionSet schema parentType rightSet)
+      -> leftField.responseName = rightField.responseName
+      -> (∀ leftGroup : NormalizedFieldGroupSource schema variableDefinitions parentType
+                          leftSet leftField,
+          ∀ rightGroup : NormalizedFieldGroupSource schema variableDefinitions
+                          parentType rightSet rightField,
+            (leftField.parentType = rightField.parentType
+              ∨ ¬ schema.objectType leftField.parentType
+              ∨ ¬ schema.objectType rightField.parentType)
+            -> ∀ objectType,
+                FieldMerge.fieldsInSetCanMerge schema objectType
+                  ((if objectTypeNameBool schema leftField.outputType.namedType then
+                      normalizeSelectionSet schema leftField.outputType.namedType
+                        leftGroup.childSource
+                    else
+                      GroundTypeNormalization.possibleTypeNormalizations schema
+                        (schema.getPossibleTypes leftField.outputType.namedType)
+                        leftGroup.childSource)
+                    ++ (if objectTypeNameBool schema
+                            rightField.outputType.namedType then
+                          normalizeSelectionSet schema rightField.outputType.namedType
+                            rightGroup.childSource
+                        else
+                          GroundTypeNormalization.possibleTypeNormalizations schema
+                            (schema.getPossibleTypes rightField.outputType.namedType)
+                            rightGroup.childSource)))
+      -> FieldMerge.fieldsForNameCanMerge schema leftField rightField := by
   intro hobject hleftReady hrightReady hleftImplementation
     hrightImplementation hleftMerge hrightMerge hsourcePair hleftFree
     hrightFree hleftFeasible hrightFeasible hleftField hrightField
@@ -433,68 +431,71 @@ theorem normalizedFields_fieldsForNameCanMerge_of_childPairs_anyParent
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (parentType mergeParent : Name)
     (leftSet rightSet : List Selection)
-    (leftField rightField : FieldMerge.ScopedField) :
-    schema.objectType parentType ->
-    selectionSetSemanticsReady schema parentType leftSet ->
-    selectionSetSemanticsReady schema parentType rightSet ->
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType leftSet ->
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType rightSet ->
-    FieldMerge.fieldsInSetCanMerge schema parentType leftSet ->
-    FieldMerge.fieldsInSetCanMerge schema parentType rightSet ->
-    FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet) ->
-    selectionSetDirectiveFree leftSet ->
-    selectionSetDirectiveFree rightSet ->
-    selectionSetTypeConditionFeasible schema parentType [parentType]
-      .allFields leftSet ->
-    selectionSetTypeConditionFeasible schema parentType [parentType]
-      .allFields rightSet ->
-    leftField ∈ FieldMerge.collectFields schema mergeParent
-      (normalizeSelectionSet schema parentType leftSet) ->
-    rightField ∈ FieldMerge.collectFields schema mergeParent
-      (normalizeSelectionSet schema parentType rightSet) ->
-    leftField.responseName = rightField.responseName ->
-    (∀ leftParentField,
-      leftParentField ∈ FieldMerge.collectFields schema parentType
-        (normalizeSelectionSet schema parentType leftSet) ->
-      ∀ rightParentField,
-        rightParentField ∈ FieldMerge.collectFields schema parentType
-          (normalizeSelectionSet schema parentType rightSet) ->
-        leftParentField.responseName = rightParentField.responseName ->
-        ∀ leftGroup :
-            NormalizedFieldGroupSource schema variableDefinitions parentType
-              leftSet leftParentField,
-        ∀ rightGroup :
-            NormalizedFieldGroupSource schema variableDefinitions parentType
-              rightSet rightParentField,
-        (leftParentField.parentType = rightParentField.parentType
-            ∨ ¬ schema.objectType leftParentField.parentType
-            ∨ ¬ schema.objectType rightParentField.parentType) ->
-          ∀ objectType,
-            FieldMerge.fieldsInSetCanMerge schema objectType
-              ((if objectTypeNameBool schema
-                    leftParentField.outputType.namedType then
-                  normalizeSelectionSet schema
-                    leftParentField.outputType.namedType
-                    leftGroup.childSource
-                else
-                  GroundTypeNormalization.possibleTypeNormalizations schema
-                    (schema.getPossibleTypes
-                      leftParentField.outputType.namedType)
-                    leftGroup.childSource)
-                ++
-                (if objectTypeNameBool schema
-                    rightParentField.outputType.namedType then
-                  normalizeSelectionSet schema
-                    rightParentField.outputType.namedType
-                    rightGroup.childSource
-                else
-                  GroundTypeNormalization.possibleTypeNormalizations schema
-                    (schema.getPossibleTypes
-                      rightParentField.outputType.namedType)
-                    rightGroup.childSource))) ->
-      FieldMerge.fieldsForNameCanMerge schema leftField rightField := by
+    (leftField rightField : FieldMerge.ScopedField)
+    : schema.objectType parentType
+      -> selectionSetSemanticsReady schema parentType leftSet
+      -> selectionSetSemanticsReady schema parentType rightSet
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType leftSet
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType rightSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType leftSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType rightSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet)
+      -> selectionSetDirectiveFree leftSet
+      -> selectionSetDirectiveFree rightSet
+      -> selectionSetTypeConditionFeasible schema parentType [parentType]
+          .allFields leftSet
+      -> selectionSetTypeConditionFeasible schema parentType [parentType]
+          .allFields rightSet
+      -> leftField
+          ∈ FieldMerge.collectFields schema mergeParent
+              (normalizeSelectionSet schema parentType leftSet)
+      -> rightField
+          ∈ FieldMerge.collectFields schema mergeParent
+              (normalizeSelectionSet schema parentType rightSet)
+      -> leftField.responseName = rightField.responseName
+      -> (∀ leftParentField,
+            leftParentField
+              ∈ FieldMerge.collectFields schema parentType
+                  (normalizeSelectionSet schema parentType leftSet)
+            -> ∀ rightParentField,
+                rightParentField
+                  ∈ FieldMerge.collectFields schema parentType
+                      (normalizeSelectionSet schema parentType rightSet)
+                -> leftParentField.responseName = rightParentField.responseName
+                -> ∀ leftGroup : NormalizedFieldGroupSource schema variableDefinitions
+                                  parentType leftSet leftParentField,
+                    ∀ rightGroup : NormalizedFieldGroupSource schema variableDefinitions
+                                    parentType rightSet rightParentField,
+                      (leftParentField.parentType = rightParentField.parentType
+                        ∨ ¬ schema.objectType leftParentField.parentType
+                        ∨ ¬ schema.objectType rightParentField.parentType)
+                      -> ∀ objectType,
+                          FieldMerge.fieldsInSetCanMerge schema objectType
+                            ((if objectTypeNameBool schema
+                                  leftParentField.outputType.namedType then
+                                normalizeSelectionSet schema
+                                  leftParentField.outputType.namedType
+                                  leftGroup.childSource
+                              else
+                                GroundTypeNormalization.possibleTypeNormalizations
+                                  schema
+                                  (schema.getPossibleTypes
+                                    leftParentField.outputType.namedType)
+                                  leftGroup.childSource)
+                              ++ (if objectTypeNameBool schema
+                                      rightParentField.outputType.namedType then
+                                    normalizeSelectionSet schema
+                                      rightParentField.outputType.namedType
+                                      rightGroup.childSource
+                                  else
+                                    GroundTypeNormalization.possibleTypeNormalizations
+                                      schema
+                                      (schema.getPossibleTypes
+                                        rightParentField.outputType.namedType)
+                                      rightGroup.childSource)))
+      -> FieldMerge.fieldsForNameCanMerge schema leftField rightField := by
   intro hobject hleftReady hrightReady hleftImplementation
     hrightImplementation hleftMerge hrightMerge hsourcePair hleftFree
     hrightFree hleftFeasible hrightFeasible hleftField hrightField
@@ -620,66 +621,66 @@ theorem normalizedFieldGroupSources_objectReturn_childPairs
     (parentType returnType : Name)
     {leftSet rightSet : List Selection}
     {leftField rightField : FieldMerge.ScopedField}
-    (hleftGroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        leftSet leftField)
-    (hrightGroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        rightSet rightField) :
-    schema.objectType parentType ->
-    objectTypeNameBool schema returnType = true ->
-    FieldMerge.fieldsInSetCanMerge schema parentType leftSet ->
-    FieldMerge.fieldsInSetCanMerge schema parentType rightSet ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (leftSet ++ rightSet) ->
-    leftField.responseName = rightField.responseName ->
-    leftField.outputType.namedType = returnType ->
-    rightField.outputType.namedType = returnType ->
-    (∀ leftChildField,
-      leftChildField ∈ FieldMerge.collectFields schema returnType
-        (normalizeSelectionSet schema returnType hleftGroup.childSource) ->
-      ∀ rightChildField,
-        rightChildField ∈ FieldMerge.collectFields schema returnType
-          (normalizeSelectionSet schema returnType
-            hrightGroup.childSource) ->
-        leftChildField.responseName = rightChildField.responseName ->
-        ∀ leftChildGroup :
-            NormalizedFieldGroupSource schema variableDefinitions returnType
-              hleftGroup.childSource leftChildField,
-        ∀ rightChildGroup :
-            NormalizedFieldGroupSource schema variableDefinitions returnType
-              hrightGroup.childSource rightChildField,
-        (leftChildField.parentType = rightChildField.parentType
-            ∨ ¬ schema.objectType leftChildField.parentType
-            ∨ ¬ schema.objectType rightChildField.parentType) ->
-          ∀ objectType,
-            FieldMerge.fieldsInSetCanMerge schema objectType
-              ((if objectTypeNameBool schema
-                    leftChildField.outputType.namedType then
-                  normalizeSelectionSet schema
-                    leftChildField.outputType.namedType
-                    leftChildGroup.childSource
-                else
-                  GroundTypeNormalization.possibleTypeNormalizations schema
-                    (schema.getPossibleTypes
-                      leftChildField.outputType.namedType)
-                    leftChildGroup.childSource)
-                ++
-                (if objectTypeNameBool schema
-                    rightChildField.outputType.namedType then
-                  normalizeSelectionSet schema
-                    rightChildField.outputType.namedType
-                    rightChildGroup.childSource
-                else
-                  GroundTypeNormalization.possibleTypeNormalizations schema
-                    (schema.getPossibleTypes
-                      rightChildField.outputType.namedType)
-                    rightChildGroup.childSource))) ->
-      ∀ mergeParent,
-        FieldMerge.fieldsInSetCanMerge schema mergeParent
-          (normalizeSelectionSet schema returnType hleftGroup.childSource
-            ++ normalizeSelectionSet schema returnType
-              hrightGroup.childSource) := by
+    (hleftGroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          leftSet leftField)
+    (hrightGroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          rightSet rightField)
+    : schema.objectType parentType
+      -> objectTypeNameBool schema returnType = true
+      -> FieldMerge.fieldsInSetCanMerge schema parentType leftSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType rightSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet)
+      -> leftField.responseName = rightField.responseName
+      -> leftField.outputType.namedType = returnType
+      -> rightField.outputType.namedType = returnType
+      -> (∀ leftChildField,
+            leftChildField
+              ∈ FieldMerge.collectFields schema returnType
+                  (normalizeSelectionSet schema returnType hleftGroup.childSource)
+            -> ∀ rightChildField,
+                rightChildField
+                  ∈ FieldMerge.collectFields schema returnType
+                      (normalizeSelectionSet schema returnType hrightGroup.childSource)
+                -> leftChildField.responseName = rightChildField.responseName
+                -> ∀ leftChildGroup : NormalizedFieldGroupSource schema
+                                        variableDefinitions returnType
+                                        hleftGroup.childSource leftChildField,
+                    ∀ rightChildGroup : NormalizedFieldGroupSource schema
+                                          variableDefinitions returnType
+                                          hrightGroup.childSource rightChildField,
+                      (leftChildField.parentType = rightChildField.parentType
+                        ∨ ¬ schema.objectType leftChildField.parentType
+                        ∨ ¬ schema.objectType rightChildField.parentType)
+                      -> ∀ objectType,
+                          FieldMerge.fieldsInSetCanMerge schema objectType
+                            ((if objectTypeNameBool schema
+                                  leftChildField.outputType.namedType then
+                                normalizeSelectionSet schema
+                                  leftChildField.outputType.namedType
+                                  leftChildGroup.childSource
+                              else
+                                GroundTypeNormalization.possibleTypeNormalizations
+                                  schema
+                                  (schema.getPossibleTypes
+                                    leftChildField.outputType.namedType)
+                                  leftChildGroup.childSource)
+                              ++ (if objectTypeNameBool schema
+                                      rightChildField.outputType.namedType then
+                                    normalizeSelectionSet schema
+                                      rightChildField.outputType.namedType
+                                      rightChildGroup.childSource
+                                  else
+                                    GroundTypeNormalization.possibleTypeNormalizations
+                                      schema
+                                      (schema.getPossibleTypes
+                                        rightChildField.outputType.namedType)
+                                      rightChildGroup.childSource)))
+      -> ∀ mergeParent,
+          FieldMerge.fieldsInSetCanMerge schema mergeParent
+            (normalizeSelectionSet schema returnType hleftGroup.childSource
+              ++ normalizeSelectionSet schema returnType hrightGroup.childSource) := by
   intro hobject hreturnObject hleftMerge hrightMerge hsourcePair
     hresponse hleftReturn hrightReturn hchildPairs mergeParent
   have hreturnObjectProp : schema.objectType returnType :=
@@ -772,7 +773,6 @@ theorem normalizedFieldGroupSources_objectReturn_childPairs
         hrightChildMerge hchildSourcePair hleftGroup.childDirectiveFree
         hrightGroup.childDirectiveFree hleftFeasible hrightFeasible
         hleftChildField hrightChildField hchildResponse hchildPairs
-
 
 end CompleteNormalization
 

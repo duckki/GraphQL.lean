@@ -14,24 +14,24 @@ namespace NormalForm
 namespace GroundTypeNormalization
 
 theorem normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_object_diff_trace_data_separates
-    {schema : Schema} {left right : Operation} :
-    (SchemaWellFormedness.schemaWellFormed schema ->
-      Validation.selectionSetValid schema left.variableDefinitions left.rootType
-        left.selectionSet ->
-      Validation.selectionSetValid schema right.variableDefinitions left.rootType
-        right.selectionSet ->
-      selectionSetDirectiveFree left.selectionSet ->
-      selectionSetDirectiveFree right.selectionSet ->
-      selectionSetNormal schema left.rootType left.selectionSet ->
-      selectionSetNormal schema left.rootType right.selectionSet ->
-      objectTypeNameBool schema left.rootType = true ->
-      ∀ responsePath,
-        NormalSelectionSetDiffTrace schema left.rootType left.selectionSet
-          right.selectionSet responsePath ->
-          ¬ selectionSetsDataEquivalent schema left.rootType left.selectionSet
-            right.selectionSet) ->
-      normalOperationsSemanticallyEquivalentEqualUpToReordering schema
-        left right := by
+    {schema : Schema} {left right : Operation}
+    : (SchemaWellFormedness.schemaWellFormed schema
+        -> Validation.selectionSetValid schema left.variableDefinitions left.rootType
+            left.selectionSet
+        -> Validation.selectionSetValid schema right.variableDefinitions left.rootType
+            right.selectionSet
+        -> selectionSetDirectiveFree left.selectionSet
+        -> selectionSetDirectiveFree right.selectionSet
+        -> selectionSetNormal schema left.rootType left.selectionSet
+        -> selectionSetNormal schema left.rootType right.selectionSet
+        -> objectTypeNameBool schema left.rootType = true
+        -> ∀ responsePath,
+            NormalSelectionSetDiffTrace schema left.rootType left.selectionSet
+              right.selectionSet responsePath
+            -> ¬ selectionSetsDataEquivalent schema left.rootType left.selectionSet
+                  right.selectionSet)
+      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema
+          left right := by
   intro htraceSeparates
   exact
     normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_object_diff_data_separates
@@ -49,24 +49,24 @@ theorem normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_ob
             htrace)
 
 theorem normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_object_diff_observable_trace_data_separates
-    {schema : Schema} {left right : Operation} :
-    (SchemaWellFormedness.schemaWellFormed schema ->
-      Validation.selectionSetValid schema left.variableDefinitions left.rootType
-        left.selectionSet ->
-      Validation.selectionSetValid schema right.variableDefinitions left.rootType
-        right.selectionSet ->
-      selectionSetDirectiveFree left.selectionSet ->
-      selectionSetDirectiveFree right.selectionSet ->
-      selectionSetNormal schema left.rootType left.selectionSet ->
-      selectionSetNormal schema left.rootType right.selectionSet ->
-      objectTypeNameBool schema left.rootType = true ->
-      ∀ responsePath,
-        NormalSelectionSetDiffObservableTrace schema left.rootType
-          left.selectionSet right.selectionSet responsePath ->
-          ¬ selectionSetsDataEquivalent schema left.rootType left.selectionSet
-            right.selectionSet) ->
-      normalOperationsSemanticallyEquivalentEqualUpToReordering schema
-        left right := by
+    {schema : Schema} {left right : Operation}
+    : (SchemaWellFormedness.schemaWellFormed schema
+        -> Validation.selectionSetValid schema left.variableDefinitions left.rootType
+            left.selectionSet
+        -> Validation.selectionSetValid schema right.variableDefinitions left.rootType
+            right.selectionSet
+        -> selectionSetDirectiveFree left.selectionSet
+        -> selectionSetDirectiveFree right.selectionSet
+        -> selectionSetNormal schema left.rootType left.selectionSet
+        -> selectionSetNormal schema left.rootType right.selectionSet
+        -> objectTypeNameBool schema left.rootType = true
+        -> ∀ responsePath,
+            NormalSelectionSetDiffObservableTrace schema left.rootType
+              left.selectionSet right.selectionSet responsePath
+            -> ¬ selectionSetsDataEquivalent schema left.rootType left.selectionSet
+                  right.selectionSet)
+      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema
+          left right := by
   intro htraceSeparates
   exact
     normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_object_diff_data_separates

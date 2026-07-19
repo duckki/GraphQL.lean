@@ -11,10 +11,9 @@ namespace NormalForm
 namespace CompleteNormalization
 
 mutual
-  theorem selectionDirectiveFree_booleanVariables_nil :
-      ∀ selection,
-        selectionDirectiveFree selection ->
-          selectionBooleanVariables selection = []
+  theorem selectionDirectiveFree_booleanVariables_nil
+      : ∀ selection,
+          selectionDirectiveFree selection -> selectionBooleanVariables selection = []
     | .field _responseName _fieldName _arguments _directives selectionSet,
         hfree => by
         rcases hfree with ⟨hdirectives, hselectionSet⟩
@@ -29,10 +28,10 @@ mutual
           selectionSetDirectiveFree_booleanVariables_nil selectionSet
             hselectionSet]
 
-  theorem selectionSetDirectiveFree_booleanVariables_nil :
-      ∀ selectionSet,
-        selectionSetDirectiveFree selectionSet ->
-          selectionSetBooleanVariables selectionSet = []
+  theorem selectionSetDirectiveFree_booleanVariables_nil
+      : ∀ selectionSet,
+          selectionSetDirectiveFree selectionSet
+          -> selectionSetBooleanVariables selectionSet = []
     | [], _hfree => by
         rfl
     | selection :: rest, hfree => by
@@ -43,9 +42,9 @@ end
 
 theorem operationBoolVarsComplete_of_operationDirectiveFree
     (operation : Operation)
-    (variableValues : Execution.VariableValues) :
-    operationDirectiveFree operation ->
-      operationBoolVarsComplete operation variableValues := by
+    (variableValues : Execution.VariableValues)
+    : operationDirectiveFree operation
+      -> operationBoolVarsComplete operation variableValues := by
   intro hfree varName hmem
   have hvariables :
       selectionSetBooleanVariables operation.selectionSet = [] :=
@@ -53,42 +52,38 @@ theorem operationBoolVarsComplete_of_operationDirectiveFree
       hfree
   simp [operationBoolVars, hvariables, dedupBoolVars] at hmem
 
-private theorem selection_size_pos (selection : Selection) :
-    0 < selection.size := by
+private theorem selection_size_pos (selection : Selection) : 0 < selection.size := by
   cases selection <;> simp [Selection.size] <;> omega
 
 private theorem selectionSet_size_tail_lt_cons
-    (selection : Selection) (rest : List Selection) :
-    SelectionSet.size rest < SelectionSet.size (selection :: rest) := by
+    (selection : Selection) (rest : List Selection)
+    : SelectionSet.size rest < SelectionSet.size (selection :: rest) := by
   simp [SelectionSet.size]
   exact Nat.lt_add_of_pos_left (selection_size_pos selection)
 
 private theorem selectionSet_size_child_lt_cons_field
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    SelectionSet.size selectionSet <
-      SelectionSet.size
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest) := by
+    (selectionSet rest : List Selection)
+    : SelectionSet.size selectionSet
+      < SelectionSet.size
+          (Selection.field responseName fieldName arguments directives selectionSet
+            :: rest) := by
   simp [SelectionSet.size, Selection.size]
   omega
 
 private theorem selectionSet_size_child_lt_cons_inline
     (typeCondition : Option Name) (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    SelectionSet.size selectionSet <
-      SelectionSet.size
-        (Selection.inlineFragment typeCondition directives selectionSet
-          :: rest) := by
+    (selectionSet rest : List Selection)
+    : SelectionSet.size selectionSet
+      < SelectionSet.size
+          (Selection.inlineFragment typeCondition directives selectionSet :: rest) := by
   simp [SelectionSet.size, Selection.size]
   omega
 
-theorem filterSelectionSetBoolCase_directiveFree
-    (schema : Schema) :
-    ∀ boolCase selectionSet,
-      selectionSetDirectiveFree
-        (filterSelectionSetBoolCase boolCase selectionSet)
+theorem filterSelectionSetBoolCase_directiveFree (schema : Schema)
+    : ∀ boolCase selectionSet,
+        selectionSetDirectiveFree (filterSelectionSetBoolCase boolCase selectionSet)
   | boolCase, [] => by
       simpa [filterSelectionSetBoolCase] using selectionSetDirectiveFree_nil
   | boolCase, selection :: rest => by
@@ -218,21 +213,21 @@ decreasing_by
     | exact selectionSet_size_child_lt_cons_inline (some typeCondition)
         directives selectionSet rest
 
-theorem wrapWithBoolCase_singleton_of_ne :
-    ∀ boolCase selectionSet,
-      boolCase ≠ [] ->
-        ∃ selection, wrapWithBoolCase boolCase selectionSet = [selection]
+theorem wrapWithBoolCase_singleton_of_ne
+    : ∀ boolCase selectionSet,
+        boolCase ≠ []
+        -> ∃ selection, wrapWithBoolCase boolCase selectionSet = [selection]
   | [], _selectionSet, hne => by
       exact False.elim (hne rfl)
   | (varName, value) :: rest, selectionSet, _hne => by
       exact ⟨Selection.inlineFragment none [directiveForBit varName value]
         (wrapWithBoolCase rest selectionSet), rfl⟩
 
-theorem completeNormalBooleanStem_wrapWithBoolCase :
-    ∀ boolCase selectionSet selection,
-      boolCase ≠ [] ->
-        wrapWithBoolCase boolCase selectionSet = [selection] ->
-          completeNormalBooleanStem boolCase selection selectionSet
+theorem completeNormalBooleanStem_wrapWithBoolCase
+    : ∀ boolCase selectionSet selection,
+        boolCase ≠ []
+        -> wrapWithBoolCase boolCase selectionSet = [selection]
+        -> completeNormalBooleanStem boolCase selection selectionSet
   | [], _selectionSet, _selection, hne, _hwrap => by
       exact False.elim (hne rfl)
   | [(varName, value)], selectionSet, selection, _hne, hwrap => by
@@ -252,10 +247,10 @@ theorem completeNormalBooleanStem_wrapWithBoolCase :
 
 theorem completeNormalBooleanStem_of_mem_wrapWithBoolCase
     {boolCase : BoolCase} {selectionSet : List Selection}
-    {selection : Selection} :
-    boolCase ≠ [] ->
-      selection ∈ wrapWithBoolCase boolCase selectionSet ->
-        completeNormalBooleanStem boolCase selection selectionSet := by
+    {selection : Selection}
+    : boolCase ≠ []
+      -> selection ∈ wrapWithBoolCase boolCase selectionSet
+      -> completeNormalBooleanStem boolCase selection selectionSet := by
   intro hne hmem
   rcases wrapWithBoolCase_singleton_of_ne boolCase selectionSet hne with
     ⟨wrappedSelection, hwrap⟩
@@ -265,10 +260,10 @@ theorem completeNormalBooleanStem_of_mem_wrapWithBoolCase
   exact completeNormalBooleanStem_wrapWithBoolCase boolCase selectionSet
     wrappedSelection hne hwrap
 
-theorem completeNormalBooleanStem_wrapWithBoolCase_eq :
-    ∀ {boolCase selection body},
-      completeNormalBooleanStem boolCase selection body ->
-        wrapWithBoolCase boolCase body = [selection]
+theorem completeNormalBooleanStem_wrapWithBoolCase_eq
+    : ∀ {boolCase selection body},
+        completeNormalBooleanStem boolCase selection body
+        -> wrapWithBoolCase boolCase body = [selection]
   | [], _selection, _body, hstem => by
       simp [completeNormalBooleanStem] at hstem
   | [(varName, value)],
@@ -302,10 +297,9 @@ theorem completeNormalBooleanStem_wrapWithBoolCase_eq :
   | [_], .inlineFragment (some _) _ _, _body, hstem => by
       simp [completeNormalBooleanStem] at hstem
 
-theorem boolCase_map_fst_of_mem_allBoolCases :
-    ∀ {variables boolCase},
-      boolCase ∈ allBoolCases variables ->
-        boolCase.map Prod.fst = variables
+theorem boolCase_map_fst_of_mem_allBoolCases
+    : ∀ {variables boolCase},
+        boolCase ∈ allBoolCases variables -> boolCase.map Prod.fst = variables
   | [], boolCase, hmem => by
       simp [allBoolCases] at hmem
       subst boolCase
@@ -321,10 +315,10 @@ theorem boolCase_map_fst_of_mem_allBoolCases :
         simp [boolCase_map_fst_of_mem_allBoolCases hrestMem]
 
 theorem completeNormalBoolCase_of_mem_allBoolCases
-    {variables : List BoolVar} {boolCase : BoolCase} :
-    variables.Nodup ->
-    boolCase ∈ allBoolCases variables ->
-      completeNormalBoolCase variables boolCase := by
+    {variables : List BoolVar} {boolCase : BoolCase}
+    : variables.Nodup
+      -> boolCase ∈ allBoolCases variables
+      -> completeNormalBoolCase variables boolCase := by
   intro hnodup hmem
   have hfst := boolCase_map_fst_of_mem_allBoolCases hmem
   refine ⟨hnodup, ?_, ?_⟩
@@ -333,43 +327,39 @@ theorem completeNormalBoolCase_of_mem_allBoolCases
     simp [hfst]
 
 theorem completeNormalBoolCase_ne_nil_of_variables_cons
-    {varName : BoolVar} {variables : List BoolVar} {boolCase : BoolCase} :
-    completeNormalBoolCase (varName :: variables) boolCase ->
-      boolCase ≠ [] := by
+    {varName : BoolVar} {variables : List BoolVar} {boolCase : BoolCase}
+    : completeNormalBoolCase (varName :: variables) boolCase -> boolCase ≠ [] := by
   intro hcomplete hnil
   rcases hcomplete with ⟨_hvarsNodup, _hcaseNodup, hvars⟩
   subst boolCase
   have hmem := (hvars varName).2 (by simp)
   simp at hmem
 
-theorem completeNormalBoolCasesEquivalent_refl
-    (boolCase : BoolCase) :
-    completeNormalBoolCasesEquivalent boolCase boolCase := by
+theorem completeNormalBoolCasesEquivalent_refl (boolCase : BoolCase)
+    : completeNormalBoolCasesEquivalent boolCase boolCase := by
   intro varName value
   rfl
 
-theorem completeNormalBoolCasesEquivalent_symm
-    {left right : BoolCase} :
-    completeNormalBoolCasesEquivalent left right ->
-      completeNormalBoolCasesEquivalent right left := by
+theorem completeNormalBoolCasesEquivalent_symm {left right : BoolCase}
+    : completeNormalBoolCasesEquivalent left right
+      -> completeNormalBoolCasesEquivalent right left := by
   intro hequiv varName value
   exact (hequiv varName value).symm
 
-theorem completeNormalBoolCasesEquivalent_trans
-    {left middle right : BoolCase} :
-    completeNormalBoolCasesEquivalent left middle ->
-    completeNormalBoolCasesEquivalent middle right ->
-      completeNormalBoolCasesEquivalent left right := by
+theorem completeNormalBoolCasesEquivalent_trans {left middle right : BoolCase}
+    : completeNormalBoolCasesEquivalent left middle
+      -> completeNormalBoolCasesEquivalent middle right
+      -> completeNormalBoolCasesEquivalent left right := by
   intro hleft hright varName value
   exact Iff.trans (hleft varName value) (hright varName value)
 
-theorem boolCase_eq_of_mem_allBoolCases_equivalent :
-    ∀ {variables left right},
-      variables.Nodup ->
-      left ∈ allBoolCases variables ->
-      right ∈ allBoolCases variables ->
-      completeNormalBoolCasesEquivalent left right ->
-        left = right
+theorem boolCase_eq_of_mem_allBoolCases_equivalent
+    : ∀ {variables left right},
+        variables.Nodup
+        -> left ∈ allBoolCases variables
+        -> right ∈ allBoolCases variables
+        -> completeNormalBoolCasesEquivalent left right
+        -> left = right
   | [], left, right, _hnodup, hleft, hright, _hequiv => by
       simp [allBoolCases] at hleft hright
       subst left
@@ -483,31 +473,28 @@ theorem boolCase_eq_of_mem_allBoolCases_equivalent :
           rfl
 
 theorem boolCase_ne_nil_of_mem_allBoolCases_cons
-    {varName : BoolVar} {variables : List BoolVar} {boolCase : BoolCase} :
-    boolCase ∈ allBoolCases (varName :: variables) ->
-      boolCase ≠ [] := by
+    {varName : BoolVar} {variables : List BoolVar} {boolCase : BoolCase}
+    : boolCase ∈ allBoolCases (varName :: variables) -> boolCase ≠ [] := by
   intro hmem hnil
   subst boolCase
   simp [allBoolCases] at hmem
 
-theorem directiveForBit_booleanVariables
-    (varName : BoolVar) (value : Bool) :
-    directiveBooleanVariables (directiveForBit varName value) = [varName] := by
+theorem directiveForBit_booleanVariables (varName : BoolVar) (value : Bool)
+    : directiveBooleanVariables (directiveForBit varName value) = [varName] := by
   cases value <;>
     simp [directiveForBit, directiveBooleanVariables,
       inputValueBooleanVariables]
 
 theorem directiveForBit_injective
-    {leftVar rightVar : BoolVar} {leftValue rightValue : Bool} :
-    directiveForBit leftVar leftValue =
-      directiveForBit rightVar rightValue ->
-        (leftVar, leftValue) = (rightVar, rightValue) := by
+    {leftVar rightVar : BoolVar} {leftValue rightValue : Bool}
+    : directiveForBit leftVar leftValue = directiveForBit rightVar rightValue
+      -> (leftVar, leftValue) = (rightVar, rightValue) := by
   cases leftValue <;> cases rightValue <;> simp [directiveForBit]
 
-theorem selectionSetBooleanVariables_wrapWithBoolCase :
-    ∀ boolCase selectionSet,
-      selectionSetBooleanVariables (wrapWithBoolCase boolCase selectionSet) =
-        boolCase.map Prod.fst ++ selectionSetBooleanVariables selectionSet
+theorem selectionSetBooleanVariables_wrapWithBoolCase
+    : ∀ boolCase selectionSet,
+        selectionSetBooleanVariables (wrapWithBoolCase boolCase selectionSet)
+        = boolCase.map Prod.fst ++ selectionSetBooleanVariables selectionSet
   | [], selectionSet => by
       simp [wrapWithBoolCase]
   | (varName, value) :: rest, selectionSet => by
@@ -518,18 +505,18 @@ theorem selectionSetBooleanVariables_wrapWithBoolCase :
 
 theorem selectionSetDirectiveFree_wrapWithBoolCase_cons_false
     (varName : BoolVar) (value : Bool) (rest : BoolCase)
-    (selectionSet : List Selection) :
-    ¬ selectionSetDirectiveFree
-        (wrapWithBoolCase ((varName, value) :: rest) selectionSet) := by
+    (selectionSet : List Selection)
+    : ¬ selectionSetDirectiveFree
+          (wrapWithBoolCase ((varName, value) :: rest) selectionSet) := by
       simp [wrapWithBoolCase, selectionSetDirectiveFree,
         selectionDirectiveFree]
 
 theorem selectionBooleanVariables_of_completeNormalBooleanStem
     {boolCase : BoolCase} {selection : Selection}
-    {body : List Selection} :
-    completeNormalBooleanStem boolCase selection body ->
-    selectionSetDirectiveFree body ->
-      selectionBooleanVariables selection = boolCase.map Prod.fst := by
+    {body : List Selection}
+    : completeNormalBooleanStem boolCase selection body
+      -> selectionSetDirectiveFree body
+      -> selectionBooleanVariables selection = boolCase.map Prod.fst := by
   intro hstem hbodyFree
   have hwrap :=
     completeNormalBooleanStem_wrapWithBoolCase_eq hstem
@@ -541,23 +528,22 @@ theorem selectionBooleanVariables_of_completeNormalBooleanStem
     using hvariables
 
 theorem completeNormalBoolCase_of_variable_mem_iff
-    {leftVariables rightVariables : List BoolVar} {boolCase : BoolCase} :
-    completeNormalBoolCase leftVariables boolCase ->
-    rightVariables.Nodup ->
-    (∀ varName, varName ∈ boolCase.map Prod.fst ↔
-      varName ∈ rightVariables) ->
-      completeNormalBoolCase rightVariables boolCase := by
+    {leftVariables rightVariables : List BoolVar} {boolCase : BoolCase}
+    : completeNormalBoolCase leftVariables boolCase
+      -> rightVariables.Nodup
+      -> (∀ varName, varName ∈ boolCase.map Prod.fst ↔ varName ∈ rightVariables)
+      -> completeNormalBoolCase rightVariables boolCase := by
   intro hcomplete hrightNodup hrightMem
   rcases hcomplete with ⟨_hleftNodup, hcaseNodup, _hleftMem⟩
   exact ⟨hrightNodup, hcaseNodup, hrightMem⟩
 
 theorem completeNormalSelectionSet_of_variable_mem_iff
     {schema : Schema} {leftVariables rightVariables : List BoolVar}
-    {parentType : Name} {selectionSet : List Selection} :
-    completeNormalSelectionSet schema leftVariables parentType selectionSet ->
-    rightVariables.Nodup ->
-    (∀ varName, varName ∈ rightVariables ↔ varName ∈ leftVariables) ->
-      completeNormalSelectionSet schema rightVariables parentType selectionSet := by
+    {parentType : Name} {selectionSet : List Selection}
+    : completeNormalSelectionSet schema leftVariables parentType selectionSet
+      -> rightVariables.Nodup
+      -> (∀ varName, varName ∈ rightVariables ↔ varName ∈ leftVariables)
+      -> completeNormalSelectionSet schema rightVariables parentType selectionSet := by
   intro hnormal hrightNodup hmemIff
   unfold completeNormalSelectionSet at hnormal ⊢
   rcases hnormal with ⟨hleftNodup, hshape⟩
@@ -618,16 +604,17 @@ theorem completeNormalSelectionSet_of_variable_mem_iff
 
 theorem selectionSetBooleanVariables_mem_of_completeNormalBranches
     {schema : Schema} {parentType : Name}
-    {variables : List BoolVar} {varName : BoolVar} :
-    ∀ {selectionSet : List Selection},
-      (∀ selection, selection ∈ selectionSet ->
-        ∃ boolCase body,
-          completeNormalBoolCase variables boolCase
-            ∧ completeNormalBooleanStem boolCase selection body
-            ∧ selectionSetNormal schema parentType body
-            ∧ selectionSetDirectiveFree body) ->
-      varName ∈ selectionSetBooleanVariables selectionSet ->
-        varName ∈ variables
+    {variables : List BoolVar} {varName : BoolVar}
+    : ∀ {selectionSet : List Selection},
+        (∀ selection,
+          selection ∈ selectionSet
+          -> ∃ boolCase body,
+              completeNormalBoolCase variables boolCase
+              ∧ completeNormalBooleanStem boolCase selection body
+              ∧ selectionSetNormal schema parentType body
+              ∧ selectionSetDirectiveFree body)
+        -> varName ∈ selectionSetBooleanVariables selectionSet
+        -> varName ∈ variables
   | [], _hbranches, hmem => by
       simp [selectionSetBooleanVariables] at hmem
   | selection :: rest, hbranches, hmem => by
@@ -653,15 +640,16 @@ theorem selectionSetBooleanVariables_mem_of_completeNormalBranches
 theorem selectionSetBooleanVariables_mem_of_variable_completeNormalBranches
     {schema : Schema} {parentType : Name}
     {variables : List BoolVar} {varName : BoolVar}
-    {selection : Selection} {rest : List Selection} :
-    (∀ candidate, candidate ∈ selection :: rest ->
-      ∃ boolCase body,
-        completeNormalBoolCase variables boolCase
-          ∧ completeNormalBooleanStem boolCase candidate body
-          ∧ selectionSetNormal schema parentType body
-          ∧ selectionSetDirectiveFree body) ->
-    varName ∈ variables ->
-      varName ∈ selectionSetBooleanVariables (selection :: rest) := by
+    {selection : Selection} {rest : List Selection}
+    : (∀ candidate,
+        candidate ∈ selection :: rest
+        -> ∃ boolCase body,
+            completeNormalBoolCase variables boolCase
+            ∧ completeNormalBooleanStem boolCase candidate body
+            ∧ selectionSetNormal schema parentType body
+            ∧ selectionSetDirectiveFree body)
+      -> varName ∈ variables
+      -> varName ∈ selectionSetBooleanVariables (selection :: rest) := by
   intro hbranches hvar
   rcases hbranches selection (by simp) with
     ⟨boolCase, body, hcase, hstem, _hbodyNormal, hbodyFree⟩
@@ -673,12 +661,11 @@ theorem selectionSetBooleanVariables_mem_of_variable_completeNormalBranches
 
 theorem operationBoolVars_mem_iff_of_completeNormalSelectionSet_cons
     {schema : Schema} {varName : BoolVar} {variables : List BoolVar}
-    {parentType : Name} {selectionSet : List Selection} :
-    completeNormalSelectionSet schema (varName :: variables) parentType selectionSet ->
-    selectionSet ≠ [] ->
-      ∀ candidate,
-        candidate ∈ dedupBoolVars
-            (selectionSetBooleanVariables selectionSet)
+    {parentType : Name} {selectionSet : List Selection}
+    : completeNormalSelectionSet schema (varName :: variables) parentType selectionSet
+      -> selectionSet ≠ []
+      -> ∀ candidate,
+          candidate ∈ dedupBoolVars (selectionSetBooleanVariables selectionSet)
           ↔ candidate ∈ varName :: variables := by
   intro hnormal hnonempty candidate
   unfold completeNormalSelectionSet at hnormal
@@ -701,15 +688,14 @@ theorem operationBoolVars_mem_iff_of_completeNormalSelectionSet_cons
             (schema := schema) (variables := varName :: variables)
             (varName := candidate) hbranches hmem
 
-theorem wrapWithBoolCase_boolCase_injective_of_directiveFree :
-    ∀ left right leftBody rightBody,
-      selectionSetDirectiveFree leftBody ->
-      selectionSetDirectiveFree rightBody ->
-      left ≠ [] ->
-      right ≠ [] ->
-      wrapWithBoolCase left leftBody =
-        wrapWithBoolCase right rightBody ->
-        left = right
+theorem wrapWithBoolCase_boolCase_injective_of_directiveFree
+    : ∀ left right leftBody rightBody,
+        selectionSetDirectiveFree leftBody
+        -> selectionSetDirectiveFree rightBody
+        -> left ≠ []
+        -> right ≠ []
+        -> wrapWithBoolCase left leftBody = wrapWithBoolCase right rightBody
+        -> left = right
   | [], _right, _leftBody, _rightBody, _hleftFree, _hrightFree,
       hleftNe, _hrightNe, _hwrap => by
       exact False.elim (hleftNe rfl)
@@ -759,10 +745,10 @@ theorem completeNormalizeRootSelectionSet_normal_nil
     (schema : Schema)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (parentType : Name) (selectionSet normalizedSelectionSet : List Selection)
-    (hparentObject : objectTypeNameBool schema parentType = true) :
-    completeNormalizeRootSelectionSet schema [] parentType selectionSet =
-      normalizedSelectionSet ->
-        completeNormalSelectionSet schema [] parentType normalizedSelectionSet := by
+    (hparentObject : objectTypeNameBool schema parentType = true)
+    : completeNormalizeRootSelectionSet schema [] parentType selectionSet
+        = normalizedSelectionSet
+      -> completeNormalSelectionSet schema [] parentType normalizedSelectionSet := by
   intro hnormalized
   unfold completeNormalizeRootSelectionSet at hnormalized
   simp [allBoolCases, wrapWithBoolCase] at hnormalized
@@ -793,21 +779,24 @@ theorem completeNormalizeRootSelectionSet_normal_nil
 
 private def completeNormalizeRootBranch
     (schema : Schema) (parentType : Name) (selectionSet : List Selection)
-    (boolCase : BoolCase) : List Selection :=
+    (boolCase : BoolCase)
+    : List Selection :=
   match normalizeSelectionSet schema parentType
-      (filterSelectionSetBoolCase boolCase selectionSet) with
+          (filterSelectionSetBoolCase boolCase selectionSet) with
   | [] => []
   | selection :: rest =>
       wrapWithBoolCase boolCase (selection :: rest)
 
 theorem nodup_flatten_map_of_nil_or_singleton_injective
-    {α β : Type} {items : List α} {f : α -> List β} :
-    items.Nodup ->
-    (∀ item, item ∈ items -> f item = [] ∨ ∃ value, f item = [value]) ->
-    (∀ left, left ∈ items ->
-      ∀ right, right ∈ items ->
-      ∀ value, value ∈ f left -> value ∈ f right -> left = right) ->
-      (items.map f).flatten.Nodup := by
+    {α β : Type} {items : List α} {f : α -> List β}
+    : items.Nodup
+      -> (∀ item, item ∈ items -> f item = [] ∨ ∃ value, f item = [value])
+      -> (∀ left,
+            left ∈ items
+            -> ∀ right,
+                right ∈ items
+                -> ∀ value, value ∈ f left -> value ∈ f right -> left = right)
+      -> (items.map f).flatten.Nodup := by
   intro hnodup hshape hinjective
   induction items with
   | nil =>
@@ -845,12 +834,12 @@ theorem nodup_flatten_map_of_nil_or_singleton_injective
 
 theorem completeNormalizeRootBranch_nil_or_singleton
     (schema : Schema) (parentType : Name) (selectionSet : List Selection)
-    {boolCase : BoolCase} :
-    boolCase ≠ [] ->
-      completeNormalizeRootBranch schema parentType selectionSet boolCase = []
-        ∨ ∃ selection,
-          completeNormalizeRootBranch schema parentType selectionSet boolCase =
-            [selection] := by
+    {boolCase : BoolCase}
+    : boolCase ≠ []
+      -> completeNormalizeRootBranch schema parentType selectionSet boolCase = []
+          ∨ ∃ selection,
+              completeNormalizeRootBranch schema parentType selectionSet boolCase
+              = [selection] := by
   intro hne
   unfold completeNormalizeRootBranch
   cases hbody :
@@ -865,10 +854,10 @@ theorem completeNormalizeRootBranch_nil_or_singleton
 
 theorem normalize_filterSelectionSetBoolCase_directiveFree
     (schema : Schema) (parentType : Name) (boolCase : BoolCase)
-    (selectionSet : List Selection) :
-    selectionSetDirectiveFree
-      (normalizeSelectionSet schema parentType
-        (filterSelectionSetBoolCase boolCase selectionSet)) := by
+    (selectionSet : List Selection)
+    : selectionSetDirectiveFree
+        (normalizeSelectionSet schema parentType
+          (filterSelectionSetBoolCase boolCase selectionSet)) := by
   exact GroundTypeNormalization.normalizeSelectionSet_directiveFree schema
     parentType
     (filterSelectionSetBoolCase boolCase selectionSet)
@@ -877,12 +866,12 @@ theorem normalize_filterSelectionSetBoolCase_directiveFree
 
 theorem completeNormalizeRootBranch_mem_boolCase_injective
     (schema : Schema) (parentType : Name) (selectionSet : List Selection)
-    {left right : BoolCase} {selection : Selection} :
-    left ≠ [] ->
-    right ≠ [] ->
-    selection ∈ completeNormalizeRootBranch schema parentType selectionSet left ->
-    selection ∈ completeNormalizeRootBranch schema parentType selectionSet right ->
-      left = right := by
+    {left right : BoolCase} {selection : Selection}
+    : left ≠ []
+      -> right ≠ []
+      -> selection ∈ completeNormalizeRootBranch schema parentType selectionSet left
+      -> selection ∈ completeNormalizeRootBranch schema parentType selectionSet right
+      -> left = right := by
   intro hleftNe hrightNe hleftMem hrightMem
   unfold completeNormalizeRootBranch at hleftMem hrightMem
   cases hleftBody :
@@ -930,14 +919,14 @@ theorem completeNormalizeRootBranch_mem_boolCase_injective
 theorem completeNormalBooleanStem_boolCase_eq_of_generated
     {varName : BoolVar} {variables : List BoolVar}
     {generatedCase stemCase : BoolCase}
-    {generatedBody stemBody : List Selection} {selection : Selection} :
-    generatedCase ∈ allBoolCases (varName :: variables) ->
-    completeNormalBoolCase (varName :: variables) stemCase ->
-    selectionSetDirectiveFree generatedBody ->
-    selectionSetDirectiveFree stemBody ->
-    selection ∈ wrapWithBoolCase generatedCase generatedBody ->
-    completeNormalBooleanStem stemCase selection stemBody ->
-      generatedCase = stemCase := by
+    {generatedBody stemBody : List Selection} {selection : Selection}
+    : generatedCase ∈ allBoolCases (varName :: variables)
+      -> completeNormalBoolCase (varName :: variables) stemCase
+      -> selectionSetDirectiveFree generatedBody
+      -> selectionSetDirectiveFree stemBody
+      -> selection ∈ wrapWithBoolCase generatedCase generatedBody
+      -> completeNormalBooleanStem stemCase selection stemBody
+      -> generatedCase = stemCase := by
   intro hgenerated hstemComplete hgeneratedFree hstemFree
     hselection hstem
   have hgeneratedNe :=
@@ -966,11 +955,11 @@ theorem completeNormalizeRootSelectionSet_normal_cons
     (varName : BoolVar) (variables : List BoolVar)
     (hvariablesNodup : (varName :: variables).Nodup)
     (parentType : Name) (selectionSet normalizedSelectionSet : List Selection)
-    (hparentObject : objectTypeNameBool schema parentType = true) :
-    completeNormalizeRootSelectionSet schema (varName :: variables)
-        parentType selectionSet =
-      normalizedSelectionSet ->
-        completeNormalSelectionSet schema (varName :: variables)
+    (hparentObject : objectTypeNameBool schema parentType = true)
+    : completeNormalizeRootSelectionSet schema (varName :: variables)
+          parentType selectionSet
+        = normalizedSelectionSet
+      -> completeNormalSelectionSet schema (varName :: variables)
           parentType normalizedSelectionSet := by
   intro hnormalized
   unfold completeNormalizeRootSelectionSet at hnormalized
@@ -1139,9 +1128,8 @@ theorem completeNormalizeRootSelectionSet_normal_cons
           subst right
           rfl
 
-theorem completeNormalizeOperation_normal
-    (schema : Schema) (operation : Operation) :
-    completeNormalizeOperationNormal schema operation := by
+theorem completeNormalizeOperation_normal (schema : Schema) (operation : Operation)
+    : completeNormalizeOperationNormal schema operation := by
   intro hschema hvalid
   have hrootEq :
       operation.rootType = schema.queryType :=

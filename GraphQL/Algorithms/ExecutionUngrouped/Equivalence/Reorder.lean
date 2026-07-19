@@ -16,10 +16,10 @@ namespace ExecutionUngrouped
 open GraphQL.Execution
 
 theorem mergeResponseField_key_mem_of_mem
-    (target responseName : Name) (incoming : ResponseValue) :
-    ∀ fields : List (Name × ResponseValue),
-      target ∈ fields.map Prod.fst ->
-        target ∈ (mergeResponseField responseName incoming fields).map Prod.fst
+    (target responseName : Name) (incoming : ResponseValue)
+    : ∀ fields : List (Name × ResponseValue),
+        target ∈ fields.map Prod.fst
+        -> target ∈ (mergeResponseField responseName incoming fields).map Prod.fst
   | [], hmem => by
       simp at hmem
   | (fieldName, response) :: rest, hmem => by
@@ -43,14 +43,14 @@ theorem mergeResponseField_key_mem_of_mem
             ⟨mergedResponse, hmergedPair⟩
 
 theorem mergeResponseField_comm_of_mem_left_ne
-    (target other : Name) (targetResponse otherResponse : ResponseValue) :
-    ∀ (fields : List (Name × ResponseValue)),
-      target ∈ fields.map Prod.fst ->
-      target ≠ other ->
-        mergeResponseField target targetResponse
-            (mergeResponseField other otherResponse fields) =
-          mergeResponseField other otherResponse
-            (mergeResponseField target targetResponse fields)
+    (target other : Name) (targetResponse otherResponse : ResponseValue)
+    : ∀ (fields : List (Name × ResponseValue)),
+        target ∈ fields.map Prod.fst
+        -> target ≠ other
+        -> mergeResponseField target targetResponse
+              (mergeResponseField other otherResponse fields)
+            = mergeResponseField other otherResponse
+                (mergeResponseField target targetResponse fields)
   | [], hmem, _hne => by
       simp at hmem
   | (fieldName, response) :: rest, hmem, hne => by
@@ -76,15 +76,15 @@ theorem mergeResponseField_comm_of_mem_left_ne
               otherResponse rest hrestMem hne]
 
 theorem mergeResponseField_comm_across_mergeResponseFields_of_mem_not_mem
-    (target : Name) (targetResponse : ResponseValue) :
-    ∀ (incoming fields : List (Name × ResponseValue)),
-      target ∈ fields.map Prod.fst ->
-      target ∉ incoming.map Prod.fst ->
-        mergeResponseField target targetResponse
-            (mergeResponseFields fields incoming) =
-          mergeResponseFields
-            (mergeResponseField target targetResponse fields)
-            incoming
+    (target : Name) (targetResponse : ResponseValue)
+    : ∀ (incoming fields : List (Name × ResponseValue)),
+        target ∈ fields.map Prod.fst
+        -> target ∉ incoming.map Prod.fst
+        -> mergeResponseField target targetResponse
+              (mergeResponseFields fields incoming)
+            = mergeResponseFields
+                (mergeResponseField target targetResponse fields)
+                incoming
   | [], fields, _hmem, _hnot => by
       simp [mergeResponseFields]
   | (other, otherResponse) :: rest, fields, hmem, hnot => by
@@ -108,10 +108,10 @@ theorem mergeResponseField_comm_across_mergeResponseFields_of_mem_not_mem
 
 theorem mergeResponseFields_append_singleton
     (fields incoming : List (Name × ResponseValue))
-    (responseName : Name) (response : ResponseValue) :
-    mergeResponseFields fields (incoming ++ [(responseName, response)]) =
-      mergeResponseField responseName response
-        (mergeResponseFields fields incoming) := by
+    (responseName : Name) (response : ResponseValue)
+    : mergeResponseFields fields (incoming ++ [(responseName, response)])
+      = mergeResponseField responseName response
+          (mergeResponseFields fields incoming) := by
   induction incoming generalizing fields with
   | nil =>
       simp [mergeResponseFields]
@@ -123,14 +123,14 @@ theorem mergeResponseSliceFold_object_eq_mergeResponseFields
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (completionDepth : Nat) (source : ResolverValue ObjectIdentity) :
-    ∀ (fields : List ExecutableField) (outputFields : List (Name × ResponseValue)),
-      mergeResponseSliceFold schema resolvers variableValues completionDepth
-          source fields (.object outputFields) =
-        .object
-          (mergeResponseFields outputFields
-            (responseObjectSlices schema resolvers variableValues
-              completionDepth source fields))
+    (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
+    : ∀ (fields : List ExecutableField) (outputFields : List (Name × ResponseValue)),
+        mergeResponseSliceFold schema resolvers variableValues completionDepth
+          source fields (.object outputFields)
+        = .object
+            (mergeResponseFields outputFields
+              (responseObjectSlices schema resolvers variableValues
+                completionDepth source fields))
   | [], outputFields => by
       simp [mergeResponseSliceFold, responseObjectSlices, mergeResponseFields]
   | field :: rest, outputFields => by
@@ -148,13 +148,13 @@ theorem mergeResponse_singleton_comm_of_existing_left_ne
     (target other : Name) (targetResponse otherResponse : ResponseValue)
     (fields : List (Name × ResponseValue))
     (htarget : target ∈ fields.map Prod.fst)
-    (hne : target ≠ other) :
-    mergeResponse
+    (hne : target ≠ other)
+    : mergeResponse
         (mergeResponse (.object fields) (.object [(other, otherResponse)]))
-        (.object [(target, targetResponse)]) =
-      mergeResponse
-        (mergeResponse (.object fields) (.object [(target, targetResponse)]))
-        (.object [(other, otherResponse)]) := by
+        (.object [(target, targetResponse)])
+      = mergeResponse
+          (mergeResponse (.object fields) (.object [(target, targetResponse)]))
+          (.object [(other, otherResponse)]) := by
   simp [mergeResponse, mergeResponseFields,
     mergeResponseField_comm_of_mem_left_ne target other targetResponse
       otherResponse fields htarget hne]
@@ -166,11 +166,11 @@ theorem mergeResponseSliceFold_adjacent_existing_second_swap
     (completionDepth : Nat) (source : ResolverValue ObjectIdentity)
     (first second : ExecutableField) (fields : List (Name × ResponseValue))
     (hsecond : second.responseName ∈ fields.map Prod.fst)
-    (hne : second.responseName ≠ first.responseName) :
-    mergeResponseSliceFold schema resolvers variableValues completionDepth source
-        [first, second] (.object fields) =
-      mergeResponseSliceFold schema resolvers variableValues completionDepth source
-        [second, first] (.object fields) := by
+    (hne : second.responseName ≠ first.responseName)
+    : mergeResponseSliceFold schema resolvers variableValues completionDepth source
+        [first, second] (.object fields)
+      = mergeResponseSliceFold schema resolvers variableValues completionDepth source
+          [second, first] (.object fields) := by
   simpa [mergeResponseSliceFold, responseObjectSlice] using
     mergeResponse_singleton_comm_of_existing_left_ne second.responseName
       first.responseName
@@ -188,11 +188,11 @@ theorem mergeResponseSliceFold_middle_existing_last_swap
     (middle : List ExecutableField) (later : ExecutableField)
     (fields : List (Name × ResponseValue))
     (hlater : later.responseName ∈ fields.map Prod.fst)
-    (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName)) :
-    mergeResponseSliceFold schema resolvers variableValues completionDepth source
-        (middle ++ [later]) (.object fields) =
-      mergeResponseSliceFold schema resolvers variableValues completionDepth source
-        (later :: middle) (.object fields) := by
+    (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
+    : mergeResponseSliceFold schema resolvers variableValues completionDepth source
+        (middle ++ [later]) (.object fields)
+      = mergeResponseSliceFold schema resolvers variableValues completionDepth source
+          (later :: middle) (.object fields) := by
   rw [mergeResponseSliceFold_object_eq_mergeResponseFields schema resolvers
     variableValues completionDepth source (middle ++ [later]) fields]
   rw [mergeResponseSliceFold_object_eq_mergeResponseFields schema resolvers
@@ -224,11 +224,11 @@ theorem mergeResponseSliceFold_middle_existing_last_swap_cons
     (rest : List ExecutableField)
     (fields : List (Name × ResponseValue))
     (hlater : later.responseName ∈ fields.map Prod.fst)
-    (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName)) :
-    mergeResponseSliceFold schema resolvers variableValues completionDepth source
-        ((middle ++ [later]) ++ rest) (.object fields) =
-      mergeResponseSliceFold schema resolvers variableValues completionDepth source
-        ((later :: middle) ++ rest) (.object fields) := by
+    (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
+    : mergeResponseSliceFold schema resolvers variableValues completionDepth source
+        ((middle ++ [later]) ++ rest) (.object fields)
+      = mergeResponseSliceFold schema resolvers variableValues completionDepth source
+          ((later :: middle) ++ rest) (.object fields) := by
   have hswap :
       mergeResponseSliceFold schema resolvers variableValues completionDepth source
           (middle ++ [later]) (.object fields) =
@@ -264,16 +264,16 @@ theorem visitFieldSliceFold_succ_middle_existing_last_swap_of_traces
     (fields : List (Name × ResponseValue))
     (hlater : later.responseName ∈ fields.map Prod.fst)
     (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
-    (hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((middle ++ [later]) ++ rest) (.object fields))
-    (hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((later :: middle) ++ rest) (.object fields)) :
-    visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
-        source ((middle ++ [later]) ++ rest) (.object fields) =
-      visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
-        source ((later :: middle) ++ rest) (.object fields) := by
+    (hleftTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((middle ++ [later]) ++ rest) (.object fields))
+    (hrightTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((later :: middle) ++ rest) (.object fields))
+    : visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
+        source ((middle ++ [later]) ++ rest) (.object fields)
+      = visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
+          source ((later :: middle) ++ rest) (.object fields) := by
   rw [visitFieldSliceFold_succ_eq_mergeResponseSliceFold_of_trace schema
     resolvers variableValues completionDepth source
     ((middle ++ [later]) ++ rest) (.object fields) hleftTrace]
@@ -294,25 +294,24 @@ theorem visitSubfields_executableFieldSelections_middle_existing_last_swap_of_tr
     (middle : List ExecutableField) (later : ExecutableField)
     (rest : List ExecutableField)
     (fields : List (Name × ResponseValue))
-    (hparents :
-      ∀ field, field ∈ ((middle ++ [later]) ++ rest) ->
-        field.parentType = parentType)
+    (hparents
+      : ∀ field, field ∈ ((middle ++ [later]) ++ rest) -> field.parentType = parentType)
     (hlater : later.responseName ∈ fields.map Prod.fst)
     (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
-    (hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((middle ++ [later]) ++ rest) (.object fields))
-    (hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((later :: middle) ++ rest) (.object fields)) :
-    visitSubfields schema resolvers variableValues
+    (hleftTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((middle ++ [later]) ++ rest) (.object fields))
+    (hrightTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((later :: middle) ++ rest) (.object fields))
+    : visitSubfields schema resolvers variableValues
         (completionDepth + 1) parentType source
         (executableFieldSelections ((middle ++ [later]) ++ rest))
-        (.object fields) =
-    visitSubfields schema resolvers variableValues
-        (completionDepth + 1) parentType source
-        (executableFieldSelections ((later :: middle) ++ rest))
-        (.object fields) := by
+        (.object fields)
+      = visitSubfields schema resolvers variableValues
+          (completionDepth + 1) parentType source
+          (executableFieldSelections ((later :: middle) ++ rest))
+          (.object fields) := by
   have hparentsRight :
       ∀ field, field ∈ ((later :: middle) ++ rest) ->
         field.parentType = parentType := by
@@ -404,31 +403,30 @@ theorem VisitSubfieldsFlatCollects_middle_existing_last_swap_of_traces
     (middle : List ExecutableField) (later : ExecutableField)
     (rest : List ExecutableField)
     (fields : List (Name × ResponseValue))
-    (hparents :
-      ∀ field, field ∈ ((middle ++ [later]) ++ rest) ->
-        field.parentType = parentType)
+    (hparents
+      : ∀ field, field ∈ ((middle ++ [later]) ++ rest) -> field.parentType = parentType)
     (hlater : later.responseName ∈ fields.map Prod.fst)
     (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
-    (hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((middle ++ [later]) ++ rest) (.object fields))
-    (hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((later :: middle) ++ rest) (.object fields))
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections ((middle ++ [later]) ++ rest)) =
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections ((later :: middle) ++ rest)))
-    (hnormalized :
-      VisitSubfieldsFlatCollects schema resolvers variableValues
+    (hleftTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((middle ++ [later]) ++ rest) (.object fields))
+    (hrightTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((later :: middle) ++ rest) (.object fields))
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          (executableFieldSelections ((middle ++ [later]) ++ rest))
+        = GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections ((later :: middle) ++ rest)))
+    (hnormalized
+      : VisitSubfieldsFlatCollects schema resolvers variableValues
+          (completionDepth + 1) parentType source
+          (executableFieldSelections ((later :: middle) ++ rest))
+          (.object fields))
+    : VisitSubfieldsFlatCollects schema resolvers variableValues
         (completionDepth + 1) parentType source
-        (executableFieldSelections ((later :: middle) ++ rest))
-        (.object fields)) :
-    VisitSubfieldsFlatCollects schema resolvers variableValues
-      (completionDepth + 1) parentType source
-      (executableFieldSelections ((middle ++ [later]) ++ rest))
-      (.object fields) := by
+        (executableFieldSelections ((middle ++ [later]) ++ rest))
+        (.object fields) := by
   unfold VisitSubfieldsFlatCollects at hnormalized ⊢
   rw [hcollect]
   rw [visitSubfields_executableFieldSelections_middle_existing_last_swap_of_traces
@@ -444,22 +442,22 @@ theorem visitFieldSliceFold_succ_middle_existing_last_swap_after_prefix_of_trace
     (pre middle : List ExecutableField) (later : ExecutableField)
     (rest : List ExecutableField)
     (fields : List (Name × ResponseValue))
-    (hprefix :
-      visitFieldSliceFold schema resolvers variableValues
-        (completionDepth + 1) source pre (.object []) =
-      .object fields)
+    (hprefix
+      : visitFieldSliceFold schema resolvers variableValues
+          (completionDepth + 1) source pre (.object [])
+        = .object fields)
     (hlater : later.responseName ∈ fields.map Prod.fst)
     (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
-    (hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((middle ++ [later]) ++ rest) (.object fields))
-    (hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((later :: middle) ++ rest) (.object fields)) :
-    visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
-        source (pre ++ ((middle ++ [later]) ++ rest)) (.object []) =
-      visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
-        source (pre ++ ((later :: middle) ++ rest)) (.object []) := by
+    (hleftTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((middle ++ [later]) ++ rest) (.object fields))
+    (hrightTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((later :: middle) ++ rest) (.object fields))
+    : visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
+        source (pre ++ ((middle ++ [later]) ++ rest)) (.object [])
+      = visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
+          source (pre ++ ((later :: middle) ++ rest)) (.object []) := by
   unfold visitFieldSliceFold at hprefix ⊢
   conv =>
     lhs
@@ -479,37 +477,34 @@ theorem visitFieldSliceFold_succ_middle_existing_last_swap_after_prefix_of_trace
       hlater hnotMiddle hleftTrace hrightTrace
 
 theorem visitSubfields_executableFieldSelections_middle_existing_last_swap_after_prefix_of_traces
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues)
-    (completionDepth : Nat) (parentType : Name)
-    (source : ResolverValue ObjectIdentity)
-    (pre middle : List ExecutableField) (later : ExecutableField)
-    (rest : List ExecutableField)
+    {ObjectIdentity : Type} (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (completionDepth : Nat) (parentType : Name)
+    (source : ResolverValue ObjectIdentity) (pre middle : List ExecutableField)
+    (later : ExecutableField) (rest : List ExecutableField)
     (fields : List (Name × ResponseValue))
-    (hprefix :
-      visitFieldSliceFold schema resolvers variableValues
-        (completionDepth + 1) source pre (.object []) =
-      .object fields)
-    (hparents :
-      ∀ field, field ∈ pre ++ ((middle ++ [later]) ++ rest) ->
-        field.parentType = parentType)
+    (hprefix
+      : visitFieldSliceFold schema resolvers variableValues
+          (completionDepth + 1) source pre (.object [])
+        = .object fields)
+    (hparents
+      : ∀ field,
+          field ∈ pre ++ ((middle ++ [later]) ++ rest) -> field.parentType = parentType)
     (hlater : later.responseName ∈ fields.map Prod.fst)
     (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
-    (hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((middle ++ [later]) ++ rest) (.object fields))
-    (hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((later :: middle) ++ rest) (.object fields)) :
-    visitSubfields schema resolvers variableValues
+    (hleftTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((middle ++ [later]) ++ rest) (.object fields))
+    (hrightTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((later :: middle) ++ rest) (.object fields))
+    : visitSubfields schema resolvers variableValues
         (completionDepth + 1) parentType source
         (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest)))
-        (.object []) =
-    visitSubfields schema resolvers variableValues
-        (completionDepth + 1) parentType source
-        (executableFieldSelections (pre ++ ((later :: middle) ++ rest)))
-        (.object []) := by
+        (.object [])
+      = visitSubfields schema resolvers variableValues
+          (completionDepth + 1) parentType source
+          (executableFieldSelections (pre ++ ((later :: middle) ++ rest)))
+          (.object []) := by
   have hparentsRight :
       ∀ field, field ∈ pre ++ ((later :: middle) ++ rest) ->
         field.parentType = parentType := by
@@ -629,37 +624,35 @@ theorem VisitSubfieldsFlatCollects_middle_existing_last_swap_after_prefix_of_tra
     (pre middle : List ExecutableField) (later : ExecutableField)
     (rest : List ExecutableField)
     (fields : List (Name × ResponseValue))
-    (hprefix :
-      visitFieldSliceFold schema resolvers variableValues
-        (completionDepth + 1) source pre (.object []) =
-      .object fields)
-    (hparents :
-      ∀ field, field ∈ pre ++ ((middle ++ [later]) ++ rest) ->
-        field.parentType = parentType)
+    (hprefix
+      : visitFieldSliceFold schema resolvers variableValues
+          (completionDepth + 1) source pre (.object [])
+        = .object fields)
+    (hparents
+      : ∀ field,
+          field ∈ pre ++ ((middle ++ [later]) ++ rest) -> field.parentType = parentType)
     (hlater : later.responseName ∈ fields.map Prod.fst)
     (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
-    (hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((middle ++ [later]) ++ rest) (.object fields))
-    (hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((later :: middle) ++ rest) (.object fields))
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections
-            (pre ++ ((middle ++ [later]) ++ rest))) =
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections
-            (pre ++ ((later :: middle) ++ rest))))
-    (hnormalized :
-      VisitSubfieldsFlatCollects schema resolvers variableValues
+    (hleftTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((middle ++ [later]) ++ rest) (.object fields))
+    (hrightTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((later :: middle) ++ rest) (.object fields))
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest)))
+        = GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections (pre ++ ((later :: middle) ++ rest))))
+    (hnormalized
+      : VisitSubfieldsFlatCollects schema resolvers variableValues
+          (completionDepth + 1) parentType source
+          (executableFieldSelections (pre ++ ((later :: middle) ++ rest)))
+          (.object []))
+    : VisitSubfieldsFlatCollects schema resolvers variableValues
         (completionDepth + 1) parentType source
-        (executableFieldSelections (pre ++ ((later :: middle) ++ rest)))
-        (.object [])) :
-    VisitSubfieldsFlatCollects schema resolvers variableValues
-      (completionDepth + 1) parentType source
-      (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest)))
-      (.object []) := by
+        (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest)))
+        (.object []) := by
   unfold VisitSubfieldsFlatCollects at hnormalized ⊢
   rw [hcollect]
   rw [visitSubfields_executableFieldSelections_middle_existing_last_swap_after_prefix_of_traces
@@ -677,45 +670,42 @@ theorem executeRootSelectionSet_eq_spec_of_middle_existing_last_swap_after_prefi
     (pre middle : List ExecutableField) (later : ExecutableField)
     (rest : List ExecutableField)
     (fields : List (Name × ResponseValue))
-    (hprefix :
-      visitFieldSliceFold schema resolvers variableValues
-        (completionDepth + 1) source pre (.object []) =
-      .object fields)
-    (hparents :
-      ∀ field, field ∈ pre ++ ((middle ++ [later]) ++ rest) ->
-        field.parentType = parentType)
+    (hprefix
+      : visitFieldSliceFold schema resolvers variableValues
+          (completionDepth + 1) source pre (.object [])
+        = .object fields)
+    (hparents
+      : ∀ field,
+          field ∈ pre ++ ((middle ++ [later]) ++ rest) -> field.parentType = parentType)
     (hlater : later.responseName ∈ fields.map Prod.fst)
     (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
-    (hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((middle ++ [later]) ++ rest) (.object fields))
-    (hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((later :: middle) ++ rest) (.object fields))
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections
-            (pre ++ ((middle ++ [later]) ++ rest))) =
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections
-            (pre ++ ((later :: middle) ++ rest))))
-    (hnormalized :
-      VisitSubfieldsFlatCollects schema resolvers variableValues
+    (hleftTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((middle ++ [later]) ++ rest) (.object fields))
+    (hrightTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((later :: middle) ++ rest) (.object fields))
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest)))
+        = GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections (pre ++ ((later :: middle) ++ rest))))
+    (hnormalized
+      : VisitSubfieldsFlatCollects schema resolvers variableValues
+          (completionDepth + 1) parentType source
+          (executableFieldSelections (pre ++ ((later :: middle) ++ rest)))
+          (.object []))
+    (hgroups
+      : ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues
+          (completionDepth + 1) parentType source
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest)))))
+    : executeRootSelectionSet schema resolvers variableValues
         (completionDepth + 1) parentType source
-        (executableFieldSelections (pre ++ ((later :: middle) ++ rest)))
-        (.object []))
-    (hgroups :
-      ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues
-        (completionDepth + 1) parentType source
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections
-            (pre ++ ((middle ++ [later]) ++ rest))))) :
-    executeRootSelectionSet schema resolvers variableValues
-        (completionDepth + 1) parentType source
-        (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest))) =
-      GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-        (completionDepth + 1) parentType source
-        (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest))) := by
+        (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest)))
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          (completionDepth + 1) parentType source
+          (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest))) := by
   exact
     executeRootSelectionSet_eq_spec_of_flatCollects_and_groupFlatSpecEquivalent
       schema resolvers variableValues (completionDepth + 1) parentType source
@@ -734,11 +724,11 @@ theorem mergeResponseSliceFold_adjacent_existing_second_swap_cons
     (first second : ExecutableField) (rest : List ExecutableField)
     (fields : List (Name × ResponseValue))
     (hsecond : second.responseName ∈ fields.map Prod.fst)
-    (hne : second.responseName ≠ first.responseName) :
-    mergeResponseSliceFold schema resolvers variableValues completionDepth source
-        (first :: second :: rest) (.object fields) =
-      mergeResponseSliceFold schema resolvers variableValues completionDepth source
-        (second :: first :: rest) (.object fields) := by
+    (hne : second.responseName ≠ first.responseName)
+    : mergeResponseSliceFold schema resolvers variableValues completionDepth source
+        (first :: second :: rest) (.object fields)
+      = mergeResponseSliceFold schema resolvers variableValues completionDepth source
+          (second :: first :: rest) (.object fields) := by
   have hswap :
       mergeResponse
           (mergeResponse (.object fields)
@@ -772,16 +762,16 @@ theorem visitFieldSliceFold_succ_adjacent_existing_second_swap_of_traces
     (fields : List (Name × ResponseValue))
     (hsecond : second.responseName ∈ fields.map Prod.fst)
     (hne : second.responseName ≠ first.responseName)
-    (hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source (first :: second :: rest) (.object fields))
-    (hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source (second :: first :: rest) (.object fields)) :
-    visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
-        source (first :: second :: rest) (.object fields) =
-      visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
-        source (second :: first :: rest) (.object fields) := by
+    (hleftTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source (first :: second :: rest) (.object fields))
+    (hrightTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source (second :: first :: rest) (.object fields))
+    : visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
+        source (first :: second :: rest) (.object fields)
+      = visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
+          source (second :: first :: rest) (.object fields) := by
   rw [visitFieldSliceFold_succ_eq_mergeResponseSliceFold_of_trace schema
     resolvers variableValues completionDepth source (first :: second :: rest)
     (.object fields) hleftTrace]
@@ -801,25 +791,24 @@ theorem visitSubfields_executableFieldSelections_adjacent_existing_second_swap_o
     (source : ResolverValue ObjectIdentity)
     (first second : ExecutableField) (rest : List ExecutableField)
     (fields : List (Name × ResponseValue))
-    (hparents :
-      ∀ field, field ∈ first :: second :: rest ->
-        field.parentType = parentType)
+    (hparents
+      : ∀ field, field ∈ first :: second :: rest -> field.parentType = parentType)
     (hsecond : second.responseName ∈ fields.map Prod.fst)
     (hne : second.responseName ≠ first.responseName)
-    (hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source (first :: second :: rest) (.object fields))
-    (hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source (second :: first :: rest) (.object fields)) :
-    (visitSubfields schema resolvers variableValues (completionDepth + 1)
+    (hleftTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source (first :: second :: rest) (.object fields))
+    (hrightTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source (second :: first :: rest) (.object fields))
+    : (visitSubfields schema resolvers variableValues (completionDepth + 1)
         parentType source
         (executableFieldSelections (first :: second :: rest))
-        (.object fields)).fst =
-      (visitSubfields schema resolvers variableValues (completionDepth + 1)
-        parentType source
-        (executableFieldSelections (second :: first :: rest))
-        (.object fields)).fst := by
+        (.object fields)).fst
+      = (visitSubfields schema resolvers variableValues (completionDepth + 1)
+          parentType source
+          (executableFieldSelections (second :: first :: rest))
+          (.object fields)).fst := by
   have hparentsRight :
       ∀ field, field ∈ second :: first :: rest ->
         field.parentType = parentType := by
@@ -849,22 +838,22 @@ theorem visitFieldSliceFold_succ_adjacent_existing_second_swap_after_prefix_of_t
     (pre : List ExecutableField)
     (first second : ExecutableField) (rest : List ExecutableField)
     (fields : List (Name × ResponseValue))
-    (hprefix :
-      visitFieldSliceFold schema resolvers variableValues
-        (completionDepth + 1) source pre (.object []) =
-      .object fields)
+    (hprefix
+      : visitFieldSliceFold schema resolvers variableValues
+          (completionDepth + 1) source pre (.object [])
+        = .object fields)
     (hsecond : second.responseName ∈ fields.map Prod.fst)
     (hne : second.responseName ≠ first.responseName)
-    (hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source (first :: second :: rest) (.object fields))
-    (hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source (second :: first :: rest) (.object fields)) :
-    visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
-        source (pre ++ first :: second :: rest) (.object []) =
-      visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
-        source (pre ++ second :: first :: rest) (.object []) := by
+    (hleftTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source (first :: second :: rest) (.object fields))
+    (hrightTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source (second :: first :: rest) (.object fields))
+    : visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
+        source (pre ++ first :: second :: rest) (.object [])
+      = visitFieldSliceFold schema resolvers variableValues (completionDepth + 1)
+          source (pre ++ second :: first :: rest) (.object []) := by
   unfold visitFieldSliceFold at hprefix ⊢
   rw [List.foldl_append, List.foldl_append]
   rw [hprefix]

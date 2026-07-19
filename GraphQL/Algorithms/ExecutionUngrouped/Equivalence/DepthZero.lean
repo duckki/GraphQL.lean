@@ -19,28 +19,25 @@ def depthZeroVisitStatus : Nat -> VisitStatus
   | 0 => visitOk
   | n + 1 => .error (n + 1)
 
-theorem combineVisitStatus_depthZeroVisitStatus
-    (left right : Nat) :
-    combineVisitStatus (depthZeroVisitStatus left)
-      (depthZeroVisitStatus right) =
-    depthZeroVisitStatus (left + right) := by
+theorem combineVisitStatus_depthZeroVisitStatus (left right : Nat)
+    : combineVisitStatus (depthZeroVisitStatus left) (depthZeroVisitStatus right)
+      = depthZeroVisitStatus (left + right) := by
   cases left <;> cases right <;>
     simp [depthZeroVisitStatus, visitOk, combineVisitStatus,
       GraphQL.Execution.Result.combine,
       Nat.add_comm, Nat.add_left_comm]
 
 def zeroDepthResponseNameResult
-    (responseName : Name) (fields : List (Name × ResponseValue)) :
-    ResponseValue × VisitStatus :=
+    (responseName : Name) (fields : List (Name × ResponseValue))
+    : ResponseValue × VisitStatus :=
   let fieldResult : GraphQL.Execution.Result ResponseValue :=
     match responseObjectField? responseName (.object fields) with
     | some previous => .ok (previous, 0)
     | none => GraphQL.Execution.outOfFuel
   mergeResponseFieldResult responseName fieldResult (.object fields)
 
-def zeroDepthExecutableFieldsResult :
-    List ExecutableField -> List (Name × ResponseValue) ->
-      ResponseValue × VisitStatus
+def zeroDepthExecutableFieldsResult
+    : List ExecutableField -> List (Name × ResponseValue) -> ResponseValue × VisitStatus
   | [], fields => (.object fields, visitOk)
   | field :: rest, fields =>
       let head := zeroDepthResponseNameResult field.responseName fields
@@ -56,10 +53,10 @@ theorem zeroDepthResponseNameResult_eq_visitSelection_executableField
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (field : ExecutableField) (fields : List (Name × ResponseValue)) :
-    visitSelection schema resolvers variableValues 0 parentType source
-        (executableFieldSelection field) (.object fields) =
-      zeroDepthResponseNameResult field.responseName fields := by
+    (field : ExecutableField) (fields : List (Name × ResponseValue))
+    : visitSelection schema resolvers variableValues 0 parentType source
+        (executableFieldSelection field) (.object fields)
+      = zeroDepthResponseNameResult field.responseName fields := by
   cases hprevious :
       responseObjectField? field.responseName (.object fields) with
   | none =>
@@ -75,14 +72,13 @@ theorem zeroDepthResponseNameResult_eq_visitSelection_executableField
         hprevious, mergeResponseFieldResult, resultValueOrNull, resultStatus]
 
 theorem visitSubfields_executableFieldSelections_depth_zero_eq_zeroDepthExecutableFieldsResult
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    ∀ (fields : List ExecutableField) (outputFields : List (Name × ResponseValue)),
-      visitSubfields schema resolvers variableValues 0 parentType source
-          (executableFieldSelections fields) (.object outputFields) =
-        zeroDepthExecutableFieldsResult fields outputFields
+    {ObjectIdentity : Type} (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (parentType : Name)
+    (source : ResolverValue ObjectIdentity)
+    : ∀ (fields : List ExecutableField) (outputFields : List (Name × ResponseValue)),
+        visitSubfields schema resolvers variableValues 0 parentType source
+          (executableFieldSelections fields) (.object outputFields)
+        = zeroDepthExecutableFieldsResult fields outputFields
   | [], outputFields => by
       simp [visitSubfields, executableFieldSelections,
         zeroDepthExecutableFieldsResult]
@@ -121,11 +117,10 @@ theorem visitSubfields_executableFieldSelections_depth_zero_eq_zeroDepthExecutab
           · exact congrArg Prod.fst htail
           · rw [congrArg Prod.snd htail]
 
-theorem collectedExecutableFields_length_eq_groups_length_of_singletons :
-    ∀ groups : List (Name × List ExecutableField),
-      (∀ responseName fields,
-        (responseName, fields) ∈ groups -> fields.length = 1) ->
-      (collectedExecutableFields groups).length = groups.length
+theorem collectedExecutableFields_length_eq_groups_length_of_singletons
+    : ∀ groups : List (Name × List ExecutableField),
+        (∀ responseName fields, (responseName, fields) ∈ groups -> fields.length = 1)
+        -> (collectedExecutableFields groups).length = groups.length
   | [], _hsingletons => by
       simp [collectedExecutableFields]
   | (responseName, fields) :: rest, hsingletons => by
@@ -143,10 +138,11 @@ theorem collectedExecutableFields_length_eq_groups_length_of_singletons :
 theorem executeCollectedFields_depth_zero_equivalence
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (source : ResolverValue ObjectIdentity) :
-    ∀ groups,
-      GraphQL.Execution.executeCollectedFieldsData schema resolvers variableValues
-        0 source groups = []
+    (variableValues : VariableValues) (source : ResolverValue ObjectIdentity)
+    : ∀ groups,
+        GraphQL.Execution.executeCollectedFieldsData schema resolvers variableValues
+          0 source groups
+        = []
   | [] => by
       simp [GraphQL.Execution.executeCollectedFieldsData,
         GraphQL.Execution.executeCollectedFields,
@@ -196,14 +192,14 @@ theorem executeCollectedFields_depth_zero_equivalence
 theorem executeCollectedFields_depth_zero_nonempty
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (source : ResolverValue ObjectIdentity) :
-    ∀ groups,
-      CollectedGroupsFieldsNonempty groups ->
-        GraphQL.Execution.executeCollectedFields schema resolvers variableValues
-          0 source groups =
-        match groups with
-        | [] => .ok ([], 0)
-        | _group :: _rest => .error groups.length
+    (variableValues : VariableValues) (source : ResolverValue ObjectIdentity)
+    : ∀ groups,
+        CollectedGroupsFieldsNonempty groups
+        -> GraphQL.Execution.executeCollectedFields schema resolvers variableValues
+              0 source groups
+            = match groups with
+              | [] => .ok ([], 0)
+              | _group :: _rest => .error groups.length
   | [], _hnonempty => by
       simp [GraphQL.Execution.executeCollectedFields]
   | (_responseName, fields) :: rest, hnonempty => by
@@ -234,15 +230,13 @@ theorem visitSubfields_executableFieldSelections_depth_zero_status_fresh
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    ∀ (fields : List ExecutableField)
-      (outputFields : List (Name × ResponseValue)),
-      (fields.map (fun field => field.responseName)).Nodup ->
-      (∀ field, field ∈ fields ->
-        field.responseName ∉ outputFields.map Prod.fst) ->
-    (visitSubfields schema resolvers variableValues 0 parentType source
-      (executableFieldSelections fields) (.object outputFields)).snd =
-    depthZeroVisitStatus fields.length
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : ∀ (fields : List ExecutableField) (outputFields : List (Name × ResponseValue)),
+        (fields.map (fun field => field.responseName)).Nodup
+        -> (∀ field, field ∈ fields -> field.responseName ∉ outputFields.map Prod.fst)
+        -> (visitSubfields schema resolvers variableValues 0 parentType source
+              (executableFieldSelections fields) (.object outputFields)).snd
+            = depthZeroVisitStatus fields.length
   | [], outputFields, _hnodup, _hfresh => by
       simp [visitSubfields, executableFieldSelections, depthZeroVisitStatus,
         visitOk]
@@ -299,11 +293,10 @@ theorem visitSubfields_executableFieldSelections_depth_zero_status_fresh
 theorem collectedExecutableFields_responseName_key_mem
     (groups : List (Name × List ExecutableField))
     (hresponses : CollectedGroupsResponseName groups)
-    (responseName : Name) :
-    responseName ∈
-        (collectedExecutableFields groups).map
-          (fun field => field.responseName) ->
-      responseName ∈ groups.map Prod.fst := by
+    (responseName : Name)
+    : responseName
+        ∈ (collectedExecutableFields groups).map (fun field => field.responseName)
+      -> responseName ∈ groups.map Prod.fst := by
   induction groups with
   | nil =>
       intro hmem
@@ -330,11 +323,9 @@ theorem collectedExecutableFields_responseNames_nodup_of_singletons
     (groups : List (Name × List ExecutableField))
     (hnodup : PairKeysNodup groups)
     (hresponses : CollectedGroupsResponseName groups)
-    (hsingletons :
-      ∀ responseName fields,
-        (responseName, fields) ∈ groups -> fields.length = 1) :
-    (collectedExecutableFields groups).map
-      (fun field => field.responseName) |>.Nodup := by
+    (hsingletons
+      : ∀ responseName fields, (responseName, fields) ∈ groups -> fields.length = 1)
+    : (collectedExecutableFields groups).map (fun field => field.responseName) |>.Nodup := by
   induction groups with
   | nil =>
       simp [collectedExecutableFields]
@@ -391,11 +382,10 @@ theorem ExecutableGroupsFlatSpecEquivalent_depth_zero
     (hnonempty : CollectedGroupsFieldsNonempty groups)
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent parentType groups)
-    (hsingletons :
-      ∀ responseName fields,
-        (responseName, fields) ∈ groups -> fields.length = 1) :
-    ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues 0
-      parentType source groups := by
+    (hsingletons
+      : ∀ responseName fields, (responseName, fields) ∈ groups -> fields.length = 1)
+    : ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues 0
+        parentType source groups := by
   unfold ExecutableGroupsFlatSpecEquivalent
   unfold ExecutableFieldsFlatSpecEquivalent
   have hspec :=

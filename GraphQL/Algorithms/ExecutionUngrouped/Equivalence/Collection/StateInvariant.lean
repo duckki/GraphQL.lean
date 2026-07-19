@@ -10,41 +10,37 @@ namespace ExecutionUngrouped
 
 open GraphQL.Execution
 
-def CollectedGroupsArgumentsNodup
-    (groups : List (Name × List ExecutableField)) : Prop :=
+def CollectedGroupsArgumentsNodup (groups : List (Name × List ExecutableField))
+    : Prop :=
   ∀ responseName fields,
-    (responseName, fields) ∈ groups ->
-      ExecutableFieldsArgumentsNodup fields
+    (responseName, fields) ∈ groups -> ExecutableFieldsArgumentsNodup fields
 
-theorem ExecutableFieldsArgumentsNodup_singleton
-    (field : ExecutableField) :
-    (field.arguments.map Argument.name).Nodup ->
-      ExecutableFieldsArgumentsNodup [field] := by
+theorem ExecutableFieldsArgumentsNodup_singleton (field : ExecutableField)
+    : (field.arguments.map Argument.name).Nodup
+      -> ExecutableFieldsArgumentsNodup [field] := by
   intro hnodup candidate hmem
   have hcandidate : candidate = field := by
     simpa using hmem
   subst candidate
   exact hnodup
 
-theorem ExecutableFieldsArgumentsNodup_append
-    (left right : List ExecutableField) :
-    ExecutableFieldsArgumentsNodup left ->
-      ExecutableFieldsArgumentsNodup right ->
-        ExecutableFieldsArgumentsNodup (left ++ right) := by
+theorem ExecutableFieldsArgumentsNodup_append (left right : List ExecutableField)
+    : ExecutableFieldsArgumentsNodup left
+      -> ExecutableFieldsArgumentsNodup right
+      -> ExecutableFieldsArgumentsNodup (left ++ right) := by
   intro hleft hright field hmem
   rcases List.mem_append.mp hmem with hfield | hfield
   · exact hleft field hfield
   · exact hright field hfield
 
-theorem CollectedGroupsArgumentsNodup_nil :
-    CollectedGroupsArgumentsNodup [] := by
+theorem CollectedGroupsArgumentsNodup_nil : CollectedGroupsArgumentsNodup [] := by
   intro _responseName _fields hmem
   simp at hmem
 
 theorem CollectedGroupsArgumentsNodup_singleton
-    (responseName : Name) (fields : List ExecutableField) :
-    ExecutableFieldsArgumentsNodup fields ->
-      CollectedGroupsArgumentsNodup [(responseName, fields)] := by
+    (responseName : Name) (fields : List ExecutableField)
+    : ExecutableFieldsArgumentsNodup fields
+      -> CollectedGroupsArgumentsNodup [(responseName, fields)] := by
   intro hfields groupResponseName groupFields hmem
   have hpair :
       (groupResponseName, groupFields) = (responseName, fields) := by
@@ -54,18 +50,18 @@ theorem CollectedGroupsArgumentsNodup_singleton
 
 theorem CollectedGroupsArgumentsNodup_tail
     {group : Name × List ExecutableField}
-    {groups : List (Name × List ExecutableField)} :
-    CollectedGroupsArgumentsNodup (group :: groups) ->
-      CollectedGroupsArgumentsNodup groups := by
+    {groups : List (Name × List ExecutableField)}
+    : CollectedGroupsArgumentsNodup (group :: groups)
+      -> CollectedGroupsArgumentsNodup groups := by
   intro hgroups responseName fields hmem
   exact hgroups responseName fields (by simp [hmem])
 
 theorem CollectedGroupsArgumentsNodup_addExecutableGroup
     (group : Name × List ExecutableField)
-    (groups : List (Name × List ExecutableField)) :
-    ExecutableFieldsArgumentsNodup group.snd ->
-      CollectedGroupsArgumentsNodup groups ->
-        CollectedGroupsArgumentsNodup
+    (groups : List (Name × List ExecutableField))
+    : ExecutableFieldsArgumentsNodup group.snd
+      -> CollectedGroupsArgumentsNodup groups
+      -> CollectedGroupsArgumentsNodup
           (GraphQL.Execution.addExecutableGroup group groups) := by
   rcases group with ⟨groupName, groupFields⟩
   intro hgroup hgroups
@@ -103,10 +99,10 @@ theorem CollectedGroupsArgumentsNodup_addExecutableGroup
             responseName fields htail
 
 theorem CollectedGroupsArgumentsNodup_mergeExecutableGroups
-    (left right : List (Name × List ExecutableField)) :
-    CollectedGroupsArgumentsNodup left ->
-      CollectedGroupsArgumentsNodup right ->
-        CollectedGroupsArgumentsNodup
+    (left right : List (Name × List ExecutableField))
+    : CollectedGroupsArgumentsNodup left
+      -> CollectedGroupsArgumentsNodup right
+      -> CollectedGroupsArgumentsNodup
           (GraphQL.Execution.mergeExecutableGroups left right) := by
   intro hleft hright
   induction right generalizing left with
@@ -124,10 +120,9 @@ theorem CollectedGroupsArgumentsNodup_mergeExecutableGroups
 theorem argumentsValid_argumentsNodup
     {schema : Schema} {definitions : List InputValueDefinition}
     {variableDefinitions : List VariableDefinition}
-    {arguments : List Argument} :
-    Validation.argumentsValid schema definitions variableDefinitions
-      arguments ->
-        (arguments.map Argument.name).Nodup := by
+    {arguments : List Argument}
+    : Validation.argumentsValid schema definitions variableDefinitions arguments
+      -> (arguments.map Argument.name).Nodup := by
   intro hvalid
   exact hvalid.1
 
@@ -135,11 +130,11 @@ theorem ValidOperationPrefixSelectionState.field_argumentsNodup
     {schema : Schema} {operation : Operation}
     {prefixSelections suffix : List Selection}
     {responseName fieldName : Name} {arguments : List Argument}
-    {directives : List DirectiveApplication} {selectionSet : List Selection} :
-    ValidOperationPrefixSelectionState schema operation prefixSelections
-      (.field responseName fieldName arguments directives selectionSet)
-      suffix ->
-      (arguments.map Argument.name).Nodup := by
+    {directives : List DirectiveApplication} {selectionSet : List Selection}
+    : ValidOperationPrefixSelectionState schema operation prefixSelections
+        (.field responseName fieldName arguments directives selectionSet)
+        suffix
+      -> (arguments.map Argument.name).Nodup := by
   intro hstate
   rcases ValidOperationPrefixSelectionState.field_lookup hstate with
     ⟨_fieldDefinition, _hlookup, harguments, _hselectionSet⟩
@@ -153,12 +148,11 @@ mutual
       (variableValues : VariableValues)
       (collectParent validParent : Name)
       (source : ResolverValue ObjectIdentity)
-      (selection : Selection) :
-      Validation.selectionValid schema variableDefinitions validParent
-        selection ->
-        CollectedGroupsArgumentsNodup
-          (GraphQL.Execution.collectSelection schema variableValues
-            collectParent source selection) := by
+      (selection : Selection)
+      : Validation.selectionValid schema variableDefinitions validParent selection
+        -> CollectedGroupsArgumentsNodup
+            (GraphQL.Execution.collectSelection schema variableValues
+              collectParent source selection) := by
     intro hvalid
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
@@ -256,12 +250,11 @@ mutual
       (variableValues : VariableValues)
       (collectParent validParent : Name)
       (source : ResolverValue ObjectIdentity)
-      (selectionSet : List Selection) :
-      Validation.selectionSetValid schema variableDefinitions validParent
-        selectionSet ->
-        CollectedGroupsArgumentsNodup
-          (GraphQL.Execution.collectFields schema variableValues collectParent
-            source selectionSet) := by
+      (selectionSet : List Selection)
+      : Validation.selectionSetValid schema variableDefinitions validParent selectionSet
+        -> CollectedGroupsArgumentsNodup
+            (GraphQL.Execution.collectFields schema variableValues collectParent
+              source selectionSet) := by
     intro hvalid
     cases selectionSet with
     | nil =>
@@ -298,14 +291,14 @@ mutual
       (variableValues : VariableValues)
       (collectParent validParent runtimeType : Name)
       (identity : ObjectIdentity)
-      (selection : Selection) :
-      SchemaWellFormedness.schemaWellFormed schema ->
-      ScopedParentRuntimeApplies schema runtimeType validParent ->
-      Validation.selectionValidInPossibleTypes schema variableDefinitions
-        validParent selection ->
-        CollectedGroupsArgumentsNodup
-          (GraphQL.Execution.collectSelection schema variableValues
-            collectParent (.object runtimeType identity) selection) := by
+      (selection : Selection)
+      : SchemaWellFormedness.schemaWellFormed schema
+        -> ScopedParentRuntimeApplies schema runtimeType validParent
+        -> Validation.selectionValidInPossibleTypes schema variableDefinitions
+            validParent selection
+        -> CollectedGroupsArgumentsNodup
+            (GraphQL.Execution.collectSelection schema variableValues
+              collectParent (.object runtimeType identity) selection) := by
     intro hschema hparentRuntime hvalid
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
@@ -450,14 +443,14 @@ mutual
       (variableValues : VariableValues)
       (collectParent validParent runtimeType : Name)
       (identity : ObjectIdentity)
-      (selectionSet : List Selection) :
-      SchemaWellFormedness.schemaWellFormed schema ->
-      ScopedParentRuntimeApplies schema runtimeType validParent ->
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions validParent selectionSet ->
-        CollectedGroupsArgumentsNodup
-          (GraphQL.Execution.collectFields schema variableValues collectParent
-            (.object runtimeType identity) selectionSet) := by
+      (selectionSet : List Selection)
+      : SchemaWellFormedness.schemaWellFormed schema
+        -> ScopedParentRuntimeApplies schema runtimeType validParent
+        -> Validation.selectionSetValidInPossibleTypes schema
+            variableDefinitions validParent selectionSet
+        -> CollectedGroupsArgumentsNodup
+            (GraphQL.Execution.collectFields schema variableValues collectParent
+              (.object runtimeType identity) selectionSet) := by
     intro hschema hparentRuntime himplementation
     cases selectionSet with
     | nil =>
@@ -490,19 +483,20 @@ end
 def CollectedGroupsResolveStable
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
     (source : ResolverValue ObjectIdentity)
-    (groups : List (Name × List ExecutableField)) : Prop :=
+    (groups : List (Name × List ExecutableField))
+    : Prop :=
   ∀ responseName fields,
-    (responseName, fields) ∈ groups ->
-      ExecutableFieldsResolveStable resolvers source fields
+    (responseName, fields) ∈ groups
+    -> ExecutableFieldsResolveStable resolvers source fields
 
 theorem CollectedGroupsResolveStable.group
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
     (source : ResolverValue ObjectIdentity)
     (groups : List (Name × List ExecutableField))
-    (responseName : Name) (fields : List ExecutableField) :
-    CollectedGroupsResolveStable resolvers source groups ->
-    (responseName, fields) ∈ groups ->
-      ExecutableFieldsResolveStable resolvers source fields := by
+    (responseName : Name) (fields : List ExecutableField)
+    : CollectedGroupsResolveStable resolvers source groups
+      -> (responseName, fields) ∈ groups
+      -> ExecutableFieldsResolveStable resolvers source fields := by
   intro hstable hmem
   exact hstable responseName fields hmem
 
@@ -510,118 +504,121 @@ theorem CollectedGroupsResolveStable.tail
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
     (source : ResolverValue ObjectIdentity)
     (group : Name × List ExecutableField)
-    (groups : List (Name × List ExecutableField)) :
-    CollectedGroupsResolveStable resolvers source (group :: groups) ->
-      CollectedGroupsResolveStable resolvers source groups := by
+    (groups : List (Name × List ExecutableField))
+    : CollectedGroupsResolveStable resolvers source (group :: groups)
+      -> CollectedGroupsResolveStable resolvers source groups := by
   intro hstable responseName fields hmem
   exact hstable responseName fields (by simp [hmem])
 
-structure ExecutionStateInvariant
-    (state : ExecutionEquivalenceState ObjectIdentity) : Prop where
-  groupedResponseKeysUnique :
-    PairKeysNodup
-      (GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet)
-  groupedFieldsCompatible :
-    ∀ responseName fields,
-      (responseName, fields) ∈
-        GraphQL.Execution.collectFields state.window.schema
+structure ExecutionStateInvariant (state : ExecutionEquivalenceState ObjectIdentity)
+    : Prop where
+  groupedResponseKeysUnique
+    : PairKeysNodup
+        (GraphQL.Execution.collectFields state.window.schema
           state.window.variableValues state.window.parentType state.window.source
-          state.window.selectionSet ->
-        ExecutableFieldsMergeCompatible fields
-  groupedFieldsResolveStable :
-    ∀ responseName fields,
-      (responseName, fields) ∈
-        GraphQL.Execution.collectFields state.window.schema
-          state.window.variableValues state.window.parentType state.window.source
-          state.window.selectionSet ->
-        ExecutableFieldsResolveStable state.window.resolvers state.window.source
-          fields
+          state.window.selectionSet)
+  groupedFieldsCompatible
+    : ∀ responseName fields,
+        (responseName, fields)
+          ∈ GraphQL.Execution.collectFields state.window.schema
+              state.window.variableValues state.window.parentType state.window.source
+              state.window.selectionSet
+        -> ExecutableFieldsMergeCompatible fields
+  groupedFieldsResolveStable
+    : ∀ responseName fields,
+        (responseName, fields)
+          ∈ GraphQL.Execution.collectFields state.window.schema
+              state.window.variableValues state.window.parentType state.window.source
+              state.window.selectionSet
+        -> ExecutableFieldsResolveStable state.window.resolvers state.window.source
+            fields
 
 structure ExecutionSemanticStateInvariant
-    (state : ExecutionEquivalenceState ObjectIdentity) : Prop where
-  groupedResponseKeysUnique :
-    PairKeysNodup
-      (GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet)
-  groupedFieldsSameParent :
-    CollectedGroupsSameResponseParent
-      (GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet)
-  groupedFieldsValidationCompatible :
-    CollectedGroupsValidationMergeCompatible
-      (GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet)
-  resolversRespectArgumentEquivalence :
-    ResolversRespectArgumentEquivalence state.window.resolvers
-      state.window.source
+    (state : ExecutionEquivalenceState ObjectIdentity)
+    : Prop where
+  groupedResponseKeysUnique
+    : PairKeysNodup
+        (GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet)
+  groupedFieldsSameParent
+    : CollectedGroupsSameResponseParent
+        (GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet)
+  groupedFieldsValidationCompatible
+    : CollectedGroupsValidationMergeCompatible
+        (GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet)
+  resolversRespectArgumentEquivalence
+    : ResolversRespectArgumentEquivalence state.window.resolvers state.window.source
 
 structure ExecutionFieldSemanticStateInvariant
-    (state : ExecutionEquivalenceState ObjectIdentity) : Prop where
-  groupedResponseKeysUnique :
-    PairKeysNodup
-      (GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet)
-  groupedFieldsFieldCompatible :
-    CollectedGroupsFieldValidationMergeCompatible
-      (GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet)
-  resolversRespectFieldAndArgumentEquivalence :
-    ResolversRespectFieldAndArgumentEquivalence state.window.resolvers
-      state.window.source
+    (state : ExecutionEquivalenceState ObjectIdentity)
+    : Prop where
+  groupedResponseKeysUnique
+    : PairKeysNodup
+        (GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet)
+  groupedFieldsFieldCompatible
+    : CollectedGroupsFieldValidationMergeCompatible
+        (GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet)
+  resolversRespectFieldAndArgumentEquivalence
+    : ResolversRespectFieldAndArgumentEquivalence state.window.resolvers
+        state.window.source
 
 structure ExecutionValidFieldSemanticStateInvariant
-    (state : ExecutionEquivalenceState ObjectIdentity) : Prop where
-  groupedResponseKeysUnique :
-    PairKeysNodup
-      (GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet)
-  groupedFieldsFieldCompatible :
-    CollectedGroupsFieldValidationMergeCompatible
-      (GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet)
-  groupedFieldsArgumentsNodup :
-    CollectedGroupsArgumentsNodup
-      (GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet)
-  resolversRespectValidFieldAndArgumentEquivalence :
-    ResolversRespectValidFieldAndArgumentEquivalence state.window.resolvers
-      state.window.source
+    (state : ExecutionEquivalenceState ObjectIdentity)
+    : Prop where
+  groupedResponseKeysUnique
+    : PairKeysNodup
+        (GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet)
+  groupedFieldsFieldCompatible
+    : CollectedGroupsFieldValidationMergeCompatible
+        (GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet)
+  groupedFieldsArgumentsNodup
+    : CollectedGroupsArgumentsNodup
+        (GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet)
+  resolversRespectValidFieldAndArgumentEquivalence
+    : ResolversRespectValidFieldAndArgumentEquivalence state.window.resolvers
+        state.window.source
 
 structure ExecutionCollectedFieldInvariant
-    (state : ExecutionEquivalenceState ObjectIdentity) : Prop where
-  groupedResponseKeysUnique :
-    PairKeysNodup
-      (GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet)
-  groupedFieldsResolveStable :
-    CollectedGroupsResolveStable state.window.resolvers state.window.source
-      (GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet)
+    (state : ExecutionEquivalenceState ObjectIdentity)
+    : Prop where
+  groupedResponseKeysUnique
+    : PairKeysNodup
+        (GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet)
+  groupedFieldsResolveStable
+    : CollectedGroupsResolveStable state.window.resolvers state.window.source
+        (GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet)
 
 def CollectedGroupsFieldLookupValid
     (schema : Schema) (parentType : Name)
-    (groups : List (Name × List ExecutableField)) : Prop :=
+    (groups : List (Name × List ExecutableField))
+    : Prop :=
   ∀ responseName field fields,
-    (responseName, field :: fields) ∈ groups ->
-      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
-        some fieldDefinition
+    (responseName, field :: fields) ∈ groups
+    -> ∃ fieldDefinition,
+        schema.lookupField parentType field.fieldName = some fieldDefinition
 
 mutual
-  theorem inputValue_structuralEquivalent_refl :
-      ∀ value : InputValue,
-        InputValue.structuralEquivalent value value
+  theorem inputValue_structuralEquivalent_refl
+      : ∀ value : InputValue, InputValue.structuralEquivalent value value
     | .null => by simp [InputValue.structuralEquivalent]
     | .int value => by simp [InputValue.structuralEquivalent]
     | .float value => by simp [InputValue.structuralEquivalent]
@@ -636,18 +633,17 @@ mutual
         simp [InputValue.structuralEquivalent,
           inputValue_structuralObjectFieldsEquivalent_refl fields]
 
-  theorem inputValue_structuralValuesEquivalent_refl :
-      ∀ values : List InputValue,
-        InputValue.structuralValuesEquivalent values values
+  theorem inputValue_structuralValuesEquivalent_refl
+      : ∀ values : List InputValue, InputValue.structuralValuesEquivalent values values
     | [] => by simp [InputValue.structuralValuesEquivalent]
     | value :: rest => by
         simp [InputValue.structuralValuesEquivalent,
           inputValue_structuralEquivalent_refl value,
           inputValue_structuralValuesEquivalent_refl rest]
 
-  theorem inputValue_structuralObjectFieldsEquivalent_refl :
-      ∀ fields : List (Name × InputValue),
-        InputValue.structuralObjectFieldsEquivalent fields fields
+  theorem inputValue_structuralObjectFieldsEquivalent_refl
+      : ∀ fields : List (Name × InputValue),
+          InputValue.structuralObjectFieldsEquivalent fields fields
     | [] => by simp [InputValue.structuralObjectFieldsEquivalent]
     | (name, value) :: rest => by
         simp [InputValue.structuralObjectFieldsEquivalent,
@@ -655,58 +651,61 @@ mutual
           inputValue_structuralObjectFieldsEquivalent_refl rest]
 end
 
-theorem inputValue_equivalent_refl (value : InputValue) :
-    value.equivalent value := by
+theorem inputValue_equivalent_refl (value : InputValue) : value.equivalent value := by
   exact inputValue_structuralEquivalent_refl value.canonical
 
 theorem fieldsForNameCanMerge_executable_identity
     (schema : Schema) (first later : ExecutableField)
-    (firstOutputType laterOutputType : TypeRef) :
-    FieldMerge.fieldsForNameCanMerge schema
-      { parentType := first.parentType
-        responseName := first.responseName
-        fieldName := first.fieldName
-        arguments := first.arguments
-        outputType := firstOutputType
-        selectionSet := first.selectionSet }
-      { parentType := later.parentType
-        responseName := later.responseName
-        fieldName := later.fieldName
-        arguments := later.arguments
-        outputType := laterOutputType
-        selectionSet := later.selectionSet } ->
-    first.parentType = later.parentType ->
-      first.fieldName = later.fieldName ∧
-      Argument.argumentsEquivalent first.arguments later.arguments := by
+    (firstOutputType laterOutputType : TypeRef)
+    : FieldMerge.fieldsForNameCanMerge schema
+        {
+          parentType := first.parentType
+          responseName := first.responseName
+          fieldName := first.fieldName
+          arguments := first.arguments
+          outputType := firstOutputType
+          selectionSet := first.selectionSet
+        }
+        {
+          parentType := later.parentType
+          responseName := later.responseName
+          fieldName := later.fieldName
+          arguments := later.arguments
+          outputType := laterOutputType
+          selectionSet := later.selectionSet
+        }
+      -> first.parentType = later.parentType
+      -> first.fieldName = later.fieldName
+          ∧ Argument.argumentsEquivalent first.arguments later.arguments := by
   intro hmerge hparent
   exact FieldMerge.fieldsForNameCanMerge_same_parent_identity hmerge hparent
 
 theorem fieldsInSetCanMerge_scoped_collectFields_compatible
-    (schema : Schema) (parentType : Name) (selectionSet : List Selection) :
-    FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-      ScopedFieldsValidationMergeCompatible
-        (FieldMerge.collectFields schema parentType selectionSet) := by
+    (schema : Schema) (parentType : Name) (selectionSet : List Selection)
+    : FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+      -> ScopedFieldsValidationMergeCompatible
+          (FieldMerge.collectFields schema parentType selectionSet) := by
   intro hmerge first later hfirst hlater hresponse hparent
   exact FieldMerge.fieldsForNameCanMerge_same_parent_identity
     (FieldMerge.fieldsInSetCanMerge_pair hmerge hfirst hlater hresponse)
     hparent
 
 theorem ScopedFieldsValidationMergeCompatible.fieldCompatible
-    (fields : List FieldMerge.ScopedField) :
-    ScopedFieldsSameResponseParent fields ->
-    ScopedFieldsValidationMergeCompatible fields ->
-      ScopedFieldsFieldValidationMergeCompatible fields := by
+    (fields : List FieldMerge.ScopedField)
+    : ScopedFieldsSameResponseParent fields
+      -> ScopedFieldsValidationMergeCompatible fields
+      -> ScopedFieldsFieldValidationMergeCompatible fields := by
   intro hsameParent hcompatible first later hfirst hlater hresponse
   exact hcompatible first later hfirst hlater hresponse
     (hsameParent first later hfirst hlater hresponse)
 
 theorem fieldsInSetCanMerge_scoped_collectFields_fieldCompatible_of_sameParent
-    (schema : Schema) (parentType : Name) (selectionSet : List Selection) :
-    FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-    ScopedFieldsSameResponseParent
-      (FieldMerge.collectFields schema parentType selectionSet) ->
-      ScopedFieldsFieldValidationMergeCompatible
-        (FieldMerge.collectFields schema parentType selectionSet) := by
+    (schema : Schema) (parentType : Name) (selectionSet : List Selection)
+    : FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+      -> ScopedFieldsSameResponseParent
+          (FieldMerge.collectFields schema parentType selectionSet)
+      -> ScopedFieldsFieldValidationMergeCompatible
+          (FieldMerge.collectFields schema parentType selectionSet) := by
   intro hmerge hsameParent
   exact ScopedFieldsValidationMergeCompatible.fieldCompatible
     (FieldMerge.collectFields schema parentType selectionSet)
@@ -716,13 +715,13 @@ theorem fieldsInSetCanMerge_scoped_collectFields_fieldCompatible_of_sameParent
 
 theorem fieldsInSetCanMerge_scoped_collectFields_fieldCompatible_of_runtimeApplies
     (schema : Schema) (parentType runtimeType : Name)
-    (selectionSet : List Selection) :
-    FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-    (∀ scopedField,
-      scopedField ∈ FieldMerge.collectFields schema parentType selectionSet ->
-        ScopedFieldRuntimeApplies schema runtimeType scopedField) ->
-      ScopedFieldsFieldValidationMergeCompatible
-        (FieldMerge.collectFields schema parentType selectionSet) := by
+    (selectionSet : List Selection)
+    : FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+      -> (∀ scopedField,
+            scopedField ∈ FieldMerge.collectFields schema parentType selectionSet
+            -> ScopedFieldRuntimeApplies schema runtimeType scopedField)
+      -> ScopedFieldsFieldValidationMergeCompatible
+          (FieldMerge.collectFields schema parentType selectionSet) := by
   intro hmerge happlies first later hfirst hlater hresponse
   have hfieldMerge :
       FieldMerge.fieldsForNameCanMerge schema first later :=
@@ -733,10 +732,10 @@ theorem fieldsInSetCanMerge_scoped_collectFields_fieldCompatible_of_runtimeAppli
 
 theorem ScopedFieldsValidationMergeCompatible.executable_sameParent
     (scopedFields : List FieldMerge.ScopedField)
-    (fields : List ExecutableField) :
-    ScopedFieldsValidationMergeCompatible scopedFields ->
-    ExecutableFieldsScopedBy scopedFields fields ->
-      ExecutableFieldsSameParentValidationMergeCompatible fields := by
+    (fields : List ExecutableField)
+    : ScopedFieldsValidationMergeCompatible scopedFields
+      -> ExecutableFieldsScopedBy scopedFields fields
+      -> ExecutableFieldsSameParentValidationMergeCompatible fields := by
   intro hcompatible hscoped first later hfirst hlater hresponse hparent
   rcases hscoped first hfirst with ⟨firstScoped, hfirstScopedMem,
     hfirstScopedMatch⟩
@@ -767,10 +766,10 @@ theorem ScopedFieldsValidationMergeCompatible.executable_sameParent
 
 theorem ScopedFieldsFieldValidationMergeCompatible.executable
     (scopedFields : List FieldMerge.ScopedField)
-    (fields : List ExecutableField) :
-    ScopedFieldsFieldValidationMergeCompatible scopedFields ->
-    ExecutableFieldsScopedBy scopedFields fields ->
-      ExecutableFieldsFieldValidationMergeCompatible fields := by
+    (fields : List ExecutableField)
+    : ScopedFieldsFieldValidationMergeCompatible scopedFields
+      -> ExecutableFieldsScopedBy scopedFields fields
+      -> ExecutableFieldsFieldValidationMergeCompatible fields := by
   intro hcompatible hscoped first later hfirst hlater hresponse
   rcases hscoped first hfirst with ⟨firstScoped, hfirstScopedMem,
     hfirstScopedMatch⟩
@@ -797,10 +796,10 @@ theorem ScopedFieldsFieldValidationMergeCompatible.executable
 
 theorem ScopedFieldsFieldValidationMergeCompatible.executable_identity
     (scopedFields : List FieldMerge.ScopedField)
-    (fields : List ExecutableField) :
-    ScopedFieldsFieldValidationMergeCompatible scopedFields ->
-    ExecutableFieldsIdentityScopedBy scopedFields fields ->
-      ExecutableFieldsFieldValidationMergeCompatible fields := by
+    (fields : List ExecutableField)
+    : ScopedFieldsFieldValidationMergeCompatible scopedFields
+      -> ExecutableFieldsIdentityScopedBy scopedFields fields
+      -> ExecutableFieldsFieldValidationMergeCompatible fields := by
   intro hcompatible hscoped first later hfirst hlater hresponse
   rcases hscoped first hfirst with ⟨firstScoped, hfirstScopedMem,
     hfirstScopedMatch⟩
@@ -825,11 +824,11 @@ theorem ScopedFieldsFieldValidationMergeCompatible.executable_identity
 
 theorem fieldsInSetCanMerge_executable_runtimeScoped
     (schema : Schema) (parentType runtimeType : Name)
-    (selectionSet : List Selection) (fields : List ExecutableField) :
-    FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-    ExecutableFieldsRuntimeScopedBy schema runtimeType
-      (FieldMerge.collectFields schema parentType selectionSet) fields ->
-      ExecutableFieldsFieldValidationMergeCompatible fields := by
+    (selectionSet : List Selection) (fields : List ExecutableField)
+    : FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+      -> ExecutableFieldsRuntimeScopedBy schema runtimeType
+          (FieldMerge.collectFields schema parentType selectionSet) fields
+      -> ExecutableFieldsFieldValidationMergeCompatible fields := by
   intro hmerge hscoped first later hfirst hlater hresponse
   rcases hscoped first hfirst with
     ⟨firstScoped, hfirstScopedMem, hfirstMatch, hfirstRuntime⟩
@@ -861,14 +860,14 @@ theorem fieldsInSetCanMerge_executable_runtimeScoped
 theorem fieldsInSetCanMerge_mergedFieldSelectionSet_of_runtimeScoped
     (schema : Schema) (parentType runtimeType : Name)
     (selectionSet : List Selection) (responseName : Name)
-    (fields : List ExecutableField) :
-    FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-    (∀ field, field ∈ fields -> field.responseName = responseName) ->
-    ExecutableFieldsRuntimeScopedBy schema runtimeType
-      (FieldMerge.collectFields schema parentType selectionSet) fields ->
-      ∀ objectType,
-        FieldMerge.fieldsInSetCanMerge schema objectType
-          (GraphQL.Execution.mergedFieldSelectionSet fields) := by
+    (fields : List ExecutableField)
+    : FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+      -> (∀ field, field ∈ fields -> field.responseName = responseName)
+      -> ExecutableFieldsRuntimeScopedBy schema runtimeType
+          (FieldMerge.collectFields schema parentType selectionSet) fields
+      -> ∀ objectType,
+          FieldMerge.fieldsInSetCanMerge schema objectType
+            (GraphQL.Execution.mergedFieldSelectionSet fields) := by
   intro hmerge hresponses hscoped objectType
   apply FieldMerge.fieldsInSetCanMerge_mergedFieldSelectionSet_of_pairwise
   intro first hfirst later hlater
@@ -904,18 +903,18 @@ theorem collectFields_group_mergedFieldSelectionSet_canMerge_runtimeScoped
     (identity : ObjectIdentity)
     (selectionSet : List Selection)
     (groups : List (Name × List ExecutableField))
-    (responseName : Name) (fields : List ExecutableField) :
-    Validation.selectionSetValid schema variableDefinitions validParent
-      selectionSet ->
-    FieldMerge.fieldsInSetCanMerge schema validParent selectionSet ->
-    ScopedParentRuntimeApplies schema runtimeType validParent ->
-    GraphQL.Execution.collectFields schema variableValues collectParent
-      (.object runtimeType identity) selectionSet = groups ->
-    (responseName, fields) ∈ groups ->
-    CollectedGroupsResponseName groups ->
-      ∀ objectType,
-        FieldMerge.fieldsInSetCanMerge schema objectType
-          (GraphQL.Execution.mergedFieldSelectionSet fields) := by
+    (responseName : Name) (fields : List ExecutableField)
+    : Validation.selectionSetValid schema variableDefinitions validParent selectionSet
+      -> FieldMerge.fieldsInSetCanMerge schema validParent selectionSet
+      -> ScopedParentRuntimeApplies schema runtimeType validParent
+      -> GraphQL.Execution.collectFields schema variableValues collectParent
+            (.object runtimeType identity) selectionSet
+          = groups
+      -> (responseName, fields) ∈ groups
+      -> CollectedGroupsResponseName groups
+      -> ∀ objectType,
+          FieldMerge.fieldsInSetCanMerge schema objectType
+            (GraphQL.Execution.mergedFieldSelectionSet fields) := by
   intro hvalid hmerge hparentRuntime hcollect hgroup hresponses
   apply fieldsInSetCanMerge_mergedFieldSelectionSet_of_runtimeScoped
     schema validParent runtimeType selectionSet responseName fields hmerge
@@ -940,16 +939,16 @@ theorem collectFields_group_mergedFieldSelectionSet_canMerge_of_valid_root_opera
     (operation : Operation)
     (runtimeType : Name) (identity : ObjectIdentity)
     (groups : List (Name × List ExecutableField))
-    (responseName : Name) (fields : List ExecutableField) :
-    rootSourceAppliesBool schema operation (.object runtimeType identity) =
-      true ->
-    Validation.operationDefinitionValid schema operation ->
-    GraphQL.Execution.collectFields schema variableValues operation.rootType
-      (.object runtimeType identity) operation.selectionSet = groups ->
-    (responseName, fields) ∈ groups ->
-      ∀ objectType,
-        FieldMerge.fieldsInSetCanMerge schema objectType
-          (GraphQL.Execution.mergedFieldSelectionSet fields) := by
+    (responseName : Name) (fields : List ExecutableField)
+    : rootSourceAppliesBool schema operation (.object runtimeType identity) = true
+      -> Validation.operationDefinitionValid schema operation
+      -> GraphQL.Execution.collectFields schema variableValues operation.rootType
+            (.object runtimeType identity) operation.selectionSet
+          = groups
+      -> (responseName, fields) ∈ groups
+      -> ∀ objectType,
+          FieldMerge.fieldsInSetCanMerge schema objectType
+            (GraphQL.Execution.mergedFieldSelectionSet fields) := by
   intro hroot hvalid hcollect hgroup
   apply collectFields_group_mergedFieldSelectionSet_canMerge_runtimeScoped
     schema operation.variableDefinitions variableValues operation.rootType
@@ -972,14 +971,13 @@ theorem collectFields_fieldCompatible_of_selectionSetValid_scopedCompatible
     (variableValues : VariableValues)
     (collectParent validParent : Name)
     (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    Validation.selectionSetValid schema variableDefinitions validParent
-      selectionSet ->
-    ScopedFieldsFieldValidationMergeCompatible
-      (FieldMerge.collectFields schema validParent selectionSet) ->
-      CollectedGroupsFieldValidationMergeCompatible
-        (GraphQL.Execution.collectFields schema variableValues collectParent
-          source selectionSet) := by
+    (selectionSet : List Selection)
+    : Validation.selectionSetValid schema variableDefinitions validParent selectionSet
+      -> ScopedFieldsFieldValidationMergeCompatible
+          (FieldMerge.collectFields schema validParent selectionSet)
+      -> CollectedGroupsFieldValidationMergeCompatible
+          (GraphQL.Execution.collectFields schema variableValues collectParent
+            source selectionSet) := by
   intro hvalid hscopedCompatible
   apply CollectedGroupsFieldValidationMergeCompatible.of_collectedExecutableFields
   exact ScopedFieldsFieldValidationMergeCompatible.executable_identity
@@ -998,16 +996,16 @@ theorem collectFields_fieldCompatible_of_canMerge_runtimeScoped
     (variableValues : VariableValues)
     (collectParent validParent runtimeType : Name)
     (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    FieldMerge.fieldsInSetCanMerge schema validParent selectionSet ->
-    ExecutableFieldsRuntimeScopedBy schema runtimeType
-      (FieldMerge.collectFields schema validParent selectionSet)
-      (collectedExecutableFields
-        (GraphQL.Execution.collectFields schema variableValues collectParent
-          source selectionSet)) ->
-      CollectedGroupsFieldValidationMergeCompatible
-        (GraphQL.Execution.collectFields schema variableValues collectParent
-          source selectionSet) := by
+    (selectionSet : List Selection)
+    : FieldMerge.fieldsInSetCanMerge schema validParent selectionSet
+      -> ExecutableFieldsRuntimeScopedBy schema runtimeType
+          (FieldMerge.collectFields schema validParent selectionSet)
+          (collectedExecutableFields
+            (GraphQL.Execution.collectFields schema variableValues collectParent
+              source selectionSet))
+      -> CollectedGroupsFieldValidationMergeCompatible
+          (GraphQL.Execution.collectFields schema variableValues collectParent
+            source selectionSet) := by
   intro hmerge hscoped
   apply CollectedGroupsFieldValidationMergeCompatible.of_collectedExecutableFields
   exact fieldsInSetCanMerge_executable_runtimeScoped schema validParent
@@ -1023,13 +1021,13 @@ theorem collectFields_fieldCompatible_of_canMerge_lookupValid
     (variableValues : VariableValues)
     (collectParent validParent runtimeType : Name)
     (identity : ObjectIdentity)
-    (selectionSet : List Selection) :
-    FieldMerge.fieldsInSetCanMerge schema validParent selectionSet ->
-    ScopedParentRuntimeApplies schema runtimeType validParent ->
-    NormalForm.selectionSetLookupValid schema validParent selectionSet ->
-      CollectedGroupsFieldValidationMergeCompatible
-        (GraphQL.Execution.collectFields schema variableValues collectParent
-          (.object runtimeType identity) selectionSet) := by
+    (selectionSet : List Selection)
+    : FieldMerge.fieldsInSetCanMerge schema validParent selectionSet
+      -> ScopedParentRuntimeApplies schema runtimeType validParent
+      -> NormalForm.selectionSetLookupValid schema validParent selectionSet
+      -> CollectedGroupsFieldValidationMergeCompatible
+          (GraphQL.Execution.collectFields schema variableValues collectParent
+            (.object runtimeType identity) selectionSet) := by
   intro hmerge hparentRuntime hlookupValid
   apply collectFields_fieldCompatible_of_canMerge_runtimeScoped
     schema variableValues collectParent validParent runtimeType
@@ -1044,13 +1042,13 @@ theorem collectFields_fieldCompatible_of_canMerge_lookupValid_object
     (variableValues : VariableValues)
     (collectParent validParent runtimeType : Name)
     (identity : ObjectIdentity)
-    (selectionSet : List Selection) :
-    FieldMerge.fieldsInSetCanMerge schema validParent selectionSet ->
-    ScopedParentRuntimeApplies schema runtimeType validParent ->
-    NormalForm.selectionSetLookupValid schema validParent selectionSet ->
-      CollectedGroupsFieldValidationMergeCompatible
-        (GraphQL.Execution.collectFields schema variableValues collectParent
-          (.object runtimeType identity) selectionSet) := by
+    (selectionSet : List Selection)
+    : FieldMerge.fieldsInSetCanMerge schema validParent selectionSet
+      -> ScopedParentRuntimeApplies schema runtimeType validParent
+      -> NormalForm.selectionSetLookupValid schema validParent selectionSet
+      -> CollectedGroupsFieldValidationMergeCompatible
+          (GraphQL.Execution.collectFields schema variableValues collectParent
+            (.object runtimeType identity) selectionSet) := by
   intro hmerge hparentRuntime hlookupValid
   apply collectFields_fieldCompatible_of_canMerge_runtimeScoped
     schema variableValues collectParent validParent runtimeType
@@ -1059,10 +1057,9 @@ theorem collectFields_fieldCompatible_of_canMerge_lookupValid_object
     variableValues collectParent validParent runtimeType identity selectionSet
     hparentRuntime hlookupValid
 
-theorem ExecutableFieldsMergeCompatible.to_validation
-    (fields : List ExecutableField) :
-    ExecutableFieldsMergeCompatible fields ->
-      ExecutableFieldsValidationMergeCompatible fields := by
+theorem ExecutableFieldsMergeCompatible.to_validation (fields : List ExecutableField)
+    : ExecutableFieldsMergeCompatible fields
+      -> ExecutableFieldsValidationMergeCompatible fields := by
   intro hcompatible first later hfirst hlater hresponse
   rcases hcompatible first later hfirst hlater hresponse with
     ⟨hparent, hfield, harguments⟩
@@ -1078,19 +1075,19 @@ theorem ExecutableFieldsMergeCompatible.to_validation
       exact ⟨argument, hmem, by exact ⟨rfl, inputValue_equivalent_refl argument.value⟩⟩
 
 theorem ExecutableFieldsSameParentValidationMergeCompatible.fieldCompatible
-    (fields : List ExecutableField) :
-    ExecutableFieldsSameResponseParent fields ->
-    ExecutableFieldsSameParentValidationMergeCompatible fields ->
-      ExecutableFieldsFieldValidationMergeCompatible fields := by
+    (fields : List ExecutableField)
+    : ExecutableFieldsSameResponseParent fields
+      -> ExecutableFieldsSameParentValidationMergeCompatible fields
+      -> ExecutableFieldsFieldValidationMergeCompatible fields := by
   intro hsameParent hcompatible first later hfirst hlater hresponse
   exact hcompatible first later hfirst hlater hresponse
     (hsameParent first later hfirst hlater hresponse)
 
 theorem CollectedGroupsValidationMergeCompatible.fieldCompatible
-    (groups : List (Name × List ExecutableField)) :
-    CollectedGroupsSameResponseParent groups ->
-    CollectedGroupsValidationMergeCompatible groups ->
-      CollectedGroupsFieldValidationMergeCompatible groups := by
+    (groups : List (Name × List ExecutableField))
+    : CollectedGroupsSameResponseParent groups
+      -> CollectedGroupsValidationMergeCompatible groups
+      -> CollectedGroupsFieldValidationMergeCompatible groups := by
   intro hsameParent hcompatible responseName fields hmem
   exact ExecutableFieldsSameParentValidationMergeCompatible.fieldCompatible
     fields
@@ -1099,9 +1096,9 @@ theorem CollectedGroupsValidationMergeCompatible.fieldCompatible
 
 theorem ExecutableFieldsMergeCompatible.resolveStable
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField) :
-    ExecutableFieldsMergeCompatible fields ->
-      ExecutableFieldsResolveStable resolvers source fields := by
+    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField)
+    : ExecutableFieldsMergeCompatible fields
+      -> ExecutableFieldsResolveStable resolvers source fields := by
   intro hcompatible first later hfirst hlater hresponse
   rcases hcompatible first later hfirst hlater hresponse with
     ⟨hparent, hfield, harguments⟩
@@ -1109,11 +1106,11 @@ theorem ExecutableFieldsMergeCompatible.resolveStable
 
 theorem ExecutableFieldsSameParentValidationMergeCompatible.resolveStable
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField) :
-    ResolversRespectArgumentEquivalence resolvers source ->
-    ExecutableFieldsSameResponseParent fields ->
-    ExecutableFieldsSameParentValidationMergeCompatible fields ->
-      ExecutableFieldsResolveStable resolvers source fields := by
+    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField)
+    : ResolversRespectArgumentEquivalence resolvers source
+      -> ExecutableFieldsSameResponseParent fields
+      -> ExecutableFieldsSameParentValidationMergeCompatible fields
+      -> ExecutableFieldsResolveStable resolvers source fields := by
   intro hresolvers hsameParent hcompatible first later hfirst hlater hresponse
   have hparent := hsameParent first later hfirst hlater hresponse
   rcases hcompatible first later hfirst hlater hresponse hparent with
@@ -1124,10 +1121,10 @@ theorem ExecutableFieldsSameParentValidationMergeCompatible.resolveStable
 
 theorem ExecutableFieldsFieldValidationMergeCompatible.resolveStable
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField) :
-    ResolversRespectFieldAndArgumentEquivalence resolvers source ->
-    ExecutableFieldsFieldValidationMergeCompatible fields ->
-      ExecutableFieldsResolveStable resolvers source fields := by
+    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField)
+    : ResolversRespectFieldAndArgumentEquivalence resolvers source
+      -> ExecutableFieldsFieldValidationMergeCompatible fields
+      -> ExecutableFieldsResolveStable resolvers source fields := by
   intro hresolvers hcompatible first later hfirst hlater hresponse
   rcases hcompatible first later hfirst hlater hresponse with
     ⟨hfield, harguments⟩
@@ -1137,11 +1134,11 @@ theorem ExecutableFieldsFieldValidationMergeCompatible.resolveStable
 
 theorem ExecutableFieldsFieldValidationMergeCompatible.resolveStableValid
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField) :
-    ResolversRespectValidFieldAndArgumentEquivalence resolvers source ->
-    ExecutableFieldsFieldValidationMergeCompatible fields ->
-    ExecutableFieldsArgumentsNodup fields ->
-      ExecutableFieldsResolveStable resolvers source fields := by
+    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField)
+    : ResolversRespectValidFieldAndArgumentEquivalence resolvers source
+      -> ExecutableFieldsFieldValidationMergeCompatible fields
+      -> ExecutableFieldsArgumentsNodup fields
+      -> ExecutableFieldsResolveStable resolvers source fields := by
   intro hresolvers hcompatible hnodup first later hfirst hlater hresponse
   rcases hcompatible first later hfirst hlater hresponse with
     ⟨hfield, harguments⟩
@@ -1153,11 +1150,11 @@ theorem ExecutableFieldsFieldValidationMergeCompatible.resolveStableValid
 theorem CollectedGroupsValidationMergeCompatible.resolveStable
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
     (source : ResolverValue ObjectIdentity)
-    (groups : List (Name × List ExecutableField)) :
-    ResolversRespectArgumentEquivalence resolvers source ->
-    CollectedGroupsSameResponseParent groups ->
-    CollectedGroupsValidationMergeCompatible groups ->
-      CollectedGroupsResolveStable resolvers source groups := by
+    (groups : List (Name × List ExecutableField))
+    : ResolversRespectArgumentEquivalence resolvers source
+      -> CollectedGroupsSameResponseParent groups
+      -> CollectedGroupsValidationMergeCompatible groups
+      -> CollectedGroupsResolveStable resolvers source groups := by
   intro hresolvers hsameParent hcompatible responseName fields hmem
   exact
     ExecutableFieldsSameParentValidationMergeCompatible.resolveStable
@@ -1168,10 +1165,10 @@ theorem CollectedGroupsValidationMergeCompatible.resolveStable
 theorem CollectedGroupsFieldValidationMergeCompatible.resolveStable
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
     (source : ResolverValue ObjectIdentity)
-    (groups : List (Name × List ExecutableField)) :
-    ResolversRespectFieldAndArgumentEquivalence resolvers source ->
-    CollectedGroupsFieldValidationMergeCompatible groups ->
-      CollectedGroupsResolveStable resolvers source groups := by
+    (groups : List (Name × List ExecutableField))
+    : ResolversRespectFieldAndArgumentEquivalence resolvers source
+      -> CollectedGroupsFieldValidationMergeCompatible groups
+      -> CollectedGroupsResolveStable resolvers source groups := by
   intro hresolvers hcompatible responseName fields hmem
   exact
     ExecutableFieldsFieldValidationMergeCompatible.resolveStable resolvers
@@ -1180,11 +1177,11 @@ theorem CollectedGroupsFieldValidationMergeCompatible.resolveStable
 theorem CollectedGroupsFieldValidationMergeCompatible.resolveStableValid
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
     (source : ResolverValue ObjectIdentity)
-    (groups : List (Name × List ExecutableField)) :
-    ResolversRespectValidFieldAndArgumentEquivalence resolvers source ->
-    CollectedGroupsFieldValidationMergeCompatible groups ->
-    CollectedGroupsArgumentsNodup groups ->
-      CollectedGroupsResolveStable resolvers source groups := by
+    (groups : List (Name × List ExecutableField))
+    : ResolversRespectValidFieldAndArgumentEquivalence resolvers source
+      -> CollectedGroupsFieldValidationMergeCompatible groups
+      -> CollectedGroupsArgumentsNodup groups
+      -> CollectedGroupsResolveStable resolvers source groups := by
   intro hresolvers hcompatible hnodup responseName fields hmem
   exact
     ExecutableFieldsFieldValidationMergeCompatible.resolveStableValid resolvers
@@ -1193,15 +1190,15 @@ theorem CollectedGroupsFieldValidationMergeCompatible.resolveStableValid
 
 theorem ExecutionSemanticStateInvariant.groupedFieldsResolveStable
     {ObjectIdentity : Type}
-    (state : ExecutionEquivalenceState ObjectIdentity) :
-    ExecutionSemanticStateInvariant state ->
-      ∀ responseName fields,
-        (responseName, fields) ∈
-          GraphQL.Execution.collectFields state.window.schema
-            state.window.variableValues state.window.parentType
-            state.window.source state.window.selectionSet ->
-        ExecutableFieldsResolveStable state.window.resolvers
-          state.window.source fields := by
+    (state : ExecutionEquivalenceState ObjectIdentity)
+    : ExecutionSemanticStateInvariant state
+      -> ∀ responseName fields,
+          (responseName, fields)
+            ∈ GraphQL.Execution.collectFields state.window.schema
+                state.window.variableValues state.window.parentType
+                state.window.source state.window.selectionSet
+          -> ExecutableFieldsResolveStable state.window.resolvers
+              state.window.source fields := by
   intro hinvariant responseName fields hmem
   exact
     CollectedGroupsValidationMergeCompatible.resolveStable
@@ -1216,15 +1213,15 @@ theorem ExecutionSemanticStateInvariant.groupedFieldsResolveStable
 
 theorem ExecutionFieldSemanticStateInvariant.groupedFieldsResolveStable
     {ObjectIdentity : Type}
-    (state : ExecutionEquivalenceState ObjectIdentity) :
-    ExecutionFieldSemanticStateInvariant state ->
-      ∀ responseName fields,
-        (responseName, fields) ∈
-          GraphQL.Execution.collectFields state.window.schema
-            state.window.variableValues state.window.parentType
-            state.window.source state.window.selectionSet ->
-        ExecutableFieldsResolveStable state.window.resolvers
-          state.window.source fields := by
+    (state : ExecutionEquivalenceState ObjectIdentity)
+    : ExecutionFieldSemanticStateInvariant state
+      -> ∀ responseName fields,
+          (responseName, fields)
+            ∈ GraphQL.Execution.collectFields state.window.schema
+                state.window.variableValues state.window.parentType
+                state.window.source state.window.selectionSet
+          -> ExecutableFieldsResolveStable state.window.resolvers
+              state.window.source fields := by
   intro hinvariant responseName fields hmem
   exact
     CollectedGroupsFieldValidationMergeCompatible.resolveStable
@@ -1238,15 +1235,15 @@ theorem ExecutionFieldSemanticStateInvariant.groupedFieldsResolveStable
 
 theorem ExecutionValidFieldSemanticStateInvariant.groupedFieldsResolveStable
     {ObjectIdentity : Type}
-    (state : ExecutionEquivalenceState ObjectIdentity) :
-    ExecutionValidFieldSemanticStateInvariant state ->
-      ∀ responseName fields,
-        (responseName, fields) ∈
-          GraphQL.Execution.collectFields state.window.schema
-            state.window.variableValues state.window.parentType
-            state.window.source state.window.selectionSet ->
-        ExecutableFieldsResolveStable state.window.resolvers
-          state.window.source fields := by
+    (state : ExecutionEquivalenceState ObjectIdentity)
+    : ExecutionValidFieldSemanticStateInvariant state
+      -> ∀ responseName fields,
+          (responseName, fields)
+            ∈ GraphQL.Execution.collectFields state.window.schema
+                state.window.variableValues state.window.parentType
+                state.window.source state.window.selectionSet
+          -> ExecutableFieldsResolveStable state.window.resolvers
+              state.window.source fields := by
   intro hinvariant responseName fields hmem
   exact
     CollectedGroupsFieldValidationMergeCompatible.resolveStableValid
@@ -1261,9 +1258,8 @@ theorem ExecutionValidFieldSemanticStateInvariant.groupedFieldsResolveStable
 
 theorem ExecutionCollectedFieldInvariant.of_stateInvariant
     {ObjectIdentity : Type}
-    (state : ExecutionEquivalenceState ObjectIdentity) :
-    ExecutionStateInvariant state ->
-      ExecutionCollectedFieldInvariant state := by
+    (state : ExecutionEquivalenceState ObjectIdentity)
+    : ExecutionStateInvariant state -> ExecutionCollectedFieldInvariant state := by
   intro hinvariant
   constructor
   · exact hinvariant.groupedResponseKeysUnique
@@ -1271,9 +1267,9 @@ theorem ExecutionCollectedFieldInvariant.of_stateInvariant
 
 theorem ExecutionCollectedFieldInvariant.of_semantic
     {ObjectIdentity : Type}
-    (state : ExecutionEquivalenceState ObjectIdentity) :
-    ExecutionSemanticStateInvariant state ->
-      ExecutionCollectedFieldInvariant state := by
+    (state : ExecutionEquivalenceState ObjectIdentity)
+    : ExecutionSemanticStateInvariant state
+      -> ExecutionCollectedFieldInvariant state := by
   intro hinvariant
   constructor
   · exact hinvariant.groupedResponseKeysUnique
@@ -1282,9 +1278,9 @@ theorem ExecutionCollectedFieldInvariant.of_semantic
 
 theorem ExecutionCollectedFieldInvariant.of_fieldSemantic
     {ObjectIdentity : Type}
-    (state : ExecutionEquivalenceState ObjectIdentity) :
-    ExecutionFieldSemanticStateInvariant state ->
-      ExecutionCollectedFieldInvariant state := by
+    (state : ExecutionEquivalenceState ObjectIdentity)
+    : ExecutionFieldSemanticStateInvariant state
+      -> ExecutionCollectedFieldInvariant state := by
   intro hinvariant
   constructor
   · exact hinvariant.groupedResponseKeysUnique
@@ -1293,9 +1289,9 @@ theorem ExecutionCollectedFieldInvariant.of_fieldSemantic
 
 theorem ExecutionCollectedFieldInvariant.of_validFieldSemantic
     {ObjectIdentity : Type}
-    (state : ExecutionEquivalenceState ObjectIdentity) :
-    ExecutionValidFieldSemanticStateInvariant state ->
-      ExecutionCollectedFieldInvariant state := by
+    (state : ExecutionEquivalenceState ObjectIdentity)
+    : ExecutionValidFieldSemanticStateInvariant state
+      -> ExecutionCollectedFieldInvariant state := by
   intro hinvariant
   constructor
   · exact hinvariant.groupedResponseKeysUnique
@@ -1306,11 +1302,12 @@ theorem ExecutionCollectedFieldInvariant.responseName_of_collect_eq
     {ObjectIdentity : Type}
     (state : ExecutionEquivalenceState ObjectIdentity)
     (groups : List (Name × List ExecutableField))
-    (hcollect :
-      GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet = groups) :
-    CollectedGroupsResponseName groups := by
+    (hcollect
+      : GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet
+        = groups)
+    : CollectedGroupsResponseName groups := by
   rw [← hcollect]
   exact collectFields_responseName state.window.schema
     state.window.variableValues state.window.parentType state.window.source
@@ -1320,11 +1317,12 @@ theorem ExecutionCollectedFieldInvariant.parent_of_collect_eq
     {ObjectIdentity : Type}
     (state : ExecutionEquivalenceState ObjectIdentity)
     (groups : List (Name × List ExecutableField))
-    (hcollect :
-      GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet = groups) :
-    CollectedGroupsParent state.window.parentType groups := by
+    (hcollect
+      : GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet
+        = groups)
+    : CollectedGroupsParent state.window.parentType groups := by
   rw [← hcollect]
   exact collectFields_parent state.window.schema state.window.variableValues
     state.window.parentType state.window.source state.window.selectionSet
@@ -1334,11 +1332,12 @@ theorem ExecutionCollectedFieldInvariant.pairKeysNodup_of_collect_eq
     (state : ExecutionEquivalenceState ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (hinvariant : ExecutionCollectedFieldInvariant state)
-    (hcollect :
-      GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet = groups) :
-    PairKeysNodup groups := by
+    (hcollect
+      : GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet
+        = groups)
+    : PairKeysNodup groups := by
   rw [← hcollect]
   exact hinvariant.groupedResponseKeysUnique
 
@@ -1347,12 +1346,13 @@ theorem ExecutionCollectedFieldInvariant.resolveStable_of_collect_eq
     (state : ExecutionEquivalenceState ObjectIdentity)
     (groups : List (Name × List ExecutableField))
     (hinvariant : ExecutionCollectedFieldInvariant state)
-    (hcollect :
-      GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet = groups) :
-    CollectedGroupsResolveStable state.window.resolvers state.window.source
-      groups := by
+    (hcollect
+      : GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet
+        = groups)
+    : CollectedGroupsResolveStable state.window.resolvers state.window.source
+        groups := by
   rw [← hcollect]
   exact hinvariant.groupedFieldsResolveStable
 
@@ -1362,38 +1362,37 @@ theorem ExecutionCollectedFieldInvariant.groupResolveStable_of_collect_eq
     (groups : List (Name × List ExecutableField))
     (responseName : Name) (fields : List ExecutableField)
     (hinvariant : ExecutionCollectedFieldInvariant state)
-    (hcollect :
-      GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet = groups)
-    (hgroup : (responseName, fields) ∈ groups) :
-    ExecutableFieldsResolveStable state.window.resolvers state.window.source
-      fields :=
+    (hcollect
+      : GraphQL.Execution.collectFields state.window.schema
+          state.window.variableValues state.window.parentType state.window.source
+          state.window.selectionSet
+        = groups)
+    (hgroup : (responseName, fields) ∈ groups)
+    : ExecutableFieldsResolveStable state.window.resolvers state.window.source fields :=
   (hinvariant.resolveStable_of_collect_eq state groups hcollect)
     responseName fields hgroup
 
 theorem ExecutionSemanticStateInvariant.of_grouped_validation
     {ObjectIdentity : Type}
     (state : ExecutionEquivalenceState ObjectIdentity)
-    (hunique :
-      PairKeysNodup
-        (GraphQL.Execution.collectFields state.window.schema
-          state.window.variableValues state.window.parentType
-          state.window.source state.window.selectionSet))
-    (hsameParent :
-      CollectedGroupsSameResponseParent
-        (GraphQL.Execution.collectFields state.window.schema
-          state.window.variableValues state.window.parentType
-          state.window.source state.window.selectionSet))
-    (hcompatible :
-      CollectedGroupsValidationMergeCompatible
-        (GraphQL.Execution.collectFields state.window.schema
-          state.window.variableValues state.window.parentType
-          state.window.source state.window.selectionSet))
-    (hresolvers :
-      ResolversRespectArgumentEquivalence state.window.resolvers
-        state.window.source) :
-    ExecutionSemanticStateInvariant state := by
+    (hunique
+      : PairKeysNodup
+          (GraphQL.Execution.collectFields state.window.schema
+            state.window.variableValues state.window.parentType
+            state.window.source state.window.selectionSet))
+    (hsameParent
+      : CollectedGroupsSameResponseParent
+          (GraphQL.Execution.collectFields state.window.schema
+            state.window.variableValues state.window.parentType
+            state.window.source state.window.selectionSet))
+    (hcompatible
+      : CollectedGroupsValidationMergeCompatible
+          (GraphQL.Execution.collectFields state.window.schema
+            state.window.variableValues state.window.parentType
+            state.window.source state.window.selectionSet))
+    (hresolvers
+      : ResolversRespectArgumentEquivalence state.window.resolvers state.window.source)
+    : ExecutionSemanticStateInvariant state := by
   constructor
   · exact hunique
   · exact hsameParent
@@ -1403,20 +1402,20 @@ theorem ExecutionSemanticStateInvariant.of_grouped_validation
 theorem ExecutionFieldSemanticStateInvariant.of_grouped_validation
     {ObjectIdentity : Type}
     (state : ExecutionEquivalenceState ObjectIdentity)
-    (hunique :
-      PairKeysNodup
-        (GraphQL.Execution.collectFields state.window.schema
-          state.window.variableValues state.window.parentType
-          state.window.source state.window.selectionSet))
-    (hcompatible :
-      CollectedGroupsFieldValidationMergeCompatible
-        (GraphQL.Execution.collectFields state.window.schema
-          state.window.variableValues state.window.parentType
-          state.window.source state.window.selectionSet))
-    (hresolvers :
-      ResolversRespectFieldAndArgumentEquivalence state.window.resolvers
-        state.window.source) :
-    ExecutionFieldSemanticStateInvariant state := by
+    (hunique
+      : PairKeysNodup
+          (GraphQL.Execution.collectFields state.window.schema
+            state.window.variableValues state.window.parentType
+            state.window.source state.window.selectionSet))
+    (hcompatible
+      : CollectedGroupsFieldValidationMergeCompatible
+          (GraphQL.Execution.collectFields state.window.schema
+            state.window.variableValues state.window.parentType
+            state.window.source state.window.selectionSet))
+    (hresolvers
+      : ResolversRespectFieldAndArgumentEquivalence state.window.resolvers
+          state.window.source)
+    : ExecutionFieldSemanticStateInvariant state := by
   constructor
   · exact hunique
   · exact hcompatible
@@ -1425,25 +1424,25 @@ theorem ExecutionFieldSemanticStateInvariant.of_grouped_validation
 theorem ExecutionValidFieldSemanticStateInvariant.of_grouped_validation
     {ObjectIdentity : Type}
     (state : ExecutionEquivalenceState ObjectIdentity)
-    (hunique :
-      PairKeysNodup
-        (GraphQL.Execution.collectFields state.window.schema
-          state.window.variableValues state.window.parentType
-          state.window.source state.window.selectionSet))
-    (hcompatible :
-      CollectedGroupsFieldValidationMergeCompatible
-        (GraphQL.Execution.collectFields state.window.schema
-          state.window.variableValues state.window.parentType
-          state.window.source state.window.selectionSet))
-    (hargumentsNodup :
-      CollectedGroupsArgumentsNodup
-        (GraphQL.Execution.collectFields state.window.schema
-          state.window.variableValues state.window.parentType
-          state.window.source state.window.selectionSet))
-    (hresolvers :
-      ResolversRespectValidFieldAndArgumentEquivalence state.window.resolvers
-        state.window.source) :
-    ExecutionValidFieldSemanticStateInvariant state := by
+    (hunique
+      : PairKeysNodup
+          (GraphQL.Execution.collectFields state.window.schema
+            state.window.variableValues state.window.parentType
+            state.window.source state.window.selectionSet))
+    (hcompatible
+      : CollectedGroupsFieldValidationMergeCompatible
+          (GraphQL.Execution.collectFields state.window.schema
+            state.window.variableValues state.window.parentType
+            state.window.source state.window.selectionSet))
+    (hargumentsNodup
+      : CollectedGroupsArgumentsNodup
+          (GraphQL.Execution.collectFields state.window.schema
+            state.window.variableValues state.window.parentType
+            state.window.source state.window.selectionSet))
+    (hresolvers
+      : ResolversRespectValidFieldAndArgumentEquivalence state.window.resolvers
+          state.window.source)
+    : ExecutionValidFieldSemanticStateInvariant state := by
   constructor
   · exact hunique
   · exact hcompatible
@@ -1452,11 +1451,11 @@ theorem ExecutionValidFieldSemanticStateInvariant.of_grouped_validation
 
 theorem ExecutionFieldSemanticStateInvariant.of_semantic_same_parent
     {ObjectIdentity : Type}
-    (state : ExecutionEquivalenceState ObjectIdentity) :
-    ExecutionSemanticStateInvariant state ->
-    ResolversRespectFieldAndArgumentEquivalence state.window.resolvers
-      state.window.source ->
-      ExecutionFieldSemanticStateInvariant state := by
+    (state : ExecutionEquivalenceState ObjectIdentity)
+    : ExecutionSemanticStateInvariant state
+      -> ResolversRespectFieldAndArgumentEquivalence state.window.resolvers
+          state.window.source
+      -> ExecutionFieldSemanticStateInvariant state := by
   intro hinvariant hresolvers
   apply ExecutionFieldSemanticStateInvariant.of_grouped_validation state
   · exact hinvariant.groupedResponseKeysUnique
@@ -1471,20 +1470,18 @@ theorem ExecutionFieldSemanticStateInvariant.of_semantic_same_parent
 theorem ExecutionSemanticStateInvariant.of_collected_groups
     {ObjectIdentity : Type}
     (state : ExecutionEquivalenceState ObjectIdentity)
-    (groups :
-      List (Name × List ExecutableField))
-    (hgroups :
-      groups =
-        GraphQL.Execution.collectFields state.window.schema
-          state.window.variableValues state.window.parentType
-          state.window.source state.window.selectionSet)
+    (groups : List (Name × List ExecutableField))
+    (hgroups
+      : groups
+        = GraphQL.Execution.collectFields state.window.schema
+            state.window.variableValues state.window.parentType
+            state.window.source state.window.selectionSet)
     (hunique : PairKeysNodup groups)
     (hsameParent : CollectedGroupsSameResponseParent groups)
     (hcompatible : CollectedGroupsValidationMergeCompatible groups)
-    (hresolvers :
-      ResolversRespectArgumentEquivalence state.window.resolvers
-        state.window.source) :
-    ExecutionSemanticStateInvariant state := by
+    (hresolvers
+      : ResolversRespectArgumentEquivalence state.window.resolvers state.window.source)
+    : ExecutionSemanticStateInvariant state := by
   apply ExecutionSemanticStateInvariant.of_grouped_validation state
   · simpa [← hgroups] using hunique
   · simpa [← hgroups] using hsameParent
@@ -1494,19 +1491,18 @@ theorem ExecutionSemanticStateInvariant.of_collected_groups
 theorem ExecutionFieldSemanticStateInvariant.of_collected_groups
     {ObjectIdentity : Type}
     (state : ExecutionEquivalenceState ObjectIdentity)
-    (groups :
-      List (Name × List ExecutableField))
-    (hgroups :
-      groups =
-        GraphQL.Execution.collectFields state.window.schema
-          state.window.variableValues state.window.parentType
-          state.window.source state.window.selectionSet)
+    (groups : List (Name × List ExecutableField))
+    (hgroups
+      : groups
+        = GraphQL.Execution.collectFields state.window.schema
+            state.window.variableValues state.window.parentType
+            state.window.source state.window.selectionSet)
     (hunique : PairKeysNodup groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
-    (hresolvers :
-      ResolversRespectFieldAndArgumentEquivalence state.window.resolvers
-        state.window.source) :
-    ExecutionFieldSemanticStateInvariant state := by
+    (hresolvers
+      : ResolversRespectFieldAndArgumentEquivalence state.window.resolvers
+          state.window.source)
+    : ExecutionFieldSemanticStateInvariant state := by
   apply ExecutionFieldSemanticStateInvariant.of_grouped_validation state
   · simpa [← hgroups] using hunique
   · simpa [← hgroups] using hcompatible
@@ -1515,20 +1511,19 @@ theorem ExecutionFieldSemanticStateInvariant.of_collected_groups
 theorem ExecutionValidFieldSemanticStateInvariant.of_collected_groups
     {ObjectIdentity : Type}
     (state : ExecutionEquivalenceState ObjectIdentity)
-    (groups :
-      List (Name × List ExecutableField))
-    (hgroups :
-      groups =
-        GraphQL.Execution.collectFields state.window.schema
-          state.window.variableValues state.window.parentType
-          state.window.source state.window.selectionSet)
+    (groups : List (Name × List ExecutableField))
+    (hgroups
+      : groups
+        = GraphQL.Execution.collectFields state.window.schema
+            state.window.variableValues state.window.parentType
+            state.window.source state.window.selectionSet)
     (hunique : PairKeysNodup groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
     (hargumentsNodup : CollectedGroupsArgumentsNodup groups)
-    (hresolvers :
-      ResolversRespectValidFieldAndArgumentEquivalence state.window.resolvers
-        state.window.source) :
-    ExecutionValidFieldSemanticStateInvariant state := by
+    (hresolvers
+      : ResolversRespectValidFieldAndArgumentEquivalence state.window.resolvers
+          state.window.source)
+    : ExecutionValidFieldSemanticStateInvariant state := by
   apply ExecutionValidFieldSemanticStateInvariant.of_grouped_validation state
   · simpa [← hgroups] using hunique
   · simpa [← hgroups] using hcompatible
@@ -1538,26 +1533,25 @@ theorem ExecutionValidFieldSemanticStateInvariant.of_collected_groups
 theorem ExecutionStateInvariant.of_grouped_compatible
     {ObjectIdentity : Type}
     (state : ExecutionEquivalenceState ObjectIdentity)
-    (hunique :
-      PairKeysNodup
-        (GraphQL.Execution.collectFields state.window.schema
-          state.window.variableValues state.window.parentType
-          state.window.source state.window.selectionSet))
-    (hcompatible :
-      ∀ responseName fields,
-        (responseName, fields) ∈
-          GraphQL.Execution.collectFields state.window.schema
+    (hunique
+      : PairKeysNodup
+          (GraphQL.Execution.collectFields state.window.schema
             state.window.variableValues state.window.parentType
-            state.window.source state.window.selectionSet ->
-          ExecutableFieldsMergeCompatible fields) :
-    ExecutionStateInvariant state := by
+            state.window.source state.window.selectionSet))
+    (hcompatible
+      : ∀ responseName fields,
+          (responseName, fields)
+            ∈ GraphQL.Execution.collectFields state.window.schema
+                state.window.variableValues state.window.parentType
+                state.window.source state.window.selectionSet
+          -> ExecutableFieldsMergeCompatible fields)
+    : ExecutionStateInvariant state := by
   constructor
   · exact hunique
   · exact hcompatible
   · intro responseName fields hmem
     exact ExecutableFieldsMergeCompatible.resolveStable state.window.resolvers
       state.window.source fields (hcompatible responseName fields hmem)
-
 
 end ExecutionUngrouped
 end Algorithms

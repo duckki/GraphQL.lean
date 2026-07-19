@@ -12,108 +12,116 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
-inductive NormalSelectionSetDiff
-    (schema : Schema) : Name -> List Selection -> List Selection -> Prop where
+inductive NormalSelectionSetDiff (schema : Schema)
+    : Name -> List Selection -> List Selection -> Prop where
   | objectLeftResponseName
-      {parentType : Name} {left right : List Selection}
-      {responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-      responseName ∉ right.filterMap Selection.responseName? ->
-      NormalSelectionSetDiff schema parentType left right
+    {parentType : Name} {left right : List Selection}
+    {responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ left
+      -> responseName ∉ right.filterMap Selection.responseName?
+      -> NormalSelectionSetDiff schema parentType left right
   | objectRightResponseName
-      {parentType : Name} {left right : List Selection}
-      {responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-      responseName ∉ left.filterMap Selection.responseName? ->
-      NormalSelectionSetDiff schema parentType left right
+    {parentType : Name} {left right : List Selection}
+    {responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ right
+      -> responseName ∉ left.filterMap Selection.responseName?
+      -> NormalSelectionSetDiff schema parentType left right
   | objectFieldName
-      {parentType : Name} {left right : List Selection}
-      {responseName leftFieldName rightFieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName leftFieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName rightFieldName rightArguments rightDirectives
-        rightChildSelectionSet ∈ right ->
-      leftFieldName ≠ rightFieldName ->
-      NormalSelectionSetDiff schema parentType left right
+    {parentType : Name} {left right : List Selection}
+    {responseName leftFieldName rightFieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> leftFieldName ≠ rightFieldName
+      -> NormalSelectionSetDiff schema parentType left right
   | objectArguments
-      {parentType : Name} {left right : List Selection}
-      {responseName fieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName fieldName rightArguments rightDirectives
-        rightChildSelectionSet ∈ right ->
-      ¬ Argument.argumentsEquivalent leftArguments rightArguments ->
-      NormalSelectionSetDiff schema parentType left right
+    {parentType : Name} {left right : List Selection}
+    {responseName fieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName fieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> ¬ Argument.argumentsEquivalent leftArguments rightArguments
+      -> NormalSelectionSetDiff schema parentType left right
   | objectChild
-      {parentType returnType : Name} {left right : List Selection}
-      {responseName fieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection} :
-      objectTypeNameBool schema parentType = true ->
-      schema.fieldReturnType? parentType fieldName = some returnType ->
-      Selection.field responseName fieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName fieldName rightArguments rightDirectives
-        rightChildSelectionSet ∈ right ->
-      Argument.argumentsEquivalent leftArguments rightArguments ->
-      NormalSelectionSetDiff schema returnType
-        leftChildSelectionSet rightChildSelectionSet ->
-      NormalSelectionSetDiff schema parentType left right
+    {parentType returnType : Name} {left right : List Selection}
+    {responseName fieldName : Name}
+    {leftArguments rightArguments : List Argument}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> schema.fieldReturnType? parentType fieldName = some returnType
+      -> Selection.field responseName fieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName fieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> Argument.argumentsEquivalent leftArguments rightArguments
+      -> NormalSelectionSetDiff schema returnType
+          leftChildSelectionSet rightChildSelectionSet
+      -> NormalSelectionSetDiff schema parentType left right
   | abstractLeftTypeCondition
-      {parentType : Name} {left right : List Selection}
-      {typeCondition : Name}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection} :
-      objectTypeNameBool schema parentType = false ->
-      Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ left ->
-      typeCondition ∉ right.filterMap inlineFragmentTypeCondition? ->
-      NormalSelectionSetDiff schema parentType left right
+    {parentType : Name} {left right : List Selection}
+    {typeCondition : Name}
+    {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection}
+    : objectTypeNameBool schema parentType = false
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ left
+      -> typeCondition ∉ right.filterMap inlineFragmentTypeCondition?
+      -> NormalSelectionSetDiff schema parentType left right
   | abstractRightTypeCondition
-      {parentType : Name} {left right : List Selection}
-      {typeCondition : Name}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection} :
-      objectTypeNameBool schema parentType = false ->
-      Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ right ->
-      typeCondition ∉ left.filterMap inlineFragmentTypeCondition? ->
-      NormalSelectionSetDiff schema parentType left right
+    {parentType : Name} {left right : List Selection}
+    {typeCondition : Name}
+    {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection}
+    : objectTypeNameBool schema parentType = false
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ right
+      -> typeCondition ∉ left.filterMap inlineFragmentTypeCondition?
+      -> NormalSelectionSetDiff schema parentType left right
   | abstractChild
-      {parentType typeCondition : Name} {left right : List Selection}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection} :
-      objectTypeNameBool schema parentType = false ->
-      Selection.inlineFragment (some typeCondition) leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.inlineFragment (some typeCondition) rightDirectives
-        rightChildSelectionSet ∈ right ->
-      NormalSelectionSetDiff schema typeCondition
-        leftChildSelectionSet rightChildSelectionSet ->
-      NormalSelectionSetDiff schema parentType left right
+    {parentType typeCondition : Name} {left right : List Selection}
+    {leftDirectives rightDirectives : List DirectiveApplication}
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    : objectTypeNameBool schema parentType = false
+      -> Selection.inlineFragment (some typeCondition) leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.inlineFragment (some typeCondition) rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> NormalSelectionSetDiff schema typeCondition
+          leftChildSelectionSet rightChildSelectionSet
+      -> NormalSelectionSetDiff schema parentType left right
 
 mutual
-  theorem inputValue_structuralEquivalent_refl_forSyntaxDiff :
-      ∀ value, InputValue.structuralEquivalent value value
+  theorem inputValue_structuralEquivalent_refl_forSyntaxDiff
+      : ∀ value, InputValue.structuralEquivalent value value
     | .null => by simp [InputValue.structuralEquivalent]
     | .int _ => by simp [InputValue.structuralEquivalent]
     | .float _ => by simp [InputValue.structuralEquivalent]
@@ -128,16 +136,16 @@ mutual
         simp [InputValue.structuralEquivalent,
           inputObjectFields_structuralEquivalent_refl_forSyntaxDiff fields]
 
-  theorem inputValues_structuralEquivalent_refl_forSyntaxDiff :
-      ∀ values, InputValue.structuralValuesEquivalent values values
+  theorem inputValues_structuralEquivalent_refl_forSyntaxDiff
+      : ∀ values, InputValue.structuralValuesEquivalent values values
     | [] => by simp [InputValue.structuralValuesEquivalent]
     | value :: rest => by
         simp [InputValue.structuralValuesEquivalent,
           inputValue_structuralEquivalent_refl_forSyntaxDiff value,
           inputValues_structuralEquivalent_refl_forSyntaxDiff rest]
 
-  theorem inputObjectFields_structuralEquivalent_refl_forSyntaxDiff :
-      ∀ fields, InputValue.structuralObjectFieldsEquivalent fields fields
+  theorem inputObjectFields_structuralEquivalent_refl_forSyntaxDiff
+      : ∀ fields, InputValue.structuralObjectFieldsEquivalent fields fields
     | [] => by simp [InputValue.structuralObjectFieldsEquivalent]
     | (_name, value) :: rest => by
         simp [InputValue.structuralObjectFieldsEquivalent,
@@ -145,16 +153,16 @@ mutual
           inputObjectFields_structuralEquivalent_refl_forSyntaxDiff rest]
 end
 
-theorem inputValue_equivalent_refl_forSyntaxDiff (value : InputValue) :
-    value.equivalent value := by
+theorem inputValue_equivalent_refl_forSyntaxDiff (value : InputValue)
+    : value.equivalent value := by
   exact inputValue_structuralEquivalent_refl_forSyntaxDiff value.canonical
 
-theorem argument_equivalent_refl_forSyntaxDiff (argument : Argument) :
-    argument.equivalent argument := by
+theorem argument_equivalent_refl_forSyntaxDiff (argument : Argument)
+    : argument.equivalent argument := by
   exact ⟨rfl, inputValue_equivalent_refl_forSyntaxDiff argument.value⟩
 
-theorem argumentsEquivalent_refl_forSyntaxDiff (arguments : List Argument) :
-    Argument.argumentsEquivalent arguments arguments := by
+theorem argumentsEquivalent_refl_forSyntaxDiff (arguments : List Argument)
+    : Argument.argumentsEquivalent arguments arguments := by
   constructor
   · intro argument hargument
     exact ⟨argument, hargument, argument_equivalent_refl_forSyntaxDiff argument⟩
@@ -162,37 +170,37 @@ theorem argumentsEquivalent_refl_forSyntaxDiff (arguments : List Argument) :
     exact ⟨argument, hargument, argument_equivalent_refl_forSyntaxDiff argument⟩
 
 theorem selectionSetNormal_responseNamesNodup
-    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
-    selectionSetNormal schema parentType selectionSet ->
-      responseNamesNodup selectionSet := by
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    : selectionSetNormal schema parentType selectionSet
+      -> responseNamesNodup selectionSet := by
   intro hnormal
   unfold selectionSetNormal selectionSetNonRedundant at hnormal
   exact hnormal.2.1
 
 theorem selectionSetNormal_inlineFragmentTypeConditionsNodup
-    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
-    selectionSetNormal schema parentType selectionSet ->
-      inlineFragmentTypeConditionsNodup selectionSet := by
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    : selectionSetNormal schema parentType selectionSet
+      -> inlineFragmentTypeConditionsNodup selectionSet := by
   intro hnormal
   unfold selectionSetNormal selectionSetNonRedundant at hnormal
   exact hnormal.2.2.1
 
 theorem selectionSetNormal_allFields_of_object
-    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = true ->
-      selectionsAllFields selectionSet := by
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    : selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> selectionsAllFields selectionSet := by
   intro hnormal hobject
   unfold selectionSetNormal selectionSetGroundTyped at hnormal
   simpa [hobject] using hnormal.1.1
 
 theorem selectionSet_field_mem_of_responseName_mem
-    {selectionSet : List Selection} {responseName : Name} :
-    selectionsAllFields selectionSet ->
-    responseName ∈ selectionSet.filterMap Selection.responseName? ->
-      ∃ fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet := by
+    {selectionSet : List Selection} {responseName : Name}
+    : selectionsAllFields selectionSet
+      -> responseName ∈ selectionSet.filterMap Selection.responseName?
+      -> ∃ fieldName arguments directives childSelectionSet,
+          Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet := by
   intro hallFields hresponseName
   rcases List.mem_filterMap.mp hresponseName with
     ⟨selection, hselectionMem, hselectionName⟩
@@ -210,13 +218,13 @@ theorem selectionSet_field_mem_of_responseName_mem
 
 theorem selectionSetNormal_field_mem_of_responseName_mem
     {schema : Schema} {parentType : Name} {selectionSet : List Selection}
-    {responseName : Name} :
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = true ->
-    responseName ∈ selectionSet.filterMap Selection.responseName? ->
-      ∃ fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet := by
+    {responseName : Name}
+    : selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> responseName ∈ selectionSet.filterMap Selection.responseName?
+      -> ∃ fieldName arguments directives childSelectionSet,
+          Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet := by
   intro hnormal hobject hresponseName
   exact
     selectionSet_field_mem_of_responseName_mem
@@ -224,20 +232,20 @@ theorem selectionSetNormal_field_mem_of_responseName_mem
       hresponseName
 
 theorem selectionSetNormal_allInlineFragments_of_abstract
-    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = false ->
-      selectionsAllInlineFragments selectionSet := by
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    : selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = false
+      -> selectionsAllInlineFragments selectionSet := by
   intro hnormal hobject
   unfold selectionSetNormal selectionSetGroundTyped at hnormal
   simpa [hobject] using hnormal.1.1
 
 theorem selectionSetNormal_responseName_not_mem_of_abstract
     {schema : Schema} {parentType : Name} {selectionSet : List Selection}
-    {responseName : Name} :
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = false ->
-      responseName ∉ selectionSet.filterMap Selection.responseName? := by
+    {responseName : Name}
+    : selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = false
+      -> responseName ∉ selectionSet.filterMap Selection.responseName? := by
   intro hnormal hobject hmem
   rcases List.mem_filterMap.mp hmem with
     ⟨selection, hselectionMem, hresponseName⟩
@@ -250,26 +258,25 @@ theorem selectionSetNormal_responseName_not_mem_of_abstract
   | inlineFragment typeCondition directives childSelectionSet =>
       simp [Selection.responseName?] at hresponseName
 
-theorem selectionsAllFields_tail
-    {selection : Selection} {selectionSet : List Selection} :
-    selectionsAllFields (selection :: selectionSet) ->
-      selectionsAllFields selectionSet := by
+theorem selectionsAllFields_tail {selection : Selection} {selectionSet : List Selection}
+    : selectionsAllFields (selection :: selectionSet)
+      -> selectionsAllFields selectionSet := by
   intro hallFields candidate hcandidate
   exact hallFields candidate (List.mem_cons_of_mem selection hcandidate)
 
 theorem selectionsAllInlineFragments_tail
-    {selection : Selection} {selectionSet : List Selection} :
-    selectionsAllInlineFragments (selection :: selectionSet) ->
-      selectionsAllInlineFragments selectionSet := by
+    {selection : Selection} {selectionSet : List Selection}
+    : selectionsAllInlineFragments (selection :: selectionSet)
+      -> selectionsAllInlineFragments selectionSet := by
   intro hallInlineFragments candidate hcandidate
   exact hallInlineFragments candidate
     (List.mem_cons_of_mem selection hcandidate)
 
 theorem selectionSetGroundTyped_tail
     {schema : Schema} {parentType : Name}
-    {selection : Selection} {selectionSet : List Selection} :
-    selectionSetGroundTyped schema parentType (selection :: selectionSet) ->
-      selectionSetGroundTyped schema parentType selectionSet := by
+    {selection : Selection} {selectionSet : List Selection}
+    : selectionSetGroundTyped schema parentType (selection :: selectionSet)
+      -> selectionSetGroundTyped schema parentType selectionSet := by
   intro hground
   unfold selectionSetGroundTyped at hground ⊢
   constructor
@@ -279,10 +286,9 @@ theorem selectionSetGroundTyped_tail
   · intro candidate hcandidate
     exact hground.2 candidate (List.mem_cons_of_mem selection hcandidate)
 
-theorem responseNamesNodup_tail
-    {selection : Selection} {selectionSet : List Selection} :
-    responseNamesNodup (selection :: selectionSet) ->
-      responseNamesNodup selectionSet := by
+theorem responseNamesNodup_tail {selection : Selection} {selectionSet : List Selection}
+    : responseNamesNodup (selection :: selectionSet)
+      -> responseNamesNodup selectionSet := by
   intro hnodup
   cases selection with
   | field responseName fieldName arguments directives childSelectionSet =>
@@ -295,9 +301,9 @@ theorem responseNamesNodup_tail
       simpa [responseNamesNodup, Selection.responseName?] using hnodup
 
 theorem inlineFragmentTypeConditionsNodup_tail
-    {selection : Selection} {selectionSet : List Selection} :
-    inlineFragmentTypeConditionsNodup (selection :: selectionSet) ->
-      inlineFragmentTypeConditionsNodup selectionSet := by
+    {selection : Selection} {selectionSet : List Selection}
+    : inlineFragmentTypeConditionsNodup (selection :: selectionSet)
+      -> inlineFragmentTypeConditionsNodup selectionSet := by
   intro hnodup
   cases selection with
   | field responseName fieldName arguments directives childSelectionSet =>
@@ -317,9 +323,9 @@ theorem inlineFragmentTypeConditionsNodup_tail
                   inlineFragmentTypeCondition?] using hnodup)).2
 
 theorem selectionSetNonRedundant_tail
-    {selection : Selection} {selectionSet : List Selection} :
-    selectionSetNonRedundant (selection :: selectionSet) ->
-      selectionSetNonRedundant selectionSet := by
+    {selection : Selection} {selectionSet : List Selection}
+    : selectionSetNonRedundant (selection :: selectionSet)
+      -> selectionSetNonRedundant selectionSet := by
   intro hnonRedundant
   unfold selectionSetNonRedundant at hnonRedundant ⊢
   exact
@@ -332,21 +338,21 @@ theorem selectionSetNonRedundant_tail
 
 theorem selectionSetNormal_tail
     {schema : Schema} {parentType : Name}
-    {selection : Selection} {selectionSet : List Selection} :
-    selectionSetNormal schema parentType (selection :: selectionSet) ->
-      selectionSetNormal schema parentType selectionSet := by
+    {selection : Selection} {selectionSet : List Selection}
+    : selectionSetNormal schema parentType (selection :: selectionSet)
+      -> selectionSetNormal schema parentType selectionSet := by
   intro hnormal
   exact
     ⟨selectionSetGroundTyped_tail hnormal.1,
       selectionSetNonRedundant_tail hnormal.2⟩
 
 theorem selectionSet_field_mem_of_allFields_responseName_mem
-    {selectionSet : List Selection} {responseName : Name} :
-    selectionsAllFields selectionSet ->
-    responseName ∈ selectionSet.filterMap Selection.responseName? ->
-      ∃ fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet := by
+    {selectionSet : List Selection} {responseName : Name}
+    : selectionsAllFields selectionSet
+      -> responseName ∈ selectionSet.filterMap Selection.responseName?
+      -> ∃ fieldName arguments directives childSelectionSet,
+          Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet := by
   intro hallFields hmem
   induction selectionSet with
   | nil =>
@@ -379,13 +385,12 @@ theorem selectionSet_field_mem_of_allFields_responseName_mem
       | inlineFragment typeCondition directives childSelectionSet =>
           simp [Selection.isField] at hheadField
 
-theorem selectionSet_field_mem_of_allFields_nonempty
-    {selectionSet : List Selection} :
-    selectionsAllFields selectionSet ->
-    selectionSet ≠ [] ->
-      ∃ responseName fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet := by
+theorem selectionSet_field_mem_of_allFields_nonempty {selectionSet : List Selection}
+    : selectionsAllFields selectionSet
+      -> selectionSet ≠ []
+      -> ∃ responseName fieldName arguments directives childSelectionSet,
+          Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet := by
   intro hallFields hnonempty
   cases selectionSet with
   | nil =>
@@ -401,24 +406,24 @@ theorem selectionSet_field_mem_of_allFields_nonempty
           simp [Selection.isField] at hheadField
 
 theorem selectionSetNormal_field_mem_of_object_nonempty
-    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = true ->
-    selectionSet ≠ [] ->
-      ∃ responseName fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet := by
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    : selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> selectionSet ≠ []
+      -> ∃ responseName fieldName arguments directives childSelectionSet,
+          Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet := by
   intro hnormal hobject hnonempty
   exact selectionSet_field_mem_of_allFields_nonempty
     (selectionSetNormal_allFields_of_object hnormal hobject) hnonempty
 
 theorem selectionSet_inlineFragment_mem_of_allInlineFragments_typeCondition_mem
-    {selectionSet : List Selection} {typeCondition : Name} :
-    selectionsAllInlineFragments selectionSet ->
-    typeCondition ∈ selectionSet.filterMap inlineFragmentTypeCondition? ->
-      ∃ directives childSelectionSet,
-        Selection.inlineFragment (some typeCondition) directives
-          childSelectionSet ∈ selectionSet := by
+    {selectionSet : List Selection} {typeCondition : Name}
+    : selectionsAllInlineFragments selectionSet
+      -> typeCondition ∈ selectionSet.filterMap inlineFragmentTypeCondition?
+      -> ∃ directives childSelectionSet,
+          Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet := by
   intro hallInline hmem
   induction selectionSet with
   | nil =>
@@ -461,35 +466,35 @@ theorem selectionSet_inlineFragment_mem_of_allInlineFragments_typeCondition_mem
 
 theorem selectionSetNormal_field_mem_of_object_responseName_mem
     {schema : Schema} {parentType : Name} {selectionSet : List Selection}
-    {responseName : Name} :
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = true ->
-    responseName ∈ selectionSet.filterMap Selection.responseName? ->
-      ∃ fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet := by
+    {responseName : Name}
+    : selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> responseName ∈ selectionSet.filterMap Selection.responseName?
+      -> ∃ fieldName arguments directives childSelectionSet,
+          Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet := by
   intro hnormal hobject hmem
   exact selectionSet_field_mem_of_allFields_responseName_mem
     (selectionSetNormal_allFields_of_object hnormal hobject) hmem
 
 theorem selectionSetNormal_inlineFragment_mem_of_abstract_typeCondition_mem
     {schema : Schema} {parentType : Name} {selectionSet : List Selection}
-    {typeCondition : Name} :
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = false ->
-    typeCondition ∈ selectionSet.filterMap inlineFragmentTypeCondition? ->
-      ∃ directives childSelectionSet,
-        Selection.inlineFragment (some typeCondition) directives
-          childSelectionSet ∈ selectionSet := by
+    {typeCondition : Name}
+    : selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = false
+      -> typeCondition ∈ selectionSet.filterMap inlineFragmentTypeCondition?
+      -> ∃ directives childSelectionSet,
+          Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet := by
   intro hnormal hobject hmem
   exact selectionSet_inlineFragment_mem_of_allInlineFragments_typeCondition_mem
     (selectionSetNormal_allInlineFragments_of_abstract hnormal hobject) hmem
 
 theorem selectionDirectiveFree_of_mem
-    {selectionSet : List Selection} {selection : Selection} :
-    selectionSetDirectiveFree selectionSet ->
-    selection ∈ selectionSet ->
-      selectionDirectiveFree selection := by
+    {selectionSet : List Selection} {selection : Selection}
+    : selectionSetDirectiveFree selectionSet
+      -> selection ∈ selectionSet
+      -> selectionDirectiveFree selection := by
   intro hfree
   induction selectionSet with
   | nil =>
@@ -506,11 +511,11 @@ theorem selectionSetDirectiveFree_field_directives_nil_of_mem
     {selectionSet : List Selection}
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} :
-    selectionSetDirectiveFree selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      directives = [] := by
+    {childSelectionSet : List Selection}
+    : selectionSetDirectiveFree selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> directives = [] := by
   intro hfree hmem
   have hselectionFree :
       selectionDirectiveFree
@@ -522,11 +527,11 @@ theorem selectionSetDirectiveFree_field_directives_nil_of_mem
 theorem selectionSetDirectiveFree_inlineFragment_directives_nil_of_mem
     {selectionSet : List Selection}
     {typeCondition : Option Name} {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} :
-    selectionSetDirectiveFree selectionSet ->
-    Selection.inlineFragment typeCondition directives childSelectionSet
-        ∈ selectionSet ->
-      directives = [] := by
+    {childSelectionSet : List Selection}
+    : selectionSetDirectiveFree selectionSet
+      -> Selection.inlineFragment typeCondition directives childSelectionSet
+          ∈ selectionSet
+      -> directives = [] := by
   intro hfree hmem
   have hselectionFree :
       selectionDirectiveFree
@@ -538,11 +543,11 @@ theorem selectionSetDirectiveFree_field_child_of_mem
     {selectionSet : List Selection}
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} :
-    selectionSetDirectiveFree selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      selectionSetDirectiveFree childSelectionSet := by
+    {childSelectionSet : List Selection}
+    : selectionSetDirectiveFree selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> selectionSetDirectiveFree childSelectionSet := by
   intro hfree hmem
   have hselectionFree :
       selectionDirectiveFree
@@ -554,11 +559,11 @@ theorem selectionSetDirectiveFree_field_child_of_mem
 theorem selectionSetDirectiveFree_inlineFragment_child_of_mem
     {selectionSet : List Selection}
     {typeCondition : Option Name} {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} :
-    selectionSetDirectiveFree selectionSet ->
-    Selection.inlineFragment typeCondition directives childSelectionSet
-        ∈ selectionSet ->
-      selectionSetDirectiveFree childSelectionSet := by
+    {childSelectionSet : List Selection}
+    : selectionSetDirectiveFree selectionSet
+      -> Selection.inlineFragment typeCondition directives childSelectionSet
+          ∈ selectionSet
+      -> selectionSetDirectiveFree childSelectionSet := by
   intro hfree hmem
   have hselectionFree :
       selectionDirectiveFree
@@ -569,12 +574,12 @@ theorem selectionSetDirectiveFree_inlineFragment_child_of_mem
 theorem selectionSetNormal_field_child_of_mem_with_returnType
     {schema : Schema} {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      ∃ returnType,
-        schema.fieldReturnType? parentType fieldName = some returnType
+    {childSelectionSet selectionSet : List Selection}
+    : selectionSetNormal schema parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> ∃ returnType,
+          schema.fieldReturnType? parentType fieldName = some returnType
           ∧ selectionSetNormal schema returnType childSelectionSet := by
   intro hnormal hmem
   rcases hnormal with ⟨hground, hnonRedundant⟩
@@ -603,12 +608,12 @@ theorem selectionSetNormal_field_child_of_mem_with_returnType
 theorem selectionSetNormal_inlineFragment_child_of_mem
     {schema : Schema} {parentType typeCondition : Name}
     {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    selectionSetNormal schema parentType selectionSet ->
-      Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ selectionSet ->
-      schema.objectType typeCondition
-        ∧ selectionSetNormal schema typeCondition childSelectionSet := by
+    {childSelectionSet selectionSet : List Selection}
+    : selectionSetNormal schema parentType selectionSet
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet
+      -> schema.objectType typeCondition
+          ∧ selectionSetNormal schema typeCondition childSelectionSet := by
   intro hnormal hmem
   rcases hnormal with ⟨hground, hnonRedundant⟩
   unfold selectionSetGroundTyped at hground
@@ -635,10 +640,8 @@ theorem selectionSetNormal_inlineFragment_child_of_mem
         selectionSetNormal schema typeCondition childSelectionSet)⟩
 
 theorem mem_erase_of_ne_of_mem {α : Type} [BEq α] [LawfulBEq α]
-    {a b : α} {items : List α} :
-    a ≠ b ->
-    a ∈ items ->
-      a ∈ items.erase b := by
+    {a b : α} {items : List α}
+    : a ≠ b -> a ∈ items -> a ∈ items.erase b := by
   intro hne hmem
   induction items with
   | nil =>
@@ -659,9 +662,8 @@ theorem mem_erase_of_ne_of_mem {α : Type} [BEq α] [LawfulBEq α]
         · exact List.mem_cons.mpr (Or.inl hsame)
         · exact List.mem_cons_of_mem head (ih htail)
 
-theorem not_mem_erase_self {α : Type} [BEq α] [LawfulBEq α]
-    (a : α) :
-    ∀ items : List α, items.Nodup -> a ∉ items.erase a
+theorem not_mem_erase_self {α : Type} [BEq α] [LawfulBEq α] (a : α)
+    : ∀ items : List α, items.Nodup -> a ∉ items.erase a
   | [], _hnodup => by
       simp
   | head :: tail, hnodup => by
@@ -685,12 +687,12 @@ theorem not_mem_erase_self {α : Type} [BEq α] [LawfulBEq α]
         · exact not_mem_erase_self a tail htailNodup htailMem
 
 theorem listPermOfNodupSubsetSubset {α : Type}
-    [BEq α] [LawfulBEq α] {left right : List α} :
-    left.Nodup ->
-    right.Nodup ->
-    (∀ item, item ∈ left -> item ∈ right) ->
-    (∀ item, item ∈ right -> item ∈ left) ->
-      left.Perm right := by
+    [BEq α] [LawfulBEq α] {left right : List α}
+    : left.Nodup
+      -> right.Nodup
+      -> (∀ item, item ∈ left -> item ∈ right)
+      -> (∀ item, item ∈ right -> item ∈ left)
+      -> left.Perm right := by
   intro hleftNodup
   induction left generalizing right with
   | nil =>
@@ -744,12 +746,13 @@ theorem responseNamesNodup_remove_middle_field
     {pref suffix : List Selection}
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} :
-    responseNamesNodup
-      (pref ++
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet :: suffix) ->
-      responseNamesNodup (pref ++ suffix) := by
+    {childSelectionSet : List Selection}
+    : responseNamesNodup
+        (pref
+          ++ Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              :: suffix)
+      -> responseNamesNodup (pref ++ suffix) := by
   intro hnodup
   unfold responseNamesNodup at hnodup ⊢
   have hnames :
@@ -770,12 +773,13 @@ theorem responseName_not_mem_remove_middle_field
     {pref suffix : List Selection}
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} :
-    responseNamesNodup
-      (pref ++
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet :: suffix) ->
-      responseName ∉ (pref ++ suffix).filterMap Selection.responseName? := by
+    {childSelectionSet : List Selection}
+    : responseNamesNodup
+        (pref
+          ++ Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              :: suffix)
+      -> responseName ∉ (pref ++ suffix).filterMap Selection.responseName? := by
   intro hnodup hmem
   unfold responseNamesNodup at hnodup
   have hnames :
@@ -799,16 +803,18 @@ theorem field_eq_of_responseNamesNodup_mem
     {responseName leftFieldName rightFieldName : Name}
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
-    {leftChildSelectionSet rightChildSelectionSet : List Selection} :
-    responseNamesNodup selectionSet ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ selectionSet ->
-    Selection.field responseName rightFieldName rightArguments
-      rightDirectives rightChildSelectionSet ∈ selectionSet ->
-      Selection.field responseName leftFieldName leftArguments leftDirectives
-        leftChildSelectionSet =
-      Selection.field responseName rightFieldName rightArguments
-        rightDirectives rightChildSelectionSet := by
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    : responseNamesNodup selectionSet
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ selectionSet
+      -> Selection.field responseName rightFieldName rightArguments
+            rightDirectives rightChildSelectionSet
+          ∈ selectionSet
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          = Selection.field responseName rightFieldName rightArguments
+              rightDirectives rightChildSelectionSet := by
   intro hnodup hleftMem hrightMem
   rcases List.mem_iff_append.mp hleftMem with
     ⟨pref, suffix, hselectionSet⟩
@@ -853,16 +859,18 @@ theorem field_components_eq_of_responseNamesNodup_mem
     {responseName leftFieldName rightFieldName : Name}
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
-    {leftChildSelectionSet rightChildSelectionSet : List Selection} :
-    responseNamesNodup selectionSet ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ selectionSet ->
-    Selection.field responseName rightFieldName rightArguments
-      rightDirectives rightChildSelectionSet ∈ selectionSet ->
-      leftFieldName = rightFieldName
-        ∧ leftArguments = rightArguments
-        ∧ leftDirectives = rightDirectives
-        ∧ leftChildSelectionSet = rightChildSelectionSet := by
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    : responseNamesNodup selectionSet
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ selectionSet
+      -> Selection.field responseName rightFieldName rightArguments
+            rightDirectives rightChildSelectionSet
+          ∈ selectionSet
+      -> leftFieldName = rightFieldName
+          ∧ leftArguments = rightArguments
+          ∧ leftDirectives = rightDirectives
+          ∧ leftChildSelectionSet = rightChildSelectionSet := by
   intro hnodup hleftMem hrightMem
   have hfieldEq :=
     field_eq_of_responseNamesNodup_mem hnodup hleftMem hrightMem
@@ -875,16 +883,18 @@ theorem field_components_eq_of_selectionSetNormal_responseName_mem
     {responseName leftFieldName rightFieldName : Name}
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
-    {leftChildSelectionSet rightChildSelectionSet : List Selection} :
-    selectionSetNormal schema parentType selectionSet ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ selectionSet ->
-    Selection.field responseName rightFieldName rightArguments
-      rightDirectives rightChildSelectionSet ∈ selectionSet ->
-      leftFieldName = rightFieldName
-        ∧ leftArguments = rightArguments
-        ∧ leftDirectives = rightDirectives
-        ∧ leftChildSelectionSet = rightChildSelectionSet := by
+    {leftChildSelectionSet rightChildSelectionSet : List Selection}
+    : selectionSetNormal schema parentType selectionSet
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ selectionSet
+      -> Selection.field responseName rightFieldName rightArguments
+            rightDirectives rightChildSelectionSet
+          ∈ selectionSet
+      -> leftFieldName = rightFieldName
+          ∧ leftArguments = rightArguments
+          ∧ leftDirectives = rightDirectives
+          ∧ leftChildSelectionSet = rightChildSelectionSet := by
   intro hnormal
   exact
     field_components_eq_of_responseNamesNodup_mem
@@ -893,12 +903,12 @@ theorem field_components_eq_of_selectionSetNormal_responseName_mem
 theorem inlineFragmentTypeConditionsNodup_remove_middle_inlineFragment
     {pref suffix : List Selection}
     {typeCondition : Name} {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} :
-    inlineFragmentTypeConditionsNodup
-      (pref ++
-        Selection.inlineFragment (some typeCondition) directives
-          childSelectionSet :: suffix) ->
-      inlineFragmentTypeConditionsNodup (pref ++ suffix) := by
+    {childSelectionSet : List Selection}
+    : inlineFragmentTypeConditionsNodup
+        (pref
+          ++ Selection.inlineFragment (some typeCondition) directives childSelectionSet
+              :: suffix)
+      -> inlineFragmentTypeConditionsNodup (pref ++ suffix) := by
   intro hnodup
   unfold inlineFragmentTypeConditionsNodup at hnodup ⊢
   have hconditions :
@@ -919,12 +929,12 @@ theorem inlineFragmentTypeConditionsNodup_remove_middle_inlineFragment
 theorem inlineFragmentTypeCondition_not_mem_remove_middle_inlineFragment
     {pref suffix : List Selection}
     {typeCondition : Name} {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} :
-    inlineFragmentTypeConditionsNodup
-      (pref ++
-        Selection.inlineFragment (some typeCondition) directives
-          childSelectionSet :: suffix) ->
-      typeCondition ∉ (pref ++ suffix).filterMap inlineFragmentTypeCondition? := by
+    {childSelectionSet : List Selection}
+    : inlineFragmentTypeConditionsNodup
+        (pref
+          ++ Selection.inlineFragment (some typeCondition) directives childSelectionSet
+              :: suffix)
+      -> typeCondition ∉ (pref ++ suffix).filterMap inlineFragmentTypeCondition? := by
   intro hnodup hmem
   unfold inlineFragmentTypeConditionsNodup at hnodup
   have hconditions :
@@ -943,9 +953,9 @@ theorem inlineFragmentTypeCondition_not_mem_remove_middle_inlineFragment
       (List.nodup_cons.mp hparts.2.1).1
     exact hnotSuffix hsuffix
 
-theorem selectionSet_size_append_eq (left right : List Selection) :
-    SelectionSet.size (left ++ right) =
-      SelectionSet.size left + SelectionSet.size right := by
+theorem selectionSet_size_append_eq (left right : List Selection)
+    : SelectionSet.size (left ++ right)
+      = SelectionSet.size left + SelectionSet.size right := by
   induction left with
   | nil =>
       simp [SelectionSet.size]
@@ -956,10 +966,10 @@ theorem selectionSet_size_field_child_lt_of_mem
     {responseName fieldName : Name}
     {arguments : List Argument}
     {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-      SelectionSet.size childSelectionSet < SelectionSet.size selectionSet := by
+    {childSelectionSet selectionSet : List Selection}
+    : Selection.field responseName fieldName arguments directives childSelectionSet
+        ∈ selectionSet
+      -> SelectionSet.size childSelectionSet < SelectionSet.size selectionSet := by
   intro hmem
   rcases List.mem_iff_append.mp hmem with ⟨pref, suffix, hselectionSet⟩
   subst selectionSet
@@ -970,10 +980,9 @@ theorem selectionSet_size_field_child_lt_of_mem
 theorem selectionSet_size_inlineFragment_child_lt_of_mem
     {typeCondition : Option Name}
     {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection} :
-    Selection.inlineFragment typeCondition directives childSelectionSet ∈
-      selectionSet ->
-      SelectionSet.size childSelectionSet < SelectionSet.size selectionSet := by
+    {childSelectionSet selectionSet : List Selection}
+    : Selection.inlineFragment typeCondition directives childSelectionSet ∈ selectionSet
+      -> SelectionSet.size childSelectionSet < SelectionSet.size selectionSet := by
   intro hmem
   rcases List.mem_iff_append.mp hmem with ⟨pref, suffix, hselectionSet⟩
   subst selectionSet
@@ -982,8 +991,8 @@ theorem selectionSet_size_inlineFragment_child_lt_of_mem
   omega
 
 mutual
-  theorem selectionEqualUpToReordering_refl :
-      ∀ selection, SelectionEqualUpToReordering selection selection
+  theorem selectionEqualUpToReordering_refl
+      : ∀ selection, SelectionEqualUpToReordering selection selection
     | .field responseName fieldName arguments directives selectionSet =>
         SelectionEqualUpToReordering.field responseName fieldName directives
           (argumentsEquivalent_refl_forSyntaxDiff arguments)
@@ -992,8 +1001,8 @@ mutual
         SelectionEqualUpToReordering.inlineFragment typeCondition directives
           (selectionSetEqualUpToReordering_refl selectionSet)
 
-  theorem selectionSetEqualUpToReordering_refl :
-      ∀ selectionSet, SelectionSetEqualUpToReordering selectionSet selectionSet
+  theorem selectionSetEqualUpToReordering_refl
+      : ∀ selectionSet, SelectionSetEqualUpToReordering selectionSet selectionSet
     | [] => by
         exact SelectionSetEqualUpToReordering.paired [] List.Perm.nil
           List.Perm.nil
@@ -1012,28 +1021,29 @@ mutual
           · exact hrelations pair htail
 end
 
-theorem selectionSetEqualUpToReordering_of_field_responseName_matches :
-    ∀ left right,
-      selectionsAllFields left ->
-      selectionsAllFields right ->
-      responseNamesNodup left ->
-      responseNamesNodup right ->
-      (∀ responseName fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ left ->
-          ∃ rightFieldName rightArguments rightDirectives
-            rightChildSelectionSet,
-            Selection.field responseName rightFieldName rightArguments
-              rightDirectives rightChildSelectionSet ∈ right
-              ∧ SelectionEqualUpToReordering
-                (Selection.field responseName fieldName arguments directives
-                  childSelectionSet)
-                (Selection.field responseName rightFieldName rightArguments
-                  rightDirectives rightChildSelectionSet)) ->
-      (∀ responseName,
-        responseName ∈ right.filterMap Selection.responseName? ->
-          responseName ∈ left.filterMap Selection.responseName?) ->
-      SelectionSetEqualUpToReordering left right := by
+theorem selectionSetEqualUpToReordering_of_field_responseName_matches
+    : ∀ left right,
+        selectionsAllFields left
+        -> selectionsAllFields right
+        -> responseNamesNodup left
+        -> responseNamesNodup right
+        -> (∀ responseName fieldName arguments directives childSelectionSet,
+              Selection.field responseName fieldName arguments directives
+                  childSelectionSet
+                ∈ left
+              -> ∃ rightFieldName rightArguments rightDirectives rightChildSelectionSet,
+                  Selection.field responseName rightFieldName rightArguments
+                      rightDirectives rightChildSelectionSet
+                    ∈ right
+                  ∧ SelectionEqualUpToReordering
+                      (Selection.field responseName fieldName arguments directives
+                        childSelectionSet)
+                      (Selection.field responseName rightFieldName rightArguments
+                        rightDirectives rightChildSelectionSet))
+        -> (∀ responseName,
+              responseName ∈ right.filterMap Selection.responseName?
+              -> responseName ∈ left.filterMap Selection.responseName?)
+        -> SelectionSetEqualUpToReordering left right := by
   intro left
   induction left with
   | nil =>
@@ -1222,35 +1232,38 @@ theorem selectionSetEqualUpToReordering_of_field_responseName_matches :
               exact hselectionEq
             · exact hpairRelations pair htail
 
-theorem selectionSetEqualUpToReordering_of_inlineFragment_typeCondition_matches :
-    ∀ left right,
-      inlineFragmentTypeConditionsNodup left ->
-      inlineFragmentTypeConditionsNodup right ->
-      (∀ selection, selection ∈ left ->
-        ∃ typeCondition directives childSelectionSet,
-          selection =
-            Selection.inlineFragment (some typeCondition) directives
-              childSelectionSet) ->
-      (∀ selection, selection ∈ right ->
-        ∃ typeCondition directives childSelectionSet,
-          selection =
-            Selection.inlineFragment (some typeCondition) directives
-              childSelectionSet) ->
-      (∀ typeCondition directives childSelectionSet,
-        Selection.inlineFragment (some typeCondition) directives
-          childSelectionSet ∈ left ->
-          ∃ rightDirectives rightChildSelectionSet,
-            Selection.inlineFragment (some typeCondition) rightDirectives
-              rightChildSelectionSet ∈ right
-              ∧ SelectionEqualUpToReordering
-                (Selection.inlineFragment (some typeCondition) directives
-                  childSelectionSet)
-                (Selection.inlineFragment (some typeCondition) rightDirectives
-                  rightChildSelectionSet)) ->
-      (∀ typeCondition,
-        typeCondition ∈ right.filterMap inlineFragmentTypeCondition? ->
-          typeCondition ∈ left.filterMap inlineFragmentTypeCondition?) ->
-      SelectionSetEqualUpToReordering left right := by
+theorem selectionSetEqualUpToReordering_of_inlineFragment_typeCondition_matches
+    : ∀ left right,
+        inlineFragmentTypeConditionsNodup left
+        -> inlineFragmentTypeConditionsNodup right
+        -> (∀ selection,
+              selection ∈ left
+              -> ∃ typeCondition directives childSelectionSet,
+                  selection
+                  = Selection.inlineFragment (some typeCondition) directives
+                      childSelectionSet)
+        -> (∀ selection,
+              selection ∈ right
+              -> ∃ typeCondition directives childSelectionSet,
+                  selection
+                  = Selection.inlineFragment (some typeCondition) directives
+                      childSelectionSet)
+        -> (∀ typeCondition directives childSelectionSet,
+              Selection.inlineFragment (some typeCondition) directives childSelectionSet
+                ∈ left
+              -> ∃ rightDirectives rightChildSelectionSet,
+                  Selection.inlineFragment (some typeCondition) rightDirectives
+                      rightChildSelectionSet
+                    ∈ right
+                  ∧ SelectionEqualUpToReordering
+                      (Selection.inlineFragment (some typeCondition) directives
+                        childSelectionSet)
+                      (Selection.inlineFragment (some typeCondition) rightDirectives
+                        rightChildSelectionSet))
+        -> (∀ typeCondition,
+              typeCondition ∈ right.filterMap inlineFragmentTypeCondition?
+              -> typeCondition ∈ left.filterMap inlineFragmentTypeCondition?)
+        -> SelectionSetEqualUpToReordering left right := by
   intro left
   induction left with
   | nil =>
@@ -1438,15 +1451,14 @@ theorem selectionSetEqualUpToReordering_of_inlineFragment_typeCondition_matches 
           exact hselectionEq
         · exact hpairRelations pair htail
 
-theorem selectionSetEqualUpToReordering_of_no_normalSelectionSetDiff
-    (schema : Schema) :
-    ∀ parentType left right,
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema parentType left ->
-      selectionSetNormal schema parentType right ->
-      ¬ NormalSelectionSetDiff schema parentType left right ->
-      SelectionSetEqualUpToReordering left right := by
+theorem selectionSetEqualUpToReordering_of_no_normalSelectionSetDiff (schema : Schema)
+    : ∀ parentType left right,
+        selectionSetDirectiveFree left
+        -> selectionSetDirectiveFree right
+        -> selectionSetNormal schema parentType left
+        -> selectionSetNormal schema parentType right
+        -> ¬ NormalSelectionSetDiff schema parentType left right
+        -> SelectionSetEqualUpToReordering left right := by
   intro parentType left right hleftFree hrightFree hleftNormal hrightNormal
     hnoDiff
   by_cases hobject : objectTypeNameBool schema parentType = true
@@ -1661,13 +1673,13 @@ decreasing_by
       omega
 
 theorem normalSelectionSetDiff_of_not_equalUpToReordering
-    {schema : Schema} {parentType : Name} {left right : List Selection} :
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    ¬ SelectionSetEqualUpToReordering left right ->
-      NormalSelectionSetDiff schema parentType left right := by
+    {schema : Schema} {parentType : Name} {left right : List Selection}
+    : selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> ¬ SelectionSetEqualUpToReordering left right
+      -> NormalSelectionSetDiff schema parentType left right := by
   intro hleftFree hrightFree hleftNormal hrightNormal hnotEqual
   exact Classical.byContradiction fun hnoDiff =>
     hnotEqual

@@ -10,185 +10,186 @@ namespace ExecutionUngrouped
 
 open GraphQL.Execution
 
-local instance groupListFreshPrefixPlanResponseVisitStatusCoe :
-    Coe (ResponseValue × VisitStatus) ResponseValue where
+local instance groupListFreshPrefixPlanResponseVisitStatusCoe
+    : Coe (ResponseValue × VisitStatus) ResponseValue where
   coe := Prod.fst
 
 inductive FreshPrefixSelectionPlan
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (completionDepth : Nat)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    List Selection -> Prop where
-  | nil :
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : List Selection -> Prop where
+  | nil
+    : FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
         parentType source []
-  | appendDisjoint (left right : List Selection) :
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source left ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source right ->
-      GraphQL.NormalForm.executableGroupNamesDisjoint
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          left)
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          right) ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source (left ++ right)
-  | sameGroup (responseName : Name) (fields : List ExecutableField) :
-      (∀ field, field ∈ fields -> field.responseName = responseName) ->
-      (∀ field, field ∈ fields -> field.parentType = parentType) ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source (executableFieldSelections fields)
+  | appendDisjoint (left right : List Selection)
+    : FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+        parentType source left
+      -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+          parentType source right
+      -> GraphQL.NormalForm.executableGroupNamesDisjoint
+          (GraphQL.Execution.collectFields schema variableValues parentType source left)
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            right)
+      -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+          parentType source (left ++ right)
+  | sameGroup (responseName : Name) (fields : List ExecutableField)
+    : (∀ field, field ∈ fields -> field.responseName = responseName)
+      -> (∀ field, field ∈ fields -> field.parentType = parentType)
+      -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+          parentType source (executableFieldSelections fields)
   | duplicateFieldBlockNormalize
-      (first later : ExecutableField) (middle suffix : List Selection) :
-      later.responseName = first.responseName ->
-      (∃ fieldDefinition, schema.lookupField parentType later.fieldName =
-        some fieldDefinition) ->
-      first.responseName ∉
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source middle).map Prod.fst ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source middle ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source
-        ((executableFieldSelections [first, later] ++
-            executableFieldSelections
-              (collectedExecutableFields
-                (GraphQL.Execution.collectFields schema variableValues
-                  parentType source middle))) ++ suffix) ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source
-        ((executableFieldSelections [first] ++ middle ++
-            executableFieldSelections [later]) ++ suffix)
-  | consDisjoint
-      (selection : Selection) (rest : List Selection) :
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        (completionDepth + 1) parentType source [selection] ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source rest ->
-      GraphQL.NormalForm.executableGroupNamesDisjoint
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          [selection])
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          rest) ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source (selection :: rest)
-  | duplicateFieldBlock
-      (first later : ExecutableField) (middle suffix : List Selection) :
-      later.responseName = first.responseName ->
-      (∃ fieldDefinition, schema.lookupField parentType later.fieldName =
-        some fieldDefinition) ->
-      first.responseName ∉
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source middle).map Prod.fst ->
-      GraphQL.NormalForm.executableGroupNamesDisjoint
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections [first] ++ middle ++
-            executableFieldSelections [later]))
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          suffix) ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source middle ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source suffix ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source
-        (executableFieldSelections [first] ++ middle ++
-          executableFieldSelections [later] ++ suffix)
+    (first later : ExecutableField) (middle suffix : List Selection)
+    : later.responseName = first.responseName
+      -> (∃ fieldDefinition,
+            schema.lookupField parentType later.fieldName = some fieldDefinition)
+      -> first.responseName
+          ∉ (GraphQL.Execution.collectFields schema variableValues parentType
+              source middle).map
+              Prod.fst
+      -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+          parentType source middle
+      -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+          parentType source
+          ((executableFieldSelections [first, later]
+              ++ executableFieldSelections
+                  (collectedExecutableFields
+                    (GraphQL.Execution.collectFields schema variableValues
+                      parentType source middle)))
+            ++ suffix)
+      -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+          parentType source
+          ((executableFieldSelections [first]
+              ++ middle
+              ++ executableFieldSelections [later])
+            ++ suffix)
+  | consDisjoint (selection : Selection) (rest : List Selection)
+    : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+        (completionDepth + 1) parentType source [selection]
+      -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+          parentType source rest
+      -> GraphQL.NormalForm.executableGroupNamesDisjoint
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            [selection])
+          (GraphQL.Execution.collectFields schema variableValues parentType source rest)
+      -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+          parentType source (selection :: rest)
+  | duplicateFieldBlock (first later : ExecutableField) (middle suffix : List Selection)
+    : later.responseName = first.responseName
+      -> (∃ fieldDefinition,
+            schema.lookupField parentType later.fieldName = some fieldDefinition)
+      -> first.responseName
+          ∉ (GraphQL.Execution.collectFields schema variableValues parentType
+              source middle).map
+              Prod.fst
+      -> GraphQL.NormalForm.executableGroupNamesDisjoint
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections [first]
+              ++ middle
+              ++ executableFieldSelections [later]))
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            suffix)
+      -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+          parentType source middle
+      -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+          parentType source suffix
+      -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+          parentType source
+          (executableFieldSelections [first]
+            ++ middle
+            ++ executableFieldSelections [later]
+            ++ suffix)
 
 inductive FreshPrefixSelectionDerivation
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    List Selection -> Prop where
-  | nil :
-      FreshPrefixSelectionDerivation schema variableValues parentType source []
-  | appendDisjoint (left right : List Selection) :
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        left ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        right ->
-      GraphQL.NormalForm.executableGroupNamesDisjoint
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          left)
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          right) ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        (left ++ right)
-  | sameGroup (responseName : Name) (fields : List ExecutableField) :
-      (∀ field, field ∈ fields -> field.responseName = responseName) ->
-      (∀ field, field ∈ fields -> field.parentType = parentType) ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        (executableFieldSelections fields)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : List Selection -> Prop where
+  | nil : FreshPrefixSelectionDerivation schema variableValues parentType source []
+  | appendDisjoint (left right : List Selection)
+    : FreshPrefixSelectionDerivation schema variableValues parentType source left
+      -> FreshPrefixSelectionDerivation schema variableValues parentType source right
+      -> GraphQL.NormalForm.executableGroupNamesDisjoint
+          (GraphQL.Execution.collectFields schema variableValues parentType source left)
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            right)
+      -> FreshPrefixSelectionDerivation schema variableValues parentType source
+          (left ++ right)
+  | sameGroup (responseName : Name) (fields : List ExecutableField)
+    : (∀ field, field ∈ fields -> field.responseName = responseName)
+      -> (∀ field, field ∈ fields -> field.parentType = parentType)
+      -> FreshPrefixSelectionDerivation schema variableValues parentType source
+          (executableFieldSelections fields)
   | inlineFragmentNone (directives : List DirectiveApplication)
-      (selectionSet : List Selection) :
-      (selectionDirectivesAllowBool variableValues directives = true ->
-        FreshPrefixSelectionDerivation schema variableValues parentType source
-          selectionSet) ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        [.inlineFragment none directives selectionSet]
+    (selectionSet : List Selection)
+    : (selectionDirectivesAllowBool variableValues directives = true
+        -> FreshPrefixSelectionDerivation schema variableValues parentType source
+            selectionSet)
+      -> FreshPrefixSelectionDerivation schema variableValues parentType source
+          [.inlineFragment none directives selectionSet]
   | inlineFragmentSome (typeCondition : Name)
-      (directives : List DirectiveApplication) (selectionSet : List Selection) :
-      (selectionDirectivesAllowBool variableValues directives = true ->
-        doesFragmentTypeApplyBool schema parentType source typeCondition = true ->
-          FreshPrefixSelectionDerivation schema variableValues parentType source
-            selectionSet) ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        [.inlineFragment (some typeCondition) directives selectionSet]
+    (directives : List DirectiveApplication) (selectionSet : List Selection)
+    : (selectionDirectivesAllowBool variableValues directives = true
+        -> doesFragmentTypeApplyBool schema parentType source typeCondition = true
+        -> FreshPrefixSelectionDerivation schema variableValues parentType source
+            selectionSet)
+      -> FreshPrefixSelectionDerivation schema variableValues parentType source
+          [.inlineFragment (some typeCondition) directives selectionSet]
   | duplicateFieldBlockNormalize
-      (first later : ExecutableField) (middle suffix : List Selection) :
-      later.responseName = first.responseName ->
-      (∃ fieldDefinition, schema.lookupField parentType later.fieldName =
-        some fieldDefinition) ->
-      first.responseName ∉
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source middle).map Prod.fst ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        middle ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        ((executableFieldSelections [first, later] ++
-            executableFieldSelections
-              (collectedExecutableFields
-                (GraphQL.Execution.collectFields schema variableValues
-                  parentType source middle))) ++ suffix) ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        ((executableFieldSelections [first] ++ middle ++
-            executableFieldSelections [later]) ++ suffix)
-  | consHeadDisjoint
-      (selection : Selection) (rest : List Selection) :
-      SelectionCollectFieldsHeadDisjointTree schema variableValues parentType
-        source selection ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        rest ->
-      GraphQL.NormalForm.executableGroupNamesDisjoint
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          [selection])
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          rest) ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        (selection :: rest)
-  | duplicateFieldBlock
-      (first later : ExecutableField) (middle suffix : List Selection) :
-      later.responseName = first.responseName ->
-      (∃ fieldDefinition, schema.lookupField parentType later.fieldName =
-        some fieldDefinition) ->
-      first.responseName ∉
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source middle).map Prod.fst ->
-      GraphQL.NormalForm.executableGroupNamesDisjoint
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections [first] ++ middle ++
-            executableFieldSelections [later]))
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          suffix) ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        middle ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        suffix ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        (executableFieldSelections [first] ++ middle ++
-          executableFieldSelections [later] ++ suffix)
+    (first later : ExecutableField) (middle suffix : List Selection)
+    : later.responseName = first.responseName
+      -> (∃ fieldDefinition,
+            schema.lookupField parentType later.fieldName = some fieldDefinition)
+      -> first.responseName
+          ∉ (GraphQL.Execution.collectFields schema variableValues parentType
+              source middle).map
+              Prod.fst
+      -> FreshPrefixSelectionDerivation schema variableValues parentType source middle
+      -> FreshPrefixSelectionDerivation schema variableValues parentType source
+          ((executableFieldSelections [first, later]
+              ++ executableFieldSelections
+                  (collectedExecutableFields
+                    (GraphQL.Execution.collectFields schema variableValues
+                      parentType source middle)))
+            ++ suffix)
+      -> FreshPrefixSelectionDerivation schema variableValues parentType source
+          ((executableFieldSelections [first]
+              ++ middle
+              ++ executableFieldSelections [later])
+            ++ suffix)
+  | consHeadDisjoint (selection : Selection) (rest : List Selection)
+    : SelectionCollectFieldsHeadDisjointTree schema variableValues parentType
+        source selection
+      -> FreshPrefixSelectionDerivation schema variableValues parentType source rest
+      -> GraphQL.NormalForm.executableGroupNamesDisjoint
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            [selection])
+          (GraphQL.Execution.collectFields schema variableValues parentType source rest)
+      -> FreshPrefixSelectionDerivation schema variableValues parentType source
+          (selection :: rest)
+  | duplicateFieldBlock (first later : ExecutableField) (middle suffix : List Selection)
+    : later.responseName = first.responseName
+      -> (∃ fieldDefinition,
+            schema.lookupField parentType later.fieldName = some fieldDefinition)
+      -> first.responseName
+          ∉ (GraphQL.Execution.collectFields schema variableValues parentType
+              source middle).map
+              Prod.fst
+      -> GraphQL.NormalForm.executableGroupNamesDisjoint
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections [first]
+              ++ middle
+              ++ executableFieldSelections [later]))
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            suffix)
+      -> FreshPrefixSelectionDerivation schema variableValues parentType source middle
+      -> FreshPrefixSelectionDerivation schema variableValues parentType source suffix
+      -> FreshPrefixSelectionDerivation schema variableValues parentType source
+          (executableFieldSelections [first]
+            ++ middle
+            ++ executableFieldSelections [later]
+            ++ suffix)
 
 namespace FreshPrefixSelectionDerivation
 
@@ -197,11 +198,11 @@ theorem single_of_headDisjointTree
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selection : Selection)
-    (htree :
-      SelectionCollectFieldsHeadDisjointTree schema variableValues parentType
-        source selection) :
-    FreshPrefixSelectionDerivation schema variableValues parentType source
-      [selection] :=
+    (htree
+      : SelectionCollectFieldsHeadDisjointTree schema variableValues parentType
+          source selection)
+    : FreshPrefixSelectionDerivation schema variableValues parentType source
+        [selection] :=
   .consHeadDisjoint selection []
     htree
     .nil
@@ -212,15 +213,16 @@ theorem single_of_headDisjointTree
 theorem of_headDisjoint
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    ∀ selectionSet,
-      SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
-        source selectionSet ->
-      (∀ selection, selection ∈ selectionSet ->
-        SelectionCollectFieldsHeadDisjointTree schema variableValues parentType
-          source selection) ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        selectionSet
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : ∀ selectionSet,
+        SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
+          source selectionSet
+        -> (∀ selection,
+              selection ∈ selectionSet
+              -> SelectionCollectFieldsHeadDisjointTree schema variableValues parentType
+                  source selection)
+        -> FreshPrefixSelectionDerivation schema variableValues parentType source
+            selectionSet
   | [], _hdisjoint, _hchildren => .nil
   | selection :: rest, hdisjoint, hchildren => by
       rcases hdisjoint with ⟨hheadDisjoint, hrestDisjoint⟩
@@ -238,11 +240,11 @@ theorem of_headDisjointTree
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
-    (htree :
-      SelectionSetCollectFieldsHeadDisjointTree schema variableValues
-        parentType source selectionSet) :
-    FreshPrefixSelectionDerivation schema variableValues parentType source
-      selectionSet := by
+    (htree
+      : SelectionSetCollectFieldsHeadDisjointTree schema variableValues
+          parentType source selectionSet)
+    : FreshPrefixSelectionDerivation schema variableValues parentType source
+        selectionSet := by
   have htree' :
       SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
           source selectionSet
@@ -260,29 +262,33 @@ theorem duplicateFieldBlock_of_headDisjointTrees
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (first later : ExecutableField) (middle suffix : List Selection)
     (hsameResponse : later.responseName = first.responseName)
-    (hlaterLookup :
-      ∃ fieldDefinition, schema.lookupField parentType later.fieldName =
-        some fieldDefinition)
-    (hnotMiddle :
-      first.responseName ∉
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source middle).map Prod.fst)
-    (hdisjoint :
-      GraphQL.NormalForm.executableGroupNamesDisjoint
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections [first] ++ middle ++
-            executableFieldSelections [later]))
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          suffix))
-    (hmiddle :
-      SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
-        source middle)
-    (hsuffix :
-      SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
-        source suffix) :
-    FreshPrefixSelectionDerivation schema variableValues parentType source
-      (executableFieldSelections [first] ++ middle ++
-        executableFieldSelections [later] ++ suffix) :=
+    (hlaterLookup
+      : ∃ fieldDefinition,
+          schema.lookupField parentType later.fieldName = some fieldDefinition)
+    (hnotMiddle
+      : first.responseName
+        ∉ (GraphQL.Execution.collectFields schema variableValues parentType
+            source middle).map
+            Prod.fst)
+    (hdisjoint
+      : GraphQL.NormalForm.executableGroupNamesDisjoint
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections [first]
+              ++ middle
+              ++ executableFieldSelections [later]))
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            suffix))
+    (hmiddle
+      : SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
+          source middle)
+    (hsuffix
+      : SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
+          source suffix)
+    : FreshPrefixSelectionDerivation schema variableValues parentType source
+        (executableFieldSelections [first]
+          ++ middle
+          ++ executableFieldSelections [later]
+          ++ suffix) :=
   .duplicateFieldBlock first later middle suffix hsameResponse hlaterLookup
     hnotMiddle hdisjoint
     (of_headDisjointTree schema variableValues parentType source middle hmiddle)
@@ -294,19 +300,21 @@ theorem duplicateFieldPair_of_headDisjointMiddle
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (first later : ExecutableField) (middle : List Selection)
     (hsameResponse : later.responseName = first.responseName)
-    (hlaterLookup :
-      ∃ fieldDefinition, schema.lookupField parentType later.fieldName =
-        some fieldDefinition)
-    (hnotMiddle :
-      first.responseName ∉
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source middle).map Prod.fst)
-    (hmiddle :
-      SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
-        source middle) :
-    FreshPrefixSelectionDerivation schema variableValues parentType source
-      (executableFieldSelections [first] ++ middle ++
-        executableFieldSelections [later]) := by
+    (hlaterLookup
+      : ∃ fieldDefinition,
+          schema.lookupField parentType later.fieldName = some fieldDefinition)
+    (hnotMiddle
+      : first.responseName
+        ∉ (GraphQL.Execution.collectFields schema variableValues parentType
+            source middle).map
+            Prod.fst)
+    (hmiddle
+      : SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
+          source middle)
+    : FreshPrefixSelectionDerivation schema variableValues parentType source
+        (executableFieldSelections [first]
+          ++ middle
+          ++ executableFieldSelections [later]) := by
   simpa using
     duplicateFieldBlock_of_headDisjointTrees schema variableValues parentType
       source first later middle [] hsameResponse hlaterLookup hnotMiddle
@@ -318,27 +326,25 @@ theorem duplicateFieldPair_of_headDisjointMiddle
         simp [SelectionSetCollectFieldsHeadDisjointTree,
           SelectionSetCollectFieldsHeadDisjoint])
 
-def singletonExecutableGroups :
-    List ExecutableField -> List (Name × List ExecutableField)
+def singletonExecutableGroups
+    : List ExecutableField -> List (Name × List ExecutableField)
   | [] => []
   | field :: rest =>
       (field.responseName, [field]) :: singletonExecutableGroups rest
 
-theorem collectedExecutableFields_singletonExecutableGroups :
-    ∀ fields,
-      collectedExecutableFields (singletonExecutableGroups fields) = fields
+theorem collectedExecutableFields_singletonExecutableGroups
+    : ∀ fields, collectedExecutableFields (singletonExecutableGroups fields) = fields
   | [] => by
       simp [singletonExecutableGroups, collectedExecutableFields]
   | field :: rest => by
       simp [singletonExecutableGroups, collectedExecutableFields,
         collectedExecutableFields_singletonExecutableGroups rest]
 
-theorem singletonExecutableGroups_mem_cons :
-    ∀ {fields : List ExecutableField} {responseName : Name}
-      {field : ExecutableField} {fieldsTail : List ExecutableField},
-      (responseName, field :: fieldsTail) ∈
-        singletonExecutableGroups fields ->
-        field ∈ fields ∧ fieldsTail = []
+theorem singletonExecutableGroups_mem_cons
+    : ∀ {fields : List ExecutableField} {responseName : Name}
+          {field : ExecutableField} {fieldsTail : List ExecutableField},
+        (responseName, field :: fieldsTail) ∈ singletonExecutableGroups fields
+        -> field ∈ fields ∧ fieldsTail = []
   | [], _responseName, _field, _fieldsTail, hmem => by
       simp [singletonExecutableGroups] at hmem
   | head :: rest, responseName, field, fieldsTail, hmem => by
@@ -356,25 +362,24 @@ theorem singletonExecutableGroups_mem_cons :
           ⟨hfield, hfieldsTail⟩
         exact ⟨by simp [hfield], hfieldsTail⟩
 
-theorem singletonExecutableGroups_map_fst :
-    ∀ fields,
-      (singletonExecutableGroups fields).map Prod.fst =
-        fields.map (fun field => field.responseName)
+theorem singletonExecutableGroups_map_fst
+    : ∀ fields,
+        (singletonExecutableGroups fields).map Prod.fst
+        = fields.map (fun field => field.responseName)
   | [] => by
       simp [singletonExecutableGroups]
   | field :: rest => by
       simp [singletonExecutableGroups, singletonExecutableGroups_map_fst rest]
 
-theorem pairKeysNodup_singletonExecutableGroups
-    {fields : List ExecutableField} :
-    (fields.map (fun field => field.responseName)).Nodup ->
-      PairKeysNodup (singletonExecutableGroups fields) := by
+theorem pairKeysNodup_singletonExecutableGroups {fields : List ExecutableField}
+    : (fields.map (fun field => field.responseName)).Nodup
+      -> PairKeysNodup (singletonExecutableGroups fields) := by
   intro hnodup
   simpa [PairKeysNodup, singletonExecutableGroups_map_fst] using hnodup
 
 theorem collectedGroupsFieldsNonempty_singletonExecutableGroups
-    (fields : List ExecutableField) :
-    CollectedGroupsFieldsNonempty (singletonExecutableGroups fields) := by
+    (fields : List ExecutableField)
+    : CollectedGroupsFieldsNonempty (singletonExecutableGroups fields) := by
   intro responseName groupFields hmem
   induction fields with
   | nil =>
@@ -387,8 +392,8 @@ theorem collectedGroupsFieldsNonempty_singletonExecutableGroups
       · exact ih htail
 
 theorem collectedGroupsResponseName_singletonExecutableGroups
-    (fields : List ExecutableField) :
-    CollectedGroupsResponseName (singletonExecutableGroups fields) := by
+    (fields : List ExecutableField)
+    : CollectedGroupsResponseName (singletonExecutableGroups fields) := by
   intro responseName groupFields hmem
   induction fields generalizing responseName groupFields with
   | nil =>
@@ -407,9 +412,9 @@ theorem collectedGroupsResponseName_singletonExecutableGroups
       · exact ih responseName groupFields htail
 
 theorem collectedGroupsParent_singletonExecutableGroups
-    {parentType : Name} {fields : List ExecutableField} :
-    ExecutableFieldsParent parentType fields ->
-      CollectedGroupsParent parentType (singletonExecutableGroups fields) := by
+    {parentType : Name} {fields : List ExecutableField}
+    : ExecutableFieldsParent parentType fields
+      -> CollectedGroupsParent parentType (singletonExecutableGroups fields) := by
   intro hparents responseName groupFields hmem
   induction fields generalizing responseName groupFields with
   | nil =>
@@ -430,12 +435,10 @@ theorem collectedGroupsParent_singletonExecutableGroups
             exact hparents restField (by simp [hrestField]))
           responseName groupFields htail
 
-theorem ExecutableFieldsParent_collectedExecutableFields
-    {parentType : Name} :
-    ∀ {groups : List (Name × List ExecutableField)},
-      CollectedGroupsParent parentType groups ->
-        ExecutableFieldsParent parentType
-          (collectedExecutableFields groups)
+theorem ExecutableFieldsParent_collectedExecutableFields {parentType : Name}
+    : ∀ {groups : List (Name × List ExecutableField)},
+        CollectedGroupsParent parentType groups
+        -> ExecutableFieldsParent parentType (collectedExecutableFields groups)
   | [], _hparents => by
       intro field hfield
       simp [collectedExecutableFields] at hfield
@@ -452,11 +455,12 @@ theorem collectFields_executableFieldSelections_key_mem
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (fields : List ExecutableField) (responseName : Name) :
-    responseName ∈
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections fields)).map Prod.fst ↔
-      responseName ∈ fields.map (fun field => field.responseName) := by
+    (fields : List ExecutableField) (responseName : Name)
+    : responseName
+        ∈ (GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections fields)).map
+            Prod.fst
+      ↔ responseName ∈ fields.map (fun field => field.responseName) := by
   induction fields with
   | nil =>
       simp [executableFieldSelections, GraphQL.Execution.collectFields]
@@ -490,14 +494,13 @@ theorem collectFields_executableFieldSelections_key_mem
         · right
           exact ih.mpr htailMem
 
-theorem executableFields_first_responseName_split
-    (responseName : Name) :
-    ∀ fields : List ExecutableField,
-      responseName ∈ fields.map (fun field => field.responseName) ->
-        ∃ middle later suffix,
-          fields = middle ++ later :: suffix ∧
-          later.responseName = responseName ∧
-          responseName ∉ middle.map (fun field => field.responseName)
+theorem executableFields_first_responseName_split (responseName : Name)
+    : ∀ fields : List ExecutableField,
+        responseName ∈ fields.map (fun field => field.responseName)
+        -> ∃ middle later suffix,
+            fields = middle ++ later :: suffix
+            ∧ later.responseName = responseName
+            ∧ responseName ∉ middle.map (fun field => field.responseName)
   | [], hmem => by
       simp at hmem
   | field :: rest, hmem => by
@@ -525,13 +528,12 @@ theorem executableFieldConsFresh
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (field : ExecutableField) (rest : List ExecutableField)
-    (hfresh :
-      field.responseName ∉ rest.map (fun field => field.responseName))
-    (hrest :
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        (executableFieldSelections rest)) :
-    FreshPrefixSelectionDerivation schema variableValues parentType source
-      (executableFieldSelections (field :: rest)) := by
+    (hfresh : field.responseName ∉ rest.map (fun field => field.responseName))
+    (hrest
+      : FreshPrefixSelectionDerivation schema variableValues parentType source
+          (executableFieldSelections rest))
+    : FreshPrefixSelectionDerivation schema variableValues parentType source
+        (executableFieldSelections (field :: rest)) := by
   simpa [executableFieldSelections] using
     FreshPrefixSelectionDerivation.consHeadDisjoint
       (schema := schema) (variableValues := variableValues)
@@ -558,14 +560,14 @@ theorem executableFieldConsFresh
 theorem of_collectedGroups
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    ∀ groups,
-      PairKeysNodup groups ->
-      CollectedGroupsFieldsNonempty groups ->
-      CollectedGroupsResponseName groups ->
-      CollectedGroupsParent parentType groups ->
-        FreshPrefixSelectionDerivation schema variableValues parentType source
-          (executableFieldSelections (collectedExecutableFields groups))
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : ∀ groups,
+        PairKeysNodup groups
+        -> CollectedGroupsFieldsNonempty groups
+        -> CollectedGroupsResponseName groups
+        -> CollectedGroupsParent parentType groups
+        -> FreshPrefixSelectionDerivation schema variableValues parentType source
+            (executableFieldSelections (collectedExecutableFields groups))
   | [], _hnodup, _hnonempty, _hresponses, _hparents => by
       simpa [collectedExecutableFields, executableFieldSelections] using
         (FreshPrefixSelectionDerivation.nil
@@ -650,12 +652,12 @@ theorem of_collectedCollectFields
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    FreshPrefixSelectionDerivation schema variableValues parentType source
-      (executableFieldSelections
-        (collectedExecutableFields
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source selectionSet))) :=
+    (selectionSet : List Selection)
+    : FreshPrefixSelectionDerivation schema variableValues parentType source
+        (executableFieldSelections
+          (collectedExecutableFields
+            (GraphQL.Execution.collectFields schema variableValues parentType
+              source selectionSet))) :=
   of_collectedGroups schema variableValues parentType source
     (GraphQL.Execution.collectFields schema variableValues parentType source
       selectionSet)
@@ -676,9 +678,9 @@ theorem of_executableFieldSelections_responseNamesNodup
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (fields : List ExecutableField)
     (hnodup : (fields.map (fun field => field.responseName)).Nodup)
-    (hparents : ExecutableFieldsParent parentType fields) :
-    FreshPrefixSelectionDerivation schema variableValues parentType source
-      (executableFieldSelections fields) := by
+    (hparents : ExecutableFieldsParent parentType fields)
+    : FreshPrefixSelectionDerivation schema variableValues parentType source
+        (executableFieldSelections fields) := by
   simpa [collectedExecutableFields_singletonExecutableGroups] using
     of_collectedGroups schema variableValues parentType source
       (singletonExecutableGroups fields)
@@ -693,10 +695,10 @@ theorem collectFields_executableFieldSelections_singletonExecutableGroups
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (fields : List ExecutableField)
     (hnodup : (fields.map (fun field => field.responseName)).Nodup)
-    (hparents : ExecutableFieldsParent parentType fields) :
-    GraphQL.Execution.collectFields schema variableValues parentType source
-      (executableFieldSelections fields) =
-    singletonExecutableGroups fields := by
+    (hparents : ExecutableFieldsParent parentType fields)
+    : GraphQL.Execution.collectFields schema variableValues parentType source
+        (executableFieldSelections fields)
+      = singletonExecutableGroups fields := by
   simpa [collectedExecutableFields_singletonExecutableGroups] using
     collectFields_executableFieldSelections_collectedExecutableFields schema
       variableValues parentType source (singletonExecutableGroups fields)
@@ -714,11 +716,11 @@ theorem collectFields_executableFieldSelections_mem_cons
     (hparents : ExecutableFieldsParent parentType fields)
     {responseName : Name} {field : ExecutableField}
     {fieldsTail : List ExecutableField}
-    (hgroup :
-      (responseName, field :: fieldsTail) ∈
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections fields)) :
-    field ∈ fields ∧ fieldsTail = [] := by
+    (hgroup
+      : (responseName, field :: fieldsTail)
+        ∈ GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections fields))
+    : field ∈ fields ∧ fieldsTail = [] := by
   have hcollect :
       GraphQL.Execution.collectFields schema variableValues parentType source
           (executableFieldSelections fields) =
@@ -740,13 +742,12 @@ theorem collectFields_executableFieldSelections_prefix_empty
     (hparents : ExecutableFieldsParent parentType fields)
     {responseName : Name} {field : ExecutableField}
     {fieldsTail prefixTail : List ExecutableField}
-    (hgroup :
-      (responseName, field :: fieldsTail) ∈
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections fields))
-    (hprefix :
-      ∀ candidate, candidate ∈ prefixTail -> candidate ∈ fieldsTail) :
-    field ∈ fields ∧ fieldsTail = [] ∧ prefixTail = [] := by
+    (hgroup
+      : (responseName, field :: fieldsTail)
+        ∈ GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections fields))
+    (hprefix : ∀ candidate, candidate ∈ prefixTail -> candidate ∈ fieldsTail)
+    : field ∈ fields ∧ fieldsTail = [] ∧ prefixTail = [] := by
   rcases
       collectFields_executableFieldSelections_mem_cons schema variableValues
         parentType source hnodup hparents hgroup with
@@ -761,27 +762,29 @@ theorem collectFields_executableFieldSelections_prefix_empty
 
 def executableFieldOfSelection (parentType : Name) : Selection -> ExecutableField
   | .field responseName fieldName arguments _directives selectionSet =>
-      { parentType := parentType
+      {
+        parentType := parentType
         responseName := responseName
         fieldName := fieldName
         arguments := arguments
-        selectionSet := selectionSet }
+        selectionSet := selectionSet
+      }
   | .inlineFragment _typeCondition _directives _selectionSet =>
-      { parentType := parentType
+      {
+        parentType := parentType
         responseName := ""
         fieldName := ""
         arguments := []
-        selectionSet := [] }
+        selectionSet := []
+      }
 
-theorem executableFieldSelections_map_executableFieldOfSelection
-    (parentType : Name) :
-    ∀ selectionSet,
-      NormalForm.selectionsAllFields selectionSet ->
-      NormalForm.selectionSetDirectiveFree selectionSet ->
-        executableFieldSelections
-            (selectionSet.map (executableFieldOfSelection parentType))
-          =
-        selectionSet
+theorem executableFieldSelections_map_executableFieldOfSelection (parentType : Name)
+    : ∀ selectionSet,
+        NormalForm.selectionsAllFields selectionSet
+        -> NormalForm.selectionSetDirectiveFree selectionSet
+        -> executableFieldSelections
+              (selectionSet.map (executableFieldOfSelection parentType))
+            = selectionSet
   | [], _hall, _hfree => by
       simp [executableFieldSelections]
   | selection :: rest, hall, hfree => by
@@ -812,13 +815,13 @@ theorem executableFieldSelections_map_executableFieldOfSelection
       | inlineFragment typeCondition directives selectionSet =>
           simp [Selection.isField] at hselectionField
 
-theorem responseNames_map_executableFieldOfSelection
-    (parentType : Name) :
-    ∀ selectionSet,
-      NormalForm.selectionsAllFields selectionSet ->
-        selectionSet.filterMap Selection.responseName? =
-          (selectionSet.map (fun selection =>
-            (executableFieldOfSelection parentType selection).responseName))
+theorem responseNames_map_executableFieldOfSelection (parentType : Name)
+    : ∀ selectionSet,
+        NormalForm.selectionsAllFields selectionSet
+        -> selectionSet.filterMap Selection.responseName?
+            = (selectionSet.map
+                (fun selection =>
+                  (executableFieldOfSelection parentType selection).responseName))
   | [], _hall => by
       simp
   | selection :: rest, hall => by
@@ -836,20 +839,22 @@ theorem responseNames_map_executableFieldOfSelection
           simp [Selection.isField] at hselectionField
 
 theorem responseNamesNodup_map_executableFieldOfSelection
-    (parentType : Name) (selectionSet : List Selection) :
-    NormalForm.selectionsAllFields selectionSet ->
-    NormalForm.responseNamesNodup selectionSet ->
-      (selectionSet.map (fun selection =>
-        (executableFieldOfSelection parentType selection).responseName)).Nodup := by
+    (parentType : Name) (selectionSet : List Selection)
+    : NormalForm.selectionsAllFields selectionSet
+      -> NormalForm.responseNamesNodup selectionSet
+      -> (selectionSet.map
+            (fun selection =>
+              (executableFieldOfSelection parentType
+                selection).responseName)).Nodup := by
   intro hall hnodup
   have hnames :=
     responseNames_map_executableFieldOfSelection parentType selectionSet hall
   simpa [NormalForm.responseNamesNodup, hnames] using hnodup
 
 theorem executableFieldsParent_map_executableFieldOfSelection
-    (parentType : Name) (selectionSet : List Selection) :
-    ExecutableFieldsParent parentType
-      (selectionSet.map (executableFieldOfSelection parentType)) := by
+    (parentType : Name) (selectionSet : List Selection)
+    : ExecutableFieldsParent parentType
+        (selectionSet.map (executableFieldOfSelection parentType)) := by
   intro field hfield
   rcases List.mem_map.mp hfield with ⟨selection, _hselection, hfieldEq⟩
   subst field
@@ -859,17 +864,17 @@ theorem collectFields_allFields_directiveFree_responseNamesNodup_prefix_empty
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    NormalForm.selectionsAllFields selectionSet ->
-    NormalForm.selectionSetDirectiveFree selectionSet ->
-    NormalForm.responseNamesNodup selectionSet ->
-    ∀ {responseName : Name} {field : ExecutableField}
-      {fieldsTail prefixTail : List ExecutableField},
-      (responseName, field :: fieldsTail) ∈
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          selectionSet ->
-      (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fieldsTail) ->
-        fieldsTail = [] ∧ prefixTail = [] := by
+    (selectionSet : List Selection)
+    : NormalForm.selectionsAllFields selectionSet
+      -> NormalForm.selectionSetDirectiveFree selectionSet
+      -> NormalForm.responseNamesNodup selectionSet
+      -> ∀ {responseName : Name} {field : ExecutableField}
+            {fieldsTail prefixTail : List ExecutableField},
+          (responseName, field :: fieldsTail)
+            ∈ GraphQL.Execution.collectFields schema variableValues parentType source
+                selectionSet
+          -> (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fieldsTail)
+          -> fieldsTail = [] ∧ prefixTail = [] := by
   intro hall hfree hnodup responseName field fieldsTail prefixTail hgroup
     hprefix
   let fields := selectionSet.map (executableFieldOfSelection parentType)
@@ -902,19 +907,19 @@ theorem collectFields_allFields_directiveFree_responseNamesNodup_field_mem_prefi
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    NormalForm.selectionsAllFields selectionSet ->
-    NormalForm.selectionSetDirectiveFree selectionSet ->
-    NormalForm.responseNamesNodup selectionSet ->
-    ∀ {responseName : Name} {field : ExecutableField}
-      {fieldsTail prefixTail : List ExecutableField},
-      (responseName, field :: fieldsTail) ∈
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          selectionSet ->
-      (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fieldsTail) ->
-        field ∈ selectionSet.map (executableFieldOfSelection parentType)
-          ∧ fieldsTail = []
-          ∧ prefixTail = [] := by
+    (selectionSet : List Selection)
+    : NormalForm.selectionsAllFields selectionSet
+      -> NormalForm.selectionSetDirectiveFree selectionSet
+      -> NormalForm.responseNamesNodup selectionSet
+      -> ∀ {responseName : Name} {field : ExecutableField}
+            {fieldsTail prefixTail : List ExecutableField},
+          (responseName, field :: fieldsTail)
+            ∈ GraphQL.Execution.collectFields schema variableValues parentType source
+                selectionSet
+          -> (∀ candidate, candidate ∈ prefixTail -> candidate ∈ fieldsTail)
+          -> field ∈ selectionSet.map (executableFieldOfSelection parentType)
+              ∧ fieldsTail = []
+              ∧ prefixTail = [] := by
   intro hall hfree hnodup responseName field fieldsTail prefixTail hgroup
     hprefix
   let fields := selectionSet.map (executableFieldOfSelection parentType)
@@ -944,11 +949,11 @@ theorem collectFields_allFields_directiveFree_responseNamesNodup_field_mem_prefi
   exact ⟨by simpa [fields] using hfield, hfieldsTail, hprefixTail⟩
 
 theorem fieldMerge_collectFields_parent_of_allFields
-    (schema : Schema) (parentType : Name) :
-    ∀ selectionSet scopedField,
-      NormalForm.selectionsAllFields selectionSet ->
-      scopedField ∈ FieldMerge.collectFields schema parentType selectionSet ->
-        scopedField.parentType = parentType
+    (schema : Schema) (parentType : Name)
+    : ∀ selectionSet scopedField,
+        NormalForm.selectionsAllFields selectionSet
+        -> scopedField ∈ FieldMerge.collectFields schema parentType selectionSet
+        -> scopedField.parentType = parentType
   | [], scopedField, _hall, hmem => by
       simp [FieldMerge.collectFields] at hmem
   | selection :: rest, scopedField, hall, hmem => by
@@ -977,12 +982,12 @@ theorem fieldMerge_collectFields_parent_of_allFields
           simp [Selection.isField] at hselectionField
 
 theorem selectionSetResponseNameFree_of_allFields_responseNamesNodup
-    (schema : Schema) (parentType responseName : Name) :
-    ∀ selectionSet,
-      NormalForm.selectionsAllFields selectionSet ->
-      responseName ∉ selectionSet.filterMap Selection.responseName? ->
-        NormalForm.selectionSetResponseNameFree schema parentType
-          responseName selectionSet
+    (schema : Schema) (parentType responseName : Name)
+    : ∀ selectionSet,
+        NormalForm.selectionsAllFields selectionSet
+        -> responseName ∉ selectionSet.filterMap Selection.responseName?
+        -> NormalForm.selectionSetResponseNameFree schema parentType
+            responseName selectionSet
   | [], _hall, _hnotMem => by
       exact NormalForm.selectionSetResponseNameFree_nil schema parentType
         responseName
@@ -1013,14 +1018,15 @@ theorem collectFields_responseName_not_mem_of_allFields_responseNameFree
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (responseName : Name) :
-    ∀ selectionSet,
-      NormalForm.selectionsAllFields selectionSet ->
-      NormalForm.selectionSetResponseNameFree schema parentType responseName
-        selectionSet ->
-        responseName ∉
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source selectionSet).map Prod.fst
+    (responseName : Name)
+    : ∀ selectionSet,
+        NormalForm.selectionsAllFields selectionSet
+        -> NormalForm.selectionSetResponseNameFree schema parentType responseName
+            selectionSet
+        -> responseName
+            ∉ (GraphQL.Execution.collectFields schema variableValues parentType
+                source selectionSet).map
+                Prod.fst
   | [], _hall, _hfree => by
       simp [GraphQL.Execution.collectFields]
   | selection :: rest, hall, hfree => by
@@ -1115,15 +1121,14 @@ theorem scopedField_outputType_eq_fieldReturnType_of_identity_match
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType : Name) (selectionSet : List Selection)
     (scopedField : FieldMerge.ScopedField)
-    (field : ExecutableField) :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    scopedField ∈ FieldMerge.collectFields schema parentType selectionSet ->
-    field.parentType = scopedField.parentType ->
-    ScopedFieldMatchesExecutableIdentity scopedField field ->
-      scopedField.outputType.namedType =
-        ((schema.fieldReturnType? field.parentType field.fieldName).getD
-          field.fieldName) := by
+    (field : ExecutableField)
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> scopedField ∈ FieldMerge.collectFields schema parentType selectionSet
+      -> field.parentType = scopedField.parentType
+      -> ScopedFieldMatchesExecutableIdentity scopedField field
+      -> scopedField.outputType.namedType
+          = ((schema.fieldReturnType? field.parentType field.fieldName).getD
+              field.fieldName) := by
   intro hvalid hscopedMem hparent hmatch
   rcases hmatch with
     ⟨_hresponseName, hfieldName, _harguments, _hselectionSet⟩
@@ -1143,12 +1148,12 @@ theorem of_allFields_directiveFree_responseNamesNodup
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    NormalForm.selectionsAllFields selectionSet ->
-    NormalForm.selectionSetDirectiveFree selectionSet ->
-    NormalForm.responseNamesNodup selectionSet ->
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        selectionSet := by
+    (selectionSet : List Selection)
+    : NormalForm.selectionsAllFields selectionSet
+      -> NormalForm.selectionSetDirectiveFree selectionSet
+      -> NormalForm.responseNamesNodup selectionSet
+      -> FreshPrefixSelectionDerivation schema variableValues parentType source
+          selectionSet := by
   intro hall hfree hnodup
   let fields := selectionSet.map (executableFieldOfSelection parentType)
   have hselectionSet :
@@ -1172,14 +1177,13 @@ theorem of_allFields_directiveFree_responseNamesNodup
   rwa [hselectionSet] at hderivation
 
 theorem selectionSetCollectFieldsHeadDisjointTree_executableFieldSelections_responseNamesNodup
-    {ObjectIdentity : Type}
-    (schema : Schema) (variableValues : VariableValues)
+    {ObjectIdentity : Type} (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (fields : List ExecutableField)
     (hnodup : (fields.map (fun field => field.responseName)).Nodup)
-    (hparents : ExecutableFieldsParent parentType fields) :
-    SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
-      source (executableFieldSelections fields) := by
+    (hparents : ExecutableFieldsParent parentType fields)
+    : SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
+        source (executableFieldSelections fields) := by
   have htree :
       SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
           source (executableFieldSelections fields)
@@ -1254,16 +1258,13 @@ theorem collectFields_executableFieldSelections_single_prefix_duplicate_fresh_mi
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (first later : ExecutableField) (middle : List ExecutableField)
     (hsameResponse : later.responseName = first.responseName)
-    (hmiddleNodup :
-      (middle.map (fun field => field.responseName)).Nodup)
-    (hmiddleParents :
-      ∀ field, field ∈ middle -> field.parentType = parentType)
-    (hnotMiddle :
-      later.responseName ∉ middle.map (fun field => field.responseName)) :
-    GraphQL.Execution.collectFields schema variableValues parentType source
-        (executableFieldSelections ([first] ++ (middle ++ [later]))) =
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        (executableFieldSelections ([first] ++ [later] ++ middle)) := by
+    (hmiddleNodup : (middle.map (fun field => field.responseName)).Nodup)
+    (hmiddleParents : ∀ field, field ∈ middle -> field.parentType = parentType)
+    (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
+    : GraphQL.Execution.collectFields schema variableValues parentType source
+        (executableFieldSelections ([first] ++ (middle ++ [later])))
+      = GraphQL.Execution.collectFields schema variableValues parentType source
+          (executableFieldSelections ([first] ++ [later] ++ middle)) := by
   have hnotMiddleCollect :
       first.responseName ∉
         (GraphQL.Execution.collectFields schema variableValues parentType
@@ -1296,11 +1297,11 @@ theorem freshFlat
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {completionDepth : Nat}
-    {parentType : Name} {source : ResolverValue ObjectIdentity} {selectionSet} :
-    FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-      parentType source selectionSet ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      (completionDepth + 1) parentType source selectionSet := by
+    {parentType : Name} {source : ResolverValue ObjectIdentity} {selectionSet}
+    : FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+        parentType source selectionSet
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          (completionDepth + 1) parentType source selectionSet := by
   intro plan
   induction plan with
   | nil =>
@@ -1339,11 +1340,11 @@ theorem single_of_headDisjointTree
     (variableValues : VariableValues) (completionDepth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selection : Selection)
-    (htree :
-      SelectionCollectFieldsHeadDisjointTree schema variableValues parentType
-        source selection) :
-    FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-      parentType source [selection] :=
+    (htree
+      : SelectionCollectFieldsHeadDisjointTree schema variableValues parentType
+          source selection)
+    : FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+        parentType source [selection] :=
   .consDisjoint selection []
     (VisitSubfieldsFlatCollectsFreshPrefixes_single_of_headDisjointTree schema
       resolvers variableValues (completionDepth + 1) parentType source
@@ -1357,15 +1358,16 @@ theorem of_headDisjoint
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (completionDepth : Nat)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    ∀ selectionSet,
-      SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
-        source selectionSet ->
-      (∀ selection, selection ∈ selectionSet ->
-        FreshPrefixSelectionPlan schema resolvers variableValues
-          completionDepth parentType source [selection]) ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source selectionSet
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : ∀ selectionSet,
+        SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
+          source selectionSet
+        -> (∀ selection,
+              selection ∈ selectionSet
+              -> FreshPrefixSelectionPlan schema resolvers variableValues
+                  completionDepth parentType source [selection])
+        -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+            parentType source selectionSet
   | [], _hdisjoint, _hsingle => .nil
   | selection :: rest, hdisjoint, hsingle => by
       rcases hdisjoint with ⟨hheadDisjoint, hrestDisjoint⟩
@@ -1384,11 +1386,11 @@ theorem of_headDisjointTree
     (variableValues : VariableValues) (completionDepth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
-    (htree :
-      SelectionSetCollectFieldsHeadDisjointTree schema variableValues
-        parentType source selectionSet) :
-    FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-      parentType source selectionSet := by
+    (htree
+      : SelectionSetCollectFieldsHeadDisjointTree schema variableValues
+          parentType source selectionSet)
+    : FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+        parentType source selectionSet := by
   have htree' :
       SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
           source selectionSet
@@ -1412,30 +1414,34 @@ theorem duplicateFieldBlock_of_headDisjointTrees
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (first later : ExecutableField) (middle suffix : List Selection)
     (hsameResponse : later.responseName = first.responseName)
-    (hlaterLookup :
-      ∃ fieldDefinition, schema.lookupField parentType later.fieldName =
-        some fieldDefinition)
-    (hnotMiddle :
-      first.responseName ∉
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source middle).map Prod.fst)
-    (hdisjoint :
-      GraphQL.NormalForm.executableGroupNamesDisjoint
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections [first] ++ middle ++
-            executableFieldSelections [later]))
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          suffix))
-    (hmiddle :
-      SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
-        source middle)
-    (hsuffix :
-      SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
-        source suffix) :
-    FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-      parentType source
-      (executableFieldSelections [first] ++ middle ++
-        executableFieldSelections [later] ++ suffix) :=
+    (hlaterLookup
+      : ∃ fieldDefinition,
+          schema.lookupField parentType later.fieldName = some fieldDefinition)
+    (hnotMiddle
+      : first.responseName
+        ∉ (GraphQL.Execution.collectFields schema variableValues parentType
+            source middle).map
+            Prod.fst)
+    (hdisjoint
+      : GraphQL.NormalForm.executableGroupNamesDisjoint
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections [first]
+              ++ middle
+              ++ executableFieldSelections [later]))
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            suffix))
+    (hmiddle
+      : SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
+          source middle)
+    (hsuffix
+      : SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
+          source suffix)
+    : FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+        parentType source
+        (executableFieldSelections [first]
+          ++ middle
+          ++ executableFieldSelections [later]
+          ++ suffix) :=
   .duplicateFieldBlock first later middle suffix hsameResponse hlaterLookup
     hnotMiddle hdisjoint
     (of_headDisjointTree schema resolvers variableValues completionDepth
@@ -1450,20 +1456,22 @@ theorem duplicateFieldPair_of_headDisjointMiddle
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (first later : ExecutableField) (middle : List Selection)
     (hsameResponse : later.responseName = first.responseName)
-    (hlaterLookup :
-      ∃ fieldDefinition, schema.lookupField parentType later.fieldName =
-        some fieldDefinition)
-    (hnotMiddle :
-      first.responseName ∉
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source middle).map Prod.fst)
-    (hmiddle :
-      SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
-        source middle) :
-    FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-      parentType source
-      (executableFieldSelections [first] ++ middle ++
-        executableFieldSelections [later]) := by
+    (hlaterLookup
+      : ∃ fieldDefinition,
+          schema.lookupField parentType later.fieldName = some fieldDefinition)
+    (hnotMiddle
+      : first.responseName
+        ∉ (GraphQL.Execution.collectFields schema variableValues parentType
+            source middle).map
+            Prod.fst)
+    (hmiddle
+      : SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
+          source middle)
+    : FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+        parentType source
+        (executableFieldSelections [first]
+          ++ middle
+          ++ executableFieldSelections [later]) := by
   simpa using
     duplicateFieldBlock_of_headDisjointTrees schema resolvers variableValues
       completionDepth parentType source first later middle [] hsameResponse
@@ -1480,15 +1488,15 @@ theorem of_collectedGroups
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (completionDepth : Nat)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    ∀ groups,
-      PairKeysNodup groups ->
-      CollectedGroupsFieldsNonempty groups ->
-      CollectedGroupsResponseName groups ->
-      CollectedGroupsParent parentType groups ->
-        FreshPrefixSelectionPlan schema resolvers variableValues
-          completionDepth parentType source
-          (executableFieldSelections (collectedExecutableFields groups))
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : ∀ groups,
+        PairKeysNodup groups
+        -> CollectedGroupsFieldsNonempty groups
+        -> CollectedGroupsResponseName groups
+        -> CollectedGroupsParent parentType groups
+        -> FreshPrefixSelectionPlan schema resolvers variableValues
+            completionDepth parentType source
+            (executableFieldSelections (collectedExecutableFields groups))
   | [], _hnodup, _hnonempty, _hresponses, _hparents => by
       simpa [collectedExecutableFields, executableFieldSelections] using
         (FreshPrefixSelectionPlan.nil
@@ -1580,13 +1588,13 @@ theorem of_collectedCollectFields
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (completionDepth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-      parentType source
-      (executableFieldSelections
-        (collectedExecutableFields
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source selectionSet))) :=
+    (selectionSet : List Selection)
+    : FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+        parentType source
+        (executableFieldSelections
+          (collectedExecutableFields
+            (GraphQL.Execution.collectFields schema variableValues parentType
+              source selectionSet))) :=
   of_collectedGroups schema resolvers variableValues completionDepth parentType
     source
     (GraphQL.Execution.collectFields schema variableValues parentType source
@@ -1610,28 +1618,30 @@ theorem duplicateFieldBlockNormalizePlan_of_headDisjointSuffix
     (first later : ExecutableField) (middle suffix : List Selection)
     (hsameResponse : later.responseName = first.responseName)
     (hparents : ExecutableFieldsParent parentType [first, later])
-    (hnotMiddle :
-      first.responseName ∉
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source middle).map Prod.fst)
-    (hdisjoint :
-      GraphQL.NormalForm.executableGroupNamesDisjoint
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections [first] ++ middle ++
-            executableFieldSelections [later]))
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          suffix))
-    (hsuffix :
-      SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
-        source suffix) :
-    FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-      parentType source
-      ((executableFieldSelections [first, later] ++
-          executableFieldSelections
-            (collectedExecutableFields
-              (GraphQL.Execution.collectFields schema variableValues parentType
-                source middle))) ++
-        suffix) := by
+    (hnotMiddle
+      : first.responseName
+        ∉ (GraphQL.Execution.collectFields schema variableValues parentType
+            source middle).map
+            Prod.fst)
+    (hdisjoint
+      : GraphQL.NormalForm.executableGroupNamesDisjoint
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections [first]
+              ++ middle
+              ++ executableFieldSelections [later]))
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            suffix))
+    (hsuffix
+      : SelectionSetCollectFieldsHeadDisjointTree schema variableValues parentType
+          source suffix)
+    : FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+        parentType source
+        ((executableFieldSelections [first, later]
+            ++ executableFieldSelections
+                (collectedExecutableFields
+                  (GraphQL.Execution.collectFields schema variableValues parentType
+                    source middle)))
+          ++ suffix) := by
   let collectedMiddle :=
     executableFieldSelections
       (collectedExecutableFields
@@ -1735,12 +1745,12 @@ theorem of_derivation
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (completionDepth : Nat)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    ∀ {selectionSet},
-      FreshPrefixSelectionDerivation schema variableValues parentType source
-        selectionSet ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source selectionSet
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : ∀ {selectionSet},
+        FreshPrefixSelectionDerivation schema variableValues parentType source
+          selectionSet
+        -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+            parentType source selectionSet
   | _, FreshPrefixSelectionDerivation.nil => .nil
   | _, FreshPrefixSelectionDerivation.appendDisjoint left right hleft hright
         hdisjoint =>
@@ -1817,9 +1827,9 @@ theorem of_executableFieldSelections_responseNamesNodup
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (fields : List ExecutableField)
     (hnodup : (fields.map (fun field => field.responseName)).Nodup)
-    (hparents : ExecutableFieldsParent parentType fields) :
-    FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-      parentType source (executableFieldSelections fields) :=
+    (hparents : ExecutableFieldsParent parentType fields)
+    : FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+        parentType source (executableFieldSelections fields) :=
   of_derivation schema resolvers variableValues completionDepth parentType source
     (FreshPrefixSelectionDerivation.of_executableFieldSelections_responseNamesNodup
       schema variableValues parentType source fields hnodup hparents)
@@ -1829,12 +1839,12 @@ theorem of_allFields_directiveFree_responseNamesNodup
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (completionDepth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    NormalForm.selectionsAllFields selectionSet ->
-    NormalForm.selectionSetDirectiveFree selectionSet ->
-    NormalForm.responseNamesNodup selectionSet ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source selectionSet :=
+    (selectionSet : List Selection)
+    : NormalForm.selectionsAllFields selectionSet
+      -> NormalForm.selectionSetDirectiveFree selectionSet
+      -> NormalForm.responseNamesNodup selectionSet
+      -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+          parentType source selectionSet :=
   fun hall hfree hnodup =>
     of_derivation schema resolvers variableValues completionDepth parentType
       source
@@ -1846,11 +1856,11 @@ theorem of_normalizeSelectionSet
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (completionDepth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    NormalForm.selectionSetDirectiveFree selectionSet ->
-      FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
-        parentType source
-        (NormalForm.normalizeSelectionSet schema parentType selectionSet) := by
+    (selectionSet : List Selection)
+    : NormalForm.selectionSetDirectiveFree selectionSet
+      -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
+          parentType source
+          (NormalForm.normalizeSelectionSet schema parentType selectionSet) := by
   intro hfree
   exact
     of_allFields_directiveFree_responseNamesNodup schema resolvers
@@ -1866,16 +1876,14 @@ theorem of_normalizeSelectionSet
 end FreshPrefixSelectionPlan
 
 theorem VisitSubfieldsFlatCollectsFreshPrefixes_of_allFields_directiveFree_responseNamesNodup
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (completionDepth : Nat)
-    (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    NormalForm.selectionsAllFields selectionSet ->
-    NormalForm.selectionSetDirectiveFree selectionSet ->
-    NormalForm.responseNamesNodup selectionSet ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        (completionDepth + 1) parentType source selectionSet :=
+    {ObjectIdentity : Type} (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (completionDepth : Nat) (parentType : Name)
+    (source : ResolverValue ObjectIdentity) (selectionSet : List Selection)
+    : NormalForm.selectionsAllFields selectionSet
+      -> NormalForm.selectionSetDirectiveFree selectionSet
+      -> NormalForm.responseNamesNodup selectionSet
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          (completionDepth + 1) parentType source selectionSet :=
   fun hall hfree hnodup =>
     (FreshPrefixSelectionPlan.of_allFields_directiveFree_responseNamesNodup
       schema resolvers variableValues completionDepth parentType source
@@ -1886,12 +1894,12 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_of_allFields_directiveFree_norma
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (completionDepth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    NormalForm.selectionsAllFields selectionSet ->
-    NormalForm.selectionSetDirectiveFree selectionSet ->
-    NormalForm.selectionSetNormal schema parentType selectionSet ->
-      VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-        (completionDepth + 1) parentType source selectionSet := by
+    (selectionSet : List Selection)
+    : NormalForm.selectionsAllFields selectionSet
+      -> NormalForm.selectionSetDirectiveFree selectionSet
+      -> NormalForm.selectionSetNormal schema parentType selectionSet
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          (completionDepth + 1) parentType source selectionSet := by
   intro hall hfree hnormal
   have hnodup : NormalForm.responseNamesNodup selectionSet := by
     have hnonRedundant : NormalForm.selectionSetNonRedundant selectionSet :=

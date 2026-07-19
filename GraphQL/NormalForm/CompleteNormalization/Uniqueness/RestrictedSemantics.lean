@@ -13,14 +13,15 @@ namespace CompleteNormalization
 
 def selectionSetsSemanticallyEquivalentForCompleteBoolVars
     (schema : Schema) (variables : List BoolVar)
-    (parentType : Name) (left right : List Selection) : Prop :=
+    (parentType : Name) (left right : List Selection)
+    : Prop :=
   ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
-    variableValues fuel (source : Execution.ResolverValue ObjectRef),
-    boolVarsComplete variables variableValues ->
-    (∃ runtimeType ref,
-      source = Execution.ResolverValue.object runtimeType ref
-        ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-      Execution.Response.semanticEquivalent
+      variableValues fuel (source : Execution.ResolverValue ObjectRef),
+    boolVarsComplete variables variableValues
+    -> (∃ runtimeType ref,
+          source = Execution.ResolverValue.object runtimeType ref
+          ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+    -> Execution.Response.semanticEquivalent
         (Execution.executeSelectionSetAsResponse schema resolvers
           variableValues fuel parentType source left)
         (Execution.executeSelectionSetAsResponse schema resolvers

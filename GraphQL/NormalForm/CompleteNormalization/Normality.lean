@@ -26,8 +26,7 @@ mutual
   def bottomSelectionSetDirectiveFree : List Selection -> Prop
     | [] => True
     | selection :: rest =>
-        bottomSelectionDirectiveFree selection
-          ∧ bottomSelectionSetDirectiveFree rest
+        bottomSelectionDirectiveFree selection ∧ bottomSelectionSetDirectiveFree rest
 end
 
 def caseBodySelectionShape : Selection -> Prop
@@ -38,32 +37,29 @@ def caseBodySelectionShape : Selection -> Prop
   | _ => False
 
 def caseBodySelectionSetShape (selectionSet : List Selection) : Prop :=
-  ∀ selection, selection ∈ selectionSet ->
-    caseBodySelectionShape selection
+  ∀ selection, selection ∈ selectionSet -> caseBodySelectionShape selection
 
 def boolCaseWrapperShape : List BoolVar -> List Selection -> Prop
   | [], selectionSet => caseBodySelectionSetShape selectionSet
   | _variable :: restVariables,
-      [Selection.inlineFragment none directives selectionSet] =>
-        directives ≠ [] ∧ boolCaseWrapperShape restVariables selectionSet
+    [Selection.inlineFragment none directives selectionSet] =>
+      directives ≠ [] ∧ boolCaseWrapperShape restVariables selectionSet
   | _variable :: _restVariables, _ => False
 
 def boolCaseVars : BoolCase -> List BoolVar
   | [] => []
   | (varName, _value) :: rest => varName :: boolCaseVars rest
 
-theorem boolCaseVars_cons
-    (varName : BoolVar) (value : Bool)
-    (boolCase : BoolCase) :
-    boolCaseVars ((varName, value) :: boolCase) =
-      varName :: boolCaseVars boolCase := by
+theorem boolCaseVars_cons (varName : BoolVar) (value : Bool) (boolCase : BoolCase)
+    : boolCaseVars ((varName, value) :: boolCase)
+      = varName :: boolCaseVars boolCase := by
   rfl
 
-theorem boolCaseWrapperShape_wrapWithBoolCase :
-    ∀ boolCase selectionSet,
-      caseBodySelectionSetShape selectionSet ->
-        boolCaseWrapperShape (boolCaseVars boolCase)
-          (wrapWithBoolCase boolCase selectionSet)
+theorem boolCaseWrapperShape_wrapWithBoolCase
+    : ∀ boolCase selectionSet,
+        caseBodySelectionSetShape selectionSet
+        -> boolCaseWrapperShape (boolCaseVars boolCase)
+            (wrapWithBoolCase boolCase selectionSet)
   | [], selectionSet, hbody => hbody
   | (varName, value) :: rest, selectionSet, hbody => by
       simp [boolCaseVars, wrapWithBoolCase,
@@ -71,10 +67,9 @@ theorem boolCaseWrapperShape_wrapWithBoolCase :
       exact boolCaseWrapperShape_wrapWithBoolCase rest
         selectionSet hbody
 
-theorem boolCaseVars_of_mem_allBoolCases :
-    ∀ {variables boolCase},
-      boolCase ∈ allBoolCases variables ->
-        boolCaseVars boolCase = variables
+theorem boolCaseVars_of_mem_allBoolCases
+    : ∀ {variables boolCase},
+        boolCase ∈ allBoolCases variables -> boolCaseVars boolCase = variables
   | [], boolCase, hmem => by
       simp [allBoolCases] at hmem
       subst boolCase
@@ -93,11 +88,10 @@ theorem boolCaseVars_of_mem_allBoolCases :
 
 theorem boolCaseWrapperShape_wrapWithBoolCase_of_mem
     {variables : List BoolVar} {boolCase : BoolCase}
-    {selectionSet : List Selection} :
-    boolCase ∈ allBoolCases variables ->
-      caseBodySelectionSetShape selectionSet ->
-        boolCaseWrapperShape variables
-          (wrapWithBoolCase boolCase selectionSet) := by
+    {selectionSet : List Selection}
+    : boolCase ∈ allBoolCases variables
+      -> caseBodySelectionSetShape selectionSet
+      -> boolCaseWrapperShape variables (wrapWithBoolCase boolCase selectionSet) := by
   intro hmem hbody
   have hvariables := boolCaseVars_of_mem_allBoolCases hmem
   rw [← hvariables]
@@ -105,20 +99,20 @@ theorem boolCaseWrapperShape_wrapWithBoolCase_of_mem
     selectionSet hbody
 
 theorem caseBodySelectionSetShape_singleton_of_mem
-    {selection : Selection} {selectionSet : List Selection} :
-    caseBodySelectionSetShape selectionSet ->
-      selection ∈ selectionSet ->
-        caseBodySelectionSetShape [selection] := by
+    {selection : Selection} {selectionSet : List Selection}
+    : caseBodySelectionSetShape selectionSet
+      -> selection ∈ selectionSet
+      -> caseBodySelectionSetShape [selection] := by
   intro hbody hmem candidate hcandidate
   simp at hcandidate
   subst candidate
   exact hbody selection hmem
 
-theorem boolCaseWrapperShape_singleton_of_mem_wrapWithBoolCase :
-    ∀ boolCase selectionSet selection,
-      caseBodySelectionSetShape selectionSet ->
-      selection ∈ wrapWithBoolCase boolCase selectionSet ->
-        boolCaseWrapperShape (boolCaseVars boolCase) [selection]
+theorem boolCaseWrapperShape_singleton_of_mem_wrapWithBoolCase
+    : ∀ boolCase selectionSet selection,
+        caseBodySelectionSetShape selectionSet
+        -> selection ∈ wrapWithBoolCase boolCase selectionSet
+        -> boolCaseWrapperShape (boolCaseVars boolCase) [selection]
   | [], selectionSet, selection, hbody, hmem => by
       exact caseBodySelectionSetShape_singleton_of_mem hbody hmem
   | (varName, value) :: rest, selectionSet, selection, hbody, hmem => by
@@ -130,11 +124,11 @@ theorem boolCaseWrapperShape_singleton_of_mem_wrapWithBoolCase :
 
 theorem boolCaseWrapperShape_singleton_of_mem_wrapWithBoolCase_of_mem
     {variables : List BoolVar} {boolCase : BoolCase}
-    {selectionSet : List Selection} {selection : Selection} :
-    boolCase ∈ allBoolCases variables ->
-      caseBodySelectionSetShape selectionSet ->
-      selection ∈ wrapWithBoolCase boolCase selectionSet ->
-        boolCaseWrapperShape variables [selection] := by
+    {selectionSet : List Selection} {selection : Selection}
+    : boolCase ∈ allBoolCases variables
+      -> caseBodySelectionSetShape selectionSet
+      -> selection ∈ wrapWithBoolCase boolCase selectionSet
+      -> boolCaseWrapperShape variables [selection] := by
   intro hmem hbody hselection
   have hvariables := boolCaseVars_of_mem_allBoolCases hmem
   rw [← hvariables]
@@ -142,14 +136,14 @@ theorem boolCaseWrapperShape_singleton_of_mem_wrapWithBoolCase_of_mem
     boolCaseWrapperShape_singleton_of_mem_wrapWithBoolCase
       boolCase selectionSet selection hbody hselection
 
-theorem bottomSelectionSetDirectiveFree_of_allFields_noDirectives :
-    ∀ selectionSet,
-      selectionsAllFields selectionSet ->
-      (∀ responseName fieldName arguments directives subselections,
-        Selection.field responseName fieldName arguments directives
-          subselections ∈ selectionSet ->
-          directives = []) ->
-        bottomSelectionSetDirectiveFree selectionSet
+theorem bottomSelectionSetDirectiveFree_of_allFields_noDirectives
+    : ∀ selectionSet,
+        selectionsAllFields selectionSet
+        -> (∀ responseName fieldName arguments directives subselections,
+              Selection.field responseName fieldName arguments directives subselections
+                ∈ selectionSet
+              -> directives = [])
+        -> bottomSelectionSetDirectiveFree selectionSet
   | [], _hall, _hdirectives => by
       simp [bottomSelectionSetDirectiveFree]
   | selection :: rest, hall, hdirectives => by
@@ -179,12 +173,11 @@ theorem bottomSelectionSetDirectiveFree_of_allFields_noDirectives :
       | inlineFragment typeCondition directives selectionSet =>
           simp [Selection.isField] at hselectionField
 
-theorem bottomSelectionDirectiveFree_of_mem
-    {selection : Selection} :
-    ∀ {selectionSet},
-      bottomSelectionSetDirectiveFree selectionSet ->
-      selection ∈ selectionSet ->
-        bottomSelectionDirectiveFree selection
+theorem bottomSelectionDirectiveFree_of_mem {selection : Selection}
+    : ∀ {selectionSet},
+        bottomSelectionSetDirectiveFree selectionSet
+        -> selection ∈ selectionSet
+        -> bottomSelectionDirectiveFree selection
   | [], hbottom, hmem => by
       simp at hmem
   | head :: rest, hbottom, hmem => by
@@ -195,19 +188,17 @@ theorem bottomSelectionDirectiveFree_of_mem
         exact hbottom.1
       · exact bottomSelectionDirectiveFree_of_mem hbottom.2 htail
 
-theorem bottomSelectionSetDirectiveFree_singleton
-    {selection : Selection} :
-    bottomSelectionDirectiveFree selection ->
-      bottomSelectionSetDirectiveFree [selection] := by
+theorem bottomSelectionSetDirectiveFree_singleton {selection : Selection}
+    : bottomSelectionDirectiveFree selection
+      -> bottomSelectionSetDirectiveFree [selection] := by
   intro hselection
   simp [bottomSelectionSetDirectiveFree, hselection]
 
-theorem selectionDirectiveFree_of_mem
-    {selection : Selection} :
-    ∀ {selectionSet},
-      selectionSetDirectiveFree selectionSet ->
-      selection ∈ selectionSet ->
-        selectionDirectiveFree selection
+theorem selectionDirectiveFree_of_mem {selection : Selection}
+    : ∀ {selectionSet},
+        selectionSetDirectiveFree selectionSet
+        -> selection ∈ selectionSet
+        -> selectionDirectiveFree selection
   | [], _hfree, hmem => by
       simp at hmem
   | head :: rest, hfree, hmem => by
@@ -217,11 +208,10 @@ theorem selectionDirectiveFree_of_mem
         exact hfree.1
       · exact selectionDirectiveFree_of_mem hfree.2 htail
 
-theorem caseBodySelectionShape_of_field_directiveFree
-    {selection : Selection} :
-    Selection.isField selection ->
-      selectionDirectiveFree selection ->
-        caseBodySelectionShape selection := by
+theorem caseBodySelectionShape_of_field_directiveFree {selection : Selection}
+    : Selection.isField selection
+      -> selectionDirectiveFree selection
+      -> caseBodySelectionShape selection := by
   intro hfield hfree
   cases selection with
   | field responseName fieldName arguments directives selectionSet =>
@@ -231,10 +221,10 @@ theorem caseBodySelectionShape_of_field_directiveFree
       simp [Selection.isField] at hfield
 
 theorem caseBodySelectionSetShape_of_allFields_directiveFree
-    {selectionSet : List Selection} :
-    selectionsAllFields selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-        caseBodySelectionSetShape selectionSet := by
+    {selectionSet : List Selection}
+    : selectionsAllFields selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> caseBodySelectionSetShape selectionSet := by
   intro hall hfree selection hmem
   exact caseBodySelectionShape_of_field_directiveFree
     (hall selection hmem)
@@ -243,10 +233,10 @@ theorem caseBodySelectionSetShape_of_allFields_directiveFree
 theorem staticCollectForGround_bottomDirectiveFree
     (schema : Schema) (variables : List BoolVar)
     (lookupParent groundType : Name) (boolCase : BoolCase)
-    (selectionSet : List Selection) :
-    bottomSelectionSetDirectiveFree
-      (staticCollectForGround schema variables lookupParent
-        groundType boolCase selectionSet) := by
+    (selectionSet : List Selection)
+    : bottomSelectionSetDirectiveFree
+        (staticCollectForGround schema variables lookupParent
+          groundType boolCase selectionSet) := by
   apply bottomSelectionSetDirectiveFree_of_allFields_noDirectives
   · exact staticCollectForGround_allFields schema variables
       lookupParent groundType boolCase selectionSet
@@ -262,10 +252,10 @@ theorem staticCollectForGround_bottomDirectiveFree
 theorem staticCollectForGround_caseBodyShape
     (schema : Schema) (variables : List BoolVar)
     (lookupParent groundType : Name) (boolCase : BoolCase)
-    (selectionSet : List Selection) :
-    caseBodySelectionSetShape
-      (staticCollectForGround schema variables lookupParent
-        groundType boolCase selectionSet) := by
+    (selectionSet : List Selection)
+    : caseBodySelectionSetShape
+        (staticCollectForGround schema variables lookupParent
+          groundType boolCase selectionSet) := by
   intro selection hmem
   rcases
     staticCollectForGround_field_shape schema variables
@@ -277,9 +267,9 @@ theorem staticCollectForGround_caseBodyShape
 
 theorem normalizeBoolCaseForType_caseBodyShape
     (schema : Schema) (boolCase : BoolCase) (returnType : Name)
-    (selectionSet : List Selection) :
-    caseBodySelectionSetShape
-      (normalizeBoolCaseForType schema boolCase returnType selectionSet) := by
+    (selectionSet : List Selection)
+    : caseBodySelectionSetShape
+        (normalizeBoolCaseForType schema boolCase returnType selectionSet) := by
   apply caseBodySelectionSetShape_of_allFields_directiveFree
   · simpa [normalizeBoolCaseForType] using
       GroundTypeNormalization.normalizeSelectionSet_allFields schema
@@ -296,36 +286,35 @@ def groundBranchShape (_variables : List BoolVar) : Selection -> Prop
 
 def completeBranchShape (variables : List BoolVar) : Selection -> Prop :=
   fun selection =>
-    groundBranchShape variables selection
-      ∨ boolCaseWrapperShape variables [selection]
+    groundBranchShape variables selection ∨ boolCaseWrapperShape variables [selection]
 
-def completeSelectionSetShape
-    (variables : List BoolVar) (selectionSet : List Selection) : Prop :=
-  ∀ selection, selection ∈ selectionSet ->
-    Selection.isField selection ∨ completeBranchShape variables selection
+def completeSelectionSetShape (variables : List BoolVar) (selectionSet : List Selection)
+    : Prop :=
+  ∀ selection,
+    selection ∈ selectionSet
+    -> Selection.isField selection ∨ completeBranchShape variables selection
 
 def completeOperationShape (schema : Schema)
-    (variables : List BoolVar) (operation : Operation) : Prop :=
+    (variables : List BoolVar) (operation : Operation)
+    : Prop :=
   completeOperationNormal schema operation
-    ∧ completeSelectionSetShape variables operation.selectionSet
+  ∧ completeSelectionSetShape variables operation.selectionSet
 
 theorem normalizeForType_leaf
     (schema : Schema) (variables : List BoolVar) (returnType : Name)
-    (selectionSet : List Selection) :
-    leafTypeNameBool schema returnType = true ->
-      normalizeForType schema variables returnType
-          selectionSet =
-        [] := by
+    (selectionSet : List Selection)
+    : leafTypeNameBool schema returnType = true
+      -> normalizeForType schema variables returnType selectionSet = [] := by
   intro hleaf
   simp [normalizeForType, hleaf]
 
 theorem boolCaseBranchesForGround_layerShape
     (schema : Schema) (variables : List BoolVar)
-    (groundType : Name) (selectionSet : List Selection) :
-    selectionsAllFields
+    (groundType : Name) (selectionSet : List Selection)
+    : selectionsAllFields
         (boolCaseBranchesForGround schema groundType variables selectionSet)
       ∨ selectionsAllInlineFragments
-        (boolCaseBranchesForGround schema groundType variables selectionSet) := by
+          (boolCaseBranchesForGround schema groundType variables selectionSet) := by
   cases variables with
   | nil =>
       apply Or.inl
@@ -354,11 +343,10 @@ theorem boolCaseBranchesForGround_layerShape
 
 theorem boolCaseBranchesForGround_boolCaseWrapperShape
     (schema : Schema) (variables : List BoolVar)
-    (groundType : Name) (selectionSet : List Selection) :
-    ∀ selection,
-      selection ∈ boolCaseBranchesForGround schema groundType variables
-        selectionSet ->
-        boolCaseWrapperShape variables [selection] := by
+    (groundType : Name) (selectionSet : List Selection)
+    : ∀ selection,
+        selection ∈ boolCaseBranchesForGround schema groundType variables selectionSet
+        -> boolCaseWrapperShape variables [selection] := by
   cases variables with
   | nil =>
       intro selection hmem
@@ -400,10 +388,9 @@ theorem boolCaseBranchesForGround_boolCaseWrapperShape
 
 theorem boolCaseBranchesForGround_completeSelectionSetShape
     (schema : Schema) (variables : List BoolVar)
-    (groundType : Name) (selectionSet : List Selection) :
-    completeSelectionSetShape variables
-      (boolCaseBranchesForGround schema groundType variables
-        selectionSet) := by
+    (groundType : Name) (selectionSet : List Selection)
+    : completeSelectionSetShape variables
+        (boolCaseBranchesForGround schema groundType variables selectionSet) := by
   intro selection hmem
   exact Or.inr (Or.inr
     (boolCaseBranchesForGround_boolCaseWrapperShape schema variables
@@ -411,12 +398,10 @@ theorem boolCaseBranchesForGround_completeSelectionSetShape
 
 theorem normalizeForType_boolCaseWrapperShape
     (schema : Schema) (variables : List BoolVar)
-    (returnType : Name) (selectionSet : List Selection) :
-    ∀ selection,
-      selection ∈ normalizeForType schema variables
-        returnType
-        selectionSet ->
-        boolCaseWrapperShape variables [selection] := by
+    (returnType : Name) (selectionSet : List Selection)
+    : ∀ selection,
+        selection ∈ normalizeForType schema variables returnType selectionSet
+        -> boolCaseWrapperShape variables [selection] := by
   intro selection hmem
   cases hleaf : leafTypeNameBool schema returnType with
   | true =>
@@ -435,10 +420,9 @@ theorem normalizeForType_boolCaseWrapperShape
 
 theorem normalizeForType_completeSelectionSetShape
     (schema : Schema) (variables : List BoolVar) (returnType : Name)
-    (selectionSet : List Selection) :
-    completeSelectionSetShape variables
-      (normalizeForType schema variables returnType
-        selectionSet) := by
+    (selectionSet : List Selection)
+    : completeSelectionSetShape variables
+        (normalizeForType schema variables returnType selectionSet) := by
   intro selection hmem
   exact Or.inr (Or.inr
     (normalizeForType_boolCaseWrapperShape schema
@@ -446,10 +430,10 @@ theorem normalizeForType_completeSelectionSetShape
 
 theorem completeNormalizeRootSelectionSetShape
     (schema : Schema) (variables : List BoolVar) (parentType : Name)
-    (selectionSet normalizedSelectionSet : List Selection) :
-    completeNormalizeRootSelectionSet schema variables parentType
-      selectionSet = normalizedSelectionSet ->
-      completeSelectionSetShape variables normalizedSelectionSet := by
+    (selectionSet normalizedSelectionSet : List Selection)
+    : completeNormalizeRootSelectionSet schema variables parentType selectionSet
+        = normalizedSelectionSet
+      -> completeSelectionSetShape variables normalizedSelectionSet := by
   intro hnormalized selection hmem
   unfold completeNormalizeRootSelectionSet at hnormalized
   let branches :=
@@ -482,9 +466,9 @@ theorem completeNormalizeRootSelectionSetShape
           (by simpa [hbody] using hselection)))
 
 theorem completeNormalizeOperation_selectionSetShape
-    (schema : Schema) (operation : Operation) :
-    completeSelectionSetShape (operationBoolVars operation)
-      (completeNormalizeOperation schema operation).selectionSet := by
+    (schema : Schema) (operation : Operation)
+    : completeSelectionSetShape (operationBoolVars operation)
+        (completeNormalizeOperation schema operation).selectionSet := by
   exact completeNormalizeRootSelectionSetShape schema
     (operationBoolVars operation) operation.rootType operation.selectionSet
     (completeNormalizeRootSelectionSet schema (operationBoolVars operation)
@@ -492,9 +476,9 @@ theorem completeNormalizeOperation_selectionSetShape
     rfl
 
 theorem completeNormalizeOperation_rootSelectionSetShape
-    (schema : Schema) (operation : Operation) :
-    completeSelectionSetShape (operationBoolVars operation)
-      (completeNormalizeOperation schema operation).selectionSet := by
+    (schema : Schema) (operation : Operation)
+    : completeSelectionSetShape (operationBoolVars operation)
+        (completeNormalizeOperation schema operation).selectionSet := by
   exact completeNormalizeOperation_selectionSetShape schema operation
 
 end CompleteNormalization

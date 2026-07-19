@@ -11,51 +11,51 @@ namespace CompleteNormalization
 
 theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_none_skipped_execution_case
     (schema : Schema) (resolvers : Execution.Resolvers)
-    (variableValues : Execution.VariableValues)
-    (operation : Operation)
-    (depth : Nat)
-    (execParent lookupParent groundType : Name)
-    (boolCase : BoolCase)
-    (directives : List DirectiveApplication)
-    (selectionSet : List Selection)
-    (rest : List CompleteScopedSelection) :
-    variableValuesAgreeWithCase variableValues boolCase
-      (operationBoolVars operation) ->
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables
-        (eraseCompleteScopedSelectionSet
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.inlineFragment none directives selectionSet }
-            :: rest)) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    directivesAllowIn boolCase directives = false ->
-    Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (staticCollectCompleteScopedSelectionSet schema
-          (operationBoolVars operation) groundType
-          boolCase rest)
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (eraseCompleteScopedSelectionSet rest) ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (staticCollectCompleteScopedSelectionSet schema
-          (operationBoolVars operation) groundType
-          boolCase
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.inlineFragment none directives selectionSet }
-            :: rest))
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (eraseCompleteScopedSelectionSet
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.inlineFragment none directives selectionSet }
-            :: rest)) := by
+    (variableValues : Execution.VariableValues) (operation : Operation) (depth : Nat)
+    (execParent lookupParent groundType : Name) (boolCase : BoolCase)
+    (directives : List DirectiveApplication) (selectionSet : List Selection)
+    (rest : List CompleteScopedSelection)
+    : variableValuesAgreeWithCase variableValues boolCase (operationBoolVars operation)
+      -> (∀ varName,
+            varName
+              ∈ selectionSetBooleanVariables
+                  (eraseCompleteScopedSelectionSet
+                    ({
+                        lookupParent := lookupParent,
+                        selection :=
+                          Selection.inlineFragment none directives selectionSet
+                      }
+                      :: rest))
+            -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> directivesAllowIn boolCase directives = false
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            execParent (.object groundType ())
+            (staticCollectCompleteScopedSelectionSet schema
+              (operationBoolVars operation) groundType
+              boolCase rest)
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              execParent (.object groundType ())
+              (eraseCompleteScopedSelectionSet rest)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            execParent (.object groundType ())
+            (staticCollectCompleteScopedSelectionSet schema
+              (operationBoolVars operation) groundType
+              boolCase
+              ({
+                  lookupParent := lookupParent,
+                  selection :=
+                    Selection.inlineFragment none directives selectionSet
+                }
+                :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              execParent (.object groundType ())
+              (eraseCompleteScopedSelectionSet
+                ({
+                    lookupParent := lookupParent,
+                    selection :=
+                      Selection.inlineFragment none directives selectionSet
+                  }
+                  :: rest)) := by
   intro hagrees hsourceVars hskip hrest
   have hsourceVarsRaw :
       ∀ varName,
@@ -90,55 +90,55 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_none_
 
 theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_field_skipped_execution_case
     (schema : Schema) (resolvers : Execution.Resolvers)
-    (variableValues : Execution.VariableValues)
-    (operation : Operation)
-    (depth : Nat)
-    (execParent lookupParent groundType : Name)
-    (boolCase : BoolCase)
+    (variableValues : Execution.VariableValues) (operation : Operation) (depth : Nat)
+    (execParent lookupParent groundType : Name) (boolCase : BoolCase)
     (responseName fieldName : Name) (arguments : List Argument)
-    (directives : List DirectiveApplication)
-    (selectionSet : List Selection)
-    (rest : List CompleteScopedSelection) :
-    variableValuesAgreeWithCase variableValues boolCase
-      (operationBoolVars operation) ->
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables
-        (eraseCompleteScopedSelectionSet
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.field responseName fieldName arguments directives
-                selectionSet }
-            :: rest)) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    directivesAllowIn boolCase directives = false ->
-    Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (staticCollectCompleteScopedSelectionSet schema
-          (operationBoolVars operation) groundType
-          boolCase rest)
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (eraseCompleteScopedSelectionSet rest) ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (staticCollectCompleteScopedSelectionSet schema
-          (operationBoolVars operation) groundType
-          boolCase
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.field responseName fieldName arguments directives
-                selectionSet }
-            :: rest))
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (eraseCompleteScopedSelectionSet
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.field responseName fieldName arguments directives
-                selectionSet }
-            :: rest)) := by
+    (directives : List DirectiveApplication) (selectionSet : List Selection)
+    (rest : List CompleteScopedSelection)
+    : variableValuesAgreeWithCase variableValues boolCase (operationBoolVars operation)
+      -> (∀ varName,
+            varName
+              ∈ selectionSetBooleanVariables
+                  (eraseCompleteScopedSelectionSet
+                    ({
+                        lookupParent := lookupParent,
+                        selection :=
+                          Selection.field responseName fieldName arguments directives
+                            selectionSet
+                      }
+                      :: rest))
+            -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> directivesAllowIn boolCase directives = false
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            execParent (.object groundType ())
+            (staticCollectCompleteScopedSelectionSet schema
+              (operationBoolVars operation) groundType
+              boolCase rest)
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              execParent (.object groundType ())
+              (eraseCompleteScopedSelectionSet rest)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            execParent (.object groundType ())
+            (staticCollectCompleteScopedSelectionSet schema
+              (operationBoolVars operation) groundType
+              boolCase
+              ({
+                  lookupParent := lookupParent,
+                  selection :=
+                    Selection.field responseName fieldName arguments directives
+                      selectionSet
+                }
+                :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              execParent (.object groundType ())
+              (eraseCompleteScopedSelectionSet
+                ({
+                    lookupParent := lookupParent,
+                    selection :=
+                      Selection.field responseName fieldName arguments directives
+                        selectionSet
+                  }
+                  :: rest)) := by
   intro hagrees hsourceVars hskip hrest
   have hsourceVarsRaw :
       ∀ varName,
@@ -176,53 +176,53 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_field_skippe
 
 theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_none_allowed_flatten_case
     (schema : Schema) (resolvers : Execution.Resolvers)
-    (variableValues : Execution.VariableValues)
-    (operation : Operation)
-    (depth : Nat)
-    (execParent lookupParent groundType : Name)
-    (boolCase : BoolCase)
-    (directives : List DirectiveApplication)
-    (selectionSet : List Selection)
-    (rest : List CompleteScopedSelection) :
-    variableValuesAgreeWithCase variableValues boolCase
-      (operationBoolVars operation) ->
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables
-        (eraseCompleteScopedSelectionSet
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.inlineFragment none directives selectionSet }
-            :: rest)) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    directivesAllowIn boolCase directives = true ->
-    Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (staticCollectCompleteScopedSelectionSet schema
-          (operationBoolVars operation) groundType
-          boolCase
-          (completeScopedSelectionSet lookupParent selectionSet ++ rest))
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (eraseCompleteScopedSelectionSet
-          (completeScopedSelectionSet lookupParent selectionSet ++ rest)) ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (staticCollectCompleteScopedSelectionSet schema
-          (operationBoolVars operation) groundType
-          boolCase
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.inlineFragment none directives selectionSet }
-            :: rest))
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (eraseCompleteScopedSelectionSet
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.inlineFragment none directives selectionSet }
-            :: rest)) := by
+    (variableValues : Execution.VariableValues) (operation : Operation) (depth : Nat)
+    (execParent lookupParent groundType : Name) (boolCase : BoolCase)
+    (directives : List DirectiveApplication) (selectionSet : List Selection)
+    (rest : List CompleteScopedSelection)
+    : variableValuesAgreeWithCase variableValues boolCase (operationBoolVars operation)
+      -> (∀ varName,
+            varName
+              ∈ selectionSetBooleanVariables
+                  (eraseCompleteScopedSelectionSet
+                    ({
+                        lookupParent := lookupParent,
+                        selection :=
+                          Selection.inlineFragment none directives selectionSet
+                      }
+                      :: rest))
+            -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> directivesAllowIn boolCase directives = true
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            execParent (.object groundType ())
+            (staticCollectCompleteScopedSelectionSet schema
+              (operationBoolVars operation) groundType
+              boolCase
+              (completeScopedSelectionSet lookupParent selectionSet ++ rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              execParent (.object groundType ())
+              (eraseCompleteScopedSelectionSet
+                (completeScopedSelectionSet lookupParent selectionSet ++ rest))
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            execParent (.object groundType ())
+            (staticCollectCompleteScopedSelectionSet schema
+              (operationBoolVars operation) groundType
+              boolCase
+              ({
+                  lookupParent := lookupParent,
+                  selection :=
+                    Selection.inlineFragment none directives selectionSet
+                }
+                :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              execParent (.object groundType ())
+              (eraseCompleteScopedSelectionSet
+                ({
+                    lookupParent := lookupParent,
+                    selection :=
+                      Selection.inlineFragment none directives selectionSet
+                  }
+                  :: rest)) := by
   intro hagrees hsourceVars hallow hflatten
   have hsourceVarsRaw :
       ∀ varName,
@@ -288,55 +288,56 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_none_
 
 theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_skipped_execution_case
     (schema : Schema) (resolvers : Execution.Resolvers)
-    (variableValues : Execution.VariableValues)
-    (operation : Operation)
-    (depth : Nat)
-    (execParent lookupParent groundType typeCondition : Name)
-    (boolCase : BoolCase)
-    (directives : List DirectiveApplication)
-    (selectionSet : List Selection)
-    (rest : List CompleteScopedSelection) :
-    variableValuesAgreeWithCase variableValues boolCase
-      (operationBoolVars operation) ->
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables
-        (eraseCompleteScopedSelectionSet
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.inlineFragment (some typeCondition) directives
-                selectionSet }
-            :: rest)) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    (directivesAllowIn boolCase directives
-      && schema.typeIncludesObjectBool typeCondition groundType) = false ->
-    Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (staticCollectCompleteScopedSelectionSet schema
-          (operationBoolVars operation) groundType
-          boolCase rest)
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (eraseCompleteScopedSelectionSet rest) ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (staticCollectCompleteScopedSelectionSet schema
-          (operationBoolVars operation) groundType
-          boolCase
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.inlineFragment (some typeCondition) directives
-                selectionSet }
-            :: rest))
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (eraseCompleteScopedSelectionSet
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.inlineFragment (some typeCondition) directives
-                selectionSet }
-            :: rest)) := by
+    (variableValues : Execution.VariableValues) (operation : Operation) (depth : Nat)
+    (execParent lookupParent groundType typeCondition : Name) (boolCase : BoolCase)
+    (directives : List DirectiveApplication) (selectionSet : List Selection)
+    (rest : List CompleteScopedSelection)
+    : variableValuesAgreeWithCase variableValues boolCase (operationBoolVars operation)
+      -> (∀ varName,
+            varName
+              ∈ selectionSetBooleanVariables
+                  (eraseCompleteScopedSelectionSet
+                    ({
+                        lookupParent := lookupParent,
+                        selection :=
+                          Selection.inlineFragment (some typeCondition) directives
+                            selectionSet
+                      }
+                      :: rest))
+            -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> (directivesAllowIn boolCase directives
+            && schema.typeIncludesObjectBool typeCondition groundType)
+          = false
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            execParent (.object groundType ())
+            (staticCollectCompleteScopedSelectionSet schema
+              (operationBoolVars operation) groundType
+              boolCase rest)
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              execParent (.object groundType ())
+              (eraseCompleteScopedSelectionSet rest)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            execParent (.object groundType ())
+            (staticCollectCompleteScopedSelectionSet schema
+              (operationBoolVars operation) groundType
+              boolCase
+              ({
+                  lookupParent := lookupParent,
+                  selection :=
+                    Selection.inlineFragment (some typeCondition) directives
+                      selectionSet
+                }
+                :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              execParent (.object groundType ())
+              (eraseCompleteScopedSelectionSet
+                ({
+                    lookupParent := lookupParent,
+                    selection :=
+                      Selection.inlineFragment (some typeCondition) directives
+                        selectionSet
+                  }
+                  :: rest)) := by
   intro hagrees hsourceVars hskip hrest
   have hsourceVarsRaw :
       ∀ varName,
@@ -373,57 +374,57 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_
 
 theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_allowed_flatten_case
     (schema : Schema) (resolvers : Execution.Resolvers)
-    (variableValues : Execution.VariableValues)
-    (operation : Operation)
-    (depth : Nat)
-    (execParent lookupParent groundType typeCondition : Name)
-    (boolCase : BoolCase)
-    (directives : List DirectiveApplication)
-    (selectionSet : List Selection)
-    (rest : List CompleteScopedSelection) :
-    variableValuesAgreeWithCase variableValues boolCase
-      (operationBoolVars operation) ->
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables
-        (eraseCompleteScopedSelectionSet
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.inlineFragment (some typeCondition) directives
-                selectionSet }
-            :: rest)) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    directivesAllowIn boolCase directives = true ->
-    schema.typeIncludesObjectBool typeCondition groundType = true ->
-    Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (staticCollectCompleteScopedSelectionSet schema
-          (operationBoolVars operation) groundType
-          boolCase
-          (completeScopedSelectionSet typeCondition selectionSet ++ rest))
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (eraseCompleteScopedSelectionSet
-          (completeScopedSelectionSet typeCondition selectionSet ++ rest)) ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (staticCollectCompleteScopedSelectionSet schema
-          (operationBoolVars operation) groundType
-          boolCase
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.inlineFragment (some typeCondition) directives
-                selectionSet }
-            :: rest))
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        execParent (.object groundType ())
-        (eraseCompleteScopedSelectionSet
-          ({ lookupParent := lookupParent,
-             selection :=
-              Selection.inlineFragment (some typeCondition) directives
-                selectionSet }
-            :: rest)) := by
+    (variableValues : Execution.VariableValues) (operation : Operation) (depth : Nat)
+    (execParent lookupParent groundType typeCondition : Name) (boolCase : BoolCase)
+    (directives : List DirectiveApplication) (selectionSet : List Selection)
+    (rest : List CompleteScopedSelection)
+    : variableValuesAgreeWithCase variableValues boolCase (operationBoolVars operation)
+      -> (∀ varName,
+            varName
+              ∈ selectionSetBooleanVariables
+                  (eraseCompleteScopedSelectionSet
+                    ({
+                        lookupParent := lookupParent,
+                        selection :=
+                          Selection.inlineFragment (some typeCondition) directives
+                            selectionSet
+                      }
+                      :: rest))
+            -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> directivesAllowIn boolCase directives = true
+      -> schema.typeIncludesObjectBool typeCondition groundType = true
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            execParent (.object groundType ())
+            (staticCollectCompleteScopedSelectionSet schema
+              (operationBoolVars operation) groundType
+              boolCase
+              (completeScopedSelectionSet typeCondition selectionSet ++ rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              execParent (.object groundType ())
+              (eraseCompleteScopedSelectionSet
+                (completeScopedSelectionSet typeCondition selectionSet ++ rest))
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            execParent (.object groundType ())
+            (staticCollectCompleteScopedSelectionSet schema
+              (operationBoolVars operation) groundType
+              boolCase
+              ({
+                  lookupParent := lookupParent,
+                  selection :=
+                    Selection.inlineFragment (some typeCondition) directives
+                      selectionSet
+                }
+                :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              execParent (.object groundType ())
+              (eraseCompleteScopedSelectionSet
+                ({
+                    lookupParent := lookupParent,
+                    selection :=
+                      Selection.inlineFragment (some typeCondition) directives
+                        selectionSet
+                  }
+                  :: rest)) := by
   intro hagrees hsourceVars hallow hincludes hflatten
   have hsourceVarsRaw :
       ∀ varName,
@@ -488,7 +489,6 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_
         schema resolvers variableValues depth execParent groundType
         typeCondition () directives selectionSet
         (eraseCompleteScopedSelectionSet rest) hexecAllow hincludes).symm
-
 
 end CompleteNormalization
 

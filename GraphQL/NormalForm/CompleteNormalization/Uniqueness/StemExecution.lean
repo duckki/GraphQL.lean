@@ -13,12 +13,11 @@ namespace CompleteNormalization
 
 variable {ObjectRef : Type}
 
-private theorem list_split_of_mem_nodup
-    {α : Type} {items : List α} {item : α} :
-    items.Nodup ->
-    item ∈ items ->
-      ∃ before after,
-        items = before ++ item :: after
+private theorem list_split_of_mem_nodup {α : Type} {items : List α} {item : α}
+    : items.Nodup
+      -> item ∈ items
+      -> ∃ before after,
+          items = before ++ item :: after
           ∧ (∀ candidate, candidate ∈ before -> candidate ≠ item)
           ∧ (∀ candidate, candidate ∈ after -> candidate ≠ item) := by
   intro hnodup hmem
@@ -50,17 +49,14 @@ private theorem list_split_of_mem_nodup
 
 private theorem collectFields_eq_nil_of_singletons_eq_nil
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.ResolverValue ObjectRef) :
-    ∀ selectionSet : List Selection,
-      (∀ selection, selection ∈ selectionSet ->
-        Execution.collectFields schema variableValues parentType source
-            [selection]
-          =
-        []) ->
-        Execution.collectFields schema variableValues parentType source
-            selectionSet
-          =
-        []
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
+    : ∀ selectionSet : List Selection,
+        (∀ selection,
+          selection ∈ selectionSet
+          -> Execution.collectFields schema variableValues parentType source [selection]
+              = [])
+        -> Execution.collectFields schema variableValues parentType source selectionSet
+            = []
   | [], _hsingletons => by
       simp [Execution.collectFields]
   | selection :: rest, hsingletons => by
@@ -84,12 +80,10 @@ private theorem collectFields_completeNormalBooleanStem_of_equivalent_of_agrees
     {selection : Selection} {body : List Selection}
     (hruntime : completeNormalBoolCase variables runtimeCase)
     (hagrees : variableValuesAgreeWithCase variableValues runtimeCase variables)
-    (hequivalent :
-      completeNormalBoolCasesEquivalent runtimeCase candidate)
-    (hstem : completeNormalBooleanStem candidate selection body) :
-    Execution.collectFields schema variableValues parentType source [selection]
-      =
-    Execution.collectFields schema variableValues parentType source body := by
+    (hequivalent : completeNormalBoolCasesEquivalent runtimeCase candidate)
+    (hstem : completeNormalBooleanStem candidate selection body)
+    : Execution.collectFields schema variableValues parentType source [selection]
+      = Execution.collectFields schema variableValues parentType source body := by
   rw [← completeNormalBooleanStem_wrapWithBoolCase_eq hstem]
   exact collectFields_wrapWithBoolCase_of_agrees schema variableValues
     parentType source body candidate (by
@@ -105,12 +99,10 @@ private theorem collectFields_completeNormalBooleanStem_of_not_equivalent_of_agr
     (hruntime : completeNormalBoolCase variables runtimeCase)
     (hcandidate : completeNormalBoolCase variables candidate)
     (hagrees : variableValuesAgreeWithCase variableValues runtimeCase variables)
-    (hnequivalent :
-      ¬ completeNormalBoolCasesEquivalent runtimeCase candidate)
-    (hstem : completeNormalBooleanStem candidate selection body) :
-    Execution.collectFields schema variableValues parentType source [selection]
-      =
-    [] := by
+    (hnequivalent : ¬ completeNormalBoolCasesEquivalent runtimeCase candidate)
+    (hstem : completeNormalBooleanStem candidate selection body)
+    : Execution.collectFields schema variableValues parentType source [selection]
+      = [] := by
   rcases completeNormalBoolCases_mismatch_pair hruntime hcandidate
       hnequivalent with ⟨varName, value, hpair, hmismatchPair⟩
   rw [← completeNormalBooleanStem_wrapWithBoolCase_eq hstem]
@@ -122,16 +114,15 @@ private theorem collectFields_completeNormalBooleanStem_of_not_equivalent_of_agr
 private theorem collectFields_wrapWithBoolCase_of_missing_pair
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    ∀ boolCase : BoolCase,
-      (varName : BoolVar) ->
-      (value : Bool) ->
-      (varName, value) ∈ boolCase ->
-      Execution.inputValueBoolean? variableValues (.variable varName) = none ->
-        Execution.collectFields schema variableValues parentType source
-            (wrapWithBoolCase boolCase selectionSet)
-          =
-        []
+    (selectionSet : List Selection)
+    : ∀ boolCase : BoolCase,
+        (varName : BoolVar)
+        -> (value : Bool)
+        -> (varName, value) ∈ boolCase
+            -> Execution.inputValueBoolean? variableValues (.variable varName) = none
+            -> Execution.collectFields schema variableValues parentType source
+                  (wrapWithBoolCase boolCase selectionSet)
+                = []
   | [], varName, value, hpair, _hmissing => by
       cases hpair
   | (headVar, headValue) :: rest, varName, value, hpair, hmissing => by
@@ -161,14 +152,14 @@ theorem collectFields_completeNormalSelectionSet_eq_nil_of_missing_variable
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     {varName : BoolVar} {variables : List BoolVar}
     {selectionSet : List Selection}
-    (hnormal : completeNormalSelectionSet schema (varName :: variables)
-      parentType selectionSet)
+    (hnormal
+      : completeNormalSelectionSet schema (varName :: variables)
+          parentType selectionSet)
     {missingVar : BoolVar} (hmissingMem : missingVar ∈ varName :: variables)
-    (hmissing :
-      Execution.inputValueBoolean? variableValues (.variable missingVar) = none) :
-    Execution.collectFields schema variableValues parentType source selectionSet
-      =
-    [] := by
+    (hmissing
+      : Execution.inputValueBoolean? variableValues (.variable missingVar) = none)
+    : Execution.collectFields schema variableValues parentType source selectionSet
+      = [] := by
   rcases hnormal with ⟨_hvariablesNodup, _hselectionSetNodup,
     hbranches, _hunique⟩
   apply collectFields_eq_nil_of_singletons_eq_nil schema variableValues
@@ -191,19 +182,20 @@ theorem collectFields_completeNormalSelectionSet_eq_nil_of_no_equivalent_of_agre
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     {varName : BoolVar} {variables : List BoolVar}
     {runtimeCase : BoolCase} {selectionSet : List Selection}
-    (hnormal : completeNormalSelectionSet schema (varName :: variables)
-      parentType selectionSet)
+    (hnormal
+      : completeNormalSelectionSet schema (varName :: variables)
+          parentType selectionSet)
     (hruntime : completeNormalBoolCase (varName :: variables) runtimeCase)
-    (hagrees : variableValuesAgreeWithCase variableValues runtimeCase
-      (varName :: variables))
-    (hnone : ¬ ∃ selection candidate body,
-      selection ∈ selectionSet
-        ∧ completeNormalBoolCase (varName :: variables) candidate
-        ∧ completeNormalBooleanStem candidate selection body
-        ∧ completeNormalBoolCasesEquivalent runtimeCase candidate) :
-    Execution.collectFields schema variableValues parentType source selectionSet
-      =
-    [] := by
+    (hagrees
+      : variableValuesAgreeWithCase variableValues runtimeCase (varName :: variables))
+    (hnone
+      : ¬ ∃ selection candidate body,
+            selection ∈ selectionSet
+            ∧ completeNormalBoolCase (varName :: variables) candidate
+            ∧ completeNormalBooleanStem candidate selection body
+            ∧ completeNormalBoolCasesEquivalent runtimeCase candidate)
+    : Execution.collectFields schema variableValues parentType source selectionSet
+      = [] := by
   rcases hnormal with ⟨_hvariablesNodup, _hselectionSetNodup,
     hbranches, _hunique⟩
   apply collectFields_eq_nil_of_singletons_eq_nil schema variableValues
@@ -224,22 +216,20 @@ theorem collectFields_completeNormalSelectionSet_eq_body_of_equivalent_of_agrees
     {varName : BoolVar} {variables : List BoolVar}
     {runtimeCase selected : BoolCase} {selectedSelection : Selection}
     {selectedBody selectionSet : List Selection}
-    (hnormal : completeNormalSelectionSet schema (varName :: variables)
-      parentType selectionSet)
+    (hnormal
+      : completeNormalSelectionSet schema (varName :: variables)
+          parentType selectionSet)
     (hselectedMem : selectedSelection ∈ selectionSet)
     (hruntime : completeNormalBoolCase (varName :: variables) runtimeCase)
     (hselected : completeNormalBoolCase (varName :: variables) selected)
-    (hagrees : variableValuesAgreeWithCase variableValues runtimeCase
-      (varName :: variables))
-    (hequivalent :
-      completeNormalBoolCasesEquivalent runtimeCase selected)
-    (hselectedStem :
-      completeNormalBooleanStem selected selectedSelection selectedBody)
-    (hselectedBodyFree : selectionSetDirectiveFree selectedBody) :
-    Execution.collectFields schema variableValues parentType source selectionSet
-      =
-    Execution.collectFields schema variableValues parentType source
-      selectedBody := by
+    (hagrees
+      : variableValuesAgreeWithCase variableValues runtimeCase (varName :: variables))
+    (hequivalent : completeNormalBoolCasesEquivalent runtimeCase selected)
+    (hselectedStem : completeNormalBooleanStem selected selectedSelection selectedBody)
+    (hselectedBodyFree : selectionSetDirectiveFree selectedBody)
+    : Execution.collectFields schema variableValues parentType source selectionSet
+      = Execution.collectFields schema variableValues parentType source
+          selectedBody := by
   rcases hnormal with ⟨_hvariablesNodup, hselectionSetNodup,
     hbranches, hunique⟩
   rcases list_split_of_mem_nodup hselectionSetNodup hselectedMem with
@@ -304,18 +294,19 @@ theorem collectFields_completeNormalSelectionSet_eq_nil_of_no_equivalent
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     {varName : BoolVar} {variables : List BoolVar}
     {selected : BoolCase} {selectionSet : List Selection}
-    (hnormal : completeNormalSelectionSet schema (varName :: variables)
-      parentType selectionSet)
+    (hnormal
+      : completeNormalSelectionSet schema (varName :: variables)
+          parentType selectionSet)
     (hselected : completeNormalBoolCase (varName :: variables) selected)
-    (hnone : ¬ ∃ selection candidate body,
-      selection ∈ selectionSet
-        ∧ completeNormalBoolCase (varName :: variables) candidate
-        ∧ completeNormalBooleanStem candidate selection body
-        ∧ completeNormalBoolCasesEquivalent selected candidate) :
-    Execution.collectFields schema
+    (hnone
+      : ¬ ∃ selection candidate body,
+            selection ∈ selectionSet
+            ∧ completeNormalBoolCase (varName :: variables) candidate
+            ∧ completeNormalBooleanStem candidate selection body
+            ∧ completeNormalBoolCasesEquivalent selected candidate)
+    : Execution.collectFields schema
         (boolCaseVariableValues selected base) parentType source selectionSet
-      =
-    [] := by
+      = [] := by
   exact
     collectFields_completeNormalSelectionSet_eq_nil_of_no_equivalent_of_agrees
       schema (boolCaseVariableValues selected base) parentType source hnormal
@@ -328,23 +319,20 @@ theorem collectFields_completeNormalSelectionSet_eq_body_of_equivalent
     {varName : BoolVar} {variables : List BoolVar}
     {runtimeCase selected : BoolCase} {selectedSelection : Selection}
     {selectedBody selectionSet : List Selection}
-    (hnormal : completeNormalSelectionSet schema (varName :: variables)
-      parentType selectionSet)
+    (hnormal
+      : completeNormalSelectionSet schema (varName :: variables)
+          parentType selectionSet)
     (hselectedMem : selectedSelection ∈ selectionSet)
-    (hruntime :
-      completeNormalBoolCase (varName :: variables) runtimeCase)
+    (hruntime : completeNormalBoolCase (varName :: variables) runtimeCase)
     (hselected : completeNormalBoolCase (varName :: variables) selected)
-    (hequivalent :
-      completeNormalBoolCasesEquivalent runtimeCase selected)
-    (hselectedStem :
-      completeNormalBooleanStem selected selectedSelection selectedBody)
-    (hselectedBodyFree : selectionSetDirectiveFree selectedBody) :
-    Execution.collectFields schema
+    (hequivalent : completeNormalBoolCasesEquivalent runtimeCase selected)
+    (hselectedStem : completeNormalBooleanStem selected selectedSelection selectedBody)
+    (hselectedBodyFree : selectionSetDirectiveFree selectedBody)
+    : Execution.collectFields schema
         (boolCaseVariableValues runtimeCase base) parentType source selectionSet
-      =
-    Execution.collectFields schema
-        (boolCaseVariableValues runtimeCase base) parentType source
-        selectedBody := by
+      = Execution.collectFields schema
+          (boolCaseVariableValues runtimeCase base) parentType source
+          selectedBody := by
   exact
     collectFields_completeNormalSelectionSet_eq_body_of_equivalent_of_agrees
       schema (boolCaseVariableValues runtimeCase base) parentType source
@@ -358,18 +346,17 @@ theorem collectFields_completeNormalSelectionSet_eq_body
     {varName : BoolVar} {variables : List BoolVar}
     {selected : BoolCase} {selectedSelection : Selection}
     {selectedBody selectionSet : List Selection}
-    (hnormal : completeNormalSelectionSet schema (varName :: variables)
-      parentType selectionSet)
+    (hnormal
+      : completeNormalSelectionSet schema (varName :: variables)
+          parentType selectionSet)
     (hselectedMem : selectedSelection ∈ selectionSet)
     (hselected : completeNormalBoolCase (varName :: variables) selected)
-    (hselectedStem :
-      completeNormalBooleanStem selected selectedSelection selectedBody)
-    (hselectedBodyFree : selectionSetDirectiveFree selectedBody) :
-    Execution.collectFields schema
+    (hselectedStem : completeNormalBooleanStem selected selectedSelection selectedBody)
+    (hselectedBodyFree : selectionSetDirectiveFree selectedBody)
+    : Execution.collectFields schema
         (boolCaseVariableValues selected base) parentType source selectionSet
-      =
-    Execution.collectFields schema
-        (boolCaseVariableValues selected base) parentType source selectedBody := by
+      = Execution.collectFields schema
+          (boolCaseVariableValues selected base) parentType source selectedBody := by
   exact collectFields_completeNormalSelectionSet_eq_body_of_equivalent schema
     base parentType source hnormal hselectedMem hselected hselected
     (completeNormalBoolCasesEquivalent_refl selected) hselectedStem

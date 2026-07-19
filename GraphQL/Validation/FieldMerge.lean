@@ -7,10 +7,8 @@ namespace GraphQL
 
 namespace FieldMerge
 
-theorem sameResponseShape_refl (schema : Schema) :
-    ∀ typeRef,
-      typeRef.isOutputType schema ->
-        sameResponseShape schema typeRef typeRef
+theorem sameResponseShape_refl (schema : Schema)
+    : ∀ typeRef, typeRef.isOutputType schema -> sameResponseShape schema typeRef typeRef
   | .named _typeName, houtput => by
       exact ⟨houtput, houtput, by intro _hleaf; rfl⟩
   | .list inner, houtput => by
@@ -27,10 +25,9 @@ theorem sameResponseShape_refl (schema : Schema) :
             simp [TypeRef.isOutputType] at houtput
       exact sameResponseShape_refl schema inner hinner
 
-theorem sameResponseShape_symm (schema : Schema) :
-    ∀ left right,
-      sameResponseShape schema left right ->
-        sameResponseShape schema right left
+theorem sameResponseShape_symm (schema : Schema)
+    : ∀ left right,
+        sameResponseShape schema left right -> sameResponseShape schema right left
   | .named _left, .named _right, hshape => by
       exact ⟨hshape.2.1, hshape.1,
         by
@@ -55,11 +52,11 @@ theorem sameResponseShape_symm (schema : Schema) :
   | .nonNull _, .list _, hshape => by
       simp [sameResponseShape] at hshape
 
-theorem sameResponseShape_trans (schema : Schema) :
-    ∀ left middle right,
-      sameResponseShape schema left middle ->
-        sameResponseShape schema middle right ->
-          sameResponseShape schema left right
+theorem sameResponseShape_trans (schema : Schema)
+    : ∀ left middle right,
+        sameResponseShape schema left middle
+        -> sameResponseShape schema middle right
+        -> sameResponseShape schema left right
   | .named left, .named middle, .named right, hleft, hright => by
       exact ⟨hleft.1, hright.2.1,
         by
@@ -110,12 +107,12 @@ theorem sameResponseShape_trans (schema : Schema) :
 
 theorem fieldsInSetCanMerge_pair
     {schema : Schema} {parentType : Name} {selectionSet : List Selection}
-    {left right : ScopedField} :
-    fieldsInSetCanMerge schema parentType selectionSet ->
-      left ∈ collectFields schema parentType selectionSet ->
-        right ∈ collectFields schema parentType selectionSet ->
-          left.responseName = right.responseName ->
-            fieldsForNameCanMerge schema left right := by
+    {left right : ScopedField}
+    : fieldsInSetCanMerge schema parentType selectionSet
+      -> left ∈ collectFields schema parentType selectionSet
+      -> right ∈ collectFields schema parentType selectionSet
+      -> left.responseName = right.responseName
+      -> fieldsForNameCanMerge schema left right := by
   intro hmerge hleft hright hresponse
   unfold fieldsInSetCanMerge at hmerge
   cases hmerge with
@@ -123,22 +120,21 @@ theorem fieldsInSetCanMerge_pair
       exact hfields left hleft right hright hresponse
 
 theorem fieldsForNameCanMerge_sameResponseShape
-    {schema : Schema} {left right : ScopedField} :
-    fieldsForNameCanMerge schema left right ->
-      sameResponseShape schema left.outputType right.outputType := by
+    {schema : Schema} {left right : ScopedField}
+    : fieldsForNameCanMerge schema left right
+      -> sameResponseShape schema left.outputType right.outputType := by
   intro hmerge
   unfold fieldsForNameCanMerge at hmerge
   cases hmerge with
   | intro _ _ hshape _hidentity _hsubfields =>
       exact hshape
 
-theorem fieldsForNameCanMerge_identity
-    {schema : Schema} {left right : ScopedField} :
-    fieldsForNameCanMerge schema left right ->
-      (left.parentType = right.parentType
+theorem fieldsForNameCanMerge_identity {schema : Schema} {left right : ScopedField}
+    : fieldsForNameCanMerge schema left right
+      -> (left.parentType = right.parentType
           ∨ ¬ schema.objectType left.parentType
-          ∨ ¬ schema.objectType right.parentType) ->
-        left.fieldName = right.fieldName
+          ∨ ¬ schema.objectType right.parentType)
+      -> left.fieldName = right.fieldName
           ∧ Argument.argumentsEquivalent left.arguments right.arguments := by
   intro hmerge hparents
   unfold fieldsForNameCanMerge at hmerge
@@ -147,35 +143,32 @@ theorem fieldsForNameCanMerge_identity
       exact hidentity hparents
 
 theorem fieldsForNameCanMerge_same_parent_identity
-    {schema : Schema} {left right : ScopedField} :
-    fieldsForNameCanMerge schema left right ->
-      left.parentType = right.parentType ->
-        left.fieldName = right.fieldName
+    {schema : Schema} {left right : ScopedField}
+    : fieldsForNameCanMerge schema left right
+      -> left.parentType = right.parentType
+      -> left.fieldName = right.fieldName
           ∧ Argument.argumentsEquivalent left.arguments right.arguments := by
   intro hmerge hparent
   exact fieldsForNameCanMerge_identity hmerge (Or.inl hparent)
 
-theorem fieldsForNameCanMerge_subfields
-    {schema : Schema} {left right : ScopedField} :
-    fieldsForNameCanMerge schema left right ->
-      (left.parentType = right.parentType
+theorem fieldsForNameCanMerge_subfields {schema : Schema} {left right : ScopedField}
+    : fieldsForNameCanMerge schema left right
+      -> (left.parentType = right.parentType
           ∨ ¬ schema.objectType left.parentType
-          ∨ ¬ schema.objectType right.parentType) ->
-      ∀ objectType,
-        fieldsInSetCanMerge schema objectType
-          (left.selectionSet ++ right.selectionSet) := by
+          ∨ ¬ schema.objectType right.parentType)
+      -> ∀ objectType,
+          fieldsInSetCanMerge schema objectType
+            (left.selectionSet ++ right.selectionSet) := by
   intro hmerge hparents objectType
   unfold fieldsForNameCanMerge at hmerge
   cases hmerge with
   | intro _ _ _hshape _hidentity hsubfields =>
       exact hsubfields hparents objectType
 
-theorem collectFields_append (schema : Schema) (parentType : Name) :
-    ∀ left right,
-      collectFields schema parentType (left ++ right)
-        =
-      collectFields schema parentType left
-        ++ collectFields schema parentType right
+theorem collectFields_append (schema : Schema) (parentType : Name)
+    : ∀ left right,
+        collectFields schema parentType (left ++ right)
+        = collectFields schema parentType left ++ collectFields schema parentType right
   | [], _right => by
       simp [collectFields]
   | selection :: rest, right => by
@@ -200,10 +193,10 @@ theorem collectFields_append (schema : Schema) (parentType : Name) :
                 List.append_assoc]
 
 mutual
-  theorem inputValue_structuralEquivalent_symm :
-      ∀ left right,
-        InputValue.structuralEquivalent left right ->
-          InputValue.structuralEquivalent right left
+  theorem inputValue_structuralEquivalent_symm
+      : ∀ left right,
+          InputValue.structuralEquivalent left right
+          -> InputValue.structuralEquivalent right left
     | .null, .null, h => by
         simp [InputValue.structuralEquivalent]
     | .int left, .int right, h => by
@@ -295,10 +288,10 @@ mutual
     | .variable _, .list _, h => by simp [InputValue.structuralEquivalent] at h
     | .variable _, .object _, h => by simp [InputValue.structuralEquivalent] at h
 
-  theorem inputValue_structuralValuesEquivalent_symm :
-      ∀ left right,
-        InputValue.structuralValuesEquivalent left right ->
-          InputValue.structuralValuesEquivalent right left
+  theorem inputValue_structuralValuesEquivalent_symm
+      : ∀ left right,
+          InputValue.structuralValuesEquivalent left right
+          -> InputValue.structuralValuesEquivalent right left
     | [], [], h => by
         simp [InputValue.structuralValuesEquivalent]
     | left :: lefts, right :: rights, h => by
@@ -310,10 +303,10 @@ mutual
     | _ :: _, [], h => by
         simp [InputValue.structuralValuesEquivalent] at h
 
-  theorem inputValue_structuralObjectFieldsEquivalent_symm :
-      ∀ left right,
-        InputValue.structuralObjectFieldsEquivalent left right ->
-          InputValue.structuralObjectFieldsEquivalent right left
+  theorem inputValue_structuralObjectFieldsEquivalent_symm
+      : ∀ left right,
+          InputValue.structuralObjectFieldsEquivalent left right
+          -> InputValue.structuralObjectFieldsEquivalent right left
     | [], [], h => by
         simp [InputValue.structuralObjectFieldsEquivalent]
     | (leftName, leftValue) :: lefts,
@@ -329,19 +322,19 @@ mutual
         simp [InputValue.structuralObjectFieldsEquivalent] at h
 end
 
-theorem inputValue_equivalent_symm {left right : InputValue} :
-    left.equivalent right -> right.equivalent left := by
+theorem inputValue_equivalent_symm {left right : InputValue}
+    : left.equivalent right -> right.equivalent left := by
   intro h
   exact inputValue_structuralEquivalent_symm left.canonical right.canonical h
 
-theorem argumentEquivalent_symm {left right : Argument} :
-    left.equivalent right -> right.equivalent left := by
+theorem argumentEquivalent_symm {left right : Argument}
+    : left.equivalent right -> right.equivalent left := by
   intro h
   exact ⟨h.1.symm, inputValue_equivalent_symm h.2⟩
 
-theorem argumentsEquivalent_symm {left right : List Argument} :
-    Argument.argumentsEquivalent left right ->
-      Argument.argumentsEquivalent right left := by
+theorem argumentsEquivalent_symm {left right : List Argument}
+    : Argument.argumentsEquivalent left right
+      -> Argument.argumentsEquivalent right left := by
   intro h
   exact ⟨
     by
@@ -358,9 +351,9 @@ theorem argumentsEquivalent_symm {left right : List Argument} :
         argumentEquivalent_symm hequivalent⟩⟩
 
 theorem fieldsInSetCanMerge_append_comm
-    {schema : Schema} {parentType : Name} {left right : List Selection} :
-    fieldsInSetCanMerge schema parentType (left ++ right) ->
-      fieldsInSetCanMerge schema parentType (right ++ left) := by
+    {schema : Schema} {parentType : Name} {left right : List Selection}
+    : fieldsInSetCanMerge schema parentType (left ++ right)
+      -> fieldsInSetCanMerge schema parentType (right ++ left) := by
   intro hmerge
   unfold fieldsInSetCanMerge
   refine FieldsInSetCanMerge.intro parentType (right ++ left) ?_
@@ -411,10 +404,9 @@ theorem fieldsInSetCanMerge_append_comm
             (collectFields schema parentType right) hrightLeft)
         hresponse
 
-theorem fieldsForNameCanMerge_symm
-    {schema : Schema} {left right : ScopedField} :
-    fieldsForNameCanMerge schema left right ->
-      fieldsForNameCanMerge schema right left := by
+theorem fieldsForNameCanMerge_symm {schema : Schema} {left right : ScopedField}
+    : fieldsForNameCanMerge schema left right
+      -> fieldsForNameCanMerge schema right left := by
   intro hmerge
   unfold fieldsForNameCanMerge at hmerge ⊢
   cases hmerge with

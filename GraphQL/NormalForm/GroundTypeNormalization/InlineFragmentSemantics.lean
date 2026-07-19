@@ -17,27 +17,24 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_noOverlap_
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet rest : List Selection) :
-      (∃ runtimeType ref,
+    (selectionSet rest : List Selection)
+    : (∃ runtimeType ref,
         source = .object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-      schema.typesOverlapBool parentType typeCondition = false ->
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source
-          (normalizeSelectionSet schema parentType rest)
-          =
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source rest ->
-          Execution.executeSelectionSet schema resolvers variableValues depth
+        ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+      -> schema.typesOverlapBool parentType typeCondition = false
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType rest)
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source rest
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
             (normalizeSelectionSet schema parentType
+              (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
               (Selection.inlineFragment (some typeCondition) [] selectionSet
-                :: rest))
-            =
-          Execution.executeSelectionSet schema resolvers variableValues depth
-            parentType source
-            (Selection.inlineFragment (some typeCondition) [] selectionSet
-              :: rest) := by
+                :: rest) := by
   intro hsource hoverlap hrest
   rcases hsource with ⟨runtimeType, ref, hsourceEq, hparent⟩
   subst source
@@ -62,21 +59,19 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_none_case
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet rest : List Selection) :
-    Execution.executeSelectionSet schema resolvers variableValues depth
-      parentType source
-      (normalizeSelectionSet schema parentType (selectionSet ++ rest))
-      =
-    Execution.executeSelectionSet schema resolvers variableValues depth
-      parentType source (selectionSet ++ rest) ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        parentType source
-        (normalizeSelectionSet schema parentType
-          (Selection.inlineFragment none [] selectionSet :: rest))
-        =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        parentType source
-        (Selection.inlineFragment none [] selectionSet :: rest) := by
+    (selectionSet rest : List Selection)
+    : Execution.executeSelectionSet schema resolvers variableValues depth
+          parentType source
+          (normalizeSelectionSet schema parentType (selectionSet ++ rest))
+        = Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source (selectionSet ++ rest)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType
+              (Selection.inlineFragment none [] selectionSet :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
+              (Selection.inlineFragment none [] selectionSet :: rest) := by
   intro happend
   simp [normalizeSelectionSet]
   rw [happend]
@@ -89,26 +84,23 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_apply_case
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet rest : List Selection) :
-    schema.typesOverlapBool parentType typeCondition = true ->
-      Execution.doesFragmentTypeApplyBool schema parentType source
-        typeCondition = true ->
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source
-          (normalizeSelectionSet schema parentType (selectionSet ++ rest))
-          =
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source (selectionSet ++ rest) ->
-          Execution.executeSelectionSet schema resolvers variableValues depth
+    (selectionSet rest : List Selection)
+    : schema.typesOverlapBool parentType typeCondition = true
+      -> Execution.doesFragmentTypeApplyBool schema parentType source typeCondition
+          = true
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType (selectionSet ++ rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source (selectionSet ++ rest)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
             (normalizeSelectionSet schema parentType
+              (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
               (Selection.inlineFragment (some typeCondition) [] selectionSet
-                :: rest))
-            =
-          Execution.executeSelectionSet schema resolvers variableValues depth
-            parentType source
-            (Selection.inlineFragment (some typeCondition) [] selectionSet
-              :: rest) := by
+                :: rest) := by
   intro hoverlap happly happend
   simp [normalizeSelectionSet, hoverlap]
   rw [happend]
@@ -122,25 +114,22 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_overlap_ca
     (variableValues : Execution.VariableValues)
     (depth : Nat) (parentType typeCondition : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet rest : List Selection) :
-    objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType ref,
-          source = .object runtimeType ref
-            ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-        schema.typesOverlapBool parentType typeCondition = true ->
-          Execution.executeSelectionSet schema resolvers variableValues depth
+    (selectionSet rest : List Selection)
+    : objectTypeNameBool schema parentType = true
+      -> (∃ runtimeType ref,
+            source = .object runtimeType ref
+            ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+      -> schema.typesOverlapBool parentType typeCondition = true
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
             (normalizeSelectionSet schema parentType (selectionSet ++ rest))
-            =
-          Execution.executeSelectionSet schema resolvers variableValues depth
-            parentType source (selectionSet ++ rest) ->
-            Execution.executeSelectionSet schema resolvers variableValues depth
-              parentType source
-              (normalizeSelectionSet schema parentType
-                (Selection.inlineFragment (some typeCondition) [] selectionSet
-                  :: rest))
-              =
-            Execution.executeSelectionSet schema resolvers variableValues depth
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source (selectionSet ++ rest)
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            parentType source
+            (normalizeSelectionSet schema parentType
+              (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
               parentType source
               (Selection.inlineFragment (some typeCondition) [] selectionSet
                 :: rest) := by
@@ -156,7 +145,6 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_overlap_ca
       ⟨runtimeType, ref, by simp [], hparent⟩
       hoverlap)
     happend
-
 
 end GroundTypeNormalization
 

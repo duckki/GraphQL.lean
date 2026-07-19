@@ -7,15 +7,15 @@ namespace NamedFragment
 namespace Semantics
 
 mutual
-  theorem selectionValid_changeFragments_of_inlined :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {fragments : List FragmentDefinition} {parentType : Name}
-        {selection : Selection},
-        GraphQL.NamedFragment.Validation.selectionValid schema
-          variableDefinitions fragments parentType selection ->
-        selectionInlined selection ->
-        GraphQL.NamedFragment.Validation.selectionValid schema
-          variableDefinitions [] parentType selection
+  theorem selectionValid_changeFragments_of_inlined
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {fragments : List FragmentDefinition} {parentType : Name}
+            {selection : Selection},
+          GraphQL.NamedFragment.Validation.selectionValid schema
+            variableDefinitions fragments parentType selection
+          -> selectionInlined selection
+          -> GraphQL.NamedFragment.Validation.selectionValid schema
+              variableDefinitions [] parentType selection
     | schema, variableDefinitions, fragments, parentType,
         .field responseName fieldName arguments directives selectionSet,
         hvalid, hinlined => by
@@ -48,15 +48,15 @@ mutual
         .fragmentSpread _fragmentName _directives, _hvalid, hinlined => by
         simp [selectionInlined] at hinlined
 
-  theorem selectionSetValid_changeFragments_of_inlined :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {fragments : List FragmentDefinition} {parentType : Name}
-        {selectionSet : List Selection},
-        GraphQL.NamedFragment.Validation.selectionSetValid schema
-          variableDefinitions fragments parentType selectionSet ->
-        selectionSetInlined selectionSet ->
-        GraphQL.NamedFragment.Validation.selectionSetValid schema
-          variableDefinitions [] parentType selectionSet
+  theorem selectionSetValid_changeFragments_of_inlined
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {fragments : List FragmentDefinition} {parentType : Name}
+            {selectionSet : List Selection},
+          GraphQL.NamedFragment.Validation.selectionSetValid schema
+            variableDefinitions fragments parentType selectionSet
+          -> selectionSetInlined selectionSet
+          -> GraphQL.NamedFragment.Validation.selectionSetValid schema
+              variableDefinitions [] parentType selectionSet
     | _schema, _variableDefinitions, _fragments, _parentType, [],
         _hvalid, _hinlined => by
         simp [GraphQL.NamedFragment.Validation.selectionSetValid]
@@ -82,15 +82,15 @@ mutual
               selectionSetValid_changeFragments_of_inlined hrestValid
                 hinlined.2⟩
 
-  theorem fieldSelectionSetValid_changeFragments_of_inlined :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {fragments : List FragmentDefinition}
-        {fieldDefinition : FieldDefinition} {selectionSet : List Selection},
-        GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
-          variableDefinitions fragments fieldDefinition selectionSet ->
-        selectionSetInlined selectionSet ->
-        GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
-          variableDefinitions [] fieldDefinition selectionSet
+  theorem fieldSelectionSetValid_changeFragments_of_inlined
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {fragments : List FragmentDefinition}
+            {fieldDefinition : FieldDefinition} {selectionSet : List Selection},
+          GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
+            variableDefinitions fragments fieldDefinition selectionSet
+          -> selectionSetInlined selectionSet
+          -> GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
+              variableDefinitions [] fieldDefinition selectionSet
     | schema, variableDefinitions, fragments, fieldDefinition, selectionSet,
         hvalid, hinlined => by
         simp [GraphQL.NamedFragment.Validation.fieldSelectionSetValid] at hvalid ⊢
@@ -111,28 +111,28 @@ theorem inlineSelectionSet_valid_changeFragments
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {fragments : List FragmentDefinition} {parentType : Name}
     {selectionSet : List Selection}
-    (hvalid :
-      GraphQL.NamedFragment.Validation.selectionSetValid schema
-        variableDefinitions fragments parentType
-        (Inline.inlineSelectionSet fragments selectionSet)) :
-    GraphQL.NamedFragment.Validation.selectionSetValid schema
-      variableDefinitions [] parentType
-      (Inline.inlineSelectionSet fragments selectionSet) :=
+    (hvalid
+      : GraphQL.NamedFragment.Validation.selectionSetValid schema
+          variableDefinitions fragments parentType
+          (Inline.inlineSelectionSet fragments selectionSet))
+    : GraphQL.NamedFragment.Validation.selectionSetValid schema
+        variableDefinitions [] parentType
+        (Inline.inlineSelectionSet fragments selectionSet) :=
   selectionSetValid_changeFragments_of_inlined hvalid
     (inlineSelectionSet_inlined fragments selectionSet)
 
 theorem inlineOperation_valid_of_inlinedSelectionSetValidWithFragments
     {schema : Schema} {operation : Operation}
-    (hvalid :
-      GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
-    (hselectionValid :
-      GraphQL.NamedFragment.Validation.selectionSetValid schema
-        (Inline.inlineOperation operation).variableDefinitions
-        operation.fragmentDefinitions
-        (Inline.inlineOperation operation).rootType
-        (Inline.inlineOperation operation).selectionSet) :
-    GraphQL.NamedFragment.Validation.operationDefinitionValid schema
-      (Inline.inlineOperation operation) := by
+    (hvalid
+      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hselectionValid
+      : GraphQL.NamedFragment.Validation.selectionSetValid schema
+          (Inline.inlineOperation operation).variableDefinitions
+          operation.fragmentDefinitions
+          (Inline.inlineOperation operation).rootType
+          (Inline.inlineOperation operation).selectionSet)
+    : GraphQL.NamedFragment.Validation.operationDefinitionValid schema
+        (Inline.inlineOperation operation) := by
   apply inlineOperation_valid_of_selectionSetValid hvalid
   cases operation with
   | mk name rootType variableDefinitions fragmentDefinitions selectionSet =>
@@ -140,28 +140,27 @@ theorem inlineOperation_valid_of_inlinedSelectionSetValidWithFragments
         inlineSelectionSet_valid_changeFragments hselectionValid
 
 mutual
-  theorem selectionValid_inlineSelection_of_localFragmentBodiesValid :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {fragments : List FragmentDefinition} {parentType : Name}
-        {selection : Selection},
-        (∀ {fragmentName : Name} {fragment : FragmentDefinition}
-          {remaining : { remaining : List FragmentDefinition //
-            remaining.length < fragments.length }},
-          fragmentName ∈
-              GraphQL.NamedFragment.Validation.selectionFragmentSpreadNames
-                selection ->
-          lookupFragmentAndRestLt? fragmentName fragments =
-              some (fragment, remaining) ->
-            fragment.selectionSet ≠ []
-              ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-                variableDefinitions [] fragment.typeCondition
-                (Inline.inlineSelectionSet remaining.val
-                  fragment.selectionSet)) ->
-        GraphQL.NamedFragment.Validation.selectionValid schema
-          variableDefinitions fragments parentType selection ->
-        GraphQL.NamedFragment.Validation.selectionValid schema
-          variableDefinitions [] parentType
-          (Inline.inlineSelection fragments selection)
+  theorem selectionValid_inlineSelection_of_localFragmentBodiesValid
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {fragments : List FragmentDefinition} {parentType : Name}
+            {selection : Selection},
+          (∀ {fragmentName : Name} {fragment : FragmentDefinition}
+              {remaining
+                : { remaining : List FragmentDefinition
+                    // remaining.length < fragments.length }},
+            fragmentName
+              ∈ GraphQL.NamedFragment.Validation.selectionFragmentSpreadNames selection
+            -> lookupFragmentAndRestLt? fragmentName fragments
+                = some (fragment, remaining)
+            -> fragment.selectionSet ≠ []
+                ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
+                    variableDefinitions [] fragment.typeCondition
+                    (Inline.inlineSelectionSet remaining.val fragment.selectionSet))
+          -> GraphQL.NamedFragment.Validation.selectionValid schema
+              variableDefinitions fragments parentType selection
+          -> GraphQL.NamedFragment.Validation.selectionValid schema
+              variableDefinitions [] parentType
+              (Inline.inlineSelection fragments selection)
     | schema, variableDefinitions, fragments, parentType,
         .field responseName fieldName arguments directives selectionSet,
         hfragmentBodies, hvalid => by
@@ -229,28 +228,28 @@ mutual
         exact ⟨hdirectives, hcomposite, hoverlap,
           inlineSelectionSet_nonempty hnonempty, hselectionSet⟩
 
-  theorem selectionSetValid_inlineSelectionSet_of_localFragmentBodiesValid :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {fragments : List FragmentDefinition} {parentType : Name}
-        {selectionSet : List Selection},
-        (∀ {fragmentName : Name} {fragment : FragmentDefinition}
-          {remaining : { remaining : List FragmentDefinition //
-            remaining.length < fragments.length }},
-          fragmentName ∈
-              GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-                selectionSet ->
-          lookupFragmentAndRestLt? fragmentName fragments =
-              some (fragment, remaining) ->
-            fragment.selectionSet ≠ []
-              ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-                variableDefinitions [] fragment.typeCondition
-                (Inline.inlineSelectionSet remaining.val
-                  fragment.selectionSet)) ->
-        GraphQL.NamedFragment.Validation.selectionSetValid schema
-          variableDefinitions fragments parentType selectionSet ->
-        GraphQL.NamedFragment.Validation.selectionSetValid schema
-          variableDefinitions [] parentType
-          (Inline.inlineSelectionSet fragments selectionSet)
+  theorem selectionSetValid_inlineSelectionSet_of_localFragmentBodiesValid
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {fragments : List FragmentDefinition} {parentType : Name}
+            {selectionSet : List Selection},
+          (∀ {fragmentName : Name} {fragment : FragmentDefinition}
+              {remaining
+                : { remaining : List FragmentDefinition
+                    // remaining.length < fragments.length }},
+            fragmentName
+              ∈ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+                  selectionSet
+            -> lookupFragmentAndRestLt? fragmentName fragments
+                = some (fragment, remaining)
+            -> fragment.selectionSet ≠ []
+                ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
+                    variableDefinitions [] fragment.typeCondition
+                    (Inline.inlineSelectionSet remaining.val fragment.selectionSet))
+          -> GraphQL.NamedFragment.Validation.selectionSetValid schema
+              variableDefinitions fragments parentType selectionSet
+          -> GraphQL.NamedFragment.Validation.selectionSetValid schema
+              variableDefinitions [] parentType
+              (Inline.inlineSelectionSet fragments selectionSet)
     | _schema, _variableDefinitions, _fragments, _parentType, [],
         _hfragmentBodies, _hvalid => by
         simp [GraphQL.NamedFragment.Validation.selectionSetValid]
@@ -288,28 +287,28 @@ mutual
                     hlookup)
                 hrestValid⟩
 
-  theorem fieldSelectionSetValid_inlineSelectionSet_of_localFragmentBodiesValid :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {fragments : List FragmentDefinition}
-        {fieldDefinition : FieldDefinition} {selectionSet : List Selection},
-        (∀ {fragmentName : Name} {fragment : FragmentDefinition}
-          {remaining : { remaining : List FragmentDefinition //
-            remaining.length < fragments.length }},
-          fragmentName ∈
-              GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
-                selectionSet ->
-          lookupFragmentAndRestLt? fragmentName fragments =
-              some (fragment, remaining) ->
-            fragment.selectionSet ≠ []
-              ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-                variableDefinitions [] fragment.typeCondition
-                (Inline.inlineSelectionSet remaining.val
-                  fragment.selectionSet)) ->
-        GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
-          variableDefinitions fragments fieldDefinition selectionSet ->
-        GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
-          variableDefinitions [] fieldDefinition
-          (Inline.inlineSelectionSet fragments selectionSet)
+  theorem fieldSelectionSetValid_inlineSelectionSet_of_localFragmentBodiesValid
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {fragments : List FragmentDefinition}
+            {fieldDefinition : FieldDefinition} {selectionSet : List Selection},
+          (∀ {fragmentName : Name} {fragment : FragmentDefinition}
+              {remaining
+                : { remaining : List FragmentDefinition
+                    // remaining.length < fragments.length }},
+            fragmentName
+              ∈ GraphQL.NamedFragment.Validation.selectionSetFragmentSpreadNames
+                  selectionSet
+            -> lookupFragmentAndRestLt? fragmentName fragments
+                = some (fragment, remaining)
+            -> fragment.selectionSet ≠ []
+                ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
+                    variableDefinitions [] fragment.typeCondition
+                    (Inline.inlineSelectionSet remaining.val fragment.selectionSet))
+          -> GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
+              variableDefinitions fragments fieldDefinition selectionSet
+          -> GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
+              variableDefinitions [] fieldDefinition
+              (Inline.inlineSelectionSet fragments selectionSet)
     | schema, variableDefinitions, fragments, fieldDefinition, selectionSet,
         hfragmentBodies, hvalid => by
         simp [GraphQL.NamedFragment.Validation.fieldSelectionSetValid] at hvalid ⊢
@@ -330,25 +329,24 @@ mutual
 end
 
 mutual
-  theorem selectionValid_inlineSelection_of_fragmentBodiesValid :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {fragments : List FragmentDefinition} {parentType : Name}
-        {selection : Selection},
-        (∀ {fragmentName : Name} {fragment : FragmentDefinition}
-          {remaining : { remaining : List FragmentDefinition //
-            remaining.length < fragments.length }},
-          lookupFragmentAndRestLt? fragmentName fragments =
-              some (fragment, remaining) ->
-            fragment.selectionSet ≠ []
-              ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-                variableDefinitions [] fragment.typeCondition
-                (Inline.inlineSelectionSet remaining.val
-                  fragment.selectionSet)) ->
-        GraphQL.NamedFragment.Validation.selectionValid schema
-          variableDefinitions fragments parentType selection ->
-        GraphQL.NamedFragment.Validation.selectionValid schema
-          variableDefinitions [] parentType
-          (Inline.inlineSelection fragments selection)
+  theorem selectionValid_inlineSelection_of_fragmentBodiesValid
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {fragments : List FragmentDefinition} {parentType : Name}
+            {selection : Selection},
+          (∀ {fragmentName : Name} {fragment : FragmentDefinition}
+              {remaining
+                : { remaining : List FragmentDefinition
+                    // remaining.length < fragments.length }},
+            lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining)
+            -> fragment.selectionSet ≠ []
+                ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
+                    variableDefinitions [] fragment.typeCondition
+                    (Inline.inlineSelectionSet remaining.val fragment.selectionSet))
+          -> GraphQL.NamedFragment.Validation.selectionValid schema
+              variableDefinitions fragments parentType selection
+          -> GraphQL.NamedFragment.Validation.selectionValid schema
+              variableDefinitions [] parentType
+              (Inline.inlineSelection fragments selection)
     | schema, variableDefinitions, fragments, parentType,
         .field responseName fieldName arguments directives selectionSet,
         hfragmentBodies, hvalid => by
@@ -394,25 +392,24 @@ mutual
         exact ⟨hdirectives, hcomposite, hoverlap,
           inlineSelectionSet_nonempty hnonempty, hselectionSet⟩
 
-  theorem selectionSetValid_inlineSelectionSet_of_fragmentBodiesValid :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {fragments : List FragmentDefinition} {parentType : Name}
-        {selectionSet : List Selection},
-        (∀ {fragmentName : Name} {fragment : FragmentDefinition}
-          {remaining : { remaining : List FragmentDefinition //
-            remaining.length < fragments.length }},
-          lookupFragmentAndRestLt? fragmentName fragments =
-              some (fragment, remaining) ->
-            fragment.selectionSet ≠ []
-              ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-                variableDefinitions [] fragment.typeCondition
-                (Inline.inlineSelectionSet remaining.val
-                  fragment.selectionSet)) ->
-        GraphQL.NamedFragment.Validation.selectionSetValid schema
-          variableDefinitions fragments parentType selectionSet ->
-        GraphQL.NamedFragment.Validation.selectionSetValid schema
-          variableDefinitions [] parentType
-          (Inline.inlineSelectionSet fragments selectionSet)
+  theorem selectionSetValid_inlineSelectionSet_of_fragmentBodiesValid
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {fragments : List FragmentDefinition} {parentType : Name}
+            {selectionSet : List Selection},
+          (∀ {fragmentName : Name} {fragment : FragmentDefinition}
+              {remaining
+                : { remaining : List FragmentDefinition
+                    // remaining.length < fragments.length }},
+            lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining)
+            -> fragment.selectionSet ≠ []
+                ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
+                    variableDefinitions [] fragment.typeCondition
+                    (Inline.inlineSelectionSet remaining.val fragment.selectionSet))
+          -> GraphQL.NamedFragment.Validation.selectionSetValid schema
+              variableDefinitions fragments parentType selectionSet
+          -> GraphQL.NamedFragment.Validation.selectionSetValid schema
+              variableDefinitions [] parentType
+              (Inline.inlineSelectionSet fragments selectionSet)
     | _schema, _variableDefinitions, _fragments, _parentType, [],
         _hfragmentBodies, _hvalid => by
         simp [GraphQL.NamedFragment.Validation.selectionSetValid]
@@ -438,25 +435,24 @@ mutual
               selectionSetValid_inlineSelectionSet_of_fragmentBodiesValid
                 hfragmentBodies hrestValid⟩
 
-  theorem fieldSelectionSetValid_inlineSelectionSet_of_fragmentBodiesValid :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {fragments : List FragmentDefinition}
-        {fieldDefinition : FieldDefinition} {selectionSet : List Selection},
-        (∀ {fragmentName : Name} {fragment : FragmentDefinition}
-          {remaining : { remaining : List FragmentDefinition //
-            remaining.length < fragments.length }},
-          lookupFragmentAndRestLt? fragmentName fragments =
-              some (fragment, remaining) ->
-            fragment.selectionSet ≠ []
-              ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
-                variableDefinitions [] fragment.typeCondition
-                (Inline.inlineSelectionSet remaining.val
-                  fragment.selectionSet)) ->
-        GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
-          variableDefinitions fragments fieldDefinition selectionSet ->
-        GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
-          variableDefinitions [] fieldDefinition
-          (Inline.inlineSelectionSet fragments selectionSet)
+  theorem fieldSelectionSetValid_inlineSelectionSet_of_fragmentBodiesValid
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {fragments : List FragmentDefinition}
+            {fieldDefinition : FieldDefinition} {selectionSet : List Selection},
+          (∀ {fragmentName : Name} {fragment : FragmentDefinition}
+              {remaining
+                : { remaining : List FragmentDefinition
+                    // remaining.length < fragments.length }},
+            lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining)
+            -> fragment.selectionSet ≠ []
+                ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
+                    variableDefinitions [] fragment.typeCondition
+                    (Inline.inlineSelectionSet remaining.val fragment.selectionSet))
+          -> GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
+              variableDefinitions fragments fieldDefinition selectionSet
+          -> GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
+              variableDefinitions [] fieldDefinition
+              (Inline.inlineSelectionSet fragments selectionSet)
     | schema, variableDefinitions, fragments, fieldDefinition, selectionSet,
         hfragmentBodies, hvalid => by
         simp [GraphQL.NamedFragment.Validation.fieldSelectionSetValid] at hvalid ⊢
@@ -477,12 +473,12 @@ mutual
 end
 
 mutual
-  theorem selectionValid_emptyFragments_inlined :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {parentType : Name} {selection : Selection},
-        GraphQL.NamedFragment.Validation.selectionValid schema
-          variableDefinitions [] parentType selection ->
-        selectionInlined selection
+  theorem selectionValid_emptyFragments_inlined
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {parentType : Name} {selection : Selection},
+          GraphQL.NamedFragment.Validation.selectionValid schema
+            variableDefinitions [] parentType selection
+          -> selectionInlined selection
     | schema, variableDefinitions, parentType,
         .field responseName fieldName arguments directives selectionSet,
         hvalid => by
@@ -512,12 +508,12 @@ mutual
           GraphQL.NamedFragment.lookupFragment?,
           GraphQL.NamedFragment.lookupFragment?] at hvalid
 
-  theorem selectionSetValid_emptyFragments_inlined :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {parentType : Name} {selectionSet : List Selection},
-        GraphQL.NamedFragment.Validation.selectionSetValid schema
-          variableDefinitions [] parentType selectionSet ->
-        selectionSetInlined selectionSet
+  theorem selectionSetValid_emptyFragments_inlined
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {parentType : Name} {selectionSet : List Selection},
+          GraphQL.NamedFragment.Validation.selectionSetValid schema
+            variableDefinitions [] parentType selectionSet
+          -> selectionSetInlined selectionSet
     | _schema, _variableDefinitions, _parentType, [], _hvalid => by
         simp [selectionSetInlined]
     | schema, variableDefinitions, parentType, selection :: rest, hvalid => by
@@ -536,12 +532,12 @@ mutual
           selectionValid_emptyFragments_inlined hselectionValid,
           selectionSetValid_emptyFragments_inlined hrestValid]
 
-  theorem fieldSelectionSetValid_emptyFragments_inlined :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {fieldDefinition : FieldDefinition} {selectionSet : List Selection},
-        GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
-          variableDefinitions [] fieldDefinition selectionSet ->
-        selectionSetInlined selectionSet
+  theorem fieldSelectionSetValid_emptyFragments_inlined
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {fieldDefinition : FieldDefinition} {selectionSet : List Selection},
+          GraphQL.NamedFragment.Validation.fieldSelectionSetValid schema
+            variableDefinitions [] fieldDefinition selectionSet
+          -> selectionSetInlined selectionSet
     | schema, variableDefinitions, fieldDefinition, selectionSet, hvalid => by
         simp [GraphQL.NamedFragment.Validation.fieldSelectionSetValid] at hvalid
         rcases hvalid with ⟨_houtput, hshape⟩

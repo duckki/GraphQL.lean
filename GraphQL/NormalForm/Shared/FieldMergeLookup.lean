@@ -8,15 +8,12 @@ namespace GraphQL
 
 namespace NormalForm
 
-
-theorem fieldMerge_collectFields_mem_outputType
-    (schema : Schema) :
-    ∀ parentType selectionSet scopedField,
-      SchemaWellFormedness.schemaWellFormed schema ->
-        selectionSetLookupValid schema parentType selectionSet ->
-          scopedField ∈ FieldMerge.collectFields schema parentType
-            selectionSet ->
-            scopedField.outputType.isOutputType schema
+theorem fieldMerge_collectFields_mem_outputType (schema : Schema)
+    : ∀ parentType selectionSet scopedField,
+        SchemaWellFormedness.schemaWellFormed schema
+        -> selectionSetLookupValid schema parentType selectionSet
+        -> scopedField ∈ FieldMerge.collectFields schema parentType selectionSet
+        -> scopedField.outputType.isOutputType schema
   | _parentType, [], _scopedField, _hschema, _hvalid, hfield => by
       simp [FieldMerge.collectFields] at hfield
   | parentType, selection :: rest, scopedField, hschema, hvalid, hfield => by
@@ -69,14 +66,12 @@ theorem fieldMerge_collectFields_mem_outputType
               · exact fieldMerge_collectFields_mem_outputType schema
                   parentType rest scopedField hschema htailValid hrest
 
-theorem fieldMerge_collectFields_mem_lookupField_outputType
-    (schema : Schema) :
-    ∀ parentType selectionSet scopedField,
-      scopedField ∈ FieldMerge.collectFields schema parentType
-        selectionSet ->
-        ∃ fieldDefinition,
-          schema.lookupField scopedField.parentType scopedField.fieldName =
-              some fieldDefinition
+theorem fieldMerge_collectFields_mem_lookupField_outputType (schema : Schema)
+    : ∀ parentType selectionSet scopedField,
+        scopedField ∈ FieldMerge.collectFields schema parentType selectionSet
+        -> ∃ fieldDefinition,
+            schema.lookupField scopedField.parentType scopedField.fieldName
+              = some fieldDefinition
             ∧ scopedField.outputType = fieldDefinition.outputType
   | _parentType, [], _scopedField, hfield => by
       simp [FieldMerge.collectFields] at hfield
@@ -122,12 +117,12 @@ theorem fieldMerge_collectFields_outputType_eq_of_same_parent_field
     (schema : Schema)
     {leftParent rightParent : Name}
     {leftSet rightSet : List Selection}
-    {left right : FieldMerge.ScopedField} :
-    left ∈ FieldMerge.collectFields schema leftParent leftSet ->
-    right ∈ FieldMerge.collectFields schema rightParent rightSet ->
-    left.parentType = right.parentType ->
-    left.fieldName = right.fieldName ->
-      left.outputType = right.outputType := by
+    {left right : FieldMerge.ScopedField}
+    : left ∈ FieldMerge.collectFields schema leftParent leftSet
+      -> right ∈ FieldMerge.collectFields schema rightParent rightSet
+      -> left.parentType = right.parentType
+      -> left.fieldName = right.fieldName
+      -> left.outputType = right.outputType := by
   intro hleft hright hparent hfield
   rcases
     fieldMerge_collectFields_mem_lookupField_outputType schema leftParent
@@ -147,28 +142,23 @@ theorem fieldMerge_collectFields_outputType_eq_of_same_parent_field
   injection hsome with hdefinitions
   simp [hleftOutput, hrightOutput, hdefinitions]
 
-def scopedFieldSameSelection
-    (left right : FieldMerge.ScopedField) : Prop :=
+def scopedFieldSameSelection (left right : FieldMerge.ScopedField) : Prop :=
   left.responseName = right.responseName
-    ∧ left.fieldName = right.fieldName
-    ∧ left.arguments = right.arguments
-    ∧ left.selectionSet = right.selectionSet
+  ∧ left.fieldName = right.fieldName
+  ∧ left.arguments = right.arguments
+  ∧ left.selectionSet = right.selectionSet
 
-theorem scopedFieldSameSelection_refl
-    (field : FieldMerge.ScopedField) :
-    scopedFieldSameSelection field field := by
+theorem scopedFieldSameSelection_refl (field : FieldMerge.ScopedField)
+    : scopedFieldSameSelection field field := by
   simp [scopedFieldSameSelection]
 
-theorem fieldMerge_collectFields_allFields_lookupParent_sameSelection
-    (schema : Schema) :
-    ∀ lookupParent collectParent selectionSet scopedField,
-      selectionsAllFields selectionSet ->
-      selectionSetLookupValid schema lookupParent selectionSet ->
-      scopedField ∈ FieldMerge.collectFields schema collectParent
-        selectionSet ->
-        ∃ lookupField,
-          lookupField ∈ FieldMerge.collectFields schema lookupParent
-            selectionSet
+theorem fieldMerge_collectFields_allFields_lookupParent_sameSelection (schema : Schema)
+    : ∀ lookupParent collectParent selectionSet scopedField,
+        selectionsAllFields selectionSet
+        -> selectionSetLookupValid schema lookupParent selectionSet
+        -> scopedField ∈ FieldMerge.collectFields schema collectParent selectionSet
+        -> ∃ lookupField,
+            lookupField ∈ FieldMerge.collectFields schema lookupParent selectionSet
             ∧ scopedFieldSameSelection scopedField lookupField
   | _lookupParent, _collectParent, [], _scopedField, _hallFields,
       _hlookupValid, hfield => by
@@ -237,9 +227,9 @@ theorem fieldMerge_collectFields_allFields_lookupParent_sameSelection
           simp [Selection.isField] at hheadField
 
 theorem possibleObjectParent_eq_or_abstract_not_object
-    (schema : Schema) {objectParent abstractParent : Name} :
-    objectParent ∈ schema.getPossibleTypes abstractParent ->
-      abstractParent = objectParent ∨ ¬ schema.objectType abstractParent := by
+    (schema : Schema) {objectParent abstractParent : Name}
+    : objectParent ∈ schema.getPossibleTypes abstractParent
+      -> abstractParent = objectParent ∨ ¬ schema.objectType abstractParent := by
   intro hpossible
   by_cases habstractObject : schema.objectType abstractParent
   · have hinclude :
@@ -253,21 +243,20 @@ theorem possibleObjectParent_eq_or_abstract_not_object
 
 theorem fieldsForNameCanMerge_of_sameSelection_bridge
     (schema : Schema)
-    (objectLeft objectRight abstractLeft abstractRight :
-      FieldMerge.ScopedField) :
-    scopedFieldSameSelection objectLeft abstractLeft ->
-    scopedFieldSameSelection objectRight abstractRight ->
-    FieldMerge.sameResponseShape schema objectLeft.outputType
-      abstractLeft.outputType ->
-    FieldMerge.sameResponseShape schema objectRight.outputType
-      abstractRight.outputType ->
-    (abstractLeft.parentType = objectLeft.parentType
-      ∨ ¬ schema.objectType abstractLeft.parentType) ->
-    (abstractRight.parentType = objectRight.parentType
-      ∨ ¬ schema.objectType abstractRight.parentType) ->
-    objectLeft.responseName = objectRight.responseName ->
-    FieldMerge.fieldsForNameCanMerge schema abstractLeft abstractRight ->
-      FieldMerge.fieldsForNameCanMerge schema objectLeft objectRight := by
+    (objectLeft objectRight abstractLeft abstractRight : FieldMerge.ScopedField)
+    : scopedFieldSameSelection objectLeft abstractLeft
+      -> scopedFieldSameSelection objectRight abstractRight
+      -> FieldMerge.sameResponseShape schema objectLeft.outputType
+          abstractLeft.outputType
+      -> FieldMerge.sameResponseShape schema objectRight.outputType
+          abstractRight.outputType
+      -> (abstractLeft.parentType = objectLeft.parentType
+          ∨ ¬ schema.objectType abstractLeft.parentType)
+      -> (abstractRight.parentType = objectRight.parentType
+          ∨ ¬ schema.objectType abstractRight.parentType)
+      -> objectLeft.responseName = objectRight.responseName
+      -> FieldMerge.fieldsForNameCanMerge schema abstractLeft abstractRight
+      -> FieldMerge.fieldsForNameCanMerge schema objectLeft objectRight := by
   intro hleftSame hrightSame hleftShape hrightShape hleftParent
     hrightParent hresponse habstractMerge
   rcases hleftSame with
@@ -354,24 +343,21 @@ theorem fieldsForNameCanMerge_of_sameSelection_bridge
     simpa [FieldMerge.fieldsInSetCanMerge, hleftSelectionSet, hrightSelectionSet]
       using hsubfields
 
-theorem fieldMerge_collectFields_objectParent_possibleParent
-    (schema : Schema) :
-    ∀ objectParent abstractParent selectionSet objectField,
-      SchemaWellFormedness.schemaWellFormed schema ->
-        schema.objectType objectParent ->
-          objectParent ∈ schema.getPossibleTypes abstractParent ->
-            selectionSetLookupValid schema objectParent selectionSet ->
-              selectionSetLookupValid schema abstractParent selectionSet ->
-                objectField ∈ FieldMerge.collectFields schema objectParent
-                  selectionSet ->
-                  ∃ abstractField,
-                    abstractField ∈ FieldMerge.collectFields schema
-                      abstractParent selectionSet
-                      ∧ scopedFieldSameSelection objectField abstractField
-                      ∧ FieldMerge.sameResponseShape schema
-                        objectField.outputType abstractField.outputType
-                      ∧ (abstractField.parentType = objectField.parentType
-                        ∨ ¬ schema.objectType abstractField.parentType)
+theorem fieldMerge_collectFields_objectParent_possibleParent (schema : Schema)
+    : ∀ objectParent abstractParent selectionSet objectField,
+        SchemaWellFormedness.schemaWellFormed schema
+        -> schema.objectType objectParent
+        -> objectParent ∈ schema.getPossibleTypes abstractParent
+        -> selectionSetLookupValid schema objectParent selectionSet
+        -> selectionSetLookupValid schema abstractParent selectionSet
+        -> objectField ∈ FieldMerge.collectFields schema objectParent selectionSet
+        -> ∃ abstractField,
+            abstractField ∈ FieldMerge.collectFields schema abstractParent selectionSet
+            ∧ scopedFieldSameSelection objectField abstractField
+            ∧ FieldMerge.sameResponseShape schema
+                objectField.outputType abstractField.outputType
+            ∧ (abstractField.parentType = objectField.parentType
+                ∨ ¬ schema.objectType abstractField.parentType)
   | _objectParent, _abstractParent, [], _objectField, _hschema, _hobject,
       _hpossible, _hvalidObject, _hvalidAbstract, hfield => by
       simp [FieldMerge.collectFields] at hfield
@@ -519,18 +505,16 @@ theorem fieldMerge_collectFields_objectParent_possibleParent
 
 theorem fieldsInSetCanMerge_inlineFragment_some_overlap_flatten_object
     (schema : Schema) (parentType typeCondition : Name)
-    (selectionSet rest : List Selection) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    schema.objectType parentType ->
-    schema.typesOverlapBool parentType typeCondition = true ->
-    selectionSetLookupValid schema parentType selectionSet ->
-    selectionSetLookupValid schema typeCondition selectionSet ->
-    selectionSetLookupValid schema parentType rest ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.inlineFragment (some typeCondition) [] selectionSet
-        :: rest) ->
-      FieldMerge.fieldsInSetCanMerge schema parentType
-        (selectionSet ++ rest) := by
+    (selectionSet rest : List Selection)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> schema.objectType parentType
+      -> schema.typesOverlapBool parentType typeCondition = true
+      -> selectionSetLookupValid schema parentType selectionSet
+      -> selectionSetLookupValid schema typeCondition selectionSet
+      -> selectionSetLookupValid schema parentType rest
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType (selectionSet ++ rest) := by
   intro hschema hobject hoverlap hselectionParentLookup
     hselectionTypeLookup hrestLookup hmerge
   have hpossible :
@@ -597,7 +581,6 @@ theorem fieldsInSetCanMerge_inlineFragment_some_overlap_flatten_object
   exact fieldsForNameCanMerge_of_sameSelection_bridge schema left right
     abstractLeft abstractRight hleftSame hrightSame hleftShape hrightShape
     hleftParent hrightParent hresponse habstractMerge
-
 
 end NormalForm
 

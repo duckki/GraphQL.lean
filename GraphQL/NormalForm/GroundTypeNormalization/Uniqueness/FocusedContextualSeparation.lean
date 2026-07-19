@@ -18,63 +18,60 @@ namespace NormalForm
 namespace GroundTypeNormalization
 
 theorem selectionSet_fieldPairProjectionFieldOk_framed_leaf_targets_of_valid_normal_members
-    {schema : Schema} {parentType : Name}
-    {members : List (List Selection)} {selectionSet : List Selection}
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat)
-    (leftField rightField : Name)
-    (leftArguments rightArguments : List Argument) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    (∀ memberSelectionSet,
-      memberSelectionSet ∈ members ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            memberSelectionSet
-          ∧ selectionSetDirectiveFree memberSelectionSet
-          ∧ selectionSetNormal schema parentType memberSelectionSet) ->
-    selectionSet ∈ members ->
-    objectTypeNameBool schema parentType = true ->
-    selectionSetDeepProbeFuel schema parentType (List.flatten members)
-      ≤ fuel ->
-    (∀ fieldDefinition,
-      schema.lookupField parentType leftField = some fieldDefinition ->
-        (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = false) ->
-    (∀ fieldDefinition,
-      schema.lookupField parentType rightField = some fieldDefinition ->
-        (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = false) ->
-    (∀ arguments,
-      Argument.argumentsEquivalent arguments rightArguments ->
-        ¬ fieldProbeTarget parentType leftField leftArguments parentType
-          rightField arguments) ->
-    ∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema
-          (fieldPairOrDeepSuccessResolvers schema
-            [Selection.inlineFragment (some parentType) []
-              (List.flatten members)]
-            (fieldPairProbeResolvers schema
-              [Selection.inlineFragment (some parentType) []
-                (List.flatten members)]
-              parentType leftField rightField leftArguments rightArguments)
-            parentType leftField rightField leftArguments rightArguments)
-          variableValues
-          (fuel + 1)
-          (projectionRootResolverValue
-            (.object parentType (none : Option FieldPairProbeTag)))
-          responseName
-          [{
-            parentType := parentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors) := by
+    {schema : Schema} {parentType : Name} {members : List (List Selection)}
+    {selectionSet : List Selection} (variableValues : Execution.VariableValues)
+    (fuel : Nat) (leftField rightField : Name)
+    (leftArguments rightArguments : List Argument)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> (∀ memberSelectionSet,
+            memberSelectionSet ∈ members
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  memberSelectionSet
+                ∧ selectionSetDirectiveFree memberSelectionSet
+                ∧ selectionSetNormal schema parentType memberSelectionSet)
+      -> selectionSet ∈ members
+      -> objectTypeNameBool schema parentType = true
+      -> selectionSetDeepProbeFuel schema parentType (List.flatten members) ≤ fuel
+      -> (∀ fieldDefinition,
+            schema.lookupField parentType leftField = some fieldDefinition
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                  schema
+                = false)
+      -> (∀ fieldDefinition,
+            schema.lookupField parentType rightField = some fieldDefinition
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                  schema
+                = false)
+      -> (∀ arguments,
+            Argument.argumentsEquivalent arguments rightArguments
+            -> ¬ fieldProbeTarget parentType leftField leftArguments parentType
+                  rightField arguments)
+      -> ∀ responseName fieldName arguments directives childSelectionSet,
+          Selection.field responseName fieldName arguments directives childSelectionSet
+            ∈ selectionSet
+          -> ∃ responseValue fieldErrors,
+              Execution.executeField schema
+                (fieldPairOrDeepSuccessResolvers schema
+                  [Selection.inlineFragment (some parentType) [] (List.flatten members)]
+                  (fieldPairProbeResolvers schema
+                    [Selection.inlineFragment (some parentType) []
+                      (List.flatten members)]
+                    parentType leftField rightField leftArguments rightArguments)
+                  parentType leftField rightField leftArguments rightArguments)
+                variableValues
+                (fuel + 1)
+                (projectionRootResolverValue
+                  (.object parentType (none : Option FieldPairProbeTag)))
+                responseName
+                [{
+                  parentType := parentType,
+                  responseName := responseName,
+                  fieldName := fieldName,
+                  arguments := arguments,
+                  selectionSet := childSelectionSet
+                }]
+              = .ok ([(responseName, responseValue)], fieldErrors) := by
   intro hschema hmembers hmember hobject hfuel hleftLeaf hrightLeaf
     hrightNotLeft responseName fieldName arguments directives
     childSelectionSet hmem
@@ -227,63 +224,60 @@ theorem selectionSet_fieldPairProjectionFieldOk_framed_leaf_targets_of_valid_nor
       exact hdeep
 
 theorem selectionSet_fieldPairProjectionFieldOk_framed_left_leaf_right_composite_targets_of_valid_normal_members
-    {schema : Schema} {parentType : Name}
-    {members : List (List Selection)} {selectionSet : List Selection}
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat)
-    (leftField rightField : Name)
-    (leftArguments rightArguments : List Argument) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    (∀ memberSelectionSet,
-      memberSelectionSet ∈ members ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            memberSelectionSet
-          ∧ selectionSetDirectiveFree memberSelectionSet
-          ∧ selectionSetNormal schema parentType memberSelectionSet) ->
-    selectionSet ∈ members ->
-    objectTypeNameBool schema parentType = true ->
-    selectionSetDeepProbeFuel schema parentType (List.flatten members)
-      ≤ fuel ->
-    (∀ fieldDefinition,
-      schema.lookupField parentType leftField = some fieldDefinition ->
-        (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = false) ->
-    (∀ fieldDefinition,
-      schema.lookupField parentType rightField = some fieldDefinition ->
-        (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = true) ->
-    (∀ arguments,
-      Argument.argumentsEquivalent arguments rightArguments ->
-        ¬ fieldProbeTarget parentType leftField leftArguments parentType
-          rightField arguments) ->
-    ∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      ∃ responseValue fieldErrors,
-        Execution.executeField schema
-          (fieldPairOrDeepSuccessResolvers schema
-            [Selection.inlineFragment (some parentType) []
-              (List.flatten members)]
-            (fieldPairProbeResolvers schema
-              [Selection.inlineFragment (some parentType) []
-                (List.flatten members)]
-              parentType leftField rightField leftArguments rightArguments)
-            parentType leftField rightField leftArguments rightArguments)
-          variableValues
-          (fuel + 1)
-          (projectionRootResolverValue
-            (.object parentType (none : Option FieldPairProbeTag)))
-          responseName
-          [{
-            parentType := parentType,
-            responseName := responseName,
-            fieldName := fieldName,
-            arguments := arguments,
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], fieldErrors) := by
+    {schema : Schema} {parentType : Name} {members : List (List Selection)}
+    {selectionSet : List Selection} (variableValues : Execution.VariableValues)
+    (fuel : Nat) (leftField rightField : Name)
+    (leftArguments rightArguments : List Argument)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> (∀ memberSelectionSet,
+            memberSelectionSet ∈ members
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  memberSelectionSet
+                ∧ selectionSetDirectiveFree memberSelectionSet
+                ∧ selectionSetNormal schema parentType memberSelectionSet)
+      -> selectionSet ∈ members
+      -> objectTypeNameBool schema parentType = true
+      -> selectionSetDeepProbeFuel schema parentType (List.flatten members) ≤ fuel
+      -> (∀ fieldDefinition,
+            schema.lookupField parentType leftField = some fieldDefinition
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                  schema
+                = false)
+      -> (∀ fieldDefinition,
+            schema.lookupField parentType rightField = some fieldDefinition
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                  schema
+                = true)
+      -> (∀ arguments,
+            Argument.argumentsEquivalent arguments rightArguments
+            -> ¬ fieldProbeTarget parentType leftField leftArguments parentType
+                  rightField arguments)
+      -> ∀ responseName fieldName arguments directives childSelectionSet,
+          Selection.field responseName fieldName arguments directives childSelectionSet
+            ∈ selectionSet
+          -> ∃ responseValue fieldErrors,
+              Execution.executeField schema
+                (fieldPairOrDeepSuccessResolvers schema
+                  [Selection.inlineFragment (some parentType) [] (List.flatten members)]
+                  (fieldPairProbeResolvers schema
+                    [Selection.inlineFragment (some parentType) []
+                      (List.flatten members)]
+                    parentType leftField rightField leftArguments rightArguments)
+                  parentType leftField rightField leftArguments rightArguments)
+                variableValues
+                (fuel + 1)
+                (projectionRootResolverValue
+                  (.object parentType (none : Option FieldPairProbeTag)))
+                responseName
+                [{
+                  parentType := parentType,
+                  responseName := responseName,
+                  fieldName := fieldName,
+                  arguments := arguments,
+                  selectionSet := childSelectionSet
+                }]
+              = .ok ([(responseName, responseValue)], fieldErrors) := by
   intro hschema hmembers hmember hobject hfuel hleftLeaf hrightComposite
     hrightNotLeft responseName fieldName arguments directives
     childSelectionSet hmem
@@ -524,41 +518,40 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_o
     {schema : Schema}
     {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType : Name} {left right : List Selection}
-    {supportSelectionSets : List (List Selection)}
-    {responseName fieldName : Name}
+    {supportSelectionSets : List (List Selection)} {responseName fieldName : Name}
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
     {leftChildSelectionSet rightChildSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} {minFuel : Nat} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = true ->
-    (∀ supportSelectionSet,
-      supportSelectionSet ∈ supportSelectionSets ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            supportSelectionSet
-          ∧ selectionSetDirectiveFree supportSelectionSet
-          ∧ selectionSetNormal schema parentType supportSelectionSet) ->
-    Selection.field responseName fieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName fieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = false ->
-    ¬ Argument.argumentsEquivalent leftArguments rightArguments ->
-      selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
-        parentType parentType left right
-        (fun selectionSet => selectionSet ∈ supportSelectionSets)
-        minFuel := by
+    {fieldDefinition : FieldDefinition} {minFuel : Nat}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = true
+      -> (∀ supportSelectionSet,
+            supportSelectionSet ∈ supportSelectionSets
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  supportSelectionSet
+                ∧ selectionSetDirectiveFree supportSelectionSet
+                ∧ selectionSetNormal schema parentType supportSelectionSet)
+      -> Selection.field responseName fieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName fieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> ¬ Argument.argumentsEquivalent leftArguments rightArguments
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
+          parentType parentType left right
+          (fun selectionSet => selectionSet ∈ supportSelectionSets)
+          minFuel := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hobject hsupportValid hleftMem hrightMem hlookup hleaf
     hargumentsDiff
@@ -834,40 +827,40 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_o
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
     {leftChildSelectionSet rightChildSelectionSet : List Selection}
-    {leftFieldDefinition rightFieldDefinition : FieldDefinition}
-    {minFuel : Nat} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = true ->
-    (∀ supportSelectionSet,
-      supportSelectionSet ∈ supportSelectionSets ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            supportSelectionSet
-          ∧ selectionSetDirectiveFree supportSelectionSet
-          ∧ selectionSetNormal schema parentType supportSelectionSet) ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName rightFieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    schema.lookupField parentType leftFieldName = some leftFieldDefinition ->
-    schema.lookupField parentType rightFieldName = some rightFieldDefinition ->
-    (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-      schema = false ->
-    (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-      schema = false ->
-    leftFieldName ≠ rightFieldName ->
-      selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
-        parentType parentType left right
-        (fun selectionSet => selectionSet ∈ supportSelectionSets)
-        minFuel := by
+    {leftFieldDefinition rightFieldDefinition : FieldDefinition} {minFuel : Nat}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = true
+      -> (∀ supportSelectionSet,
+            supportSelectionSet ∈ supportSelectionSets
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  supportSelectionSet
+                ∧ selectionSetDirectiveFree supportSelectionSet
+                ∧ selectionSetNormal schema parentType supportSelectionSet)
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
+      -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = false
+      -> leftFieldName ≠ rightFieldName
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
+          parentType parentType left right
+          (fun selectionSet => selectionSet ∈ supportSelectionSets)
+          minFuel := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hobject hsupportValid hleftMem hrightMem hleftLookup
     hrightLookup hleftLeaf hrightLeaf hfieldDiff
@@ -1155,40 +1148,40 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_o
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
     {leftChildSelectionSet rightChildSelectionSet : List Selection}
-    {leftFieldDefinition rightFieldDefinition : FieldDefinition}
-    {minFuel : Nat} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = true ->
-    (∀ supportSelectionSet,
-      supportSelectionSet ∈ supportSelectionSets ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            supportSelectionSet
-          ∧ selectionSetDirectiveFree supportSelectionSet
-          ∧ selectionSetNormal schema parentType supportSelectionSet) ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName rightFieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    schema.lookupField parentType leftFieldName = some leftFieldDefinition ->
-    schema.lookupField parentType rightFieldName = some rightFieldDefinition ->
-    (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-      schema = false ->
-    (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    leftFieldName ≠ rightFieldName ->
-      selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
-        parentType parentType left right
-        (fun selectionSet => selectionSet ∈ supportSelectionSets)
-        minFuel := by
+    {leftFieldDefinition rightFieldDefinition : FieldDefinition} {minFuel : Nat}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = true
+      -> (∀ supportSelectionSet,
+            supportSelectionSet ∈ supportSelectionSets
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  supportSelectionSet
+                ∧ selectionSetDirectiveFree supportSelectionSet
+                ∧ selectionSetNormal schema parentType supportSelectionSet)
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
+      -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> leftFieldName ≠ rightFieldName
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
+          parentType parentType left right
+          (fun selectionSet => selectionSet ∈ supportSelectionSets)
+          minFuel := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hobject hsupportValid hleftMem hrightMem hleftLookup
     hrightLookup hleftLeaf hrightComposite hfieldDiff
@@ -1598,34 +1591,31 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_o
     {schema : Schema}
     {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType : Name} {left right : List Selection}
-    {supportSelectionSets : List (List Selection)}
-    {responseName fieldName : Name} {arguments : List Argument}
-    {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} {minFuel : Nat} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = true ->
-    (∀ supportSelectionSet,
-      supportSelectionSet ∈ supportSelectionSets ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            supportSelectionSet
-          ∧ selectionSetDirectiveFree supportSelectionSet
-          ∧ selectionSetNormal schema parentType supportSelectionSet) ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ left ->
-    responseName ∉ right.filterMap Selection.responseName? ->
-      selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
-        parentType parentType left right
-        (fun selectionSet => selectionSet ∈ supportSelectionSets)
-        minFuel := by
+    {supportSelectionSets : List (List Selection)} {responseName fieldName : Name}
+    {arguments : List Argument} {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection} {minFuel : Nat}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = true
+      -> (∀ supportSelectionSet,
+            supportSelectionSet ∈ supportSelectionSets
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  supportSelectionSet
+                ∧ selectionSetDirectiveFree supportSelectionSet
+                ∧ selectionSetNormal schema parentType supportSelectionSet)
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ left
+      -> responseName ∉ right.filterMap Selection.responseName?
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
+          parentType parentType left right
+          (fun selectionSet => selectionSet ∈ supportSelectionSets)
+          minFuel := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hobject hsupportValid hleftMem hrightNoResponseName
   let members : List (List Selection) := left :: right :: supportSelectionSets
@@ -1797,34 +1787,31 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_o
     {schema : Schema}
     {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType : Name} {left right : List Selection}
-    {supportSelectionSets : List (List Selection)}
-    {responseName fieldName : Name} {arguments : List Argument}
-    {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} {minFuel : Nat} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = true ->
-    (∀ supportSelectionSet,
-      supportSelectionSet ∈ supportSelectionSets ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            supportSelectionSet
-          ∧ selectionSetDirectiveFree supportSelectionSet
-          ∧ selectionSetNormal schema parentType supportSelectionSet) ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ right ->
-    responseName ∉ left.filterMap Selection.responseName? ->
-      selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
-        parentType parentType left right
-        (fun selectionSet => selectionSet ∈ supportSelectionSets)
-        minFuel := by
+    {supportSelectionSets : List (List Selection)} {responseName fieldName : Name}
+    {arguments : List Argument} {directives : List DirectiveApplication}
+    {childSelectionSet : List Selection} {minFuel : Nat}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = true
+      -> (∀ supportSelectionSet,
+            supportSelectionSet ∈ supportSelectionSets
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  supportSelectionSet
+                ∧ selectionSetDirectiveFree supportSelectionSet
+                ∧ selectionSetNormal schema parentType supportSelectionSet)
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ right
+      -> responseName ∉ left.filterMap Selection.responseName?
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
+          parentType parentType left right
+          (fun selectionSet => selectionSet ∈ supportSelectionSets)
+          minFuel := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hobject hsupportValid hrightMem hleftNoResponseName
   have hwitness :
@@ -1857,33 +1844,31 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_a
     {schema : Schema}
     {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType : Name} {left right : List Selection}
-    {supportSelectionSets : List (List Selection)}
-    {typeCondition : Name} {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} {minFuel : Nat} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = false ->
-    (∀ supportSelectionSet,
-      supportSelectionSet ∈ supportSelectionSets ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            supportSelectionSet
-          ∧ selectionSetDirectiveFree supportSelectionSet
-          ∧ selectionSetNormal schema parentType supportSelectionSet) ->
-    Selection.inlineFragment (some typeCondition) directives
-      childSelectionSet ∈ left ->
-    typeCondition ∉ right.filterMap inlineFragmentTypeCondition? ->
-      selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
-        parentType typeCondition left right
-        (fun selectionSet => selectionSet ∈ supportSelectionSets)
-        minFuel := by
+    {supportSelectionSets : List (List Selection)} {typeCondition : Name}
+    {directives : List DirectiveApplication} {childSelectionSet : List Selection}
+    {minFuel : Nat}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = false
+      -> (∀ supportSelectionSet,
+            supportSelectionSet ∈ supportSelectionSets
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  supportSelectionSet
+                ∧ selectionSetDirectiveFree supportSelectionSet
+                ∧ selectionSetNormal schema parentType supportSelectionSet)
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ left
+      -> typeCondition ∉ right.filterMap inlineFragmentTypeCondition?
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
+          parentType typeCondition left right
+          (fun selectionSet => selectionSet ∈ supportSelectionSets)
+          minFuel := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hnonObject hsupportValid hleftMem hrightNoTypeCondition
   have hdirectives : directives = [] :=
@@ -2131,33 +2116,31 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_a
     {schema : Schema}
     {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType : Name} {left right : List Selection}
-    {supportSelectionSets : List (List Selection)}
-    {typeCondition : Name} {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} {minFuel : Nat} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = false ->
-    (∀ supportSelectionSet,
-      supportSelectionSet ∈ supportSelectionSets ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            supportSelectionSet
-          ∧ selectionSetDirectiveFree supportSelectionSet
-          ∧ selectionSetNormal schema parentType supportSelectionSet) ->
-    Selection.inlineFragment (some typeCondition) directives
-      childSelectionSet ∈ right ->
-    typeCondition ∉ left.filterMap inlineFragmentTypeCondition? ->
-      selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
-        parentType typeCondition left right
-        (fun selectionSet => selectionSet ∈ supportSelectionSets)
-        minFuel := by
+    {supportSelectionSets : List (List Selection)} {typeCondition : Name}
+    {directives : List DirectiveApplication} {childSelectionSet : List Selection}
+    {minFuel : Nat}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = false
+      -> (∀ supportSelectionSet,
+            supportSelectionSet ∈ supportSelectionSets
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  supportSelectionSet
+                ∧ selectionSetDirectiveFree supportSelectionSet
+                ∧ selectionSetNormal schema parentType supportSelectionSet)
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ right
+      -> typeCondition ∉ left.filterMap inlineFragmentTypeCondition?
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
+          parentType typeCondition left right
+          (fun selectionSet => selectionSet ∈ supportSelectionSets)
+          minFuel := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hnonObject hsupportValid hrightMem hleftNoTypeCondition
   exact
@@ -2190,15 +2173,15 @@ noncomputable def selectionSetTargetInlineFragmentSelectionSets
 
 noncomputable def splitTargetInlineFragmentSelectionSets
     (typeCondition : Name)
-    (leftPref rightPref leftSuffix rightSuffix : List Selection) :
-    List (List Selection) :=
+    (leftPref rightPref leftSuffix rightSuffix : List Selection)
+    : List (List Selection) :=
   selectionSetTargetInlineFragmentSelectionSets typeCondition leftPref
   ++ selectionSetTargetInlineFragmentSelectionSets typeCondition rightPref
   ++ selectionSetTargetInlineFragmentSelectionSets typeCondition leftSuffix
   ++ selectionSetTargetInlineFragmentSelectionSets typeCondition rightSuffix
 
-noncomputable def supportTargetInlineFragmentSelectionSets
-    (typeCondition : Name) : List (List Selection) -> List (List Selection)
+noncomputable def supportTargetInlineFragmentSelectionSets (typeCondition : Name)
+    : List (List Selection) -> List (List Selection)
   | [] => []
   | selectionSet :: rest =>
       selectionSetTargetInlineFragmentSelectionSets typeCondition selectionSet
@@ -2207,20 +2190,19 @@ noncomputable def supportTargetInlineFragmentSelectionSets
 noncomputable def abstractChildSupportSelectionSets
     (typeCondition : Name)
     (leftPref rightPref leftSuffix rightSuffix : List Selection)
-    (supportSelectionSets : List (List Selection)) : List (List Selection) :=
+    (supportSelectionSets : List (List Selection))
+    : List (List Selection) :=
   splitTargetInlineFragmentSelectionSets typeCondition leftPref rightPref
     leftSuffix rightSuffix
-  ++ supportTargetInlineFragmentSelectionSets typeCondition
-    supportSelectionSets
+  ++ supportTargetInlineFragmentSelectionSets typeCondition supportSelectionSets
 
 theorem selectionSetTargetInlineFragmentSelectionSets_mem
-    {typeCondition : Name} {selectionSet childSelectionSet : List Selection} :
-    childSelectionSet ∈
-      selectionSetTargetInlineFragmentSelectionSets typeCondition
-        selectionSet ->
-      ∃ directives,
-        Selection.inlineFragment (some typeCondition) directives
-          childSelectionSet ∈ selectionSet := by
+    {typeCondition : Name} {selectionSet childSelectionSet : List Selection}
+    : childSelectionSet
+        ∈ selectionSetTargetInlineFragmentSelectionSets typeCondition selectionSet
+      -> ∃ directives,
+          Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet := by
   intro hmem
   induction selectionSet with
   | nil =>
@@ -2254,12 +2236,12 @@ theorem selectionSetTargetInlineFragmentSelectionSets_mem
 
 theorem selectionSetTargetInlineFragmentSelectionSets_of_mem
     {typeCondition : Name} {directives : List DirectiveApplication}
-    {selectionSet childSelectionSet : List Selection} :
-    Selection.inlineFragment (some typeCondition) directives
-      childSelectionSet ∈ selectionSet ->
-    childSelectionSet ∈
-      selectionSetTargetInlineFragmentSelectionSets typeCondition
-        selectionSet := by
+    {selectionSet childSelectionSet : List Selection}
+    : Selection.inlineFragment (some typeCondition) directives childSelectionSet
+        ∈ selectionSet
+      -> childSelectionSet
+          ∈ selectionSetTargetInlineFragmentSelectionSets typeCondition
+              selectionSet := by
   intro hmem
   induction selectionSet with
   | nil =>
@@ -2290,18 +2272,16 @@ theorem selectionSetTargetInlineFragmentSelectionSets_of_mem
 theorem selectionSetTargetInlineFragmentSelectionSets_child_valid_free_normal
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType typeCondition : Name}
-    {selectionSet childSelectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    childSelectionSet ∈
-      selectionSetTargetInlineFragmentSelectionSets typeCondition
-        selectionSet ->
-      Validation.selectionSetValid schema variableDefinitions typeCondition
-        childSelectionSet
-        ∧ selectionSetDirectiveFree childSelectionSet
-        ∧ selectionSetNormal schema typeCondition childSelectionSet := by
+    {selectionSet childSelectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> childSelectionSet
+          ∈ selectionSetTargetInlineFragmentSelectionSets typeCondition selectionSet
+      -> Validation.selectionSetValid schema variableDefinitions typeCondition
+            childSelectionSet
+          ∧ selectionSetDirectiveFree childSelectionSet
+          ∧ selectionSetNormal schema typeCondition childSelectionSet := by
   intro hvalid hfree hnormal hmem
   rcases selectionSetTargetInlineFragmentSelectionSets_mem hmem with
     ⟨directives, hinlineMem⟩
@@ -2316,23 +2296,21 @@ theorem selectionSetTargetInlineFragmentSelectionSets_child_valid_free_normal
 theorem selectionSetTargetInlineFragmentSelectionSets_child_valid_free_normal_of_subset
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType typeCondition : Name}
-    {whole selectionSet childSelectionSet : List Selection} :
-    (∀ directives childSelectionSet,
-      Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ selectionSet ->
-        Selection.inlineFragment (some typeCondition) directives
-          childSelectionSet ∈ whole) ->
-    Validation.selectionSetValid schema variableDefinitions parentType
-      whole ->
-    selectionSetDirectiveFree whole ->
-    selectionSetNormal schema parentType whole ->
-    childSelectionSet ∈
-      selectionSetTargetInlineFragmentSelectionSets typeCondition
-        selectionSet ->
-      Validation.selectionSetValid schema variableDefinitions typeCondition
-        childSelectionSet
-        ∧ selectionSetDirectiveFree childSelectionSet
-        ∧ selectionSetNormal schema typeCondition childSelectionSet := by
+    {whole selectionSet childSelectionSet : List Selection}
+    : (∀ directives childSelectionSet,
+        Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet
+        -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+            ∈ whole)
+      -> Validation.selectionSetValid schema variableDefinitions parentType whole
+      -> selectionSetDirectiveFree whole
+      -> selectionSetNormal schema parentType whole
+      -> childSelectionSet
+          ∈ selectionSetTargetInlineFragmentSelectionSets typeCondition selectionSet
+      -> Validation.selectionSetValid schema variableDefinitions typeCondition
+            childSelectionSet
+          ∧ selectionSetDirectiveFree childSelectionSet
+          ∧ selectionSetNormal schema typeCondition childSelectionSet := by
   intro hsubset hvalid hfree hnormal hmem
   rcases selectionSetTargetInlineFragmentSelectionSets_mem hmem with
     ⟨directives, hinlineMem⟩
@@ -2348,38 +2326,42 @@ theorem selectionSetTargetInlineFragmentSelectionSets_child_valid_free_normal_of
 
 theorem splitTargetInlineFragmentSelectionSets_child_exists_valid_free_normal
     {schema : Schema}
-    {leftVariableDefinitions rightVariableDefinitions :
-      List VariableDefinition}
+    {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType typeCondition : Name}
     {leftPref rightPref leftSuffix rightSuffix : List Selection}
-    {leftChildSelectionSet rightChildSelectionSet childSelectionSet :
-      List Selection} :
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      (leftPref ++ Selection.inlineFragment (some typeCondition) []
-        leftChildSelectionSet :: leftSuffix) ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      (rightPref ++ Selection.inlineFragment (some typeCondition) []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetDirectiveFree
-      (leftPref ++ Selection.inlineFragment (some typeCondition) []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetDirectiveFree
-      (rightPref ++ Selection.inlineFragment (some typeCondition) []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetNormal schema parentType
-      (leftPref ++ Selection.inlineFragment (some typeCondition) []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetNormal schema parentType
-      (rightPref ++ Selection.inlineFragment (some typeCondition) []
-        rightChildSelectionSet :: rightSuffix) ->
-    childSelectionSet ∈
-      splitTargetInlineFragmentSelectionSets typeCondition leftPref
-        rightPref leftSuffix rightSuffix ->
-      ∃ variableDefinitions,
-        Validation.selectionSetValid schema variableDefinitions typeCondition
-          childSelectionSet
-        ∧ selectionSetDirectiveFree childSelectionSet
-        ∧ selectionSetNormal schema typeCondition childSelectionSet := by
+    {leftChildSelectionSet rightChildSelectionSet childSelectionSet : List Selection}
+    : Validation.selectionSetValid schema leftVariableDefinitions parentType
+        (leftPref
+          ++ Selection.inlineFragment (some typeCondition) [] leftChildSelectionSet
+              :: leftSuffix)
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType
+          (rightPref
+            ++ Selection.inlineFragment (some typeCondition) [] rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetDirectiveFree
+          (leftPref
+            ++ Selection.inlineFragment (some typeCondition) [] leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetDirectiveFree
+          (rightPref
+            ++ Selection.inlineFragment (some typeCondition) [] rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetNormal schema parentType
+          (leftPref
+            ++ Selection.inlineFragment (some typeCondition) [] leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetNormal schema parentType
+          (rightPref
+            ++ Selection.inlineFragment (some typeCondition) [] rightChildSelectionSet
+                :: rightSuffix)
+      -> childSelectionSet
+          ∈ splitTargetInlineFragmentSelectionSets typeCondition leftPref
+              rightPref leftSuffix rightSuffix
+      -> ∃ variableDefinitions,
+          Validation.selectionSetValid schema variableDefinitions typeCondition
+            childSelectionSet
+          ∧ selectionSetDirectiveFree childSelectionSet
+          ∧ selectionSetNormal schema typeCondition childSelectionSet := by
   intro hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hmem
   simp [splitTargetInlineFragmentSelectionSets] at hmem
@@ -2450,16 +2432,14 @@ theorem splitTargetInlineFragmentSelectionSets_child_exists_valid_free_normal
           hrightValid hrightFree hrightNormal hrightSuffix⟩
 
 theorem selectionSetTargetInlineFragmentSelectionSets_subset_supportTargetInlineFragmentSelectionSets_of_mem
-    {typeCondition : Name}
-    {supportSelectionSets : List (List Selection)}
-    {selectionSet childSelectionSet : List Selection} :
-    selectionSet ∈ supportSelectionSets ->
-    childSelectionSet ∈
-      selectionSetTargetInlineFragmentSelectionSets typeCondition
-        selectionSet ->
-    childSelectionSet ∈
-      supportTargetInlineFragmentSelectionSets typeCondition
-        supportSelectionSets := by
+    {typeCondition : Name} {supportSelectionSets : List (List Selection)}
+    {selectionSet childSelectionSet : List Selection}
+    : selectionSet ∈ supportSelectionSets
+      -> childSelectionSet
+          ∈ selectionSetTargetInlineFragmentSelectionSets typeCondition selectionSet
+      -> childSelectionSet
+          ∈ supportTargetInlineFragmentSelectionSets typeCondition
+              supportSelectionSets := by
   intro hselection hchild
   induction supportSelectionSets with
   | nil =>
@@ -2475,22 +2455,21 @@ theorem selectionSetTargetInlineFragmentSelectionSets_subset_supportTargetInline
 theorem supportTargetInlineFragmentSelectionSets_child_exists_valid_free_normal
     {schema : Schema} {parentType typeCondition : Name}
     {supportSelectionSets : List (List Selection)}
-    {childSelectionSet : List Selection} :
-    (∀ supportSelectionSet,
-      supportSelectionSet ∈ supportSelectionSets ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            supportSelectionSet
-          ∧ selectionSetDirectiveFree supportSelectionSet
-          ∧ selectionSetNormal schema parentType supportSelectionSet) ->
-    childSelectionSet ∈
-      supportTargetInlineFragmentSelectionSets typeCondition
-        supportSelectionSets ->
-      ∃ variableDefinitions,
-        Validation.selectionSetValid schema variableDefinitions typeCondition
-          childSelectionSet
-        ∧ selectionSetDirectiveFree childSelectionSet
-        ∧ selectionSetNormal schema typeCondition childSelectionSet := by
+    {childSelectionSet : List Selection}
+    : (∀ supportSelectionSet,
+        supportSelectionSet ∈ supportSelectionSets
+        -> ∃ variableDefinitions,
+            Validation.selectionSetValid schema variableDefinitions parentType
+              supportSelectionSet
+            ∧ selectionSetDirectiveFree supportSelectionSet
+            ∧ selectionSetNormal schema parentType supportSelectionSet)
+      -> childSelectionSet
+          ∈ supportTargetInlineFragmentSelectionSets typeCondition supportSelectionSets
+      -> ∃ variableDefinitions,
+          Validation.selectionSetValid schema variableDefinitions typeCondition
+            childSelectionSet
+          ∧ selectionSetDirectiveFree childSelectionSet
+          ∧ selectionSetNormal schema typeCondition childSelectionSet := by
   intro hsupportValid hmem
   induction supportSelectionSets with
   | nil =>
@@ -2515,49 +2494,58 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_a
     {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType typeCondition runtimeType : Name}
     {leftChildSelectionSet rightChildSelectionSet
-      leftPref rightPref leftSuffix rightSuffix : List Selection}
-    {supportSelectionSets : List (List Selection)} {minFuel : Nat} :
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      (leftPref ++ Selection.inlineFragment (some typeCondition) []
-        leftChildSelectionSet :: leftSuffix) ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      (rightPref ++ Selection.inlineFragment (some typeCondition) []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetDirectiveFree
-      (leftPref ++ Selection.inlineFragment (some typeCondition) []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetDirectiveFree
-      (rightPref ++ Selection.inlineFragment (some typeCondition) []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetNormal schema parentType
-      (leftPref ++ Selection.inlineFragment (some typeCondition) []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetNormal schema parentType
-      (rightPref ++ Selection.inlineFragment (some typeCondition) []
-        rightChildSelectionSet :: rightSuffix) ->
-    objectTypeNameBool schema parentType = false ->
-    (∀ supportSelectionSet,
-      supportSelectionSet ∈ supportSelectionSets ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            supportSelectionSet
-          ∧ selectionSetDirectiveFree supportSelectionSet
-          ∧ selectionSetNormal schema parentType supportSelectionSet) ->
-    selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
-      typeCondition runtimeType leftChildSelectionSet rightChildSelectionSet
-      (fun childSelectionSet =>
-        childSelectionSet ∈
-          abstractChildSupportSelectionSets typeCondition leftPref rightPref
-            leftSuffix rightSuffix supportSelectionSets)
-      minFuel ->
-      selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
-        parentType runtimeType
-        (leftPref ++ Selection.inlineFragment (some typeCondition) []
-          leftChildSelectionSet :: leftSuffix)
-        (rightPref ++ Selection.inlineFragment (some typeCondition) []
-          rightChildSelectionSet :: rightSuffix)
-        (fun selectionSet => selectionSet ∈ supportSelectionSets)
-        minFuel := by
+      leftPref rightPref leftSuffix rightSuffix
+      : List Selection}
+    {supportSelectionSets : List (List Selection)} {minFuel : Nat}
+    : Validation.selectionSetValid schema leftVariableDefinitions parentType
+        (leftPref
+          ++ Selection.inlineFragment (some typeCondition) [] leftChildSelectionSet
+              :: leftSuffix)
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType
+          (rightPref
+            ++ Selection.inlineFragment (some typeCondition) [] rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetDirectiveFree
+          (leftPref
+            ++ Selection.inlineFragment (some typeCondition) [] leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetDirectiveFree
+          (rightPref
+            ++ Selection.inlineFragment (some typeCondition) [] rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetNormal schema parentType
+          (leftPref
+            ++ Selection.inlineFragment (some typeCondition) [] leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetNormal schema parentType
+          (rightPref
+            ++ Selection.inlineFragment (some typeCondition) [] rightChildSelectionSet
+                :: rightSuffix)
+      -> objectTypeNameBool schema parentType = false
+      -> (∀ supportSelectionSet,
+            supportSelectionSet ∈ supportSelectionSets
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  supportSelectionSet
+                ∧ selectionSetDirectiveFree supportSelectionSet
+                ∧ selectionSetNormal schema parentType supportSelectionSet)
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
+          typeCondition runtimeType leftChildSelectionSet rightChildSelectionSet
+          (fun childSelectionSet =>
+            childSelectionSet
+            ∈ abstractChildSupportSelectionSets typeCondition leftPref rightPref
+                leftSuffix rightSuffix supportSelectionSets)
+          minFuel
+      -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
+          parentType runtimeType
+          (leftPref
+            ++ Selection.inlineFragment (some typeCondition) [] leftChildSelectionSet
+                :: leftSuffix)
+          (rightPref
+            ++ Selection.inlineFragment (some typeCondition) [] rightChildSelectionSet
+                :: rightSuffix)
+          (fun selectionSet => selectionSet ∈ supportSelectionSets)
+          minFuel := by
   intro hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hnonObject hsupportValid hwitness
   let leftSelectionSet :=

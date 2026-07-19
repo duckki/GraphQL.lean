@@ -13,17 +13,16 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
-def liftResolverValue {ObjectRef : Type} :
-    Execution.ResolverValue ObjectRef ->
-      Execution.ResolverValue (Option ObjectRef)
+def liftResolverValue {ObjectRef : Type}
+    : Execution.ResolverValue ObjectRef -> Execution.ResolverValue (Option ObjectRef)
   | .null => .null
   | .scalar value => .scalar value
   | .object typeName ref => .object typeName (some ref)
   | .list values => .list (values.map liftResolverValue)
 
-def lowerResolverValue? {ObjectRef : Type} :
-    Execution.ResolverValue (Option ObjectRef) ->
-      Option (Execution.ResolverValue ObjectRef)
+def lowerResolverValue? {ObjectRef : Type}
+    : Execution.ResolverValue (Option ObjectRef)
+      -> Option (Execution.ResolverValue ObjectRef)
   | .null => some .null
   | .scalar value => some (.scalar value)
   | .object typeName (some ref) => some (.object typeName ref)
@@ -32,10 +31,9 @@ def lowerResolverValue? {ObjectRef : Type} :
       (values.mapM lowerResolverValue?).map Execution.ResolverValue.list
 
 mutual
-  theorem lowerResolverValue?_liftResolverValue
-      {ObjectRef : Type} :
-      ∀ value : Execution.ResolverValue ObjectRef,
-        lowerResolverValue? (liftResolverValue value) = some value
+  theorem lowerResolverValue?_liftResolverValue {ObjectRef : Type}
+      : ∀ value : Execution.ResolverValue ObjectRef,
+          lowerResolverValue? (liftResolverValue value) = some value
     | .null => by
         simp [liftResolverValue, lowerResolverValue?]
     | .scalar value => by
@@ -46,10 +44,9 @@ mutual
         simp [liftResolverValue, lowerResolverValue?,
           lowerResolverValues?_map_liftResolverValue values]
 
-  theorem lowerResolverValues?_map_liftResolverValue
-      {ObjectRef : Type} :
-      ∀ values : List (Execution.ResolverValue ObjectRef),
-        (values.map liftResolverValue).mapM lowerResolverValue? = some values
+  theorem lowerResolverValues?_map_liftResolverValue {ObjectRef : Type}
+      : ∀ values : List (Execution.ResolverValue ObjectRef),
+          (values.map liftResolverValue).mapM lowerResolverValue? = some values
     | [] => by
         simp
     | value :: rest => by
@@ -90,43 +87,36 @@ def liftResolvers {ObjectRef : Type}
 theorem liftResolvers_resolve_liftResolverValue
     {ObjectRef : Type} (base : Execution.Resolvers ObjectRef)
     (parentType fieldName : Name) (arguments : List Argument)
-    (source : Execution.ResolverValue ObjectRef) :
-    (liftResolvers base).resolve parentType fieldName arguments
-      (liftResolverValue source)
-      =
-      (base.resolve parentType fieldName arguments source).map
-        liftResolverValue := by
+    (source : Execution.ResolverValue ObjectRef)
+    : (liftResolvers base).resolve parentType fieldName arguments
+        (liftResolverValue source)
+      = (base.resolve parentType fieldName arguments source).map liftResolverValue := by
   simp [liftResolvers, lowerResolverValue?_liftResolverValue]
 
 theorem runtimeObjectType?_liftResolverValue
-    {ObjectRef : Type} (value : Execution.ResolverValue ObjectRef) :
-    Execution.runtimeObjectType? (liftResolverValue value)
-      =
-    Execution.runtimeObjectType? value := by
+    {ObjectRef : Type} (value : Execution.ResolverValue ObjectRef)
+    : Execution.runtimeObjectType? (liftResolverValue value)
+      = Execution.runtimeObjectType? value := by
   cases value <;> simp [liftResolverValue, Execution.runtimeObjectType?]
 
 theorem doesFragmentTypeApplyBool_liftResolverValue
     {ObjectRef : Type} (schema : Schema) (parentType typeCondition : Name)
-    (source : Execution.ResolverValue ObjectRef) :
-    Execution.doesFragmentTypeApplyBool schema parentType
-      (liftResolverValue source) typeCondition
-      =
-    Execution.doesFragmentTypeApplyBool schema parentType source
-      typeCondition := by
+    (source : Execution.ResolverValue ObjectRef)
+    : Execution.doesFragmentTypeApplyBool schema parentType
+        (liftResolverValue source) typeCondition
+      = Execution.doesFragmentTypeApplyBool schema parentType source typeCondition := by
   simp [Execution.doesFragmentTypeApplyBool,
     runtimeObjectType?_liftResolverValue]
 
 mutual
   theorem collectSelection_liftResolverValue
       {ObjectRef : Type} (schema : Schema)
-      (variableValues : Execution.VariableValues) :
-      ∀ (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-        (selection : Selection),
-        Execution.collectSelection schema variableValues parentType
-          (liftResolverValue source) selection
-        =
-        Execution.collectSelection schema variableValues parentType source
-          selection
+      (variableValues : Execution.VariableValues)
+      : ∀ (parentType : Name) (source : Execution.ResolverValue ObjectRef)
+            (selection : Selection),
+          Execution.collectSelection schema variableValues parentType
+            (liftResolverValue source) selection
+          = Execution.collectSelection schema variableValues parentType source selection
     | parentType, source,
       .field responseName fieldName arguments directives selectionSet => by
         simp [Execution.collectSelection]
@@ -188,14 +178,12 @@ mutual
 
   theorem collectFields_liftResolverValue
       {ObjectRef : Type} (schema : Schema)
-      (variableValues : Execution.VariableValues) :
-      ∀ (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-        (selectionSet : List Selection),
-        Execution.collectFields schema variableValues parentType
-          (liftResolverValue source) selectionSet
-        =
-        Execution.collectFields schema variableValues parentType source
-          selectionSet
+      (variableValues : Execution.VariableValues)
+      : ∀ (parentType : Name) (source : Execution.ResolverValue ObjectRef)
+            (selectionSet : List Selection),
+          Execution.collectFields schema variableValues parentType
+            (liftResolverValue source) selectionSet
+          = Execution.collectFields schema variableValues parentType source selectionSet
     | parentType, source, [] => by
         simp [Execution.collectFields]
     | parentType, source, selection :: rest => by
@@ -208,14 +196,12 @@ end
 
 theorem collectSubfields_liftResolverValue
     {ObjectRef : Type} (schema : Schema)
-    (variableValues : Execution.VariableValues) :
-    ∀ (objectType : Name) (source : Execution.ResolverValue ObjectRef)
-      (fields : List Execution.ExecutableField),
-      Execution.collectSubfields schema variableValues objectType
-        (liftResolverValue source) fields
-      =
-      Execution.collectSubfields schema variableValues objectType source
-        fields
+    (variableValues : Execution.VariableValues)
+    : ∀ (objectType : Name) (source : Execution.ResolverValue ObjectRef)
+          (fields : List Execution.ExecutableField),
+        Execution.collectSubfields schema variableValues objectType
+          (liftResolverValue source) fields
+        = Execution.collectSubfields schema variableValues objectType source fields
   | objectType, source, [] => by
       simp [Execution.collectSubfields]
   | objectType, source, field :: fields => by
@@ -229,14 +215,13 @@ mutual
   theorem executeCollectedFields_liftResolvers
       {ObjectRef : Type} (schema : Schema)
       (base : Execution.Resolvers ObjectRef)
-      (variableValues : Execution.VariableValues) :
-      ∀ (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
-        (fields : List (Name × List Execution.ExecutableField)),
-        Execution.executeCollectedFields schema (liftResolvers base)
-          variableValues fuel (liftResolverValue source) fields
-        =
-        Execution.executeCollectedFields schema base variableValues fuel source
-          fields
+      (variableValues : Execution.VariableValues)
+      : ∀ (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
+            (fields : List (Name × List Execution.ExecutableField)),
+          Execution.executeCollectedFields schema (liftResolvers base)
+            variableValues fuel (liftResolverValue source) fields
+          = Execution.executeCollectedFields schema base variableValues fuel source
+              fields
     | fuel, source, [] => by
         simp [Execution.executeCollectedFields]
     | fuel, source, (responseName, fields) :: rest => by
@@ -249,14 +234,13 @@ mutual
   theorem executeField_liftResolvers
       {ObjectRef : Type} (schema : Schema)
       (base : Execution.Resolvers ObjectRef)
-      (variableValues : Execution.VariableValues) :
-      ∀ (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
-        (responseName : Name) (fields : List Execution.ExecutableField),
-        Execution.executeField schema (liftResolvers base) variableValues fuel
-          (liftResolverValue source) responseName fields
-        =
-        Execution.executeField schema base variableValues fuel source
-          responseName fields
+      (variableValues : Execution.VariableValues)
+      : ∀ (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
+            (responseName : Name) (fields : List Execution.ExecutableField),
+          Execution.executeField schema (liftResolvers base) variableValues fuel
+            (liftResolverValue source) responseName fields
+          = Execution.executeField schema base variableValues fuel source
+              responseName fields
     | fuel, source, responseName, [] => by
         simp [Execution.executeField]
     | 0, source, responseName, field :: fields => by
@@ -285,15 +269,14 @@ mutual
   theorem completeValue_liftResolvers
       {ObjectRef : Type} (schema : Schema)
       (base : Execution.Resolvers ObjectRef)
-      (variableValues : Execution.VariableValues) :
-      ∀ (fuel : Nat) (fieldType : TypeRef)
-        (fields : List Execution.ExecutableField)
-        (value : Execution.ResolverValue ObjectRef),
-        Execution.completeValue schema (liftResolvers base) variableValues
-          fuel fieldType fields (liftResolverValue value)
-        =
-        Execution.completeValue schema base variableValues fuel fieldType
-          fields value
+      (variableValues : Execution.VariableValues)
+      : ∀ (fuel : Nat) (fieldType : TypeRef)
+            (fields : List Execution.ExecutableField)
+            (value : Execution.ResolverValue ObjectRef),
+          Execution.completeValue schema (liftResolvers base) variableValues
+            fuel fieldType fields (liftResolverValue value)
+          = Execution.completeValue schema base variableValues fuel fieldType
+              fields value
     | 0, fieldType, fields, value => by
         simp [Execution.completeValue, Execution.outOfFuel]
     | fuel + 1, .nonNull inner, fields, value => by
@@ -364,15 +347,14 @@ mutual
   theorem completeValueList_liftResolvers
       {ObjectRef : Type} (schema : Schema)
       (base : Execution.Resolvers ObjectRef)
-      (variableValues : Execution.VariableValues) :
-      ∀ (fuel : Nat) (itemType : TypeRef)
-        (fields : List Execution.ExecutableField)
-        (values : List (Execution.ResolverValue ObjectRef)),
-        Execution.completeValueList schema (liftResolvers base)
-          variableValues fuel itemType fields (values.map liftResolverValue)
-        =
-        Execution.completeValueList schema base variableValues fuel itemType
-          fields values
+      (variableValues : Execution.VariableValues)
+      : ∀ (fuel : Nat) (itemType : TypeRef)
+            (fields : List Execution.ExecutableField)
+            (values : List (Execution.ResolverValue ObjectRef)),
+          Execution.completeValueList schema (liftResolvers base)
+            variableValues fuel itemType fields (values.map liftResolverValue)
+          = Execution.completeValueList schema base variableValues fuel itemType
+              fields values
     | fuel, itemType, fields, [] => by
         simp [Execution.completeValueList]
     | fuel, itemType, fields, value :: values => by
@@ -388,12 +370,11 @@ theorem executeSelectionSet_liftResolvers
     (base : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    Execution.executeSelectionSet schema (liftResolvers base) variableValues
-      fuel parentType (liftResolverValue source) selectionSet
-    =
-    Execution.executeSelectionSet schema base variableValues fuel parentType
-      source selectionSet := by
+    (selectionSet : List Selection)
+    : Execution.executeSelectionSet schema (liftResolvers base) variableValues
+        fuel parentType (liftResolverValue source) selectionSet
+      = Execution.executeSelectionSet schema base variableValues fuel parentType
+          source selectionSet := by
   simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet]
   rw [collectFields_liftResolverValue schema variableValues parentType source
     selectionSet]
@@ -407,12 +388,11 @@ theorem executeSelectionSetAsResponse_liftResolvers
     (base : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    Execution.executeSelectionSetAsResponse schema (liftResolvers base)
-      variableValues fuel parentType (liftResolverValue source) selectionSet
-    =
-    Execution.executeSelectionSetAsResponse schema base variableValues fuel parentType
-      source selectionSet := by
+    (selectionSet : List Selection)
+    : Execution.executeSelectionSetAsResponse schema (liftResolvers base)
+        variableValues fuel parentType (liftResolverValue source) selectionSet
+      = Execution.executeSelectionSetAsResponse schema base variableValues fuel
+          parentType source selectionSet := by
   simp [Execution.executeSelectionSetAsResponse,
     executeSelectionSet_liftResolvers schema base variableValues fuel
       parentType source selectionSet]
@@ -457,23 +437,21 @@ def parentObjectFieldResolvers {ObjectRef : Type}
 theorem parentObjectFieldResolvers_target
     {ObjectRef : Type} (base : Execution.Resolvers ObjectRef)
     (targetParent targetField runtimeType : Name) (ref : ObjectRef)
-    (arguments : List Argument) :
-    (parentObjectFieldResolvers base targetParent targetField runtimeType ref).resolve
-      targetParent targetField arguments (.object targetParent none)
-      =
-      some (.object runtimeType (some ref)) := by
+    (arguments : List Argument)
+    : (parentObjectFieldResolvers base targetParent targetField runtimeType ref).resolve
+        targetParent targetField arguments (.object targetParent none)
+      = some (.object runtimeType (some ref)) := by
   simp [parentObjectFieldResolvers]
 
 theorem parentObjectFieldResolvers_resolve_liftResolverValue
     {ObjectRef : Type} (base : Execution.Resolvers ObjectRef)
     (targetParent targetField runtimeType : Name) (ref : ObjectRef)
     (parentType fieldName : Name) (arguments : List Argument)
-    (source : Execution.ResolverValue ObjectRef) :
-    (parentObjectFieldResolvers base targetParent targetField runtimeType ref).resolve
-      parentType fieldName arguments (liftResolverValue source)
-      =
-      (liftResolvers base).resolve parentType fieldName arguments
-        (liftResolverValue source) := by
+    (source : Execution.ResolverValue ObjectRef)
+    : (parentObjectFieldResolvers base targetParent targetField runtimeType ref).resolve
+        parentType fieldName arguments (liftResolverValue source)
+      = (liftResolvers base).resolve parentType fieldName arguments
+          (liftResolverValue source) := by
   cases source <;> simp [parentObjectFieldResolvers, liftResolverValue]
 
 mutual
@@ -481,16 +459,14 @@ mutual
       {ObjectRef : Type} (schema : Schema)
       (base : Execution.Resolvers ObjectRef)
       (variableValues : Execution.VariableValues)
-      (targetParent targetField runtimeType : Name) (ref : ObjectRef) :
-      ∀ (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
-        (fields : List (Name × List Execution.ExecutableField)),
-        Execution.executeCollectedFields schema
-          (parentObjectFieldResolvers base targetParent targetField
-            runtimeType ref)
-          variableValues fuel (liftResolverValue source) fields
-        =
-        Execution.executeCollectedFields schema (liftResolvers base)
-          variableValues fuel (liftResolverValue source) fields
+      (targetParent targetField runtimeType : Name) (ref : ObjectRef)
+      : ∀ (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
+            (fields : List (Name × List Execution.ExecutableField)),
+          Execution.executeCollectedFields schema
+            (parentObjectFieldResolvers base targetParent targetField runtimeType ref)
+            variableValues fuel (liftResolverValue source) fields
+          = Execution.executeCollectedFields schema (liftResolvers base)
+              variableValues fuel (liftResolverValue source) fields
     | fuel, source, [] => by
         simp [Execution.executeCollectedFields]
     | fuel, source, (responseName, fields) :: rest => by
@@ -506,16 +482,14 @@ mutual
       {ObjectRef : Type} (schema : Schema)
       (base : Execution.Resolvers ObjectRef)
       (variableValues : Execution.VariableValues)
-      (targetParent targetField runtimeType : Name) (ref : ObjectRef) :
-      ∀ (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
-        (responseName : Name) (fields : List Execution.ExecutableField),
-        Execution.executeField schema
-          (parentObjectFieldResolvers base targetParent targetField
-            runtimeType ref)
-          variableValues fuel (liftResolverValue source) responseName fields
-        =
-        Execution.executeField schema (liftResolvers base) variableValues fuel
-          (liftResolverValue source) responseName fields
+      (targetParent targetField runtimeType : Name) (ref : ObjectRef)
+      : ∀ (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
+            (responseName : Name) (fields : List Execution.ExecutableField),
+          Execution.executeField schema
+            (parentObjectFieldResolvers base targetParent targetField runtimeType ref)
+            variableValues fuel (liftResolverValue source) responseName fields
+          = Execution.executeField schema (liftResolvers base) variableValues fuel
+              (liftResolverValue source) responseName fields
     | fuel, source, responseName, [] => by
         simp [Execution.executeField]
     | 0, source, responseName, field :: fields => by
@@ -550,17 +524,15 @@ mutual
       {ObjectRef : Type} (schema : Schema)
       (base : Execution.Resolvers ObjectRef)
       (variableValues : Execution.VariableValues)
-      (targetParent targetField runtimeType : Name) (ref : ObjectRef) :
-      ∀ (fuel : Nat) (fieldType : TypeRef)
-        (fields : List Execution.ExecutableField)
-        (value : Execution.ResolverValue ObjectRef),
-        Execution.completeValue schema
-          (parentObjectFieldResolvers base targetParent targetField
-            runtimeType ref)
-          variableValues fuel fieldType fields (liftResolverValue value)
-        =
-        Execution.completeValue schema (liftResolvers base) variableValues
-          fuel fieldType fields (liftResolverValue value)
+      (targetParent targetField runtimeType : Name) (ref : ObjectRef)
+      : ∀ (fuel : Nat) (fieldType : TypeRef)
+            (fields : List Execution.ExecutableField)
+            (value : Execution.ResolverValue ObjectRef),
+          Execution.completeValue schema
+            (parentObjectFieldResolvers base targetParent targetField runtimeType ref)
+            variableValues fuel fieldType fields (liftResolverValue value)
+          = Execution.completeValue schema (liftResolvers base) variableValues
+              fuel fieldType fields (liftResolverValue value)
     | 0, fieldType, fields, value => by
         simp [Execution.completeValue, Execution.outOfFuel]
     | fuel + 1, .nonNull inner, fields, value => by
@@ -626,17 +598,15 @@ mutual
       {ObjectRef : Type} (schema : Schema)
       (base : Execution.Resolvers ObjectRef)
       (variableValues : Execution.VariableValues)
-      (targetParent targetField runtimeType : Name) (ref : ObjectRef) :
-      ∀ (fuel : Nat) (itemType : TypeRef)
-        (fields : List Execution.ExecutableField)
-        (values : List (Execution.ResolverValue ObjectRef)),
-        Execution.completeValueList schema
-          (parentObjectFieldResolvers base targetParent targetField
-            runtimeType ref)
-          variableValues fuel itemType fields (values.map liftResolverValue)
-        =
-        Execution.completeValueList schema (liftResolvers base) variableValues
-          fuel itemType fields (values.map liftResolverValue)
+      (targetParent targetField runtimeType : Name) (ref : ObjectRef)
+      : ∀ (fuel : Nat) (itemType : TypeRef)
+            (fields : List Execution.ExecutableField)
+            (values : List (Execution.ResolverValue ObjectRef)),
+          Execution.completeValueList schema
+            (parentObjectFieldResolvers base targetParent targetField runtimeType ref)
+            variableValues fuel itemType fields (values.map liftResolverValue)
+          = Execution.completeValueList schema (liftResolvers base) variableValues
+              fuel itemType fields (values.map liftResolverValue)
     | fuel, itemType, fields, [] => by
         simp [Execution.completeValueList]
     | fuel, itemType, fields, value :: values => by
@@ -655,13 +625,12 @@ theorem executeSelectionSetAsResponse_parentObjectFieldResolvers_liftResolverVal
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (targetParent targetField runtimeType : Name) (ref : ObjectRef)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    Execution.executeSelectionSetAsResponse schema
-      (parentObjectFieldResolvers base targetParent targetField runtimeType ref)
-      variableValues fuel parentType (liftResolverValue source) selectionSet
-    =
-    Execution.executeSelectionSetAsResponse schema (liftResolvers base)
-      variableValues fuel parentType (liftResolverValue source) selectionSet := by
+    (selectionSet : List Selection)
+    : Execution.executeSelectionSetAsResponse schema
+        (parentObjectFieldResolvers base targetParent targetField runtimeType ref)
+        variableValues fuel parentType (liftResolverValue source) selectionSet
+      = Execution.executeSelectionSetAsResponse schema (liftResolvers base)
+          variableValues fuel parentType (liftResolverValue source) selectionSet := by
   simp [Execution.executeSelectionSetAsResponse, Execution.executeSelectionSet,
     Execution.executeRootSelectionSet,
     executeCollectedFields_parentObjectFieldResolvers_liftResolverValue

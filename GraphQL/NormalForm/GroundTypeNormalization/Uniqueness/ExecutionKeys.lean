@@ -16,10 +16,10 @@ namespace ExecutionKeys
 variable {ObjectRef : Type}
 
 theorem mem_map_fst_addExecutableGroup_iff
-    (name : Name) (group : Name × List (Execution.ExecutableField)) :
-    ∀ groups : List (Name × List (Execution.ExecutableField)),
-      (name ∈ (Execution.addExecutableGroup group groups).map Prod.fst
-        ↔ name = group.1 ∨ name ∈ groups.map Prod.fst)
+    (name : Name) (group : Name × List (Execution.ExecutableField))
+    : ∀ groups : List (Name × List (Execution.ExecutableField)),
+        (name ∈ (Execution.addExecutableGroup group groups).map Prod.fst
+          ↔ name = group.1 ∨ name ∈ groups.map Prod.fst)
   | [] => by
       simp [Execution.addExecutableGroup]
   | candidate :: rest => by
@@ -41,11 +41,10 @@ theorem mem_map_fst_addExecutableGroup_iff
           · exact Or.inl hcandidate
           · exact Or.inr (Or.inr hrest)
 
-theorem mem_map_fst_mergeExecutableGroups_iff
-    (name : Name) :
-    ∀ left right : List (Name × List (Execution.ExecutableField)),
-      (name ∈ (Execution.mergeExecutableGroups left right).map Prod.fst
-        ↔ name ∈ left.map Prod.fst ∨ name ∈ right.map Prod.fst)
+theorem mem_map_fst_mergeExecutableGroups_iff (name : Name)
+    : ∀ left right : List (Name × List (Execution.ExecutableField)),
+        (name ∈ (Execution.mergeExecutableGroups left right).map Prod.fst
+          ↔ name ∈ left.map Prod.fst ∨ name ∈ right.map Prod.fst)
   | left, [] => by
       simp [Execution.mergeExecutableGroups]
   | left, group :: rest => by
@@ -85,22 +84,22 @@ theorem mem_map_fst_mergeExecutableGroups_iff
           · exact hrec.mpr (Or.inl (hadd.mpr (Or.inl hgroup)))
           · exact hrec.mpr (Or.inr hrest)
 
-theorem selectionDirectivesAllowBool_nil
-    (variableValues : Execution.VariableValues) :
-    Execution.selectionDirectivesAllowBool variableValues [] = true := by
+theorem selectionDirectivesAllowBool_nil (variableValues : Execution.VariableValues)
+    : Execution.selectionDirectivesAllowBool variableValues [] = true := by
   rfl
 
 theorem collectFields_allFields_directiveFree_key_mem_iff
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (name : Name) :
-    ∀ selectionSet : List Selection,
-      selectionsAllFields selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-        (name ∈
-            (Execution.collectFields schema variableValues parentType source
-              selectionSet).map Prod.fst
-          ↔ name ∈ selectionSet.filterMap Selection.responseName?)
+    (name : Name)
+    : ∀ selectionSet : List Selection,
+        selectionsAllFields selectionSet
+        -> selectionSetDirectiveFree selectionSet
+        -> (name
+              ∈ (Execution.collectFields schema variableValues parentType source
+                  selectionSet).map
+                  Prod.fst
+            ↔ name ∈ selectionSet.filterMap Selection.responseName?)
   | [], _hallFields, _hfree => by
       simp [Execution.collectFields]
   | selection :: rest, hallFields, hfree => by
@@ -136,14 +135,15 @@ theorem collectFields_allFields_directiveFree_key_mem_iff
 theorem collectFields_normal_object_key_mem_iff
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (name : Name) {selectionSet : List Selection} :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetNormal schema parentType selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-      (name ∈
-          (Execution.collectFields schema variableValues parentType source
-            selectionSet).map Prod.fst
-        ↔ name ∈ selectionSet.filterMap Selection.responseName?) := by
+    (name : Name) {selectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetNormal schema parentType selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> (name
+            ∈ (Execution.collectFields schema variableValues parentType source
+                selectionSet).map
+                Prod.fst
+          ↔ name ∈ selectionSet.filterMap Selection.responseName?) := by
   intro hobject hnormal hfree
   exact collectFields_allFields_directiveFree_key_mem_iff schema
     variableValues parentType source name selectionSet
@@ -153,27 +153,28 @@ theorem collectFields_normal_object_field_head
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
-    (childSelectionSet rest : List Selection) :
-    selectionSetDirectiveFree
-      (Selection.field responseName fieldName arguments [] childSelectionSet
-        :: rest) ->
-    selectionSetNormal schema parentType
-      (Selection.field responseName fieldName arguments [] childSelectionSet
-        :: rest) ->
-    objectTypeNameBool schema parentType = true ->
-      Execution.collectFields schema variableValues parentType source
-        (Selection.field responseName fieldName arguments [] childSelectionSet
-          :: rest)
-      =
-      (responseName, [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := childSelectionSet
-      }])
-        :: Execution.collectFields schema variableValues parentType source
-          rest := by
+    (childSelectionSet rest : List Selection)
+    : selectionSetDirectiveFree
+        (Selection.field responseName fieldName arguments [] childSelectionSet :: rest)
+      -> selectionSetNormal schema parentType
+          (Selection.field responseName fieldName arguments [] childSelectionSet
+            :: rest)
+      -> objectTypeNameBool schema parentType = true
+      -> Execution.collectFields schema variableValues parentType source
+            (Selection.field responseName fieldName arguments [] childSelectionSet
+              :: rest)
+          = (
+              responseName,
+              [{
+                parentType := parentType,
+                responseName := responseName,
+                fieldName := fieldName,
+                arguments := arguments,
+                selectionSet := childSelectionSet
+              }]
+            )
+            :: Execution.collectFields schema variableValues parentType source
+                rest := by
   intro hfree hnormal hobject
   have hrestFree : selectionSetDirectiveFree rest :=
     selectionSetDirectiveFree_tail hfree
@@ -201,15 +202,15 @@ theorem collectFields_normal_object_field_head
 
 theorem collectFields_normal_object_keys_eq_responseNames
     (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType : Name) (source : Execution.ResolverValue ObjectRef) :
-    ∀ selectionSet : List Selection,
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetNormal schema parentType selectionSet ->
-      objectTypeNameBool schema parentType = true ->
-        (Execution.collectFields schema variableValues parentType source
-          selectionSet).map Prod.fst
-        =
-        selectionSet.filterMap Selection.responseName?
+    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
+    : ∀ selectionSet : List Selection,
+        selectionSetDirectiveFree selectionSet
+        -> selectionSetNormal schema parentType selectionSet
+        -> objectTypeNameBool schema parentType = true
+        -> (Execution.collectFields schema variableValues parentType source
+              selectionSet).map
+              Prod.fst
+            = selectionSet.filterMap Selection.responseName?
   | [], _hfree, _hnormal, _hobject => by
       simp [Execution.collectFields]
   | selection :: rest, hfree, hnormal, hobject => by
@@ -258,12 +259,13 @@ theorem collectFields_normal_object_keys_eq_responseNames
 theorem collectFields_normal_object_keys_nodup
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = true ->
-      ((Execution.collectFields schema variableValues parentType source
-        selectionSet).map Prod.fst).Nodup := by
+    (selectionSet : List Selection)
+    : selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> ((Execution.collectFields schema variableValues parentType source
+            selectionSet).map
+            Prod.fst).Nodup := by
   intro hfree hnormal hobject
   rw [collectFields_normal_object_keys_eq_responseNames schema variableValues
     parentType source selectionSet hfree hnormal hobject]

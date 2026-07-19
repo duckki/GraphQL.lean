@@ -13,22 +13,22 @@ open GroundTypeNormalization
 
 structure BoolFilteredScopedFieldSource
     (schema : Schema) (boolCase : BoolCase)
-    (source filtered : FieldMerge.ScopedField) : Prop where
+    (source filtered : FieldMerge.ScopedField)
+    : Prop where
   parentType : filtered.parentType = source.parentType
   responseName : filtered.responseName = source.responseName
   fieldName : filtered.fieldName = source.fieldName
   arguments : filtered.arguments = source.arguments
   outputType : filtered.outputType = source.outputType
-  selectionSet :
-    filtered.selectionSet =
-      filterSelectionSetBoolCase boolCase source.selectionSet
+  selectionSet
+    : filtered.selectionSet = filterSelectionSetBoolCase boolCase source.selectionSet
 
 theorem normalizedFieldSource_of_boolFiltered
     {schema : Schema} {boolCase : BoolCase}
-    {source filtered normalized : FieldMerge.ScopedField} :
-    BoolFilteredScopedFieldSource schema boolCase source filtered ->
-    GroundTypeNormalization.NormalizedFieldSource schema filtered normalized ->
-      GroundTypeNormalization.NormalizedFieldSource schema source normalized := by
+    {source filtered normalized : FieldMerge.ScopedField}
+    : BoolFilteredScopedFieldSource schema boolCase source filtered
+      -> GroundTypeNormalization.NormalizedFieldSource schema filtered normalized
+      -> GroundTypeNormalization.NormalizedFieldSource schema source normalized := by
   intro hfiltered hnormalized
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact hfiltered.responseName.symm.trans hnormalized.responseName
@@ -43,8 +43,8 @@ theorem normalizedFieldSource_of_boolFiltered
           simpa [hfiltered.parentType] using hsourceObject))
 
 private theorem selectionSet_size_append_for_completeValidity
-    (left right : List Selection) :
-    SelectionSet.size (left ++ right)
+    (left right : List Selection)
+    : SelectionSet.size (left ++ right)
       = SelectionSet.size left + SelectionSet.size right := by
   induction left with
   | nil => simp [SelectionSet.size]
@@ -52,10 +52,9 @@ private theorem selectionSet_size_append_for_completeValidity
       simp [SelectionSet.size, ih, Nat.add_assoc]
 
 private theorem mergeSelectionSets_append_for_completeValidity
-    (left right : List Selection) :
-    mergeSelectionSets (left ++ right)
-      =
-    mergeSelectionSets left ++ mergeSelectionSets right := by
+    (left right : List Selection)
+    : mergeSelectionSets (left ++ right)
+      = mergeSelectionSets left ++ mergeSelectionSets right := by
   induction left with
   | nil =>
       simp [mergeSelectionSets]
@@ -63,14 +62,14 @@ private theorem mergeSelectionSets_append_for_completeValidity
       simp [mergeSelectionSets, ih, List.append_assoc]
 
 private theorem selectionSet_size_tail_lt_cons_for_completeValidity
-    (selection : Selection) (rest : List Selection) :
-    SelectionSet.size rest < SelectionSet.size (selection :: rest) := by
+    (selection : Selection) (rest : List Selection)
+    : SelectionSet.size rest < SelectionSet.size (selection :: rest) := by
   cases selection <;> simp [SelectionSet.size, Selection.size] <;> omega
 
 private theorem size_withoutFieldSelectionsWithResponseName_le_for_completeValidity
-    (schema : Schema) (responseName : Name) :
-    ∀ selectionSet,
-      SelectionSet.size
+    (schema : Schema) (responseName : Name)
+    : ∀ selectionSet,
+        SelectionSet.size
           (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
         ≤ SelectionSet.size selectionSet
   | [] => by
@@ -110,11 +109,12 @@ decreasing_by
     omega
 
 private theorem size_mergeSelectionSets_fieldSelectionsWithResponseNameInScope_le_for_completeValidity
-    (schema : Schema) (parentType responseName : Name) :
-    ∀ selectionSet,
-      SelectionSet.size
+    (schema : Schema) (parentType responseName : Name)
+    : ∀ selectionSet,
+        SelectionSet.size
           (mergeSelectionSets
-            (fieldSelectionsWithResponseNameInScope schema parentType responseName selectionSet))
+            (fieldSelectionsWithResponseNameInScope schema parentType responseName
+              selectionSet))
         ≤ SelectionSet.size selectionSet
   | [] => by
       simp [fieldSelectionsWithResponseNameInScope, mergeSelectionSets,
@@ -178,50 +178,46 @@ structure NormalizedFieldGroupSource
     (parentType : Name) (selectionSet : List Selection)
     (normalized : FieldMerge.ScopedField) where
   source : FieldMerge.ScopedField
-  sourceMem :
-    source ∈ FieldMerge.collectFields schema parentType selectionSet
-  sourceRel :
-    GroundTypeNormalization.NormalizedFieldSource schema source normalized
+  sourceMem : source ∈ FieldMerge.collectFields schema parentType selectionSet
+  sourceRel : GroundTypeNormalization.NormalizedFieldSource schema source normalized
   group : List Selection
   childSource : List Selection
-  childSource_eq :
-    childSource = mergeSelectionSets group
-  childSource_size_lt :
-    SelectionSet.size childSource < SelectionSet.size selectionSet
-  childReady :
-    ∀ runtimeType,
-      runtimeType ∈ schema.getPossibleTypes normalized.outputType.namedType ->
-        selectionSetSemanticsReady schema runtimeType childSource
-  childLookup :
-    selectionSetLookupValid schema normalized.outputType.namedType childSource
-  childImplementation :
-    ∀ runtimeType,
-      runtimeType ∈ schema.getPossibleTypes normalized.outputType.namedType ->
-        Validation.selectionSetValidInPossibleTypes schema
-          variableDefinitions runtimeType childSource
-  childFeasible :
-    ∀ runtimeType,
-      runtimeType ∈ schema.getPossibleTypes normalized.outputType.namedType ->
-        selectionSetTypeConditionFeasible schema runtimeType [runtimeType]
-          .allFields childSource
-  childDirectiveFree :
-    selectionSetDirectiveFree childSource
-  groupScoped :
-    ∀ selection, selection ∈ group ->
-      ∃ scopedField,
-        scopedField ∈ FieldMerge.collectFields schema parentType selectionSet
-          ∧ scopedField.responseName = normalized.responseName
-          ∧ scopedField.selectionSet = selection.subselections
-          ∧ (schema.objectType scopedField.parentType ->
-            schema.typesOverlapBool parentType scopedField.parentType = true)
-  normalizedSelectionSet :
-    normalized.selectionSet =
-      if objectTypeNameBool schema normalized.outputType.namedType then
-        normalizeSelectionSet schema normalized.outputType.namedType childSource
-      else
-        GroundTypeNormalization.possibleTypeNormalizations schema
-          (schema.getPossibleTypes normalized.outputType.namedType)
-          childSource
+  childSource_eq : childSource = mergeSelectionSets group
+  childSource_size_lt : SelectionSet.size childSource < SelectionSet.size selectionSet
+  childReady
+    : ∀ runtimeType,
+        runtimeType ∈ schema.getPossibleTypes normalized.outputType.namedType
+        -> selectionSetSemanticsReady schema runtimeType childSource
+  childLookup
+    : selectionSetLookupValid schema normalized.outputType.namedType childSource
+  childImplementation
+    : ∀ runtimeType,
+        runtimeType ∈ schema.getPossibleTypes normalized.outputType.namedType
+        -> Validation.selectionSetValidInPossibleTypes schema
+            variableDefinitions runtimeType childSource
+  childFeasible
+    : ∀ runtimeType,
+        runtimeType ∈ schema.getPossibleTypes normalized.outputType.namedType
+        -> selectionSetTypeConditionFeasible schema runtimeType [runtimeType]
+            .allFields childSource
+  childDirectiveFree : selectionSetDirectiveFree childSource
+  groupScoped
+    : ∀ selection,
+        selection ∈ group
+        -> ∃ scopedField,
+            scopedField ∈ FieldMerge.collectFields schema parentType selectionSet
+            ∧ scopedField.responseName = normalized.responseName
+            ∧ scopedField.selectionSet = selection.subselections
+            ∧ (schema.objectType scopedField.parentType
+                -> schema.typesOverlapBool parentType scopedField.parentType = true)
+  normalizedSelectionSet
+    : normalized.selectionSet
+      = if objectTypeNameBool schema normalized.outputType.namedType then
+          normalizeSelectionSet schema normalized.outputType.namedType childSource
+        else
+          GroundTypeNormalization.possibleTypeNormalizations schema
+            (schema.getPossibleTypes normalized.outputType.namedType)
+            childSource
 
 def normalizedFieldGroupSource_fieldHead
     (schema : Schema)
@@ -593,23 +589,25 @@ noncomputable def NormalizedFieldGroupSource.mapInlineSomeOverlap
 theorem collectFields_normalizeSelectionSet_mem_groupSource_nonempty
     (schema : Schema)
     (variableDefinitions : List VariableDefinition)
-    (hschema : SchemaWellFormedness.schemaWellFormed schema) :
-    ∀ parentType selectionSet normalizedField,
+    (hschema : SchemaWellFormedness.schemaWellFormed schema)
+    : ∀ parentType selectionSet normalizedField,
       ∀ typeConditions,
-      schema.objectType parentType ->
-      objectSatisfiesTypeConditionStack schema parentType typeConditions ->
-      selectionSetSemanticsReady schema parentType selectionSet ->
-      selectionSetLookupValid schema parentType selectionSet ->
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions parentType selectionSet ->
-      FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetTypeConditionFeasible schema parentType typeConditions
-        .allFields selectionSet ->
-      normalizedField ∈ FieldMerge.collectFields schema parentType
-        (normalizeSelectionSet schema parentType selectionSet) ->
-        Nonempty (NormalizedFieldGroupSource schema variableDefinitions
-          parentType selectionSet normalizedField) := by
+        schema.objectType parentType
+        -> objectSatisfiesTypeConditionStack schema parentType typeConditions
+        -> selectionSetSemanticsReady schema parentType selectionSet
+        -> selectionSetLookupValid schema parentType selectionSet
+        -> Validation.selectionSetValidInPossibleTypes schema
+            variableDefinitions parentType selectionSet
+        -> FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+        -> selectionSetDirectiveFree selectionSet
+        -> selectionSetTypeConditionFeasible schema parentType typeConditions
+            .allFields selectionSet
+        -> normalizedField
+            ∈ FieldMerge.collectFields schema parentType
+                (normalizeSelectionSet schema parentType selectionSet)
+        -> Nonempty
+            (NormalizedFieldGroupSource schema variableDefinitions
+              parentType selectionSet normalizedField) := by
   intro parentType selectionSet
   induction parentType, selectionSet using normalizeSelectionSet.induct schema with
   | case1 parentType =>
@@ -1160,18 +1158,17 @@ theorem fieldsInSetCanMerge_groupSources_rawChildSource_pair
     (parentType objectType : Name)
     {leftSet rightSet : List Selection}
     {leftField rightField : FieldMerge.ScopedField}
-    (hleftGroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        leftSet leftField)
-    (hrightGroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        rightSet rightField) :
-    schema.objectType parentType ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (leftSet ++ rightSet) ->
-    leftField.responseName = rightField.responseName ->
-      FieldMerge.fieldsInSetCanMerge schema objectType
-        (hleftGroup.childSource ++ hrightGroup.childSource) := by
+    (hleftGroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          leftSet leftField)
+    (hrightGroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          rightSet rightField)
+    : schema.objectType parentType
+      -> FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet)
+      -> leftField.responseName = rightField.responseName
+      -> FieldMerge.fieldsInSetCanMerge schema objectType
+          (hleftGroup.childSource ++ hrightGroup.childSource) := by
   intro hobject hsourcePair hresponse
   have hscopedOf :
       ∀ selection, selection ∈ hleftGroup.group ++ hrightGroup.group ->
@@ -1208,7 +1205,6 @@ theorem fieldsInSetCanMerge_groupSources_rawChildSource_pair
       parentType leftField.responseName objectType (leftSet ++ rightSet)
       hleftGroup.group hrightGroup.group hobject hsourcePair hscopedOf
   simpa [hleftGroup.childSource_eq, hrightGroup.childSource_eq] using hraw
-
 
 end CompleteNormalization
 

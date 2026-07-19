@@ -10,8 +10,8 @@ theorem fragmentReachableBool_direct
     {fragment : FragmentDefinition}
     (hlookup : lookupFragment? fragments source = some fragment)
     (hspread : target ∈ selectionSetFragmentSpreadNames fragment.selectionSet)
-    (fuel : Nat) :
-    fragmentReachableBool fragments (fuel + 1) source target = true := by
+    (fuel : Nat)
+    : fragmentReachableBool fragments (fuel + 1) source target = true := by
   have hany :
       (selectionSetFragmentSpreadNames fragment.selectionSet).any
       (fun next => next == target) = true :=
@@ -21,14 +21,12 @@ theorem fragmentReachableBool_direct
 theorem fragmentReachableBool_direct_of_lookupFragmentAndRestLt?
     {fragments : List FragmentDefinition} {source target : Name}
     {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
-    (hlookup :
-      lookupFragmentAndRestLt? source fragments =
-        some (fragment, remaining))
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
+    (hlookup : lookupFragmentAndRestLt? source fragments = some (fragment, remaining))
     (hspread : target ∈ selectionSetFragmentSpreadNames fragment.selectionSet)
-    (fuel : Nat) :
-    fragmentReachableBool fragments (fuel + 1) source target = true := by
+    (fuel : Nat)
+    : fragmentReachableBool fragments (fuel + 1) source target = true := by
   exact fragmentReachableBool_direct
     (lookupFragment?_of_lookupFragmentAndRestLt? hlookup) hspread fuel
 
@@ -36,18 +34,14 @@ theorem fragmentReachableBool_two_step
     {fragments : List FragmentDefinition}
     {source intermediate target : Name}
     {sourceFragment intermediateFragment : FragmentDefinition}
-    (hsource :
-      lookupFragment? fragments source = some sourceFragment)
-    (hsourceSpread :
-      intermediate ∈
-        selectionSetFragmentSpreadNames sourceFragment.selectionSet)
-    (hintermediate :
-      lookupFragment? fragments intermediate = some intermediateFragment)
-    (hintermediateSpread :
-      target ∈
-        selectionSetFragmentSpreadNames intermediateFragment.selectionSet)
-    (fuel : Nat) :
-    fragmentReachableBool fragments (fuel + 2) source target = true := by
+    (hsource : lookupFragment? fragments source = some sourceFragment)
+    (hsourceSpread
+      : intermediate ∈ selectionSetFragmentSpreadNames sourceFragment.selectionSet)
+    (hintermediate : lookupFragment? fragments intermediate = some intermediateFragment)
+    (hintermediateSpread
+      : target ∈ selectionSetFragmentSpreadNames intermediateFragment.selectionSet)
+    (fuel : Nat)
+    : fragmentReachableBool fragments (fuel + 2) source target = true := by
   have hnext :
       fragmentReachableBool fragments (fuel + 1) intermediate target = true :=
     fragmentReachableBool_direct hintermediate hintermediateSpread fuel
@@ -58,14 +52,11 @@ theorem fragmentReachableBool_append_direct
     {fragments : List FragmentDefinition}
     {source target final : Name}
     {targetFragment : FragmentDefinition}
-    (hreachable :
-      fragmentReachableBool fragments fuel source target = true)
-    (htarget :
-      lookupFragment? fragments target = some targetFragment)
-    (htargetSpread :
-      final ∈
-        selectionSetFragmentSpreadNames targetFragment.selectionSet) :
-    fragmentReachableBool fragments (fuel + 1) source final = true := by
+    (hreachable : fragmentReachableBool fragments fuel source target = true)
+    (htarget : lookupFragment? fragments target = some targetFragment)
+    (htargetSpread
+      : final ∈ selectionSetFragmentSpreadNames targetFragment.selectionSet)
+    : fragmentReachableBool fragments (fuel + 1) source final = true := by
   induction fuel generalizing source with
   | zero =>
       simp [fragmentReachableBool] at hreachable
@@ -90,9 +81,8 @@ theorem fragmentReachableBool_mono_fuel
     {fragments : List FragmentDefinition} {source target : Name}
     {fuel fuel' : Nat}
     (hle : fuel ≤ fuel')
-    (hreachable :
-      fragmentReachableBool fragments fuel source target = true) :
-    fragmentReachableBool fragments fuel' source target = true := by
+    (hreachable : fragmentReachableBool fragments fuel source target = true)
+    : fragmentReachableBool fragments fuel' source target = true := by
   induction fuel generalizing source fuel' with
   | zero =>
       simp [fragmentReachableBool] at hreachable
@@ -116,9 +106,9 @@ theorem fragmentReachableBool_mono_fuel
 theorem fragmentsAcyclic_not_reachable_self
     {fragments : List FragmentDefinition} {fragment : FragmentDefinition}
     (hacyclic : fragmentsAcyclic fragments)
-    (hmem : fragment ∈ fragments) :
-    fragmentReachableBool fragments fragments.length fragment.name
-      fragment.name = false := by
+    (hmem : fragment ∈ fragments)
+    : fragmentReachableBool fragments fragments.length fragment.name fragment.name
+      = false := by
   simp [fragmentsAcyclic, fragmentsAcyclicBool] at hacyclic
   have hnotReachable := hacyclic fragment hmem
   cases hreachable :
@@ -130,8 +120,8 @@ theorem fragmentsAcyclic_no_direct_self_spread
     {fragments : List FragmentDefinition} {fragment : FragmentDefinition}
     (hunique : fragmentNamesUnique fragments)
     (hacyclic : fragmentsAcyclic fragments)
-    (hmem : fragment ∈ fragments) :
-    fragment.name ∉ selectionSetFragmentSpreadNames fragment.selectionSet := by
+    (hmem : fragment ∈ fragments)
+    : fragment.name ∉ selectionSetFragmentSpreadNames fragment.selectionSet := by
   intro hspread
   cases fragments with
   | nil =>
@@ -156,11 +146,10 @@ theorem fragmentsAcyclic_no_direct_spread_to_reachable_source
     {fuel : Nat}
     (hacyclic : fragmentsAcyclic fragments)
     (hsourceMem : source ∈ fragments)
-    (hreachable :
-      fragmentReachableBool fragments fuel source.name targetName = true)
+    (hreachable : fragmentReachableBool fragments fuel source.name targetName = true)
     (hle : fuel + 1 ≤ fragments.length)
-    (htargetLookup : lookupFragment? fragments targetName = some target) :
-    source.name ∉ selectionSetFragmentSpreadNames target.selectionSet := by
+    (htargetLookup : lookupFragment? fragments targetName = some target)
+    : source.name ∉ selectionSetFragmentSpreadNames target.selectionSet := by
   intro htargetSpread
   have hcycleSmall :
       fragmentReachableBool fragments (fuel + 1) source.name source.name =
@@ -183,10 +172,9 @@ theorem fragmentsAcyclic_no_direct_back_spread
     (hunique : fragmentNamesUnique fragments)
     (hacyclic : fragmentsAcyclic fragments)
     (hsourceMem : source ∈ fragments)
-    (hsourceSpread :
-      targetName ∈ selectionSetFragmentSpreadNames source.selectionSet)
-    (htargetLookup : lookupFragment? fragments targetName = some target) :
-    source.name ∉ selectionSetFragmentSpreadNames target.selectionSet := by
+    (hsourceSpread : targetName ∈ selectionSetFragmentSpreadNames source.selectionSet)
+    (htargetLookup : lookupFragment? fragments targetName = some target)
+    : source.name ∉ selectionSetFragmentSpreadNames target.selectionSet := by
   intro htargetSpread
   by_cases hsame : targetName = source.name
   · have hsourceLookup :
@@ -240,15 +228,13 @@ theorem lookupFragment?_remaining_to_original
     {removedName sourceName : Name}
     {fragments : List FragmentDefinition}
     {removed source : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
     (hunique : fragmentNamesUnique fragments)
-    (hremove :
-      lookupFragmentAndRestLt? removedName fragments =
-        some (removed, remaining))
-    (hlookup :
-      lookupFragment? remaining.val sourceName = some source) :
-    lookupFragment? fragments sourceName = some source := by
+    (hremove
+      : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
+    (hlookup : lookupFragment? remaining.val sourceName = some source)
+    : lookupFragment? fragments sourceName = some source := by
   have hsourceMemRemaining : source ∈ remaining.val :=
     lookupFragment?_found_mem hlookup
   have hsourceMem : source ∈ fragments :=
@@ -265,16 +251,14 @@ theorem fragmentReachableBool_remaining_to_original
     {removedName : Name}
     {fragments : List FragmentDefinition}
     {removed : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
     {fuel : Nat} {source target : Name}
     (hunique : fragmentNamesUnique fragments)
-    (hremove :
-      lookupFragmentAndRestLt? removedName fragments =
-        some (removed, remaining))
-    (hreachable :
-      fragmentReachableBool remaining.val fuel source target = true) :
-    fragmentReachableBool fragments fuel source target = true := by
+    (hremove
+      : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
+    (hreachable : fragmentReachableBool remaining.val fuel source target = true)
+    : fragmentReachableBool fragments fuel source target = true := by
   induction fuel generalizing source with
   | zero =>
       simp [fragmentReachableBool] at hreachable
@@ -298,14 +282,13 @@ theorem fragmentsAcyclic_of_lookupFragmentAndRestLt?_remaining
     {fragmentName : Name}
     {fragments : List FragmentDefinition}
     {fragment : FragmentDefinition}
-    {remaining : { remaining : List FragmentDefinition //
-      remaining.length < fragments.length }}
+    {remaining
+      : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
     (hunique : fragmentNamesUnique fragments)
     (hacyclic : fragmentsAcyclic fragments)
-    (hlookup :
-      lookupFragmentAndRestLt? fragmentName fragments =
-        some (fragment, remaining)) :
-    fragmentsAcyclic remaining.val := by
+    (hlookup
+      : lookupFragmentAndRestLt? fragmentName fragments = some (fragment, remaining))
+    : fragmentsAcyclic remaining.val := by
   simp [fragmentsAcyclic, fragmentsAcyclicBool]
   intro candidate hcandidate
   have hcandidateOriginal : candidate ∈ fragments :=

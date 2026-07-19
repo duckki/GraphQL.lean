@@ -11,27 +11,22 @@ namespace NormalForm
 
 -- Returns the object branches that can execute for an already-unwrapped composite return
 -- type.
-def groundObjectTypesForType (schema : Schema) (returnType : Name) :
-    List Name :=
+def groundObjectTypesForType (schema : Schema) (returnType : Name) : List Name :=
   if objectTypeNameBool schema returnType then
     [returnType]
   else
     schema.getPossibleTypes returnType
 
-
 theorem objectTypeNameBool_eq_true_of_objectType_base
-    (schema : Schema) {typeName : Name} :
-    schema.objectType typeName ->
-      objectTypeNameBool schema typeName = true := by
+    (schema : Schema) {typeName : Name}
+    : schema.objectType typeName -> objectTypeNameBool schema typeName = true := by
   intro hobject
   unfold Schema.objectType at hobject
   rcases hobject with ⟨objectType, hlookup⟩
   simp [objectTypeNameBool, hlookup]
 
-theorem objectType_of_objectTypeNameBool_eq_true
-    (schema : Schema) {typeName : Name} :
-    objectTypeNameBool schema typeName = true ->
-      schema.objectType typeName := by
+theorem objectType_of_objectTypeNameBool_eq_true (schema : Schema) {typeName : Name}
+    : objectTypeNameBool schema typeName = true -> schema.objectType typeName := by
   intro hobject
   unfold objectTypeNameBool at hobject
   cases hlookup : schema.lookupType typeName with
@@ -48,10 +43,9 @@ theorem objectType_of_objectTypeNameBool_eq_true
       | enum enumType => simp [hlookup] at hobject
       | inputObject inputObjectType => simp [hlookup] at hobject
 
-theorem object_typeIncludesObjectBool_self
-    (schema : Schema) {typeName : Name} :
-    schema.objectType typeName ->
-      schema.typeIncludesObjectBool typeName typeName = true := by
+theorem object_typeIncludesObjectBool_self (schema : Schema) {typeName : Name}
+    : schema.objectType typeName
+      -> schema.typeIncludesObjectBool typeName typeName = true := by
   intro hobject
   rcases hobject with ⟨objectType, hlookup⟩
   have hname : objectType.name = typeName := by
@@ -60,12 +54,11 @@ theorem object_typeIncludesObjectBool_self
   simp [Schema.typeIncludesObjectBool, Schema.getPossibleTypes, hlookup,
     hname]
 
-theorem object_typesOverlapBool_eq
-    (schema : Schema) {left right : Name} :
-    schema.objectType left ->
-      schema.objectType right ->
-        schema.typesOverlapBool left right = true ->
-          right = left := by
+theorem object_typesOverlapBool_eq (schema : Schema) {left right : Name}
+    : schema.objectType left
+      -> schema.objectType right
+      -> schema.typesOverlapBool left right = true
+      -> right = left := by
   intro hleft hright hoverlap
   rcases hleft with ⟨leftObject, hleftLookup⟩
   have hleftName : leftObject.name = left := by
@@ -76,10 +69,9 @@ theorem object_typesOverlapBool_eq
   exact (object_typeIncludesObjectBool_eq_self schema
     (typeName := right) (objectName := left) hright hoverlap).symm
 
-theorem object_typesOverlapBool_self
-    (schema : Schema) {typeName : Name} :
-    schema.objectType typeName ->
-    schema.typesOverlapBool typeName typeName = true := by
+theorem object_typesOverlapBool_self (schema : Schema) {typeName : Name}
+    : schema.objectType typeName
+      -> schema.typesOverlapBool typeName typeName = true := by
   intro hobject
   rcases hobject with ⟨objectType, hlookup⟩
   have hname : objectType.name = typeName := by
@@ -89,10 +81,10 @@ theorem object_typesOverlapBool_self
     Schema.getPossibleTypes, hlookup, hname]
 
 theorem typeIncludesObjectBool_of_object_typesOverlapBool
-    (schema : Schema) {objectType typeCondition : Name} :
-    schema.objectType objectType ->
-    schema.typesOverlapBool objectType typeCondition = true ->
-      schema.typeIncludesObjectBool typeCondition objectType = true := by
+    (schema : Schema) {objectType typeCondition : Name}
+    : schema.objectType objectType
+      -> schema.typesOverlapBool objectType typeCondition = true
+      -> schema.typeIncludesObjectBool typeCondition objectType = true := by
   intro hobject hoverlap
   rcases hobject with ⟨objectDefinition, hlookup⟩
   have hname : objectDefinition.name = objectType := by
@@ -102,10 +94,8 @@ theorem typeIncludesObjectBool_of_object_typesOverlapBool
   simp [Schema.getPossibleTypes, hlookup, hname] at hoverlap
   exact hoverlap
 
-theorem possibleTypes_eq_nil_of_isLeafType
-    (schema : Schema) {typeName : Name} :
-    schema.isLeafType typeName ->
-      schema.getPossibleTypes typeName = [] := by
+theorem possibleTypes_eq_nil_of_isLeafType (schema : Schema) {typeName : Name}
+    : schema.isLeafType typeName -> schema.getPossibleTypes typeName = [] := by
   intro hleaf
   rcases hleaf with ⟨typeDefinition, hlookup, hleafDefinition⟩
   cases typeDefinition with
@@ -127,12 +117,12 @@ theorem possibleTypes_eq_nil_of_isLeafType
 theorem fieldSelectionSetValid_child_of_possibleType
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {fieldDefinition : FieldDefinition} {selectionSet : List Selection}
-    {objectType : Name} :
-    Validation.fieldSelectionSetValid schema variableDefinitions
-      fieldDefinition selectionSet ->
-    objectType ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType ->
-      Validation.selectionSetValid schema variableDefinitions
-        fieldDefinition.outputType.namedType selectionSet := by
+    {objectType : Name}
+    : Validation.fieldSelectionSetValid schema variableDefinitions
+        fieldDefinition selectionSet
+      -> objectType ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType
+      -> Validation.selectionSetValid schema variableDefinitions
+          fieldDefinition.outputType.namedType selectionSet := by
   intro hvalid hpossible
   simp [Validation.fieldSelectionSetValid] at hvalid
   rcases hvalid with ⟨_houtput, hchild⟩

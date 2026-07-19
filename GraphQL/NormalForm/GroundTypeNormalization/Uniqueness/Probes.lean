@@ -12,11 +12,11 @@ namespace NormalForm
 namespace GroundTypeNormalization
 
 mutual
-  theorem inputValue_structuralEquivalent_trans :
-      ∀ {left middle right : InputValue},
-        InputValue.structuralEquivalent left middle ->
-        InputValue.structuralEquivalent middle right ->
-          InputValue.structuralEquivalent left right := by
+  theorem inputValue_structuralEquivalent_trans
+      : ∀ {left middle right : InputValue},
+          InputValue.structuralEquivalent left middle
+          -> InputValue.structuralEquivalent middle right
+          -> InputValue.structuralEquivalent left right := by
     intro left middle right hleft hright
     cases left <;> cases middle <;> cases right <;>
       simp [InputValue.structuralEquivalent] at hleft hright ⊢
@@ -28,11 +28,11 @@ mutual
       | trivial
       | contradiction
 
-  theorem inputValues_structuralEquivalent_trans :
-      ∀ {left middle right : List InputValue},
-        InputValue.structuralValuesEquivalent left middle ->
-        InputValue.structuralValuesEquivalent middle right ->
-          InputValue.structuralValuesEquivalent left right
+  theorem inputValues_structuralEquivalent_trans
+      : ∀ {left middle right : List InputValue},
+          InputValue.structuralValuesEquivalent left middle
+          -> InputValue.structuralValuesEquivalent middle right
+          -> InputValue.structuralValuesEquivalent left right
     | [], [], [], _hleft, _hright => by
         simp [InputValue.structuralValuesEquivalent]
     | left :: lefts, middle :: middles, right :: rights, hleft, hright => by
@@ -53,11 +53,11 @@ mutual
     | _ :: _, _ :: _, [], _hleft, hright => by
         simp [InputValue.structuralValuesEquivalent] at hright
 
-  theorem inputObjectFields_structuralEquivalent_trans :
-      ∀ {left middle right : List (Name × InputValue)},
-        InputValue.structuralObjectFieldsEquivalent left middle ->
-        InputValue.structuralObjectFieldsEquivalent middle right ->
-          InputValue.structuralObjectFieldsEquivalent left right
+  theorem inputObjectFields_structuralEquivalent_trans
+      : ∀ {left middle right : List (Name × InputValue)},
+          InputValue.structuralObjectFieldsEquivalent left middle
+          -> InputValue.structuralObjectFieldsEquivalent middle right
+          -> InputValue.structuralObjectFieldsEquivalent left right
     | [], [], [], _hleft, _hright => by
         simp [InputValue.structuralObjectFieldsEquivalent]
     | (leftName, leftValue) :: lefts,
@@ -83,28 +83,21 @@ mutual
         simp [InputValue.structuralObjectFieldsEquivalent] at hright
 end
 
-theorem inputValue_equivalent_trans
-    {left middle right : InputValue} :
-    left.equivalent middle ->
-    middle.equivalent right ->
-      left.equivalent right := by
+theorem inputValue_equivalent_trans {left middle right : InputValue}
+    : left.equivalent middle -> middle.equivalent right -> left.equivalent right := by
   intro hleft hright
   exact inputValue_structuralEquivalent_trans hleft hright
 
-theorem argumentEquivalent_trans
-    {left middle right : Argument} :
-    left.equivalent middle ->
-    middle.equivalent right ->
-      left.equivalent right := by
+theorem argumentEquivalent_trans {left middle right : Argument}
+    : left.equivalent middle -> middle.equivalent right -> left.equivalent right := by
   intro hleft hright
   exact ⟨hleft.1.trans hright.1,
     inputValue_equivalent_trans hleft.2 hright.2⟩
 
-theorem argumentsEquivalent_trans
-    {left middle right : List Argument} :
-    Argument.argumentsEquivalent left middle ->
-    Argument.argumentsEquivalent middle right ->
-      Argument.argumentsEquivalent left right := by
+theorem argumentsEquivalent_trans {left middle right : List Argument}
+    : Argument.argumentsEquivalent left middle
+      -> Argument.argumentsEquivalent middle right
+      -> Argument.argumentsEquivalent left right := by
   intro hleft hright
   exact ⟨
     by
@@ -136,8 +129,8 @@ def fieldFailureResolvers {ObjectRef : Type}
       _harguments
     rfl
 
-def schemaSuccessResolverValue (schema : Schema) :
-    TypeRef -> Execution.ResolverValue PUnit
+def schemaSuccessResolverValue (schema : Schema)
+    : TypeRef -> Execution.ResolverValue PUnit
   | .named typeName =>
       if (TypeRef.named typeName).isCompositeBool schema then
         .object typeName PUnit.unit
@@ -147,8 +140,8 @@ def schemaSuccessResolverValue (schema : Schema) :
   | .nonNull inner => schemaSuccessResolverValue schema inner
 
 def schemaSuccessResolverValueWithRef {ObjectRef : Type}
-    (schema : Schema) (objectRef : ObjectRef) :
-    TypeRef -> Execution.ResolverValue ObjectRef
+    (schema : Schema) (objectRef : ObjectRef)
+    : TypeRef -> Execution.ResolverValue ObjectRef
   | .named typeName =>
       if (TypeRef.named typeName).isCompositeBool schema then
         .object typeName objectRef
@@ -187,16 +180,15 @@ def schemaSuccessResolversWithRef {ObjectRef : Type}
 
 def firstInlineFragmentTypeCondition? : List Selection -> Option Name
   | [] => none
-  | Selection.inlineFragment (some typeCondition) _directives
-      _selectionSet :: _rest =>
+  | Selection.inlineFragment (some typeCondition) _directives _selectionSet :: _rest =>
       some typeCondition
   | _selection :: rest => firstInlineFragmentTypeCondition? rest
 
-def abstractRuntimeForField? (fieldName : Name) :
-    List Selection -> Option Name
+def abstractRuntimeForField? (fieldName : Name) : List Selection -> Option Name
   | [] => none
   | Selection.field _responseName candidateFieldName _arguments
-      _directives childSelectionSet :: rest =>
+      _directives childSelectionSet
+    :: rest =>
       if candidateFieldName == fieldName then
         match firstInlineFragmentTypeCondition? childSelectionSet with
         | some runtimeType => some runtimeType
@@ -313,14 +305,12 @@ decreasing_by
 theorem abstractRuntimeForFieldHeadDeep?_eq_of_argumentsEquivalent
     (schema : Schema) (targetParent targetField : Name)
     {firstArguments laterArguments : List Argument}
-    (hequivalent :
-      Argument.argumentsEquivalent firstArguments laterArguments) :
-    ∀ currentParent selectionSet,
-      abstractRuntimeForFieldHeadDeep? schema targetParent targetField
-        firstArguments currentParent selectionSet
-      =
-      abstractRuntimeForFieldHeadDeep? schema targetParent targetField
-        laterArguments currentParent selectionSet
+    (hequivalent : Argument.argumentsEquivalent firstArguments laterArguments)
+    : ∀ currentParent selectionSet,
+        abstractRuntimeForFieldHeadDeep? schema targetParent targetField
+          firstArguments currentParent selectionSet
+        = abstractRuntimeForFieldHeadDeep? schema targetParent targetField
+            laterArguments currentParent selectionSet
   | _currentParent, [] => by
       simp [abstractRuntimeForFieldHeadDeep?]
   | currentParent, selection :: rest => by
@@ -510,8 +500,8 @@ decreasing_by
     omega
 
 def selectionSetSuccessResolverValue (schema : Schema)
-    (rootSelectionSet : List Selection) (fieldName : Name) :
-    TypeRef -> Execution.ResolverValue PUnit
+    (rootSelectionSet : List Selection) (fieldName : Name)
+    : TypeRef -> Execution.ResolverValue PUnit
   | .named typeName =>
       if (TypeRef.named typeName).isCompositeBool schema then
         if objectTypeNameBool schema typeName then
@@ -527,16 +517,15 @@ def selectionSetSuccessResolverValue (schema : Schema)
       selectionSetSuccessResolverValue schema rootSelectionSet fieldName inner
 
 def deepSelectionSetSuccessResolverValue (schema : Schema)
-    (rootSelectionSet : List Selection) (parentType fieldName : Name) :
-    TypeRef -> Execution.ResolverValue PUnit
+    (rootSelectionSet : List Selection) (parentType fieldName : Name)
+    : TypeRef -> Execution.ResolverValue PUnit
   | .named typeName =>
       if (TypeRef.named typeName).isCompositeBool schema then
         if objectTypeNameBool schema typeName then
           .object typeName PUnit.unit
         else
-          match
-            abstractRuntimeForFieldDeep? schema parentType fieldName
-              parentType rootSelectionSet with
+          match abstractRuntimeForFieldDeep? schema parentType fieldName
+                  parentType rootSelectionSet with
           | some runtimeType => .object runtimeType PUnit.unit
           | none => .object typeName PUnit.unit
       else
@@ -548,16 +537,15 @@ def deepSelectionSetSuccessResolverValue (schema : Schema)
 
 def deepSelectionSetSuccessResolverValueWithRef {ObjectRef : Type}
     (schema : Schema) (rootSelectionSet : List Selection)
-    (objectRef : ObjectRef) (parentType fieldName : Name) :
-    TypeRef -> Execution.ResolverValue ObjectRef
+    (objectRef : ObjectRef) (parentType fieldName : Name)
+    : TypeRef -> Execution.ResolverValue ObjectRef
   | .named typeName =>
       if (TypeRef.named typeName).isCompositeBool schema then
         if objectTypeNameBool schema typeName then
           .object typeName objectRef
         else
-          match
-            abstractRuntimeForFieldDeep? schema parentType fieldName
-              parentType rootSelectionSet with
+          match abstractRuntimeForFieldDeep? schema parentType fieldName
+                  parentType rootSelectionSet with
           | some runtimeType => .object runtimeType objectRef
           | none => .object typeName objectRef
       else
@@ -568,16 +556,15 @@ def deepSelectionSetSuccessResolverValueWithRef {ObjectRef : Type}
         objectRef parentType fieldName inner
 
 def deepSelectionSetProbeResolverValue (schema : Schema)
-    (rootSelectionSet : List Selection) (parentType fieldName : Name) :
-    TypeRef -> Execution.ResolverValue PUnit
+    (rootSelectionSet : List Selection) (parentType fieldName : Name)
+    : TypeRef -> Execution.ResolverValue PUnit
   | .named typeName =>
       if (TypeRef.named typeName).isCompositeBool schema then
         if objectTypeNameBool schema typeName then
           .object typeName PUnit.unit
         else
-          match
-            abstractRuntimeForFieldDeep? schema parentType fieldName
-              parentType rootSelectionSet with
+          match abstractRuntimeForFieldDeep? schema parentType fieldName
+                  parentType rootSelectionSet with
           | some runtimeType => .object runtimeType PUnit.unit
           | none => .object typeName PUnit.unit
       else
@@ -651,12 +638,10 @@ def deepSelectionSetProbeResolvers (schema : Schema)
 theorem schemaSuccessResolvers_resolve_lookup
     (schema : Schema) (parentType fieldName : Name)
     (arguments : List Argument) (source : Execution.ResolverValue PUnit)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      (schemaSuccessResolvers schema).resolve parentType fieldName arguments
-        source
-        =
-      some (schemaSuccessResolverValue schema fieldDefinition.outputType) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> (schemaSuccessResolvers schema).resolve parentType fieldName arguments source
+          = some (schemaSuccessResolverValue schema fieldDefinition.outputType) := by
   intro hlookup
   simp [schemaSuccessResolvers, hlookup]
 
@@ -665,14 +650,13 @@ theorem schemaSuccessResolversWithRef_resolve_lookup
     (parentType fieldName : Name)
     (arguments : List Argument)
     (source : Execution.ResolverValue ObjectRef)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      (schemaSuccessResolversWithRef schema objectRef).resolve parentType
-        fieldName arguments source
-        =
-      some
-        (schemaSuccessResolverValueWithRef schema objectRef
-          fieldDefinition.outputType) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> (schemaSuccessResolversWithRef schema objectRef).resolve parentType
+            fieldName arguments source
+          = some
+              (schemaSuccessResolverValueWithRef schema objectRef
+                fieldDefinition.outputType) := by
   intro hlookup
   simp [schemaSuccessResolversWithRef, hlookup]
 
@@ -680,14 +664,13 @@ theorem selectionSetSuccessResolvers_resolve_lookup
     (schema : Schema) (rootSelectionSet : List Selection)
     (parentType fieldName : Name)
     (arguments : List Argument) (source : Execution.ResolverValue PUnit)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      (selectionSetSuccessResolvers schema rootSelectionSet).resolve
-        parentType fieldName arguments source
-        =
-      some
-        (selectionSetSuccessResolverValue schema rootSelectionSet fieldName
-          fieldDefinition.outputType) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> (selectionSetSuccessResolvers schema rootSelectionSet).resolve
+            parentType fieldName arguments source
+          = some
+              (selectionSetSuccessResolverValue schema rootSelectionSet fieldName
+                fieldDefinition.outputType) := by
   intro hlookup
   simp [selectionSetSuccessResolvers, hlookup]
 
@@ -695,14 +678,13 @@ theorem deepSelectionSetSuccessResolvers_resolve_lookup
     (schema : Schema) (rootSelectionSet : List Selection)
     (parentType fieldName : Name)
     (arguments : List Argument) (source : Execution.ResolverValue PUnit)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      (deepSelectionSetSuccessResolvers schema rootSelectionSet).resolve
-        parentType fieldName arguments source
-        =
-      some
-        (deepSelectionSetSuccessResolverValue schema rootSelectionSet
-          parentType fieldName fieldDefinition.outputType) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> (deepSelectionSetSuccessResolvers schema rootSelectionSet).resolve
+            parentType fieldName arguments source
+          = some
+              (deepSelectionSetSuccessResolverValue schema rootSelectionSet
+                parentType fieldName fieldDefinition.outputType) := by
   intro hlookup
   simp [deepSelectionSetSuccessResolvers, hlookup]
 
@@ -712,14 +694,14 @@ theorem deepSelectionSetSuccessResolversWithRef_resolve_lookup
     (parentType fieldName : Name)
     (arguments : List Argument)
     (source : Execution.ResolverValue ObjectRef)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-        objectRef).resolve parentType fieldName arguments source
-        =
-      some
-        (deepSelectionSetSuccessResolverValueWithRef schema rootSelectionSet
-          objectRef parentType fieldName fieldDefinition.outputType) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+            objectRef).resolve
+            parentType fieldName arguments source
+          = some
+              (deepSelectionSetSuccessResolverValueWithRef schema rootSelectionSet
+                objectRef parentType fieldName fieldDefinition.outputType) := by
   intro hlookup
   simp [deepSelectionSetSuccessResolversWithRef, hlookup]
 
@@ -727,26 +709,24 @@ theorem deepSelectionSetProbeResolvers_resolve_lookup
     (schema : Schema) (rootSelectionSet : List Selection)
     (parentType fieldName : Name)
     (arguments : List Argument) (source : Execution.ResolverValue PUnit)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      (deepSelectionSetProbeResolvers schema rootSelectionSet).resolve
-        parentType fieldName arguments source
-        =
-      some
-        (deepSelectionSetProbeResolverValue schema rootSelectionSet
-          parentType fieldName fieldDefinition.outputType) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> (deepSelectionSetProbeResolvers schema rootSelectionSet).resolve
+            parentType fieldName arguments source
+          = some
+              (deepSelectionSetProbeResolverValue schema rootSelectionSet
+                parentType fieldName fieldDefinition.outputType) := by
   intro hlookup
   simp [deepSelectionSetProbeResolvers, hlookup]
 
 theorem deepSelectionSetSuccessResolverValueWithRef_named_object
     {ObjectRef : Type} (schema : Schema)
     (rootSelectionSet : List Selection) (objectRef : ObjectRef)
-    (parentType fieldName typeName : Name) :
-    objectTypeNameBool schema typeName = true ->
-      deepSelectionSetSuccessResolverValueWithRef schema rootSelectionSet
-          objectRef parentType fieldName (.named typeName)
-        =
-        .object typeName objectRef := by
+    (parentType fieldName typeName : Name)
+    : objectTypeNameBool schema typeName = true
+      -> deepSelectionSetSuccessResolverValueWithRef schema rootSelectionSet
+            objectRef parentType fieldName (.named typeName)
+          = .object typeName objectRef := by
   intro hobject
   have hcomposite :
       (TypeRef.named typeName).isCompositeBool schema = true := by
@@ -762,39 +742,37 @@ theorem deepSelectionSetSuccessResolverValueWithRef_named_object
 theorem deepSelectionSetSuccessResolverValueWithRef_named_leaf
     {ObjectRef : Type} (schema : Schema)
     (rootSelectionSet : List Selection) (objectRef : ObjectRef)
-    (parentType fieldName typeName : Name) :
-    (TypeRef.named typeName).isCompositeBool schema = false ->
-      deepSelectionSetSuccessResolverValueWithRef schema rootSelectionSet
-          objectRef parentType fieldName (.named typeName)
-        =
-        .scalar "success" := by
+    (parentType fieldName typeName : Name)
+    : (TypeRef.named typeName).isCompositeBool schema = false
+      -> deepSelectionSetSuccessResolverValueWithRef schema rootSelectionSet
+            objectRef parentType fieldName (.named typeName)
+          = .scalar "success" := by
   intro hleaf
   simp [deepSelectionSetSuccessResolverValueWithRef, hleaf]
 
 theorem deepSelectionSetSuccessResolverValueWithRef_named_abstract
     {ObjectRef : Type} (schema : Schema)
     (rootSelectionSet : List Selection) (objectRef : ObjectRef)
-    (parentType fieldName typeName runtimeType : Name) :
-    (TypeRef.named typeName).isCompositeBool schema = true ->
-    objectTypeNameBool schema typeName = false ->
-    abstractRuntimeForFieldDeep? schema parentType fieldName parentType
-      rootSelectionSet = some runtimeType ->
-      deepSelectionSetSuccessResolverValueWithRef schema rootSelectionSet
-          objectRef parentType fieldName (.named typeName)
-        =
-        .object runtimeType objectRef := by
+    (parentType fieldName typeName runtimeType : Name)
+    : (TypeRef.named typeName).isCompositeBool schema = true
+      -> objectTypeNameBool schema typeName = false
+      -> abstractRuntimeForFieldDeep? schema parentType fieldName parentType
+            rootSelectionSet
+          = some runtimeType
+      -> deepSelectionSetSuccessResolverValueWithRef schema rootSelectionSet
+            objectRef parentType fieldName (.named typeName)
+          = .object runtimeType objectRef := by
   intro hcomposite hnonObject hruntime
   simp [deepSelectionSetSuccessResolverValueWithRef, hcomposite, hnonObject,
     hruntime]
 
 theorem deepSelectionSetSuccessResolverValue_named_object
     (schema : Schema) (rootSelectionSet : List Selection)
-    (parentType fieldName typeName : Name) :
-    objectTypeNameBool schema typeName = true ->
-      deepSelectionSetSuccessResolverValue schema rootSelectionSet parentType
-          fieldName (.named typeName)
-        =
-        .object typeName PUnit.unit := by
+    (parentType fieldName typeName : Name)
+    : objectTypeNameBool schema typeName = true
+      -> deepSelectionSetSuccessResolverValue schema rootSelectionSet parentType
+            fieldName (.named typeName)
+          = .object typeName PUnit.unit := by
   intro hobject
   simpa [deepSelectionSetSuccessResolverValue,
     deepSelectionSetSuccessResolverValueWithRef] using
@@ -803,12 +781,11 @@ theorem deepSelectionSetSuccessResolverValue_named_object
 
 theorem deepSelectionSetSuccessResolverValue_named_leaf
     (schema : Schema) (rootSelectionSet : List Selection)
-    (parentType fieldName typeName : Name) :
-    (TypeRef.named typeName).isCompositeBool schema = false ->
-      deepSelectionSetSuccessResolverValue schema rootSelectionSet parentType
-          fieldName (.named typeName)
-        =
-        .scalar "success" := by
+    (parentType fieldName typeName : Name)
+    : (TypeRef.named typeName).isCompositeBool schema = false
+      -> deepSelectionSetSuccessResolverValue schema rootSelectionSet parentType
+            fieldName (.named typeName)
+          = .scalar "success" := by
   intro hleaf
   simpa [deepSelectionSetSuccessResolverValue,
     deepSelectionSetSuccessResolverValueWithRef] using
@@ -817,15 +794,15 @@ theorem deepSelectionSetSuccessResolverValue_named_leaf
 
 theorem deepSelectionSetSuccessResolverValue_named_abstract
     (schema : Schema) (rootSelectionSet : List Selection)
-    (parentType fieldName typeName runtimeType : Name) :
-    (TypeRef.named typeName).isCompositeBool schema = true ->
-    objectTypeNameBool schema typeName = false ->
-    abstractRuntimeForFieldDeep? schema parentType fieldName parentType
-      rootSelectionSet = some runtimeType ->
-      deepSelectionSetSuccessResolverValue schema rootSelectionSet parentType
-          fieldName (.named typeName)
-        =
-        .object runtimeType PUnit.unit := by
+    (parentType fieldName typeName runtimeType : Name)
+    : (TypeRef.named typeName).isCompositeBool schema = true
+      -> objectTypeNameBool schema typeName = false
+      -> abstractRuntimeForFieldDeep? schema parentType fieldName parentType
+            rootSelectionSet
+          = some runtimeType
+      -> deepSelectionSetSuccessResolverValue schema rootSelectionSet parentType
+            fieldName (.named typeName)
+          = .object runtimeType PUnit.unit := by
   intro hcomposite hnonObject hruntime
   simpa [deepSelectionSetSuccessResolverValue,
     deepSelectionSetSuccessResolverValueWithRef] using
@@ -881,11 +858,11 @@ noncomputable def argumentClassScalarResolvers {ObjectRef : Type}
 theorem argumentClassScalarResolvers_target
     {ObjectRef : Type} (targetParent targetField : Name)
     (targetArguments : List Argument) (matched missed : String)
-    (source : Execution.ResolverValue ObjectRef) :
-    (argumentClassScalarResolvers targetParent targetField targetArguments
+    (source : Execution.ResolverValue ObjectRef)
+    : (argumentClassScalarResolvers targetParent targetField targetArguments
         matched missed).resolve
-      targetParent targetField targetArguments source =
-      Execution.Option.scalar matched := by
+        targetParent targetField targetArguments source
+      = Execution.Option.scalar matched := by
   classical
   simp [argumentClassScalarResolvers,
     argumentsEquivalent_refl_forSyntaxDiff targetArguments]
@@ -893,12 +870,12 @@ theorem argumentClassScalarResolvers_target
 theorem argumentClassScalarResolvers_equivalent
     {ObjectRef : Type} (targetParent targetField : Name)
     (targetArguments arguments : List Argument) (matched missed : String)
-    (source : Execution.ResolverValue ObjectRef) :
-    Argument.argumentsEquivalent arguments targetArguments ->
-      (argumentClassScalarResolvers targetParent targetField targetArguments
-          matched missed).resolve
-        targetParent targetField arguments source =
-        Execution.Option.scalar matched := by
+    (source : Execution.ResolverValue ObjectRef)
+    : Argument.argumentsEquivalent arguments targetArguments
+      -> (argumentClassScalarResolvers targetParent targetField targetArguments
+            matched missed).resolve
+            targetParent targetField arguments source
+          = Execution.Option.scalar matched := by
   intro harguments
   classical
   simp [argumentClassScalarResolvers, harguments]
@@ -906,12 +883,12 @@ theorem argumentClassScalarResolvers_equivalent
 theorem argumentClassScalarResolvers_not_equivalent
     {ObjectRef : Type} (targetParent targetField : Name)
     (targetArguments arguments : List Argument) (matched missed : String)
-    (source : Execution.ResolverValue ObjectRef) :
-    ¬ Argument.argumentsEquivalent arguments targetArguments ->
-      (argumentClassScalarResolvers targetParent targetField targetArguments
-          matched missed).resolve
-        targetParent targetField arguments source =
-        Execution.Option.scalar missed := by
+    (source : Execution.ResolverValue ObjectRef)
+    : ¬ Argument.argumentsEquivalent arguments targetArguments
+      -> (argumentClassScalarResolvers targetParent targetField targetArguments
+            matched missed).resolve
+            targetParent targetField arguments source
+          = Execution.Option.scalar missed := by
   intro harguments
   classical
   simp [argumentClassScalarResolvers, harguments]
@@ -919,12 +896,12 @@ theorem argumentClassScalarResolvers_not_equivalent
 theorem argumentClassScalarResolvers_other_field
     {ObjectRef : Type} (targetParent targetField fieldName : Name)
     (targetArguments arguments : List Argument) (matched missed : String)
-    (source : Execution.ResolverValue ObjectRef) :
-    (fieldName == targetField) = false ->
-      (argumentClassScalarResolvers targetParent targetField targetArguments
-          matched missed).resolve
-        targetParent fieldName arguments source =
-        Execution.Option.null := by
+    (source : Execution.ResolverValue ObjectRef)
+    : (fieldName == targetField) = false
+      -> (argumentClassScalarResolvers targetParent targetField targetArguments
+            matched missed).resolve
+            targetParent fieldName arguments source
+          = Execution.Option.null := by
   intro hfield
   classical
   have hfieldNe : fieldName ≠ targetField := by
@@ -951,27 +928,25 @@ def fieldScalarResolvers {ObjectRef : Type}
 
 theorem fieldScalarResolvers_target
     {ObjectRef : Type} (targetParent targetField : Name) (value : String)
-    (arguments : List Argument) (source : Execution.ResolverValue ObjectRef) :
-    (fieldScalarResolvers targetParent targetField value).resolve
-      targetParent targetField arguments source =
-      Execution.Option.scalar value := by
+    (arguments : List Argument) (source : Execution.ResolverValue ObjectRef)
+    : (fieldScalarResolvers targetParent targetField value).resolve
+        targetParent targetField arguments source
+      = Execution.Option.scalar value := by
   simp [fieldScalarResolvers]
 
-def leafProbeResolverValue {ObjectRef : Type} :
-    TypeRef -> String -> Execution.ResolverValue ObjectRef
+def leafProbeResolverValue {ObjectRef : Type}
+    : TypeRef -> String -> Execution.ResolverValue ObjectRef
   | .named _typeName, value => .scalar value
   | .list inner, value => .list [leafProbeResolverValue inner value]
   | .nonNull inner, value => leafProbeResolverValue inner value
 
-def leafProbeResponseValue :
-    TypeRef -> String -> Execution.ResponseValue
+def leafProbeResponseValue : TypeRef -> String -> Execution.ResponseValue
   | .named _typeName, value => .scalar value
   | .list inner, value => .list [leafProbeResponseValue inner value]
   | .nonNull inner, value => leafProbeResponseValue inner value
 
-theorem leafProbeResponseValue_ne_null
-    (outputType : TypeRef) (value : String) :
-    leafProbeResponseValue outputType value ≠ .null := by
+theorem leafProbeResponseValue_ne_null (outputType : TypeRef) (value : String)
+    : leafProbeResponseValue outputType value ≠ .null := by
   induction outputType with
   | named _typeName =>
       simp [leafProbeResponseValue]
@@ -981,11 +956,11 @@ theorem leafProbeResponseValue_ne_null
       simpa [leafProbeResponseValue] using ih
 
 theorem leafProbeResponseValue_semanticEquivalent_eq
-    (outputType : TypeRef) {left right : String} :
-    Execution.ResponseValue.semanticEquivalent
-      (leafProbeResponseValue outputType left)
-      (leafProbeResponseValue outputType right) ->
-      left = right := by
+    (outputType : TypeRef) {left right : String}
+    : Execution.ResponseValue.semanticEquivalent
+        (leafProbeResponseValue outputType left)
+        (leafProbeResponseValue outputType right)
+      -> left = right := by
   intro hsemantic
   induction outputType with
   | named _typeName =>
@@ -1002,20 +977,20 @@ theorem leafProbeResponseValue_semanticEquivalent_eq
       exact ih (by simpa [leafProbeResponseValue] using hsemantic)
 
 theorem leafProbeResponseValue_not_semanticEquivalent_of_ne
-    (outputType : TypeRef) {left right : String} :
-    left ≠ right ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (leafProbeResponseValue outputType left)
-        (leafProbeResponseValue outputType right) := by
+    (outputType : TypeRef) {left right : String}
+    : left ≠ right
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (leafProbeResponseValue outputType left)
+            (leafProbeResponseValue outputType right) := by
   intro hne hsemantic
   exact hne (leafProbeResponseValue_semanticEquivalent_eq outputType hsemantic)
 
 theorem leafProbeResponseValue_not_semanticEquivalent_of_ne_any
-    (leftType rightType : TypeRef) {left right : String} :
-    left ≠ right ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (leafProbeResponseValue leftType left)
-        (leafProbeResponseValue rightType right) := by
+    (leftType rightType : TypeRef) {left right : String}
+    : left ≠ right
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (leafProbeResponseValue leftType left)
+            (leafProbeResponseValue rightType right) := by
   intro hne hsemantic
   cases leftType with
   | named leftName =>
@@ -1064,8 +1039,7 @@ def leafProbeFuel : TypeRef -> Nat
   | .list inner => leafProbeFuel inner + 1
   | .nonNull inner => leafProbeFuel inner
 
-theorem leafProbeFuel_pos (outputType : TypeRef) :
-    0 < leafProbeFuel outputType := by
+theorem leafProbeFuel_pos (outputType : TypeRef) : 0 < leafProbeFuel outputType := by
   induction outputType with
   | named _typeName =>
       simp [leafProbeFuel]
@@ -1081,12 +1055,13 @@ theorem completeValue_nonNull_ok_of_ne_null
     (fuel : Nat) (inner : TypeRef)
     (fields : List Execution.ExecutableField)
     (resolved : Execution.ResolverValue ObjectRef)
-    (responseValue : Execution.ResponseValue) (errors : Nat) :
-    Execution.completeValue schema resolvers variableValues fuel inner fields
-      resolved = .ok (responseValue, errors) ->
-    responseValue ≠ .null ->
-      Execution.completeValue schema resolvers variableValues fuel
-        (.nonNull inner) fields resolved = .ok (responseValue, errors) := by
+    (responseValue : Execution.ResponseValue) (errors : Nat)
+    : Execution.completeValue schema resolvers variableValues fuel inner fields resolved
+        = .ok (responseValue, errors)
+      -> responseValue ≠ .null
+      -> Execution.completeValue schema resolvers variableValues fuel
+            (.nonNull inner) fields resolved
+          = .ok (responseValue, errors) := by
   intro hcomplete hnonNull
   cases fuel with
   | zero =>
@@ -1099,15 +1074,14 @@ theorem completeValue_nonNull_ok_of_ne_null
 theorem completeValue_leafProbe
     {ObjectRef : Type} (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
-    (variableValues : Execution.VariableValues) :
-    ∀ (outputType : TypeRef) (fields : List Execution.ExecutableField)
-      (value : String),
-      (TypeRef.named outputType.namedType).isCompositeBool schema = false ->
-        Execution.completeValue schema resolvers variableValues
-          (leafProbeFuel outputType) outputType fields
-          (leafProbeResolverValue outputType value)
-          =
-        .ok (leafProbeResponseValue outputType value, 0)
+    (variableValues : Execution.VariableValues)
+    : ∀ (outputType : TypeRef) (fields : List Execution.ExecutableField)
+          (value : String),
+        (TypeRef.named outputType.namedType).isCompositeBool schema = false
+        -> Execution.completeValue schema resolvers variableValues
+              (leafProbeFuel outputType) outputType fields
+              (leafProbeResolverValue outputType value)
+            = .ok (leafProbeResponseValue outputType value, 0)
   | .named typeName, fields, value, hleaf => by
       simpa [leafProbeFuel, leafProbeResolverValue, leafProbeResponseValue,
         TypeRef.namedType, Execution.completeValue, hleaf]
@@ -1150,16 +1124,15 @@ theorem completeValue_leafProbe
 theorem completeValue_leafProbe_of_fuel_ge
     {ObjectRef : Type} (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
-    (variableValues : Execution.VariableValues) :
-    ∀ (outputType : TypeRef) (fields : List Execution.ExecutableField)
-      (value : String) (fuel : Nat),
-      leafProbeFuel outputType ≤ fuel ->
-      (TypeRef.named outputType.namedType).isCompositeBool schema = false ->
-        Execution.completeValue schema resolvers variableValues
-          fuel outputType fields
-          (leafProbeResolverValue outputType value)
-          =
-        .ok (leafProbeResponseValue outputType value, 0)
+    (variableValues : Execution.VariableValues)
+    : ∀ (outputType : TypeRef) (fields : List Execution.ExecutableField)
+          (value : String) (fuel : Nat),
+        leafProbeFuel outputType ≤ fuel
+        -> (TypeRef.named outputType.namedType).isCompositeBool schema = false
+        -> Execution.completeValue schema resolvers variableValues
+              fuel outputType fields
+              (leafProbeResolverValue outputType value)
+            = .ok (leafProbeResponseValue outputType value, 0)
   | .named typeName, fields, value, fuel, hfuel, hleaf => by
       cases fuel with
       | zero =>
@@ -1222,18 +1195,17 @@ theorem completeValue_deepSelectionSetSuccessWithRef_leaf_ok
     (rootSelectionSet : List Selection) (objectRef : ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (parentType fieldName : Name)
-    (fields : List Execution.ExecutableField) :
-    ∀ outputType,
-      (TypeRef.named outputType.namedType).isCompositeBool schema = false ->
-        ∃ responseValue errors,
-          Execution.completeValue schema
-            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-              objectRef)
-            variableValues (fuel + leafProbeFuel outputType) outputType fields
-            (deepSelectionSetSuccessResolverValueWithRef schema
-              rootSelectionSet objectRef parentType fieldName outputType)
-          =
-          .ok (responseValue, errors)
+    (fields : List Execution.ExecutableField)
+    : ∀ outputType,
+        (TypeRef.named outputType.namedType).isCompositeBool schema = false
+        -> ∃ responseValue errors,
+            Execution.completeValue schema
+                (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                  objectRef)
+                variableValues (fuel + leafProbeFuel outputType) outputType fields
+                (deepSelectionSetSuccessResolverValueWithRef schema
+                  rootSelectionSet objectRef parentType fieldName outputType)
+              = .ok (responseValue, errors)
             ∧ responseValue ≠ .null
   | .named typeName, hleaf => by
       refine ⟨.scalar "success", 0, ?_, ?_⟩
@@ -1296,27 +1268,25 @@ theorem completeValue_deepSelectionSetSuccessWithRef_object_of_executeCollectedF
     (parentType fieldName : Name)
     (fields : List Execution.ExecutableField)
     (responseFields : List (Name × Execution.ResponseValue))
-    (errors : Nat) :
-    ∀ outputType,
-      objectTypeNameBool schema outputType.namedType = true ->
-      Execution.executeCollectedFields schema
-        (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-          objectRef)
-        variableValues fuel
-        (.object outputType.namedType objectRef)
-        (Execution.collectSubfields schema variableValues outputType.namedType
-          (.object outputType.namedType objectRef) fields)
-        =
-        .ok (responseFields, errors) ->
-        ∃ responseValue completeErrors,
-          Execution.completeValue schema
-            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-              objectRef)
-            variableValues (fuel + leafProbeFuel outputType) outputType fields
-            (deepSelectionSetSuccessResolverValueWithRef schema
-              rootSelectionSet objectRef parentType fieldName outputType)
-          =
-          .ok (responseValue, completeErrors)
+    (errors : Nat)
+    : ∀ outputType,
+        objectTypeNameBool schema outputType.namedType = true
+        -> Execution.executeCollectedFields schema
+              (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                objectRef)
+              variableValues fuel
+              (.object outputType.namedType objectRef)
+              (Execution.collectSubfields schema variableValues outputType.namedType
+                (.object outputType.namedType objectRef) fields)
+            = .ok (responseFields, errors)
+        -> ∃ responseValue completeErrors,
+            Execution.completeValue schema
+                (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                  objectRef)
+                variableValues (fuel + leafProbeFuel outputType) outputType fields
+                (deepSelectionSetSuccessResolverValueWithRef schema
+                  rootSelectionSet objectRef parentType fieldName outputType)
+              = .ok (responseValue, completeErrors)
             ∧ responseValue ≠ .null
   | .named typeName, hobject, hfields => by
       have hinclude :
@@ -1388,37 +1358,33 @@ theorem completeValue_deepSelectionSetSuccessWithRef_object_of_executeCollectedF
         hnonNullComplete
 
 theorem completeValue_deepSelectionSetSuccessWithRef_abstract_of_executeCollectedFields_ok
-    {ObjectRef : Type} (schema : Schema)
-    (rootSelectionSet : List Selection) (objectRef : ObjectRef)
-    (variableValues : Execution.VariableValues) (fuel : Nat)
-    (parentType fieldName runtimeType : Name)
-    (fields : List Execution.ExecutableField)
-    (responseFields : List (Name × Execution.ResponseValue))
-    (errors : Nat) :
-    ∀ outputType,
-      (TypeRef.named outputType.namedType).isCompositeBool schema = true ->
-      objectTypeNameBool schema outputType.namedType = false ->
-      abstractRuntimeForFieldDeep? schema parentType fieldName parentType
-        rootSelectionSet = some runtimeType ->
-      schema.typeIncludesObjectBool outputType.namedType runtimeType = true ->
-      Execution.executeCollectedFields schema
-        (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-          objectRef)
-        variableValues fuel
-        (.object runtimeType objectRef)
-        (Execution.collectSubfields schema variableValues runtimeType
-          (.object runtimeType objectRef) fields)
-        =
-        .ok (responseFields, errors) ->
-        ∃ responseValue completeErrors,
-          Execution.completeValue schema
-            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-              objectRef)
-            variableValues (fuel + leafProbeFuel outputType) outputType fields
-            (deepSelectionSetSuccessResolverValueWithRef schema
-              rootSelectionSet objectRef parentType fieldName outputType)
-          =
-          .ok (responseValue, completeErrors)
+    {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
+    (objectRef : ObjectRef) (variableValues : Execution.VariableValues) (fuel : Nat)
+    (parentType fieldName runtimeType : Name) (fields : List Execution.ExecutableField)
+    (responseFields : List (Name × Execution.ResponseValue)) (errors : Nat)
+    : ∀ outputType,
+        (TypeRef.named outputType.namedType).isCompositeBool schema = true
+        -> objectTypeNameBool schema outputType.namedType = false
+        -> abstractRuntimeForFieldDeep? schema parentType fieldName parentType
+              rootSelectionSet
+            = some runtimeType
+        -> schema.typeIncludesObjectBool outputType.namedType runtimeType = true
+        -> Execution.executeCollectedFields schema
+              (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                objectRef)
+              variableValues fuel
+              (.object runtimeType objectRef)
+              (Execution.collectSubfields schema variableValues runtimeType
+                (.object runtimeType objectRef) fields)
+            = .ok (responseFields, errors)
+        -> ∃ responseValue completeErrors,
+            Execution.completeValue schema
+                (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                  objectRef)
+                variableValues (fuel + leafProbeFuel outputType) outputType fields
+                (deepSelectionSetSuccessResolverValueWithRef schema
+                  rootSelectionSet objectRef parentType fieldName outputType)
+              = .ok (responseValue, completeErrors)
             ∧ responseValue ≠ .null
   | .named typeName, hcomposite, hnonObject, hruntime, hinclude,
       hfields => by
@@ -1502,34 +1468,32 @@ theorem executeField_deepSelectionSetSuccessWithRef_of_lookup
     (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
     (responseName parentType fieldName : Name) (arguments : List Argument)
     (childSelectionSet : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      Execution.executeField schema
-        (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-          objectRef)
-        variableValues (fuel + 1) source responseName
-        [{
-          parentType := parentType
-          responseName := responseName
-          fieldName := fieldName
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.singleFieldResult responseName
-        (Execution.completeValue schema
-          (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-            objectRef)
-          variableValues fuel fieldDefinition.outputType
-          [{
-            parentType := parentType
-            responseName := responseName
-            fieldName := fieldName
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-          (deepSelectionSetSuccessResolverValueWithRef schema rootSelectionSet
-            objectRef parentType fieldName fieldDefinition.outputType)) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> Execution.executeField schema
+            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet objectRef)
+            variableValues (fuel + 1) source responseName
+            [{
+              parentType := parentType
+              responseName := responseName
+              fieldName := fieldName
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = Execution.singleFieldResult responseName
+              (Execution.completeValue schema
+                (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                  objectRef)
+                variableValues fuel fieldDefinition.outputType
+                [{
+                  parentType := parentType
+                  responseName := responseName
+                  fieldName := fieldName
+                  arguments := arguments
+                  selectionSet := childSelectionSet
+                }]
+                (deepSelectionSetSuccessResolverValueWithRef schema rootSelectionSet
+                  objectRef parentType fieldName fieldDefinition.outputType)) := by
   intro hlookup
   have hresolve :
       (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
@@ -1550,69 +1514,68 @@ theorem executeField_deepSelectionSetSuccessWithRef_fieldDefinition_ok
     (source : Execution.ResolverValue ObjectRef)
     (responseName parentType fieldName : Name) (arguments : List Argument)
     (childSelectionSet : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-        ∧ ∃ responseFields errors,
-          Execution.executeCollectedFields schema
-            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-              objectRef)
-            variableValues fuel
-            (.object fieldDefinition.outputType.namedType objectRef)
-            (Execution.collectSubfields schema variableValues
-              fieldDefinition.outputType.namedType
-              (.object fieldDefinition.outputType.namedType objectRef)
+    (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+            ∧ ∃ responseFields errors,
+                Execution.executeCollectedFields schema
+                  (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                    objectRef)
+                  variableValues fuel
+                  (.object fieldDefinition.outputType.namedType objectRef)
+                  (Execution.collectSubfields schema variableValues
+                    fieldDefinition.outputType.namedType
+                    (.object fieldDefinition.outputType.namedType objectRef)
+                    [{
+                      parentType := parentType
+                      responseName := responseName
+                      fieldName := fieldName
+                      arguments := arguments
+                      selectionSet := childSelectionSet
+                    }])
+                = .ok (responseFields, errors))
+          ∨ (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+            = false
+          ∨ ∃ runtimeType responseFields errors,
+              (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                  schema
+                = true
+              ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+              ∧ abstractRuntimeForFieldDeep? schema parentType fieldName
+                  parentType rootSelectionSet
+                = some runtimeType
+              ∧ schema.typeIncludesObjectBool
+                  fieldDefinition.outputType.namedType runtimeType
+                = true
+              ∧ Execution.executeCollectedFields schema
+                  (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                    objectRef)
+                  variableValues fuel (.object runtimeType objectRef)
+                  (Execution.collectSubfields schema variableValues runtimeType
+                    (.object runtimeType objectRef)
+                    [{
+                      parentType := parentType
+                      responseName := responseName
+                      fieldName := fieldName
+                      arguments := arguments
+                      selectionSet := childSelectionSet
+                    }])
+                = .ok (responseFields, errors))
+      -> ∃ responseValue errors,
+          Execution.executeField schema
+              (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                objectRef)
+              variableValues
+              (fuel + leafProbeFuel fieldDefinition.outputType + 1)
+              source responseName
               [{
                 parentType := parentType
                 responseName := responseName
                 fieldName := fieldName
                 arguments := arguments
                 selectionSet := childSelectionSet
-              }])
-          =
-          .ok (responseFields, errors))
-      ∨ (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = false
-      ∨ ∃ runtimeType responseFields errors,
-          (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-            schema = true
-          ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-            false
-          ∧ abstractRuntimeForFieldDeep? schema parentType fieldName
-            parentType rootSelectionSet = some runtimeType
-          ∧ schema.typeIncludesObjectBool
-            fieldDefinition.outputType.namedType runtimeType = true
-          ∧ Execution.executeCollectedFields schema
-            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-              objectRef)
-            variableValues fuel (.object runtimeType objectRef)
-            (Execution.collectSubfields schema variableValues runtimeType
-              (.object runtimeType objectRef)
-              [{
-                parentType := parentType
-                responseName := responseName
-                fieldName := fieldName
-                arguments := arguments
-                selectionSet := childSelectionSet
-              }])
-          =
-          .ok (responseFields, errors)) ->
-      ∃ responseValue errors,
-        Execution.executeField schema
-          (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-            objectRef)
-          variableValues
-          (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-          source responseName
-          [{
-            parentType := parentType
-            responseName := responseName
-            fieldName := fieldName
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], errors)
+              }]
+            = .ok ([(responseName, responseValue)], errors)
           ∧ responseValue ≠ .null := by
   intro hlookup hkind
   have hfield :=
@@ -1680,58 +1643,55 @@ theorem executeField_deepSelectionSetSuccessWithRef_fieldDefinition_ok
       simpa [hcomplete, Execution.singleFieldResult] using hfield
 
 theorem executeField_deepSelectionSetSuccessWithRef_fieldDefinition_ok_of_child_executeSelectionSet_ok
-    {ObjectRef : Type} (schema : Schema)
-    (rootSelectionSet : List Selection) (objectRef : ObjectRef)
-    (variableValues : Execution.VariableValues) (fuel : Nat)
+    {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
+    (objectRef : ObjectRef) (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
     (responseName parentType fieldName : Name) (arguments : List Argument)
-    (childSelectionSet : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-        ∧ ∃ responseFields errors,
-          Execution.executeSelectionSet schema
-            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-              objectRef)
-            variableValues fuel fieldDefinition.outputType.namedType
-            (.object fieldDefinition.outputType.namedType objectRef)
-            childSelectionSet
-          =
-          .ok (responseFields, errors))
-      ∨ (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = false
-      ∨ ∃ runtimeType responseFields errors,
-          (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-            schema = true
-          ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-            false
-          ∧ abstractRuntimeForFieldDeep? schema parentType fieldName
-            parentType rootSelectionSet = some runtimeType
-          ∧ schema.typeIncludesObjectBool
-            fieldDefinition.outputType.namedType runtimeType = true
-          ∧ Execution.executeSelectionSet schema
-            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-              objectRef)
-            variableValues fuel runtimeType
-            (.object runtimeType objectRef) childSelectionSet
-          =
-          .ok (responseFields, errors)) ->
-      ∃ responseValue errors,
-        Execution.executeField schema
-          (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-            objectRef)
-          variableValues
-          (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-          source responseName
-          [{
-            parentType := parentType
-            responseName := responseName
-            fieldName := fieldName
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], errors)
+    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+            ∧ ∃ responseFields errors,
+                Execution.executeSelectionSet schema
+                  (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                    objectRef)
+                  variableValues fuel fieldDefinition.outputType.namedType
+                  (.object fieldDefinition.outputType.namedType objectRef)
+                  childSelectionSet
+                = .ok (responseFields, errors))
+          ∨ (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+            = false
+          ∨ ∃ runtimeType responseFields errors,
+              (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                  schema
+                = true
+              ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+              ∧ abstractRuntimeForFieldDeep? schema parentType fieldName
+                  parentType rootSelectionSet
+                = some runtimeType
+              ∧ schema.typeIncludesObjectBool
+                  fieldDefinition.outputType.namedType runtimeType
+                = true
+              ∧ Execution.executeSelectionSet schema
+                  (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                    objectRef)
+                  variableValues fuel runtimeType
+                  (.object runtimeType objectRef) childSelectionSet
+                = .ok (responseFields, errors))
+      -> ∃ responseValue errors,
+          Execution.executeField schema
+              (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                objectRef)
+              variableValues
+              (fuel + leafProbeFuel fieldDefinition.outputType + 1)
+              source responseName
+              [{
+                parentType := parentType
+                responseName := responseName
+                fieldName := fieldName
+                arguments := arguments
+                selectionSet := childSelectionSet
+              }]
+            = .ok ([(responseName, responseValue)], errors)
           ∧ responseValue ≠ .null := by
   intro hlookup hkind
   have hcollectedKind :
@@ -1807,60 +1767,57 @@ theorem executeField_deepSelectionSetSuccessWithRef_fieldDefinition_ok_of_child_
       hlookup hcollectedKind
 
 theorem executeField_deepSelectionSetSuccessWithRef_fieldDefinition_ok_of_child_executeSelectionSet_ok_fuel_ge
-    {ObjectRef : Type} (schema : Schema)
-    (rootSelectionSet : List Selection) (objectRef : ObjectRef)
-    (variableValues : Execution.VariableValues) (fuel : Nat)
+    {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
+    (objectRef : ObjectRef) (variableValues : Execution.VariableValues) (fuel : Nat)
     (source : Execution.ResolverValue ObjectRef)
     (responseName parentType fieldName : Name) (arguments : List Argument)
-    (childSelectionSet : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-    ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-        ∧ ∃ responseFields errors,
-          Execution.executeSelectionSet schema
-            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-              objectRef)
-            variableValues
-            (fuel - leafProbeFuel fieldDefinition.outputType)
-            fieldDefinition.outputType.namedType
-            (.object fieldDefinition.outputType.namedType objectRef)
-            childSelectionSet
-          =
-          .ok (responseFields, errors))
-      ∨ (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = false
-      ∨ ∃ runtimeType responseFields errors,
-          (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-            schema = true
-          ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-            false
-          ∧ abstractRuntimeForFieldDeep? schema parentType fieldName
-            parentType rootSelectionSet = some runtimeType
-          ∧ schema.typeIncludesObjectBool
-            fieldDefinition.outputType.namedType runtimeType = true
-          ∧ Execution.executeSelectionSet schema
-            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-              objectRef)
-            variableValues
-            (fuel - leafProbeFuel fieldDefinition.outputType)
-            runtimeType (.object runtimeType objectRef) childSelectionSet
-          =
-          .ok (responseFields, errors)) ->
-      ∃ responseValue errors,
-        Execution.executeField schema
-          (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-            objectRef)
-          variableValues (fuel + 1) source responseName
-          [{
-            parentType := parentType
-            responseName := responseName
-            fieldName := fieldName
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], errors)
+    (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+            ∧ ∃ responseFields errors,
+                Execution.executeSelectionSet schema
+                  (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                    objectRef)
+                  variableValues
+                  (fuel - leafProbeFuel fieldDefinition.outputType)
+                  fieldDefinition.outputType.namedType
+                  (.object fieldDefinition.outputType.namedType objectRef)
+                  childSelectionSet
+                = .ok (responseFields, errors))
+          ∨ (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+            = false
+          ∨ ∃ runtimeType responseFields errors,
+              (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                  schema
+                = true
+              ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+              ∧ abstractRuntimeForFieldDeep? schema parentType fieldName
+                  parentType rootSelectionSet
+                = some runtimeType
+              ∧ schema.typeIncludesObjectBool
+                  fieldDefinition.outputType.namedType runtimeType
+                = true
+              ∧ Execution.executeSelectionSet schema
+                  (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                    objectRef)
+                  variableValues
+                  (fuel - leafProbeFuel fieldDefinition.outputType)
+                  runtimeType (.object runtimeType objectRef) childSelectionSet
+                = .ok (responseFields, errors))
+      -> ∃ responseValue errors,
+          Execution.executeField schema
+              (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                objectRef)
+              variableValues (fuel + 1) source responseName
+              [{
+                parentType := parentType
+                responseName := responseName
+                fieldName := fieldName
+                arguments := arguments
+                selectionSet := childSelectionSet
+              }]
+            = .ok ([(responseName, responseValue)], errors)
           ∧ responseValue ≠ .null := by
   intro hlookup hfuel hkind
   rcases
@@ -1886,35 +1843,30 @@ def deepFieldSelectionSetExecutionReadyWithRef
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (parentType _responseName fieldName : Name) (_arguments : List Argument)
     (childSelectionSet : List Selection)
-    (fieldDefinition : FieldDefinition) : Prop :=
+    (fieldDefinition : FieldDefinition)
+    : Prop :=
   (objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-      ∧ ∃ responseFields errors,
+    ∧ ∃ responseFields errors,
         Execution.executeSelectionSet schema
-          (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-            objectRef)
+          (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet objectRef)
           variableValues fuel fieldDefinition.outputType.namedType
           (.object fieldDefinition.outputType.namedType objectRef)
           childSelectionSet
-        =
-        .ok (responseFields, errors))
-    ∨ (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-        schema = false
-    ∨ ∃ runtimeType responseFields errors,
-        (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = true
-        ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-          false
-        ∧ abstractRuntimeForFieldDeep? schema parentType fieldName
-          parentType rootSelectionSet = some runtimeType
-        ∧ schema.typeIncludesObjectBool
-          fieldDefinition.outputType.namedType runtimeType = true
-        ∧ Execution.executeSelectionSet schema
-          (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-            objectRef)
+        = .ok (responseFields, errors))
+  ∨ (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema = false
+  ∨ ∃ runtimeType responseFields errors,
+      (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema = true
+      ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+      ∧ abstractRuntimeForFieldDeep? schema parentType fieldName
+          parentType rootSelectionSet
+        = some runtimeType
+      ∧ schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+        = true
+      ∧ Execution.executeSelectionSet schema
+          (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet objectRef)
           variableValues fuel runtimeType
           (.object runtimeType objectRef) childSelectionSet
-        =
-        .ok (responseFields, errors)
+        = .ok (responseFields, errors)
 
 theorem executeField_deepSelectionSetSuccessWithRef_fieldDefinition_ok_of_ready_fuel_ge
     {ObjectRef : Type} (schema : Schema)
@@ -1923,28 +1875,27 @@ theorem executeField_deepSelectionSetSuccessWithRef_fieldDefinition_ok_of_ready_
     (source : Execution.ResolverValue ObjectRef)
     (responseName parentType fieldName : Name) (arguments : List Argument)
     (childSelectionSet : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-    deepFieldSelectionSetExecutionReadyWithRef schema rootSelectionSet
-      objectRef variableValues
-      (fuel - leafProbeFuel fieldDefinition.outputType)
-      parentType responseName fieldName arguments childSelectionSet
-      fieldDefinition ->
-      ∃ responseValue errors,
-        Execution.executeField schema
-          (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-            objectRef)
-          variableValues (fuel + 1) source responseName
-          [{
-            parentType := parentType
-            responseName := responseName
-            fieldName := fieldName
-            arguments := arguments
-            selectionSet := childSelectionSet
-          }]
-        =
-        .ok ([(responseName, responseValue)], errors)
+    (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> deepFieldSelectionSetExecutionReadyWithRef schema rootSelectionSet
+          objectRef variableValues
+          (fuel - leafProbeFuel fieldDefinition.outputType)
+          parentType responseName fieldName arguments childSelectionSet
+          fieldDefinition
+      -> ∃ responseValue errors,
+          Execution.executeField schema
+              (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                objectRef)
+              variableValues (fuel + 1) source responseName
+              [{
+                parentType := parentType
+                responseName := responseName
+                fieldName := fieldName
+                arguments := arguments
+                selectionSet := childSelectionSet
+              }]
+            = .ok ([(responseName, responseValue)], errors)
           ∧ responseValue ≠ .null := by
   intro hlookup hfuel hready
   exact
@@ -1960,34 +1911,34 @@ theorem executeSelectionSet_deepSelectionSetSuccessWithRef_deepFieldReady
     (rootSelectionSet : List Selection) (objectRef : ObjectRef)
     (variableValues : Execution.VariableValues)
     (fuel : Nat) (parentType : Name)
-    (source : Execution.ResolverValue ObjectRef) :
-    ∀ selectionSet,
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetNormal schema parentType selectionSet ->
-      objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType ref,
-        source = Execution.ResolverValue.object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-      (∀ responseName fieldName arguments directives childSelectionSet,
-        Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-          ∃ fieldDefinition,
-            schema.lookupField parentType fieldName = some fieldDefinition
-              ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
-              ∧ deepFieldSelectionSetExecutionReadyWithRef schema
-                rootSelectionSet objectRef variableValues
-                (fuel - leafProbeFuel fieldDefinition.outputType)
-                parentType responseName fieldName arguments childSelectionSet
-                fieldDefinition) ->
-        ∃ responseFields errors,
-          Execution.executeSelectionSet schema
-            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-              objectRef)
-            variableValues (fuel + 1) parentType source selectionSet
-            =
-          .ok (responseFields, errors)
-            ∧ responseFields.map Prod.fst =
-              selectionSet.filterMap Selection.responseName?
+    (source : Execution.ResolverValue ObjectRef)
+    : ∀ selectionSet,
+        selectionSetDirectiveFree selectionSet
+        -> selectionSetNormal schema parentType selectionSet
+        -> objectTypeNameBool schema parentType = true
+        -> (∃ runtimeType ref,
+              source = Execution.ResolverValue.object runtimeType ref
+              ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+        -> (∀ responseName fieldName arguments directives childSelectionSet,
+              Selection.field responseName fieldName arguments directives
+                  childSelectionSet
+                ∈ selectionSet
+              -> ∃ fieldDefinition,
+                  schema.lookupField parentType fieldName = some fieldDefinition
+                  ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
+                  ∧ deepFieldSelectionSetExecutionReadyWithRef schema
+                      rootSelectionSet objectRef variableValues
+                      (fuel - leafProbeFuel fieldDefinition.outputType)
+                      parentType responseName fieldName arguments childSelectionSet
+                      fieldDefinition)
+        -> ∃ responseFields errors,
+            Execution.executeSelectionSet schema
+                (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                  objectRef)
+                variableValues (fuel + 1) parentType source selectionSet
+              = .ok (responseFields, errors)
+            ∧ responseFields.map Prod.fst
+              = selectionSet.filterMap Selection.responseName?
   | [], _hfree, _hnormal, _hobject, _hsource, _hready => by
       refine ⟨[], 0, ?_, ?_⟩
       · simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
@@ -2072,12 +2023,12 @@ theorem deepFieldSelectionSetExecutionReadyWithRef_leaf
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (parentType responseName fieldName : Name) (arguments : List Argument)
     (childSelectionSet : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = false ->
-      deepFieldSelectionSetExecutionReadyWithRef schema rootSelectionSet
-        objectRef variableValues fuel parentType responseName fieldName
-        arguments childSelectionSet fieldDefinition := by
+    (fieldDefinition : FieldDefinition)
+    : (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+        = false
+      -> deepFieldSelectionSetExecutionReadyWithRef schema rootSelectionSet
+          objectRef variableValues fuel parentType responseName fieldName
+          arguments childSelectionSet fieldDefinition := by
   intro hleaf
   exact Or.inr (Or.inl hleaf)
 
@@ -2087,28 +2038,29 @@ theorem deepFieldSelectionSetExecutionReadyWithRef_object_of_child_deepFieldRead
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (parentType responseName fieldName : Name) (arguments : List Argument)
     (childSelectionSet : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    objectTypeNameBool schema fieldDefinition.outputType.namedType = true ->
-    selectionSetDirectiveFree childSelectionSet ->
-    selectionSetNormal schema fieldDefinition.outputType.namedType
-      childSelectionSet ->
-    (∀ childResponseName childFieldName childArguments childDirectives
-        grandChildSelectionSet,
-      Selection.field childResponseName childFieldName childArguments
-        childDirectives grandChildSelectionSet ∈ childSelectionSet ->
-        ∃ childFieldDefinition,
-          schema.lookupField fieldDefinition.outputType.namedType
-            childFieldName = some childFieldDefinition
-            ∧ leafProbeFuel childFieldDefinition.outputType ≤ fuel
-            ∧ deepFieldSelectionSetExecutionReadyWithRef schema
-              rootSelectionSet objectRef variableValues
-              (fuel - leafProbeFuel childFieldDefinition.outputType)
-              fieldDefinition.outputType.namedType childResponseName
-              childFieldName childArguments grandChildSelectionSet
-              childFieldDefinition) ->
-      deepFieldSelectionSetExecutionReadyWithRef schema rootSelectionSet
-        objectRef variableValues (fuel + 1) parentType responseName fieldName
-        arguments childSelectionSet fieldDefinition := by
+    (fieldDefinition : FieldDefinition)
+    : objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+      -> selectionSetDirectiveFree childSelectionSet
+      -> selectionSetNormal schema fieldDefinition.outputType.namedType
+          childSelectionSet
+      -> (∀ childResponseName childFieldName childArguments childDirectives
+              grandChildSelectionSet,
+            Selection.field childResponseName childFieldName childArguments
+                childDirectives grandChildSelectionSet
+              ∈ childSelectionSet
+            -> ∃ childFieldDefinition,
+                schema.lookupField fieldDefinition.outputType.namedType childFieldName
+                  = some childFieldDefinition
+                ∧ leafProbeFuel childFieldDefinition.outputType ≤ fuel
+                ∧ deepFieldSelectionSetExecutionReadyWithRef schema
+                    rootSelectionSet objectRef variableValues
+                    (fuel - leafProbeFuel childFieldDefinition.outputType)
+                    fieldDefinition.outputType.namedType childResponseName
+                    childFieldName childArguments grandChildSelectionSet
+                    childFieldDefinition)
+      -> deepFieldSelectionSetExecutionReadyWithRef schema rootSelectionSet
+          objectRef variableValues (fuel + 1) parentType responseName fieldName
+          arguments childSelectionSet fieldDefinition := by
   intro hobject hchildFree hchildNormal hchildReady
   have hsource :
       ∃ runtimeType ref,
@@ -2140,24 +2092,22 @@ theorem deepFieldSelectionSetExecutionReadyWithRef_abstract_of_execute
     (arguments : List Argument) (childSelectionSet : List Selection)
     (fieldDefinition : FieldDefinition)
     (responseFields : List (Name × Execution.ResponseValue))
-    (errors : Nat) :
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    objectTypeNameBool schema fieldDefinition.outputType.namedType = false ->
-    abstractRuntimeForFieldDeep? schema parentType fieldName parentType
-      rootSelectionSet = some runtimeType ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-    Execution.executeSelectionSet schema
-      (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-        objectRef)
-      variableValues fuel runtimeType (.object runtimeType objectRef)
-      childSelectionSet
-      =
-      .ok (responseFields, errors) ->
-      deepFieldSelectionSetExecutionReadyWithRef schema rootSelectionSet
-        objectRef variableValues fuel parentType responseName fieldName
-        arguments childSelectionSet fieldDefinition := by
+    (errors : Nat)
+    : (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema = true
+      -> objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+      -> abstractRuntimeForFieldDeep? schema parentType fieldName parentType
+            rootSelectionSet
+          = some runtimeType
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> Execution.executeSelectionSet schema
+            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet objectRef)
+            variableValues fuel runtimeType (.object runtimeType objectRef)
+            childSelectionSet
+          = .ok (responseFields, errors)
+      -> deepFieldSelectionSetExecutionReadyWithRef schema rootSelectionSet
+          objectRef variableValues fuel parentType responseName fieldName
+          arguments childSelectionSet fieldDefinition := by
   intro hcomposite hnonObject hruntime hinclude hexecute
   exact
     Or.inr
@@ -2171,22 +2121,21 @@ theorem deepFieldSelectionSetExecutionReadyWithRef_composite_execute
     {variableValues : Execution.VariableValues} {fuel : Nat}
     {parentType responseName fieldName : Name}
     {arguments : List Argument} {childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    deepFieldSelectionSetExecutionReadyWithRef schema rootSelectionSet
-      objectRef variableValues fuel parentType responseName fieldName
-      arguments childSelectionSet fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-      ∃ runtimeType responseFields errors,
-        schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-          runtimeType = true
+    {fieldDefinition : FieldDefinition}
+    : deepFieldSelectionSetExecutionReadyWithRef schema rootSelectionSet
+        objectRef variableValues fuel parentType responseName fieldName
+        arguments childSelectionSet fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> ∃ runtimeType responseFields errors,
+          schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+            = true
           ∧ Execution.executeSelectionSet schema
-            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-              objectRef)
-            variableValues fuel runtimeType
-            (.object runtimeType objectRef) childSelectionSet
-            =
-            .ok (responseFields, errors) := by
+              (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                objectRef)
+              variableValues fuel runtimeType
+              (.object runtimeType objectRef) childSelectionSet
+            = .ok (responseFields, errors) := by
   intro hready hcomposite
   rcases hready with hobject | hleafOrAbstract
   · rcases hobject with ⟨hobject, responseFields, errors, hexecute⟩
@@ -2219,12 +2168,11 @@ theorem schemaLeafProbeResolvers_resolve_lookup
     {ObjectRef : Type} (schema : Schema) (value : String)
     (parentType fieldName : Name) (arguments : List Argument)
     (source : Execution.ResolverValue ObjectRef)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      (schemaLeafProbeResolvers schema value).resolve parentType fieldName
-        arguments source
-        =
-      some (leafProbeResolverValue fieldDefinition.outputType value) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> (schemaLeafProbeResolvers schema value).resolve parentType fieldName
+            arguments source
+          = some (leafProbeResolverValue fieldDefinition.outputType value) := by
   intro hlookup
   simp [schemaLeafProbeResolvers, hlookup]
 
@@ -2247,24 +2195,22 @@ noncomputable def argumentClassLeafProbeValue
 
 theorem argumentClassLeafProbeValue_target_equivalent
     (targetParent targetField : Name) (targetArguments arguments : List Argument)
-    (matched missed fallback : String) :
-    Argument.argumentsEquivalent arguments targetArguments ->
-      argumentClassLeafProbeValue targetParent targetField targetArguments
-        matched missed fallback targetParent targetField arguments
-      =
-      matched := by
+    (matched missed fallback : String)
+    : Argument.argumentsEquivalent arguments targetArguments
+      -> argumentClassLeafProbeValue targetParent targetField targetArguments
+            matched missed fallback targetParent targetField arguments
+          = matched := by
   intro harguments
   classical
   simp [argumentClassLeafProbeValue, harguments]
 
 theorem argumentClassLeafProbeValue_target_not_equivalent
     (targetParent targetField : Name) (targetArguments arguments : List Argument)
-    (matched missed fallback : String) :
-    ¬ Argument.argumentsEquivalent arguments targetArguments ->
-      argumentClassLeafProbeValue targetParent targetField targetArguments
-        matched missed fallback targetParent targetField arguments
-      =
-      missed := by
+    (matched missed fallback : String)
+    : ¬ Argument.argumentsEquivalent arguments targetArguments
+      -> argumentClassLeafProbeValue targetParent targetField targetArguments
+            matched missed fallback targetParent targetField arguments
+          = missed := by
   intro harguments
   classical
   simp [argumentClassLeafProbeValue, harguments]
@@ -2272,12 +2218,11 @@ theorem argumentClassLeafProbeValue_target_not_equivalent
 theorem argumentClassLeafProbeValue_other_field
     (targetParent targetField fieldName : Name)
     (targetArguments arguments : List Argument)
-    (matched missed fallback : String) :
-    (fieldName == targetField) = false ->
-      argumentClassLeafProbeValue targetParent targetField targetArguments
-        matched missed fallback targetParent fieldName arguments
-      =
-      fallback := by
+    (matched missed fallback : String)
+    : (fieldName == targetField) = false
+      -> argumentClassLeafProbeValue targetParent targetField targetArguments
+            matched missed fallback targetParent fieldName arguments
+          = fallback := by
   intro hfield
   classical
   have hfieldNe : fieldName ≠ targetField := by
@@ -2341,17 +2286,16 @@ theorem schemaArgumentClassLeafProbeResolvers_resolve_lookup
     (targetArguments : List Argument) (matched missed fallback : String)
     (parentType fieldName : Name) (arguments : List Argument)
     (source : Execution.ResolverValue ObjectRef)
-    (fieldDefinition : FieldDefinition) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      (schemaArgumentClassLeafProbeResolvers schema targetParent targetField
-          targetArguments matched missed fallback).resolve parentType fieldName
-        arguments source
-        =
-      some
-        (leafProbeResolverValue fieldDefinition.outputType
-          (argumentClassLeafProbeValue targetParent targetField
-            targetArguments matched missed fallback parentType fieldName
-            arguments)) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> (schemaArgumentClassLeafProbeResolvers schema targetParent targetField
+            targetArguments matched missed fallback).resolve
+            parentType fieldName arguments source
+          = some
+              (leafProbeResolverValue fieldDefinition.outputType
+                (argumentClassLeafProbeValue targetParent targetField
+                  targetArguments matched missed fallback parentType fieldName
+                  arguments)) := by
   intro hlookup
   simp [schemaArgumentClassLeafProbeResolvers, hlookup]
 
@@ -2362,25 +2306,29 @@ theorem executeField_leafProbe_singleton_of_resolve_fuel_ge
     (source : Execution.ResolverValue ObjectRef)
     (responseName parentType fieldName : Name) (arguments : List Argument)
     (selectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (value : String) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    resolvers.resolve parentType fieldName arguments source =
-      some (leafProbeResolverValue fieldDefinition.outputType value) ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = false ->
-    Execution.executeField schema resolvers variableValues (fuel + 1) source
-      responseName
-      [{
-        parentType := parentType
-        responseName := responseName
-        fieldName := fieldName
-        arguments := arguments
-        selectionSet := selectionSet
-      }]
-    =
-    .ok ([(responseName,
-      leafProbeResponseValue fieldDefinition.outputType value)], 0) := by
+    (value : String)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> resolvers.resolve parentType fieldName arguments source
+          = some (leafProbeResolverValue fieldDefinition.outputType value)
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> Execution.executeField schema resolvers variableValues (fuel + 1) source
+            responseName
+            [{
+              parentType := parentType
+              responseName := responseName
+              fieldName := fieldName
+              arguments := arguments
+              selectionSet := selectionSet
+            }]
+          = .ok
+              (
+                [(
+                  responseName, leafProbeResponseValue fieldDefinition.outputType value
+                )],
+                0
+              ) := by
   intro hlookup hresolve hfuel hleaf
   have hcomplete :
       Execution.completeValue schema resolvers variableValues fuel
@@ -2415,24 +2363,28 @@ theorem executeField_schemaLeafProbe_singleton_of_fuel_ge
     (source : Execution.ResolverValue ObjectRef)
     (responseName parentType fieldName : Name) (arguments : List Argument)
     (selectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (value : String) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = false ->
-      Execution.executeField schema
-        (schemaLeafProbeResolvers (ObjectRef := ObjectRef) schema value)
-        variableValues (fuel + 1) source responseName
-        [{
-          parentType := parentType
-          responseName := responseName
-          fieldName := fieldName
-          arguments := arguments
-          selectionSet := selectionSet
-        }]
-      =
-      .ok ([(responseName,
-        leafProbeResponseValue fieldDefinition.outputType value)], 0) := by
+    (value : String)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> Execution.executeField schema
+            (schemaLeafProbeResolvers (ObjectRef := ObjectRef) schema value)
+            variableValues (fuel + 1) source responseName
+            [{
+              parentType := parentType
+              responseName := responseName
+              fieldName := fieldName
+              arguments := arguments
+              selectionSet := selectionSet
+            }]
+          = .ok
+              (
+                [(
+                  responseName, leafProbeResponseValue fieldDefinition.outputType value
+                )],
+                0
+              ) := by
   intro hlookup hfuel hleaf
   have hresolve :
       (schemaLeafProbeResolvers (ObjectRef := ObjectRef) schema value).resolve
@@ -2457,31 +2409,37 @@ theorem executeField_named_object_of_resolve
     (definitionName returnType : Name)
     (definitionArguments : List InputValueDefinition)
     (runtimeType : Name) (ref : ObjectRef)
-    (childSelectionSet : List Selection) :
-    schema.lookupField parentType fieldName =
-      some
-        { name := definitionName
-          outputType := .named returnType
-          arguments := definitionArguments } ->
-    schema.typeIncludesObjectBool returnType runtimeType = true ->
-    resolvers.resolve parentType fieldName arguments source =
-      some (.object runtimeType ref) ->
-      Execution.executeField schema resolvers variableValues (fuel + 2)
-        source responseName
-        [{
-          parentType := parentType,
-          responseName := responseName,
-          fieldName := fieldName,
-          arguments := arguments,
-          selectionSet := childSelectionSet
-        }]
-      =
-      .ok
-        ([(responseName,
-          (Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-            runtimeType (.object runtimeType ref) childSelectionSet).data)],
-          (Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-            runtimeType (.object runtimeType ref) childSelectionSet).errors) := by
+    (childSelectionSet : List Selection)
+    : schema.lookupField parentType fieldName
+        = some
+            {
+              name := definitionName
+              outputType := .named returnType
+              arguments := definitionArguments
+            }
+      -> schema.typeIncludesObjectBool returnType runtimeType = true
+      -> resolvers.resolve parentType fieldName arguments source
+          = some (.object runtimeType ref)
+      -> Execution.executeField schema resolvers variableValues (fuel + 2)
+            source responseName
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := childSelectionSet
+            }]
+          = .ok
+              (
+                [(
+                  responseName,
+                  (Execution.executeSelectionSetAsResponse schema resolvers
+                    variableValues fuel runtimeType (.object runtimeType ref)
+                    childSelectionSet).data
+                )],
+                (Execution.executeSelectionSetAsResponse schema resolvers variableValues
+                  fuel runtimeType (.object runtimeType ref) childSelectionSet).errors
+              ) := by
   intro hlookup hinclude hresolve
   cases hchild :
       Execution.executeCollectedFields schema resolvers variableValues fuel
@@ -2514,27 +2472,33 @@ theorem executeSelectionSetAsResponse_singleton_named_object_of_resolve
     (definitionArguments : List InputValueDefinition)
     (runtimeType : Name) (ref : ObjectRef)
     (source : Execution.ResolverValue ObjectRef)
-    (childSelectionSet : List Selection) :
-    schema.lookupField parentType fieldName =
-      some
-        { name := definitionName
-          outputType := .named returnType
-          arguments := definitionArguments } ->
-    schema.typeIncludesObjectBool returnType runtimeType = true ->
-    resolvers.resolve parentType fieldName arguments source =
-      some (.object runtimeType ref) ->
-      Execution.executeSelectionSetAsResponse schema resolvers variableValues
-        (fuel + 2) parentType source
-        [Selection.field responseName fieldName arguments []
-          childSelectionSet]
-      =
-      { data := .object
-          [(responseName,
-            (Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-              runtimeType (.object runtimeType ref) childSelectionSet).data)]
-        errors :=
-          (Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-            runtimeType (.object runtimeType ref) childSelectionSet).errors } := by
+    (childSelectionSet : List Selection)
+    : schema.lookupField parentType fieldName
+        = some
+            {
+              name := definitionName
+              outputType := .named returnType
+              arguments := definitionArguments
+            }
+      -> schema.typeIncludesObjectBool returnType runtimeType = true
+      -> resolvers.resolve parentType fieldName arguments source
+          = some (.object runtimeType ref)
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues
+            (fuel + 2) parentType source
+            [Selection.field responseName fieldName arguments [] childSelectionSet]
+          = {
+              data :=
+                .object
+                  [(
+                    responseName,
+                    (Execution.executeSelectionSetAsResponse schema resolvers
+                      variableValues fuel runtimeType (.object runtimeType ref)
+                      childSelectionSet).data
+                  )]
+              errors :=
+                (Execution.executeSelectionSetAsResponse schema resolvers variableValues
+                  fuel runtimeType (.object runtimeType ref) childSelectionSet).errors
+            } := by
   intro hlookup hinclude hresolve
   have hfield :
       Execution.executeField schema resolvers variableValues (fuel + 2)
@@ -2593,18 +2557,17 @@ decreasing_by
       simp [SelectionSet.size, Selection.size]
       omega
 
-theorem selectionSetDeepProbeFuel_field_mem
-    (schema : Schema) (parentType : Name) :
-    ∀ selectionSet responseName fieldName arguments directives childSelectionSet
-      fieldDefinition,
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-        leafProbeFuel fieldDefinition.outputType
-          + selectionSetDeepProbeFuel schema
-            fieldDefinition.outputType.namedType childSelectionSet
-          + 1
-          ≤ selectionSetDeepProbeFuel schema parentType selectionSet
+theorem selectionSetDeepProbeFuel_field_mem (schema : Schema) (parentType : Name)
+    : ∀ selectionSet responseName fieldName arguments directives childSelectionSet
+          fieldDefinition,
+        Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+        -> schema.lookupField parentType fieldName = some fieldDefinition
+        -> leafProbeFuel fieldDefinition.outputType
+              + selectionSetDeepProbeFuel schema
+                  fieldDefinition.outputType.namedType childSelectionSet
+              + 1
+            ≤ selectionSetDeepProbeFuel schema parentType selectionSet
   | [], _responseName, _fieldName, _arguments, _directives,
       _childSelectionSet, _fieldDefinition, hmem, _hlookup => by
       simp at hmem
@@ -2668,12 +2631,12 @@ theorem selectionSetDeepProbeFuel_field_mem
             exact Nat.le_trans htailFuel (Nat.le_max_right _ _)
 
 theorem selectionSetDeepProbeFuel_inlineFragment_some_mem
-    (schema : Schema) (parentType : Name) :
-    ∀ selectionSet typeCondition directives childSelectionSet,
-      Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ selectionSet ->
-        selectionSetDeepProbeFuel schema typeCondition childSelectionSet
-          ≤ selectionSetDeepProbeFuel schema parentType selectionSet
+    (schema : Schema) (parentType : Name)
+    : ∀ selectionSet typeCondition directives childSelectionSet,
+        Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet
+        -> selectionSetDeepProbeFuel schema typeCondition childSelectionSet
+            ≤ selectionSetDeepProbeFuel schema parentType selectionSet
   | [], _typeCondition, _directives, _childSelectionSet, hmem => by
       simp at hmem
   | Selection.field headResponseName headFieldName headArguments headDirectives
@@ -2727,10 +2690,8 @@ theorem selectionSetDeepProbeFuel_inlineFragment_some_mem
             simp [selectionSetDeepProbeFuel]
             exact Nat.le_trans htailFuel (Nat.le_max_right _ _)
 
-theorem selectionSetDeepProbeFuel_pos
-    (schema : Schema) (parentType : Name) :
-    ∀ selectionSet,
-      0 < selectionSetDeepProbeFuel schema parentType selectionSet
+theorem selectionSetDeepProbeFuel_pos (schema : Schema) (parentType : Name)
+    : ∀ selectionSet, 0 < selectionSetDeepProbeFuel schema parentType selectionSet
   | [] => by
       simp [selectionSetDeepProbeFuel]
   | Selection.field _responseName fieldName _arguments _directives
@@ -2753,46 +2714,44 @@ theorem selectionSetDeepProbeFuel_pos
       simp [selectionSetDeepProbeFuel]
       exact Nat.lt_of_lt_of_le hrest (Nat.le_max_right _ _)
 
-def wrapTypeRefSingletonResponse :
-    TypeRef -> Execution.ResponseValue -> Execution.ResponseValue
+def wrapTypeRefSingletonResponse
+    : TypeRef -> Execution.ResponseValue -> Execution.ResponseValue
   | .named _typeName, response => response
   | .list inner, response =>
       .list [wrapTypeRefSingletonResponse inner response]
   | .nonNull inner, response =>
       wrapTypeRefSingletonResponse inner response
 
-def wrapTypeRefSelectionSetResult :
-    TypeRef -> Execution.Response -> Execution.Result Execution.ResponseValue
+def wrapTypeRefSelectionSetResult
+    : TypeRef -> Execution.Response -> Execution.Result Execution.ResponseValue
   | .named _typeName, response => .ok (response.data, response.errors)
   | .list inner, response =>
       match wrapTypeRefSelectionSetResult inner response with
       | .ok (value, errors) => .ok (.list [value], errors)
       | .error errors => .ok (.null, errors)
   | .nonNull inner, response =>
-      Execution.nonNullCompletion
-        (wrapTypeRefSelectionSetResult inner response)
+      Execution.nonNullCompletion (wrapTypeRefSelectionSetResult inner response)
 
 def wrapTypeRefSelectionSetResponse
     (responseName : Name) (outputType : TypeRef)
-    (response : Execution.Response) : Execution.Response :=
+    (response : Execution.Response)
+    : Execution.Response :=
   Execution.selectionSetResultToResponse
     (Execution.singleFieldResult responseName
       (wrapTypeRefSelectionSetResult outputType response))
 
 def wrapTypeRefSelectionSetDataValue
-    (outputType : TypeRef) (response : Execution.Response) :
-    Execution.ResponseValue :=
-  Execution.Result.getD .null
-    (wrapTypeRefSelectionSetResult outputType response)
+    (outputType : TypeRef) (response : Execution.Response)
+    : Execution.ResponseValue :=
+  Execution.Result.getD .null (wrapTypeRefSelectionSetResult outputType response)
 
-theorem wrapTypeRefSelectionSetResult_ok_nonNull_of_object_response :
-    ∀ outputType fields errors,
-      ∃ value wrappedErrors,
-        wrapTypeRefSelectionSetResult outputType
-            ({ data := Execution.ResponseValue.object fields, errors := errors } :
-              Execution.Response)
-          =
-          .ok (value, wrappedErrors)
+theorem wrapTypeRefSelectionSetResult_ok_nonNull_of_object_response
+    : ∀ outputType fields errors,
+        ∃ value wrappedErrors,
+          wrapTypeRefSelectionSetResult outputType
+              ({ data := Execution.ResponseValue.object fields, errors := errors }
+                : Execution.Response)
+            = .ok (value, wrappedErrors)
           ∧ value ≠ Execution.ResponseValue.null
   | .named _typeName, fields, errors => by
       exact ⟨Execution.ResponseValue.object fields, errors, rfl,
@@ -2817,19 +2776,18 @@ theorem wrapTypeRefSelectionSetResult_ok_nonNull_of_object_response :
           Execution.nonNullCompletion] at hinnerNonNull ⊢
 
 theorem leafProbeResponseValue_not_semanticEquivalent_wrapped_object_of_composite
-    (schema : Schema) :
-    ∀ (leftType rightType : TypeRef) (value : String)
-      (rightValue : Execution.ResponseValue) (rightErrors : Nat)
-      (fields : List (Name × Execution.ResponseValue)) (errors : Nat),
-      (TypeRef.named leftType.namedType).isCompositeBool schema = false ->
-      (TypeRef.named rightType.namedType).isCompositeBool schema = true ->
-      wrapTypeRefSelectionSetResult rightType
-          ({ data := Execution.ResponseValue.object fields, errors := errors } :
-            Execution.Response)
-        =
-        .ok (rightValue, rightErrors) ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (leafProbeResponseValue leftType value) rightValue
+    (schema : Schema)
+    : ∀ (leftType rightType : TypeRef) (value : String)
+          (rightValue : Execution.ResponseValue) (rightErrors : Nat)
+          (fields : List (Name × Execution.ResponseValue)) (errors : Nat),
+        (TypeRef.named leftType.namedType).isCompositeBool schema = false
+        -> (TypeRef.named rightType.namedType).isCompositeBool schema = true
+        -> wrapTypeRefSelectionSetResult rightType
+              ({ data := Execution.ResponseValue.object fields, errors := errors }
+                : Execution.Response)
+            = .ok (rightValue, rightErrors)
+        -> ¬ Execution.ResponseValue.semanticEquivalent
+              (leafProbeResponseValue leftType value) rightValue
   | .named _leftName, .named _rightName, value, rightValue, rightErrors,
       fields, errors, _hleftLeaf, _hrightComposite, hwrapped => by
       intro hsemantic
@@ -2974,8 +2932,8 @@ decreasing_by
     try omega
 
 def objectProbeResolverValueWithRuntime {ObjectRef : Type}
-    (runtimeType : Name) (ref : ObjectRef) :
-    TypeRef -> Execution.ResolverValue ObjectRef
+    (runtimeType : Name) (ref : ObjectRef)
+    : TypeRef -> Execution.ResolverValue ObjectRef
   | .named _typeName => .object runtimeType ref
   | .list inner =>
       .list [objectProbeResolverValueWithRuntime runtimeType ref inner]
@@ -2983,11 +2941,10 @@ def objectProbeResolverValueWithRuntime {ObjectRef : Type}
       objectProbeResolverValueWithRuntime runtimeType ref inner
 
 theorem selectionSetResultToResponse_combine_append_nil
-    (result : Execution.Result (List (Name × Execution.ResponseValue))) :
-    Execution.selectionSetResultToResponse
-      (Execution.Result.combine List.append result (.ok ([], 0)))
-    =
-    Execution.selectionSetResultToResponse result := by
+    (result : Execution.Result (List (Name × Execution.ResponseValue)))
+    : Execution.selectionSetResultToResponse
+        (Execution.Result.combine List.append result (.ok ([], 0)))
+      = Execution.selectionSetResultToResponse result := by
   cases result with
   | error errors =>
       simp [Execution.selectionSetResultToResponse, Execution.Result.combine]
@@ -2996,9 +2953,9 @@ theorem selectionSetResultToResponse_combine_append_nil
       simp [Execution.selectionSetResultToResponse, Execution.Result.combine]
 
 theorem wrapTypeRefSelectionSetDataValue_nonNull
-    (inner : TypeRef) (response : Execution.Response) :
-    wrapTypeRefSelectionSetDataValue (.nonNull inner) response =
-      wrapTypeRefSelectionSetDataValue inner response := by
+    (inner : TypeRef) (response : Execution.Response)
+    : wrapTypeRefSelectionSetDataValue (.nonNull inner) response
+      = wrapTypeRefSelectionSetDataValue inner response := by
   cases hwrapped : wrapTypeRefSelectionSetResult inner response with
   | error errors =>
       simp [wrapTypeRefSelectionSetDataValue, wrapTypeRefSelectionSetResult,
@@ -3009,19 +2966,18 @@ theorem wrapTypeRefSelectionSetDataValue_nonNull
         simp [wrapTypeRefSelectionSetDataValue, wrapTypeRefSelectionSetResult,
           Execution.nonNullCompletion, Execution.Result.getD, hwrapped]
 
-theorem semanticEquivalent_singleton_list_data
-    {left right : Execution.ResponseValue} :
-    Execution.ResponseValue.semanticEquivalent (.list [left]) (.list [right]) ->
-      Execution.ResponseValue.semanticEquivalent left right := by
+theorem semanticEquivalent_singleton_list_data {left right : Execution.ResponseValue}
+    : Execution.ResponseValue.semanticEquivalent (.list [left]) (.list [right])
+      -> Execution.ResponseValue.semanticEquivalent left right := by
   intro hsemantic
   simpa [Execution.ResponseValue.semanticEquivalent,
     Execution.ResponseValue.canonical,
     Execution.ResponseValue.canonicalList] using hsemantic
 
-theorem wrapTypeRefSingletonResponse_object_ne_null :
-    ∀ outputType fields,
-      wrapTypeRefSingletonResponse outputType
-        (Execution.ResponseValue.object fields) ≠ Execution.ResponseValue.null
+theorem wrapTypeRefSingletonResponse_object_ne_null
+    : ∀ outputType fields,
+        wrapTypeRefSingletonResponse outputType (Execution.ResponseValue.object fields)
+        ≠ Execution.ResponseValue.null
   | .named _typeName, fields => by
       simp [wrapTypeRefSingletonResponse]
   | .list inner, fields => by
@@ -3030,15 +2986,17 @@ theorem wrapTypeRefSingletonResponse_object_ne_null :
       simpa [wrapTypeRefSingletonResponse] using
         wrapTypeRefSingletonResponse_object_ne_null inner fields
 
-theorem wrapTypeRefSelectionSetResult_object_response :
-    ∀ outputType fields errors,
-      wrapTypeRefSelectionSetResult outputType
-          ({ data := Execution.ResponseValue.object fields, errors := errors } :
-            Execution.Response)
-        =
-        .ok
-          (wrapTypeRefSingletonResponse outputType
-            (Execution.ResponseValue.object fields), errors)
+theorem wrapTypeRefSelectionSetResult_object_response
+    : ∀ outputType fields errors,
+        wrapTypeRefSelectionSetResult outputType
+          ({ data := Execution.ResponseValue.object fields, errors := errors }
+            : Execution.Response)
+        = .ok
+            (
+              wrapTypeRefSingletonResponse outputType
+                (Execution.ResponseValue.object fields),
+              errors
+            )
   | .named _typeName, fields, errors => by
       simp [wrapTypeRefSelectionSetResult, wrapTypeRefSingletonResponse]
   | .list inner, fields, errors => by
@@ -3057,16 +3015,16 @@ theorem wrapTypeRefSelectionSetResult_object_response :
           wrapTypeRefSingletonResponse, Execution.nonNullCompletion,
           hvalue] at hnonNull ⊢
 
-theorem wrapTypeRefSingletonResponse_object_semanticEquivalent_injective :
-    ∀ leftType rightType leftFields rightFields,
-      Execution.ResponseValue.semanticEquivalent
-        (wrapTypeRefSingletonResponse leftType
-          (Execution.ResponseValue.object leftFields))
-        (wrapTypeRefSingletonResponse rightType
-          (Execution.ResponseValue.object rightFields)) ->
+theorem wrapTypeRefSingletonResponse_object_semanticEquivalent_injective
+    : ∀ leftType rightType leftFields rightFields,
         Execution.ResponseValue.semanticEquivalent
-          (Execution.ResponseValue.object leftFields)
-          (Execution.ResponseValue.object rightFields)
+          (wrapTypeRefSingletonResponse leftType
+            (Execution.ResponseValue.object leftFields))
+          (wrapTypeRefSingletonResponse rightType
+            (Execution.ResponseValue.object rightFields))
+        -> Execution.ResponseValue.semanticEquivalent
+            (Execution.ResponseValue.object leftFields)
+            (Execution.ResponseValue.object rightFields)
   | .named _leftName, .named _rightName, leftFields, rightFields,
       hsemantic => by
       simpa [wrapTypeRefSingletonResponse] using hsemantic
@@ -3123,21 +3081,22 @@ theorem wrapped_object_values_not_semanticEquivalent_of_child
     {leftValue rightValue : Execution.ResponseValue}
     {leftFieldErrors rightFieldErrors : Nat}
     {leftFields rightFields : List (Name × Execution.ResponseValue)}
-    {leftErrors rightErrors : Nat} :
-    wrapTypeRefSelectionSetResult leftType
-        ({ data := Execution.ResponseValue.object leftFields,
-           errors := leftErrors } : Execution.Response)
-      =
-      .ok (leftValue, leftFieldErrors) ->
-    wrapTypeRefSelectionSetResult rightType
-        ({ data := Execution.ResponseValue.object rightFields,
-           errors := rightErrors } : Execution.Response)
-      =
-      .ok (rightValue, rightFieldErrors) ->
-    ¬ Execution.ResponseValue.semanticEquivalent
-      (Execution.ResponseValue.object leftFields)
-      (Execution.ResponseValue.object rightFields) ->
-    ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue := by
+    {leftErrors rightErrors : Nat}
+    : wrapTypeRefSelectionSetResult leftType
+          ({ data := Execution.ResponseValue.object leftFields, errors := leftErrors }
+            : Execution.Response)
+        = .ok (leftValue, leftFieldErrors)
+      -> wrapTypeRefSelectionSetResult rightType
+            ({
+                data := Execution.ResponseValue.object rightFields,
+                errors := rightErrors
+              }
+              : Execution.Response)
+          = .ok (rightValue, rightFieldErrors)
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.ResponseValue.object leftFields)
+            (Execution.ResponseValue.object rightFields)
+      -> ¬ Execution.ResponseValue.semanticEquivalent leftValue rightValue := by
   intro hleft hright hchild hsemantic
   have hleftExact :=
     wrapTypeRefSelectionSetResult_object_response
@@ -3154,11 +3113,11 @@ theorem wrapped_object_values_not_semanticEquivalent_of_child
       leftType rightType leftFields rightFields hsemantic)
 
 theorem wrapTypeRefSelectionSetDataValue_semanticEquivalent_injective
-    (outputType : TypeRef) {left right : Execution.Response} :
-    Execution.ResponseValue.semanticEquivalent
-      (wrapTypeRefSelectionSetDataValue outputType left)
-      (wrapTypeRefSelectionSetDataValue outputType right) ->
-    Execution.ResponseValue.semanticEquivalent left.data right.data := by
+    (outputType : TypeRef) {left right : Execution.Response}
+    : Execution.ResponseValue.semanticEquivalent
+        (wrapTypeRefSelectionSetDataValue outputType left)
+        (wrapTypeRefSelectionSetDataValue outputType right)
+      -> Execution.ResponseValue.semanticEquivalent left.data right.data := by
   intro hsemantic
   induction outputType with
   | named typeName =>
@@ -3206,20 +3165,19 @@ theorem completeValue_objectProbeWithRuntime_response
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (runtimeType : Name) (ref : ObjectRef)
-    (fields : List Execution.ExecutableField) :
-    ∀ outputType,
-      schema.typeIncludesObjectBool outputType.namedType runtimeType = true ->
-        Execution.completeValue schema resolvers variableValues
-          (fuel + leafProbeFuel outputType) outputType fields
-          (objectProbeResolverValueWithRuntime runtimeType ref outputType)
-        =
-        wrapTypeRefSelectionSetResult outputType
-          (Execution.selectionSetResultToResponse
-            (Execution.executeCollectedFields schema resolvers
-              variableValues fuel (.object runtimeType ref)
-              (Execution.collectFields schema variableValues runtimeType
-                (.object runtimeType ref)
-                (Execution.mergedFieldSelectionSet fields))))
+    (fields : List Execution.ExecutableField)
+    : ∀ outputType,
+        schema.typeIncludesObjectBool outputType.namedType runtimeType = true
+        -> Execution.completeValue schema resolvers variableValues
+              (fuel + leafProbeFuel outputType) outputType fields
+              (objectProbeResolverValueWithRuntime runtimeType ref outputType)
+            = wrapTypeRefSelectionSetResult outputType
+                (Execution.selectionSetResultToResponse
+                  (Execution.executeCollectedFields schema resolvers
+                    variableValues fuel (.object runtimeType ref)
+                    (Execution.collectFields schema variableValues runtimeType
+                      (.object runtimeType ref)
+                      (Execution.mergedFieldSelectionSet fields))))
   | .named typeName, hinclude => by
       have hincludeNamed :
           schema.typeIncludesObjectBool typeName runtimeType = true := by
@@ -3319,32 +3277,31 @@ theorem executeField_objectProbeWithRuntime_response
     (source : Execution.ResolverValue ObjectRef)
     (responseName parentType fieldName : Name) (arguments : List Argument)
     (selectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (runtimeType : Name) (ref : ObjectRef) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    resolvers.resolve parentType fieldName arguments source =
-      some
-        (objectProbeResolverValueWithRuntime runtimeType ref
-          fieldDefinition.outputType) ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-    Execution.executeField schema resolvers variableValues
-      (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-      source responseName
-      [{
-        parentType := parentType
-        responseName := responseName
-        fieldName := fieldName
-        arguments := arguments
-        selectionSet := selectionSet
-      }]
-    =
-    Execution.singleFieldResult responseName
-      (wrapTypeRefSelectionSetResult fieldDefinition.outputType
-        (Execution.selectionSetResultToResponse
-          (Execution.executeCollectedFields schema resolvers variableValues
-            fuel (.object runtimeType ref)
-            (Execution.collectFields schema variableValues runtimeType
-              (.object runtimeType ref) selectionSet)))) := by
+    (runtimeType : Name) (ref : ObjectRef)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> resolvers.resolve parentType fieldName arguments source
+          = some
+              (objectProbeResolverValueWithRuntime runtimeType ref
+                fieldDefinition.outputType)
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> Execution.executeField schema resolvers variableValues
+            (fuel + leafProbeFuel fieldDefinition.outputType + 1)
+            source responseName
+            [{
+              parentType := parentType
+              responseName := responseName
+              fieldName := fieldName
+              arguments := arguments
+              selectionSet := selectionSet
+            }]
+          = Execution.singleFieldResult responseName
+              (wrapTypeRefSelectionSetResult fieldDefinition.outputType
+                (Execution.selectionSetResultToResponse
+                  (Execution.executeCollectedFields schema resolvers variableValues
+                    fuel (.object runtimeType ref)
+                    (Execution.collectFields schema variableValues runtimeType
+                      (.object runtimeType ref) selectionSet)))) := by
   intro hlookup hresolve hinclude
   have hcomplete :=
     completeValue_objectProbeWithRuntime_response schema resolvers
@@ -3368,30 +3325,29 @@ theorem executeField_objectProbeWithRuntime_response_of_fuel_ge
     (source : Execution.ResolverValue ObjectRef)
     (responseName parentType fieldName : Name) (arguments : List Argument)
     (selectionSet : List Selection) (fieldDefinition : FieldDefinition)
-    (runtimeType : Name) (ref : ObjectRef) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    resolvers.resolve parentType fieldName arguments source =
-      some
-        (objectProbeResolverValueWithRuntime runtimeType ref
-          fieldDefinition.outputType) ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-    Execution.executeField schema resolvers variableValues (fuel + 1)
-      source responseName
-      [{
-        parentType := parentType
-        responseName := responseName
-        fieldName := fieldName
-        arguments := arguments
-        selectionSet := selectionSet
-      }]
-    =
-    Execution.singleFieldResult responseName
-      (wrapTypeRefSelectionSetResult fieldDefinition.outputType
-        (Execution.executeSelectionSetAsResponse schema resolvers variableValues
-          (fuel - leafProbeFuel fieldDefinition.outputType)
-          runtimeType (.object runtimeType ref) selectionSet)) := by
+    (runtimeType : Name) (ref : ObjectRef)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> resolvers.resolve parentType fieldName arguments source
+          = some
+              (objectProbeResolverValueWithRuntime runtimeType ref
+                fieldDefinition.outputType)
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> Execution.executeField schema resolvers variableValues (fuel + 1)
+            source responseName
+            [{
+              parentType := parentType
+              responseName := responseName
+              fieldName := fieldName
+              arguments := arguments
+              selectionSet := selectionSet
+            }]
+          = Execution.singleFieldResult responseName
+              (wrapTypeRefSelectionSetResult fieldDefinition.outputType
+                (Execution.executeSelectionSetAsResponse schema resolvers variableValues
+                  (fuel - leafProbeFuel fieldDefinition.outputType)
+                  runtimeType (.object runtimeType ref) selectionSet)) := by
   intro hlookup hresolve hinclude hfuel
   have hexecute :=
     executeField_objectProbeWithRuntime_response schema resolvers
@@ -3415,22 +3371,20 @@ theorem executeSelectionSetAsResponse_singleton_objectProbeWithRuntime_response
     (fieldDefinition : FieldDefinition)
     (runtimeType : Name) (ref : ObjectRef)
     (source : Execution.ResolverValue ObjectRef)
-    (childSelectionSet : List Selection) :
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    resolvers.resolve parentType fieldName arguments source =
-      some
-        (objectProbeResolverValueWithRuntime runtimeType ref
-          fieldDefinition.outputType) ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-      Execution.executeSelectionSetAsResponse schema resolvers variableValues
-        (fuel + leafProbeFuel fieldDefinition.outputType + 1) parentType source
-        [Selection.field responseName fieldName arguments []
-          childSelectionSet]
-      =
-      wrapTypeRefSelectionSetResponse responseName fieldDefinition.outputType
-        (Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
-          runtimeType (.object runtimeType ref) childSelectionSet) := by
+    (childSelectionSet : List Selection)
+    : schema.lookupField parentType fieldName = some fieldDefinition
+      -> resolvers.resolve parentType fieldName arguments source
+          = some
+              (objectProbeResolverValueWithRuntime runtimeType ref
+                fieldDefinition.outputType)
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> Execution.executeSelectionSetAsResponse schema resolvers variableValues
+            (fuel + leafProbeFuel fieldDefinition.outputType + 1) parentType source
+            [Selection.field responseName fieldName arguments [] childSelectionSet]
+          = wrapTypeRefSelectionSetResponse responseName fieldDefinition.outputType
+              (Execution.executeSelectionSetAsResponse schema resolvers variableValues
+                fuel runtimeType (.object runtimeType ref) childSelectionSet) := by
   intro hlookup hresolve hinclude
   have hfield :
       Execution.executeField schema resolvers variableValues

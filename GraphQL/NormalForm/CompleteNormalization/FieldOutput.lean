@@ -11,25 +11,24 @@ namespace CompleteNormalization
 
 def completeScopedFieldOutputsInclude
     (schema : Schema) (runtimeType : Name)
-    (scopedSelections : List CompleteScopedSelection) : Prop :=
-  ∀ scopedSelection, scopedSelection ∈ scopedSelections ->
-    ∃ responseName fieldName arguments directives subselections
-        fieldDefinition,
-      scopedSelection.selection =
-        Selection.field responseName fieldName arguments directives
-          subselections
-        ∧ schema.lookupField scopedSelection.lookupParent fieldName =
-          some fieldDefinition
-        ∧ schema.typeIncludesObjectBool
-          fieldDefinition.outputType.namedType runtimeType = true
+    (scopedSelections : List CompleteScopedSelection)
+    : Prop :=
+  ∀ scopedSelection,
+    scopedSelection ∈ scopedSelections
+    -> ∃ responseName fieldName arguments directives subselections fieldDefinition,
+        scopedSelection.selection
+          = Selection.field responseName fieldName arguments directives subselections
+        ∧ schema.lookupField scopedSelection.lookupParent fieldName
+          = some fieldDefinition
+        ∧ schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
 
 theorem completeScopedFieldOutputsInclude_append
     {schema : Schema} {runtimeType : Name}
-    {left right : List CompleteScopedSelection} :
-    completeScopedFieldOutputsInclude schema runtimeType left ->
-      completeScopedFieldOutputsInclude schema runtimeType right ->
-        completeScopedFieldOutputsInclude schema runtimeType
-          (left ++ right) := by
+    {left right : List CompleteScopedSelection}
+    : completeScopedFieldOutputsInclude schema runtimeType left
+      -> completeScopedFieldOutputsInclude schema runtimeType right
+      -> completeScopedFieldOutputsInclude schema runtimeType (left ++ right) := by
   intro hleft hright scopedSelection hmem
   rcases List.mem_append.mp hmem with hmem | hmem
   · exact hleft scopedSelection hmem
@@ -37,27 +36,26 @@ theorem completeScopedFieldOutputsInclude_append
 
 theorem completeScopedFieldOutputsInclude_append_left
     {schema : Schema} {runtimeType : Name}
-    {left right : List CompleteScopedSelection} :
-    completeScopedFieldOutputsInclude schema runtimeType (left ++ right) ->
-      completeScopedFieldOutputsInclude schema runtimeType left := by
+    {left right : List CompleteScopedSelection}
+    : completeScopedFieldOutputsInclude schema runtimeType (left ++ right)
+      -> completeScopedFieldOutputsInclude schema runtimeType left := by
   intro hmatches scopedSelection hmem
   exact hmatches scopedSelection (List.mem_append.mpr (Or.inl hmem))
 
 theorem completeScopedFieldOutputsInclude_append_right
     {schema : Schema} {runtimeType : Name}
-    {left right : List CompleteScopedSelection} :
-    completeScopedFieldOutputsInclude schema runtimeType (left ++ right) ->
-      completeScopedFieldOutputsInclude schema runtimeType right := by
+    {left right : List CompleteScopedSelection}
+    : completeScopedFieldOutputsInclude schema runtimeType (left ++ right)
+      -> completeScopedFieldOutputsInclude schema runtimeType right := by
   intro hmatches scopedSelection hmem
   exact hmatches scopedSelection (List.mem_append.mpr (Or.inr hmem))
 
 theorem completeScopedFieldOutputsInclude_tail
     {schema : Schema} {runtimeType : Name}
     {scopedSelection : CompleteScopedSelection}
-    {rest : List CompleteScopedSelection} :
-    completeScopedFieldOutputsInclude schema runtimeType
-      (scopedSelection :: rest) ->
-      completeScopedFieldOutputsInclude schema runtimeType rest := by
+    {rest : List CompleteScopedSelection}
+    : completeScopedFieldOutputsInclude schema runtimeType (scopedSelection :: rest)
+      -> completeScopedFieldOutputsInclude schema runtimeType rest := by
   intro hmatches candidate hcandidate
   exact hmatches candidate
     (List.mem_cons_of_mem scopedSelection hcandidate)
@@ -65,31 +63,29 @@ theorem completeScopedFieldOutputsInclude_tail
 theorem completeScopedFieldOutputsInclude_head
     {schema : Schema} {runtimeType : Name}
     {scopedSelection : CompleteScopedSelection}
-    {rest : List CompleteScopedSelection} :
-    completeScopedFieldOutputsInclude schema runtimeType
-      (scopedSelection :: rest) ->
-      ∃ responseName fieldName arguments directives subselections
-          fieldDefinition,
-        scopedSelection.selection =
-          Selection.field responseName fieldName arguments directives
-            subselections
-          ∧ schema.lookupField scopedSelection.lookupParent fieldName =
-            some fieldDefinition
+    {rest : List CompleteScopedSelection}
+    : completeScopedFieldOutputsInclude schema runtimeType (scopedSelection :: rest)
+      -> ∃ responseName fieldName arguments directives subselections fieldDefinition,
+          scopedSelection.selection
+            = Selection.field responseName fieldName arguments directives subselections
+          ∧ schema.lookupField scopedSelection.lookupParent fieldName
+            = some fieldDefinition
           ∧ schema.typeIncludesObjectBool
-            fieldDefinition.outputType.namedType runtimeType = true := by
+              fieldDefinition.outputType.namedType runtimeType
+            = true := by
   intro hmatches
   exact hmatches scopedSelection (by simp)
 
 theorem completeScopedFieldOutputsInclude_selection_field
     {schema : Schema} {runtimeType : Name}
     {scopedSelection : CompleteScopedSelection}
-    {scopedSelections : List CompleteScopedSelection} :
-    completeScopedFieldOutputsInclude schema runtimeType scopedSelections ->
-    scopedSelection ∈ scopedSelections ->
-      ∃ responseName fieldName arguments directives subselections,
-        scopedSelection.selection =
-          Selection.field responseName fieldName arguments directives
-            subselections := by
+    {scopedSelections : List CompleteScopedSelection}
+    : completeScopedFieldOutputsInclude schema runtimeType scopedSelections
+      -> scopedSelection ∈ scopedSelections
+      -> ∃ responseName fieldName arguments directives subselections,
+          scopedSelection.selection
+          = Selection.field responseName fieldName arguments directives
+              subselections := by
   intro hmatches hmem
   rcases hmatches scopedSelection hmem with
     ⟨responseName, fieldName, arguments, directives, subselections,
@@ -103,17 +99,17 @@ theorem completeScopedFieldOutputsInclude_lookup
     {scopedSelections : List CompleteScopedSelection}
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
-    {subselections : List Selection} :
-    completeScopedFieldOutputsInclude schema runtimeType scopedSelections ->
-    scopedSelection ∈ scopedSelections ->
-    scopedSelection.selection =
-      Selection.field responseName fieldName arguments directives
-        subselections ->
-      ∃ fieldDefinition,
-        schema.lookupField scopedSelection.lookupParent fieldName =
-          some fieldDefinition
+    {subselections : List Selection}
+    : completeScopedFieldOutputsInclude schema runtimeType scopedSelections
+      -> scopedSelection ∈ scopedSelections
+      -> scopedSelection.selection
+          = Selection.field responseName fieldName arguments directives subselections
+      -> ∃ fieldDefinition,
+          schema.lookupField scopedSelection.lookupParent fieldName
+            = some fieldDefinition
           ∧ schema.typeIncludesObjectBool
-            fieldDefinition.outputType.namedType runtimeType = true := by
+              fieldDefinition.outputType.namedType runtimeType
+            = true := by
   intro hmatches hmem hselection
   rcases hmatches scopedSelection hmem with
     ⟨matchedResponseName, matchedFieldName, matchedArguments,
@@ -129,22 +125,22 @@ theorem completeScopedFieldOutputsInclude_staticScopedFieldsWithResponseName_obj
     (fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    schema.objectType lookupParent ->
-    selectionSetLookupValid schema lookupParent
-      (Selection.field responseName fieldName arguments directives
-        selectionSet :: rest) ->
-    FieldMerge.fieldsInSetCanMerge schema lookupParent
-      (Selection.field responseName fieldName arguments directives
-        selectionSet :: rest) ->
-    schema.lookupField lookupParent fieldName = some fieldDefinition ->
-    schema.typeIncludesObjectBool lookupParent groundType = true ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-      completeScopedFieldOutputsInclude schema runtimeType
-        (staticScopedFieldsWithResponseName schema boolCase lookupParent
-          groundType responseName rest) := by
+    (fieldDefinition : FieldDefinition)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> schema.objectType lookupParent
+      -> selectionSetLookupValid schema lookupParent
+          (Selection.field responseName fieldName arguments directives selectionSet
+            :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema lookupParent
+          (Selection.field responseName fieldName arguments directives selectionSet
+            :: rest)
+      -> schema.lookupField lookupParent fieldName = some fieldDefinition
+      -> schema.typeIncludesObjectBool lookupParent groundType = true
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> completeScopedFieldOutputsInclude schema runtimeType
+          (staticScopedFieldsWithResponseName schema boolCase lookupParent
+            groundType responseName rest) := by
   intro hschema hobject hlookupValid hmerge hlookup hground hincludes
     scopedSelection hmem
   rcases

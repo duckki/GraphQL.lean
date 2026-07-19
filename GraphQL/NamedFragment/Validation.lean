@@ -21,12 +21,11 @@ mutual
   def selectionSetFragmentSpreadNames : List Selection -> List Name
     | [] => []
     | selection :: rest =>
-        selectionFragmentSpreadNames selection
-          ++ selectionSetFragmentSpreadNames rest
+        selectionFragmentSpreadNames selection ++ selectionSetFragmentSpreadNames rest
 end
 
-def fragmentReachableBool (fragments : List FragmentDefinition) :
-    Nat -> Name -> Name -> Bool
+def fragmentReachableBool (fragments : List FragmentDefinition)
+    : Nat -> Name -> Name -> Bool
   | 0, _source, _target => false
   | fuel + 1, source, target =>
       match GraphQL.NamedFragment.lookupFragment? fragments source with
@@ -34,12 +33,14 @@ def fragmentReachableBool (fragments : List FragmentDefinition) :
       | some fragment =>
           let direct := selectionSetFragmentSpreadNames fragment.selectionSet
           direct.any (fun next => next == target)
-            || direct.any (fun next =>
-              fragmentReachableBool fragments fuel next target)
+          || direct.any
+              (fun next =>
+                fragmentReachableBool fragments fuel next target)
 
 def fragmentsAcyclicBool (fragments : List FragmentDefinition) : Bool :=
-  fragments.all (fun fragment =>
-    !(fragmentReachableBool fragments fragments.length fragment.name fragment.name))
+  fragments.all
+    (fun fragment =>
+      !(fragmentReachableBool fragments fragments.length fragment.name fragment.name))
 
 def fragmentsAcyclic (fragments : List FragmentDefinition) : Prop :=
   fragmentsAcyclicBool fragments = true
@@ -48,70 +49,74 @@ mutual
   def selectionValid (schema : Schema)
       (variableDefinitions : List VariableDefinition)
       (fragments : List FragmentDefinition)
-      (parentType : Name) : Selection -> Prop
+      (parentType : Name)
+      : Selection -> Prop
     | .field _responseName fieldName arguments directives selectionSet =>
         GraphQL.Validation.directivesValid schema variableDefinitions directives
-          ∧ ∃ fieldDefinition,
+        ∧ ∃ fieldDefinition,
             schema.lookupField parentType fieldName = some fieldDefinition
-              ∧ GraphQL.Validation.argumentsValid schema
+            ∧ GraphQL.Validation.argumentsValid schema
                 fieldDefinition.arguments variableDefinitions arguments
-              ∧ fieldSelectionSetValid schema variableDefinitions fragments
+            ∧ fieldSelectionSetValid schema variableDefinitions fragments
                 fieldDefinition selectionSet
     | .inlineFragment none directives selectionSet =>
         GraphQL.Validation.directivesValid schema variableDefinitions directives
-          ∧ selectionSet ≠ []
-          ∧ selectionSetValid schema variableDefinitions fragments
-            parentType selectionSet
+        ∧ selectionSet ≠ []
+        ∧ selectionSetValid schema variableDefinitions fragments parentType selectionSet
     | .inlineFragment (some typeCondition) directives selectionSet =>
         GraphQL.Validation.directivesValid schema variableDefinitions directives
-          ∧ schema.isCompositeType typeCondition
-          ∧ schema.typesOverlap parentType typeCondition
-          ∧ selectionSet ≠ []
-          ∧ selectionSetValid schema variableDefinitions fragments
+        ∧ schema.isCompositeType typeCondition
+        ∧ schema.typesOverlap parentType typeCondition
+        ∧ selectionSet ≠ []
+        ∧ selectionSetValid schema variableDefinitions fragments
             typeCondition selectionSet
     | .fragmentSpread fragmentName directives =>
         GraphQL.Validation.directivesValid schema variableDefinitions directives
-          ∧ ∃ fragment,
-            GraphQL.NamedFragment.lookupFragment? fragments fragmentName =
-                some fragment
-              ∧ schema.isCompositeType fragment.typeCondition
-              ∧ schema.typesOverlap parentType fragment.typeCondition
+        ∧ ∃ fragment,
+            GraphQL.NamedFragment.lookupFragment? fragments fragmentName = some fragment
+            ∧ schema.isCompositeType fragment.typeCondition
+            ∧ schema.typesOverlap parentType fragment.typeCondition
 
   def selectionSetValid (schema : Schema)
       (variableDefinitions : List VariableDefinition)
       (fragments : List FragmentDefinition)
-      (parentType : Name) (selectionSet : List Selection) : Prop :=
-    ∀ selection, selection ∈ selectionSet ->
-      selectionValid schema variableDefinitions fragments parentType selection
+      (parentType : Name) (selectionSet : List Selection)
+      : Prop :=
+    ∀ selection,
+      selection ∈ selectionSet
+      -> selectionValid schema variableDefinitions fragments parentType selection
 
   def fieldSelectionSetValid (schema : Schema)
       (variableDefinitions : List VariableDefinition)
       (fragments : List FragmentDefinition)
-      (fieldDefinition : FieldDefinition) (selectionSet : List Selection) :
-      Prop :=
+      (fieldDefinition : FieldDefinition) (selectionSet : List Selection)
+      : Prop :=
     let returnType := fieldDefinition.outputType.namedType
     fieldDefinition.outputType.isOutputType schema
-      ∧ ((schema.isLeafType returnType ∧ selectionSet = [])
-      ∨ (schema.isCompositeType returnType
-        ∧ selectionSet ≠ []
-        ∧ selectionSetValid schema variableDefinitions fragments
-          returnType selectionSet))
+    ∧ ((schema.isLeafType returnType ∧ selectionSet = [])
+        ∨ (schema.isCompositeType returnType
+            ∧ selectionSet ≠ []
+            ∧ selectionSetValid schema variableDefinitions fragments
+                returnType selectionSet))
 end
 
 def fragmentDefinitionValid (schema : Schema)
     (variableDefinitions : List VariableDefinition)
     (fragments : List FragmentDefinition)
-    (fragment : FragmentDefinition) : Prop :=
+    (fragment : FragmentDefinition)
+    : Prop :=
   schema.isCompositeType fragment.typeCondition
-    ∧ fragment.selectionSet ≠ []
-    ∧ selectionSetValid schema variableDefinitions fragments
+  ∧ fragment.selectionSet ≠ []
+  ∧ selectionSetValid schema variableDefinitions fragments
       fragment.typeCondition fragment.selectionSet
 
 def allFragmentDefinitionsValid (schema : Schema)
     (variableDefinitions : List VariableDefinition)
-    (fragments : List FragmentDefinition) : Prop :=
-  ∀ fragment, fragment ∈ fragments ->
-    fragmentDefinitionValid schema variableDefinitions fragments fragment
+    (fragments : List FragmentDefinition)
+    : Prop :=
+  ∀ fragment,
+    fragment ∈ fragments
+    -> fragmentDefinitionValid schema variableDefinitions fragments fragment
 
 namespace FieldMerge
 
@@ -192,69 +197,71 @@ mutual
 end
 
 mutual
-  inductive FieldsInSetCanMerge
-      (schema : Schema) (fragments : List FragmentDefinition) :
-      Name -> List Selection -> Prop where
+  inductive FieldsInSetCanMerge (schema : Schema) (fragments : List FragmentDefinition)
+      : Name -> List Selection -> Prop where
     | intro (parentType : Name) (selectionSet : List Selection)
-        (hfields :
-          let fields := collectFields schema fragments parentType selectionSet
-          ∀ left, left ∈ fields ->
-            ∀ right, right ∈ fields ->
-              left.responseName = right.responseName ->
-                FieldsForNameCanMerge schema fragments left right) :
-        FieldsInSetCanMerge schema fragments parentType selectionSet
+      (hfields
+        : let fields := collectFields schema fragments parentType selectionSet
+          ∀ left,
+            left ∈ fields
+            -> ∀ right,
+                right ∈ fields
+                -> left.responseName = right.responseName
+                -> FieldsForNameCanMerge schema fragments left right)
+      : FieldsInSetCanMerge schema fragments parentType selectionSet
 
   inductive FieldsForNameCanMerge
-      (schema : Schema) (fragments : List FragmentDefinition) :
-      ScopedField -> ScopedField -> Prop where
+      (schema : Schema) (fragments : List FragmentDefinition)
+      : ScopedField -> ScopedField -> Prop where
     | intro (left right : ScopedField)
-        (hshape :
-          GraphQL.FieldMerge.sameResponseShape schema left.outputType
-            right.outputType)
-        (hidentity :
-          (left.parentType = right.parentType
-              ∨ ¬ schema.objectType left.parentType
-              ∨ ¬ schema.objectType right.parentType) ->
-            left.fieldName = right.fieldName
+      (hshape
+        : GraphQL.FieldMerge.sameResponseShape schema left.outputType right.outputType)
+      (hidentity
+        : (left.parentType = right.parentType
+            ∨ ¬ schema.objectType left.parentType
+            ∨ ¬ schema.objectType right.parentType)
+          -> left.fieldName = right.fieldName
               ∧ Argument.argumentsEquivalent left.arguments right.arguments)
-        (hsubfields :
-          (left.parentType = right.parentType
-              ∨ ¬ schema.objectType left.parentType
-              ∨ ¬ schema.objectType right.parentType) ->
-            ∀ objectType,
+      (hsubfields
+        : (left.parentType = right.parentType
+            ∨ ¬ schema.objectType left.parentType
+            ∨ ¬ schema.objectType right.parentType)
+          -> ∀ objectType,
               let fields :=
                 collectFields schema left.availableFragments objectType
                   left.selectionSet
                 ++ collectFields schema right.availableFragments objectType
-                  right.selectionSet
-              ∀ subLeft, subLeft ∈ fields ->
-                ∀ subRight, subRight ∈ fields ->
-                  subLeft.responseName = subRight.responseName ->
-                    FieldsForNameCanMerge schema fragments subLeft subRight) :
-        FieldsForNameCanMerge schema fragments left right
+                    right.selectionSet
+              ∀ subLeft,
+                subLeft ∈ fields
+                -> ∀ subRight,
+                    subRight ∈ fields
+                    -> subLeft.responseName = subRight.responseName
+                    -> FieldsForNameCanMerge schema fragments subLeft subRight)
+      : FieldsForNameCanMerge schema fragments left right
 end
 
 def fieldsInSetCanMerge (schema : Schema)
     (fragments : List FragmentDefinition)
-    (parentType : Name) (selectionSet : List Selection) : Prop :=
+    (parentType : Name) (selectionSet : List Selection)
+    : Prop :=
   FieldsInSetCanMerge schema fragments parentType selectionSet
 
 end FieldMerge
 
 def operationDefinitionValid (schema : Schema) (operation : Operation) : Prop :=
   operation.rootType = schema.queryType
-    ∧ schema.isCompositeType operation.rootType
-    ∧ GraphQL.Validation.variableDefinitionsValid schema
-        operation.variableDefinitions
-    ∧ fragmentNamesUnique operation.fragmentDefinitions
-    ∧ fragmentsAcyclic operation.fragmentDefinitions
-    ∧ allFragmentDefinitionsValid schema operation.variableDefinitions
-        operation.fragmentDefinitions
-    ∧ operation.selectionSet ≠ []
-    ∧ selectionSetValid schema operation.variableDefinitions
-        operation.fragmentDefinitions operation.rootType operation.selectionSet
-    ∧ FieldMerge.fieldsInSetCanMerge schema operation.fragmentDefinitions
-        operation.rootType operation.selectionSet
+  ∧ schema.isCompositeType operation.rootType
+  ∧ GraphQL.Validation.variableDefinitionsValid schema operation.variableDefinitions
+  ∧ fragmentNamesUnique operation.fragmentDefinitions
+  ∧ fragmentsAcyclic operation.fragmentDefinitions
+  ∧ allFragmentDefinitionsValid schema operation.variableDefinitions
+      operation.fragmentDefinitions
+  ∧ operation.selectionSet ≠ []
+  ∧ selectionSetValid schema operation.variableDefinitions
+      operation.fragmentDefinitions operation.rootType operation.selectionSet
+  ∧ FieldMerge.fieldsInSetCanMerge schema operation.fragmentDefinitions
+      operation.rootType operation.selectionSet
 
 end Validation
 end NamedFragment

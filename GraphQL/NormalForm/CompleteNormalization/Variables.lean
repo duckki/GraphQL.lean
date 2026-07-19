@@ -9,36 +9,30 @@ namespace NormalForm
 
 namespace CompleteNormalization
 
-theorem allBoolCases_nil :
-    allBoolCases ([] : List BoolVar) = [[]] := by
+theorem allBoolCases_nil : allBoolCases ([] : List BoolVar) = [[]] := by
   rfl
 
-theorem BoolCase.lookup?_head_eq
-    (varName : BoolVar) (value : Bool)
-    (rest : BoolCase) :
-    BoolCase.lookup? ((varName, value) :: rest) varName = some value := by
+theorem BoolCase.lookup?_head_eq (varName : BoolVar) (value : Bool) (rest : BoolCase)
+    : BoolCase.lookup? ((varName, value) :: rest) varName = some value := by
   simp [BoolCase.lookup?]
 
-theorem directiveForBit_true (varName : BoolVar) :
-    directiveForBit varName true = .include (.variable varName) := by
+theorem directiveForBit_true (varName : BoolVar)
+    : directiveForBit varName true = .include (.variable varName) := by
   simp [directiveForBit]
 
-theorem directiveForBit_false (varName : BoolVar) :
-    directiveForBit varName false = .skip (.variable varName) := by
+theorem directiveForBit_false (varName : BoolVar)
+    : directiveForBit varName false = .skip (.variable varName) := by
   simp [directiveForBit]
 
-theorem inputValueBooleanVariables_variable (varName : BoolVar) :
-    inputValueBooleanVariables (.variable varName) = [varName] := by
+theorem inputValueBooleanVariables_variable (varName : BoolVar)
+    : inputValueBooleanVariables (.variable varName) = [varName] := by
   rfl
 
-theorem directivesBooleanVariables_nil :
-    directivesBooleanVariables [] = [] := by
+theorem directivesBooleanVariables_nil : directivesBooleanVariables [] = [] := by
   rfl
 
-theorem boolVariableMem_eq_true_iff
-    (varName : BoolVar) :
-    ∀ variables,
-      boolVariableMem varName variables = true ↔ varName ∈ variables
+theorem boolVariableMem_eq_true_iff (varName : BoolVar)
+    : ∀ variables, boolVariableMem varName variables = true ↔ varName ∈ variables
   | [] => by
       simp [boolVariableMem]
   | candidate :: rest => by
@@ -53,9 +47,8 @@ theorem boolVariableMem_eq_true_iff
         simp [boolVariableMem, hbeq,
           boolVariableMem_eq_true_iff varName rest, hvarNeCandidate]
 
-theorem boolVariableMem_eq_false_iff
-    (varName : BoolVar) (variables : List BoolVar) :
-    boolVariableMem varName variables = false ↔ varName ∉ variables := by
+theorem boolVariableMem_eq_false_iff (varName : BoolVar) (variables : List BoolVar)
+    : boolVariableMem varName variables = false ↔ varName ∉ variables := by
   cases hmem : boolVariableMem varName variables with
   | false =>
       simp
@@ -66,8 +59,7 @@ theorem boolVariableMem_eq_false_iff
       simp
       exact (boolVariableMem_eq_true_iff varName variables).1 hmem
 
-theorem dedupBoolVars_nodup :
-    ∀ variables, (dedupBoolVars variables).Nodup
+theorem dedupBoolVars_nodup : ∀ variables, (dedupBoolVars variables).Nodup
   | [] => by
       simp [dedupBoolVars]
   | varName :: rest => by
@@ -82,9 +74,8 @@ theorem dedupBoolVars_nodup :
               (dedupBoolVars rest)).1 hmem
           simp [dedupBoolVars, hmem, hnotMem, hrest]
 
-theorem mem_dedupBoolVars_iff
-    (varName : BoolVar) :
-    ∀ variables, varName ∈ dedupBoolVars variables ↔ varName ∈ variables
+theorem mem_dedupBoolVars_iff (varName : BoolVar)
+    : ∀ variables, varName ∈ dedupBoolVars variables ↔ varName ∈ variables
   | [] => by
       simp [dedupBoolVars]
   | headVar :: rest => by
@@ -122,9 +113,9 @@ theorem mem_dedupBoolVars_iff
           simp [dedupBoolVars, hmem, hrest]
 
 theorem mem_operationBoolVars_of_selectionSet
-    (operation : Operation) (varName : BoolVar) :
-    varName ∈ selectionSetBooleanVariables operation.selectionSet ->
-      varName ∈ operationBoolVars operation := by
+    (operation : Operation) (varName : BoolVar)
+    : varName ∈ selectionSetBooleanVariables operation.selectionSet
+      -> varName ∈ operationBoolVars operation := by
   intro hmem
   exact (mem_dedupBoolVars_iff varName
     (selectionSetBooleanVariables operation.selectionSet)).2 hmem
@@ -133,11 +124,12 @@ theorem directivesBooleanVariables_mem_selectionBooleanVariables_field
     (varName : BoolVar)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
-    (selectionSet : List Selection) :
-    varName ∈ directivesBooleanVariables directives ->
-      varName ∈ selectionBooleanVariables
-        (Selection.field responseName fieldName arguments directives
-          selectionSet) := by
+    (selectionSet : List Selection)
+    : varName ∈ directivesBooleanVariables directives
+      -> varName
+          ∈ selectionBooleanVariables
+              (Selection.field responseName fieldName arguments directives
+                selectionSet) := by
   intro hmem
   simp [selectionBooleanVariables, hmem]
 
@@ -145,47 +137,50 @@ theorem childSelectionSetBooleanVariables_mem_selectionBooleanVariables_field
     (varName : BoolVar)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
-    (selectionSet : List Selection) :
-    varName ∈ selectionSetBooleanVariables selectionSet ->
-      varName ∈ selectionBooleanVariables
-        (Selection.field responseName fieldName arguments directives
-          selectionSet) := by
+    (selectionSet : List Selection)
+    : varName ∈ selectionSetBooleanVariables selectionSet
+      -> varName
+          ∈ selectionBooleanVariables
+              (Selection.field responseName fieldName arguments directives
+                selectionSet) := by
   intro hmem
   simp [selectionBooleanVariables, hmem]
 
 theorem directivesBooleanVariables_mem_selectionBooleanVariables_inline
     (varName : BoolVar) (typeCondition : Option Name)
     (directives : List DirectiveApplication)
-    (selectionSet : List Selection) :
-    varName ∈ directivesBooleanVariables directives ->
-      varName ∈ selectionBooleanVariables
-        (Selection.inlineFragment typeCondition directives selectionSet) := by
+    (selectionSet : List Selection)
+    : varName ∈ directivesBooleanVariables directives
+      -> varName
+          ∈ selectionBooleanVariables
+              (Selection.inlineFragment typeCondition directives selectionSet) := by
   intro hmem
   simp [selectionBooleanVariables, hmem]
 
 theorem childSelectionSetBooleanVariables_mem_selectionBooleanVariables_inline
     (varName : BoolVar) (typeCondition : Option Name)
     (directives : List DirectiveApplication)
-    (selectionSet : List Selection) :
-    varName ∈ selectionSetBooleanVariables selectionSet ->
-      varName ∈ selectionBooleanVariables
-        (Selection.inlineFragment typeCondition directives selectionSet) := by
+    (selectionSet : List Selection)
+    : varName ∈ selectionSetBooleanVariables selectionSet
+      -> varName
+          ∈ selectionBooleanVariables
+              (Selection.inlineFragment typeCondition directives selectionSet) := by
   intro hmem
   simp [selectionBooleanVariables, hmem]
 
 theorem selectionBooleanVariables_mem_selectionSetBooleanVariables_head
     (varName : BoolVar) (selection : Selection)
-    (rest : List Selection) :
-    varName ∈ selectionBooleanVariables selection ->
-      varName ∈ selectionSetBooleanVariables (selection :: rest) := by
+    (rest : List Selection)
+    : varName ∈ selectionBooleanVariables selection
+      -> varName ∈ selectionSetBooleanVariables (selection :: rest) := by
   intro hmem
   simp [selectionSetBooleanVariables, hmem]
 
 theorem selectionSetBooleanVariables_mem_selectionSetBooleanVariables_tail
     (varName : BoolVar) (selection : Selection)
-    (rest : List Selection) :
-    varName ∈ selectionSetBooleanVariables rest ->
-      varName ∈ selectionSetBooleanVariables (selection :: rest) := by
+    (rest : List Selection)
+    : varName ∈ selectionSetBooleanVariables rest
+      -> varName ∈ selectionSetBooleanVariables (selection :: rest) := by
   intro hmem
   simp [selectionSetBooleanVariables, hmem]
 
@@ -193,11 +188,12 @@ theorem directivesBooleanVariables_mem_selectionSetBooleanVariables_field_head
     (varName : BoolVar)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    varName ∈ directivesBooleanVariables directives ->
-      varName ∈ selectionSetBooleanVariables
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest) := by
+    (selectionSet rest : List Selection)
+    : varName ∈ directivesBooleanVariables directives
+      -> varName
+          ∈ selectionSetBooleanVariables
+              (Selection.field responseName fieldName arguments directives selectionSet
+                :: rest) := by
   intro hmem
   exact selectionBooleanVariables_mem_selectionSetBooleanVariables_head
     varName
@@ -209,11 +205,12 @@ theorem directivesBooleanVariables_mem_selectionSetBooleanVariables_field_head
 theorem directivesBooleanVariables_mem_selectionSetBooleanVariables_inline_head
     (varName : BoolVar) (typeCondition : Option Name)
     (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    varName ∈ directivesBooleanVariables directives ->
-      varName ∈ selectionSetBooleanVariables
-        (Selection.inlineFragment typeCondition directives selectionSet
-          :: rest) := by
+    (selectionSet rest : List Selection)
+    : varName ∈ directivesBooleanVariables directives
+      -> varName
+          ∈ selectionSetBooleanVariables
+              (Selection.inlineFragment typeCondition directives selectionSet
+                :: rest) := by
   intro hmem
   exact selectionBooleanVariables_mem_selectionSetBooleanVariables_head
     varName
@@ -226,11 +223,12 @@ theorem childSelectionSetBooleanVariables_mem_selectionSetBooleanVariables_field
     (varName : BoolVar)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    varName ∈ selectionSetBooleanVariables selectionSet ->
-      varName ∈ selectionSetBooleanVariables
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest) := by
+    (selectionSet rest : List Selection)
+    : varName ∈ selectionSetBooleanVariables selectionSet
+      -> varName
+          ∈ selectionSetBooleanVariables
+              (Selection.field responseName fieldName arguments directives selectionSet
+                :: rest) := by
   intro hmem
   exact selectionBooleanVariables_mem_selectionSetBooleanVariables_head
     varName
@@ -242,11 +240,12 @@ theorem childSelectionSetBooleanVariables_mem_selectionSetBooleanVariables_field
 theorem childSelectionSetBooleanVariables_mem_selectionSetBooleanVariables_inline_head
     (varName : BoolVar) (typeCondition : Option Name)
     (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    varName ∈ selectionSetBooleanVariables selectionSet ->
-      varName ∈ selectionSetBooleanVariables
-        (Selection.inlineFragment typeCondition directives selectionSet
-          :: rest) := by
+    (selectionSet rest : List Selection)
+    : varName ∈ selectionSetBooleanVariables selectionSet
+      -> varName
+          ∈ selectionSetBooleanVariables
+              (Selection.inlineFragment typeCondition directives selectionSet
+                :: rest) := by
   intro hmem
   exact selectionBooleanVariables_mem_selectionSetBooleanVariables_head
     varName
@@ -259,14 +258,16 @@ theorem sourceSelectionSetVariables_field_child
     (operation : Operation)
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    ∀ varName, varName ∈ selectionSetBooleanVariables selectionSet ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet := by
+    (selectionSet rest : List Selection)
+    : (∀ varName,
+        varName
+          ∈ selectionSetBooleanVariables
+              (Selection.field responseName fieldName arguments directives selectionSet
+                :: rest)
+        -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> ∀ varName,
+          varName ∈ selectionSetBooleanVariables selectionSet
+          -> varName ∈ selectionSetBooleanVariables operation.selectionSet := by
   intro hsourceVars varName hmem
   exact hsourceVars varName
     (childSelectionSetBooleanVariables_mem_selectionSetBooleanVariables_field_head
@@ -276,14 +277,15 @@ theorem sourceSelectionSetVariables_field_child
 theorem sourceSelectionSetVariables_inline_child
     (operation : Operation) (typeCondition : Option Name)
     (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables
-        (Selection.inlineFragment typeCondition directives selectionSet
-          :: rest) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    ∀ varName, varName ∈ selectionSetBooleanVariables selectionSet ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet := by
+    (selectionSet rest : List Selection)
+    : (∀ varName,
+        varName
+          ∈ selectionSetBooleanVariables
+              (Selection.inlineFragment typeCondition directives selectionSet :: rest)
+        -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> ∀ varName,
+          varName ∈ selectionSetBooleanVariables selectionSet
+          -> varName ∈ selectionSetBooleanVariables operation.selectionSet := by
   intro hsourceVars varName hmem
   exact hsourceVars varName
     (childSelectionSetBooleanVariables_mem_selectionSetBooleanVariables_inline_head
@@ -291,22 +293,21 @@ theorem sourceSelectionSetVariables_inline_child
 
 theorem sourceSelectionSetVariables_tail
     (operation : Operation) (selection : Selection)
-    (rest : List Selection) :
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables (selection :: rest) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    ∀ varName, varName ∈ selectionSetBooleanVariables rest ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet := by
+    (rest : List Selection)
+    : (∀ varName,
+        varName ∈ selectionSetBooleanVariables (selection :: rest)
+        -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> ∀ varName,
+          varName ∈ selectionSetBooleanVariables rest
+          -> varName ∈ selectionSetBooleanVariables operation.selectionSet := by
   intro hsourceVars varName hmem
   exact hsourceVars varName
     (selectionSetBooleanVariables_mem_selectionSetBooleanVariables_tail
       varName selection rest hmem)
 
-theorem selectionSetBooleanVariables_append
-    (left right : List Selection) :
-    selectionSetBooleanVariables (left ++ right)
-      =
-    selectionSetBooleanVariables left ++ selectionSetBooleanVariables right := by
+theorem selectionSetBooleanVariables_append (left right : List Selection)
+    : selectionSetBooleanVariables (left ++ right)
+      = selectionSetBooleanVariables left ++ selectionSetBooleanVariables right := by
   induction left with
   | nil =>
       simp [selectionSetBooleanVariables]
@@ -314,12 +315,13 @@ theorem selectionSetBooleanVariables_append
       simp [selectionSetBooleanVariables, ih, List.append_assoc]
 
 theorem sourceSelectionSetVariables_append_left
-    (operation : Operation) (left right : List Selection) :
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables (left ++ right) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    ∀ varName, varName ∈ selectionSetBooleanVariables left ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet := by
+    (operation : Operation) (left right : List Selection)
+    : (∀ varName,
+        varName ∈ selectionSetBooleanVariables (left ++ right)
+        -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> ∀ varName,
+          varName ∈ selectionSetBooleanVariables left
+          -> varName ∈ selectionSetBooleanVariables operation.selectionSet := by
   intro hsourceVars varName hmem
   exact hsourceVars varName (by
     rw [selectionSetBooleanVariables_append]
@@ -327,12 +329,13 @@ theorem sourceSelectionSetVariables_append_left
       (selectionSetBooleanVariables right) hmem)
 
 theorem sourceSelectionSetVariables_append_right
-    (operation : Operation) (left right : List Selection) :
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables (left ++ right) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    ∀ varName, varName ∈ selectionSetBooleanVariables right ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet := by
+    (operation : Operation) (left right : List Selection)
+    : (∀ varName,
+        varName ∈ selectionSetBooleanVariables (left ++ right)
+        -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> ∀ varName,
+          varName ∈ selectionSetBooleanVariables right
+          -> varName ∈ selectionSetBooleanVariables operation.selectionSet := by
   intro hsourceVars varName hmem
   exact hsourceVars varName (by
     rw [selectionSetBooleanVariables_append]
@@ -340,11 +343,12 @@ theorem sourceSelectionSetVariables_append_right
       (selectionSetBooleanVariables left) hmem)
 
 theorem selectionSetBooleanVariables_withoutFieldSelectionsWithResponseName_mem
-    (schema : Schema) (responseName : Name) (varName : BoolVar) :
-    ∀ selectionSet,
-      varName ∈ selectionSetBooleanVariables
-          (withoutFieldSelectionsWithResponseName schema responseName selectionSet) ->
-        varName ∈ selectionSetBooleanVariables selectionSet
+    (schema : Schema) (responseName : Name) (varName : BoolVar)
+    : ∀ selectionSet,
+        varName
+          ∈ selectionSetBooleanVariables
+              (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+        -> varName ∈ selectionSetBooleanVariables selectionSet
   | [], hmem => by
       simp [withoutFieldSelectionsWithResponseName, selectionSetBooleanVariables] at hmem
   | Selection.field fieldResponseName fieldName arguments directives
@@ -394,23 +398,25 @@ theorem selectionSetBooleanVariables_withoutFieldSelectionsWithResponseName_mem
 
 theorem sourceSelectionSetVariables_withoutFieldSelectionsWithResponseName
     (operation : Operation) (schema : Schema) (responseName : Name)
-    (selectionSet : List Selection) :
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables selectionSet ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    ∀ varName,
-      varName ∈ selectionSetBooleanVariables
-        (withoutFieldSelectionsWithResponseName schema responseName selectionSet) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet := by
+    (selectionSet : List Selection)
+    : (∀ varName,
+        varName ∈ selectionSetBooleanVariables selectionSet
+        -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> ∀ varName,
+          varName
+            ∈ selectionSetBooleanVariables
+                (withoutFieldSelectionsWithResponseName schema responseName
+                  selectionSet)
+          -> varName ∈ selectionSetBooleanVariables operation.selectionSet := by
   intro hsourceVars varName hmem
   exact hsourceVars varName
     (selectionSetBooleanVariables_withoutFieldSelectionsWithResponseName_mem schema
       responseName varName selectionSet hmem)
 
 theorem selectionSubselectionsBooleanVariables_mem_selectionBooleanVariables
-    (varName : BoolVar) (selection : Selection) :
-    varName ∈ selectionSetBooleanVariables selection.subselections ->
-      varName ∈ selectionBooleanVariables selection := by
+    (varName : BoolVar) (selection : Selection)
+    : varName ∈ selectionSetBooleanVariables selection.subselections
+      -> varName ∈ selectionBooleanVariables selection := by
   intro hmem
   cases selection with
   | field responseName fieldName arguments directives selectionSet =>
@@ -421,11 +427,10 @@ theorem selectionSubselectionsBooleanVariables_mem_selectionBooleanVariables
         (by simpa [Selection.subselections] using hmem)
 
 theorem mergeSelectionSetsBooleanVariables_mem_selectionSetBooleanVariables
-    (varName : BoolVar) :
-    ∀ selectionSet,
-      varName ∈ selectionSetBooleanVariables
-        (mergeSelectionSets selectionSet) ->
-        varName ∈ selectionSetBooleanVariables selectionSet
+    (varName : BoolVar)
+    : ∀ selectionSet,
+        varName ∈ selectionSetBooleanVariables (mergeSelectionSets selectionSet)
+        -> varName ∈ selectionSetBooleanVariables selectionSet
   | [] => by
       simp [mergeSelectionSets, selectionSetBooleanVariables]
   | selection :: rest => by
@@ -448,12 +453,13 @@ theorem mergeSelectionSetsBooleanVariables_mem_selectionSetBooleanVariables
 
 theorem fieldSelectionsWithResponseNameInScope_variables_mem
     (schema : Schema) (parentType responseName : Name)
-    (varName : BoolVar) :
-    ∀ selectionSet,
-      varName ∈ selectionSetBooleanVariables
-        (fieldSelectionsWithResponseNameInScope schema parentType responseName
-          selectionSet) ->
-        varName ∈ selectionSetBooleanVariables selectionSet := by
+    (varName : BoolVar)
+    : ∀ selectionSet,
+        varName
+          ∈ selectionSetBooleanVariables
+              (fieldSelectionsWithResponseNameInScope schema parentType responseName
+                selectionSet)
+        -> varName ∈ selectionSetBooleanVariables selectionSet := by
   intro selectionSet
   induction selectionSet using
     fieldSelectionsWithResponseNameInScope.induct schema parentType responseName with
@@ -580,12 +586,13 @@ theorem fieldSelectionsWithResponseNameInScope_variables_mem
 
 theorem mergeSelectionSets_fieldSelectionsWithResponseNameInScope_variables_mem
     (schema : Schema) (parentType responseName : Name)
-    (varName : BoolVar) (selectionSet : List Selection) :
-    varName ∈ selectionSetBooleanVariables
-        (mergeSelectionSets
-          (fieldSelectionsWithResponseNameInScope schema parentType responseName
-            selectionSet)) ->
-      varName ∈ selectionSetBooleanVariables selectionSet := by
+    (varName : BoolVar) (selectionSet : List Selection)
+    : varName
+        ∈ selectionSetBooleanVariables
+            (mergeSelectionSets
+              (fieldSelectionsWithResponseNameInScope schema parentType responseName
+                selectionSet))
+      -> varName ∈ selectionSetBooleanVariables selectionSet := by
   intro hmem
   exact fieldSelectionsWithResponseNameInScope_variables_mem schema parentType
     responseName varName selectionSet
@@ -599,19 +606,21 @@ theorem sourceSelectionSetVariables_field_merged
     (operation : Operation)
     (schema : Schema) (parentType responseName fieldName : Name)
     (arguments : List Argument) (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    (∀ varName,
-      varName ∈ selectionSetBooleanVariables
-        (Selection.field responseName fieldName arguments directives
-          selectionSet :: rest) ->
-      varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-    ∀ varName,
-      varName ∈ selectionSetBooleanVariables
-        (selectionSet ++
-          mergeSelectionSets
-            (fieldSelectionsWithResponseNameInScope schema parentType responseName
-              rest)) ->
-        varName ∈ selectionSetBooleanVariables operation.selectionSet := by
+    (selectionSet rest : List Selection)
+    : (∀ varName,
+        varName
+          ∈ selectionSetBooleanVariables
+              (Selection.field responseName fieldName arguments directives selectionSet
+                :: rest)
+        -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+      -> ∀ varName,
+          varName
+            ∈ selectionSetBooleanVariables
+                (selectionSet
+                  ++ mergeSelectionSets
+                      (fieldSelectionsWithResponseNameInScope schema parentType
+                        responseName rest))
+          -> varName ∈ selectionSetBooleanVariables operation.selectionSet := by
   intro hsourceVars varName hmem
   have hmem' :
       varName ∈ selectionSetBooleanVariables selectionSet
@@ -638,11 +647,11 @@ theorem sourceSelectionSetVariables_field_merged
       (mergeSelectionSets_fieldSelectionsWithResponseNameInScope_variables_mem schema
         parentType responseName varName rest hmerged)
 
-theorem BoolCase.lookup?_mem_of_allBoolCases :
-    ∀ {variables boolCase varName},
-      boolCase ∈ allBoolCases variables ->
-      varName ∈ variables ->
-        ∃ value, BoolCase.lookup? boolCase varName = some value
+theorem BoolCase.lookup?_mem_of_allBoolCases
+    : ∀ {variables boolCase varName},
+        boolCase ∈ allBoolCases variables
+        -> varName ∈ variables
+        -> ∃ value, BoolCase.lookup? boolCase varName = some value
   | [], boolCase, varName, hcase, hvar => by
       cases hvar
   | headVar :: restVars, boolCase, varName, hcase,
@@ -676,12 +685,13 @@ theorem BoolCase.lookup?_mem_of_allBoolCases :
             exact ⟨true, by simp [BoolCase.lookup?]⟩
           · exact ⟨value, by simp [BoolCase.lookup?, hsame, hvalue]⟩
 
-theorem allBoolCases_complete :
-    ∀ {variables} {f : BoolVar -> Option Bool},
-      (∀ varName, varName ∈ variables -> ∃ value, f varName = some value) ->
-        ∃ boolCase, boolCase ∈ allBoolCases variables ∧
-          ∀ varName, varName ∈ variables ->
-            BoolCase.lookup? boolCase varName = f varName
+theorem allBoolCases_complete
+    : ∀ {variables} {f : BoolVar -> Option Bool},
+        (∀ varName, varName ∈ variables -> ∃ value, f varName = some value)
+        -> ∃ boolCase,
+            boolCase ∈ allBoolCases variables
+            ∧ ∀ varName,
+                varName ∈ variables -> BoolCase.lookup? boolCase varName = f varName
   | [], f, _hcomplete => by
       exact ⟨[], by simp [allBoolCases]⟩
   | headVar :: restVars, f, hcomplete => by
@@ -720,11 +730,11 @@ theorem allBoolCases_complete :
                 simp [BoolCase.lookup?, hheadValue]
               · simp [BoolCase.lookup?, hsame, hrestEq varName htail]
 
-theorem boolCase_pair_variable_mem_of_allBoolCases :
-    ∀ {variables boolCase varName value},
-      boolCase ∈ allBoolCases variables ->
-      (varName, value) ∈ boolCase ->
-        varName ∈ variables
+theorem boolCase_pair_variable_mem_of_allBoolCases
+    : ∀ {variables boolCase varName value},
+        boolCase ∈ allBoolCases variables
+        -> (varName, value) ∈ boolCase
+        -> varName ∈ variables
   | [], boolCase, varName, value, hcase, hpair => by
       simp [allBoolCases] at hcase
       subst boolCase
@@ -752,12 +762,12 @@ theorem boolCase_pair_variable_mem_of_allBoolCases :
             (boolCase_pair_variable_mem_of_allBoolCases
               hrestCase htail)
 
-theorem BoolCase.lookup?_eq_of_pair_mem_allBoolCases_nodup :
-    ∀ {variables boolCase varName value},
-      variables.Nodup ->
-      boolCase ∈ allBoolCases variables ->
-      (varName, value) ∈ boolCase ->
-        BoolCase.lookup? boolCase varName = some value
+theorem BoolCase.lookup?_eq_of_pair_mem_allBoolCases_nodup
+    : ∀ {variables boolCase varName value},
+        variables.Nodup
+        -> boolCase ∈ allBoolCases variables
+        -> (varName, value) ∈ boolCase
+        -> BoolCase.lookup? boolCase varName = some value
   | [], boolCase, varName, value, _hnodup, hcase, hpair => by
       simp [allBoolCases] at hcase
       subst boolCase
@@ -806,9 +816,8 @@ theorem BoolCase.lookup?_eq_of_pair_mem_allBoolCases_nodup :
               hrestNodup hrestCase htail
           simp [BoolCase.lookup?, hneq, htailValue]
 
-theorem allBoolCases_nodup :
-    ∀ {variables : List BoolVar},
-      variables.Nodup -> (allBoolCases variables).Nodup
+theorem allBoolCases_nodup
+    : ∀ {variables : List BoolVar}, variables.Nodup -> (allBoolCases variables).Nodup
   | [], _hnodup => by
       simp [allBoolCases]
   | headVar :: restVars, hnodup => by
@@ -859,12 +868,12 @@ theorem allBoolCases_nodup :
           subst right
           exact hdisjoint left hleft hright⟩
 
-theorem boolCaseList_split_of_mem_nodup :
-    ∀ {boolCases : List BoolCase} {boolCase : BoolCase},
-      boolCases.Nodup ->
-      boolCase ∈ boolCases ->
-        ∃ before after,
-          boolCases = before ++ boolCase :: after
+theorem boolCaseList_split_of_mem_nodup
+    : ∀ {boolCases : List BoolCase} {boolCase : BoolCase},
+        boolCases.Nodup
+        -> boolCase ∈ boolCases
+        -> ∃ before after,
+            boolCases = before ++ boolCase :: after
             ∧ (∀ candidate, candidate ∈ before -> candidate ≠ boolCase)
             ∧ (∀ candidate, candidate ∈ after -> candidate ≠ boolCase)
   | [], boolCase, _hnodup, hmem => by
@@ -893,12 +902,11 @@ theorem boolCaseList_split_of_mem_nodup :
             exact hheadNotMem htail
           · exact hbefore candidate hcandidate
 
-theorem allBoolCases_split_case
-    {variables : List BoolVar} {boolCase : BoolCase} :
-    variables.Nodup ->
-    boolCase ∈ allBoolCases variables ->
-      ∃ before after,
-        allBoolCases variables = before ++ boolCase :: after
+theorem allBoolCases_split_case {variables : List BoolVar} {boolCase : BoolCase}
+    : variables.Nodup
+      -> boolCase ∈ allBoolCases variables
+      -> ∃ before after,
+          allBoolCases variables = before ++ boolCase :: after
           ∧ (∀ candidate, candidate ∈ before -> candidate ≠ boolCase)
           ∧ (∀ candidate, candidate ∈ after -> candidate ≠ boolCase) := by
   intro hnodup hmem

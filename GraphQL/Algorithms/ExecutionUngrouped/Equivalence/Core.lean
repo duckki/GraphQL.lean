@@ -38,8 +38,8 @@ abbrev visitSubfieldsResult
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) (initial : ResponseValue) :
-    Result ResponseValue :=
+    (selectionSet : List Selection) (initial : ResponseValue)
+    : Result ResponseValue :=
   let visited :=
     visitSubfields schema resolvers variableValues depth parentType source
       selectionSet initial
@@ -47,32 +47,34 @@ abbrev visitSubfieldsResult
   | .error errors => .error errors
   | .ok (_unit, errors) => .ok (visited.fst, errors)
 
-@[simp] theorem visitSubfieldsResult_nil
+@[simp]
+theorem visitSubfieldsResult_nil
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (initial : ResponseValue) :
-    visitSubfieldsResult schema resolvers variableValues depth parentType source
-      [] initial = .ok (initial, 0) := by
+    (initial : ResponseValue)
+    : visitSubfieldsResult schema resolvers variableValues depth parentType source
+        [] initial
+      = .ok (initial, 0) := by
   simp [visitSubfieldsResult, visitSubfields, visitOk]
 
-def ungroupedResult (window : ExecutionWindow ObjectIdentity) :
-    Result (List (Name × ResponseValue)) :=
+def ungroupedResult (window : ExecutionWindow ObjectIdentity)
+    : Result (List (Name × ResponseValue)) :=
   executeRootSelectionSet window.schema window.resolvers window.variableValues
     window.depth window.parentType window.source window.selectionSet
 
-def specResult (window : ExecutionWindow ObjectIdentity) :
-    Result (List (Name × ResponseValue)) :=
+def specResult (window : ExecutionWindow ObjectIdentity)
+    : Result (List (Name × ResponseValue)) :=
   GraphQL.Execution.executeRootSelectionSet window.schema window.resolvers
     window.variableValues window.depth window.parentType window.source
     window.selectionSet
 
-def ungroupedResponseFields (window : ExecutionWindow ObjectIdentity) :
-    List (Name × ResponseValue) :=
+def ungroupedResponseFields (window : ExecutionWindow ObjectIdentity)
+    : List (Name × ResponseValue) :=
   GraphQL.Execution.Result.getD [] window.ungroupedResult
 
-def specResponseFields (window : ExecutionWindow ObjectIdentity) :
-    List (Name × ResponseValue) :=
+def specResponseFields (window : ExecutionWindow ObjectIdentity)
+    : List (Name × ResponseValue) :=
   GraphQL.Execution.Result.getD [] window.specResult
 
 def ungroupedResponse (window : ExecutionWindow ObjectIdentity) : ResponseValue :=
@@ -89,32 +91,29 @@ structure ExecutionEquivalenceState (ObjectIdentity : Type) where
 
 namespace ExecutionEquivalenceState
 
-def ungroupedProjectionResult
-    (state : ExecutionEquivalenceState ObjectIdentity) : Result ResponseValue :=
+def ungroupedProjectionResult (state : ExecutionEquivalenceState ObjectIdentity)
+    : Result ResponseValue :=
   ExecutionWindow.visitSubfieldsResult state.window.schema state.window.resolvers
     state.window.variableValues state.window.depth state.window.parentType
     state.window.source state.window.selectionSet state.initial
 
-def specProjectionResult
-    (state : ExecutionEquivalenceState ObjectIdentity) : Result ResponseValue :=
-  match
-    GraphQL.Execution.executeCollectedFields state.window.schema
-      state.window.resolvers state.window.variableValues state.window.depth
-      state.window.source
-      (GraphQL.Execution.collectFields state.window.schema
-        state.window.variableValues state.window.parentType state.window.source
-        state.window.selectionSet)
-  with
+def specProjectionResult (state : ExecutionEquivalenceState ObjectIdentity)
+    : Result ResponseValue :=
+  match GraphQL.Execution.executeCollectedFields state.window.schema
+          state.window.resolvers state.window.variableValues state.window.depth
+          state.window.source
+          (GraphQL.Execution.collectFields state.window.schema
+            state.window.variableValues state.window.parentType state.window.source
+            state.window.selectionSet) with
   | .error errors => .error errors
   | .ok (fields, errors) =>
       .ok (mergeResponse state.initial (.object fields), errors)
 
-def ungroupedProjection (state : ExecutionEquivalenceState ObjectIdentity) :
-    ResponseValue :=
+def ungroupedProjection (state : ExecutionEquivalenceState ObjectIdentity)
+    : ResponseValue :=
   GraphQL.Execution.Result.getD default state.ungroupedProjectionResult
 
-def specProjection (state : ExecutionEquivalenceState ObjectIdentity) :
-    ResponseValue :=
+def specProjection (state : ExecutionEquivalenceState ObjectIdentity) : ResponseValue :=
   GraphQL.Execution.Result.getD default state.specProjectionResult
 
 end ExecutionEquivalenceState
@@ -131,43 +130,40 @@ def resultErrorCount {α : Type} : Result α -> Nat
 
 theorem resultErrorCount_combine
     {α β γ : Type} (combine : α -> β -> γ)
-    (left : Result α) (right : Result β) :
-    resultErrorCount (GraphQL.Execution.Result.combine combine left right) =
-      resultErrorCount left + resultErrorCount right := by
+    (left : Result α) (right : Result β)
+    : resultErrorCount (GraphQL.Execution.Result.combine combine left right)
+      = resultErrorCount left + resultErrorCount right := by
   cases left <;> cases right <;> simp [resultErrorCount,
     GraphQL.Execution.Result.combine]
 
 def ErrorPresenceEquivalent (ungrouped spec : Nat) : Prop :=
   (spec = 0 -> ungrouped = 0) ∧ (0 < spec -> 0 < ungrouped)
 
-theorem ErrorPresenceEquivalent.refl (errors : Nat) :
-    ErrorPresenceEquivalent errors errors :=
+theorem ErrorPresenceEquivalent.refl (errors : Nat)
+    : ErrorPresenceEquivalent errors errors :=
   ⟨fun hzero => hzero, fun hpositive => hpositive⟩
 
 theorem ErrorPresenceEquivalent.of_pos
     {ungrouped spec : Nat} (hUngrouped : 0 < ungrouped)
-    (hSpec : 0 < spec) :
-    ErrorPresenceEquivalent ungrouped spec := by
+    (hSpec : 0 < spec)
+    : ErrorPresenceEquivalent ungrouped spec := by
   constructor
   · intro hzero
     omega
   · intro _hpositive
     exact hUngrouped
 
-theorem ErrorPresenceEquivalent.trans
-    {left middle right : Nat} :
-    ErrorPresenceEquivalent left middle ->
-    ErrorPresenceEquivalent middle right ->
-      ErrorPresenceEquivalent left right := by
+theorem ErrorPresenceEquivalent.trans {left middle right : Nat}
+    : ErrorPresenceEquivalent left middle
+      -> ErrorPresenceEquivalent middle right
+      -> ErrorPresenceEquivalent left right := by
   intro hleft hmiddle
   exact
     ⟨fun hrightZero => hleft.1 (hmiddle.1 hrightZero),
       fun hrightPositive => hleft.2 (hmiddle.2 hrightPositive)⟩
 
-theorem ErrorPresenceEquivalent.symm
-    {left right : Nat} :
-    ErrorPresenceEquivalent left right ->
-      ErrorPresenceEquivalent right left := by
+theorem ErrorPresenceEquivalent.symm {left right : Nat}
+    : ErrorPresenceEquivalent left right -> ErrorPresenceEquivalent right left := by
   intro h
   constructor
   · intro hleftZero
@@ -185,9 +181,9 @@ theorem ErrorPresenceEquivalent.symm
 theorem ErrorPresenceEquivalent.add
     {ungroupedLeft specLeft ungroupedRight specRight : Nat}
     (hleft : ErrorPresenceEquivalent ungroupedLeft specLeft)
-    (hright : ErrorPresenceEquivalent ungroupedRight specRight) :
-    ErrorPresenceEquivalent
-      (ungroupedLeft + ungroupedRight) (specLeft + specRight) := by
+    (hright : ErrorPresenceEquivalent ungroupedRight specRight)
+    : ErrorPresenceEquivalent
+        (ungroupedLeft + ungroupedRight) (specLeft + specRight) := by
   constructor
   · intro hzero
     have hspecLeft : specLeft = 0 := by omega
@@ -208,8 +204,8 @@ theorem ErrorPresenceEquivalent.add
 
 theorem ErrorPresenceEquivalent.drop_right_of_left_pos
     {left right spec : Nat} (hleft : 0 < left)
-    (hcombined : ErrorPresenceEquivalent (left + right) spec) :
-    ErrorPresenceEquivalent left spec := by
+    (hcombined : ErrorPresenceEquivalent (left + right) spec)
+    : ErrorPresenceEquivalent left spec := by
   constructor
   · intro hspecZero
     have hsumZero := hcombined.1 hspecZero
@@ -219,13 +215,11 @@ theorem ErrorPresenceEquivalent.drop_right_of_left_pos
 
 theorem ErrorPresenceEquivalent.add_reassociate
     {headLeft headRight tailLeft tailRight headSpec tailSpec : Nat}
-    (hhead :
-      ErrorPresenceEquivalent (headLeft + headRight) headSpec)
-    (htail :
-      ErrorPresenceEquivalent (tailLeft + tailRight) tailSpec) :
-    ErrorPresenceEquivalent
-      (headLeft + tailLeft + (headRight + tailRight))
-      (headSpec + tailSpec) := by
+    (hhead : ErrorPresenceEquivalent (headLeft + headRight) headSpec)
+    (htail : ErrorPresenceEquivalent (tailLeft + tailRight) tailSpec)
+    : ErrorPresenceEquivalent
+        (headLeft + tailLeft + (headRight + tailRight))
+        (headSpec + tailSpec) := by
   have hcombined := ErrorPresenceEquivalent.add hhead htail
   constructor
   · intro hzero
@@ -236,24 +230,25 @@ theorem ErrorPresenceEquivalent.add_reassociate
     omega
 
 def ResultDataAndErrorPresenceEquivalent {α : Type} [Inhabited α]
-    (ungrouped spec : Result α) : Prop :=
-  GraphQL.Execution.Result.getD default ungrouped =
-      GraphQL.Execution.Result.getD default spec
-    ∧ (resultErrorCount spec = 0 -> resultErrorCount ungrouped = 0)
-    ∧ (0 < resultErrorCount spec -> 0 < resultErrorCount ungrouped)
+    (ungrouped spec : Result α)
+    : Prop :=
+  GraphQL.Execution.Result.getD default ungrouped
+    = GraphQL.Execution.Result.getD default spec
+  ∧ (resultErrorCount spec = 0 -> resultErrorCount ungrouped = 0)
+  ∧ (0 < resultErrorCount spec -> 0 < resultErrorCount ungrouped)
 
 theorem ResultDataAndErrorPresenceEquivalent.of_eq
     {α : Type} [Inhabited α] {ungrouped spec : Result α}
-    (h : ungrouped = spec) :
-    ResultDataAndErrorPresenceEquivalent ungrouped spec := by
+    (h : ungrouped = spec)
+    : ResultDataAndErrorPresenceEquivalent ungrouped spec := by
   subst ungrouped
   exact ⟨rfl, fun hzero => hzero, fun hpositive => hpositive⟩
 
 theorem ResultDataAndErrorPresenceEquivalent.trans
-    {α : Type} [Inhabited α] {left middle right : Result α} :
-    ResultDataAndErrorPresenceEquivalent left middle ->
-    ResultDataAndErrorPresenceEquivalent middle right ->
-      ResultDataAndErrorPresenceEquivalent left right := by
+    {α : Type} [Inhabited α] {left middle right : Result α}
+    : ResultDataAndErrorPresenceEquivalent left middle
+      -> ResultDataAndErrorPresenceEquivalent middle right
+      -> ResultDataAndErrorPresenceEquivalent left right := by
   intro hleft hmiddle
   rcases hleft with ⟨hleftData, hleftZero, hleftPositive⟩
   rcases hmiddle with ⟨hmiddleData, hmiddleZero, hmiddlePositive⟩
@@ -263,26 +258,25 @@ theorem ResultDataAndErrorPresenceEquivalent.trans
       fun hrightPositive => hleftPositive (hmiddlePositive hrightPositive)⟩
 
 theorem ResultDataAndErrorPresenceEquivalent.errorPresence
-    {α : Type} [Inhabited α] {ungrouped spec : Result α} :
-    ResultDataAndErrorPresenceEquivalent ungrouped spec ->
-      ErrorPresenceEquivalent (resultErrorCount ungrouped)
-        (resultErrorCount spec) := by
+    {α : Type} [Inhabited α] {ungrouped spec : Result α}
+    : ResultDataAndErrorPresenceEquivalent ungrouped spec
+      -> ErrorPresenceEquivalent (resultErrorCount ungrouped)
+          (resultErrorCount spec) := by
   intro h
   exact ⟨h.2.1, h.2.2⟩
 
-def ResponseValueResultAlignedEquivalent
-    (ungrouped spec : Result ResponseValue) : Prop :=
+def ResponseValueResultAlignedEquivalent (ungrouped spec : Result ResponseValue)
+    : Prop :=
   match ungrouped, spec with
   | .error ungroupedErrors, .error specErrors =>
       ErrorPresenceEquivalent ungroupedErrors specErrors
   | .ok (ungroupedValue, ungroupedErrors), .ok (specValue, specErrors) =>
-      ungroupedValue = specValue
-        ∧ ErrorPresenceEquivalent ungroupedErrors specErrors
+      ungroupedValue = specValue ∧ ErrorPresenceEquivalent ungroupedErrors specErrors
   | _, _ => False
 
 theorem ResponseValueResultAlignedEquivalent.of_eq
-    {ungrouped spec : Result ResponseValue} (h : ungrouped = spec) :
-    ResponseValueResultAlignedEquivalent ungrouped spec := by
+    {ungrouped spec : Result ResponseValue} (h : ungrouped = spec)
+    : ResponseValueResultAlignedEquivalent ungrouped spec := by
   subst ungrouped
   cases spec with
   | error errors =>
@@ -292,10 +286,10 @@ theorem ResponseValueResultAlignedEquivalent.of_eq
       exact ⟨rfl, ErrorPresenceEquivalent.refl errors⟩
 
 theorem ResponseValueResultAlignedEquivalent.trans
-    {left middle right : Result ResponseValue} :
-    ResponseValueResultAlignedEquivalent left middle ->
-    ResponseValueResultAlignedEquivalent middle right ->
-      ResponseValueResultAlignedEquivalent left right := by
+    {left middle right : Result ResponseValue}
+    : ResponseValueResultAlignedEquivalent left middle
+      -> ResponseValueResultAlignedEquivalent middle right
+      -> ResponseValueResultAlignedEquivalent left right := by
   intro hleft hmiddle
   cases left <;> cases middle <;> cases right <;>
     simp [ResponseValueResultAlignedEquivalent] at hleft hmiddle ⊢
@@ -306,10 +300,9 @@ theorem ResponseValueResultAlignedEquivalent.trans
       ⟨hleftValue.trans hmiddleValue,
         ErrorPresenceEquivalent.trans hleftErrors hmiddleErrors⟩
 
-theorem ResponseValueResultAlignedEquivalent.symm
-    {left right : Result ResponseValue} :
-    ResponseValueResultAlignedEquivalent left right ->
-      ResponseValueResultAlignedEquivalent right left := by
+theorem ResponseValueResultAlignedEquivalent.symm {left right : Result ResponseValue}
+    : ResponseValueResultAlignedEquivalent left right
+      -> ResponseValueResultAlignedEquivalent right left := by
   intro h
   cases left <;> cases right <;>
     simp [ResponseValueResultAlignedEquivalent] at h ⊢
@@ -318,9 +311,9 @@ theorem ResponseValueResultAlignedEquivalent.symm
     exact ⟨hvalue.symm, ErrorPresenceEquivalent.symm herrors⟩
 
 theorem ResponseValueResultAlignedEquivalent.resultValueOrNull_eq
-    {left right : Result ResponseValue} :
-    ResponseValueResultAlignedEquivalent left right ->
-      resultValueOrNull left = resultValueOrNull right := by
+    {left right : Result ResponseValue}
+    : ResponseValueResultAlignedEquivalent left right
+      -> resultValueOrNull left = resultValueOrNull right := by
   intro h
   cases left <;> cases right <;>
     simp [ResponseValueResultAlignedEquivalent, resultValueOrNull] at h ⊢
@@ -329,9 +322,9 @@ theorem ResponseValueResultAlignedEquivalent.resultValueOrNull_eq
 
 theorem ResponseValueResultAlignedEquivalent.nonNullCompletion_aligned
     {ungrouped spec : Result ResponseValue}
-    (h : ResponseValueResultAlignedEquivalent ungrouped spec) :
-    ResponseValueResultAlignedEquivalent
-      (nonNullCompletion ungrouped) (nonNullCompletion spec) := by
+    (h : ResponseValueResultAlignedEquivalent ungrouped spec)
+    : ResponseValueResultAlignedEquivalent
+        (nonNullCompletion ungrouped) (nonNullCompletion spec) := by
   cases ungrouped <;> cases spec <;>
     simp [ResponseValueResultAlignedEquivalent, nonNullCompletion,
       ErrorPresenceEquivalent] at h ⊢
@@ -348,20 +341,17 @@ theorem ResponseValueResultAlignedEquivalent.nonNullCompletion_aligned
 
 theorem ResponseValueResultAlignedEquivalent.nonNull_merge_inner
     {left right wrappedRight : Result ResponseValue}
-    (hleftErrorPositive :
-      ∀ errors, left = .error errors -> 0 < errors)
-    (hrightErrorPositive :
-      ∀ errors, right = .error errors -> 0 < errors)
-    (hwrappedNull :
-      resultValueOrNull left = .null -> wrappedRight = .ok (.null, 0))
-    (hwrappedNonNull :
-      resultValueOrNull left ≠ .null ->
-        wrappedRight = GraphQL.Execution.nonNullCompletion right) :
-    ResponseValueResultAlignedEquivalent
-      (GraphQL.Execution.Result.combine mergeResponse
-        (GraphQL.Execution.nonNullCompletion left) wrappedRight)
-      (GraphQL.Execution.nonNullCompletion
-        (GraphQL.Execution.Result.combine mergeResponse left right)) := by
+    (hleftErrorPositive : ∀ errors, left = .error errors -> 0 < errors)
+    (hrightErrorPositive : ∀ errors, right = .error errors -> 0 < errors)
+    (hwrappedNull : resultValueOrNull left = .null -> wrappedRight = .ok (.null, 0))
+    (hwrappedNonNull
+      : resultValueOrNull left ≠ .null
+        -> wrappedRight = GraphQL.Execution.nonNullCompletion right)
+    : ResponseValueResultAlignedEquivalent
+        (GraphQL.Execution.Result.combine mergeResponse
+          (GraphQL.Execution.nonNullCompletion left) wrappedRight)
+        (GraphQL.Execution.nonNullCompletion
+          (GraphQL.Execution.Result.combine mergeResponse left right)) := by
   cases left with
   | error leftErrors =>
       have hleftPositive : 0 < leftErrors :=
@@ -466,14 +456,11 @@ theorem ResponseValueResultAlignedEquivalent.nonNull_merge_inner
 
 theorem ResponseValueResultAlignedEquivalent.combine_mergeResponse
     {ungroupedLeft specLeft ungroupedRight specRight : Result ResponseValue}
-    (hleft :
-      ResponseValueResultAlignedEquivalent ungroupedLeft specLeft)
-    (hright :
-      ResponseValueResultAlignedEquivalent ungroupedRight specRight) :
-    ResponseValueResultAlignedEquivalent
-      (GraphQL.Execution.Result.combine mergeResponse ungroupedLeft
-        ungroupedRight)
-      (GraphQL.Execution.Result.combine mergeResponse specLeft specRight) := by
+    (hleft : ResponseValueResultAlignedEquivalent ungroupedLeft specLeft)
+    (hright : ResponseValueResultAlignedEquivalent ungroupedRight specRight)
+    : ResponseValueResultAlignedEquivalent
+        (GraphQL.Execution.Result.combine mergeResponse ungroupedLeft ungroupedRight)
+        (GraphQL.Execution.Result.combine mergeResponse specLeft specRight) := by
   cases ungroupedLeft <;> cases specLeft <;>
     cases ungroupedRight <;> cases specRight <;>
     simp [ResponseValueResultAlignedEquivalent,
@@ -486,19 +473,18 @@ theorem ResponseValueResultAlignedEquivalent.combine_mergeResponse
     rw [hleftValue, hrightValue]
     exact ⟨rfl, ErrorPresenceEquivalent.add hleftErrors hrightErrors⟩
 
-def ListResponseResultAlignedEquivalent
-    (ungrouped spec : Result (List ResponseValue)) : Prop :=
+def ListResponseResultAlignedEquivalent (ungrouped spec : Result (List ResponseValue))
+    : Prop :=
   match ungrouped, spec with
   | .error ungroupedErrors, .error specErrors =>
       ErrorPresenceEquivalent ungroupedErrors specErrors
   | .ok (ungroupedValues, ungroupedErrors), .ok (specValues, specErrors) =>
-      ungroupedValues = specValues
-        ∧ ErrorPresenceEquivalent ungroupedErrors specErrors
+      ungroupedValues = specValues ∧ ErrorPresenceEquivalent ungroupedErrors specErrors
   | _, _ => False
 
 theorem ListResponseResultAlignedEquivalent.of_eq
-    {ungrouped spec : Result (List ResponseValue)} (h : ungrouped = spec) :
-    ListResponseResultAlignedEquivalent ungrouped spec := by
+    {ungrouped spec : Result (List ResponseValue)} (h : ungrouped = spec)
+    : ListResponseResultAlignedEquivalent ungrouped spec := by
   subst ungrouped
   cases spec with
   | error errors =>
@@ -510,14 +496,11 @@ theorem ListResponseResultAlignedEquivalent.of_eq
 theorem ListResponseResultAlignedEquivalent.combine_cons
     {ungroupedHead specHead : Result ResponseValue}
     {ungroupedTail specTail : Result (List ResponseValue)}
-    (hhead :
-      ResponseValueResultAlignedEquivalent ungroupedHead specHead)
-    (htail :
-      ListResponseResultAlignedEquivalent ungroupedTail specTail) :
-    ListResponseResultAlignedEquivalent
-      (GraphQL.Execution.Result.combine List.cons ungroupedHead
-        ungroupedTail)
-      (GraphQL.Execution.Result.combine List.cons specHead specTail) := by
+    (hhead : ResponseValueResultAlignedEquivalent ungroupedHead specHead)
+    (htail : ListResponseResultAlignedEquivalent ungroupedTail specTail)
+    : ListResponseResultAlignedEquivalent
+        (GraphQL.Execution.Result.combine List.cons ungroupedHead ungroupedTail)
+        (GraphQL.Execution.Result.combine List.cons specHead specTail) := by
   cases ungroupedHead <;> cases specHead <;>
     cases ungroupedTail <;> cases specTail <;>
     simp [ResponseValueResultAlignedEquivalent,
@@ -533,10 +516,10 @@ theorem ListResponseResultAlignedEquivalent.combine_cons
 
 theorem ListResponseResultAlignedEquivalent.catchBubbleAsNull
     {ungrouped spec : Result (List ResponseValue)}
-    (h : ListResponseResultAlignedEquivalent ungrouped spec) :
-    ResponseValueResultAlignedEquivalent
-      (catchBubbleAsNull ResponseValue.list ungrouped)
-      (catchBubbleAsNull ResponseValue.list spec) := by
+    (h : ListResponseResultAlignedEquivalent ungrouped spec)
+    : ResponseValueResultAlignedEquivalent
+        (catchBubbleAsNull ResponseValue.list ungrouped)
+        (catchBubbleAsNull ResponseValue.list spec) := by
   cases ungrouped <;> cases spec <;>
     simp [ListResponseResultAlignedEquivalent,
       ResponseValueResultAlignedEquivalent,
@@ -546,20 +529,19 @@ theorem ListResponseResultAlignedEquivalent.catchBubbleAsNull
 
 theorem ListResponseResultAlignedEquivalent.catchBubbleAsNull_mergeResponse
     {base right spec : Result (List ResponseValue)}
-    (hrightBaseError :
-      ∀ errors, base = .error errors -> right = .ok ([], 0))
-    (h :
-      ListResponseResultAlignedEquivalent
-        (GraphQL.Execution.Result.combine mergeResponseLists base right)
-        spec) :
-    ResponseValueResultAlignedEquivalent
-      (GraphQL.Execution.Result.combine mergeResponse
-        (GraphQL.Execution.catchBubbleAsNull ResponseValue.list base)
-        (match base with
-        | .error _errors => .ok (.null, 0)
-        | .ok _result =>
-            GraphQL.Execution.catchBubbleAsNull ResponseValue.list right))
-      (GraphQL.Execution.catchBubbleAsNull ResponseValue.list spec) := by
+    (hrightBaseError : ∀ errors, base = .error errors -> right = .ok ([], 0))
+    (h
+      : ListResponseResultAlignedEquivalent
+          (GraphQL.Execution.Result.combine mergeResponseLists base right)
+          spec)
+    : ResponseValueResultAlignedEquivalent
+        (GraphQL.Execution.Result.combine mergeResponse
+          (GraphQL.Execution.catchBubbleAsNull ResponseValue.list base)
+          (match base with
+            | .error _errors => .ok (.null, 0)
+            | .ok _result =>
+                GraphQL.Execution.catchBubbleAsNull ResponseValue.list right))
+        (GraphQL.Execution.catchBubbleAsNull ResponseValue.list spec) := by
   cases base with
   | error baseErrors =>
       have hright : right = .ok ([], 0) :=
@@ -590,20 +572,19 @@ theorem ListResponseResultAlignedEquivalent.catchBubbleAsNull_mergeResponse
 theorem ListResponseResultAlignedEquivalent.zip_cons
     {headPrefix headRight headSpec : Result ResponseValue}
     {tailPrefix tailRight tailSpec : Result (List ResponseValue)}
-    (hhead :
-      ResponseValueResultAlignedEquivalent
-        (GraphQL.Execution.Result.combine mergeResponse headPrefix headRight)
-        headSpec)
-    (htail :
-      ListResponseResultAlignedEquivalent
-        (GraphQL.Execution.Result.combine mergeResponseLists tailPrefix
-          tailRight)
-        tailSpec) :
-    ListResponseResultAlignedEquivalent
-      (GraphQL.Execution.Result.combine mergeResponseLists
-        (GraphQL.Execution.Result.combine List.cons headPrefix tailPrefix)
-        (GraphQL.Execution.Result.combine List.cons headRight tailRight))
-      (GraphQL.Execution.Result.combine List.cons headSpec tailSpec) := by
+    (hhead
+      : ResponseValueResultAlignedEquivalent
+          (GraphQL.Execution.Result.combine mergeResponse headPrefix headRight)
+          headSpec)
+    (htail
+      : ListResponseResultAlignedEquivalent
+          (GraphQL.Execution.Result.combine mergeResponseLists tailPrefix tailRight)
+          tailSpec)
+    : ListResponseResultAlignedEquivalent
+        (GraphQL.Execution.Result.combine mergeResponseLists
+          (GraphQL.Execution.Result.combine List.cons headPrefix tailPrefix)
+          (GraphQL.Execution.Result.combine List.cons headRight tailRight))
+        (GraphQL.Execution.Result.combine List.cons headSpec tailSpec) := by
   cases headPrefix <;> cases headRight <;> cases headSpec <;>
     cases tailPrefix <;> cases tailRight <;> cases tailSpec <;>
     simp [ResponseValueResultAlignedEquivalent,
@@ -620,40 +601,41 @@ theorem ListResponseResultAlignedEquivalent.zip_cons
         ⟨⟨hheadValue, htailValue⟩,
           ErrorPresenceEquivalent.add_reassociate hheadErrors htailErrors⟩
 
-def rootSelectionResultData (result : Result (List (Name × ResponseValue))) :
-    ResponseValue :=
+def rootSelectionResultData (result : Result (List (Name × ResponseValue)))
+    : ResponseValue :=
   match result with
   | .error _errors => .null
   | .ok (fields, _errors) => .object fields
 
-def responseOfRootSelectionResult
-    (result : Result (List (Name × ResponseValue))) :
-    GraphQL.Execution.Response :=
-  { data := rootSelectionResultData result
-    errors := resultErrorCount result }
+def responseOfRootSelectionResult (result : Result (List (Name × ResponseValue)))
+    : GraphQL.Execution.Response :=
+  {
+    data := rootSelectionResultData result
+    errors := resultErrorCount result
+  }
 
 def RootSelectionResultDataAndErrorPresenceEquivalent
-    (ungrouped spec : Result (List (Name × ResponseValue))) : Prop :=
+    (ungrouped spec : Result (List (Name × ResponseValue)))
+    : Prop :=
   rootSelectionResultData ungrouped = rootSelectionResultData spec
-    ∧ ErrorPresenceEquivalent (resultErrorCount ungrouped)
-      (resultErrorCount spec)
+  ∧ ErrorPresenceEquivalent (resultErrorCount ungrouped) (resultErrorCount spec)
 
 def RootSelectionResultAlignedEquivalent
-    (ungrouped spec : Result (List (Name × ResponseValue))) : Prop :=
+    (ungrouped spec : Result (List (Name × ResponseValue)))
+    : Prop :=
   match ungrouped, spec with
   | .error ungroupedErrors, .error specErrors =>
       ErrorPresenceEquivalent ungroupedErrors specErrors
   | .ok (ungroupedFields, ungroupedErrors), .ok (specFields, specErrors) =>
-      ungroupedFields = specFields
-        ∧ ErrorPresenceEquivalent ungroupedErrors specErrors
+      ungroupedFields = specFields ∧ ErrorPresenceEquivalent ungroupedErrors specErrors
   | _, _ => False
 
 theorem ResponseValueResultAlignedEquivalent.singleFieldResult
-    {ungrouped spec : Result ResponseValue} (responseName : Name) :
-    ResponseValueResultAlignedEquivalent ungrouped spec ->
-      RootSelectionResultAlignedEquivalent
-        (GraphQL.Execution.singleFieldResult responseName ungrouped)
-        (GraphQL.Execution.singleFieldResult responseName spec) := by
+    {ungrouped spec : Result ResponseValue} (responseName : Name)
+    : ResponseValueResultAlignedEquivalent ungrouped spec
+      -> RootSelectionResultAlignedEquivalent
+          (GraphQL.Execution.singleFieldResult responseName ungrouped)
+          (GraphQL.Execution.singleFieldResult responseName spec) := by
   intro h
   cases ungrouped <;> cases spec <;>
     simp [ResponseValueResultAlignedEquivalent,
@@ -665,15 +647,15 @@ theorem ResponseValueResultAlignedEquivalent.singleFieldResult
 
 theorem RootSelectionResultDataAndErrorPresenceEquivalent.of_eq
     {ungrouped spec : Result (List (Name × ResponseValue))}
-    (h : ungrouped = spec) :
-    RootSelectionResultDataAndErrorPresenceEquivalent ungrouped spec := by
+    (h : ungrouped = spec)
+    : RootSelectionResultDataAndErrorPresenceEquivalent ungrouped spec := by
   subst ungrouped
   exact ⟨rfl, ErrorPresenceEquivalent.refl _⟩
 
 theorem RootSelectionResultAlignedEquivalent.of_eq
     {ungrouped spec : Result (List (Name × ResponseValue))}
-    (h : ungrouped = spec) :
-    RootSelectionResultAlignedEquivalent ungrouped spec := by
+    (h : ungrouped = spec)
+    : RootSelectionResultAlignedEquivalent ungrouped spec := by
   subst ungrouped
   cases spec with
   | error errors =>
@@ -683,9 +665,9 @@ theorem RootSelectionResultAlignedEquivalent.of_eq
       exact ⟨rfl, ErrorPresenceEquivalent.refl errors⟩
 
 theorem RootSelectionResultAlignedEquivalent.to_dataAndErrorPresence
-    {ungrouped spec : Result (List (Name × ResponseValue))} :
-    RootSelectionResultAlignedEquivalent ungrouped spec ->
-      RootSelectionResultDataAndErrorPresenceEquivalent ungrouped spec := by
+    {ungrouped spec : Result (List (Name × ResponseValue))}
+    : RootSelectionResultAlignedEquivalent ungrouped spec
+      -> RootSelectionResultDataAndErrorPresenceEquivalent ungrouped spec := by
   intro h
   cases ungrouped <;> cases spec <;>
     simp [RootSelectionResultAlignedEquivalent,
@@ -695,10 +677,10 @@ theorem RootSelectionResultAlignedEquivalent.to_dataAndErrorPresence
   · exact h
 
 theorem RootSelectionResultAlignedEquivalent.trans
-    {left middle right : Result (List (Name × ResponseValue))} :
-    RootSelectionResultAlignedEquivalent left middle ->
-    RootSelectionResultAlignedEquivalent middle right ->
-      RootSelectionResultAlignedEquivalent left right := by
+    {left middle right : Result (List (Name × ResponseValue))}
+    : RootSelectionResultAlignedEquivalent left middle
+      -> RootSelectionResultAlignedEquivalent middle right
+      -> RootSelectionResultAlignedEquivalent left right := by
   intro hleft hmiddle
   cases left <;> cases middle <;> cases right <;>
     simp [RootSelectionResultAlignedEquivalent] at hleft hmiddle ⊢
@@ -710,14 +692,13 @@ theorem RootSelectionResultAlignedEquivalent.trans
         ErrorPresenceEquivalent.trans hleftErrors hmiddleErrors⟩
 
 theorem RootSelectionResultAlignedEquivalent.combine_append
-    {ungroupedLeft specLeft ungroupedRight specRight :
-      Result (List (Name × ResponseValue))} :
-    RootSelectionResultAlignedEquivalent ungroupedLeft specLeft ->
-    RootSelectionResultAlignedEquivalent ungroupedRight specRight ->
-      RootSelectionResultAlignedEquivalent
-        (GraphQL.Execution.Result.combine List.append ungroupedLeft
-          ungroupedRight)
-        (GraphQL.Execution.Result.combine List.append specLeft specRight) := by
+    {ungroupedLeft specLeft ungroupedRight specRight
+      : Result (List (Name × ResponseValue))}
+    : RootSelectionResultAlignedEquivalent ungroupedLeft specLeft
+      -> RootSelectionResultAlignedEquivalent ungroupedRight specRight
+      -> RootSelectionResultAlignedEquivalent
+          (GraphQL.Execution.Result.combine List.append ungroupedLeft ungroupedRight)
+          (GraphQL.Execution.Result.combine List.append specLeft specRight) := by
   intro hleft hright
   cases ungroupedLeft <;> cases specLeft <;>
     cases ungroupedRight <;> cases specRight <;>
@@ -734,36 +715,36 @@ theorem RootSelectionResultAlignedEquivalent.combine_append
       ErrorPresenceEquivalent.add hleftErrors hrightErrors⟩
 
 theorem RootSelectionResultDataAndErrorPresenceEquivalent.trans
-    {left middle right : Result (List (Name × ResponseValue))} :
-    RootSelectionResultDataAndErrorPresenceEquivalent left middle ->
-    RootSelectionResultDataAndErrorPresenceEquivalent middle right ->
-      RootSelectionResultDataAndErrorPresenceEquivalent left right := by
+    {left middle right : Result (List (Name × ResponseValue))}
+    : RootSelectionResultDataAndErrorPresenceEquivalent left middle
+      -> RootSelectionResultDataAndErrorPresenceEquivalent middle right
+      -> RootSelectionResultDataAndErrorPresenceEquivalent left right := by
   intro hleft hmiddle
   exact
     ⟨hleft.1.trans hmiddle.1,
       ErrorPresenceEquivalent.trans hleft.2 hmiddle.2⟩
 
 theorem responseDataAndErrorPresenceEquivalent_of_rootSelectionResult
-    {ungrouped spec : Result (List (Name × ResponseValue))} :
-    RootSelectionResultDataAndErrorPresenceEquivalent ungrouped spec ->
-      responseDataAndErrorPresenceEquivalent
-        (responseOfRootSelectionResult ungrouped)
-        (responseOfRootSelectionResult spec) := by
+    {ungrouped spec : Result (List (Name × ResponseValue))}
+    : RootSelectionResultDataAndErrorPresenceEquivalent ungrouped spec
+      -> responseDataAndErrorPresenceEquivalent
+          (responseOfRootSelectionResult ungrouped)
+          (responseOfRootSelectionResult spec) := by
   intro h
   exact ⟨h.1, h.2.1, h.2.2⟩
 
 theorem responseDataAndErrorPresenceEquivalent_of_eq
     {ungrouped spec : GraphQL.Execution.Response}
-    (h : ungrouped = spec) :
-    responseDataAndErrorPresenceEquivalent ungrouped spec := by
+    (h : ungrouped = spec)
+    : responseDataAndErrorPresenceEquivalent ungrouped spec := by
   subst ungrouped
   exact ⟨rfl, fun hzero => hzero, fun hpositive => hpositive⟩
 
 theorem responseDataAndErrorPresenceEquivalent_trans
-    {left middle right : GraphQL.Execution.Response} :
-    responseDataAndErrorPresenceEquivalent left middle ->
-    responseDataAndErrorPresenceEquivalent middle right ->
-      responseDataAndErrorPresenceEquivalent left right := by
+    {left middle right : GraphQL.Execution.Response}
+    : responseDataAndErrorPresenceEquivalent left middle
+      -> responseDataAndErrorPresenceEquivalent middle right
+      -> responseDataAndErrorPresenceEquivalent left right := by
   intro hleft hmiddle
   rcases hleft with ⟨hleftData, hleftZero, hleftPositive⟩
   rcases hmiddle with ⟨hmiddleData, hmiddleZero, hmiddlePositive⟩
@@ -778,18 +759,15 @@ def ResponseAbsorbs (base output : ResponseValue) : Prop :=
 def ExecutionWindowEquivalent (window : ExecutionWindow ObjectIdentity) : Prop :=
   ResponseResultEquivalent window.ungroupedResult window.specResult
 
-def ExecutionStateEquivalent
-    (state : ExecutionEquivalenceState ObjectIdentity) : Prop :=
-  ResponseResultEquivalent state.ungroupedProjectionResult
-    state.specProjectionResult
+def ExecutionStateEquivalent (state : ExecutionEquivalenceState ObjectIdentity)
+    : Prop :=
+  ResponseResultEquivalent state.ungroupedProjectionResult state.specProjectionResult
 
 def PairKeysNodup {α : Type} (fields : List (Name × α)) : Prop :=
   (fields.map Prod.fst).Nodup
 
-theorem PairKeysNodup.tail
-    {α : Type} {head : Name × α} {rest : List (Name × α)} :
-    PairKeysNodup (head :: rest) ->
-      PairKeysNodup rest := by
+theorem PairKeysNodup.tail {α : Type} {head : Name × α} {rest : List (Name × α)}
+    : PairKeysNodup (head :: rest) -> PairKeysNodup rest := by
   intro hnodup
   rcases head with ⟨_, _⟩
   unfold PairKeysNodup at hnodup ⊢
@@ -797,21 +775,19 @@ theorem PairKeysNodup.tail
 
 theorem PairKeysNodup.head_not_mem_tail
     {α : Type} {responseName : Name} {value : α}
-    {rest : List (Name × α)} :
-    PairKeysNodup ((responseName, value) :: rest) ->
-      responseName ∉ rest.map Prod.fst := by
+    {rest : List (Name × α)}
+    : PairKeysNodup ((responseName, value) :: rest)
+      -> responseName ∉ rest.map Prod.fst := by
   intro hnodup
   unfold PairKeysNodup at hnodup
   exact (List.nodup_cons.mp hnodup).1
 
-theorem PairKeysNodup.append
-    {α : Type} {left right : List (Name × α)} :
-    PairKeysNodup left ->
-    PairKeysNodup right ->
-    (∀ responseName,
-      responseName ∈ left.map Prod.fst ->
-        responseName ∉ right.map Prod.fst) ->
-      PairKeysNodup (left ++ right) := by
+theorem PairKeysNodup.append {α : Type} {left right : List (Name × α)}
+    : PairKeysNodup left
+      -> PairKeysNodup right
+      -> (∀ responseName,
+            responseName ∈ left.map Prod.fst -> responseName ∉ right.map Prod.fst)
+      -> PairKeysNodup (left ++ right) := by
   intro hleft hright hdisjoint
   unfold PairKeysNodup at hleft hright ⊢
   rw [List.map_append]
@@ -822,9 +798,9 @@ theorem PairKeysNodup.append
 
 theorem executableGroupNamesDisjoint_singleton_tail_of_pairKeysNodup
     {responseName : Name} {fields : List ExecutableField}
-    {rest : List (Name × List ExecutableField)} :
-    PairKeysNodup ((responseName, fields) :: rest) ->
-      NormalForm.executableGroupNamesDisjoint [(responseName, fields)] rest := by
+    {rest : List (Name × List ExecutableField)}
+    : PairKeysNodup ((responseName, fields) :: rest)
+      -> NormalForm.executableGroupNamesDisjoint [(responseName, fields)] rest := by
   intro hnodup candidate hleft hright
   have hcandidate : candidate = responseName := by
     simpa using hleft
@@ -832,9 +808,8 @@ theorem executableGroupNamesDisjoint_singleton_tail_of_pairKeysNodup
   exact PairKeysNodup.head_not_mem_tail hnodup hright
 
 theorem executableGroupNamesNodup_of_pairKeysNodup
-    (groups : List (Name × List ExecutableField)) :
-    PairKeysNodup groups ->
-      NormalForm.executableGroupNamesNodup groups := by
+    (groups : List (Name × List ExecutableField))
+    : PairKeysNodup groups -> NormalForm.executableGroupNamesNodup groups := by
   induction groups with
   | nil =>
       simp [PairKeysNodup, NormalForm.executableGroupNamesNodup]
@@ -848,9 +823,8 @@ theorem executableGroupNamesNodup_of_pairKeysNodup
       exact ⟨hparts.1, ih hparts.2⟩
 
 theorem PairKeysNodup_of_executableGroupNamesNodup
-    (groups : List (Name × List ExecutableField)) :
-    NormalForm.executableGroupNamesNodup groups ->
-      PairKeysNodup groups := by
+    (groups : List (Name × List ExecutableField))
+    : NormalForm.executableGroupNamesNodup groups -> PairKeysNodup groups := by
   induction groups with
   | nil =>
       simp [PairKeysNodup]
@@ -865,126 +839,115 @@ theorem PairKeysNodup_of_executableGroupNamesNodup
 inductive ResponseMergeReady : ResponseValue -> Prop where
   | null : ResponseMergeReady .null
   | scalar (value : String) : ResponseMergeReady (.scalar value)
-  | object (fields : List (Name × ResponseValue)) :
-      PairKeysNodup fields ->
-      (∀ responseName response,
-        (responseName, response) ∈ fields ->
-          ResponseMergeReady response) ->
-        ResponseMergeReady (.object fields)
-  | list (values : List ResponseValue) :
-      (∀ response,
-        response ∈ values ->
-          ResponseMergeReady response) ->
-        ResponseMergeReady (.list values)
+  | object (fields : List (Name × ResponseValue))
+    : PairKeysNodup fields
+      -> (∀ responseName response,
+            (responseName, response) ∈ fields -> ResponseMergeReady response)
+      -> ResponseMergeReady (.object fields)
+  | list (values : List ResponseValue)
+    : (∀ response, response ∈ values -> ResponseMergeReady response)
+      -> ResponseMergeReady (.list values)
 
-def MergeResponseFieldsReadySteps :
-    List (Name × ResponseValue) -> List (Name × ResponseValue) -> Prop
+def MergeResponseFieldsReadySteps
+    : List (Name × ResponseValue) -> List (Name × ResponseValue) -> Prop
   | _existing, [] => True
   | existing, (responseName, incoming)::rest =>
-      ResponseMergeReady incoming ∧
-      (∀ existingResponse,
-        (responseName, existingResponse) ∈ existing ->
-          ResponseMergeReady (mergeResponse existingResponse incoming)) ∧
-      MergeResponseFieldsReadySteps
-        (mergeResponseField responseName incoming existing) rest
+      ResponseMergeReady incoming
+      ∧ (∀ existingResponse,
+          (responseName, existingResponse) ∈ existing
+          -> ResponseMergeReady (mergeResponse existingResponse incoming))
+      ∧ MergeResponseFieldsReadySteps
+          (mergeResponseField responseName incoming existing) rest
 
-def MergeResponseFieldsAbsorbsFrom
-    (base : List (Name × ResponseValue)) :
-    List (Name × ResponseValue) -> List (Name × ResponseValue) -> Prop
+def MergeResponseFieldsAbsorbsFrom (base : List (Name × ResponseValue))
+    : List (Name × ResponseValue) -> List (Name × ResponseValue) -> Prop
   | current, [] => ResponseAbsorbs (.object base) (.object current)
   | current, (responseName, incoming)::rest =>
       ResponseAbsorbs (.object base)
-        (.object (mergeResponseField responseName incoming current)) ∧
-      MergeResponseFieldsAbsorbsFrom base
-        (mergeResponseField responseName incoming current) rest
+        (.object (mergeResponseField responseName incoming current))
+      ∧ MergeResponseFieldsAbsorbsFrom base
+          (mergeResponseField responseName incoming current) rest
 
 def ExecutableFieldsMergeCompatible (fields : List ExecutableField) : Prop :=
   ∀ first later,
-    first ∈ fields ->
-    later ∈ fields ->
-    first.responseName = later.responseName ->
-      first.parentType = later.parentType ∧
-      first.fieldName = later.fieldName ∧
-      first.arguments = later.arguments
+    first ∈ fields
+    -> later ∈ fields
+    -> first.responseName = later.responseName
+    -> first.parentType = later.parentType
+        ∧ first.fieldName = later.fieldName
+        ∧ first.arguments = later.arguments
 
-def ExecutableFieldsValidationMergeCompatible
-    (fields : List ExecutableField) : Prop :=
+def ExecutableFieldsValidationMergeCompatible (fields : List ExecutableField) : Prop :=
   ∀ first later,
-    first ∈ fields ->
-    later ∈ fields ->
-    first.responseName = later.responseName ->
-      first.parentType = later.parentType ∧
-      first.fieldName = later.fieldName ∧
-      Argument.argumentsEquivalent first.arguments later.arguments
+    first ∈ fields
+    -> later ∈ fields
+    -> first.responseName = later.responseName
+    -> first.parentType = later.parentType
+        ∧ first.fieldName = later.fieldName
+        ∧ Argument.argumentsEquivalent first.arguments later.arguments
 
-def ExecutableFieldsSameParentValidationMergeCompatible
-    (fields : List ExecutableField) : Prop :=
+def ExecutableFieldsSameParentValidationMergeCompatible (fields : List ExecutableField)
+    : Prop :=
   ∀ first later,
-    first ∈ fields ->
-    later ∈ fields ->
-    first.responseName = later.responseName ->
-    first.parentType = later.parentType ->
-      first.fieldName = later.fieldName ∧
-      Argument.argumentsEquivalent first.arguments later.arguments
+    first ∈ fields
+    -> later ∈ fields
+    -> first.responseName = later.responseName
+    -> first.parentType = later.parentType
+    -> first.fieldName = later.fieldName
+        ∧ Argument.argumentsEquivalent first.arguments later.arguments
 
-def ExecutableFieldsFieldValidationMergeCompatible
-    (fields : List ExecutableField) : Prop :=
+def ExecutableFieldsFieldValidationMergeCompatible (fields : List ExecutableField)
+    : Prop :=
   ∀ first later,
-    first ∈ fields ->
-    later ∈ fields ->
-    first.responseName = later.responseName ->
-      first.fieldName = later.fieldName ∧
-      Argument.argumentsEquivalent first.arguments later.arguments
+    first ∈ fields
+    -> later ∈ fields
+    -> first.responseName = later.responseName
+    -> first.fieldName = later.fieldName
+        ∧ Argument.argumentsEquivalent first.arguments later.arguments
 
-def ExecutableFieldsArgumentsNodup
-    (fields : List ExecutableField) : Prop :=
-  ∀ field, field ∈ fields ->
-    (field.arguments.map Argument.name).Nodup
+def ExecutableFieldsArgumentsNodup (fields : List ExecutableField) : Prop :=
+  ∀ field, field ∈ fields -> (field.arguments.map Argument.name).Nodup
 
-def ExecutableFieldsSameResponseParent
-    (fields : List ExecutableField) : Prop :=
+def ExecutableFieldsSameResponseParent (fields : List ExecutableField) : Prop :=
   ∀ first later,
-    first ∈ fields ->
-    later ∈ fields ->
-    first.responseName = later.responseName ->
-      first.parentType = later.parentType
+    first ∈ fields
+    -> later ∈ fields
+    -> first.responseName = later.responseName
+    -> first.parentType = later.parentType
 
-def ExecutableFieldsParent
-    (parentType : Name) (fields : List ExecutableField) : Prop :=
+def ExecutableFieldsParent (parentType : Name) (fields : List ExecutableField) : Prop :=
   ∀ field, field ∈ fields -> field.parentType = parentType
 
-def ScopedFieldsValidationMergeCompatible
-    (fields : List FieldMerge.ScopedField) : Prop :=
+def ScopedFieldsValidationMergeCompatible (fields : List FieldMerge.ScopedField)
+    : Prop :=
   ∀ first later,
-    first ∈ fields ->
-    later ∈ fields ->
-    first.responseName = later.responseName ->
-    first.parentType = later.parentType ->
-      first.fieldName = later.fieldName ∧
-      Argument.argumentsEquivalent first.arguments later.arguments
+    first ∈ fields
+    -> later ∈ fields
+    -> first.responseName = later.responseName
+    -> first.parentType = later.parentType
+    -> first.fieldName = later.fieldName
+        ∧ Argument.argumentsEquivalent first.arguments later.arguments
 
-def ScopedFieldsSameResponseParent
-    (fields : List FieldMerge.ScopedField) : Prop :=
+def ScopedFieldsSameResponseParent (fields : List FieldMerge.ScopedField) : Prop :=
   ∀ first later,
-    first ∈ fields ->
-    later ∈ fields ->
-    first.responseName = later.responseName ->
-      first.parentType = later.parentType
+    first ∈ fields
+    -> later ∈ fields
+    -> first.responseName = later.responseName
+    -> first.parentType = later.parentType
 
-def ScopedFieldsFieldValidationMergeCompatible
-    (fields : List FieldMerge.ScopedField) : Prop :=
+def ScopedFieldsFieldValidationMergeCompatible (fields : List FieldMerge.ScopedField)
+    : Prop :=
   ∀ first later,
-    first ∈ fields ->
-    later ∈ fields ->
-    first.responseName = later.responseName ->
-      first.fieldName = later.fieldName ∧
-      Argument.argumentsEquivalent first.arguments later.arguments
+    first ∈ fields
+    -> later ∈ fields
+    -> first.responseName = later.responseName
+    -> first.fieldName = later.fieldName
+        ∧ Argument.argumentsEquivalent first.arguments later.arguments
 
 -- Proof-facing strengthening of GraphQL field merge compatibility for the scoped
 -- query fragment currently under consideration: every duplicated response key is
 -- the same semantic field with equivalent arguments.
-def ScopedFieldsNoAliasCollision
-    (fields : List FieldMerge.ScopedField) : Prop :=
+def ScopedFieldsNoAliasCollision (fields : List FieldMerge.ScopedField) : Prop :=
   ScopedFieldsFieldValidationMergeCompatible fields
 
 def OperationNoAliasCollision (schema : Schema) (operation : Operation) : Prop :=
@@ -993,65 +956,66 @@ def OperationNoAliasCollision (schema : Schema) (operation : Operation) : Prop :
 
 def ScopedFieldRuntimeApplies
     (schema : Schema) (runtimeType : Name)
-    (field : FieldMerge.ScopedField) : Prop :=
+    (field : FieldMerge.ScopedField)
+    : Prop :=
   schema.typeIncludesObjectBool field.parentType runtimeType = true
 
-def ScopedParentRuntimeApplies
-    (schema : Schema) (runtimeType parentType : Name) : Prop :=
+def ScopedParentRuntimeApplies (schema : Schema) (runtimeType parentType : Name)
+    : Prop :=
   schema.typeIncludesObjectBool parentType runtimeType = true
 
 theorem ScopedParentRuntimeApplies.of_rootSourceAppliesBool
     {ObjectIdentity : Type}
     (schema : Schema) (operation : Operation)
-    (runtimeType : Name) (identity : ObjectIdentity) :
-    rootSourceAppliesBool schema operation (.object runtimeType identity) = true ->
-      ScopedParentRuntimeApplies schema runtimeType operation.rootType := by
+    (runtimeType : Name) (identity : ObjectIdentity)
+    : rootSourceAppliesBool schema operation (.object runtimeType identity) = true
+      -> ScopedParentRuntimeApplies schema runtimeType operation.rootType := by
   intro hroot
   simpa [ScopedParentRuntimeApplies, rootSourceAppliesBool, runtimeObjectType?]
     using hroot
 
 theorem ScopedParentRuntimeApplies.of_typeIncludesObjectBool
-    (schema : Schema) (runtimeType parentType : Name) :
-    schema.typeIncludesObjectBool parentType runtimeType = true ->
-      ScopedParentRuntimeApplies schema runtimeType parentType := by
+    (schema : Schema) (runtimeType parentType : Name)
+    : schema.typeIncludesObjectBool parentType runtimeType = true
+      -> ScopedParentRuntimeApplies schema runtimeType parentType := by
   intro hincludes
   exact hincludes
 
 theorem ScopedParentRuntimeApplies.runtimeObjectType
-    (schema : Schema) {runtimeType parentType : Name} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ScopedParentRuntimeApplies schema runtimeType parentType ->
-      schema.objectType runtimeType := by
+    (schema : Schema) {runtimeType parentType : Name}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ScopedParentRuntimeApplies schema runtimeType parentType
+      -> schema.objectType runtimeType := by
   intro hschema hparentRuntime
   exact SchemaWellFormedness.schemaWellFormed_possibleTypesAreObjects hschema
     parentType runtimeType (List.contains_iff_mem.mp hparentRuntime)
 
 theorem ScopedParentRuntimeApplies.runtimeSelf
-    (schema : Schema) {runtimeType parentType : Name} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ScopedParentRuntimeApplies schema runtimeType parentType ->
-      schema.typeIncludesObjectBool runtimeType runtimeType = true := by
+    (schema : Schema) {runtimeType parentType : Name}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ScopedParentRuntimeApplies schema runtimeType parentType
+      -> schema.typeIncludesObjectBool runtimeType runtimeType = true := by
   intro hschema hparentRuntime
   exact NormalForm.object_typeIncludesObjectBool_self schema
     (ScopedParentRuntimeApplies.runtimeObjectType schema hschema
       hparentRuntime)
 
 theorem ScopedFieldsNoAliasCollision.fieldCompatible
-    (fields : List FieldMerge.ScopedField) :
-    ScopedFieldsNoAliasCollision fields ->
-      ScopedFieldsFieldValidationMergeCompatible fields := by
+    (fields : List FieldMerge.ScopedField)
+    : ScopedFieldsNoAliasCollision fields
+      -> ScopedFieldsFieldValidationMergeCompatible fields := by
   intro hnoAlias
   exact hnoAlias
 
 theorem ScopedFieldsNoAliasCollision.prefix_selection
     (schema : Schema) (parentType : Name)
     (selectionSet prefixSelections suffix : List Selection)
-    (selection : Selection) :
-    ScopedFieldsNoAliasCollision
-      (FieldMerge.collectFields schema parentType selectionSet) ->
-    selectionSet = prefixSelections ++ selection :: suffix ->
-      ScopedFieldsNoAliasCollision
-        (FieldMerge.collectFields schema parentType [selection]) := by
+    (selection : Selection)
+    : ScopedFieldsNoAliasCollision
+        (FieldMerge.collectFields schema parentType selectionSet)
+      -> selectionSet = prefixSelections ++ selection :: suffix
+      -> ScopedFieldsNoAliasCollision
+          (FieldMerge.collectFields schema parentType [selection]) := by
   intro hnoAlias hselectionSet
   unfold ScopedFieldsNoAliasCollision
   change ScopedFieldsFieldValidationMergeCompatible
@@ -1075,11 +1039,11 @@ theorem ScopedFieldsNoAliasCollision.prefix_selection
 
 theorem OperationNoAliasCollision.prefix_selection
     (schema : Schema) (operation : Operation)
-    (prefixSelections suffix : List Selection) (selection : Selection) :
-    OperationNoAliasCollision schema operation ->
-    operation.selectionSet = prefixSelections ++ selection :: suffix ->
-      ScopedFieldsNoAliasCollision
-        (FieldMerge.collectFields schema operation.rootType [selection]) := by
+    (prefixSelections suffix : List Selection) (selection : Selection)
+    : OperationNoAliasCollision schema operation
+      -> operation.selectionSet = prefixSelections ++ selection :: suffix
+      -> ScopedFieldsNoAliasCollision
+          (FieldMerge.collectFields schema operation.rootType [selection]) := by
   intro hnoAlias hselectionSet
   exact ScopedFieldsNoAliasCollision.prefix_selection schema operation.rootType
     operation.selectionSet prefixSelections suffix selection hnoAlias
@@ -1088,25 +1052,25 @@ theorem OperationNoAliasCollision.prefix_selection
 structure ValidOperationPrefixSelectionState
     (schema : Schema) (operation : Operation)
     (prefixSelections : List Selection) (selection : Selection)
-    (suffix : List Selection) : Prop where
-  selectionValid :
-    Validation.selectionValid schema operation.variableDefinitions
-      operation.rootType selection
-  fieldsInSetCanMerge :
-    FieldMerge.fieldsInSetCanMerge schema operation.rootType [selection]
-  noAlias :
-    ScopedFieldsNoAliasCollision
-      (FieldMerge.collectFields schema operation.rootType [selection])
+    (suffix : List Selection)
+    : Prop where
+  selectionValid
+    : Validation.selectionValid schema operation.variableDefinitions
+        operation.rootType selection
+  fieldsInSetCanMerge
+    : FieldMerge.fieldsInSetCanMerge schema operation.rootType [selection]
+  noAlias
+    : ScopedFieldsNoAliasCollision
+        (FieldMerge.collectFields schema operation.rootType [selection])
 
 theorem ValidOperationPrefixSelectionState.of_valid_noAlias
     (schema : Schema) (operation : Operation)
     (prefixSelections suffix : List Selection) (selection : Selection)
     (hvalid : Validation.operationDefinitionValid schema operation)
     (hnoAlias : OperationNoAliasCollision schema operation)
-    (hselectionSet :
-      operation.selectionSet = prefixSelections ++ selection :: suffix) :
-    ValidOperationPrefixSelectionState schema operation prefixSelections
-      selection suffix := by
+    (hselectionSet : operation.selectionSet = prefixSelections ++ selection :: suffix)
+    : ValidOperationPrefixSelectionState schema operation prefixSelections
+        selection suffix := by
   exact
     { selectionValid :=
         by
@@ -1134,27 +1098,27 @@ theorem ValidOperationPrefixSelectionState.field_lookup
     {schema : Schema} {operation : Operation}
     {prefixSelections suffix : List Selection}
     {responseName fieldName : Name} {arguments : List Argument}
-    {directives : List DirectiveApplication} {selectionSet : List Selection} :
-    ValidOperationPrefixSelectionState schema operation prefixSelections
-      (.field responseName fieldName arguments directives selectionSet)
-      suffix ->
-      ∃ fieldDefinition,
-        schema.lookupField operation.rootType fieldName = some fieldDefinition
+    {directives : List DirectiveApplication} {selectionSet : List Selection}
+    : ValidOperationPrefixSelectionState schema operation prefixSelections
+        (.field responseName fieldName arguments directives selectionSet)
+        suffix
+      -> ∃ fieldDefinition,
+          schema.lookupField operation.rootType fieldName = some fieldDefinition
           ∧ Validation.argumentsValid schema fieldDefinition.arguments
-            operation.variableDefinitions arguments
+              operation.variableDefinitions arguments
           ∧ Validation.fieldSelectionSetValid schema
-            operation.variableDefinitions fieldDefinition selectionSet := by
+              operation.variableDefinitions fieldDefinition selectionSet := by
   intro hstate
   exact Validation.selectionValid_field_lookup hstate.selectionValid
 
 theorem ValidOperationPrefixSelectionState.inline_none_selectionSetValid
     {schema : Schema} {operation : Operation}
     {prefixSelections suffix : List Selection}
-    {directives : List DirectiveApplication} {selectionSet : List Selection} :
-    ValidOperationPrefixSelectionState schema operation prefixSelections
-      (.inlineFragment none directives selectionSet) suffix ->
-      Validation.selectionSetValid schema operation.variableDefinitions
-        operation.rootType selectionSet := by
+    {directives : List DirectiveApplication} {selectionSet : List Selection}
+    : ValidOperationPrefixSelectionState schema operation prefixSelections
+        (.inlineFragment none directives selectionSet) suffix
+      -> Validation.selectionSetValid schema operation.variableDefinitions
+          operation.rootType selectionSet := by
   intro hstate
   exact
     Validation.selectionValid_inlineFragment_none_selectionSetValid
@@ -1164,11 +1128,11 @@ theorem ValidOperationPrefixSelectionState.inline_some_selectionSetValid
     {schema : Schema} {operation : Operation}
     {prefixSelections suffix : List Selection}
     {typeCondition : Name} {directives : List DirectiveApplication}
-    {selectionSet : List Selection} :
-    ValidOperationPrefixSelectionState schema operation prefixSelections
-      (.inlineFragment (some typeCondition) directives selectionSet) suffix ->
-      Validation.selectionSetValid schema operation.variableDefinitions
-        typeCondition selectionSet := by
+    {selectionSet : List Selection}
+    : ValidOperationPrefixSelectionState schema operation prefixSelections
+        (.inlineFragment (some typeCondition) directives selectionSet) suffix
+      -> Validation.selectionSetValid schema operation.variableDefinitions
+          typeCondition selectionSet := by
   intro hstate
   exact
     Validation.selectionValid_inlineFragment_some_selectionSetValid
@@ -1176,12 +1140,12 @@ theorem ValidOperationPrefixSelectionState.inline_some_selectionSetValid
 
 theorem ScopedFieldRuntimeApplies.mergeIdentityCondition
     (schema : Schema) (runtimeType : Name)
-    (first later : FieldMerge.ScopedField) :
-    ScopedFieldRuntimeApplies schema runtimeType first ->
-    ScopedFieldRuntimeApplies schema runtimeType later ->
-      first.parentType = later.parentType
-        ∨ ¬ schema.objectType first.parentType
-        ∨ ¬ schema.objectType later.parentType := by
+    (first later : FieldMerge.ScopedField)
+    : ScopedFieldRuntimeApplies schema runtimeType first
+      -> ScopedFieldRuntimeApplies schema runtimeType later
+      -> first.parentType = later.parentType
+          ∨ ¬ schema.objectType first.parentType
+          ∨ ¬ schema.objectType later.parentType := by
   intro hfirst hlater
   by_cases hfirstObject : schema.objectType first.parentType
   · by_cases hlaterObject : schema.objectType later.parentType
@@ -1199,52 +1163,59 @@ theorem ScopedFieldRuntimeApplies.mergeIdentityCondition
 
 def ScopedFieldMatchesExecutable
     (scopedField : FieldMerge.ScopedField)
-    (executableField : ExecutableField) : Prop :=
+    (executableField : ExecutableField)
+    : Prop :=
   scopedField.parentType = executableField.parentType
-    ∧ scopedField.responseName = executableField.responseName
-    ∧ scopedField.fieldName = executableField.fieldName
-    ∧ scopedField.arguments = executableField.arguments
-    ∧ scopedField.selectionSet = executableField.selectionSet
+  ∧ scopedField.responseName = executableField.responseName
+  ∧ scopedField.fieldName = executableField.fieldName
+  ∧ scopedField.arguments = executableField.arguments
+  ∧ scopedField.selectionSet = executableField.selectionSet
 
 def ScopedFieldMatchesExecutableIdentity
     (scopedField : FieldMerge.ScopedField)
-    (executableField : ExecutableField) : Prop :=
+    (executableField : ExecutableField)
+    : Prop :=
   scopedField.responseName = executableField.responseName
-    ∧ scopedField.fieldName = executableField.fieldName
-    ∧ scopedField.arguments = executableField.arguments
-    ∧ scopedField.selectionSet = executableField.selectionSet
+  ∧ scopedField.fieldName = executableField.fieldName
+  ∧ scopedField.arguments = executableField.arguments
+  ∧ scopedField.selectionSet = executableField.selectionSet
 
 def ExecutableFieldsScopedBy
     (scopedFields : List FieldMerge.ScopedField)
-    (fields : List ExecutableField) : Prop :=
-  ∀ field, field ∈ fields ->
-    ∃ scopedField,
-      scopedField ∈ scopedFields ∧
-      ScopedFieldMatchesExecutable scopedField field
+    (fields : List ExecutableField)
+    : Prop :=
+  ∀ field,
+    field ∈ fields
+    -> ∃ scopedField,
+        scopedField ∈ scopedFields ∧ ScopedFieldMatchesExecutable scopedField field
 
 def ExecutableFieldsIdentityScopedBy
     (scopedFields : List FieldMerge.ScopedField)
-    (fields : List ExecutableField) : Prop :=
-  ∀ field, field ∈ fields ->
-    ∃ scopedField,
-      scopedField ∈ scopedFields ∧
-      ScopedFieldMatchesExecutableIdentity scopedField field
+    (fields : List ExecutableField)
+    : Prop :=
+  ∀ field,
+    field ∈ fields
+    -> ∃ scopedField,
+        scopedField ∈ scopedFields
+        ∧ ScopedFieldMatchesExecutableIdentity scopedField field
 
 def ExecutableFieldsRuntimeScopedBy
     (schema : Schema) (runtimeType : Name)
     (scopedFields : List FieldMerge.ScopedField)
-    (fields : List ExecutableField) : Prop :=
-  ∀ field, field ∈ fields ->
-    ∃ scopedField,
-      scopedField ∈ scopedFields
+    (fields : List ExecutableField)
+    : Prop :=
+  ∀ field,
+    field ∈ fields
+    -> ∃ scopedField,
+        scopedField ∈ scopedFields
         ∧ ScopedFieldMatchesExecutableIdentity scopedField field
         ∧ ScopedFieldRuntimeApplies schema runtimeType scopedField
 
 theorem ScopedFieldMatchesExecutable.identity
     {scopedField : FieldMerge.ScopedField}
-    {executableField : ExecutableField} :
-    ScopedFieldMatchesExecutable scopedField executableField ->
-      ScopedFieldMatchesExecutableIdentity scopedField executableField := by
+    {executableField : ExecutableField}
+    : ScopedFieldMatchesExecutable scopedField executableField
+      -> ScopedFieldMatchesExecutableIdentity scopedField executableField := by
   intro hmatch
   rcases hmatch with
     ⟨_hparent, hresponseName, hfieldName, harguments, hselectionSet⟩
@@ -1252,9 +1223,9 @@ theorem ScopedFieldMatchesExecutable.identity
 
 theorem ExecutableFieldsScopedBy.identity
     (scopedFields : List FieldMerge.ScopedField)
-    (fields : List ExecutableField) :
-    ExecutableFieldsScopedBy scopedFields fields ->
-      ExecutableFieldsIdentityScopedBy scopedFields fields := by
+    (fields : List ExecutableField)
+    : ExecutableFieldsScopedBy scopedFields fields
+      -> ExecutableFieldsIdentityScopedBy scopedFields fields := by
   intro hscoped field hfield
   rcases hscoped field hfield with
     ⟨scopedField, hscopedMem, hmatch⟩
@@ -1264,9 +1235,9 @@ theorem ExecutableFieldsScopedBy.identity
 theorem ExecutableFieldsRuntimeScopedBy.identityScopedBy
     (schema : Schema) (runtimeType : Name)
     (scopedFields : List FieldMerge.ScopedField)
-    (fields : List ExecutableField) :
-    ExecutableFieldsRuntimeScopedBy schema runtimeType scopedFields fields ->
-      ExecutableFieldsIdentityScopedBy scopedFields fields := by
+    (fields : List ExecutableField)
+    : ExecutableFieldsRuntimeScopedBy schema runtimeType scopedFields fields
+      -> ExecutableFieldsIdentityScopedBy scopedFields fields := by
   intro hscoped field hfield
   rcases hscoped field hfield with
     ⟨scopedField, hscopedMem, hmatch, _hruntime⟩
@@ -1275,53 +1246,57 @@ theorem ExecutableFieldsRuntimeScopedBy.identityScopedBy
 theorem ExecutableFieldsRuntimeScopedBy.mono
     (schema : Schema) (runtimeType : Name)
     (scopedFields : List FieldMerge.ScopedField)
-    (source target : List ExecutableField) :
-    (∀ field, field ∈ target -> field ∈ source) ->
-    ExecutableFieldsRuntimeScopedBy schema runtimeType scopedFields source ->
-      ExecutableFieldsRuntimeScopedBy schema runtimeType scopedFields target := by
+    (source target : List ExecutableField)
+    : (∀ field, field ∈ target -> field ∈ source)
+      -> ExecutableFieldsRuntimeScopedBy schema runtimeType scopedFields source
+      -> ExecutableFieldsRuntimeScopedBy schema runtimeType scopedFields target := by
   intro hsubset hscoped field hfield
   exact hscoped field (hsubset field hfield)
 
 def ExecutableFieldsResolveStable
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField) : Prop :=
+    (source : ResolverValue ObjectIdentity) (fields : List ExecutableField)
+    : Prop :=
   ∀ first later,
-    first ∈ fields ->
-    later ∈ fields ->
-    first.responseName = later.responseName ->
-      resolvers.resolve first.parentType first.fieldName first.arguments source =
-      resolvers.resolve later.parentType later.fieldName later.arguments source
+    first ∈ fields
+    -> later ∈ fields
+    -> first.responseName = later.responseName
+    -> resolvers.resolve first.parentType first.fieldName first.arguments source
+        = resolvers.resolve later.parentType later.fieldName later.arguments source
 
 def ResolversRespectArgumentEquivalence
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : ResolverValue ObjectIdentity) : Prop :=
+    (source : ResolverValue ObjectIdentity)
+    : Prop :=
   ∀ parentType fieldName firstArguments laterArguments,
-    Argument.argumentsEquivalent firstArguments laterArguments ->
-      resolvers.resolve parentType fieldName firstArguments source =
-      resolvers.resolve parentType fieldName laterArguments source
+    Argument.argumentsEquivalent firstArguments laterArguments
+    -> resolvers.resolve parentType fieldName firstArguments source
+        = resolvers.resolve parentType fieldName laterArguments source
 
 def ResolversRespectFieldAndArgumentEquivalence
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : ResolverValue ObjectIdentity) : Prop :=
+    (source : ResolverValue ObjectIdentity)
+    : Prop :=
   ∀ firstParent laterParent fieldName firstArguments laterArguments,
-    Argument.argumentsEquivalent firstArguments laterArguments ->
-      resolvers.resolve firstParent fieldName firstArguments source =
-      resolvers.resolve laterParent fieldName laterArguments source
+    Argument.argumentsEquivalent firstArguments laterArguments
+    -> resolvers.resolve firstParent fieldName firstArguments source
+        = resolvers.resolve laterParent fieldName laterArguments source
 
 def ResolversRespectValidFieldAndArgumentEquivalence
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : ResolverValue ObjectIdentity) : Prop :=
+    (source : ResolverValue ObjectIdentity)
+    : Prop :=
   ∀ firstParent laterParent fieldName firstArguments laterArguments,
-    (firstArguments.map Argument.name).Nodup ->
-      (laterArguments.map Argument.name).Nodup ->
-        Argument.argumentsEquivalent firstArguments laterArguments ->
-          resolvers.resolve firstParent fieldName firstArguments source =
-          resolvers.resolve laterParent fieldName laterArguments source
+    (firstArguments.map Argument.name).Nodup
+    -> (laterArguments.map Argument.name).Nodup
+    -> Argument.argumentsEquivalent firstArguments laterArguments
+    -> resolvers.resolve firstParent fieldName firstArguments source
+        = resolvers.resolve laterParent fieldName laterArguments source
 
 theorem Resolvers.respectArgumentEquivalence
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
-    (source : ResolverValue ObjectIdentity) :
-    ResolversRespectArgumentEquivalence resolvers source := by
+    (source : ResolverValue ObjectIdentity)
+    : ResolversRespectArgumentEquivalence resolvers source := by
   intro parentType fieldName firstArguments laterArguments hequivalent
   exact resolvers.resolve_argumentsEquivalent parentType fieldName
     firstArguments laterArguments source hequivalent
@@ -1329,23 +1304,22 @@ theorem Resolvers.respectArgumentEquivalence
 theorem ExecutableFieldsResolveStable.tail
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
     (source : ResolverValue ObjectIdentity) (field : ExecutableField)
-    (fields : List ExecutableField) :
-    ExecutableFieldsResolveStable resolvers source (field :: fields) ->
-      ExecutableFieldsResolveStable resolvers source fields := by
+    (fields : List ExecutableField)
+    : ExecutableFieldsResolveStable resolvers source (field :: fields)
+      -> ExecutableFieldsResolveStable resolvers source fields := by
   intro hstable first later hfirst hlater hresponse
   exact hstable first later (by simp [hfirst]) (by simp [hlater]) hresponse
 
 theorem ExecutableFieldsResolveStable.head_eq_later
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
     (source : ResolverValue ObjectIdentity) (field later : ExecutableField)
-    (fields : List ExecutableField) :
-    ExecutableFieldsResolveStable resolvers source (field :: fields) ->
-    later ∈ fields ->
-    field.responseName = later.responseName ->
-      resolvers.resolve field.parentType field.fieldName field.arguments
-        source =
-      resolvers.resolve later.parentType later.fieldName later.arguments
-        source := by
+    (fields : List ExecutableField)
+    : ExecutableFieldsResolveStable resolvers source (field :: fields)
+      -> later ∈ fields
+      -> field.responseName = later.responseName
+      -> resolvers.resolve field.parentType field.fieldName field.arguments source
+          = resolvers.resolve later.parentType later.fieldName later.arguments
+              source := by
   intro hstable hlater hresponse
   exact hstable field later (by simp) (by simp [hlater]) hresponse
 
@@ -1357,38 +1331,36 @@ structure ExecutedResponseFieldAt
     (field : ExecutableField) (response : ResponseValue) where
   previous : ResponseValue
   resolved : ResolverValue ObjectIdentity
-  previous_eq :
-    previous = (responseObjectField? field.responseName output).getD (.object [])
-  resolved_eq :
-    resolved =
-      resolvers.resolve field.parentType field.fieldName field.arguments source
-  response_eq :
-    response =
-      completeValue schema resolvers variableValues completionDepth
-        ((schema.fieldReturnType? field.parentType field.fieldName).getD
-          field.fieldName)
-        field.selectionSet resolved previous
+  previous_eq
+    : previous = (responseObjectField? field.responseName output).getD (.object [])
+  resolved_eq
+    : resolved
+      = resolvers.resolve field.parentType field.fieldName field.arguments source
+  response_eq
+    : response
+      = completeValue schema resolvers variableValues completionDepth
+          ((schema.fieldReturnType? field.parentType field.fieldName).getD
+            field.fieldName)
+          field.selectionSet resolved previous
 
 def executableFieldSelection (field : ExecutableField) : Selection :=
   .field field.responseName field.fieldName field.arguments [] field.selectionSet
 
-def executableFieldSelections (fields : List ExecutableField) :
-    List Selection :=
+def executableFieldSelections (fields : List ExecutableField) : List Selection :=
   fields.map executableFieldSelection
 
-theorem selectionDirectivesAllowBool_empty
-    (variableValues : VariableValues) :
-    selectionDirectivesAllowBool variableValues [] = true := by
+theorem selectionDirectivesAllowBool_empty (variableValues : VariableValues)
+    : selectionDirectivesAllowBool variableValues [] = true := by
   rfl
 
 theorem collectSelection_executableFieldSelection
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (field : ExecutableField) :
-    GraphQL.Execution.collectSelection schema variableValues parentType source
-      (executableFieldSelection field) =
-    [(field.responseName, [{ field with parentType := parentType }])] := by
+    (field : ExecutableField)
+    : GraphQL.Execution.collectSelection schema variableValues parentType source
+        (executableFieldSelection field)
+      = [(field.responseName, [{ field with parentType := parentType }])] := by
   simp [executableFieldSelection, GraphQL.Execution.collectSelection,
     selectionDirectivesAllowBool_empty]
 
@@ -1396,11 +1368,11 @@ theorem collectSelection_executableFieldSelection_of_parent
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (field : ExecutableField) :
-    field.parentType = parentType ->
-      GraphQL.Execution.collectSelection schema variableValues parentType source
-        (executableFieldSelection field) =
-      [(field.responseName, [field])] := by
+    (field : ExecutableField)
+    : field.parentType = parentType
+      -> GraphQL.Execution.collectSelection schema variableValues parentType source
+            (executableFieldSelection field)
+          = [(field.responseName, [field])] := by
   intro hparent
   cases field with
   | mk fieldParent responseName fieldName arguments selectionSet =>
@@ -1412,15 +1384,15 @@ theorem collectFields_executableFieldSelections_same_group
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (responseName : Name) :
-    ∀ fields : List ExecutableField,
-      (∀ field, field ∈ fields -> field.responseName = responseName) ->
-      (∀ field, field ∈ fields -> field.parentType = parentType) ->
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections fields) =
-        match fields with
-        | [] => []
-        | _field :: _rest => [(responseName, fields)]
+    (responseName : Name)
+    : ∀ fields : List ExecutableField,
+        (∀ field, field ∈ fields -> field.responseName = responseName)
+        -> (∀ field, field ∈ fields -> field.parentType = parentType)
+        -> GraphQL.Execution.collectFields schema variableValues parentType source
+              (executableFieldSelections fields)
+            = match fields with
+              | [] => []
+              | _field :: _rest => [(responseName, fields)]
   | [], _hresponse, _hparent => by
       simp [executableFieldSelections, GraphQL.Execution.collectFields]
   | field :: rest, hresponse, hparent => by
@@ -1468,25 +1440,24 @@ theorem specExecuteRootSelectionSet_executableFieldSelections_same_group
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
-    (hresponse :
-      ∀ candidate, candidate ∈ field :: fields ->
-        candidate.responseName = responseName)
-    (hparent :
-      ∀ candidate, candidate ∈ field :: fields ->
-        candidate.parentType = parentType) :
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      depth parentType source (executableFieldSelections (field :: fields)) =
-    GraphQL.Execution.executeCollectedFields schema resolvers variableValues
-      depth source [(responseName, field :: fields)] := by
+    (hresponse
+      : ∀ candidate,
+          candidate ∈ field :: fields -> candidate.responseName = responseName)
+    (hparent
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
+    : GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+        depth parentType source (executableFieldSelections (field :: fields))
+      = GraphQL.Execution.executeCollectedFields schema resolvers variableValues
+          depth source [(responseName, field :: fields)] := by
   simp [GraphQL.Execution.executeRootSelectionSet,
     collectFields_executableFieldSelections_same_group schema variableValues
       parentType source responseName (field :: fields) hresponse hparent]
 
 theorem ResolversRespectFieldAndArgumentEquivalence.to_valid
     {ObjectIdentity : Type} {resolvers : Resolvers ObjectIdentity}
-    {source : ResolverValue ObjectIdentity} :
-    ResolversRespectFieldAndArgumentEquivalence resolvers source ->
-      ResolversRespectValidFieldAndArgumentEquivalence resolvers source := by
+    {source : ResolverValue ObjectIdentity}
+    : ResolversRespectFieldAndArgumentEquivalence resolvers source
+      -> ResolversRespectValidFieldAndArgumentEquivalence resolvers source := by
   intro hrespect firstParent laterParent fieldName firstArguments
     laterArguments _hfirstNodup _hlaterNodup hequivalent
   exact hrespect firstParent laterParent fieldName firstArguments
@@ -1495,50 +1466,44 @@ theorem ResolversRespectFieldAndArgumentEquivalence.to_valid
 def CollectedGroupsMergeCompatible
     {ObjectIdentity : Type} (resolvers : Resolvers ObjectIdentity)
     (source : ResolverValue ObjectIdentity)
-    (groups : List (Name × List ExecutableField)) : Prop :=
+    (groups : List (Name × List ExecutableField))
+    : Prop :=
   ∀ responseName fields,
-    (responseName, fields) ∈ groups ->
-      ExecutableFieldsMergeCompatible fields ∧
-      ExecutableFieldsResolveStable resolvers source fields
+    (responseName, fields) ∈ groups
+    -> ExecutableFieldsMergeCompatible fields
+        ∧ ExecutableFieldsResolveStable resolvers source fields
 
-def CollectedGroupsSameResponseParent
-    (groups : List (Name × List ExecutableField)) : Prop :=
+def CollectedGroupsSameResponseParent (groups : List (Name × List ExecutableField))
+    : Prop :=
   ∀ responseName fields,
-    (responseName, fields) ∈ groups ->
-      ExecutableFieldsSameResponseParent fields
+    (responseName, fields) ∈ groups -> ExecutableFieldsSameResponseParent fields
 
 def CollectedGroupsParent
     (parentType : Name)
-    (groups : List (Name × List ExecutableField)) : Prop :=
+    (groups : List (Name × List ExecutableField))
+    : Prop :=
   ∀ responseName fields,
-    (responseName, fields) ∈ groups ->
-      ExecutableFieldsParent parentType fields
+    (responseName, fields) ∈ groups -> ExecutableFieldsParent parentType fields
 
-def ExecutableFieldsResponseName
-    (responseName : Name) (fields : List ExecutableField) : Prop :=
+def ExecutableFieldsResponseName (responseName : Name) (fields : List ExecutableField)
+    : Prop :=
   ∀ field, field ∈ fields -> field.responseName = responseName
 
-def CollectedGroupsResponseName
-    (groups : List (Name × List ExecutableField)) : Prop :=
+def CollectedGroupsResponseName (groups : List (Name × List ExecutableField)) : Prop :=
   ∀ responseName fields,
-    (responseName, fields) ∈ groups ->
-      ExecutableFieldsResponseName responseName fields
+    (responseName, fields) ∈ groups -> ExecutableFieldsResponseName responseName fields
 
-def CollectedGroupsFieldsNonempty
-    (groups : List (Name × List ExecutableField)) : Prop :=
-  ∀ responseName fields,
-    (responseName, fields) ∈ groups ->
-      fields ≠ []
+def CollectedGroupsFieldsNonempty (groups : List (Name × List ExecutableField))
+    : Prop :=
+  ∀ responseName fields, (responseName, fields) ∈ groups -> fields ≠ []
 
-theorem CollectedGroupsFieldsNonempty_nil :
-    CollectedGroupsFieldsNonempty [] := by
+theorem CollectedGroupsFieldsNonempty_nil : CollectedGroupsFieldsNonempty [] := by
   intro _responseName _fields hmem
   simp at hmem
 
 theorem CollectedGroupsFieldsNonempty_singleton
-    (responseName : Name) (fields : List ExecutableField) :
-    fields ≠ [] ->
-      CollectedGroupsFieldsNonempty [(responseName, fields)] := by
+    (responseName : Name) (fields : List ExecutableField)
+    : fields ≠ [] -> CollectedGroupsFieldsNonempty [(responseName, fields)] := by
   intro hfields groupResponseName groupFields hmem
   have hgroup :
       (groupResponseName, groupFields) = (responseName, fields) := by
@@ -1548,18 +1513,18 @@ theorem CollectedGroupsFieldsNonempty_singleton
 
 theorem CollectedGroupsFieldsNonempty_tail
     {group : Name × List ExecutableField}
-    {groups : List (Name × List ExecutableField)} :
-    CollectedGroupsFieldsNonempty (group :: groups) ->
-      CollectedGroupsFieldsNonempty groups := by
+    {groups : List (Name × List ExecutableField)}
+    : CollectedGroupsFieldsNonempty (group :: groups)
+      -> CollectedGroupsFieldsNonempty groups := by
   intro hgroups responseName fields hmem
   exact hgroups responseName fields (by simp [hmem])
 
 theorem CollectedGroupsFieldsNonempty_addExecutableGroup
     (group : Name × List ExecutableField)
-    (groups : List (Name × List ExecutableField)) :
-    group.snd ≠ [] ->
-      CollectedGroupsFieldsNonempty groups ->
-        CollectedGroupsFieldsNonempty
+    (groups : List (Name × List ExecutableField))
+    : group.snd ≠ []
+      -> CollectedGroupsFieldsNonempty groups
+      -> CollectedGroupsFieldsNonempty
           (GraphQL.Execution.addExecutableGroup group groups) := by
   rcases group with ⟨groupName, groupFields⟩
   intro hgroup hgroups
@@ -1600,10 +1565,10 @@ theorem CollectedGroupsFieldsNonempty_addExecutableGroup
             responseName fields htail
 
 theorem CollectedGroupsFieldsNonempty_mergeExecutableGroups
-    (left right : List (Name × List ExecutableField)) :
-    CollectedGroupsFieldsNonempty left ->
-      CollectedGroupsFieldsNonempty right ->
-        CollectedGroupsFieldsNonempty
+    (left right : List (Name × List ExecutableField))
+    : CollectedGroupsFieldsNonempty left
+      -> CollectedGroupsFieldsNonempty right
+      -> CollectedGroupsFieldsNonempty
           (GraphQL.Execution.mergeExecutableGroups left right) := by
   intro hleft hright
   induction right generalizing left with
@@ -1616,24 +1581,24 @@ theorem CollectedGroupsFieldsNonempty_mergeExecutableGroups
         (CollectedGroupsFieldsNonempty_tail hright)
 
 theorem ExecutableFieldsParent.sameResponseParent
-    (parentType : Name) (fields : List ExecutableField) :
-    ExecutableFieldsParent parentType fields ->
-      ExecutableFieldsSameResponseParent fields := by
+    (parentType : Name) (fields : List ExecutableField)
+    : ExecutableFieldsParent parentType fields
+      -> ExecutableFieldsSameResponseParent fields := by
   intro hparent first later hfirst hlater _hresponse
   rw [hparent first hfirst, hparent later hlater]
 
 theorem CollectedGroupsParent.sameResponseParent
-    (parentType : Name) (groups : List (Name × List ExecutableField)) :
-    CollectedGroupsParent parentType groups ->
-      CollectedGroupsSameResponseParent groups := by
+    (parentType : Name) (groups : List (Name × List ExecutableField))
+    : CollectedGroupsParent parentType groups
+      -> CollectedGroupsSameResponseParent groups := by
   intro hparent responseName fields hmem
   exact ExecutableFieldsParent.sameResponseParent parentType fields
     (hparent responseName fields hmem)
 
 theorem ExecutableFieldsResponseName_singleton
-    (responseName : Name) (field : ExecutableField) :
-    field.responseName = responseName ->
-      ExecutableFieldsResponseName responseName [field] := by
+    (responseName : Name) (field : ExecutableField)
+    : field.responseName = responseName
+      -> ExecutableFieldsResponseName responseName [field] := by
   intro hfield candidate hmem
   have hcandidate : candidate = field := by
     simpa using hmem
@@ -1641,24 +1606,23 @@ theorem ExecutableFieldsResponseName_singleton
   exact hfield
 
 theorem ExecutableFieldsResponseName_append
-    (responseName : Name) (left right : List ExecutableField) :
-    ExecutableFieldsResponseName responseName left ->
-      ExecutableFieldsResponseName responseName right ->
-        ExecutableFieldsResponseName responseName (left ++ right) := by
+    (responseName : Name) (left right : List ExecutableField)
+    : ExecutableFieldsResponseName responseName left
+      -> ExecutableFieldsResponseName responseName right
+      -> ExecutableFieldsResponseName responseName (left ++ right) := by
   intro hleft hright field hmem
   rcases List.mem_append.mp hmem with hfield | hfield
   · exact hleft field hfield
   · exact hright field hfield
 
-theorem CollectedGroupsResponseName_nil :
-    CollectedGroupsResponseName [] := by
+theorem CollectedGroupsResponseName_nil : CollectedGroupsResponseName [] := by
   intro _responseName _fields hmem
   simp at hmem
 
 theorem CollectedGroupsResponseName_singleton
-    (responseName : Name) (fields : List ExecutableField) :
-    ExecutableFieldsResponseName responseName fields ->
-      CollectedGroupsResponseName [(responseName, fields)] := by
+    (responseName : Name) (fields : List ExecutableField)
+    : ExecutableFieldsResponseName responseName fields
+      -> CollectedGroupsResponseName [(responseName, fields)] := by
   intro hfields groupResponseName groupFields hmem
   have hpair :
       (groupResponseName, groupFields) = (responseName, fields) := by
@@ -1668,18 +1632,18 @@ theorem CollectedGroupsResponseName_singleton
 
 theorem CollectedGroupsResponseName_tail
     {group : Name × List ExecutableField}
-    {groups : List (Name × List ExecutableField)} :
-    CollectedGroupsResponseName (group :: groups) ->
-      CollectedGroupsResponseName groups := by
+    {groups : List (Name × List ExecutableField)}
+    : CollectedGroupsResponseName (group :: groups)
+      -> CollectedGroupsResponseName groups := by
   intro hgroups responseName fields hmem
   exact hgroups responseName fields (by simp [hmem])
 
 theorem CollectedGroupsResponseName_addExecutableGroup
     (group : Name × List ExecutableField)
-    (groups : List (Name × List ExecutableField)) :
-    ExecutableFieldsResponseName group.fst group.snd ->
-      CollectedGroupsResponseName groups ->
-        CollectedGroupsResponseName
+    (groups : List (Name × List ExecutableField))
+    : ExecutableFieldsResponseName group.fst group.snd
+      -> CollectedGroupsResponseName groups
+      -> CollectedGroupsResponseName
           (GraphQL.Execution.addExecutableGroup group groups) := by
   rcases group with ⟨groupName, groupFields⟩
   intro hgroup hgroups
@@ -1721,10 +1685,10 @@ theorem CollectedGroupsResponseName_addExecutableGroup
             responseName fields htail
 
 theorem CollectedGroupsResponseName_mergeExecutableGroups
-    (left right : List (Name × List ExecutableField)) :
-    CollectedGroupsResponseName left ->
-      CollectedGroupsResponseName right ->
-        CollectedGroupsResponseName
+    (left right : List (Name × List ExecutableField))
+    : CollectedGroupsResponseName left
+      -> CollectedGroupsResponseName right
+      -> CollectedGroupsResponseName
           (GraphQL.Execution.mergeExecutableGroups left right) := by
   intro hleft hright
   induction right generalizing left with
@@ -1737,10 +1701,8 @@ theorem CollectedGroupsResponseName_mergeExecutableGroups
           (hright group.fst group.snd (by simp)) hleft)
         (CollectedGroupsResponseName_tail hright)
 
-theorem ExecutableFieldsParent_singleton
-    (parentType : Name) (field : ExecutableField) :
-    field.parentType = parentType ->
-      ExecutableFieldsParent parentType [field] := by
+theorem ExecutableFieldsParent_singleton (parentType : Name) (field : ExecutableField)
+    : field.parentType = parentType -> ExecutableFieldsParent parentType [field] := by
   intro hfield candidate hmem
   have hcandidate : candidate = field := by
     simpa using hmem
@@ -1748,25 +1710,24 @@ theorem ExecutableFieldsParent_singleton
   exact hfield
 
 theorem ExecutableFieldsParent_append
-    (parentType : Name) (left right : List ExecutableField) :
-    ExecutableFieldsParent parentType left ->
-      ExecutableFieldsParent parentType right ->
-        ExecutableFieldsParent parentType (left ++ right) := by
+    (parentType : Name) (left right : List ExecutableField)
+    : ExecutableFieldsParent parentType left
+      -> ExecutableFieldsParent parentType right
+      -> ExecutableFieldsParent parentType (left ++ right) := by
   intro hleft hright field hmem
   rcases List.mem_append.mp hmem with hfield | hfield
   · exact hleft field hfield
   · exact hright field hfield
 
-theorem CollectedGroupsParent_nil
-    (parentType : Name) :
-    CollectedGroupsParent parentType [] := by
+theorem CollectedGroupsParent_nil (parentType : Name)
+    : CollectedGroupsParent parentType [] := by
   intro _responseName _fields hmem
   simp at hmem
 
 theorem CollectedGroupsParent_singleton
-    (parentType responseName : Name) (fields : List ExecutableField) :
-    ExecutableFieldsParent parentType fields ->
-      CollectedGroupsParent parentType [(responseName, fields)] := by
+    (parentType responseName : Name) (fields : List ExecutableField)
+    : ExecutableFieldsParent parentType fields
+      -> CollectedGroupsParent parentType [(responseName, fields)] := by
   intro hfields groupResponseName groupFields hmem
   have hpair :
       (groupResponseName, groupFields) = (responseName, fields) := by
@@ -1777,19 +1738,19 @@ theorem CollectedGroupsParent_singleton
 theorem CollectedGroupsParent_tail
     {parentType : Name}
     {group : Name × List ExecutableField}
-    {groups : List (Name × List ExecutableField)} :
-    CollectedGroupsParent parentType (group :: groups) ->
-      CollectedGroupsParent parentType groups := by
+    {groups : List (Name × List ExecutableField)}
+    : CollectedGroupsParent parentType (group :: groups)
+      -> CollectedGroupsParent parentType groups := by
   intro hgroups responseName fields hmem
   exact hgroups responseName fields (by simp [hmem])
 
 theorem CollectedGroupsParent_addExecutableGroup
     (parentType : Name)
     (group : Name × List ExecutableField)
-    (groups : List (Name × List ExecutableField)) :
-    ExecutableFieldsParent parentType group.snd ->
-      CollectedGroupsParent parentType groups ->
-        CollectedGroupsParent parentType
+    (groups : List (Name × List ExecutableField))
+    : ExecutableFieldsParent parentType group.snd
+      -> CollectedGroupsParent parentType groups
+      -> CollectedGroupsParent parentType
           (GraphQL.Execution.addExecutableGroup group groups) := by
   rcases group with ⟨groupName, groupFields⟩
   intro hgroup hgroups
@@ -1828,10 +1789,10 @@ theorem CollectedGroupsParent_addExecutableGroup
 
 theorem CollectedGroupsParent_mergeExecutableGroups
     (parentType : Name)
-    (left right : List (Name × List ExecutableField)) :
-    CollectedGroupsParent parentType left ->
-      CollectedGroupsParent parentType right ->
-        CollectedGroupsParent parentType
+    (left right : List (Name × List ExecutableField))
+    : CollectedGroupsParent parentType left
+      -> CollectedGroupsParent parentType right
+      -> CollectedGroupsParent parentType
           (GraphQL.Execution.mergeExecutableGroups left right) := by
   intro hleft hright
   induction right generalizing left with
@@ -1851,10 +1812,10 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
       (parentType : Name) (source : ResolverValue ObjectIdentity)
-      (selection : Selection) :
-      CollectedGroupsParent parentType
-        (GraphQL.Execution.collectSelection schema variableValues parentType
-          source selection) := by
+      (selection : Selection)
+      : CollectedGroupsParent parentType
+          (GraphQL.Execution.collectSelection schema variableValues parentType
+            source selection) := by
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
         by_cases hallows :
@@ -1933,10 +1894,10 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
       (parentType : Name) (source : ResolverValue ObjectIdentity)
-      (selectionSet : List Selection) :
-      CollectedGroupsParent parentType
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source selectionSet) := by
+      (selectionSet : List Selection)
+      : CollectedGroupsParent parentType
+          (GraphQL.Execution.collectFields schema variableValues parentType
+            source selectionSet) := by
     cases selectionSet with
     | nil =>
         simp [GraphQL.Execution.collectFields, CollectedGroupsParent_nil]
@@ -1957,10 +1918,10 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
       (parentType : Name) (source : ResolverValue ObjectIdentity)
-      (selection : Selection) :
-      CollectedGroupsResponseName
-        (GraphQL.Execution.collectSelection schema variableValues parentType
-          source selection) := by
+      (selection : Selection)
+      : CollectedGroupsResponseName
+          (GraphQL.Execution.collectSelection schema variableValues parentType
+            source selection) := by
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
         by_cases hallows :
@@ -2039,10 +2000,10 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
       (parentType : Name) (source : ResolverValue ObjectIdentity)
-      (selectionSet : List Selection) :
-      CollectedGroupsResponseName
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source selectionSet) := by
+      (selectionSet : List Selection)
+      : CollectedGroupsResponseName
+          (GraphQL.Execution.collectFields schema variableValues parentType
+            source selectionSet) := by
     cases selectionSet with
     | nil =>
         simp [GraphQL.Execution.collectFields, CollectedGroupsResponseName_nil]
@@ -2064,10 +2025,10 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
       (parentType : Name) (source : ResolverValue ObjectIdentity)
-      (selection : Selection) :
-      CollectedGroupsFieldsNonempty
-        (GraphQL.Execution.collectSelection schema variableValues parentType
-          source selection) := by
+      (selection : Selection)
+      : CollectedGroupsFieldsNonempty
+          (GraphQL.Execution.collectSelection schema variableValues parentType
+            source selection) := by
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
         by_cases hallows :
@@ -2138,10 +2099,10 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
       (parentType : Name) (source : ResolverValue ObjectIdentity)
-      (selectionSet : List Selection) :
-      CollectedGroupsFieldsNonempty
-        (GraphQL.Execution.collectFields schema variableValues parentType
-          source selectionSet) := by
+      (selectionSet : List Selection)
+      : CollectedGroupsFieldsNonempty
+          (GraphQL.Execution.collectFields schema variableValues parentType
+            source selectionSet) := by
     cases selectionSet with
     | nil =>
         simp [GraphQL.Execution.collectFields,
@@ -2163,26 +2124,28 @@ theorem collectFields_sameResponseParent
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    CollectedGroupsSameResponseParent
-      (GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet) :=
+    (selectionSet : List Selection)
+    : CollectedGroupsSameResponseParent
+        (GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet) :=
   CollectedGroupsParent.sameResponseParent parentType
     (GraphQL.Execution.collectFields schema variableValues parentType source
       selectionSet)
     (collectFields_parent schema variableValues parentType source selectionSet)
 
 def CollectedGroupsValidationMergeCompatible
-    (groups : List (Name × List ExecutableField)) : Prop :=
+    (groups : List (Name × List ExecutableField))
+    : Prop :=
   ∀ responseName fields,
-    (responseName, fields) ∈ groups ->
-      ExecutableFieldsSameParentValidationMergeCompatible fields
+    (responseName, fields) ∈ groups
+    -> ExecutableFieldsSameParentValidationMergeCompatible fields
 
 def CollectedGroupsFieldValidationMergeCompatible
-    (groups : List (Name × List ExecutableField)) : Prop :=
+    (groups : List (Name × List ExecutableField))
+    : Prop :=
   ∀ responseName fields,
-    (responseName, fields) ∈ groups ->
-      ExecutableFieldsFieldValidationMergeCompatible fields
+    (responseName, fields) ∈ groups
+    -> ExecutableFieldsFieldValidationMergeCompatible fields
 
 end ExecutionUngrouped
 end Algorithms

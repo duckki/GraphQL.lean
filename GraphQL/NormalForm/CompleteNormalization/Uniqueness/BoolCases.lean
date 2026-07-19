@@ -9,16 +9,15 @@ namespace NormalForm
 
 namespace CompleteNormalization
 
-def boolCaseVariableValues
-    (boolCase : BoolCase)
-    (base : Execution.VariableValues := []) : Execution.VariableValues :=
+def boolCaseVariableValues (boolCase : BoolCase) (base : Execution.VariableValues := [])
+    : Execution.VariableValues :=
   boolCase.map (fun entry => (entry.1, .boolean entry.2)) ++ base
 
 theorem BoolCase.lookup?_eq_of_pair_mem_nodup
     {boolCase : BoolCase} {varName : BoolVar} {value : Bool}
     (hnodup : (boolCase.map Prod.fst).Nodup)
-    (hmem : (varName, value) ∈ boolCase) :
-    BoolCase.lookup? boolCase varName = some value := by
+    (hmem : (varName, value) ∈ boolCase)
+    : BoolCase.lookup? boolCase varName = some value := by
   induction boolCase with
   | nil => simp at hmem
   | cons head rest ih =>
@@ -42,9 +41,8 @@ theorem inputValueBoolean?_eq_of_agrees_completeNormalBoolCase
     (hcomplete : completeNormalBoolCase variables boolCase)
     (hagrees : variableValuesAgreeWithCase variableValues boolCase variables)
     {varName : BoolVar} {value : Bool}
-    (hmem : (varName, value) ∈ boolCase) :
-    Execution.inputValueBoolean? variableValues (.variable varName) =
-      some value := by
+    (hmem : (varName, value) ∈ boolCase)
+    : Execution.inputValueBoolean? variableValues (.variable varName) = some value := by
   have hvarMem : varName ∈ variables :=
     (hcomplete.2.2 varName).1
       (List.mem_map.mpr ⟨(varName, value), hmem, rfl⟩)
@@ -53,13 +51,11 @@ theorem inputValueBoolean?_eq_of_agrees_completeNormalBoolCase
 
 private theorem lookupVariableValue?_boolCaseVariableValues_of_mem
     {boolCase : BoolCase} {varName : BoolVar} {value : Bool}
-    (base : Execution.VariableValues) :
-    (boolCase.map Prod.fst).Nodup ->
-    (varName, value) ∈ boolCase ->
-      Execution.lookupVariableValue?
-          (boolCaseVariableValues boolCase base) varName
-        =
-      some (.boolean value) := by
+    (base : Execution.VariableValues)
+    : (boolCase.map Prod.fst).Nodup
+      -> (varName, value) ∈ boolCase
+      -> Execution.lookupVariableValue? (boolCaseVariableValues boolCase base) varName
+          = some (.boolean value) := by
   intro hnodup hmem
   induction boolCase with
   | nil => simp at hmem
@@ -83,11 +79,10 @@ private theorem inputValueBoolean?_boolCaseVariableValues_of_mem
     {boolCase : BoolCase} {varName : BoolVar} {value : Bool}
     (base : Execution.VariableValues)
     (hnodup : (boolCase.map Prod.fst).Nodup)
-    (hmem : (varName, value) ∈ boolCase) :
-    Execution.inputValueBoolean?
+    (hmem : (varName, value) ∈ boolCase)
+    : Execution.inputValueBoolean?
         (boolCaseVariableValues boolCase base) (.variable varName)
-      =
-    some value := by
+      = some value := by
   simp [Execution.inputValueBoolean?,
     lookupVariableValue?_boolCaseVariableValues_of_mem base hnodup hmem,
     InputValue.staticBoolean?]
@@ -96,8 +91,8 @@ private theorem boolCase_value_eq_of_map_fst_nodup
     {boolCase : BoolCase} {varName : BoolVar} {leftValue rightValue : Bool}
     (hnodup : (boolCase.map Prod.fst).Nodup)
     (hleft : (varName, leftValue) ∈ boolCase)
-    (hright : (varName, rightValue) ∈ boolCase) :
-    leftValue = rightValue := by
+    (hright : (varName, rightValue) ∈ boolCase)
+    : leftValue = rightValue := by
   induction boolCase with
   | nil => simp at hleft
   | cons head rest ih =>
@@ -122,12 +117,12 @@ private theorem boolCase_value_eq_of_map_fst_nodup
 private theorem boolCaseVariableValues_agree
     {variables : List BoolVar} {boolCase : BoolCase}
     (base : Execution.VariableValues)
-    (hcomplete : completeNormalBoolCase variables boolCase) :
-    ∀ varName value, (varName, value) ∈ boolCase ->
-      Execution.inputValueBoolean?
-          (boolCaseVariableValues boolCase base) (.variable varName)
-        =
-      some value := by
+    (hcomplete : completeNormalBoolCase variables boolCase)
+    : ∀ varName value,
+        (varName, value) ∈ boolCase
+        -> Execution.inputValueBoolean?
+              (boolCaseVariableValues boolCase base) (.variable varName)
+            = some value := by
   intro varName value hmem
   exact inputValueBoolean?_boolCaseVariableValues_of_mem base
     hcomplete.2.1 hmem
@@ -135,9 +130,9 @@ private theorem boolCaseVariableValues_agree
 theorem variableValuesAgreeWithCase_boolCaseVariableValues
     {variables : List BoolVar} {boolCase : BoolCase}
     (base : Execution.VariableValues)
-    (hcomplete : completeNormalBoolCase variables boolCase) :
-    variableValuesAgreeWithCase (boolCaseVariableValues boolCase base)
-      boolCase variables := by
+    (hcomplete : completeNormalBoolCase variables boolCase)
+    : variableValuesAgreeWithCase (boolCaseVariableValues boolCase base)
+        boolCase variables := by
   intro varName hvarMem
   have hcaseVar : varName ∈ boolCase.map Prod.fst :=
     (hcomplete.2.2 varName).2 hvarMem
@@ -153,8 +148,8 @@ theorem variableValuesAgreeWithCase_boolCaseVariableValues
 theorem boolVarsComplete_boolCaseVariableValues
     {variables : List BoolVar} {boolCase : BoolCase}
     (base : Execution.VariableValues)
-    (hcomplete : completeNormalBoolCase variables boolCase) :
-    boolVarsComplete variables (boolCaseVariableValues boolCase base) := by
+    (hcomplete : completeNormalBoolCase variables boolCase)
+    : boolVarsComplete variables (boolCaseVariableValues boolCase base) := by
   intro varName hvarMem
   have hcaseVar : varName ∈ boolCase.map Prod.fst :=
     (hcomplete.2.2 varName).2 hvarMem
@@ -169,13 +164,12 @@ theorem boolCaseVariableValues_agree_of_equivalent
     {variables : List BoolVar} {selected candidate : BoolCase}
     (base : Execution.VariableValues)
     (hselected : completeNormalBoolCase variables selected)
-    (hequivalent :
-      completeNormalBoolCasesEquivalent selected candidate) :
-    ∀ varName value, (varName, value) ∈ candidate ->
-      Execution.inputValueBoolean?
-          (boolCaseVariableValues selected base) (.variable varName)
-        =
-      some value := by
+    (hequivalent : completeNormalBoolCasesEquivalent selected candidate)
+    : ∀ varName value,
+        (varName, value) ∈ candidate
+        -> Execution.inputValueBoolean?
+              (boolCaseVariableValues selected base) (.variable varName)
+            = some value := by
   intro varName value hmem
   exact boolCaseVariableValues_agree base hselected varName value
     ((hequivalent varName value).2 hmem)
@@ -184,9 +178,9 @@ private theorem completeNormalBoolCasesEquivalent_of_candidate_pairs
     {variables : List BoolVar} {selected candidate : BoolCase}
     (hselected : completeNormalBoolCase variables selected)
     (hcandidate : completeNormalBoolCase variables candidate)
-    (hpairs : ∀ varName value, (varName, value) ∈ candidate ->
-      (varName, value) ∈ selected) :
-    completeNormalBoolCasesEquivalent selected candidate := by
+    (hpairs
+      : ∀ varName value, (varName, value) ∈ candidate -> (varName, value) ∈ selected)
+    : completeNormalBoolCasesEquivalent selected candidate := by
   intro varName value
   constructor
   · intro hselectedPair
@@ -212,11 +206,8 @@ theorem completeNormalBoolCases_mismatch_pair
     {variables : List BoolVar} {selected candidate : BoolCase}
     (hselected : completeNormalBoolCase variables selected)
     (hcandidate : completeNormalBoolCase variables candidate)
-    (hnequivalent :
-      ¬ completeNormalBoolCasesEquivalent selected candidate) :
-    ∃ varName value,
-      (varName, value) ∈ candidate
-        ∧ (varName, !value) ∈ selected := by
+    (hnequivalent : ¬ completeNormalBoolCasesEquivalent selected candidate)
+    : ∃ varName value, (varName, value) ∈ candidate ∧ (varName, !value) ∈ selected := by
   classical
   by_cases hexists : ∃ varName value,
       (varName, value) ∈ candidate
@@ -254,14 +245,12 @@ theorem boolCaseVariableValues_mismatch_of_not_equivalent
     (base : Execution.VariableValues)
     (hselected : completeNormalBoolCase variables selected)
     (hcandidate : completeNormalBoolCase variables candidate)
-    (hnequivalent :
-      ¬ completeNormalBoolCasesEquivalent selected candidate) :
-    ∃ varName value,
-      (varName, value) ∈ candidate
+    (hnequivalent : ¬ completeNormalBoolCasesEquivalent selected candidate)
+    : ∃ varName value,
+        (varName, value) ∈ candidate
         ∧ Execution.inputValueBoolean?
             (boolCaseVariableValues selected base) (.variable varName)
-          =
-        some (!value) := by
+          = some (!value) := by
   rcases completeNormalBoolCases_mismatch_pair hselected hcandidate
       hnequivalent with
     ⟨varName, value, hcandidatePair, hselectedPair⟩

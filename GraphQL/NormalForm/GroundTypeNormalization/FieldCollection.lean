@@ -19,33 +19,34 @@ namespace GroundTypeNormalization
 
 variable {ObjectRef : Type}
 
-def executableFieldScoped? (schema : Schema)
-    (field : Execution.ExecutableField) : Option FieldMerge.ScopedField := do
+def executableFieldScoped? (schema : Schema) (field : Execution.ExecutableField)
+    : Option FieldMerge.ScopedField := do
   let fieldDefinition <- schema.lookupField field.parentType field.fieldName
-  some {
-    parentType := field.parentType,
-    responseName := field.responseName,
-    fieldName := field.fieldName,
-    arguments := field.arguments,
-    outputType := fieldDefinition.outputType,
-    selectionSet := field.selectionSet
-  }
+  some
+    {
+      parentType := field.parentType,
+      responseName := field.responseName,
+      fieldName := field.fieldName,
+      arguments := field.arguments,
+      outputType := fieldDefinition.outputType,
+      selectionSet := field.selectionSet
+    }
 
 theorem executableFieldScoped?_some
     {schema : Schema} {field : Execution.ExecutableField}
-    {scopedField : FieldMerge.ScopedField} :
-    executableFieldScoped? schema field = some scopedField ->
-      ∃ fieldDefinition,
-        schema.lookupField field.parentType field.fieldName =
-          some fieldDefinition
-          ∧ scopedField = {
-            parentType := field.parentType,
-            responseName := field.responseName,
-            fieldName := field.fieldName,
-            arguments := field.arguments,
-            outputType := fieldDefinition.outputType,
-            selectionSet := field.selectionSet
-          } := by
+    {scopedField : FieldMerge.ScopedField}
+    : executableFieldScoped? schema field = some scopedField
+      -> ∃ fieldDefinition,
+          schema.lookupField field.parentType field.fieldName = some fieldDefinition
+          ∧ scopedField
+            = {
+                parentType := field.parentType,
+                responseName := field.responseName,
+                fieldName := field.fieldName,
+                arguments := field.arguments,
+                outputType := fieldDefinition.outputType,
+                selectionSet := field.selectionSet
+              } := by
   intro hscoped
   unfold executableFieldScoped? at hscoped
   cases hlookup : schema.lookupField field.parentType field.fieldName with
@@ -58,13 +59,13 @@ theorem executableFieldScoped?_some
 
 theorem executableFieldScoped?_sameSelection
     {schema : Schema} {field : Execution.ExecutableField}
-    {scopedField : FieldMerge.ScopedField} :
-    executableFieldScoped? schema field = some scopedField ->
-      scopedField.parentType = field.parentType
-        ∧ scopedField.responseName = field.responseName
-        ∧ scopedField.fieldName = field.fieldName
-        ∧ scopedField.arguments = field.arguments
-        ∧ scopedField.selectionSet = field.selectionSet := by
+    {scopedField : FieldMerge.ScopedField}
+    : executableFieldScoped? schema field = some scopedField
+      -> scopedField.parentType = field.parentType
+          ∧ scopedField.responseName = field.responseName
+          ∧ scopedField.fieldName = field.fieldName
+          ∧ scopedField.arguments = field.arguments
+          ∧ scopedField.selectionSet = field.selectionSet := by
   intro hscoped
   rcases executableFieldScoped?_some hscoped with
     ⟨_fieldDefinition, _hlookup, hshape⟩
@@ -73,23 +74,23 @@ theorem executableFieldScoped?_sameSelection
 
 theorem executableGroupWellFormed_field_responseName
     {group : Name × List Execution.ExecutableField}
-    {field : Execution.ExecutableField} :
-    executableGroupWellFormed group ->
-      field ∈ group.snd ->
-        field.responseName = group.fst := by
+    {field : Execution.ExecutableField}
+    : executableGroupWellFormed group
+      -> field ∈ group.snd
+      -> field.responseName = group.fst := by
   intro hgroup hfield
   exact hgroup.2 field hfield
 
 theorem executableFields_same_parent_identity_of_scoped_merge
     {schema : Schema}
     {left right : Execution.ExecutableField}
-    {leftScoped rightScoped : FieldMerge.ScopedField} :
-    executableFieldScoped? schema left = some leftScoped ->
-      executableFieldScoped? schema right = some rightScoped ->
-        FieldMerge.fieldsForNameCanMerge schema leftScoped rightScoped ->
-          left.parentType = right.parentType ->
-            left.fieldName = right.fieldName
-              ∧ Argument.argumentsEquivalent left.arguments right.arguments := by
+    {leftScoped rightScoped : FieldMerge.ScopedField}
+    : executableFieldScoped? schema left = some leftScoped
+      -> executableFieldScoped? schema right = some rightScoped
+      -> FieldMerge.fieldsForNameCanMerge schema leftScoped rightScoped
+      -> left.parentType = right.parentType
+      -> left.fieldName = right.fieldName
+          ∧ Argument.argumentsEquivalent left.arguments right.arguments := by
   intro hleftScoped hrightScoped hmerge hparent
   have hleftShape :=
     executableFieldScoped?_sameSelection hleftScoped
@@ -110,18 +111,18 @@ theorem executableFields_same_parent_identity_of_scoped_merge
 
 theorem lookupType_name_eq_for_collection
     (schema : Schema) {typeName : Name}
-    {typeDefinition : TypeDefinition} :
-    schema.lookupType typeName = some typeDefinition ->
-      typeDefinition.name = typeName := by
+    {typeDefinition : TypeDefinition}
+    : schema.lookupType typeName = some typeDefinition
+      -> typeDefinition.name = typeName := by
   intro hlookup
   have hmatch := List.find?_some hlookup
   simpa [Schema.lookupType] using hmatch
 
 theorem typeIncludesObjectBool_eq_of_objectTypeNameBool_true_for_collection
-    (schema : Schema) {typeName runtimeType : Name} :
-    objectTypeNameBool schema typeName = true ->
-      schema.typeIncludesObjectBool typeName runtimeType = true ->
-        runtimeType = typeName := by
+    (schema : Schema) {typeName runtimeType : Name}
+    : objectTypeNameBool schema typeName = true
+      -> schema.typeIncludesObjectBool typeName runtimeType = true
+      -> runtimeType = typeName := by
   intro hobject hinclude
   unfold objectTypeNameBool at hobject
   cases hlookup : schema.lookupType typeName with
@@ -143,14 +144,14 @@ theorem typeIncludesObjectBool_eq_of_objectTypeNameBool_true_for_collection
       | inputObject inputObjectType => simp [hlookup] at hobject
 
 theorem doesFragmentTypeApplyBool_eq_typesOverlapBool_of_object_parent_source
-    (schema : Schema) {parentType typeCondition : Name} {source : Execution.ResolverValue ObjectRef} :
-    objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType ref,
-        source = .object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-        Execution.doesFragmentTypeApplyBool schema parentType source
-          typeCondition =
-        schema.typesOverlapBool parentType typeCondition := by
+    (schema : Schema) {parentType typeCondition : Name}
+    {source : Execution.ResolverValue ObjectRef}
+    : objectTypeNameBool schema parentType = true
+      -> (∃ runtimeType ref,
+            source = .object runtimeType ref
+            ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+      -> Execution.doesFragmentTypeApplyBool schema parentType source typeCondition
+          = schema.typesOverlapBool parentType typeCondition := by
   intro hobject hsource
   rcases hsource with ⟨runtimeType, ref, hsourceEq, hparent⟩
   subst source
@@ -179,11 +180,10 @@ theorem doesFragmentTypeApplyBool_eq_typesOverlapBool_of_object_parent_source
       | enum enumType => simp [hlookup] at hobject
       | inputObject inputObjectType => simp [hlookup] at hobject
 
-theorem collectedResponseSelectionSet_eq_nil_of_key_absent
-    (responseName : Name) :
-    ∀ groups,
-      responseName ∉ groups.map Prod.fst ->
-        collectedResponseSelectionSet responseName groups = []
+theorem collectedResponseSelectionSet_eq_nil_of_key_absent (responseName : Name)
+    : ∀ groups,
+        responseName ∉ groups.map Prod.fst
+        -> collectedResponseSelectionSet responseName groups = []
   | [], _habsent => by
       simp [collectedResponseSelectionSet]
   | group :: rest, habsent => by
@@ -203,16 +203,15 @@ theorem collectedResponseSelectionSet_eq_nil_of_key_absent
           hrestAbsent]
 
 theorem collectedResponseSelectionSet_addExecutableGroup
-    (responseName : Name) (group : Name × List Execution.ExecutableField) :
-    ∀ groups,
-      collectedResponseSelectionSet responseName
-        (Execution.addExecutableGroup group groups)
-        =
-      collectedResponseSelectionSet responseName groups
-        ++ if group.fst == responseName then
-          Execution.mergedFieldSelectionSet group.snd
-        else
-          []
+    (responseName : Name) (group : Name × List Execution.ExecutableField)
+    : ∀ groups,
+        collectedResponseSelectionSet responseName
+          (Execution.addExecutableGroup group groups)
+        = collectedResponseSelectionSet responseName groups
+          ++  if group.fst == responseName then
+                Execution.mergedFieldSelectionSet group.snd
+              else
+                []
   | [] => by
       rcases group with ⟨groupResponseName, fields⟩
       by_cases hresponse : (groupResponseName == responseName) = true
@@ -269,15 +268,13 @@ theorem collectedResponseSelectionSet_addExecutableGroup
             collectedResponseSelectionSet_addExecutableGroup responseName
               (groupResponseName, groupFields) rest]
 
-theorem collectedResponseSelectionSet_mergeExecutableGroups
-    (responseName : Name) :
-    ∀ left right,
-      executableGroupNamesNodup right ->
-        collectedResponseSelectionSet responseName
-          (Execution.mergeExecutableGroups left right)
-          =
-        collectedResponseSelectionSet responseName left
-          ++ collectedResponseSelectionSet responseName right
+theorem collectedResponseSelectionSet_mergeExecutableGroups (responseName : Name)
+    : ∀ left right,
+        executableGroupNamesNodup right
+        -> collectedResponseSelectionSet responseName
+              (Execution.mergeExecutableGroups left right)
+            = collectedResponseSelectionSet responseName left
+              ++ collectedResponseSelectionSet responseName right
   | left, [], _hnodup => by
       simp [Execution.mergeExecutableGroups, collectedResponseSelectionSet]
   | left, group :: rest, hnodup => by
@@ -310,9 +307,8 @@ theorem collectedResponseSelectionSet_mergeExecutableGroups
             (groupResponseName, fields) left]
         simp [collectedResponseSelectionSet, hresponseFalse]
 
-theorem executableGroupWellFormed_singleton_field
-    (field : Execution.ExecutableField) :
-    executableGroupWellFormed (field.responseName, [field]) := by
+theorem executableGroupWellFormed_singleton_field (field : Execution.ExecutableField)
+    : executableGroupWellFormed (field.responseName, [field]) := by
   constructor
   · simp
   · intro candidate hcandidate
@@ -320,26 +316,24 @@ theorem executableGroupWellFormed_singleton_field
     subst candidate
     rfl
 
-theorem executableGroupsWellFormed_nil :
-    executableGroupsWellFormed [] := by
+theorem executableGroupsWellFormed_nil : executableGroupsWellFormed [] := by
   intro group hgroup
   simp at hgroup
 
 theorem executableGroupsWellFormed_tail
     {group : Name × List Execution.ExecutableField}
-    {groups : List (Name × List Execution.ExecutableField)} :
-    executableGroupsWellFormed (group :: groups) ->
-      executableGroupsWellFormed groups := by
+    {groups : List (Name × List Execution.ExecutableField)}
+    : executableGroupsWellFormed (group :: groups)
+      -> executableGroupsWellFormed groups := by
   intro hgroups candidate hcandidate
   exact hgroups candidate (by simp [hcandidate])
 
 theorem addExecutableGroup_wellFormed
     (group : Name × List Execution.ExecutableField)
-    (groups : List (Name × List Execution.ExecutableField)) :
-    executableGroupWellFormed group ->
-      executableGroupsWellFormed groups ->
-        executableGroupsWellFormed
-          (Execution.addExecutableGroup group groups) := by
+    (groups : List (Name × List Execution.ExecutableField))
+    : executableGroupWellFormed group
+      -> executableGroupsWellFormed groups
+      -> executableGroupsWellFormed (Execution.addExecutableGroup group groups) := by
   intro hgroup hgroups
   induction groups with
   | nil =>
@@ -380,11 +374,10 @@ theorem addExecutableGroup_wellFormed
             htail
 
 theorem mergeExecutableGroups_wellFormed
-    (left right : List (Name × List Execution.ExecutableField)) :
-    executableGroupsWellFormed left ->
-      executableGroupsWellFormed right ->
-        executableGroupsWellFormed
-          (Execution.mergeExecutableGroups left right) := by
+    (left right : List (Name × List Execution.ExecutableField))
+    : executableGroupsWellFormed left
+      -> executableGroupsWellFormed right
+      -> executableGroupsWellFormed (Execution.mergeExecutableGroups left right) := by
   intro hleft hright
   induction right generalizing left with
   | nil =>
@@ -398,11 +391,9 @@ theorem mergeExecutableGroups_wellFormed
 
 theorem mergeExecutableGroups_mem_responseName
     (left right : List (Name × List Execution.ExecutableField))
-    (responseName : Name) :
-    responseName ∈
-        (Execution.mergeExecutableGroups left right).map Prod.fst
-      ↔ responseName ∈ left.map Prod.fst
-        ∨ responseName ∈ right.map Prod.fst := by
+    (responseName : Name)
+    : responseName ∈ (Execution.mergeExecutableGroups left right).map Prod.fst
+      ↔ responseName ∈ left.map Prod.fst ∨ responseName ∈ right.map Prod.fst := by
   induction right generalizing left with
   | nil =>
       simp [Execution.mergeExecutableGroups]
@@ -421,15 +412,14 @@ theorem mergeExecutableGroups_mem_responseName
 theorem withoutExecutableGroupsWithResponseName_addExecutableGroup
     (responseName : Name)
     (group : Name × List Execution.ExecutableField)
-    (groups : List (Name × List Execution.ExecutableField)) :
-    withoutExecutableGroupsWithResponseName responseName
-      (Execution.addExecutableGroup group groups)
-      =
-    if group.fst == responseName then
-      withoutExecutableGroupsWithResponseName responseName groups
-    else
-      Execution.addExecutableGroup group
-        (withoutExecutableGroupsWithResponseName responseName groups) := by
+    (groups : List (Name × List Execution.ExecutableField))
+    : withoutExecutableGroupsWithResponseName responseName
+        (Execution.addExecutableGroup group groups)
+      = if group.fst == responseName then
+          withoutExecutableGroupsWithResponseName responseName groups
+        else
+          Execution.addExecutableGroup group
+            (withoutExecutableGroupsWithResponseName responseName groups) := by
   induction groups with
   | nil =>
       rcases group with ⟨groupResponseName, groupFields⟩
@@ -502,13 +492,12 @@ theorem withoutExecutableGroupsWithResponseName_addExecutableGroup
 
 theorem withoutExecutableGroupsWithResponseName_mergeExecutableGroups
     (responseName : Name)
-    (left right : List (Name × List Execution.ExecutableField)) :
-    withoutExecutableGroupsWithResponseName responseName
-      (Execution.mergeExecutableGroups left right)
-      =
-    Execution.mergeExecutableGroups
-      (withoutExecutableGroupsWithResponseName responseName left)
-      (withoutExecutableGroupsWithResponseName responseName right) := by
+    (left right : List (Name × List Execution.ExecutableField))
+    : withoutExecutableGroupsWithResponseName responseName
+        (Execution.mergeExecutableGroups left right)
+      = Execution.mergeExecutableGroups
+          (withoutExecutableGroupsWithResponseName responseName left)
+          (withoutExecutableGroupsWithResponseName responseName right) := by
   induction right generalizing left with
   | nil =>
       simp [Execution.mergeExecutableGroups,
@@ -551,11 +540,10 @@ theorem withoutExecutableGroupsWithResponseName_mergeExecutableGroups
         simp [withoutExecutableGroupsWithResponseName,
           Execution.mergeExecutableGroups, hfalse]
 
-theorem withoutExecutableGroupsWithResponseName_eq_self_of_not_mem
-    (responseName : Name) :
-    ∀ groups : List (Name × List Execution.ExecutableField),
-      responseName ∉ groups.map Prod.fst ->
-        withoutExecutableGroupsWithResponseName responseName groups = groups
+theorem withoutExecutableGroupsWithResponseName_eq_self_of_not_mem (responseName : Name)
+    : ∀ groups : List (Name × List Execution.ExecutableField),
+        responseName ∉ groups.map Prod.fst
+        -> withoutExecutableGroupsWithResponseName responseName groups = groups
   | groups, hnotin => by
       unfold withoutExecutableGroupsWithResponseName
       apply List.filter_eq_self.mpr
@@ -574,12 +562,11 @@ theorem withoutExecutableGroupsWithResponseName_eq_self_of_not_mem
 
 theorem withoutExecutableGroupsWithResponseName_cons_self_of_namesNodup
     (responseName : Name) (fields : List Execution.ExecutableField)
-    (rest : List (Name × List Execution.ExecutableField)) :
-    executableGroupNamesNodup ((responseName, fields) :: rest) ->
-      withoutExecutableGroupsWithResponseName responseName
-        ((responseName, fields) :: rest)
-      =
-      rest := by
+    (rest : List (Name × List Execution.ExecutableField))
+    : executableGroupNamesNodup ((responseName, fields) :: rest)
+      -> withoutExecutableGroupsWithResponseName responseName
+            ((responseName, fields) :: rest)
+          = rest := by
   intro hnodup
   have htrue : (responseName == responseName) = true := by simp
   unfold withoutExecutableGroupsWithResponseName
@@ -591,12 +578,11 @@ theorem withoutExecutableGroupsWithResponseName_cons_self_of_namesNodup
 
 theorem mergeExecutableGroups_preserves_head
     (responseName : Name) (currentFields : List Execution.ExecutableField)
-    (headRest right : List (Name × List Execution.ExecutableField)) :
-    ∃ appendedFields mergedRest,
-      Execution.mergeExecutableGroups
-        ((responseName, currentFields) :: headRest) right
-      =
-      (responseName, currentFields ++ appendedFields) :: mergedRest := by
+    (headRest right : List (Name × List Execution.ExecutableField))
+    : ∃ appendedFields mergedRest,
+        Execution.mergeExecutableGroups
+          ((responseName, currentFields) :: headRest) right
+        = (responseName, currentFields ++ appendedFields) :: mergedRest := by
   induction right generalizing currentFields headRest with
   | nil =>
       exact ⟨[], headRest, by simp [Execution.mergeExecutableGroups]⟩
@@ -636,10 +622,10 @@ theorem mergeExecutableGroups_preserves_head
 
 theorem withoutExecutableGroupsWithResponseName_namesNodup
     (responseName : Name)
-    (groups : List (Name × List Execution.ExecutableField)) :
-    executableGroupNamesNodup groups ->
-      executableGroupNamesNodup
-        (withoutExecutableGroupsWithResponseName responseName groups) := by
+    (groups : List (Name × List Execution.ExecutableField))
+    : executableGroupNamesNodup groups
+      -> executableGroupNamesNodup
+          (withoutExecutableGroupsWithResponseName responseName groups) := by
   induction groups with
   | nil =>
       simp [withoutExecutableGroupsWithResponseName,
@@ -667,21 +653,20 @@ theorem withoutExecutableGroupsWithResponseName_namesNodup
 theorem collectFields_nil
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
-    (source : Execution.ResolverValue ObjectRef) :
-    Execution.collectFields schema variableValues parentType source [] = [] := by
+    (source : Execution.ResolverValue ObjectRef)
+    : Execution.collectFields schema variableValues parentType source [] = [] := by
   rfl
 
 theorem collectFields_cons
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selection : Selection) (rest : List Selection) :
-    Execution.collectFields schema variableValues parentType source
-      (selection :: rest)
-      =
-    Execution.mergeExecutableGroups
-      (Execution.collectSelection schema variableValues parentType source selection)
-      (Execution.collectFields schema variableValues parentType source rest) := by
+    (selection : Selection) (rest : List Selection)
+    : Execution.collectFields schema variableValues parentType source
+        (selection :: rest)
+      = Execution.mergeExecutableGroups
+          (Execution.collectSelection schema variableValues parentType source selection)
+          (Execution.collectFields schema variableValues parentType source rest) := by
   rfl
 
 theorem collectFields_field_noDirectives
@@ -689,46 +674,48 @@ theorem collectFields_field_noDirectives
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
-    (selectionSet rest : List Selection) :
-    Execution.collectFields schema variableValues parentType source
-      (Selection.field responseName fieldName arguments [] selectionSet :: rest)
-      =
-    Execution.mergeExecutableGroups
-      [(responseName, [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := selectionSet
-      }])]
-      (Execution.collectFields schema variableValues parentType source rest) := by
+    (selectionSet rest : List Selection)
+    : Execution.collectFields schema variableValues parentType source
+        (Selection.field responseName fieldName arguments [] selectionSet :: rest)
+      = Execution.mergeExecutableGroups
+          [(
+            responseName,
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := selectionSet
+            }]
+          )]
+          (Execution.collectFields schema variableValues parentType source rest) := by
   simp [collectFields_cons, collectSelection_field_noDirectives]
 
 theorem collectFields_inlineFragment_none_directiveFree
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet rest : List Selection) :
-    Execution.collectFields schema variableValues parentType source
-      (Selection.inlineFragment none [] selectionSet :: rest)
-      =
-    Execution.mergeExecutableGroups
-      (Execution.collectFields schema variableValues parentType source selectionSet)
-      (Execution.collectFields schema variableValues parentType source rest) := by
+    (selectionSet rest : List Selection)
+    : Execution.collectFields schema variableValues parentType source
+        (Selection.inlineFragment none [] selectionSet :: rest)
+      = Execution.mergeExecutableGroups
+          (Execution.collectFields schema variableValues parentType source selectionSet)
+          (Execution.collectFields schema variableValues parentType source rest) := by
   simp [collectFields_cons, collectSelection_inlineFragment_none_noDirectives]
 
 theorem collectFields_inlineFragment_some_directiveFree_apply
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType typeCondition : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet rest : List Selection) :
-    Execution.doesFragmentTypeApplyBool schema parentType source typeCondition = true ->
-      Execution.collectFields schema variableValues parentType source
-        (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest)
-        =
-      Execution.mergeExecutableGroups
-        (Execution.collectFields schema variableValues parentType source selectionSet)
-        (Execution.collectFields schema variableValues parentType source rest) := by
+    (selectionSet rest : List Selection)
+    : Execution.doesFragmentTypeApplyBool schema parentType source typeCondition = true
+      -> Execution.collectFields schema variableValues parentType source
+            (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest)
+          = Execution.mergeExecutableGroups
+              (Execution.collectFields schema variableValues parentType source
+                selectionSet)
+              (Execution.collectFields schema variableValues parentType source
+                rest) := by
   intro happly
   simp [collectFields_cons, collectSelection_inlineFragment_some_noDirectives,
     happly]
@@ -737,13 +724,13 @@ theorem collectFields_inlineFragment_some_directiveFree_skip
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType typeCondition : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet rest : List Selection) :
-    Execution.doesFragmentTypeApplyBool schema parentType source typeCondition = false ->
-      Execution.collectFields schema variableValues parentType source
-        (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest)
-        =
-      Execution.mergeExecutableGroups []
-        (Execution.collectFields schema variableValues parentType source rest) := by
+    (selectionSet rest : List Selection)
+    : Execution.doesFragmentTypeApplyBool schema parentType source typeCondition = false
+      -> Execution.collectFields schema variableValues parentType source
+            (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest)
+          = Execution.mergeExecutableGroups []
+              (Execution.collectFields schema variableValues parentType source
+                rest) := by
   intro hskip
   simp [collectFields_cons, collectSelection_inlineFragment_some_noDirectives,
     hskip]
@@ -753,10 +740,10 @@ mutual
       (schema : Schema) (variableValues : Execution.VariableValues)
       (parentType : Name)
       (source : Execution.ResolverValue ObjectRef)
-      (selection : Selection) :
-      executableGroupsWellFormed
-        (Execution.collectSelection schema variableValues parentType source
-          selection) := by
+      (selection : Selection)
+      : executableGroupsWellFormed
+          (Execution.collectSelection schema variableValues parentType source
+            selection) := by
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
         by_cases hallows :
@@ -835,10 +822,10 @@ mutual
       (schema : Schema) (variableValues : Execution.VariableValues)
       (parentType : Name)
       (source : Execution.ResolverValue ObjectRef)
-      (selectionSet : List Selection) :
-      executableGroupsWellFormed
-        (Execution.collectFields schema variableValues parentType source
-          selectionSet) := by
+      (selectionSet : List Selection)
+      : executableGroupsWellFormed
+          (Execution.collectFields schema variableValues parentType source
+            selectionSet) := by
     cases selectionSet with
     | nil =>
         simp [Execution.collectFields, executableGroupsWellFormed_nil]
@@ -858,12 +845,11 @@ theorem collectFields_inlineFragment_none_directiveFree_flatten
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet rest : List Selection) :
-    Execution.collectFields schema variableValues parentType source
-      (Selection.inlineFragment none [] selectionSet :: rest)
-      =
-    Execution.collectFields schema variableValues parentType source
-      (selectionSet ++ rest) := by
+    (selectionSet rest : List Selection)
+    : Execution.collectFields schema variableValues parentType source
+        (Selection.inlineFragment none [] selectionSet :: rest)
+      = Execution.collectFields schema variableValues parentType source
+          (selectionSet ++ rest) := by
   rw [collectFields_inlineFragment_none_directiveFree]
   rw [collectFields_append]
 
@@ -871,14 +857,12 @@ theorem collectFields_inlineFragment_some_directiveFree_apply_flatten
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType typeCondition : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet rest : List Selection) :
-    Execution.doesFragmentTypeApplyBool schema parentType source typeCondition =
-      true ->
-      Execution.collectFields schema variableValues parentType source
-        (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest)
-        =
-      Execution.collectFields schema variableValues parentType source
-        (selectionSet ++ rest) := by
+    (selectionSet rest : List Selection)
+    : Execution.doesFragmentTypeApplyBool schema parentType source typeCondition = true
+      -> Execution.collectFields schema variableValues parentType source
+            (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest)
+          = Execution.collectFields schema variableValues parentType source
+              (selectionSet ++ rest) := by
   intro happly
   rw [collectFields_inlineFragment_some_directiveFree_apply]
   · rw [collectFields_append]
@@ -888,18 +872,18 @@ theorem collectFields_responseName_not_mem_of_responseNameFree
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (responseName : Name) :
-    objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType ref,
-        source = .object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-        ∀ selectionSet,
-          selectionSetDirectiveFree selectionSet ->
-            selectionSetResponseNameFree schema parentType responseName
-              selectionSet ->
-              responseName ∉
-                (Execution.collectFields schema variableValues parentType
-                  source selectionSet).map Prod.fst
+    (responseName : Name)
+    : objectTypeNameBool schema parentType = true
+      -> (∃ runtimeType ref,
+            source = .object runtimeType ref
+            ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+      -> ∀ selectionSet,
+          selectionSetDirectiveFree selectionSet
+          -> selectionSetResponseNameFree schema parentType responseName selectionSet
+          -> responseName
+              ∉ (Execution.collectFields schema variableValues parentType
+                  source selectionSet).map
+                  Prod.fst
   | hobject, hsource, [], _hfree, _hresponseFree => by
       simp [Execution.collectFields]
   | hobject, hsource,
@@ -1043,23 +1027,24 @@ theorem collectFields_field_noDirectives_cons_of_responseName_not_mem
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
-    (selectionSet rest : List Selection) :
-    responseName ∉
-      (Execution.collectFields schema variableValues parentType source
-        rest).map Prod.fst ->
-      Execution.collectFields schema variableValues parentType source
-        (Selection.field responseName fieldName arguments [] selectionSet
-          :: rest)
-      =
-      (responseName, [{
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := selectionSet
-      }])
-        :: Execution.collectFields schema variableValues parentType source
-          rest := by
+    (selectionSet rest : List Selection)
+    : responseName
+        ∉ (Execution.collectFields schema variableValues parentType source rest).map
+            Prod.fst
+      -> Execution.collectFields schema variableValues parentType source
+            (Selection.field responseName fieldName arguments [] selectionSet :: rest)
+          = (
+              responseName,
+              [{
+                parentType := parentType,
+                responseName := responseName,
+                fieldName := fieldName,
+                arguments := arguments,
+                selectionSet := selectionSet
+              }]
+            )
+            :: Execution.collectFields schema variableValues parentType source
+                rest := by
   intro hnotin
   rw [collectFields_field_noDirectives]
   rw [mergeExecutableGroups_eq_append_of_namesDisjoint]
@@ -1075,19 +1060,22 @@ theorem collectFields_field_head_exists
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
     (responseName fieldName : Name) (arguments : List Argument)
-    (selectionSet rest : List Selection) :
-    ∃ sourceFields sourceRest,
-      Execution.collectFields schema variableValues parentType source
-        (Selection.field responseName fieldName arguments [] selectionSet
-          :: rest)
-      =
-      (responseName, {
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := selectionSet
-      } :: sourceFields) :: sourceRest := by
+    (selectionSet rest : List Selection)
+    : ∃ sourceFields sourceRest,
+        Execution.collectFields schema variableValues parentType source
+          (Selection.field responseName fieldName arguments [] selectionSet :: rest)
+        = (
+            responseName,
+            {
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := selectionSet
+            }
+            :: sourceFields
+          )
+          :: sourceRest := by
   let sourceField : Execution.ExecutableField :=
     {
       parentType := parentType,
@@ -1109,19 +1097,19 @@ theorem collectFields_withoutFieldSelectionsWithResponseName_directiveFree
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (responseName : Name) :
-    objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType ref,
-        source = .object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-        ∀ selectionSet,
-          selectionSetDirectiveFree selectionSet ->
-            Execution.collectFields schema variableValues parentType source
-              (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
-            =
-            withoutExecutableGroupsWithResponseName responseName
-              (Execution.collectFields schema variableValues parentType
-                source selectionSet)
+    (responseName : Name)
+    : objectTypeNameBool schema parentType = true
+      -> (∃ runtimeType ref,
+            source = .object runtimeType ref
+            ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+      -> ∀ selectionSet,
+          selectionSetDirectiveFree selectionSet
+          -> Execution.collectFields schema variableValues parentType source
+                (withoutFieldSelectionsWithResponseName schema responseName
+                  selectionSet)
+              = withoutExecutableGroupsWithResponseName responseName
+                  (Execution.collectFields schema variableValues parentType
+                    source selectionSet)
   | hobject, hsource, [], _hfree => by
       simp [Execution.collectFields, withoutFieldSelectionsWithResponseName,
         withoutExecutableGroupsWithResponseName]
@@ -1278,20 +1266,17 @@ theorem collectFields_withoutFieldSelectionsWithResponseName_eq_sourceRest_of_co
     (source : Execution.ResolverValue ObjectRef)
     (responseName : Name) (fields : List Execution.ExecutableField)
     (sourceRest : List (Name × List Execution.ExecutableField))
-    (selectionSet : List Selection) :
-    objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType ref,
-        source = .object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-        selectionSetDirectiveFree selectionSet ->
-          Execution.collectFields schema variableValues parentType source
-            selectionSet
-          =
-          (responseName, fields) :: sourceRest ->
-            Execution.collectFields schema variableValues parentType source
-              (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
-            =
-            sourceRest := by
+    (selectionSet : List Selection)
+    : objectTypeNameBool schema parentType = true
+      -> (∃ runtimeType ref,
+            source = .object runtimeType ref
+            ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+      -> selectionSetDirectiveFree selectionSet
+      -> Execution.collectFields schema variableValues parentType source selectionSet
+          = (responseName, fields) :: sourceRest
+      -> Execution.collectFields schema variableValues parentType source
+            (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+          = sourceRest := by
   intro hobject hsource hfree hcollect
   have hfilter :=
     collectFields_withoutFieldSelectionsWithResponseName_directiveFree schema
@@ -1308,37 +1293,31 @@ theorem collectFields_withoutFieldSelectionsWithResponseName_eq_sourceRest_of_co
       responseName fields sourceRest hnodup)
 
 theorem collectFields_withoutFieldSelectionsWithResponseName_fieldHead_rest_eq_sourceRest
-    (schema : Schema) (variableValues : Execution.VariableValues)
-    (parentType : Name)
-    (source : Execution.ResolverValue ObjectRef)
-    (responseName fieldName : Name) (arguments : List Argument)
-    (subselections rest : List Selection)
+    (schema : Schema) (variableValues : Execution.VariableValues) (parentType : Name)
+    (source : Execution.ResolverValue ObjectRef) (responseName fieldName : Name)
+    (arguments : List Argument) (subselections rest : List Selection)
     (sourceFields : List Execution.ExecutableField)
-    (sourceRest : List (Name × List Execution.ExecutableField)) :
-    let sourceField : Execution.ExecutableField :=
-      {
-        parentType := parentType,
-        responseName := responseName,
-        fieldName := fieldName,
-        arguments := arguments,
-        selectionSet := subselections
-      }
-    objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType ref,
-        source = .object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-        selectionSetDirectiveFree
-          (Selection.field responseName fieldName arguments [] subselections
-            :: rest) ->
-          Execution.collectFields schema variableValues parentType source
-            (Selection.field responseName fieldName arguments []
-              subselections :: rest)
-          =
-          (responseName, sourceField :: sourceFields) :: sourceRest ->
-            Execution.collectFields schema variableValues parentType source
-              (withoutFieldSelectionsWithResponseName schema responseName rest)
-            =
-            sourceRest := by
+    (sourceRest : List (Name × List Execution.ExecutableField))
+    : let sourceField : Execution.ExecutableField :=
+        {
+          parentType := parentType,
+          responseName := responseName,
+          fieldName := fieldName,
+          arguments := arguments,
+          selectionSet := subselections
+        }
+      objectTypeNameBool schema parentType = true
+      -> (∃ runtimeType ref,
+            source = .object runtimeType ref
+            ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+      -> selectionSetDirectiveFree
+          (Selection.field responseName fieldName arguments [] subselections :: rest)
+      -> Execution.collectFields schema variableValues parentType source
+            (Selection.field responseName fieldName arguments [] subselections :: rest)
+          = (responseName, sourceField :: sourceFields) :: sourceRest
+      -> Execution.collectFields schema variableValues parentType source
+            (withoutFieldSelectionsWithResponseName schema responseName rest)
+          = sourceRest := by
   intro sourceField hobject hsource hfree hcollect
   have hrestFree := selectionSetDirectiveFree_tail hfree
   have hsourceCollect :
@@ -1357,11 +1336,9 @@ theorem collectFields_withoutFieldSelectionsWithResponseName_fieldHead_rest_eq_s
       hobject hsource hfree hsourceCollect
   simpa [withoutFieldSelectionsWithResponseName] using hfilteredAll
 
-theorem mergeSelectionSets_append
-    (left right : List Selection) :
-    mergeSelectionSets (left ++ right)
-      =
-    mergeSelectionSets left ++ mergeSelectionSets right := by
+theorem mergeSelectionSets_append (left right : List Selection)
+    : mergeSelectionSets (left ++ right)
+      = mergeSelectionSets left ++ mergeSelectionSets right := by
   induction left with
   | nil =>
       simp [mergeSelectionSets]
@@ -1372,19 +1349,18 @@ theorem collectFields_fieldSelectionsWithResponseNameInScope_responseSelection
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (responseName : Name) (selectionSet : List Selection) :
-    objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType ref,
-        source = .object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-        selectionSetDirectiveFree selectionSet ->
-          collectedResponseSelectionSet responseName
+    (responseName : Name) (selectionSet : List Selection)
+    : objectTypeNameBool schema parentType = true
+      -> (∃ runtimeType ref,
+            source = .object runtimeType ref
+            ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+      -> selectionSetDirectiveFree selectionSet
+      -> collectedResponseSelectionSet responseName
             (Execution.collectFields schema variableValues parentType source
               selectionSet)
-          =
-          mergeSelectionSets
-            (fieldSelectionsWithResponseNameInScope schema parentType responseName
-              selectionSet) := by
+          = mergeSelectionSets
+              (fieldSelectionsWithResponseNameInScope schema parentType responseName
+                selectionSet) := by
   intro hobject hsource hfree
   induction selectionSet using
     fieldSelectionsWithResponseNameInScope.induct schema parentType responseName with
@@ -1520,11 +1496,11 @@ theorem mergeExecutableGroups_nil_left_collectFields
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    executableGroupNamesNodup
-      (Execution.mergeExecutableGroups []
-        (Execution.collectFields schema variableValues parentType source
-          selectionSet)) := by
+    (selectionSet : List Selection)
+    : executableGroupNamesNodup
+        (Execution.mergeExecutableGroups []
+          (Execution.collectFields schema variableValues parentType source
+            selectionSet)) := by
   exact mergeExecutableGroups_namesNodup []
     (Execution.collectFields schema variableValues parentType source selectionSet)
     (by simp [executableGroupNamesNodup])
@@ -1533,13 +1509,11 @@ theorem mergeExecutableGroups_nil_left_collectFields_eq
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    Execution.mergeExecutableGroups []
-      (Execution.collectFields schema variableValues parentType source
-        selectionSet)
-      =
-    Execution.collectFields schema variableValues parentType source
-      selectionSet := by
+    (selectionSet : List Selection)
+    : Execution.mergeExecutableGroups []
+        (Execution.collectFields schema variableValues parentType source selectionSet)
+      = Execution.collectFields schema variableValues parentType source
+          selectionSet := by
   exact mergeExecutableGroups_nil_left_of_namesNodup
     (Execution.collectFields schema variableValues parentType source selectionSet)
     (collectFields_namesNodup schema variableValues parentType source
@@ -1549,12 +1523,11 @@ theorem collectFields_inlineFragment_some_directiveFree_skip_eq
     (schema : Schema) (variableValues : Execution.VariableValues)
     (parentType typeCondition : Name)
     (source : Execution.ResolverValue ObjectRef)
-    (selectionSet rest : List Selection) :
-    Execution.doesFragmentTypeApplyBool schema parentType source typeCondition = false ->
-      Execution.collectFields schema variableValues parentType source
-        (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest)
-        =
-      Execution.collectFields schema variableValues parentType source rest := by
+    (selectionSet rest : List Selection)
+    : Execution.doesFragmentTypeApplyBool schema parentType source typeCondition = false
+      -> Execution.collectFields schema variableValues parentType source
+            (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest)
+          = Execution.collectFields schema variableValues parentType source rest := by
   intro hskip
   rw [collectFields_inlineFragment_some_directiveFree_skip schema
     variableValues parentType typeCondition source selectionSet rest hskip]

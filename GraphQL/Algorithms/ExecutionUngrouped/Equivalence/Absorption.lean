@@ -12,46 +12,46 @@ def VisitSubfieldsAbsorbsFrom
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
     (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (base : ResponseValue) :
-    List Selection -> ResponseValue -> Prop
+    (base : ResponseValue)
+    : List Selection -> ResponseValue -> Prop
   | [], current => ResponseAbsorbs base current
   | selection :: rest, current =>
       let next :=
         visitSelection schema resolvers variableValues depth parentType source
           selection current
-      ResponseAbsorbs base next.fst ∧
-      VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
-        parentType source base rest next.fst
+      ResponseAbsorbs base next.fst
+      ∧ VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
+          parentType source base rest next.fst
 
 def VisitSubfieldsLocalAbsorbsFrom
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    List Selection -> ResponseValue -> Prop
+    (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : List Selection -> ResponseValue -> Prop
   | [], current => ResponseMergeReady current
   | selection :: rest, current =>
       let next :=
         visitSelection schema resolvers variableValues depth parentType source
           selection current
-      ResponseMergeReady current ∧
-      ResponseMergeReady next.fst ∧
-      ResponseAbsorbs current next.fst ∧
-      VisitSubfieldsLocalAbsorbsFrom schema resolvers variableValues depth
-        parentType source rest next.fst
+      ResponseMergeReady current
+      ∧ ResponseMergeReady next.fst
+      ∧ ResponseAbsorbs current next.fst
+      ∧ VisitSubfieldsLocalAbsorbsFrom schema resolvers variableValues depth
+          parentType source rest next.fst
 
 theorem visitSubfields_absorbs_from_steps
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
     (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (base : ResponseValue) :
-    ∀ (selectionSet : List Selection) (current : ResponseValue),
-      VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
-        parentType source base selectionSet current ->
-        ResponseAbsorbs base
-          (visitSubfields schema resolvers variableValues depth parentType
-            source selectionSet current).fst
+    (base : ResponseValue)
+    : ∀ (selectionSet : List Selection) (current : ResponseValue),
+        VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
+          parentType source base selectionSet current
+        -> ResponseAbsorbs base
+            (visitSubfields schema resolvers variableValues depth parentType
+              source selectionSet current).fst
   | [], current, hsteps => by
       simpa [visitSubfields, VisitSubfieldsAbsorbsFrom] using hsteps
   | selection :: rest, current, hsteps => by
@@ -69,14 +69,14 @@ theorem visitSubfields_absorbs_from_local_steps
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
     (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (base : ResponseValue) :
-    ∀ (selectionSet : List Selection) (current : ResponseValue),
-      ResponseMergeReady base ->
-      ResponseAbsorbs base current ->
-      VisitSubfieldsLocalAbsorbsFrom schema resolvers variableValues depth
-        parentType source selectionSet current ->
-        VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
-          parentType source base selectionSet current
+    (base : ResponseValue)
+    : ∀ (selectionSet : List Selection) (current : ResponseValue),
+        ResponseMergeReady base
+        -> ResponseAbsorbs base current
+        -> VisitSubfieldsLocalAbsorbsFrom schema resolvers variableValues depth
+            parentType source selectionSet current
+        -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
+            parentType source base selectionSet current
   | [], current, _hbaseReady, hbaseCurrent, _hlocal => by
       simpa [VisitSubfieldsAbsorbsFrom] using hbaseCurrent
   | selection :: rest, current, hbaseReady, hbaseCurrent, hlocal => by
@@ -99,28 +99,28 @@ theorem duplicateFieldSubselections_absorb_of_steps
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
     (first later : ExecutableField)
-    (hsteps :
-      ∀ childDepth runtimeType identity,
-        childDepth < depth ->
-          VisitSubfieldsAbsorbsFrom schema resolvers variableValues childDepth
-            runtimeType (.object runtimeType identity)
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])).fst
-            later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])).fst) :
-    ∀ childDepth runtimeType identity,
-      childDepth < depth ->
-        ResponseAbsorbs
-          (visitSubfields schema resolvers variableValues childDepth runtimeType
-            (.object runtimeType identity) first.selectionSet (.object [])).fst
-          (visitSubfields schema resolvers variableValues childDepth runtimeType
-            (.object runtimeType identity) later.selectionSet
-            (visitSubfields schema resolvers variableValues childDepth
-              runtimeType (.object runtimeType identity) first.selectionSet
-              (.object [])).fst).fst := by
+    (hsteps
+      : ∀ childDepth runtimeType identity,
+          childDepth < depth
+          -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues childDepth
+              runtimeType (.object runtimeType identity)
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object [])).fst
+              later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object [])).fst)
+    : ∀ childDepth runtimeType identity,
+        childDepth < depth
+        -> ResponseAbsorbs
+            (visitSubfields schema resolvers variableValues childDepth runtimeType
+              (.object runtimeType identity) first.selectionSet (.object [])).fst
+            (visitSubfields schema resolvers variableValues childDepth runtimeType
+              (.object runtimeType identity) later.selectionSet
+              (visitSubfields schema resolvers variableValues childDepth
+                runtimeType (.object runtimeType identity) first.selectionSet
+                (.object [])).fst).fst := by
   intro childDepth runtimeType identity hlt
   exact
     visitSubfields_absorbs_from_steps schema resolvers variableValues
@@ -140,21 +140,21 @@ theorem VisitSubfieldsAbsorbsFrom_single_field_allowed_succ
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication) (selectionSet : List Selection)
     (fields : List (Name × ResponseValue))
-    (hallowed : selectionDirectivesAllowBool variableValues directives = true) :
-    ResponseMergeReady (.object fields) ->
-    (∀ existing,
-      (responseName, existing) ∈ fields ->
-        ResponseAbsorbs existing
-            (mergeResponse existing
-            (resultValueOrNull
-              (executeField schema resolvers variableValues depth source
-                (responseObjectField? responseName (.object fields))
-                (executableField parentType responseName fieldName arguments
-                  selectionSet))))) ->
-      VisitSubfieldsAbsorbsFrom schema resolvers variableValues (depth + 1)
-        parentType source (.object fields)
-        [.field responseName fieldName arguments directives selectionSet]
-        (.object fields) := by
+    (hallowed : selectionDirectivesAllowBool variableValues directives = true)
+    : ResponseMergeReady (.object fields)
+      -> (∀ existing,
+            (responseName, existing) ∈ fields
+            -> ResponseAbsorbs existing
+                (mergeResponse existing
+                  (resultValueOrNull
+                    (executeField schema resolvers variableValues depth source
+                      (responseObjectField? responseName (.object fields))
+                      (executableField parentType responseName fieldName arguments
+                        selectionSet)))))
+      -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues (depth + 1)
+          parentType source (.object fields)
+          [.field responseName fieldName arguments directives selectionSet]
+          (.object fields) := by
   intro hfieldsReady hcollisionAbsorbs
   have hstep :
       ResponseAbsorbs (.object fields)
@@ -176,12 +176,12 @@ theorem VisitSubfieldsAbsorbsFrom_single_field_allowed_succ_of_fresh
     (directives : List DirectiveApplication) (selectionSet : List Selection)
     (fields : List (Name × ResponseValue))
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (hfresh : responseName ∉ fields.map Prod.fst) :
-    ResponseMergeReady (.object fields) ->
-      VisitSubfieldsAbsorbsFrom schema resolvers variableValues (depth + 1)
-        parentType source (.object fields)
-        [.field responseName fieldName arguments directives selectionSet]
-        (.object fields) := by
+    (hfresh : responseName ∉ fields.map Prod.fst)
+    : ResponseMergeReady (.object fields)
+      -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues (depth + 1)
+          parentType source (.object fields)
+          [.field responseName fieldName arguments directives selectionSet]
+          (.object fields) := by
   intro hfieldsReady
   have hstep :
       ResponseAbsorbs (.object fields)
@@ -199,10 +199,10 @@ theorem VisitSubfieldsAbsorbsFrom_nil_of_ready
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
     (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (output : ResponseValue) :
-    ResponseMergeReady output ->
-      VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
-        parentType source output [] output := by
+    (output : ResponseValue)
+    : ResponseMergeReady output
+      -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
+          parentType source output [] output := by
   intro hready
   simpa [VisitSubfieldsAbsorbsFrom] using
     ResponseAbsorbs_refl_of_ready output hready
@@ -215,12 +215,12 @@ theorem VisitSubfieldsAbsorbsFrom_single_field_blocked
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication) (selectionSet : List Selection)
     (output : ResponseValue)
-    (hblocked : selectionDirectivesAllowBool variableValues directives = false) :
-    ResponseMergeReady output ->
-      VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
-        parentType source output
-        [.field responseName fieldName arguments directives selectionSet]
-        output := by
+    (hblocked : selectionDirectivesAllowBool variableValues directives = false)
+    : ResponseMergeReady output
+      -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
+          parentType source output
+          [.field responseName fieldName arguments directives selectionSet]
+          output := by
   intro hready
   simp [VisitSubfieldsAbsorbsFrom,
     visitSelection_field_directives_blocked schema resolvers variableValues
@@ -236,12 +236,12 @@ theorem VisitSubfieldsAbsorbsFrom_single_field_depth_zero
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication) (selectionSet : List Selection)
     (output : ResponseValue)
-    (hallowed : selectionDirectivesAllowBool variableValues directives = true) :
-    ResponseMergeReady output ->
-      VisitSubfieldsAbsorbsFrom schema resolvers variableValues 0
-        parentType source output
-        [.field responseName fieldName arguments directives selectionSet]
-        output := by
+    (hallowed : selectionDirectivesAllowBool variableValues directives = true)
+    : ResponseMergeReady output
+      -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues 0
+          parentType source output
+          [.field responseName fieldName arguments directives selectionSet]
+          output := by
   intro hready
   have hstep :=
     visitSelection_field_depth_zero_absorbs_of_ready schema resolvers
@@ -256,12 +256,12 @@ theorem VisitSubfieldsAbsorbsFrom_single_inline_none_blocked
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (directives : List DirectiveApplication) (selectionSet : List Selection)
     (output : ResponseValue)
-    (hblocked : selectionDirectivesAllowBool variableValues directives = false) :
-    ResponseMergeReady output ->
-      VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
-        parentType source output
-        [.inlineFragment none directives selectionSet]
-        output := by
+    (hblocked : selectionDirectivesAllowBool variableValues directives = false)
+    : ResponseMergeReady output
+      -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
+          parentType source output
+          [.inlineFragment none directives selectionSet]
+          output := by
   intro hready
   simp [VisitSubfieldsAbsorbsFrom,
     visitSelection_inline_none_directives_blocked schema resolvers
@@ -276,12 +276,12 @@ theorem VisitSubfieldsAbsorbsFrom_single_inline_some_blocked
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (typeCondition : Name) (directives : List DirectiveApplication)
     (selectionSet : List Selection) (output : ResponseValue)
-    (hblocked : selectionDirectivesAllowBool variableValues directives = false) :
-    ResponseMergeReady output ->
-      VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
-        parentType source output
-        [.inlineFragment (some typeCondition) directives selectionSet]
-        output := by
+    (hblocked : selectionDirectivesAllowBool variableValues directives = false)
+    : ResponseMergeReady output
+      -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
+          parentType source output
+          [.inlineFragment (some typeCondition) directives selectionSet]
+          output := by
   intro hready
   simp [VisitSubfieldsAbsorbsFrom,
     visitSelection_inline_some_directives_blocked schema resolvers
@@ -297,13 +297,13 @@ theorem VisitSubfieldsAbsorbsFrom_single_inline_some_not_apply
     (typeCondition : Name) (directives : List DirectiveApplication)
     (selectionSet : List Selection) (output : ResponseValue)
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (hnotApply :
-      doesFragmentTypeApplyBool schema parentType source typeCondition = false) :
-    ResponseMergeReady output ->
-      VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
-        parentType source output
-        [.inlineFragment (some typeCondition) directives selectionSet]
-        output := by
+    (hnotApply
+      : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
+    : ResponseMergeReady output
+      -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
+          parentType source output
+          [.inlineFragment (some typeCondition) directives selectionSet]
+          output := by
   intro hready
   simp [VisitSubfieldsAbsorbsFrom,
     visitSelection_inline_some_type_not_apply schema resolvers variableValues
@@ -318,12 +318,12 @@ theorem VisitSubfieldsAbsorbsFrom_single_inline_none_allowed
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (directives : List DirectiveApplication) (selectionSet : List Selection)
     (output : ResponseValue)
-    (hallowed : selectionDirectivesAllowBool variableValues directives = true) :
-    VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
-      parentType source output selectionSet output ->
-      VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
-        parentType source output
-        [.inlineFragment none directives selectionSet] output := by
+    (hallowed : selectionDirectivesAllowBool variableValues directives = true)
+    : VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
+        parentType source output selectionSet output
+      -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
+          parentType source output
+          [.inlineFragment none directives selectionSet] output := by
   intro hchild
   have habsorbs :=
     visitSubfields_absorbs_from_steps schema resolvers variableValues depth
@@ -339,14 +339,13 @@ theorem VisitSubfieldsAbsorbsFrom_single_inline_some_allowed
     (typeCondition : Name) (directives : List DirectiveApplication)
     (selectionSet : List Selection) (output : ResponseValue)
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (happly :
-      doesFragmentTypeApplyBool schema parentType source typeCondition = true) :
-    VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
-      parentType source output selectionSet output ->
-      VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
-        parentType source output
-        [.inlineFragment (some typeCondition) directives selectionSet]
-        output := by
+    (happly : doesFragmentTypeApplyBool schema parentType source typeCondition = true)
+    : VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
+        parentType source output selectionSet output
+      -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
+          parentType source output
+          [.inlineFragment (some typeCondition) directives selectionSet]
+          output := by
   intro hchild
   have habsorbs :=
     visitSubfields_absorbs_from_steps schema resolvers variableValues depth
@@ -358,12 +357,12 @@ theorem visitSelection_preserves_object
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ (selection : Selection) (fields : List (Name × ResponseValue)),
+    (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : ∀ (selection : Selection) (fields : List (Name × ResponseValue)),
         ∃ outputFields,
           (visitSelection schema resolvers variableValues depth parentType source
-            selection (.object fields)).fst =
-          .object outputFields :=
+            selection (.object fields)).fst
+          = .object outputFields :=
   visitSelection_preserves_object_core schema resolvers variableValues depth
     parentType source
 
@@ -371,12 +370,12 @@ theorem visitSubfields_preserves_object
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
-    (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ (selectionSet : List Selection) (fields : List (Name × ResponseValue)),
+    (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : ∀ (selectionSet : List Selection) (fields : List (Name × ResponseValue)),
         ∃ outputFields,
           (visitSubfields schema resolvers variableValues depth parentType source
-            selectionSet (.object fields)).fst =
-          .object outputFields :=
+            selectionSet (.object fields)).fst
+          = .object outputFields :=
   visitSubfields_preserves_object_core schema resolvers variableValues depth
     parentType source
 
@@ -385,13 +384,13 @@ theorem visitSubfieldsResult_empty_eq_executeRootSelectionSet_object
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    ExecutionWindow.visitSubfieldsResult schema resolvers variableValues depth
-      parentType source selectionSet (.object []) =
-    match executeRootSelectionSet schema resolvers variableValues depth
-        parentType source selectionSet with
-    | .error errors => .error errors
-    | .ok (fields, errors) => .ok (.object fields, errors) := by
+    (selectionSet : List Selection)
+    : ExecutionWindow.visitSubfieldsResult schema resolvers variableValues depth
+        parentType source selectionSet (.object [])
+      = match executeRootSelectionSet schema resolvers variableValues depth
+                parentType source selectionSet with
+        | .error errors => .error errors
+        | .ok (fields, errors) => .ok (.object fields, errors) := by
   unfold ExecutionWindow.visitSubfieldsResult executeRootSelectionSet
   obtain ⟨fields, hfields⟩ :=
     visitSubfields_preserves_object schema resolvers variableValues depth
@@ -415,16 +414,14 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues)
-      (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ (selection : Selection) (fields : List (Name × ResponseValue)),
-        PairKeysNodup fields ->
-          PairKeysNodup
-            (match
-              (visitSelection schema resolvers variableValues depth parentType
-                source selection (.object fields)).fst
-             with
-             | .object outputFields => outputFields
-             | _ => fields)
+      (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
+      : ∀ (selection : Selection) (fields : List (Name × ResponseValue)),
+          PairKeysNodup fields
+          -> PairKeysNodup
+              (match (visitSelection schema resolvers variableValues depth parentType
+                        source selection (.object fields)).fst with
+                | .object outputFields => outputFields
+                | _ => fields)
     := by
       intro selection fields hnodup
       cases selection with
@@ -497,16 +494,14 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues)
-      (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ (selectionSet : List Selection) (fields : List (Name × ResponseValue)),
-        PairKeysNodup fields ->
-          PairKeysNodup
-            (match
-              (visitSubfields schema resolvers variableValues depth parentType
-                source selectionSet (.object fields)).fst
-             with
-             | .object outputFields => outputFields
-             | _ => fields)
+      (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
+      : ∀ (selectionSet : List Selection) (fields : List (Name × ResponseValue)),
+          PairKeysNodup fields
+          -> PairKeysNodup
+              (match (visitSubfields schema resolvers variableValues depth parentType
+                        source selectionSet (.object fields)).fst with
+                | .object outputFields => outputFields
+                | _ => fields)
     := by
       intro selectionSet fields hnodup
       cases selectionSet with
@@ -534,10 +529,9 @@ mutual
           simpa [htailObject] using htail
 end
 
-theorem resultValueOrNull_nonNullCompletion_ready
-    (completed : Result ResponseValue) :
-    ResponseMergeReady (resultValueOrNull completed) ->
-      ResponseMergeReady (resultValueOrNull (nonNullCompletion completed)) := by
+theorem resultValueOrNull_nonNullCompletion_ready (completed : Result ResponseValue)
+    : ResponseMergeReady (resultValueOrNull completed)
+      -> ResponseMergeReady (resultValueOrNull (nonNullCompletion completed)) := by
   intro hready
   cases completed with
   | error errors =>
@@ -553,10 +547,10 @@ theorem resultValueOrNull_nonNullCompletion_ready
       · exact hready
 
 theorem resultValueOrNull_catchVisitBubbleAsNull_ready
-    (value : ResponseValue) (status : VisitStatus) :
-    ResponseMergeReady value ->
-      ResponseMergeReady
-        (resultValueOrNull (catchVisitBubbleAsNull value status)) := by
+    (value : ResponseValue) (status : VisitStatus)
+    : ResponseMergeReady value
+      -> ResponseMergeReady
+          (resultValueOrNull (catchVisitBubbleAsNull value status)) := by
   intro hvalue
   cases status with
   | error errors =>
@@ -568,10 +562,10 @@ theorem resultValueOrNull_catchVisitBubbleAsNull_ready
       exact hvalue
 
 theorem resultValueOrNull_catchBubbleAsNull_ready
-    {α : Type} (wrap : α -> ResponseValue) (completed : Result α) :
-    (∀ value errors, completed = .ok (value, errors) ->
-      ResponseMergeReady (wrap value)) ->
-      ResponseMergeReady (resultValueOrNull (catchBubbleAsNull wrap completed)) := by
+    {α : Type} (wrap : α -> ResponseValue) (completed : Result α)
+    : (∀ value errors,
+        completed = .ok (value, errors) -> ResponseMergeReady (wrap value))
+      -> ResponseMergeReady (resultValueOrNull (catchBubbleAsNull wrap completed)) := by
   intro hok
   cases completed with
   | error errors =>
@@ -582,14 +576,13 @@ theorem resultValueOrNull_catchBubbleAsNull_ready
       simp [catchBubbleAsNull, resultValueOrNull]
       exact hok value errors rfl
 
-theorem resultValueOrNull_outOfFuel_ready :
-    ResponseMergeReady (resultValueOrNull (outOfFuel : Result ResponseValue)) := by
+theorem resultValueOrNull_outOfFuel_ready
+    : ResponseMergeReady (resultValueOrNull (outOfFuel : Result ResponseValue)) := by
   simp [outOfFuel, resultValueOrNull]
   exact ResponseMergeReady.null
 
-theorem resultValueOrNull_handleFieldError_ready
-    (fieldType : TypeRef) :
-    ResponseMergeReady (resultValueOrNull (handleFieldError fieldType)) := by
+theorem resultValueOrNull_handleFieldError_ready (fieldType : TypeRef)
+    : ResponseMergeReady (resultValueOrNull (handleFieldError fieldType)) := by
   cases fieldType <;>
     simp [handleFieldError, resultValueOrNull] <;>
     exact ResponseMergeReady.null
@@ -599,12 +592,12 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues)
-      (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ (selection : Selection) (fields : List (Name × ResponseValue)),
-        ResponseMergeReady (.object fields) ->
-          ResponseMergeReady
-            (visitSelection schema resolvers variableValues depth parentType
-              source selection (.object fields)).fst := by
+      (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
+      : ∀ (selection : Selection) (fields : List (Name × ResponseValue)),
+          ResponseMergeReady (.object fields)
+          -> ResponseMergeReady
+              (visitSelection schema resolvers variableValues depth parentType
+                source selection (.object fields)).fst := by
     intro selection fields hfieldsReady
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
@@ -717,12 +710,12 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues)
-      (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ (selectionSet : List Selection) (fields : List (Name × ResponseValue)),
-        ResponseMergeReady (.object fields) ->
-          ResponseMergeReady
-            (visitSubfields schema resolvers variableValues depth parentType
-              source selectionSet (.object fields)).fst := by
+      (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
+      : ∀ (selectionSet : List Selection) (fields : List (Name × ResponseValue)),
+          ResponseMergeReady (.object fields)
+          -> ResponseMergeReady
+              (visitSubfields schema resolvers variableValues depth parentType
+                source selectionSet (.object fields)).fst := by
     intro selectionSet fields hfieldsReady
     cases selectionSet with
     | nil =>
@@ -754,16 +747,16 @@ mutual
       omega
 
   theorem completeValue_response_ready
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) :
-    ∀ (depth : Nat) (fieldType : TypeRef) (selectionSet : List Selection)
-      (value : ResolverValue ObjectIdentity) (previous? : Option ResponseValue),
-      (∀ previous, previous? = some previous -> ResponseMergeReady previous) ->
-        ResponseMergeReady
-          (resultValueOrNull
-            (completeValue schema resolvers variableValues depth fieldType
-              selectionSet value previous?)) := by
+      {ObjectIdentity : Type}
+      (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+      (variableValues : VariableValues)
+      : ∀ (depth : Nat) (fieldType : TypeRef) (selectionSet : List Selection)
+            (value : ResolverValue ObjectIdentity) (previous? : Option ResponseValue),
+          (∀ previous, previous? = some previous -> ResponseMergeReady previous)
+          -> ResponseMergeReady
+              (resultValueOrNull
+                (completeValue schema resolvers variableValues depth fieldType
+                  selectionSet value previous?)) := by
     intro depth fieldType selectionSet value previous? hprevious
     cases previous? with
     | none =>
@@ -1068,16 +1061,16 @@ mutual
       omega
 
   theorem completeResolvedValue_response_ready
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (completionDepth : Nat)
-    (fieldType : TypeRef) (selectionSet : List Selection)
-    (resolved : ResolverValue ObjectIdentity) (previous? : Option ResponseValue) :
-    (∀ previous, previous? = some previous -> ResponseMergeReady previous) ->
-      ResponseMergeReady
-        (resultValueOrNull
-          (completeResolvedValue schema resolvers variableValues
-            completionDepth fieldType selectionSet resolved previous?)) := by
+      {ObjectIdentity : Type}
+      (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+      (variableValues : VariableValues) (completionDepth : Nat)
+      (fieldType : TypeRef) (selectionSet : List Selection)
+      (resolved : ResolverValue ObjectIdentity) (previous? : Option ResponseValue)
+      : (∀ previous, previous? = some previous -> ResponseMergeReady previous)
+        -> ResponseMergeReady
+            (resultValueOrNull
+              (completeResolvedValue schema resolvers variableValues
+                completionDepth fieldType selectionSet resolved previous?)) := by
     intro hprevious
     cases hreuse : reusablePreviousValue? schema fieldType previous? with
     | some previous =>
@@ -1142,15 +1135,15 @@ mutual
       omega
 
   theorem resultCombine_cons_values_ready
-      (head : Result ResponseValue) (tail : Result (List ResponseValue)) :
-      ResponseMergeReady (resultValueOrNull head) ->
-      (∀ tailValues tailErrors,
-        tail = .ok (tailValues, tailErrors) ->
-          ∀ response, response ∈ tailValues -> ResponseMergeReady response) ->
-      ∀ completedValues errors,
-        Result.combine List.cons head tail = .ok (completedValues, errors) ->
-          ∀ response, response ∈ completedValues ->
-            ResponseMergeReady response := by
+      (head : Result ResponseValue) (tail : Result (List ResponseValue))
+      : ResponseMergeReady (resultValueOrNull head)
+        -> (∀ tailValues tailErrors,
+              tail = .ok (tailValues, tailErrors)
+              -> ∀ response, response ∈ tailValues -> ResponseMergeReady response)
+        -> ∀ completedValues errors,
+            Result.combine List.cons head tail = .ok (completedValues, errors)
+            -> ∀ response,
+                response ∈ completedValues -> ResponseMergeReady response := by
     intro hheadReady htailReady completedValues errors hok response hmem
     cases head with
     | error headErrors =>
@@ -1180,16 +1173,16 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues)
-      (depth : Nat) (itemType : TypeRef) (selectionSet : List Selection) :
-      ∀ (values : List (ResolverValue ObjectIdentity))
-        (previousValues : List ResponseValue),
-        (∀ previous, previous ∈ previousValues ->
-          ResponseMergeReady previous) ->
-        ∀ completedValues errors,
-          completeValueList schema resolvers variableValues depth itemType
-            selectionSet values previousValues = .ok (completedValues, errors) ->
-          ∀ response, response ∈ completedValues ->
-            ResponseMergeReady response := by
+      (depth : Nat) (itemType : TypeRef) (selectionSet : List Selection)
+      : ∀ (values : List (ResolverValue ObjectIdentity))
+            (previousValues : List ResponseValue),
+          (∀ previous, previous ∈ previousValues -> ResponseMergeReady previous)
+          -> ∀ completedValues errors,
+              completeValueList schema resolvers variableValues depth itemType
+                  selectionSet values previousValues
+                = .ok (completedValues, errors)
+              -> ∀ response,
+                  response ∈ completedValues -> ResponseMergeReady response := by
     intro values previousValues hpreviousValues completedValues errors hok
     cases values with
     | nil =>
@@ -1304,16 +1297,16 @@ mutual
       omega
 
   theorem executeField_response_ready_of_previous
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (source : ResolverValue ObjectIdentity) (previous? : Option ResponseValue)
-    (field : ExecutableField) :
-    (∀ previous, previous? = some previous -> ResponseMergeReady previous) ->
-      ResponseMergeReady
-        (resultValueOrNull
-          (executeField schema resolvers variableValues depth source previous?
-            field)) := by
+      {ObjectIdentity : Type}
+      (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+      (variableValues : VariableValues) (depth : Nat)
+      (source : ResolverValue ObjectIdentity) (previous? : Option ResponseValue)
+      (field : ExecutableField)
+      : (∀ previous, previous? = some previous -> ResponseMergeReady previous)
+        -> ResponseMergeReady
+            (resultValueOrNull
+              (executeField schema resolvers variableValues depth source previous?
+                field)) := by
     intro hprevious
     cases previous? with
         | none =>
@@ -1461,9 +1454,9 @@ theorem executeField_response_ready
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
     (source : ResolverValue ObjectIdentity) (fields : List (Name × ResponseValue))
-    (field : ExecutableField) :
-      ResponseMergeReady (.object fields) ->
-        ResponseMergeReady
+    (field : ExecutableField)
+    : ResponseMergeReady (.object fields)
+      -> ResponseMergeReady
           (resultValueOrNull
             (executeField schema resolvers variableValues depth source
               (some (.object fields)) field)) := by
@@ -1477,15 +1470,15 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues)
-      (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ (selection : Selection) (fields : List (Name × ResponseValue)),
-        ResponseMergeReady (.object fields) ->
-          let next :=
-            visitSelection schema resolvers variableValues depth parentType
-              source selection (.object fields)
-          ResponseMergeReady (.object fields) ∧
-          ResponseMergeReady next.fst ∧
-          ResponseAbsorbs (.object fields) next.fst := by
+      (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
+      : ∀ (selection : Selection) (fields : List (Name × ResponseValue)),
+          ResponseMergeReady (.object fields)
+          ->  let next :=
+                visitSelection schema resolvers variableValues depth parentType
+                  source selection (.object fields)
+              ResponseMergeReady (.object fields)
+              ∧ ResponseMergeReady next.fst
+              ∧ ResponseAbsorbs (.object fields) next.fst := by
     intro selection fields hfieldsReady
     have hnextReady :
         ResponseMergeReady
@@ -1613,11 +1606,11 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues)
-      (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ (selectionSet : List Selection) (fields : List (Name × ResponseValue)),
-        ResponseMergeReady (.object fields) ->
-          VisitSubfieldsLocalAbsorbsFrom schema resolvers variableValues depth
-            parentType source selectionSet (.object fields) := by
+      (depth : Nat) (parentType : Name) (source : ResolverValue ObjectIdentity)
+      : ∀ (selectionSet : List Selection) (fields : List (Name × ResponseValue)),
+          ResponseMergeReady (.object fields)
+          -> VisitSubfieldsLocalAbsorbsFrom schema resolvers variableValues depth
+              parentType source selectionSet (.object fields) := by
     intro selectionSet fields hfieldsReady
     cases selectionSet with
     | nil =>
@@ -1650,13 +1643,13 @@ theorem VisitSubfieldsAbsorbsFrom_single_field_allowed_succ_of_visit_fresh
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication) (selectionSet : List Selection)
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-      (hfresh :
-        ∀ fields,
+    (hfresh
+      : ∀ fields,
           (visitSubfields schema resolvers variableValues (depth + 1)
-            parentType source firstSelectionSet (.object [])).fst =
-          .object fields ->
-            responseName ∉ fields.map Prod.fst) :
-      VisitSubfieldsAbsorbsFrom schema resolvers variableValues (depth + 1)
+              parentType source firstSelectionSet (.object [])).fst
+            = .object fields
+          -> responseName ∉ fields.map Prod.fst)
+    : VisitSubfieldsAbsorbsFrom schema resolvers variableValues (depth + 1)
         parentType source
         (visitSubfields schema resolvers variableValues (depth + 1)
           parentType source firstSelectionSet (.object [])).fst
@@ -1674,7 +1667,6 @@ theorem VisitSubfieldsAbsorbsFrom_single_field_allowed_succ_of_visit_fresh
   simpa [hfields] using
     visitSubfields_response_ready schema resolvers variableValues (depth + 1)
       parentType source firstSelectionSet [] ResponseMergeReady_empty_object
-
 
 end ExecutionUngrouped
 

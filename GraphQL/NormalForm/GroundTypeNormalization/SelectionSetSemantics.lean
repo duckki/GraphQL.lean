@@ -16,21 +16,20 @@ theorem normalizeSelectionSet_executeSelectionSet
     (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (hschema : SchemaWellFormedness.schemaWellFormed schema) :
-    ∀ depth parentType (source : Execution.ResolverValue ObjectRef) selectionSet,
-      objectTypeNameBool schema parentType = true ->
-      (∃ runtimeType ref,
-        source = .object runtimeType ref
-          ∧ schema.typeIncludesObjectBool parentType runtimeType = true) ->
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetSemanticsReady schema parentType selectionSet ->
-      FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source
-          (normalizeSelectionSet schema parentType selectionSet)
-        =
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source selectionSet := by
+    (hschema : SchemaWellFormedness.schemaWellFormed schema)
+    : ∀ depth parentType (source : Execution.ResolverValue ObjectRef) selectionSet,
+        objectTypeNameBool schema parentType = true
+        -> (∃ runtimeType ref,
+              source = .object runtimeType ref
+              ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
+        -> selectionSetDirectiveFree selectionSet
+        -> selectionSetSemanticsReady schema parentType selectionSet
+        -> FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+        -> Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
+              (normalizeSelectionSet schema parentType selectionSet)
+            = Execution.executeSelectionSet schema resolvers variableValues depth
+                parentType source selectionSet := by
   intro depth parentType source selectionSet
   revert depth source
   induction parentType, selectionSet using normalizeSelectionSet.induct schema

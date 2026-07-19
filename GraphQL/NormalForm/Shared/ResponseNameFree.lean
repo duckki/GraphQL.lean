@@ -10,36 +10,38 @@ namespace NormalForm
 mutual
   -- Helper predicate: one selection cannot contribute a field with the given response
   -- name in the current type scope.
-  def selectionResponseNameFree (schema : Schema)
-      (parentType responseName : Name) : Selection -> Prop
+  def selectionResponseNameFree (schema : Schema) (parentType responseName : Name)
+      : Selection -> Prop
     | .field selectionResponseName _fieldName _arguments _directives _selectionSet =>
         selectionResponseName ≠ responseName
     | .inlineFragment none _directives selectionSet =>
         selectionSetResponseNameFree schema parentType responseName selectionSet
     | .inlineFragment (some typeCondition) _directives selectionSet =>
-        schema.typesOverlapBool parentType typeCondition = true ->
-          selectionSetResponseNameFree schema parentType responseName selectionSet
+        schema.typesOverlapBool parentType typeCondition = true
+        -> selectionSetResponseNameFree schema parentType responseName selectionSet
 
   def selectionSetResponseNameFree (schema : Schema)
       (parentType responseName : Name)
-      (selectionSet : List Selection) : Prop :=
-    ∀ selection, selection ∈ selectionSet ->
-      selectionResponseNameFree schema parentType responseName selection
+      (selectionSet : List Selection)
+      : Prop :=
+    ∀ selection,
+      selection ∈ selectionSet
+      -> selectionResponseNameFree schema parentType responseName selection
 end
 
 theorem selectionSetResponseNameFree_nil (schema : Schema)
-    (parentType responseName : Name) :
-    selectionSetResponseNameFree schema parentType responseName [] := by
+    (parentType responseName : Name)
+    : selectionSetResponseNameFree schema parentType responseName [] := by
   unfold selectionSetResponseNameFree
   intro selection hselection
   simp at hselection
 
 theorem selectionSetResponseNameFree_cons {schema : Schema}
     {parentType responseName : Name} {selection : Selection}
-    {selectionSet : List Selection} :
-    selectionResponseNameFree schema parentType responseName selection ->
-      selectionSetResponseNameFree schema parentType responseName selectionSet ->
-        selectionSetResponseNameFree schema parentType responseName
+    {selectionSet : List Selection}
+    : selectionResponseNameFree schema parentType responseName selection
+      -> selectionSetResponseNameFree schema parentType responseName selectionSet
+      -> selectionSetResponseNameFree schema parentType responseName
           (selection :: selectionSet) := by
   unfold selectionSetResponseNameFree
   intro hselection hselectionSet candidate hcandidate
@@ -51,29 +53,29 @@ theorem selectionSetResponseNameFree_cons {schema : Schema}
 
 theorem selectionSetResponseNameFree_head {schema : Schema}
     {parentType responseName : Name} {selection : Selection}
-    {selectionSet : List Selection} :
-    selectionSetResponseNameFree schema parentType responseName
-      (selection :: selectionSet) ->
-        selectionResponseNameFree schema parentType responseName selection := by
+    {selectionSet : List Selection}
+    : selectionSetResponseNameFree schema parentType responseName
+        (selection :: selectionSet)
+      -> selectionResponseNameFree schema parentType responseName selection := by
   unfold selectionSetResponseNameFree
   intro hfree
   exact hfree selection (by simp)
 
 theorem selectionSetResponseNameFree_tail {schema : Schema}
     {parentType responseName : Name} {selection : Selection}
-    {selectionSet : List Selection} :
-    selectionSetResponseNameFree schema parentType responseName
-      (selection :: selectionSet) ->
-        selectionSetResponseNameFree schema parentType responseName selectionSet := by
+    {selectionSet : List Selection}
+    : selectionSetResponseNameFree schema parentType responseName
+        (selection :: selectionSet)
+      -> selectionSetResponseNameFree schema parentType responseName selectionSet := by
   unfold selectionSetResponseNameFree
   intro hfree candidate hcandidate
   exact hfree candidate (List.mem_cons_of_mem selection hcandidate)
 
 theorem selectionSetResponseNameFree_append {schema : Schema}
-    {parentType responseName : Name} {left right : List Selection} :
-    selectionSetResponseNameFree schema parentType responseName left ->
-      selectionSetResponseNameFree schema parentType responseName right ->
-        selectionSetResponseNameFree schema parentType responseName
+    {parentType responseName : Name} {left right : List Selection}
+    : selectionSetResponseNameFree schema parentType responseName left
+      -> selectionSetResponseNameFree schema parentType responseName right
+      -> selectionSetResponseNameFree schema parentType responseName
           (left ++ right) := by
   unfold selectionSetResponseNameFree
   intro hleft hright selection hselection
@@ -82,10 +84,10 @@ theorem selectionSetResponseNameFree_append {schema : Schema}
   · exact hright selection hselection
 
 theorem withoutFieldSelectionsWithResponseName_responseNameFree (schema : Schema)
-    (parentType responseName : Name) :
-    ∀ selectionSet,
-      selectionSetResponseNameFree schema parentType responseName
-        (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
+    (parentType responseName : Name)
+    : ∀ selectionSet,
+        selectionSetResponseNameFree schema parentType responseName
+          (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
   | [] => by
       simpa [withoutFieldSelectionsWithResponseName] using
         selectionSetResponseNameFree_nil schema parentType responseName
@@ -126,11 +128,12 @@ theorem withoutFieldSelectionsWithResponseName_responseNameFree (schema : Schema
 
 theorem withoutFieldSelectionsWithResponseName_preserves_responseNameFree
     (schema : Schema) (removedResponseName : Name)
-    (parentType responseName : Name) :
-    ∀ selectionSet,
-      selectionSetResponseNameFree schema parentType responseName selectionSet ->
-        selectionSetResponseNameFree schema parentType responseName
-          (withoutFieldSelectionsWithResponseName schema removedResponseName selectionSet)
+    (parentType responseName : Name)
+    : ∀ selectionSet,
+        selectionSetResponseNameFree schema parentType responseName selectionSet
+        -> selectionSetResponseNameFree schema parentType responseName
+            (withoutFieldSelectionsWithResponseName schema removedResponseName
+              selectionSet)
   | [], hfree => by
       simpa [withoutFieldSelectionsWithResponseName] using hfree
   | selection :: rest, hfree => by
@@ -176,7 +179,6 @@ theorem withoutFieldSelectionsWithResponseName_preserves_responseNameFree
                   selectionSet (hselectionSet hoverlap)
           · exact withoutFieldSelectionsWithResponseName_preserves_responseNameFree
               schema removedResponseName parentType responseName rest hrest
-
 
 end NormalForm
 

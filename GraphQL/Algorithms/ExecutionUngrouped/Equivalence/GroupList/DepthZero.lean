@@ -10,16 +10,15 @@ namespace ExecutionUngrouped
 
 open GraphQL.Execution
 
-local instance groupListDepthZeroResponseVisitStatusCoe :
-    Coe (ResponseValue × VisitStatus) ResponseValue where
+local instance groupListDepthZeroResponseVisitStatusCoe
+    : Coe (ResponseValue × VisitStatus) ResponseValue where
   coe := Prod.fst
 
-theorem mergeResponseField_self_of_lookup_some_ready
-    (responseName : Name) :
-    ∀ (fields : List (Name × ResponseValue)) (existing : ResponseValue),
-      ResponseMergeReady (.object fields) ->
-      lookupResponseField? responseName fields = some existing ->
-        mergeResponseField responseName existing fields = fields
+theorem mergeResponseField_self_of_lookup_some_ready (responseName : Name)
+    : ∀ (fields : List (Name × ResponseValue)) (existing : ResponseValue),
+        ResponseMergeReady (.object fields)
+        -> lookupResponseField? responseName fields = some existing
+        -> mergeResponseField responseName existing fields = fields
   | [], existing, _hready, hlookup => by
       simp [lookupResponseField?] at hlookup
   | (fieldResponseName, response) :: rest, existing, hready, hlookup => by
@@ -49,10 +48,10 @@ theorem mergeResponseField_self_of_lookup_some_ready
 
 theorem zeroDepthResponseNameResult_of_lookup_some_merge
     (responseName : Name) (fields : List (Name × ResponseValue))
-    (existing : ResponseValue) :
-    lookupResponseField? responseName fields = some existing ->
-      zeroDepthResponseNameResult responseName fields =
-        (.object (mergeResponseField responseName existing fields), visitOk) := by
+    (existing : ResponseValue)
+    : lookupResponseField? responseName fields = some existing
+      -> zeroDepthResponseNameResult responseName fields
+          = (.object (mergeResponseField responseName existing fields), visitOk) := by
   intro hlookup
   have hprevious :
       responseObjectField? responseName (.object fields) = some existing := by
@@ -62,10 +61,11 @@ theorem zeroDepthResponseNameResult_of_lookup_some_merge
 
 theorem zeroDepthResponseNameResult_of_lookup_some_ready
     (responseName : Name) (fields : List (Name × ResponseValue))
-    (existing : ResponseValue) :
-    ResponseMergeReady (.object fields) ->
-    lookupResponseField? responseName fields = some existing ->
-      zeroDepthResponseNameResult responseName fields = (.object fields, visitOk) := by
+    (existing : ResponseValue)
+    : ResponseMergeReady (.object fields)
+      -> lookupResponseField? responseName fields = some existing
+      -> zeroDepthResponseNameResult responseName fields
+          = (.object fields, visitOk) := by
   intro hready hlookup
   have hresult :=
     zeroDepthResponseNameResult_of_lookup_some_merge responseName fields existing
@@ -78,17 +78,17 @@ theorem zeroDepthResponseNameResult_of_lookup_some_ready
 
 theorem zeroDepthResponseNameResult_of_lookup_some
     (responseName : Name) (fields : List (Name × ResponseValue))
-    (existing : ResponseValue) :
-    ResponseMergeReady (.object fields) ->
-    lookupResponseField? responseName fields = some existing ->
-      zeroDepthResponseNameResult responseName fields = (.object fields, visitOk) :=
+    (existing : ResponseValue)
+    : ResponseMergeReady (.object fields)
+      -> lookupResponseField? responseName fields = some existing
+      -> zeroDepthResponseNameResult responseName fields = (.object fields, visitOk) :=
   zeroDepthResponseNameResult_of_lookup_some_ready responseName fields existing
 
 theorem zeroDepthResponseNameResult_of_lookup_none
-    (responseName : Name) (fields : List (Name × ResponseValue)) :
-    lookupResponseField? responseName fields = none ->
-      zeroDepthResponseNameResult responseName fields =
-        (.object (mergeResponseField responseName .null fields), .error 1) := by
+    (responseName : Name) (fields : List (Name × ResponseValue))
+    : lookupResponseField? responseName fields = none
+      -> zeroDepthResponseNameResult responseName fields
+          = (.object (mergeResponseField responseName .null fields), .error 1) := by
   intro hlookup
   have hprevious :
       responseObjectField? responseName (.object fields) = none := by
@@ -98,14 +98,14 @@ theorem zeroDepthResponseNameResult_of_lookup_none
     resultValueOrNull, resultStatus]
 
 theorem zeroDepthExecutableFieldsResult_same_response_of_lookup_some
-    (responseName : Name) :
-      ∀ (fields : List ExecutableField)
-        (outputFields : List (Name × ResponseValue)) (existing : ResponseValue),
-        (∀ field, field ∈ fields -> field.responseName = responseName) ->
-        ResponseMergeReady (.object outputFields) ->
-        lookupResponseField? responseName outputFields = some existing ->
-          zeroDepthExecutableFieldsResult fields outputFields =
-            (.object outputFields, visitOk)
+    (responseName : Name)
+    : ∀ (fields : List ExecutableField)
+          (outputFields : List (Name × ResponseValue)) (existing : ResponseValue),
+        (∀ field, field ∈ fields -> field.responseName = responseName)
+        -> ResponseMergeReady (.object outputFields)
+        -> lookupResponseField? responseName outputFields = some existing
+        -> zeroDepthExecutableFieldsResult fields outputFields
+            = (.object outputFields, visitOk)
     | [], outputFields, existing, _hresponse, _hready, _hlookup => by
         simp [zeroDepthExecutableFieldsResult, visitOk]
     | field :: rest, outputFields, existing, hresponse, hready, hlookup => by
@@ -126,10 +126,9 @@ theorem zeroDepthExecutableFieldsResult_same_response_of_lookup_some
         visitOk, combineVisitStatus, GraphQL.Execution.Result.combine]
 
 theorem lookupResponseField?_mergeResponseField_null_same
-    (responseName : Name) (fields : List (Name × ResponseValue)) :
-    lookupResponseField? responseName
-        (mergeResponseField responseName .null fields) =
-      some .null := by
+    (responseName : Name) (fields : List (Name × ResponseValue))
+    : lookupResponseField? responseName (mergeResponseField responseName .null fields)
+      = some .null := by
     rw [lookupResponseField?_mergeResponseField_same]
     cases lookupResponseField? responseName fields with
     | none => simp
@@ -137,10 +136,10 @@ theorem lookupResponseField?_mergeResponseField_null_same
         cases existing <;> simp [mergeResponse]
 
 theorem zeroDepthResponseNameResult_of_lookup_null
-    (responseName : Name) (fields : List (Name × ResponseValue)) :
-    lookupResponseField? responseName fields = some .null ->
-      zeroDepthResponseNameResult responseName fields =
-        (.object fields, visitOk) := by
+    (responseName : Name) (fields : List (Name × ResponseValue))
+    : lookupResponseField? responseName fields = some .null
+      -> zeroDepthResponseNameResult responseName fields
+          = (.object fields, visitOk) := by
   intro hlookup
   have hresult :=
     zeroDepthResponseNameResult_of_lookup_some_merge responseName fields .null
@@ -151,13 +150,12 @@ theorem zeroDepthResponseNameResult_of_lookup_null
   simpa [hmerge] using hresult
 
 theorem zeroDepthExecutableFieldsResult_same_response_of_lookup_null
-    (responseName : Name) :
-      ∀ (fields : List ExecutableField)
-        (outputFields : List (Name × ResponseValue)),
-        (∀ field, field ∈ fields -> field.responseName = responseName) ->
-        lookupResponseField? responseName outputFields = some .null ->
-          zeroDepthExecutableFieldsResult fields outputFields =
-            (.object outputFields, visitOk)
+    (responseName : Name)
+    : ∀ (fields : List ExecutableField) (outputFields : List (Name × ResponseValue)),
+        (∀ field, field ∈ fields -> field.responseName = responseName)
+        -> lookupResponseField? responseName outputFields = some .null
+        -> zeroDepthExecutableFieldsResult fields outputFields
+            = (.object outputFields, visitOk)
     | [], outputFields, _hresponse, _hlookup => by
         simp [zeroDepthExecutableFieldsResult, visitOk]
     | field :: rest, outputFields, hresponse, hlookup => by
@@ -180,13 +178,12 @@ theorem zeroDepthExecutableFieldsResult_same_response_of_lookup_null
 theorem zeroDepthExecutableFieldsResult_same_response_cons_of_lookup_none
     (responseName : Name) (field : ExecutableField)
     (rest : List ExecutableField)
-      (outputFields : List (Name × ResponseValue)) :
-      field.responseName = responseName ->
-      (∀ restField, restField ∈ rest ->
-        restField.responseName = responseName) ->
-      lookupResponseField? responseName outputFields = none ->
-        zeroDepthExecutableFieldsResult (field :: rest) outputFields =
-          zeroDepthResponseNameResult responseName outputFields := by
+    (outputFields : List (Name × ResponseValue))
+    : field.responseName = responseName
+      -> (∀ restField, restField ∈ rest -> restField.responseName = responseName)
+      -> lookupResponseField? responseName outputFields = none
+      -> zeroDepthExecutableFieldsResult (field :: rest) outputFields
+          = zeroDepthResponseNameResult responseName outputFields := by
   intro hfieldResponse hrestResponse hlookup
   have hhead :=
     zeroDepthResponseNameResult_of_lookup_none responseName outputFields hlookup
@@ -203,9 +200,9 @@ theorem zeroDepthExecutableFieldsResult_same_response_cons_of_lookup_none
   simp [zeroDepthExecutableFieldsResult, hfieldResponse, hhead, htail,
     visitOk, combineVisitStatus, GraphQL.Execution.Result.combine]
 
-def zeroDepthExecutableGroupsResult :
-    List (Name × List ExecutableField) ->
-      List (Name × ResponseValue) -> ResponseValue × VisitStatus
+def zeroDepthExecutableGroupsResult
+    : List (Name × List ExecutableField) -> List (Name × ResponseValue)
+      -> ResponseValue × VisitStatus
   | [], fields => (.object fields, visitOk)
   | (responseName, _fields) :: rest, fields =>
       let head := zeroDepthResponseNameResult responseName fields
@@ -218,21 +215,21 @@ def zeroDepthExecutableGroupsResult :
 
 def ZeroDepthGroupsNullCompatible
     (groups : List (Name × List ExecutableField))
-    (outputFields : List (Name × ResponseValue)) : Prop :=
+    (outputFields : List (Name × ResponseValue))
+    : Prop :=
   ∀ responseName fields,
-    (responseName, fields) ∈ groups ->
-      lookupResponseField? responseName outputFields = none ∨
-        lookupResponseField? responseName outputFields = some .null
+    (responseName, fields) ∈ groups
+    -> lookupResponseField? responseName outputFields = none
+        ∨ lookupResponseField? responseName outputFields = some .null
 
 theorem zeroDepthResponseNameResult_preserves_lookup_null_or_none
-    (target responseName : Name) (fields : List (Name × ResponseValue)) :
-    lookupResponseField? target fields = none ∨
-      lookupResponseField? target fields = some .null ->
-      ∃ outputFields,
-        (zeroDepthResponseNameResult responseName fields).fst =
-          .object outputFields ∧
-        (lookupResponseField? target outputFields = none ∨
-          lookupResponseField? target outputFields = some .null) := by
+    (target responseName : Name) (fields : List (Name × ResponseValue))
+    : lookupResponseField? target fields = none
+        ∨ lookupResponseField? target fields = some .null
+      -> ∃ outputFields,
+          (zeroDepthResponseNameResult responseName fields).fst = .object outputFields
+          ∧ (lookupResponseField? target outputFields = none
+              ∨ lookupResponseField? target outputFields = some .null) := by
   intro hcompat
   by_cases hsame : target = responseName
   · subst target
@@ -283,17 +280,15 @@ theorem zeroDepthResponseNameResult_preserves_lookup_null_or_none
                 responseName existing fields hsame]
               exact htargetNull
 
-theorem zeroDepthExecutableGroupsResult_preserves_lookup_null_or_none
-    (target : Name) :
-    ∀ (groups : List (Name × List ExecutableField))
-      (fields : List (Name × ResponseValue)),
-      lookupResponseField? target fields = none ∨
-        lookupResponseField? target fields = some .null ->
-        ∃ outputFields,
-          (zeroDepthExecutableGroupsResult groups fields).fst =
-            .object outputFields ∧
-          (lookupResponseField? target outputFields = none ∨
-            lookupResponseField? target outputFields = some .null)
+theorem zeroDepthExecutableGroupsResult_preserves_lookup_null_or_none (target : Name)
+    : ∀ (groups : List (Name × List ExecutableField))
+          (fields : List (Name × ResponseValue)),
+        lookupResponseField? target fields = none
+          ∨ lookupResponseField? target fields = some .null
+        -> ∃ outputFields,
+            (zeroDepthExecutableGroupsResult groups fields).fst = .object outputFields
+            ∧ (lookupResponseField? target outputFields = none
+                ∨ lookupResponseField? target outputFields = some .null)
   | [], fields, hcompat => by
       exact ⟨fields, by simp [zeroDepthExecutableGroupsResult], hcompat⟩
   | (responseName, groupFields) :: rest, fields, hcompat => by
@@ -315,12 +310,11 @@ theorem zeroDepthExecutableGroupsResult_preserves_lookup_null_or_none
           simp [htailFst]
 
 theorem zeroDepthResponseNameResult_preserves_lookup_null
-    (target responseName : Name) (fields : List (Name × ResponseValue)) :
-    lookupResponseField? target fields = some .null ->
-      ∃ outputFields,
-        (zeroDepthResponseNameResult responseName fields).fst =
-          .object outputFields ∧
-        lookupResponseField? target outputFields = some .null := by
+    (target responseName : Name) (fields : List (Name × ResponseValue))
+    : lookupResponseField? target fields = some .null
+      -> ∃ outputFields,
+          (zeroDepthResponseNameResult responseName fields).fst = .object outputFields
+          ∧ lookupResponseField? target outputFields = some .null := by
   intro hlookup
   by_cases hsame : target = responseName
   · subst target
@@ -346,15 +340,13 @@ theorem zeroDepthResponseNameResult_preserves_lookup_null
             existing fields hsame]
           exact hlookup
 
-theorem zeroDepthExecutableGroupsResult_preserves_lookup_null
-    (target : Name) :
-    ∀ (groups : List (Name × List ExecutableField))
-      (fields : List (Name × ResponseValue)),
-      lookupResponseField? target fields = some .null ->
-        ∃ outputFields,
-          (zeroDepthExecutableGroupsResult groups fields).fst =
-            .object outputFields ∧
-          lookupResponseField? target outputFields = some .null
+theorem zeroDepthExecutableGroupsResult_preserves_lookup_null (target : Name)
+    : ∀ (groups : List (Name × List ExecutableField))
+          (fields : List (Name × ResponseValue)),
+        lookupResponseField? target fields = some .null
+        -> ∃ outputFields,
+            (zeroDepthExecutableGroupsResult groups fields).fst = .object outputFields
+            ∧ lookupResponseField? target outputFields = some .null
   | [], fields, hlookup => by
       exact ⟨fields, by simp [zeroDepthExecutableGroupsResult], hlookup⟩
   | (responseName, groupFields) :: rest, fields, hlookup => by
@@ -375,17 +367,16 @@ theorem zeroDepthExecutableGroupsResult_preserves_lookup_null
           subst headOutput
           simp [htailFst]
 
-theorem zeroDepthExecutableGroupsResult_key_mem_lookup_null
-    (target : Name) :
-    ∀ (groups : List (Name × List ExecutableField))
-      (outputFields : List (Name × ResponseValue)),
-      PairKeysNodup groups ->
-      ZeroDepthGroupsNullCompatible groups outputFields ->
-      target ∈ groups.map Prod.fst ->
-        ∃ resultFields,
-          (zeroDepthExecutableGroupsResult groups outputFields).fst =
-            .object resultFields ∧
-          lookupResponseField? target resultFields = some .null
+theorem zeroDepthExecutableGroupsResult_key_mem_lookup_null (target : Name)
+    : ∀ (groups : List (Name × List ExecutableField))
+          (outputFields : List (Name × ResponseValue)),
+        PairKeysNodup groups
+        -> ZeroDepthGroupsNullCompatible groups outputFields
+        -> target ∈ groups.map Prod.fst
+        -> ∃ resultFields,
+            (zeroDepthExecutableGroupsResult groups outputFields).fst
+              = .object resultFields
+            ∧ lookupResponseField? target resultFields = some .null
   | [], outputFields, _hnodup, _hcompat, hmem => by
       simp at hmem
   | (responseName, fields) :: rest, outputFields, hnodup, hcompat, hmem => by
@@ -456,13 +447,12 @@ theorem zeroDepthExecutableGroupsResult_key_mem_lookup_null
 theorem zeroDepthExecutableFieldsResult_same_response_cons
     (responseName : Name) (field : ExecutableField)
     (rest : List ExecutableField)
-      (outputFields : List (Name × ResponseValue)) :
-      field.responseName = responseName ->
-      (∀ restField, restField ∈ rest ->
-        restField.responseName = responseName) ->
-      ResponseMergeReady (.object outputFields) ->
-        zeroDepthExecutableFieldsResult (field :: rest) outputFields =
-          zeroDepthResponseNameResult responseName outputFields := by
+    (outputFields : List (Name × ResponseValue))
+    : field.responseName = responseName
+      -> (∀ restField, restField ∈ rest -> restField.responseName = responseName)
+      -> ResponseMergeReady (.object outputFields)
+      -> zeroDepthExecutableFieldsResult (field :: rest) outputFields
+          = zeroDepthResponseNameResult responseName outputFields := by
   intro hfieldResponse hrestResponse hready
   cases hlookup : lookupResponseField? responseName outputFields with
   | none =>
@@ -498,21 +488,21 @@ theorem zeroDepthExecutableFieldsResult_same_response_cons
 theorem ZeroDepthGroupsNullCompatible_tail
     {responseName : Name} {fields : List ExecutableField}
     {rest : List (Name × List ExecutableField)}
-    {outputFields : List (Name × ResponseValue)} :
-    ZeroDepthGroupsNullCompatible ((responseName, fields) :: rest)
-      outputFields ->
-      ZeroDepthGroupsNullCompatible rest outputFields := by
+    {outputFields : List (Name × ResponseValue)}
+    : ZeroDepthGroupsNullCompatible ((responseName, fields) :: rest) outputFields
+      -> ZeroDepthGroupsNullCompatible rest outputFields := by
   intro hcompat restResponseName restFields hmem
   exact hcompat restResponseName restFields (by simp [hmem])
 
 theorem ZeroDepthGroupsNullCompatible_of_fresh
     (groups : List (Name × List ExecutableField))
-    (outputFields : List (Name × ResponseValue)) :
-    CollectedGroupsFieldsNonempty groups ->
-    CollectedGroupsResponseName groups ->
-    (∀ field, field ∈ collectedExecutableFields groups ->
-      field.responseName ∉ outputFields.map Prod.fst) ->
-      ZeroDepthGroupsNullCompatible groups outputFields := by
+    (outputFields : List (Name × ResponseValue))
+    : CollectedGroupsFieldsNonempty groups
+      -> CollectedGroupsResponseName groups
+      -> (∀ field,
+            field ∈ collectedExecutableFields groups
+            -> field.responseName ∉ outputFields.map Prod.fst)
+      -> ZeroDepthGroupsNullCompatible groups outputFields := by
   intro hnonempty hresponses hfresh responseName fields hmem
   cases fields with
   | nil =>
@@ -528,17 +518,17 @@ theorem ZeroDepthGroupsNullCompatible_of_fresh
           intro hkey
           exact hfresh field hfieldMem (by simpa [hfieldResponse] using hkey))
 
-theorem zeroDepthExecutableFieldsResult_append :
-    ∀ (left right : List ExecutableField)
-      (outputFields : List (Name × ResponseValue)),
-      zeroDepthExecutableFieldsResult (left ++ right) outputFields =
-      let leftResult := zeroDepthExecutableFieldsResult left outputFields
-      let rightFields :=
-        match leftResult.fst with
-        | .object fields => fields
-        | _ => []
-      let rightResult := zeroDepthExecutableFieldsResult right rightFields
-      (rightResult.fst, combineVisitStatus leftResult.snd rightResult.snd)
+theorem zeroDepthExecutableFieldsResult_append
+    : ∀ (left right : List ExecutableField)
+          (outputFields : List (Name × ResponseValue)),
+        zeroDepthExecutableFieldsResult (left ++ right) outputFields
+        = let leftResult := zeroDepthExecutableFieldsResult left outputFields
+          let rightFields :=
+            match leftResult.fst with
+            | .object fields => fields
+            | _ => []
+          let rightResult := zeroDepthExecutableFieldsResult right rightFields
+          (rightResult.fst, combineVisitStatus leftResult.snd rightResult.snd)
   | [], right, outputFields => by
       simp [zeroDepthExecutableFieldsResult]
   | field :: rest, right, outputFields => by
@@ -547,14 +537,14 @@ theorem zeroDepthExecutableFieldsResult_append :
         combineVisitStatus_assoc]
 
 theorem zeroDepthExecutableFieldsResult_collectedExecutableFields_eq_groups
-    (groups : List (Name × List ExecutableField)) :
-    CollectedGroupsFieldsNonempty groups ->
-    CollectedGroupsResponseName groups ->
-    ∀ outputFields,
-      ResponseMergeReady (.object outputFields) ->
-      zeroDepthExecutableFieldsResult (collectedExecutableFields groups)
-          outputFields =
-        zeroDepthExecutableGroupsResult groups outputFields := by
+    (groups : List (Name × List ExecutableField))
+    : CollectedGroupsFieldsNonempty groups
+      -> CollectedGroupsResponseName groups
+      -> ∀ outputFields,
+          ResponseMergeReady (.object outputFields)
+          -> zeroDepthExecutableFieldsResult (collectedExecutableFields groups)
+                outputFields
+              = zeroDepthExecutableGroupsResult groups outputFields := by
   induction groups with
   | nil =>
       intro _hnonempty _hresponse outputFields _hready
@@ -609,17 +599,16 @@ theorem zeroDepthExecutableFieldsResult_collectedExecutableFields_eq_groups
               simp [ih hrestNonempty hrestResponse outputFields hready]
 
 theorem zeroDepthExecutableFieldsResult_collectedExecutableFields_eq_groups_fresh
-    (groups : List (Name × List ExecutableField)) :
-    PairKeysNodup groups ->
-    CollectedGroupsFieldsNonempty groups ->
-    CollectedGroupsResponseName groups ->
-    ∀ outputFields,
-      (∀ responseName fields,
-        (responseName, fields) ∈ groups ->
-          responseName ∉ outputFields.map Prod.fst) ->
-      zeroDepthExecutableFieldsResult (collectedExecutableFields groups)
-          outputFields =
-        zeroDepthExecutableGroupsResult groups outputFields := by
+    (groups : List (Name × List ExecutableField))
+    : PairKeysNodup groups
+      -> CollectedGroupsFieldsNonempty groups
+      -> CollectedGroupsResponseName groups
+      -> ∀ outputFields,
+          (∀ responseName fields,
+            (responseName, fields) ∈ groups -> responseName ∉ outputFields.map Prod.fst)
+          -> zeroDepthExecutableFieldsResult (collectedExecutableFields groups)
+                outputFields
+              = zeroDepthExecutableGroupsResult groups outputFields := by
   induction groups with
   | nil =>
       intro _hnodup _hnonempty _hresponse outputFields _hfresh
@@ -684,15 +673,15 @@ theorem zeroDepthExecutableFieldsResult_collectedExecutableFields_eq_groups_fres
           simp [ih hrestNodup hrestNonempty hrestResponse
             (mergeResponseField responseName .null outputFields) hrestFresh]
 
-theorem zeroDepthExecutableGroupsResult_status_fresh :
-    ∀ (groups : List (Name × List ExecutableField))
-      (outputFields : List (Name × ResponseValue)),
-      PairKeysNodup groups ->
-      (∀ responseName fields,
-        (responseName, fields) ∈ groups ->
-          responseName ∉ outputFields.map Prod.fst) ->
-      (zeroDepthExecutableGroupsResult groups outputFields).snd =
-        depthZeroVisitStatus groups.length
+theorem zeroDepthExecutableGroupsResult_status_fresh
+    : ∀ (groups : List (Name × List ExecutableField))
+          (outputFields : List (Name × ResponseValue)),
+        PairKeysNodup groups
+        -> (∀ responseName fields,
+              (responseName, fields) ∈ groups
+              -> responseName ∉ outputFields.map Prod.fst)
+        -> (zeroDepthExecutableGroupsResult groups outputFields).snd
+            = depthZeroVisitStatus groups.length
   | [], outputFields, _hnodup, _hfresh => by
       simp [zeroDepthExecutableGroupsResult, depthZeroVisitStatus, visitOk]
   | (responseName, fields) :: rest, outputFields, hnodup, hfresh => by
@@ -731,14 +720,13 @@ theorem zeroDepthExecutableGroupsResult_status_fresh :
 
 theorem zeroDepthResponseNameResult_preserves_lookup_some
     (target responseName : Name) (fields : List (Name × ResponseValue))
-    (existing : ResponseValue) :
-    ResponseMergeReady (.object fields) ->
-    lookupResponseField? target fields = some existing ->
-      ∃ outputFields,
-        (zeroDepthResponseNameResult responseName fields).fst =
-          .object outputFields ∧
-        lookupResponseField? target outputFields = some existing ∧
-        ResponseMergeReady (.object outputFields) := by
+    (existing : ResponseValue)
+    : ResponseMergeReady (.object fields)
+      -> lookupResponseField? target fields = some existing
+      -> ∃ outputFields,
+          (zeroDepthResponseNameResult responseName fields).fst = .object outputFields
+          ∧ lookupResponseField? target outputFields = some existing
+          ∧ ResponseMergeReady (.object outputFields) := by
   intro hready hlookup
   by_cases hsame : target = responseName
   · subst target
@@ -765,17 +753,15 @@ theorem zeroDepthResponseNameResult_preserves_lookup_some
             responseExisting hready hresponseLookup
         exact ⟨fields, by simp [hresult], hlookup, hready⟩
 
-theorem zeroDepthExecutableGroupsResult_preserves_lookup_some
-    (target : Name) :
-    ∀ (groups : List (Name × List ExecutableField))
-      (fields : List (Name × ResponseValue)) (existing : ResponseValue),
-      ResponseMergeReady (.object fields) ->
-      lookupResponseField? target fields = some existing ->
-        ∃ outputFields,
-          (zeroDepthExecutableGroupsResult groups fields).fst =
-            .object outputFields ∧
-          lookupResponseField? target outputFields = some existing ∧
-          ResponseMergeReady (.object outputFields)
+theorem zeroDepthExecutableGroupsResult_preserves_lookup_some (target : Name)
+    : ∀ (groups : List (Name × List ExecutableField))
+          (fields : List (Name × ResponseValue)) (existing : ResponseValue),
+        ResponseMergeReady (.object fields)
+        -> lookupResponseField? target fields = some existing
+        -> ∃ outputFields,
+            (zeroDepthExecutableGroupsResult groups fields).fst = .object outputFields
+            ∧ lookupResponseField? target outputFields = some existing
+            ∧ ResponseMergeReady (.object outputFields)
   | [], fields, existing, hready, hlookup => by
       exact ⟨fields, by simp [zeroDepthExecutableGroupsResult], hlookup,
         hready⟩
@@ -798,17 +784,17 @@ theorem zeroDepthExecutableGroupsResult_preserves_lookup_some
           subst headOutput
           simp [htailFst]
 
-theorem zeroDepthExecutableGroupsResult_append :
-    ∀ (left right : List (Name × List ExecutableField))
-      (outputFields : List (Name × ResponseValue)),
-      zeroDepthExecutableGroupsResult (left ++ right) outputFields =
-      let leftResult := zeroDepthExecutableGroupsResult left outputFields
-      let rightFields :=
-        match leftResult.fst with
-        | .object fields => fields
-        | _ => []
-      let rightResult := zeroDepthExecutableGroupsResult right rightFields
-      (rightResult.fst, combineVisitStatus leftResult.snd rightResult.snd)
+theorem zeroDepthExecutableGroupsResult_append
+    : ∀ (left right : List (Name × List ExecutableField))
+          (outputFields : List (Name × ResponseValue)),
+        zeroDepthExecutableGroupsResult (left ++ right) outputFields
+        = let leftResult := zeroDepthExecutableGroupsResult left outputFields
+          let rightFields :=
+            match leftResult.fst with
+            | .object fields => fields
+            | _ => []
+          let rightResult := zeroDepthExecutableGroupsResult right rightFields
+          (rightResult.fst, combineVisitStatus leftResult.snd rightResult.snd)
   | [], right, outputFields => by
       simp [zeroDepthExecutableGroupsResult]
   | group :: rest, right, outputFields => by
@@ -817,12 +803,12 @@ theorem zeroDepthExecutableGroupsResult_append :
         zeroDepthExecutableGroupsResult_append rest right,
         combineVisitStatus_assoc]
 
-theorem zeroDepthExecutableGroupsResult_preserves_object :
-    ∀ (groups : List (Name × List ExecutableField))
-      (outputFields : List (Name × ResponseValue)),
-      ∃ resultFields,
-        (zeroDepthExecutableGroupsResult groups outputFields).fst =
-          .object resultFields
+theorem zeroDepthExecutableGroupsResult_preserves_object
+    : ∀ (groups : List (Name × List ExecutableField))
+          (outputFields : List (Name × ResponseValue)),
+        ∃ resultFields,
+          (zeroDepthExecutableGroupsResult groups outputFields).fst
+          = .object resultFields
   | [], outputFields => by
       exact ⟨outputFields, by simp [zeroDepthExecutableGroupsResult]⟩
   | (responseName, fields) :: rest, outputFields => by
@@ -847,12 +833,11 @@ theorem zeroDepthExecutableGroupsResult_preserves_object :
             hhead, hresultFields]⟩
 
 theorem zeroDepthResponseNameResult_preserves_object_ready
-    (responseName : Name) (fields : List (Name × ResponseValue)) :
-    ResponseMergeReady (.object fields) ->
-      ∃ outputFields,
-        (zeroDepthResponseNameResult responseName fields).fst =
-          .object outputFields ∧
-        ResponseMergeReady (.object outputFields) := by
+    (responseName : Name) (fields : List (Name × ResponseValue))
+    : ResponseMergeReady (.object fields)
+      -> ∃ outputFields,
+          (zeroDepthResponseNameResult responseName fields).fst = .object outputFields
+          ∧ ResponseMergeReady (.object outputFields) := by
   intro hready
   cases hlookup : lookupResponseField? responseName fields with
   | none =>
@@ -866,14 +851,14 @@ theorem zeroDepthResponseNameResult_preserves_object_ready
       simp [zeroDepthResponseNameResult_of_lookup_some responseName fields
         existing hready hlookup]
 
-theorem zeroDepthExecutableGroupsResult_preserves_object_ready :
-    ∀ (groups : List (Name × List ExecutableField))
-      (outputFields : List (Name × ResponseValue)),
-      ResponseMergeReady (.object outputFields) ->
-        ∃ resultFields,
-          (zeroDepthExecutableGroupsResult groups outputFields).fst =
-            .object resultFields ∧
-          ResponseMergeReady (.object resultFields)
+theorem zeroDepthExecutableGroupsResult_preserves_object_ready
+    : ∀ (groups : List (Name × List ExecutableField))
+          (outputFields : List (Name × ResponseValue)),
+        ResponseMergeReady (.object outputFields)
+        -> ∃ resultFields,
+            (zeroDepthExecutableGroupsResult groups outputFields).fst
+              = .object resultFields
+            ∧ ResponseMergeReady (.object resultFields)
   | [], outputFields, hready => by
       exact ⟨outputFields, by simp [zeroDepthExecutableGroupsResult], hready⟩
   | (responseName, fields) :: rest, outputFields, hready => by
@@ -892,17 +877,16 @@ theorem zeroDepthExecutableGroupsResult_preserves_object_ready :
           subst headOutput
           simp [hresultFields]
 
-theorem zeroDepthExecutableGroupsResult_key_mem_lookup_some
-    (target : Name) :
-    ∀ (groups : List (Name × List ExecutableField))
-      (outputFields : List (Name × ResponseValue)),
-      ResponseMergeReady (.object outputFields) ->
-      target ∈ groups.map Prod.fst ->
-        ∃ resultFields existing,
-          (zeroDepthExecutableGroupsResult groups outputFields).fst =
-            .object resultFields ∧
-          lookupResponseField? target resultFields = some existing ∧
-          ResponseMergeReady (.object resultFields)
+theorem zeroDepthExecutableGroupsResult_key_mem_lookup_some (target : Name)
+    : ∀ (groups : List (Name × List ExecutableField))
+          (outputFields : List (Name × ResponseValue)),
+        ResponseMergeReady (.object outputFields)
+        -> target ∈ groups.map Prod.fst
+        -> ∃ resultFields existing,
+            (zeroDepthExecutableGroupsResult groups outputFields).fst
+              = .object resultFields
+            ∧ lookupResponseField? target resultFields = some existing
+            ∧ ResponseMergeReady (.object resultFields)
   | [], outputFields, _hready, hmem => by
       simp at hmem
   | (responseName, fields) :: rest, outputFields, hready, hmem => by
@@ -974,12 +958,12 @@ theorem zeroDepthExecutableGroupsResult_key_mem_lookup_some
 theorem zeroDepthExecutableGroupsResult_append_existing_key
     (target : Name) (groupFields : List ExecutableField)
     (groups : List (Name × List ExecutableField))
-    (outputFields : List (Name × ResponseValue)) :
-    ResponseMergeReady (.object outputFields) ->
-    target ∈ groups.map Prod.fst ->
-      zeroDepthExecutableGroupsResult (groups ++ [(target, groupFields)])
-          outputFields =
-        zeroDepthExecutableGroupsResult groups outputFields := by
+    (outputFields : List (Name × ResponseValue))
+    : ResponseMergeReady (.object outputFields)
+      -> target ∈ groups.map Prod.fst
+      -> zeroDepthExecutableGroupsResult (groups ++ [(target, groupFields)])
+            outputFields
+          = zeroDepthExecutableGroupsResult groups outputFields := by
   intro hready hmem
   obtain ⟨prefixFields, existing, hprefixFst, hlookup, hprefixReady⟩ :=
     zeroDepthExecutableGroupsResult_key_mem_lookup_some target groups
@@ -1001,13 +985,13 @@ theorem zeroDepthExecutableGroupsResult_append_existing_key
       (zeroDepthExecutableGroupsResult groups outputFields).snd
 
 theorem zeroDepthExecutableGroupsResult_addExecutableGroup_eq_append
-    (group : Name × List ExecutableField) :
-    ∀ (groups : List (Name × List ExecutableField))
-      (outputFields : List (Name × ResponseValue)),
-      ResponseMergeReady (.object outputFields) ->
-      zeroDepthExecutableGroupsResult
-          (GraphQL.Execution.addExecutableGroup group groups) outputFields =
-        zeroDepthExecutableGroupsResult (groups ++ [group]) outputFields
+    (group : Name × List ExecutableField)
+    : ∀ (groups : List (Name × List ExecutableField))
+          (outputFields : List (Name × ResponseValue)),
+        ResponseMergeReady (.object outputFields)
+        -> zeroDepthExecutableGroupsResult
+              (GraphQL.Execution.addExecutableGroup group groups) outputFields
+            = zeroDepthExecutableGroupsResult (groups ++ [group]) outputFields
   | [], outputFields, _hready => by
       rcases group with ⟨groupName, groupFields⟩
       simp [GraphQL.Execution.addExecutableGroup]
@@ -1038,26 +1022,26 @@ theorem zeroDepthExecutableGroupsResult_addExecutableGroup_eq_append
 theorem zeroDepthExecutableGroupsResult_addExecutableGroup_append_eq
     (group : Name × List ExecutableField)
     (groups suffix : List (Name × List ExecutableField))
-    (outputFields : List (Name × ResponseValue)) :
-    ResponseMergeReady (.object outputFields) ->
-    zeroDepthExecutableGroupsResult
-        (GraphQL.Execution.addExecutableGroup group groups ++ suffix)
-        outputFields =
-      zeroDepthExecutableGroupsResult ((groups ++ [group]) ++ suffix)
-        outputFields := by
+    (outputFields : List (Name × ResponseValue))
+    : ResponseMergeReady (.object outputFields)
+      -> zeroDepthExecutableGroupsResult
+            (GraphQL.Execution.addExecutableGroup group groups ++ suffix)
+            outputFields
+          = zeroDepthExecutableGroupsResult ((groups ++ [group]) ++ suffix)
+              outputFields := by
   intro hready
   rw [zeroDepthExecutableGroupsResult_append]
   rw [zeroDepthExecutableGroupsResult_append]
   rw [zeroDepthExecutableGroupsResult_addExecutableGroup_eq_append group groups
     outputFields hready]
 
-theorem zeroDepthExecutableGroupsResult_mergeExecutableGroups_eq_append :
-    ∀ (left right : List (Name × List ExecutableField))
-      (outputFields : List (Name × ResponseValue)),
-      ResponseMergeReady (.object outputFields) ->
-      zeroDepthExecutableGroupsResult
-          (GraphQL.Execution.mergeExecutableGroups left right) outputFields =
-        zeroDepthExecutableGroupsResult (left ++ right) outputFields
+theorem zeroDepthExecutableGroupsResult_mergeExecutableGroups_eq_append
+    : ∀ (left right : List (Name × List ExecutableField))
+          (outputFields : List (Name × ResponseValue)),
+        ResponseMergeReady (.object outputFields)
+        -> zeroDepthExecutableGroupsResult
+              (GraphQL.Execution.mergeExecutableGroups left right) outputFields
+            = zeroDepthExecutableGroupsResult (left ++ right) outputFields
   | left, [], outputFields, _hready => by
       simp [GraphQL.Execution.mergeExecutableGroups]
   | left, group :: rest, outputFields, hready => by
@@ -1079,15 +1063,15 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues)
-      (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ (selection : Selection) (outputFields : List (Name × ResponseValue)),
-        ResponseMergeReady (.object outputFields) ->
-        visitSelection schema resolvers variableValues 0 parentType source
-            selection (.object outputFields) =
-          zeroDepthExecutableGroupsResult
-            (GraphQL.Execution.collectSelection schema variableValues
-              parentType source selection)
-            outputFields
+      (parentType : Name) (source : ResolverValue ObjectIdentity)
+      : ∀ (selection : Selection) (outputFields : List (Name × ResponseValue)),
+          ResponseMergeReady (.object outputFields)
+          -> visitSelection schema resolvers variableValues 0 parentType source
+                selection (.object outputFields)
+              = zeroDepthExecutableGroupsResult
+                  (GraphQL.Execution.collectSelection schema variableValues
+                    parentType source selection)
+                  outputFields
   | .field responseName fieldName arguments directives selectionSet,
       outputFields, hready => by
       by_cases hallowed :
@@ -1179,16 +1163,15 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues)
-      (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ (selectionSet : List Selection)
-        (outputFields : List (Name × ResponseValue)),
-        ResponseMergeReady (.object outputFields) ->
-        visitSubfields schema resolvers variableValues 0 parentType source
-            selectionSet (.object outputFields) =
-          zeroDepthExecutableGroupsResult
-            (GraphQL.Execution.collectFields schema variableValues parentType
-              source selectionSet)
-            outputFields
+      (parentType : Name) (source : ResolverValue ObjectIdentity)
+      : ∀ (selectionSet : List Selection) (outputFields : List (Name × ResponseValue)),
+          ResponseMergeReady (.object outputFields)
+          -> visitSubfields schema resolvers variableValues 0 parentType source
+                selectionSet (.object outputFields)
+              = zeroDepthExecutableGroupsResult
+                  (GraphQL.Execution.collectFields schema variableValues parentType
+                    source selectionSet)
+                  outputFields
   | [], outputFields, _hready => by
       simp [visitSubfields, GraphQL.Execution.collectFields,
         zeroDepthExecutableGroupsResult]
@@ -1233,10 +1216,10 @@ theorem VisitSubfieldsFlatCollects_depth_zero
     (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
-    (outputFields : List (Name × ResponseValue)) :
-    ResponseMergeReady (.object outputFields) ->
-    VisitSubfieldsFlatCollects schema resolvers variableValues 0 parentType
-      source selectionSet (.object outputFields) := by
+    (outputFields : List (Name × ResponseValue))
+    : ResponseMergeReady (.object outputFields)
+      -> VisitSubfieldsFlatCollects schema resolvers variableValues 0 parentType
+          source selectionSet (.object outputFields) := by
   intro hready
   unfold VisitSubfieldsFlatCollects
   rw [visitSubfields_depth_zero_eq_zeroDepthExecutableGroupsResult_collectFields
@@ -1266,9 +1249,9 @@ theorem ExecutableGroupsFlatSpecEquivalent_depth_zero_general
     (hnodup : PairKeysNodup groups)
     (hnonempty : CollectedGroupsFieldsNonempty groups)
     (hresponses : CollectedGroupsResponseName groups)
-    (hparents : CollectedGroupsParent parentType groups) :
-    ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues 0
-      parentType source groups := by
+    (hparents : CollectedGroupsParent parentType groups)
+    : ExecutableGroupsFlatSpecEquivalent schema resolvers variableValues 0
+        parentType source groups := by
   unfold ExecutableGroupsFlatSpecEquivalent
   unfold ExecutableFieldsFlatSpecEquivalent
   have hspec :=
@@ -1314,17 +1297,17 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_depth_zero
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    ∀ fields,
-      (∀ field,
-        field ∈
-          collectedExecutableFields
-            (GraphQL.Execution.collectFields schema variableValues parentType
-              source selectionSet) ->
-        field.responseName ∉ fields.map Prod.fst) ->
-      ResponseMergeReady (.object fields) ->
-        VisitSubfieldsFlatCollects schema resolvers variableValues 0
-          parentType source selectionSet (.object fields) := by
+    (selectionSet : List Selection)
+    : ∀ fields,
+        (∀ field,
+          field
+            ∈ collectedExecutableFields
+                (GraphQL.Execution.collectFields schema variableValues parentType
+                  source selectionSet)
+          -> field.responseName ∉ fields.map Prod.fst)
+        -> ResponseMergeReady (.object fields)
+        -> VisitSubfieldsFlatCollects schema resolvers variableValues 0
+            parentType source selectionSet (.object fields) := by
   intro fields _hfresh hready
   exact
     VisitSubfieldsFlatCollects_depth_zero schema resolvers variableValues
@@ -1335,10 +1318,10 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_all
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (completionDepth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    executionSelectionSetLookupValid schema parentType selectionSet ->
-    VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
-      (completionDepth + 1) parentType source selectionSet := by
+    (selectionSet : List Selection)
+    : executionSelectionSetLookupValid schema parentType selectionSet
+      -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
+          (completionDepth + 1) parentType source selectionSet := by
   intro hlookupValid
   have hparents :
       ExecutableFieldsParent parentType ([] : List ExecutableField) := by

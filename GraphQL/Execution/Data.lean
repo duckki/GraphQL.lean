@@ -17,7 +17,8 @@ def completeValueData
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
     (fuel : Nat) (fieldType : TypeRef)
-    (fields : List ExecutableField) (value : ResolverValue ObjectRef) : ResponseValue :=
+    (fields : List ExecutableField) (value : ResolverValue ObjectRef)
+    : ResponseValue :=
   Result.getD .null
     (completeValue schema resolvers variableValues fuel fieldType fields value)
 
@@ -25,8 +26,8 @@ def executeFieldData
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (fuel : Nat)
     (source : ResolverValue ObjectRef)
-    (responseName : Name) (fields : List ExecutableField) :
-    List (Name × ResponseValue) :=
+    (responseName : Name) (fields : List ExecutableField)
+    : List (Name × ResponseValue) :=
   Result.getD []
     (executeField schema resolvers variableValues fuel source responseName fields)
 
@@ -34,8 +35,8 @@ def executeCollectedFieldsData
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (fuel : Nat)
     (source : ResolverValue ObjectRef)
-    (fields : List (Name × List ExecutableField)) :
-    List (Name × ResponseValue) :=
+    (fields : List (Name × List ExecutableField))
+    : List (Name × ResponseValue) :=
   Result.getD []
     (executeCollectedFields schema resolvers variableValues fuel source fields)
 
@@ -43,7 +44,8 @@ def executeRootSelectionSetData
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
     (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef)
-    (selectionSet : List Selection) : List (Name × ResponseValue) :=
+    (selectionSet : List Selection)
+    : List (Name × ResponseValue) :=
   Result.getD []
     (executeRootSelectionSet schema resolvers variableValues fuel parentType
       source selectionSet)
@@ -52,7 +54,8 @@ def executeSelectionSetData
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
     (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef)
-    (selectionSet : List Selection) : List (Name × ResponseValue) :=
+    (selectionSet : List Selection)
+    : List (Name × ResponseValue) :=
   executeRootSelectionSetData schema resolvers variableValues fuel parentType
     source selectionSet
 
@@ -60,14 +63,16 @@ def executeSelectionSetData
 def executeQueryDataWithFuel
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
-    (fuel : Nat) (source : ResolverValue ObjectRef) : ResponseValue :=
+    (fuel : Nat) (source : ResolverValue ObjectRef)
+    : ResponseValue :=
   (executeQueryWithFuel schema resolvers variableValues operation fuel source).data
 
 -- Default compatibility data projection using the local operation-derived fuel bound.
 def executeQueryData
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
-    (source : ResolverValue ObjectRef) : ResponseValue :=
+    (source : ResolverValue ObjectRef)
+    : ResponseValue :=
   executeQueryDataWithFuel schema resolvers variableValues operation
     (executeQueryFuelBound operation) source
 

@@ -11,9 +11,9 @@ namespace NormalForm
 namespace CompleteNormalization
 
 theorem filterSelectionSetBoolCase_cons
-    (boolCase : BoolCase) (selection : Selection) (rest : List Selection) :
-    filterSelectionSetBoolCase boolCase (selection :: rest) =
-      filterSelectionSetBoolCase boolCase [selection]
+    (boolCase : BoolCase) (selection : Selection) (rest : List Selection)
+    : filterSelectionSetBoolCase boolCase (selection :: rest)
+      = filterSelectionSetBoolCase boolCase [selection]
         ++ filterSelectionSetBoolCase boolCase rest := by
   cases selection with
   | field responseName fieldName arguments directives selectionSet =>
@@ -43,11 +43,10 @@ theorem filterSelectionSetBoolCase_cons
           · contradiction
         simp [filterSelectionSetBoolCase, hfalse]
 
-theorem filterSelectionSetBoolCase_append
-    (boolCase : BoolCase) :
-    ∀ left right,
-      filterSelectionSetBoolCase boolCase (left ++ right) =
-        filterSelectionSetBoolCase boolCase left
+theorem filterSelectionSetBoolCase_append (boolCase : BoolCase)
+    : ∀ left right,
+        filterSelectionSetBoolCase boolCase (left ++ right)
+        = filterSelectionSetBoolCase boolCase left
           ++ filterSelectionSetBoolCase boolCase right
   | [], right => by
       simp [filterSelectionSetBoolCase]
@@ -78,25 +77,26 @@ theorem filterSelectionSetBoolCase_append
 
 structure BoolFilteredScopedFieldSourceForMerge
     (schema : Schema) (boolCase : BoolCase)
-    (source filtered : FieldMerge.ScopedField) : Prop where
+    (source filtered : FieldMerge.ScopedField)
+    : Prop where
   parentType : filtered.parentType = source.parentType
   responseName : filtered.responseName = source.responseName
   fieldName : filtered.fieldName = source.fieldName
   arguments : filtered.arguments = source.arguments
   outputType : filtered.outputType = source.outputType
-  selectionSet :
-    filtered.selectionSet =
-      filterSelectionSetBoolCase boolCase source.selectionSet
+  selectionSet
+    : filtered.selectionSet = filterSelectionSetBoolCase boolCase source.selectionSet
 
 theorem collectFields_filterSelectionSetBoolCase_mem_source_forMerge
-    (schema : Schema) (boolCase : BoolCase) :
-    ∀ parentType selectionSet filteredField,
-      filteredField ∈ FieldMerge.collectFields schema parentType
-          (filterSelectionSetBoolCase boolCase selectionSet) ->
-        ∃ sourceField,
-          sourceField ∈ FieldMerge.collectFields schema parentType selectionSet
+    (schema : Schema) (boolCase : BoolCase)
+    : ∀ parentType selectionSet filteredField,
+        filteredField
+          ∈ FieldMerge.collectFields schema parentType
+              (filterSelectionSetBoolCase boolCase selectionSet)
+        -> ∃ sourceField,
+            sourceField ∈ FieldMerge.collectFields schema parentType selectionSet
             ∧ BoolFilteredScopedFieldSourceForMerge schema boolCase sourceField
-              filteredField
+                filteredField
   | _parentType, [], _filteredField, hfield => by
       simp [filterSelectionSetBoolCase, FieldMerge.collectFields] at hfield
   | parentType,
@@ -316,10 +316,10 @@ theorem collectFields_filterSelectionSetBoolCase_mem_source_forMerge
 
 theorem fieldsInSetCanMerge_filterSelectionSetBoolCase_forSemantics
     (schema : Schema) (boolCase : BoolCase)
-    {parentType : Name} {selectionSet : List Selection} :
-    FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-      FieldMerge.fieldsInSetCanMerge schema parentType
-        (filterSelectionSetBoolCase boolCase selectionSet) := by
+    {parentType : Name} {selectionSet : List Selection}
+    : FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (filterSelectionSetBoolCase boolCase selectionSet) := by
   intro hmerge
   refine
     FieldMerge.FieldsInSetCanMerge.rec
@@ -412,11 +412,11 @@ theorem fieldsInSetCanMerge_filterSelectionSetBoolCase_forSemantics
 
 mutual
   theorem selectionLookupValid_filterSelectionSetBoolCase
-      (schema : Schema) (boolCase : BoolCase) :
-      ∀ parentType sourceSelection filteredSelection,
-        filteredSelection ∈ filterSelectionSetBoolCase boolCase [sourceSelection] ->
-        selectionLookupValid schema parentType sourceSelection ->
-          selectionLookupValid schema parentType filteredSelection
+      (schema : Schema) (boolCase : BoolCase)
+      : ∀ parentType sourceSelection filteredSelection,
+          filteredSelection ∈ filterSelectionSetBoolCase boolCase [sourceSelection]
+          -> selectionLookupValid schema parentType sourceSelection
+          -> selectionLookupValid schema parentType filteredSelection
     | parentType,
       .field responseName fieldName arguments directives selectionSet,
       filteredSelection, hfiltered, hlookupValid => by
@@ -501,11 +501,11 @@ mutual
           simp [filterSelectionSetBoolCase, hfalse] at hfiltered
 
   theorem selectionSetLookupValid_filterSelectionSetBoolCase
-      (schema : Schema) (boolCase : BoolCase) :
-      ∀ parentType selectionSet,
-        selectionSetLookupValid schema parentType selectionSet ->
-          selectionSetLookupValid schema parentType
-            (filterSelectionSetBoolCase boolCase selectionSet)
+      (schema : Schema) (boolCase : BoolCase)
+      : ∀ parentType selectionSet,
+          selectionSetLookupValid schema parentType selectionSet
+          -> selectionSetLookupValid schema parentType
+              (filterSelectionSetBoolCase boolCase selectionSet)
     | parentType, [], _hlookupValid => by
         simp [filterSelectionSetBoolCase, selectionSetLookupValid]
     | parentType, selection :: rest, hlookupValid => by
@@ -533,11 +533,11 @@ end
 
 mutual
   theorem selectionSemanticsReady_filterSelectionSetBoolCase
-      (schema : Schema) (boolCase : BoolCase) :
-      ∀ parentType sourceSelection filteredSelection,
-        filteredSelection ∈ filterSelectionSetBoolCase boolCase [sourceSelection] ->
-        selectionSemanticsReady schema parentType sourceSelection ->
-          selectionSemanticsReady schema parentType filteredSelection
+      (schema : Schema) (boolCase : BoolCase)
+      : ∀ parentType sourceSelection filteredSelection,
+          filteredSelection ∈ filterSelectionSetBoolCase boolCase [sourceSelection]
+          -> selectionSemanticsReady schema parentType sourceSelection
+          -> selectionSemanticsReady schema parentType filteredSelection
     | parentType,
       .field responseName fieldName arguments directives selectionSet,
       filteredSelection, hfiltered, hready => by
@@ -649,11 +649,11 @@ mutual
           simp [filterSelectionSetBoolCase, hfalse] at hfiltered
 
   theorem selectionSetSemanticsReady_filterSelectionSetBoolCase
-      (schema : Schema) (boolCase : BoolCase) :
-      ∀ parentType selectionSet,
-        selectionSetSemanticsReady schema parentType selectionSet ->
-          selectionSetSemanticsReady schema parentType
-            (filterSelectionSetBoolCase boolCase selectionSet)
+      (schema : Schema) (boolCase : BoolCase)
+      : ∀ parentType selectionSet,
+          selectionSetSemanticsReady schema parentType selectionSet
+          -> selectionSetSemanticsReady schema parentType
+              (filterSelectionSetBoolCase boolCase selectionSet)
     | parentType, [], _hready => by
         simpa [filterSelectionSetBoolCase] using
           selectionSetSemanticsReady_nil schema parentType

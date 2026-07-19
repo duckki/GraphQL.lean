@@ -7,35 +7,33 @@ namespace GraphQL
 
 namespace SchemaWellFormedness
 
-theorem schemaWellFormed_possibleTypesAreObjects {schema : Schema} :
-    schemaWellFormed schema ->
-      ∀ typeName objectTypeName,
-        objectTypeName ∈ schema.getPossibleTypes typeName ->
-          schema.objectType objectTypeName := by
+theorem schemaWellFormed_possibleTypesAreObjects {schema : Schema}
+    : schemaWellFormed schema
+      -> ∀ typeName objectTypeName,
+          objectTypeName ∈ schema.getPossibleTypes typeName
+          -> schema.objectType objectTypeName := by
   intro hschema
   exact hschema.2.2.2.1
 
-theorem schemaWellFormed_possibleTypesNodup {schema : Schema} :
-    schemaWellFormed schema ->
-      ∀ typeName, (schema.getPossibleTypes typeName).Nodup := by
+theorem schemaWellFormed_possibleTypesNodup {schema : Schema}
+    : schemaWellFormed schema
+      -> ∀ typeName, (schema.getPossibleTypes typeName).Nodup := by
   intro hschema
   exact hschema.2.2.2.2.1
 
-theorem schemaWellFormed_possibleObjectFieldDefinitionsImplement
-    {schema : Schema} :
-    schemaWellFormed schema ->
-      possibleObjectFieldDefinitionsImplement schema := by
+theorem schemaWellFormed_possibleObjectFieldDefinitionsImplement {schema : Schema}
+    : schemaWellFormed schema -> possibleObjectFieldDefinitionsImplement schema := by
   intro hschema
   exact hschema.2.2.2.2.2
 
 theorem schemaWellFormed_possibleObject_lookupField_implements
     {schema : Schema} {parentType objectTypeName fieldName : Name}
-    {expected implementation : FieldDefinition} :
-    schemaWellFormed schema ->
-      objectTypeName ∈ schema.getPossibleTypes parentType ->
-        schema.lookupField parentType fieldName = some expected ->
-          schema.lookupField objectTypeName fieldName = some implementation ->
-            fieldDefinitionImplements schema implementation expected := by
+    {expected implementation : FieldDefinition}
+    : schemaWellFormed schema
+      -> objectTypeName ∈ schema.getPossibleTypes parentType
+      -> schema.lookupField parentType fieldName = some expected
+      -> schema.lookupField objectTypeName fieldName = some implementation
+      -> fieldDefinitionImplements schema implementation expected := by
   intro hschema hpossible hexpected himplementation
   rcases schemaWellFormed_possibleObjectFieldDefinitionsImplement hschema
       parentType objectTypeName fieldName expected hpossible hexpected with
@@ -46,13 +44,13 @@ theorem schemaWellFormed_possibleObject_lookupField_implements
 
 theorem schemaWellFormed_possibleObject_lookupField_sameResponseShape
     {schema : Schema} {parentType objectTypeName fieldName : Name}
-    {expected implementation : FieldDefinition} :
-    schemaWellFormed schema ->
-      objectTypeName ∈ schema.getPossibleTypes parentType ->
-        schema.lookupField parentType fieldName = some expected ->
-          schema.lookupField objectTypeName fieldName = some implementation ->
-            FieldMerge.sameResponseShape schema
-              implementation.outputType expected.outputType := by
+    {expected implementation : FieldDefinition}
+    : schemaWellFormed schema
+      -> objectTypeName ∈ schema.getPossibleTypes parentType
+      -> schema.lookupField parentType fieldName = some expected
+      -> schema.lookupField objectTypeName fieldName = some implementation
+      -> FieldMerge.sameResponseShape schema
+          implementation.outputType expected.outputType := by
   intro hschema hpossible hexpected himplementation
   rcases schemaWellFormed_possibleObjectFieldDefinitionsImplement hschema
       parentType objectTypeName fieldName expected hpossible hexpected with
@@ -63,12 +61,12 @@ theorem schemaWellFormed_possibleObject_lookupField_sameResponseShape
 
 theorem schemaWellFormed_possibleObject_lookupField_exists
     {schema : Schema} {parentType objectTypeName fieldName : Name}
-    {expected : FieldDefinition} :
-    schemaWellFormed schema ->
-      objectTypeName ∈ schema.getPossibleTypes parentType ->
-        schema.lookupField parentType fieldName = some expected ->
-          ∃ implementation,
-            schema.lookupField objectTypeName fieldName = some implementation := by
+    {expected : FieldDefinition}
+    : schemaWellFormed schema
+      -> objectTypeName ∈ schema.getPossibleTypes parentType
+      -> schema.lookupField parentType fieldName = some expected
+      -> ∃ implementation,
+          schema.lookupField objectTypeName fieldName = some implementation := by
   intro hschema hpossible hexpected
   rcases schemaWellFormed_possibleObjectFieldDefinitionsImplement hschema
       parentType objectTypeName fieldName expected hpossible hexpected with
@@ -77,26 +75,24 @@ theorem schemaWellFormed_possibleObject_lookupField_exists
 
 theorem schemaWellFormed_possibleObject_lookupField_outputTypeSubtype
     {schema : Schema} {parentType objectTypeName fieldName : Name}
-    {expected implementation : FieldDefinition} :
-    schemaWellFormed schema ->
-      objectTypeName ∈ schema.getPossibleTypes parentType ->
-        schema.lookupField parentType fieldName = some expected ->
-          schema.lookupField objectTypeName fieldName = some implementation ->
-            schema.outputTypeSubtype implementation.outputType
-              expected.outputType := by
+    {expected implementation : FieldDefinition}
+    : schemaWellFormed schema
+      -> objectTypeName ∈ schema.getPossibleTypes parentType
+      -> schema.lookupField parentType fieldName = some expected
+      -> schema.lookupField objectTypeName fieldName = some implementation
+      -> schema.outputTypeSubtype implementation.outputType expected.outputType := by
   intro hschema hpossible hexpected himplementation
   exact (schemaWellFormed_possibleObject_lookupField_implements hschema
     hpossible hexpected himplementation).1
 
 theorem schemaWellFormed_possibleObject_lookupField_argumentsImplement
     {schema : Schema} {parentType objectTypeName fieldName : Name}
-    {expected implementation : FieldDefinition} :
-    schemaWellFormed schema ->
-      objectTypeName ∈ schema.getPossibleTypes parentType ->
-        schema.lookupField parentType fieldName = some expected ->
-          schema.lookupField objectTypeName fieldName = some implementation ->
-            argumentDefinitionsImplement implementation.arguments
-              expected.arguments := by
+    {expected implementation : FieldDefinition}
+    : schemaWellFormed schema
+      -> objectTypeName ∈ schema.getPossibleTypes parentType
+      -> schema.lookupField parentType fieldName = some expected
+      -> schema.lookupField objectTypeName fieldName = some implementation
+      -> argumentDefinitionsImplement implementation.arguments expected.arguments := by
   intro hschema hpossible hexpected himplementation
   exact (schemaWellFormed_possibleObject_lookupField_implements hschema
     hpossible hexpected himplementation).2
@@ -104,10 +100,10 @@ theorem schemaWellFormed_possibleObject_lookupField_argumentsImplement
 end SchemaWellFormedness
 
 theorem object_typeIncludesObjectBool_eq_self
-    (schema : Schema) {typeName objectName : Name} :
-    schema.objectType typeName ->
-      schema.typeIncludesObjectBool typeName objectName = true ->
-        objectName = typeName := by
+    (schema : Schema) {typeName objectName : Name}
+    : schema.objectType typeName
+      -> schema.typeIncludesObjectBool typeName objectName = true
+      -> objectName = typeName := by
   intro hobject hinclude
   rcases hobject with ⟨objectType, hlookup⟩
   have hname : objectType.name = typeName := by
@@ -117,12 +113,11 @@ theorem object_typeIncludesObjectBool_eq_self
     hname] at hinclude
   exact hinclude
 
-theorem typeIncludesObjectBool_of_outputTypeSubtype_namedType
-    (schema : Schema) :
-    ∀ {implementation expected : TypeRef} {objectType : Name},
-      schema.outputTypeSubtype implementation expected ->
-      schema.typeIncludesObjectBool implementation.namedType objectType = true ->
-        schema.typeIncludesObjectBool expected.namedType objectType = true
+theorem typeIncludesObjectBool_of_outputTypeSubtype_namedType (schema : Schema)
+    : ∀ {implementation expected : TypeRef} {objectType : Name},
+        schema.outputTypeSubtype implementation expected
+        -> schema.typeIncludesObjectBool implementation.namedType objectType = true
+        -> schema.typeIncludesObjectBool expected.namedType objectType = true
     := by
   intro implementation
   induction implementation with

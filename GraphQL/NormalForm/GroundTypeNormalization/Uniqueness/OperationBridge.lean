@@ -11,11 +11,11 @@ namespace NormalForm
 namespace GroundTypeNormalization
 
 theorem selectionSetsSemanticallyEquivalent_of_operationsSemanticallyEquivalent
-    {schema : Schema} {left right : Operation} :
-    left.rootType = right.rootType ->
-    operationsSemanticallyEquivalent schema left right ->
-      selectionSetsSemanticallyEquivalent schema left.rootType
-        left.selectionSet right.selectionSet := by
+    {schema : Schema} {left right : Operation}
+    : left.rootType = right.rootType
+      -> operationsSemanticallyEquivalent schema left right
+      -> selectionSetsSemanticallyEquivalent schema left.rootType
+          left.selectionSet right.selectionSet := by
   intro hroot hsem ObjectRef resolvers variableValues fuel source hsource
   rcases hsource with ⟨runtimeType, _ref, hsourceEq, hinclude⟩
   have hleftRoot :
@@ -35,30 +35,30 @@ theorem selectionSetsSemanticallyEquivalent_of_operationsSemanticallyEquivalent
       hsem resolvers variableValues fuel source
 
 theorem selectionSetsDataEquivalent_of_operationsSemanticallyEquivalent
-    {schema : Schema} {left right : Operation} :
-    left.rootType = right.rootType ->
-    operationsSemanticallyEquivalent schema left right ->
-      selectionSetsDataEquivalent schema left.rootType
-        left.selectionSet right.selectionSet := by
+    {schema : Schema} {left right : Operation}
+    : left.rootType = right.rootType
+      -> operationsSemanticallyEquivalent schema left right
+      -> selectionSetsDataEquivalent schema left.rootType
+          left.selectionSet right.selectionSet := by
   intro hroot hsem
   exact selectionSetsDataEquivalent_of_selectionSetsSemanticallyEquivalent
     (selectionSetsSemanticallyEquivalent_of_operationsSemanticallyEquivalent
       hroot hsem)
 
 theorem operation_rootType_eq_of_operationDefinitionValid
-    {schema : Schema} {left right : Operation} :
-    Validation.operationDefinitionValid schema left ->
-    Validation.operationDefinitionValid schema right ->
-      left.rootType = right.rootType := by
+    {schema : Schema} {left right : Operation}
+    : Validation.operationDefinitionValid schema left
+      -> Validation.operationDefinitionValid schema right
+      -> left.rootType = right.rootType := by
   intro hleft hright
   rw [Validation.operationDefinitionValid_rootType_eq hleft,
     Validation.operationDefinitionValid_rootType_eq hright]
 
 theorem operation_root_objectTypeNameBool_of_wf_valid
-    {schema : Schema} {operation : Operation} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.operationDefinitionValid schema operation ->
-      objectTypeNameBool schema operation.rootType = true := by
+    {schema : Schema} {operation : Operation}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.operationDefinitionValid schema operation
+      -> objectTypeNameBool schema operation.rootType = true := by
   intro hschema hvalid
   have hroot : operation.rootType = schema.queryType :=
     Validation.operationDefinitionValid_rootType_eq hvalid
@@ -68,22 +68,22 @@ theorem operation_root_objectTypeNameBool_of_wf_valid
     hrootObject
 
 theorem operationsEqualUpToReordering_of_selectionSet
-    {schema : Schema} {left right : Operation} :
-    Validation.operationDefinitionValid schema left ->
-    Validation.operationDefinitionValid schema right ->
-    SelectionSetEqualUpToReordering left.selectionSet right.selectionSet ->
-      operationsEqualUpToReordering left right := by
+    {schema : Schema} {left right : Operation}
+    : Validation.operationDefinitionValid schema left
+      -> Validation.operationDefinitionValid schema right
+      -> SelectionSetEqualUpToReordering left.selectionSet right.selectionSet
+      -> operationsEqualUpToReordering left right := by
   intro hleft hright hselectionSet
   exact
     ⟨operation_rootType_eq_of_operationDefinitionValid hleft hright,
       hselectionSet⟩
 
 theorem normal_operations_semanticallyEquivalent_equalUpToReordering_of_selectionSet
-    {schema : Schema} {left right : Operation} :
-    normalSelectionSetsSemanticallyEquivalentEqualUpToReordering schema
-      left.rootType left.selectionSet right.selectionSet ->
-      normalOperationsSemanticallyEquivalentEqualUpToReordering schema
-        left right := by
+    {schema : Schema} {left right : Operation}
+    : normalSelectionSetsSemanticallyEquivalentEqualUpToReordering schema
+        left.rootType left.selectionSet right.selectionSet
+      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema
+          left right := by
   intro hselection hschema hleftValid hrightValid hleftFree hrightFree
     hleftNormal hrightNormal hsem
   have hroot :
@@ -106,12 +106,12 @@ theorem normal_operations_semanticallyEquivalent_equalUpToReordering_of_selectio
     hselectionSet
 
 theorem normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_selectionSet
-    {schema : Schema} {left right : Operation} :
-    validNormalSelectionSetsSemanticallyEquivalentEqualUpToReordering schema
-      left.variableDefinitions right.variableDefinitions left.rootType
-      left.selectionSet right.selectionSet ->
-      normalOperationsSemanticallyEquivalentEqualUpToReordering schema
-        left right := by
+    {schema : Schema} {left right : Operation}
+    : validNormalSelectionSetsSemanticallyEquivalentEqualUpToReordering schema
+        left.variableDefinitions right.variableDefinitions left.rootType
+        left.selectionSet right.selectionSet
+      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema
+          left right := by
   intro hselection hschema hleftValid hrightValid hleftFree hrightFree
     hleftNormal hrightNormal hsem
   have hroot :
@@ -141,23 +141,23 @@ theorem normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_se
     hselectionSet
 
 theorem normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_object_diff_data_separates
-    {schema : Schema} {left right : Operation} :
-    (SchemaWellFormedness.schemaWellFormed schema ->
-      Validation.selectionSetValid schema left.variableDefinitions left.rootType
-        left.selectionSet ->
-      Validation.selectionSetValid schema right.variableDefinitions left.rootType
-        right.selectionSet ->
-      selectionSetDirectiveFree left.selectionSet ->
-      selectionSetDirectiveFree right.selectionSet ->
-      selectionSetNormal schema left.rootType left.selectionSet ->
-      selectionSetNormal schema left.rootType right.selectionSet ->
-      objectTypeNameBool schema left.rootType = true ->
-      NormalSelectionSetDiff schema left.rootType left.selectionSet
-        right.selectionSet ->
-        ¬ selectionSetsDataEquivalent schema left.rootType left.selectionSet
-          right.selectionSet) ->
-      normalOperationsSemanticallyEquivalentEqualUpToReordering schema
-        left right := by
+    {schema : Schema} {left right : Operation}
+    : (SchemaWellFormedness.schemaWellFormed schema
+        -> Validation.selectionSetValid schema left.variableDefinitions left.rootType
+            left.selectionSet
+        -> Validation.selectionSetValid schema right.variableDefinitions left.rootType
+            right.selectionSet
+        -> selectionSetDirectiveFree left.selectionSet
+        -> selectionSetDirectiveFree right.selectionSet
+        -> selectionSetNormal schema left.rootType left.selectionSet
+        -> selectionSetNormal schema left.rootType right.selectionSet
+        -> objectTypeNameBool schema left.rootType = true
+        -> NormalSelectionSetDiff schema left.rootType left.selectionSet
+            right.selectionSet
+        -> ¬ selectionSetsDataEquivalent schema left.rootType left.selectionSet
+              right.selectionSet)
+      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema
+          left right := by
   intro hdiffSeparates hschema hleftValid hrightValid hleftFree hrightFree
     hleftNormal hrightNormal hsem
   have hroot :
@@ -195,11 +195,11 @@ theorem normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_ob
         hrightSelectionNormal hobject hdiff) hdata)
 
 theorem normalSelectionSetsSemanticallyEquivalent_equalUpToReordering_of_diff_separates
-    {schema : Schema} {parentType : Name} {left right : List Selection} :
-    (NormalSelectionSetDiff schema parentType left right ->
-      ¬ selectionSetsSemanticallyEquivalent schema parentType left right) ->
-      normalSelectionSetsSemanticallyEquivalentEqualUpToReordering schema
-        parentType left right := by
+    {schema : Schema} {parentType : Name} {left right : List Selection}
+    : (NormalSelectionSetDiff schema parentType left right
+        -> ¬ selectionSetsSemanticallyEquivalent schema parentType left right)
+      -> normalSelectionSetsSemanticallyEquivalentEqualUpToReordering schema
+          parentType left right := by
   intro hdiffSeparates _hschema hleftFree hrightFree hleftNormal
     hrightNormal hsem
   by_cases hequal : SelectionSetEqualUpToReordering left right
@@ -211,11 +211,11 @@ theorem normalSelectionSetsSemanticallyEquivalent_equalUpToReordering_of_diff_se
     exact False.elim ((hdiffSeparates hdiff) hsem)
 
 theorem normalSelectionSetsSemanticallyEquivalent_equalUpToReordering_of_diff_data_separates
-    {schema : Schema} {parentType : Name} {left right : List Selection} :
-    (NormalSelectionSetDiff schema parentType left right ->
-      ¬ selectionSetsDataEquivalent schema parentType left right) ->
-      normalSelectionSetsSemanticallyEquivalentEqualUpToReordering schema
-        parentType left right := by
+    {schema : Schema} {parentType : Name} {left right : List Selection}
+    : (NormalSelectionSetDiff schema parentType left right
+        -> ¬ selectionSetsDataEquivalent schema parentType left right)
+      -> normalSelectionSetsSemanticallyEquivalentEqualUpToReordering schema
+          parentType left right := by
   intro hdiffSeparates _hschema hleftFree hrightFree hleftNormal
     hrightNormal hsem
   by_cases hequal : SelectionSetEqualUpToReordering left right
@@ -230,13 +230,13 @@ theorem normalSelectionSetsSemanticallyEquivalent_equalUpToReordering_of_diff_da
           hsem))
 
 theorem feasibleNormalSelectionSetsSemanticallyEquivalent_equalUpToReordering_of_diff_separates
-    {schema : Schema} {parentType : Name} {left right : List Selection} :
-    (selectionSetFeasibleInScope schema parentType left ->
-      selectionSetFeasibleInScope schema parentType right ->
-      NormalSelectionSetDiff schema parentType left right ->
-        ¬ selectionSetsSemanticallyEquivalent schema parentType left right) ->
-      feasibleNormalSelectionSetsSemanticallyEquivalentEqualUpToReordering
-        schema parentType left right := by
+    {schema : Schema} {parentType : Name} {left right : List Selection}
+    : (selectionSetFeasibleInScope schema parentType left
+        -> selectionSetFeasibleInScope schema parentType right
+        -> NormalSelectionSetDiff schema parentType left right
+        -> ¬ selectionSetsSemanticallyEquivalent schema parentType left right)
+      -> feasibleNormalSelectionSetsSemanticallyEquivalentEqualUpToReordering
+          schema parentType left right := by
   intro hdiffSeparates _hschema hleftFree hrightFree hleftNormal
     hrightNormal hleftFeasible hrightFeasible hsem
   by_cases hequal : SelectionSetEqualUpToReordering left right
@@ -249,13 +249,13 @@ theorem feasibleNormalSelectionSetsSemanticallyEquivalent_equalUpToReordering_of
       ((hdiffSeparates hleftFeasible hrightFeasible hdiff) hsem)
 
 theorem feasibleNormalSelectionSetsSemanticallyEquivalent_equalUpToReordering_of_diff_data_separates
-    {schema : Schema} {parentType : Name} {left right : List Selection} :
-    (selectionSetFeasibleInScope schema parentType left ->
-      selectionSetFeasibleInScope schema parentType right ->
-      NormalSelectionSetDiff schema parentType left right ->
-        ¬ selectionSetsDataEquivalent schema parentType left right) ->
-      feasibleNormalSelectionSetsSemanticallyEquivalentEqualUpToReordering
-        schema parentType left right := by
+    {schema : Schema} {parentType : Name} {left right : List Selection}
+    : (selectionSetFeasibleInScope schema parentType left
+        -> selectionSetFeasibleInScope schema parentType right
+        -> NormalSelectionSetDiff schema parentType left right
+        -> ¬ selectionSetsDataEquivalent schema parentType left right)
+      -> feasibleNormalSelectionSetsSemanticallyEquivalentEqualUpToReordering
+          schema parentType left right := by
   intro hdiffSeparates _hschema hleftFree hrightFree hleftNormal
     hrightNormal hleftFeasible hrightFeasible hsem
   by_cases hequal : SelectionSetEqualUpToReordering left right
@@ -272,20 +272,18 @@ theorem feasibleNormalSelectionSetsSemanticallyEquivalent_equalUpToReordering_of
 theorem validNormalSelectionSetsSemanticallyEquivalent_equalUpToReordering_of_diff_separates
     {schema : Schema}
     {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
-    {parentType : Name} {left right : List Selection} :
-    (SchemaWellFormedness.schemaWellFormed schema ->
-      Validation.selectionSetValid schema leftVariableDefinitions parentType
-        left ->
-      Validation.selectionSetValid schema rightVariableDefinitions parentType
-        right ->
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema parentType left ->
-      selectionSetNormal schema parentType right ->
-      NormalSelectionSetDiff schema parentType left right ->
-        ¬ selectionSetsSemanticallyEquivalent schema parentType left right) ->
-      validNormalSelectionSetsSemanticallyEquivalentEqualUpToReordering schema
-        leftVariableDefinitions rightVariableDefinitions parentType left right := by
+    {parentType : Name} {left right : List Selection}
+    : (SchemaWellFormedness.schemaWellFormed schema
+        -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+        -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+        -> selectionSetDirectiveFree left
+        -> selectionSetDirectiveFree right
+        -> selectionSetNormal schema parentType left
+        -> selectionSetNormal schema parentType right
+        -> NormalSelectionSetDiff schema parentType left right
+        -> ¬ selectionSetsSemanticallyEquivalent schema parentType left right)
+      -> validNormalSelectionSetsSemanticallyEquivalentEqualUpToReordering schema
+          leftVariableDefinitions rightVariableDefinitions parentType left right := by
   intro hdiffSeparates hschema hleftValid hrightValid hleftFree hrightFree
     hleftNormal hrightNormal hsem
   by_cases hequal : SelectionSetEqualUpToReordering left right
@@ -301,20 +299,18 @@ theorem validNormalSelectionSetsSemanticallyEquivalent_equalUpToReordering_of_di
 theorem validNormalSelectionSetsSemanticallyEquivalent_equalUpToReordering_of_diff_data_separates
     {schema : Schema}
     {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
-    {parentType : Name} {left right : List Selection} :
-    (SchemaWellFormedness.schemaWellFormed schema ->
-      Validation.selectionSetValid schema leftVariableDefinitions parentType
-        left ->
-      Validation.selectionSetValid schema rightVariableDefinitions parentType
-        right ->
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema parentType left ->
-      selectionSetNormal schema parentType right ->
-      NormalSelectionSetDiff schema parentType left right ->
-        ¬ selectionSetsDataEquivalent schema parentType left right) ->
-      validNormalSelectionSetsSemanticallyEquivalentEqualUpToReordering schema
-        leftVariableDefinitions rightVariableDefinitions parentType left right := by
+    {parentType : Name} {left right : List Selection}
+    : (SchemaWellFormedness.schemaWellFormed schema
+        -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+        -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+        -> selectionSetDirectiveFree left
+        -> selectionSetDirectiveFree right
+        -> selectionSetNormal schema parentType left
+        -> selectionSetNormal schema parentType right
+        -> NormalSelectionSetDiff schema parentType left right
+        -> ¬ selectionSetsDataEquivalent schema parentType left right)
+      -> validNormalSelectionSetsSemanticallyEquivalentEqualUpToReordering schema
+          leftVariableDefinitions rightVariableDefinitions parentType left right := by
   intro hdiffSeparates hschema hleftValid hrightValid hleftFree hrightFree
     hleftNormal hrightNormal hsem
   by_cases hequal : SelectionSetEqualUpToReordering left right

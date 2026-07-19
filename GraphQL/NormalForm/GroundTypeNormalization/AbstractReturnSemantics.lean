@@ -15,17 +15,17 @@ variable {ObjectRef : Type}
 theorem collectFields_possibleTypeFragments_not_mem_eq_nil
     (schema : Schema) (variableValues : Execution.VariableValues)
     (runtimeType : Name) (ref : ObjectRef)
-    (possibleTypes : List Name) (selectionSet : List Selection) :
-    (∀ objectType, objectType ∈ possibleTypes ->
-      objectTypeNameBool schema objectType = true) ->
-    runtimeType ∉ possibleTypes ->
-      Execution.collectFields schema variableValues runtimeType
-        (.object runtimeType ref)
-        (possibleTypes.map
-          (fun objectType =>
-            Selection.inlineFragment (some objectType) []
-              (normalizeSelectionSet schema objectType selectionSet)))
-      = [] := by
+    (possibleTypes : List Name) (selectionSet : List Selection)
+    : (∀ objectType,
+        objectType ∈ possibleTypes -> objectTypeNameBool schema objectType = true)
+      -> runtimeType ∉ possibleTypes
+      -> Execution.collectFields schema variableValues runtimeType
+            (.object runtimeType ref)
+            (possibleTypes.map
+              (fun objectType =>
+                Selection.inlineFragment (some objectType) []
+                  (normalizeSelectionSet schema objectType selectionSet)))
+          = [] := by
   intro hobjects hnotin
   induction possibleTypes with
   | nil =>
@@ -58,20 +58,19 @@ theorem executeSelectionSet_append_possibleTypeFragments_not_mem
     (variableValues : Execution.VariableValues)
     (depth : Nat) (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name)
-    (selectionSet suffix : List Selection) :
-    (∀ objectType, objectType ∈ possibleTypes ->
-      objectTypeNameBool schema objectType = true) ->
-    runtimeType ∉ possibleTypes ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        runtimeType (.object runtimeType ref)
-        (suffix ++
-          possibleTypes.map
-            (fun objectType =>
-              Selection.inlineFragment (some objectType) []
-                (normalizeSelectionSet schema objectType selectionSet)))
-      =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        runtimeType (.object runtimeType ref) suffix := by
+    (selectionSet suffix : List Selection)
+    : (∀ objectType,
+        objectType ∈ possibleTypes -> objectTypeNameBool schema objectType = true)
+      -> runtimeType ∉ possibleTypes
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            runtimeType (.object runtimeType ref)
+            (suffix
+              ++ possibleTypes.map
+                  (fun objectType =>
+                    Selection.inlineFragment (some objectType) []
+                      (normalizeSelectionSet schema objectType selectionSet)))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              runtimeType (.object runtimeType ref) suffix := by
   intro hobjects hnotin
   simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
     ]
@@ -84,14 +83,14 @@ theorem executeSelectionSet_append_possibleTypeFragments_not_mem
 theorem collectFields_possibleTypeNormalizations_not_mem_eq_nil
     (schema : Schema) (variableValues : Execution.VariableValues)
     (runtimeType : Name) (ref : ObjectRef)
-    (possibleTypes : List Name) (selectionSet : List Selection) :
-    (∀ objectType, objectType ∈ possibleTypes ->
-      objectTypeNameBool schema objectType = true) ->
-    runtimeType ∉ possibleTypes ->
-      Execution.collectFields schema variableValues runtimeType
-        (.object runtimeType ref)
-        (possibleTypeNormalizations schema possibleTypes selectionSet)
-      = [] := by
+    (possibleTypes : List Name) (selectionSet : List Selection)
+    : (∀ objectType,
+        objectType ∈ possibleTypes -> objectTypeNameBool schema objectType = true)
+      -> runtimeType ∉ possibleTypes
+      -> Execution.collectFields schema variableValues runtimeType
+            (.object runtimeType ref)
+            (possibleTypeNormalizations schema possibleTypes selectionSet)
+          = [] := by
   intro hobjects hnotin
   induction possibleTypes with
   | nil =>
@@ -135,16 +134,15 @@ theorem executeSelectionSet_append_possibleTypeNormalizations_not_mem
     (variableValues : Execution.VariableValues)
     (depth : Nat) (runtimeType : Name) (ref : ObjectRef)
     (possibleTypes : List Name)
-    (selectionSet suffix : List Selection) :
-    (∀ objectType, objectType ∈ possibleTypes ->
-      objectTypeNameBool schema objectType = true) ->
-    runtimeType ∉ possibleTypes ->
-    Execution.executeSelectionSet schema resolvers variableValues depth
-      runtimeType (.object runtimeType ref)
-      (suffix ++ possibleTypeNormalizations schema possibleTypes selectionSet)
-    =
-    Execution.executeSelectionSet schema resolvers variableValues depth
-      runtimeType (.object runtimeType ref) suffix := by
+    (selectionSet suffix : List Selection)
+    : (∀ objectType,
+        objectType ∈ possibleTypes -> objectTypeNameBool schema objectType = true)
+      -> runtimeType ∉ possibleTypes
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            runtimeType (.object runtimeType ref)
+            (suffix ++ possibleTypeNormalizations schema possibleTypes selectionSet)
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              runtimeType (.object runtimeType ref) suffix := by
   intro hobjects hnotin
   simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet,
     ]
@@ -154,9 +152,8 @@ theorem executeSelectionSet_append_possibleTypeNormalizations_not_mem
     hnotin]
   simp [Execution.mergeExecutableGroups_nil_right]
 
-def completeValueSelectionSetField
-    (parentType : Name) (selectionSet : List Selection) :
-    Execution.ExecutableField :=
+def completeValueSelectionSetField (parentType : Name) (selectionSet : List Selection)
+    : Execution.ExecutableField :=
   {
     parentType := parentType,
     responseName := "",
@@ -169,27 +166,25 @@ theorem executeSelectionSet_possibleTypeFragments_runtime_branch
     (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-      (depth : Nat) (runtimeType : Name) (ref : ObjectRef)
-    (possibleTypes : List Name) (selectionSet : List Selection) :
-    (∀ objectType, objectType ∈ possibleTypes ->
-      objectTypeNameBool schema objectType = true) ->
-    possibleTypes.Nodup ->
-    runtimeType ∈ possibleTypes ->
-    Execution.executeSelectionSet schema resolvers variableValues depth
-      runtimeType (.object runtimeType ref)
-      (normalizeSelectionSet schema runtimeType selectionSet)
-      =
-    Execution.executeSelectionSet schema resolvers variableValues depth
-      runtimeType (.object runtimeType ref) selectionSet ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        runtimeType (.object runtimeType ref)
-        (possibleTypes.map
-          (fun objectType =>
-            Selection.inlineFragment (some objectType) []
-              (normalizeSelectionSet schema objectType selectionSet)))
-        =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        runtimeType (.object runtimeType ref) selectionSet := by
+    (depth : Nat) (runtimeType : Name) (ref : ObjectRef)
+    (possibleTypes : List Name) (selectionSet : List Selection)
+    : (∀ objectType,
+        objectType ∈ possibleTypes -> objectTypeNameBool schema objectType = true)
+      -> possibleTypes.Nodup
+      -> runtimeType ∈ possibleTypes
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            runtimeType (.object runtimeType ref)
+            (normalizeSelectionSet schema runtimeType selectionSet)
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              runtimeType (.object runtimeType ref) selectionSet
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            runtimeType (.object runtimeType ref)
+            (possibleTypes.map
+              (fun objectType =>
+                Selection.inlineFragment (some objectType) []
+                  (normalizeSelectionSet schema objectType selectionSet)))
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              runtimeType (.object runtimeType ref) selectionSet := by
   intro hobjects hnodup hmem hrecursive
   induction possibleTypes with
   | nil =>
@@ -260,24 +255,22 @@ theorem executeSelectionSet_possibleTypeNormalizations_runtime_branch
     (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-      (depth : Nat) (runtimeType : Name) (ref : ObjectRef)
-    (possibleTypes : List Name) (selectionSet : List Selection) :
-    (∀ objectType, objectType ∈ possibleTypes ->
-      objectTypeNameBool schema objectType = true) ->
-    possibleTypes.Nodup ->
-    runtimeType ∈ possibleTypes ->
-    Execution.executeSelectionSet schema resolvers variableValues depth
-      runtimeType (.object runtimeType ref)
-      (normalizeSelectionSet schema runtimeType selectionSet)
-      =
-    Execution.executeSelectionSet schema resolvers variableValues depth
-      runtimeType (.object runtimeType ref) selectionSet ->
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        runtimeType (.object runtimeType ref)
-        (possibleTypeNormalizations schema possibleTypes selectionSet)
-        =
-      Execution.executeSelectionSet schema resolvers variableValues depth
-        runtimeType (.object runtimeType ref) selectionSet := by
+    (depth : Nat) (runtimeType : Name) (ref : ObjectRef)
+    (possibleTypes : List Name) (selectionSet : List Selection)
+    : (∀ objectType,
+        objectType ∈ possibleTypes -> objectTypeNameBool schema objectType = true)
+      -> possibleTypes.Nodup
+      -> runtimeType ∈ possibleTypes
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            runtimeType (.object runtimeType ref)
+            (normalizeSelectionSet schema runtimeType selectionSet)
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              runtimeType (.object runtimeType ref) selectionSet
+      -> Execution.executeSelectionSet schema resolvers variableValues depth
+            runtimeType (.object runtimeType ref)
+            (possibleTypeNormalizations schema possibleTypes selectionSet)
+          = Execution.executeSelectionSet schema resolvers variableValues depth
+              runtimeType (.object runtimeType ref) selectionSet := by
   intro hobjects hnodup hmem hrecursive
   induction possibleTypes with
   | nil =>
@@ -381,28 +374,26 @@ theorem completeValue_possibleTypeFragments_eq_of_child_object_lt
     (schema : Schema)
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (hschema : SchemaWellFormedness.schemaWellFormed schema) :
-      ∀ depth childType selectionSet value,
+    (hschema : SchemaWellFormedness.schemaWellFormed schema)
+    : ∀ depth childType selectionSet value,
         (∀ childDepth runtimeType ref,
-          childDepth < depth ->
-            runtimeType ∈ schema.getPossibleTypes childType ->
-            Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType ref)
-              (normalizeSelectionSet schema runtimeType selectionSet)
-              =
-            Execution.executeSelectionSet schema resolvers variableValues
-              childDepth runtimeType (.object runtimeType ref)
-              selectionSet) ->
-        Execution.completeValue schema resolvers variableValues depth
-          childType [completeValueSelectionSetField childType
-            ((schema.getPossibleTypes childType).map
-              (fun objectType =>
-                Selection.inlineFragment (some objectType) []
-                  (normalizeSelectionSet schema objectType selectionSet)))]
-          value
-          =
-        Execution.completeValue schema resolvers variableValues depth
-          childType [completeValueSelectionSetField childType selectionSet] value
+          childDepth < depth
+          -> runtimeType ∈ schema.getPossibleTypes childType
+          -> Execution.executeSelectionSet schema resolvers variableValues
+                childDepth runtimeType (.object runtimeType ref)
+                (normalizeSelectionSet schema runtimeType selectionSet)
+              = Execution.executeSelectionSet schema resolvers variableValues
+                  childDepth runtimeType (.object runtimeType ref)
+                  selectionSet)
+        -> Execution.completeValue schema resolvers variableValues depth childType
+              [completeValueSelectionSetField childType
+                ((schema.getPossibleTypes childType).map
+                  (fun objectType =>
+                    Selection.inlineFragment (some objectType) []
+                      (normalizeSelectionSet schema objectType selectionSet)))]
+              value
+            = Execution.completeValue schema resolvers variableValues depth
+                childType [completeValueSelectionSetField childType selectionSet] value
   | 0, _childType, _selectionSet, _value, _hrecursive => by
       simp [Execution.completeValue]
   | depth + 1, childType, selectionSet, value, hrecursive => by
@@ -450,8 +441,6 @@ theorem completeValue_possibleTypeFragments_eq_of_child_object_lt
             simp [Execution.completeValue, hfalse]
       | list values =>
           simp [Execution.completeValue]
-
-
 
 end GroundTypeNormalization
 

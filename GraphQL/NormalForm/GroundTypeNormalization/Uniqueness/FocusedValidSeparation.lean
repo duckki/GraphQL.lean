@@ -20,31 +20,28 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_o
     {schema : Schema}
     {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType : Name} {left right : List Selection}
-    {supportSelectionSets : List (List Selection)}
-    {minFuel : Nat} {responsePath : List Name} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    (∀ supportSelectionSet,
-      supportSelectionSet ∈ supportSelectionSets ->
-        ∃ variableDefinitions,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            supportSelectionSet
-          ∧ selectionSetDirectiveFree supportSelectionSet
-          ∧ selectionSetNormal schema parentType supportSelectionSet) ->
-    NormalSelectionSetDiffObservableTrace schema parentType left right
-      responsePath ->
-      ∃ runtimeType,
-        selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
-          parentType runtimeType left right
-          (fun selectionSet => selectionSet ∈ supportSelectionSets)
-          minFuel := by
+    {supportSelectionSets : List (List Selection)} {minFuel : Nat}
+    {responsePath : List Name}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> (∀ supportSelectionSet,
+            supportSelectionSet ∈ supportSelectionSets
+            -> ∃ variableDefinitions,
+                Validation.selectionSetValid schema variableDefinitions parentType
+                  supportSelectionSet
+                ∧ selectionSetDirectiveFree supportSelectionSet
+                ∧ selectionSetNormal schema parentType supportSelectionSet)
+      -> NormalSelectionSetDiffObservableTrace schema parentType left right responsePath
+      -> ∃ runtimeType,
+          selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
+            parentType runtimeType left right
+            (fun selectionSet => selectionSet ∈ supportSelectionSets)
+            minFuel := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hsupportValid htrace
   revert hleftValid hrightValid hleftFree hrightFree hleftNormal
@@ -622,46 +619,63 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_child_observable_
     {parentType returnType responseName fieldName : Name}
     {leftArguments rightArguments : List Argument}
     {leftChildSelectionSet rightChildSelectionSet
-      leftPref rightPref leftSuffix rightSuffix : List Selection}
-    {fieldDefinition : FieldDefinition} {childPath : List Name} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    fieldDefinition.outputType.namedType = returnType ->
-    selectionSetDirectiveFree
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetDirectiveFree
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    selectionSetNormal schema parentType
-      (leftPref ++ Selection.field responseName fieldName leftArguments []
-        leftChildSelectionSet :: leftSuffix) ->
-    selectionSetNormal schema parentType
-      (rightPref ++ Selection.field responseName fieldName rightArguments []
-        rightChildSelectionSet :: rightSuffix) ->
-    objectTypeNameBool schema parentType = true ->
-    Argument.argumentsEquivalent leftArguments rightArguments ->
-    Validation.selectionSetValid schema leftVariableDefinitions returnType
-      leftChildSelectionSet ->
-    Validation.selectionSetValid schema rightVariableDefinitions returnType
-      rightChildSelectionSet ->
-    selectionSetDirectiveFree leftChildSelectionSet ->
-    selectionSetDirectiveFree rightChildSelectionSet ->
-    selectionSetNormal schema returnType leftChildSelectionSet ->
-    selectionSetNormal schema returnType rightChildSelectionSet ->
-    NormalSelectionSetDiffObservableTrace schema returnType
-      leftChildSelectionSet rightChildSelectionSet childPath ->
-      ¬ selectionSetsDataEquivalent schema parentType
-        (leftPref ++ Selection.field responseName fieldName leftArguments []
-          leftChildSelectionSet :: leftSuffix)
-        (rightPref ++ Selection.field responseName fieldName rightArguments []
-          rightChildSelectionSet :: rightSuffix) := by
+      leftPref rightPref leftSuffix rightSuffix
+      : List Selection}
+    {fieldDefinition : FieldDefinition} {childPath : List Name}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> fieldDefinition.outputType.namedType = returnType
+      -> selectionSetDirectiveFree
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetDirectiveFree
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> selectionSetNormal schema parentType
+          (leftPref
+            ++ Selection.field responseName fieldName leftArguments []
+                  leftChildSelectionSet
+                :: leftSuffix)
+      -> selectionSetNormal schema parentType
+          (rightPref
+            ++ Selection.field responseName fieldName rightArguments []
+                  rightChildSelectionSet
+                :: rightSuffix)
+      -> objectTypeNameBool schema parentType = true
+      -> Argument.argumentsEquivalent leftArguments rightArguments
+      -> Validation.selectionSetValid schema leftVariableDefinitions returnType
+          leftChildSelectionSet
+      -> Validation.selectionSetValid schema rightVariableDefinitions returnType
+          rightChildSelectionSet
+      -> selectionSetDirectiveFree leftChildSelectionSet
+      -> selectionSetDirectiveFree rightChildSelectionSet
+      -> selectionSetNormal schema returnType leftChildSelectionSet
+      -> selectionSetNormal schema returnType rightChildSelectionSet
+      -> NormalSelectionSetDiffObservableTrace schema returnType
+          leftChildSelectionSet rightChildSelectionSet childPath
+      -> ¬ selectionSetsDataEquivalent schema parentType
+            (leftPref
+              ++ Selection.field responseName fieldName leftArguments []
+                    leftChildSelectionSet
+                  :: leftSuffix)
+            (rightPref
+              ++ Selection.field responseName fieldName rightArguments []
+                    rightChildSelectionSet
+                  :: rightSuffix) := by
   intro hschema hleftValid hrightValid hlookup hreturnType hleftFree
     hrightFree hleftNormal hrightNormal hparentObject _harguments
     hleftChildValid hrightChildValid hleftChildFree hrightChildFree
@@ -797,29 +811,30 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_fieldName_diff_le
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
     {leftChildSelectionSet rightChildSelectionSet : List Selection}
-    {leftFieldDefinition rightFieldDefinition : FieldDefinition} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = true ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName rightFieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    schema.lookupField parentType leftFieldName = some leftFieldDefinition ->
-    schema.lookupField parentType rightFieldName = some rightFieldDefinition ->
-    (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-      schema = false ->
-    (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    leftFieldName ≠ rightFieldName ->
-      ¬ selectionSetsDataEquivalent schema parentType left right := by
+    {leftFieldDefinition rightFieldDefinition : FieldDefinition}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = true
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
+      -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = true
+      -> leftFieldName ≠ rightFieldName
+      -> ¬ selectionSetsDataEquivalent schema parentType left right := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hobject hleftMem hrightMem hleftLookup hrightLookup
     hleftLeaf hrightComposite hfieldDiff
@@ -860,29 +875,30 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_fieldName_diff_le
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
     {leftChildSelectionSet rightChildSelectionSet : List Selection}
-    {leftFieldDefinition rightFieldDefinition : FieldDefinition} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = true ->
-    Selection.field responseName leftFieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName rightFieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    schema.lookupField parentType leftFieldName = some leftFieldDefinition ->
-    schema.lookupField parentType rightFieldName = some rightFieldDefinition ->
-    (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-    (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-      schema = false ->
-    leftFieldName ≠ rightFieldName ->
-      ¬ selectionSetsDataEquivalent schema parentType left right := by
+    {leftFieldDefinition rightFieldDefinition : FieldDefinition}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = true
+      -> Selection.field responseName leftFieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName rightFieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
+      -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
+      -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+            schema
+          = false
+      -> leftFieldName ≠ rightFieldName
+      -> ¬ selectionSetsDataEquivalent schema parentType left right := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hobject hleftMem hrightMem hleftLookup hrightLookup
     hleftComposite hrightLeaf hfieldDiff
@@ -925,23 +941,18 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_fieldName_diff_le
 
 theorem not_selectionSetsDataEquivalent_of_valid_normal_object_diff_observable_trace_pairedPath
     {schema : Schema}
-    {leftVariableDefinitions rightVariableDefinitions :
-      List VariableDefinition}
-    {parentType : Name} {left right : List Selection}
-    {responsePath : List Name} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema leftVariableDefinitions parentType
-      left ->
-    Validation.selectionSetValid schema rightVariableDefinitions parentType
-      right ->
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = true ->
-    NormalSelectionSetDiffObservableTrace schema parentType left right
-      responsePath ->
-      ¬ selectionSetsDataEquivalent schema parentType left right := by
+    {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
+    {parentType : Name} {left right : List Selection} {responsePath : List Name}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema leftVariableDefinitions parentType left
+      -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
+      -> selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = true
+      -> NormalSelectionSetDiffObservableTrace schema parentType left right responsePath
+      -> ¬ selectionSetsDataEquivalent schema parentType left right := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
     hrightNormal hobject htrace
   apply

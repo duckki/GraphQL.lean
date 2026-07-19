@@ -9,17 +9,17 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
-theorem fieldsInSetCanMerge_nil (schema : Schema) (parentType : Name) :
-    FieldMerge.fieldsInSetCanMerge schema parentType [] := by
+theorem fieldsInSetCanMerge_nil (schema : Schema) (parentType : Name)
+    : FieldMerge.fieldsInSetCanMerge schema parentType [] := by
   unfold FieldMerge.fieldsInSetCanMerge
   refine FieldMerge.FieldsInSetCanMerge.intro parentType [] ?_
   simp [FieldMerge.collectFields]
 
 theorem fieldsInSetCanMerge_self
-    (schema : Schema) (parentType : Name) (selectionSet : List Selection) :
-    FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-      FieldMerge.fieldsInSetCanMerge schema parentType
-        (selectionSet ++ selectionSet) := by
+    (schema : Schema) (parentType : Name) (selectionSet : List Selection)
+    : FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (selectionSet ++ selectionSet) := by
   intro hmerge
   unfold FieldMerge.fieldsInSetCanMerge
   refine FieldMerge.FieldsInSetCanMerge.intro parentType
@@ -41,8 +41,8 @@ theorem fieldsInSetCanMerge_self
 
 theorem normalizedSelectionSetValid_nil
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (parentType : Name) :
-    NormalizedSelectionSetValid schema variableDefinitions parentType [] := by
+    (parentType : Name)
+    : NormalizedSelectionSetValid schema variableDefinitions parentType [] := by
   refine ⟨?_, ?_, ?_, ?_⟩
   · simp [Validation.selectionSetValid]
   · exact selectionSetValidInPossibleTypes_nil schema variableDefinitions
@@ -53,17 +53,18 @@ theorem normalizedSelectionSetValid_nil
 
 theorem possibleTypeNormalizations_selectionSetValid
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (returnType : Name) :
-    ∀ possibleTypes selectionSet,
-      (∀ objectType, objectType ∈ possibleTypes ->
-        schema.objectType objectType) ->
-      (∀ objectType, objectType ∈ possibleTypes ->
-        objectType ∈ schema.getPossibleTypes returnType) ->
-      (∀ objectType, objectType ∈ possibleTypes ->
-        NormalizedSelectionSetValid schema variableDefinitions objectType
-          (normalizeSelectionSet schema objectType selectionSet)) ->
-        Validation.selectionSetValid schema variableDefinitions returnType
-          (possibleTypeNormalizations schema possibleTypes selectionSet)
+    (returnType : Name)
+    : ∀ possibleTypes selectionSet,
+        (∀ objectType, objectType ∈ possibleTypes -> schema.objectType objectType)
+        -> (∀ objectType,
+              objectType ∈ possibleTypes
+              -> objectType ∈ schema.getPossibleTypes returnType)
+        -> (∀ objectType,
+              objectType ∈ possibleTypes
+              -> NormalizedSelectionSetValid schema variableDefinitions objectType
+                  (normalizeSelectionSet schema objectType selectionSet))
+        -> Validation.selectionSetValid schema variableDefinitions returnType
+            (possibleTypeNormalizations schema possibleTypes selectionSet)
   | [], selectionSet, _hobjects, _hpossible, _hbranches => by
       simp [possibleTypeNormalizations, Validation.selectionSetValid]
   | objectType :: rest, selectionSet, hobjects, hpossible, hbranches => by
@@ -130,16 +131,16 @@ theorem possibleTypeNormalizations_selectionSetValid
 
 theorem possibleTypeNormalizations_validInPossibleTypes
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (parentType : Name) :
-    ∀ possibleTypes selectionSet,
-      (∀ objectType, objectType ∈ possibleTypes ->
-        schema.objectType objectType) ->
-      (∀ objectType, objectType ∈ possibleTypes ->
-        NormalizedSelectionSetValid schema variableDefinitions objectType
-          (normalizeSelectionSet schema objectType selectionSet)) ->
-        Validation.selectionSetValidInPossibleTypes schema
-          variableDefinitions parentType
-          (possibleTypeNormalizations schema possibleTypes selectionSet)
+    (parentType : Name)
+    : ∀ possibleTypes selectionSet,
+        (∀ objectType, objectType ∈ possibleTypes -> schema.objectType objectType)
+        -> (∀ objectType,
+              objectType ∈ possibleTypes
+              -> NormalizedSelectionSetValid schema variableDefinitions objectType
+                  (normalizeSelectionSet schema objectType selectionSet))
+        -> Validation.selectionSetValidInPossibleTypes schema
+            variableDefinitions parentType
+            (possibleTypeNormalizations schema possibleTypes selectionSet)
   | [], selectionSet, _hobjects, _hbranches => by
       simp [possibleTypeNormalizations,
         Validation.selectionSetValidInPossibleTypes]
@@ -186,14 +187,16 @@ theorem possibleTypeNormalizations_validInPossibleTypes
             htail⟩
 
 theorem collectFields_possibleTypeNormalizations_mem
-    (schema : Schema) (mergeParent : Name) :
-    ∀ possibleTypes selectionSet scopedField,
-      scopedField ∈ FieldMerge.collectFields schema mergeParent
-        (possibleTypeNormalizations schema possibleTypes selectionSet) ->
-      ∃ objectType,
-        objectType ∈ possibleTypes
-          ∧ scopedField ∈ FieldMerge.collectFields schema objectType
-            (normalizeSelectionSet schema objectType selectionSet)
+    (schema : Schema) (mergeParent : Name)
+    : ∀ possibleTypes selectionSet scopedField,
+        scopedField
+          ∈ FieldMerge.collectFields schema mergeParent
+              (possibleTypeNormalizations schema possibleTypes selectionSet)
+        -> ∃ objectType,
+            objectType ∈ possibleTypes
+            ∧ scopedField
+              ∈ FieldMerge.collectFields schema objectType
+                  (normalizeSelectionSet schema objectType selectionSet)
   | [], selectionSet, scopedField, hfield => by
       simp [possibleTypeNormalizations, FieldMerge.collectFields] at hfield
   | objectType :: rest, selectionSet, scopedField, hfield => by
@@ -218,21 +221,24 @@ theorem collectFields_possibleTypeNormalizations_mem
               hbranchField⟩
 
 theorem possibleTypeNormalizations_fieldsInSetCanMerge
-    (schema : Schema) (mergeParent : Name) :
-    ∀ possibleTypes selectionSet,
-      (∀ leftType, leftType ∈ possibleTypes ->
-        ∀ rightType, rightType ∈ possibleTypes ->
-          ∀ leftField,
-            leftField ∈ FieldMerge.collectFields schema leftType
-              (normalizeSelectionSet schema leftType selectionSet) ->
-          ∀ rightField,
-            rightField ∈ FieldMerge.collectFields schema rightType
-              (normalizeSelectionSet schema rightType selectionSet) ->
-            leftField.responseName = rightField.responseName ->
-              FieldMerge.fieldsForNameCanMerge schema leftField
-                rightField) ->
-        FieldMerge.fieldsInSetCanMerge schema mergeParent
-          (possibleTypeNormalizations schema possibleTypes selectionSet)
+    (schema : Schema) (mergeParent : Name)
+    : ∀ possibleTypes selectionSet,
+        (∀ leftType,
+          leftType ∈ possibleTypes
+          -> ∀ rightType,
+              rightType ∈ possibleTypes
+              -> ∀ leftField,
+                  leftField
+                    ∈ FieldMerge.collectFields schema leftType
+                        (normalizeSelectionSet schema leftType selectionSet)
+                  -> ∀ rightField,
+                      rightField
+                        ∈ FieldMerge.collectFields schema rightType
+                            (normalizeSelectionSet schema rightType selectionSet)
+                      -> leftField.responseName = rightField.responseName
+                      -> FieldMerge.fieldsForNameCanMerge schema leftField rightField)
+        -> FieldMerge.fieldsInSetCanMerge schema mergeParent
+            (possibleTypeNormalizations schema possibleTypes selectionSet)
   | possibleTypes, selectionSet, hpairwise => by
       unfold FieldMerge.fieldsInSetCanMerge
       refine FieldMerge.FieldsInSetCanMerge.intro mergeParent
@@ -249,22 +255,25 @@ theorem possibleTypeNormalizations_fieldsInSetCanMerge
         hleftField right hrightField hresponse
 
 theorem possibleTypeNormalizations_fieldsInSetCanMerge_self
-    (schema : Schema) (mergeParent : Name) :
-    ∀ possibleTypes selectionSet,
-      (∀ leftType, leftType ∈ possibleTypes ->
-        ∀ rightType, rightType ∈ possibleTypes ->
-          ∀ leftField,
-            leftField ∈ FieldMerge.collectFields schema leftType
-              (normalizeSelectionSet schema leftType selectionSet) ->
-          ∀ rightField,
-            rightField ∈ FieldMerge.collectFields schema rightType
-              (normalizeSelectionSet schema rightType selectionSet) ->
-            leftField.responseName = rightField.responseName ->
-              FieldMerge.fieldsForNameCanMerge schema leftField
-                rightField) ->
-        FieldMerge.fieldsInSetCanMerge schema mergeParent
-          (possibleTypeNormalizations schema possibleTypes selectionSet
-            ++ possibleTypeNormalizations schema possibleTypes selectionSet)
+    (schema : Schema) (mergeParent : Name)
+    : ∀ possibleTypes selectionSet,
+        (∀ leftType,
+          leftType ∈ possibleTypes
+          -> ∀ rightType,
+              rightType ∈ possibleTypes
+              -> ∀ leftField,
+                  leftField
+                    ∈ FieldMerge.collectFields schema leftType
+                        (normalizeSelectionSet schema leftType selectionSet)
+                  -> ∀ rightField,
+                      rightField
+                        ∈ FieldMerge.collectFields schema rightType
+                            (normalizeSelectionSet schema rightType selectionSet)
+                      -> leftField.responseName = rightField.responseName
+                      -> FieldMerge.fieldsForNameCanMerge schema leftField rightField)
+        -> FieldMerge.fieldsInSetCanMerge schema mergeParent
+            (possibleTypeNormalizations schema possibleTypes selectionSet
+              ++ possibleTypeNormalizations schema possibleTypes selectionSet)
   | possibleTypes, selectionSet, hpairwise => by
       unfold FieldMerge.fieldsInSetCanMerge
       refine FieldMerge.FieldsInSetCanMerge.intro mergeParent
@@ -304,27 +313,31 @@ theorem possibleTypeNormalizations_fieldsInSetCanMerge_self
             hleftField right hrightField hresponse
 
 theorem possibleTypeNormalizations_fieldsInSetCanMerge_pair
-    (schema : Schema) (mergeParent : Name) :
-    ∀ possibleTypes leftSelectionSet rightSelectionSet,
-      FieldMerge.fieldsInSetCanMerge schema mergeParent
-        (possibleTypeNormalizations schema possibleTypes leftSelectionSet) ->
-      FieldMerge.fieldsInSetCanMerge schema mergeParent
-        (possibleTypeNormalizations schema possibleTypes rightSelectionSet) ->
-      (∀ leftType, leftType ∈ possibleTypes ->
-        ∀ rightType, rightType ∈ possibleTypes ->
-          ∀ leftField,
-            leftField ∈ FieldMerge.collectFields schema leftType
-              (normalizeSelectionSet schema leftType leftSelectionSet) ->
-          ∀ rightField,
-            rightField ∈ FieldMerge.collectFields schema rightType
-              (normalizeSelectionSet schema rightType rightSelectionSet) ->
-            leftField.responseName = rightField.responseName ->
-              FieldMerge.fieldsForNameCanMerge schema leftField
-                rightField) ->
+    (schema : Schema) (mergeParent : Name)
+    : ∀ possibleTypes leftSelectionSet rightSelectionSet,
         FieldMerge.fieldsInSetCanMerge schema mergeParent
-          (possibleTypeNormalizations schema possibleTypes leftSelectionSet
-            ++ possibleTypeNormalizations schema possibleTypes
-              rightSelectionSet)
+          (possibleTypeNormalizations schema possibleTypes leftSelectionSet)
+        -> FieldMerge.fieldsInSetCanMerge schema mergeParent
+            (possibleTypeNormalizations schema possibleTypes rightSelectionSet)
+        -> (∀ leftType,
+              leftType ∈ possibleTypes
+              -> ∀ rightType,
+                  rightType ∈ possibleTypes
+                  -> ∀ leftField,
+                      leftField
+                        ∈ FieldMerge.collectFields schema leftType
+                            (normalizeSelectionSet schema leftType leftSelectionSet)
+                      -> ∀ rightField,
+                          rightField
+                            ∈ FieldMerge.collectFields schema rightType
+                                (normalizeSelectionSet schema rightType
+                                  rightSelectionSet)
+                          -> leftField.responseName = rightField.responseName
+                          -> FieldMerge.fieldsForNameCanMerge schema leftField
+                              rightField)
+        -> FieldMerge.fieldsInSetCanMerge schema mergeParent
+            (possibleTypeNormalizations schema possibleTypes leftSelectionSet
+              ++ possibleTypeNormalizations schema possibleTypes rightSelectionSet)
   | possibleTypes, leftSelectionSet, rightSelectionSet, hleftMerge,
       hrightMerge, hpairwise => by
       unfold FieldMerge.fieldsInSetCanMerge
@@ -363,18 +376,18 @@ theorem possibleTypeNormalizations_fieldsInSetCanMerge_pair
 theorem possibleTypeNormalizations_normalizedValid
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (returnType : Name) (possibleTypeNames : List Name)
-    (selectionSet : List Selection) :
-    (∀ objectType, objectType ∈ possibleTypeNames ->
-      schema.objectType objectType) ->
-    (∀ objectType, objectType ∈ possibleTypeNames ->
-      objectType ∈ schema.getPossibleTypes returnType) ->
-    (∀ objectType, objectType ∈ possibleTypeNames ->
-      NormalizedSelectionSetValid schema variableDefinitions objectType
-        (normalizeSelectionSet schema objectType selectionSet)) ->
-    normalizedDistinctBranchesPairwiseMerge schema possibleTypeNames
-      selectionSet ->
-      NormalizedSelectionSetValid schema variableDefinitions returnType
-        (possibleTypeNormalizations schema possibleTypeNames selectionSet) := by
+    (selectionSet : List Selection)
+    : (∀ objectType, objectType ∈ possibleTypeNames -> schema.objectType objectType)
+      -> (∀ objectType,
+            objectType ∈ possibleTypeNames
+            -> objectType ∈ schema.getPossibleTypes returnType)
+      -> (∀ objectType,
+            objectType ∈ possibleTypeNames
+            -> NormalizedSelectionSetValid schema variableDefinitions objectType
+                (normalizeSelectionSet schema objectType selectionSet))
+      -> normalizedDistinctBranchesPairwiseMerge schema possibleTypeNames selectionSet
+      -> NormalizedSelectionSetValid schema variableDefinitions returnType
+          (possibleTypeNormalizations schema possibleTypeNames selectionSet) := by
   intro hobjects hpossible hbranches hdistinct
   have hpairwise :
       normalizedBranchesPairwiseMerge schema possibleTypeNames
@@ -396,41 +409,53 @@ theorem possibleTypeNormalizations_normalizedValid
 
 theorem possibleTypeNormalizations_fieldsInSetCanMerge_pair_of_normalizedValid
     (schema : Schema) (mergeParent : Name) (possibleTypeNames : List Name)
-    (leftSelectionSet rightSelectionSet : List Selection) :
-    (∀ leftType, leftType ∈ possibleTypeNames ->
-      ∀ rightType, rightType ∈ possibleTypeNames ->
-        ∀ leftField,
-          leftField ∈ FieldMerge.collectFields schema leftType
-            (normalizeSelectionSet schema leftType leftSelectionSet) ->
-        ∀ rightField,
-          rightField ∈ FieldMerge.collectFields schema rightType
-            (normalizeSelectionSet schema rightType leftSelectionSet) ->
-          leftField.responseName = rightField.responseName ->
-            FieldMerge.fieldsForNameCanMerge schema leftField rightField) ->
-    (∀ leftType, leftType ∈ possibleTypeNames ->
-      ∀ rightType, rightType ∈ possibleTypeNames ->
-        ∀ leftField,
-          leftField ∈ FieldMerge.collectFields schema leftType
-            (normalizeSelectionSet schema leftType rightSelectionSet) ->
-        ∀ rightField,
-          rightField ∈ FieldMerge.collectFields schema rightType
-            (normalizeSelectionSet schema rightType rightSelectionSet) ->
-          leftField.responseName = rightField.responseName ->
-            FieldMerge.fieldsForNameCanMerge schema leftField rightField) ->
-    (∀ leftType, leftType ∈ possibleTypeNames ->
-      ∀ rightType, rightType ∈ possibleTypeNames ->
-        ∀ leftField,
-          leftField ∈ FieldMerge.collectFields schema leftType
-            (normalizeSelectionSet schema leftType leftSelectionSet) ->
-        ∀ rightField,
-          rightField ∈ FieldMerge.collectFields schema rightType
-            (normalizeSelectionSet schema rightType rightSelectionSet) ->
-          leftField.responseName = rightField.responseName ->
-            FieldMerge.fieldsForNameCanMerge schema leftField rightField) ->
-      FieldMerge.fieldsInSetCanMerge schema mergeParent
-        (possibleTypeNormalizations schema possibleTypeNames leftSelectionSet
-          ++ possibleTypeNormalizations schema possibleTypeNames
-            rightSelectionSet) := by
+    (leftSelectionSet rightSelectionSet : List Selection)
+    : (∀ leftType,
+        leftType ∈ possibleTypeNames
+        -> ∀ rightType,
+            rightType ∈ possibleTypeNames
+            -> ∀ leftField,
+                leftField
+                  ∈ FieldMerge.collectFields schema leftType
+                      (normalizeSelectionSet schema leftType leftSelectionSet)
+                -> ∀ rightField,
+                    rightField
+                      ∈ FieldMerge.collectFields schema rightType
+                          (normalizeSelectionSet schema rightType leftSelectionSet)
+                    -> leftField.responseName = rightField.responseName
+                    -> FieldMerge.fieldsForNameCanMerge schema leftField rightField)
+      -> (∀ leftType,
+            leftType ∈ possibleTypeNames
+            -> ∀ rightType,
+                rightType ∈ possibleTypeNames
+                -> ∀ leftField,
+                    leftField
+                      ∈ FieldMerge.collectFields schema leftType
+                          (normalizeSelectionSet schema leftType rightSelectionSet)
+                    -> ∀ rightField,
+                        rightField
+                          ∈ FieldMerge.collectFields schema rightType
+                              (normalizeSelectionSet schema rightType rightSelectionSet)
+                        -> leftField.responseName = rightField.responseName
+                        -> FieldMerge.fieldsForNameCanMerge schema leftField rightField)
+      -> (∀ leftType,
+            leftType ∈ possibleTypeNames
+            -> ∀ rightType,
+                rightType ∈ possibleTypeNames
+                -> ∀ leftField,
+                    leftField
+                      ∈ FieldMerge.collectFields schema leftType
+                          (normalizeSelectionSet schema leftType leftSelectionSet)
+                    -> ∀ rightField,
+                        rightField
+                          ∈ FieldMerge.collectFields schema rightType
+                              (normalizeSelectionSet schema rightType rightSelectionSet)
+                        -> leftField.responseName = rightField.responseName
+                        -> FieldMerge.fieldsForNameCanMerge schema leftField rightField)
+      -> FieldMerge.fieldsInSetCanMerge schema mergeParent
+          (possibleTypeNormalizations schema possibleTypeNames leftSelectionSet
+            ++ possibleTypeNormalizations schema possibleTypeNames
+                rightSelectionSet) := by
   intro hleftPairwise hrightPairwise hcross
   apply possibleTypeNormalizations_fieldsInSetCanMerge_pair
   · exact possibleTypeNormalizations_fieldsInSetCanMerge schema mergeParent
@@ -442,17 +467,17 @@ theorem possibleTypeNormalizations_fieldsInSetCanMerge_pair_of_normalizedValid
 theorem fieldSelectionSetValid_normalized_of_source
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {fieldDefinition : FieldDefinition}
-    {sourceSubselections normalizedSubselections : List Selection} :
-    Validation.fieldSelectionSetValid schema variableDefinitions
-      fieldDefinition sourceSubselections ->
-    Validation.selectionSetValid schema variableDefinitions
-      fieldDefinition.outputType.namedType normalizedSubselections ->
-    (schema.isCompositeType fieldDefinition.outputType.namedType ->
-      normalizedSubselections ≠ []) ->
-    (leafTypeNameBool schema fieldDefinition.outputType.namedType = true ->
-      normalizedSubselections = []) ->
-      Validation.fieldSelectionSetValid schema variableDefinitions
-        fieldDefinition normalizedSubselections := by
+    {sourceSubselections normalizedSubselections : List Selection}
+    : Validation.fieldSelectionSetValid schema variableDefinitions
+        fieldDefinition sourceSubselections
+      -> Validation.selectionSetValid schema variableDefinitions
+          fieldDefinition.outputType.namedType normalizedSubselections
+      -> (schema.isCompositeType fieldDefinition.outputType.namedType
+          -> normalizedSubselections ≠ [])
+      -> (leafTypeNameBool schema fieldDefinition.outputType.namedType = true
+          -> normalizedSubselections = [])
+      -> Validation.fieldSelectionSetValid schema variableDefinitions
+          fieldDefinition normalizedSubselections := by
   intro hsource hnormalizedValid hnormalizedNonempty hnilIfLeaf
   have houtput :
       fieldDefinition.outputType.isOutputType schema :=
@@ -477,28 +502,27 @@ theorem normalizedField_selectionValidInPossibleTypes
     {parentType responseName fieldName : Name}
     {arguments : List Argument}
     {sourceSubselections normalizedSubselections : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    Validation.selectionValidInPossibleTypes schema variableDefinitions
-      parentType
-      (Selection.field responseName fieldName arguments [] sourceSubselections) ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    Validation.selectionSetValid schema variableDefinitions
-      fieldDefinition.outputType.namedType normalizedSubselections ->
-    (schema.isCompositeType fieldDefinition.outputType.namedType ->
-      normalizedSubselections ≠ []) ->
-    Validation.selectionSetValidInPossibleTypes schema variableDefinitions
-      fieldDefinition.outputType.namedType normalizedSubselections ->
-    (∀ objectType,
-      objectType ∈ schema.getPossibleTypes
-          fieldDefinition.outputType.namedType ->
-        Validation.selectionSetValidInPossibleTypes schema
-          variableDefinitions objectType normalizedSubselections) ->
-    (leafTypeNameBool schema fieldDefinition.outputType.namedType = true ->
-      normalizedSubselections = []) ->
-      Validation.selectionValidInPossibleTypes schema variableDefinitions
+    {fieldDefinition : FieldDefinition}
+    : Validation.selectionValidInPossibleTypes schema variableDefinitions
         parentType
-        (Selection.field responseName fieldName arguments []
-          normalizedSubselections) := by
+        (Selection.field responseName fieldName arguments [] sourceSubselections)
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> Validation.selectionSetValid schema variableDefinitions
+          fieldDefinition.outputType.namedType normalizedSubselections
+      -> (schema.isCompositeType fieldDefinition.outputType.namedType
+          -> normalizedSubselections ≠ [])
+      -> Validation.selectionSetValidInPossibleTypes schema variableDefinitions
+          fieldDefinition.outputType.namedType normalizedSubselections
+      -> (∀ objectType,
+            objectType ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType
+            -> Validation.selectionSetValidInPossibleTypes schema
+                variableDefinitions objectType normalizedSubselections)
+      -> (leafTypeNameBool schema fieldDefinition.outputType.namedType = true
+          -> normalizedSubselections = [])
+      -> Validation.selectionValidInPossibleTypes schema variableDefinitions
+          parentType
+          (Selection.field responseName fieldName arguments []
+            normalizedSubselections) := by
   intro hsourceImplementation hlookup hnormalizedValid hnormalizedNonempty
     hnormalizedImplementation hnormalizedPossible hnilIfLeaf
   have hsourceSelection :
@@ -521,7 +545,6 @@ theorem normalizedField_selectionValidInPossibleTypes
       fieldSelectionSetValid_normalized_of_source
         hsourceChild hnormalizedValid hnormalizedNonempty hnilIfLeaf⟩
   · exact hnormalizedPossible
-
 
 end GroundTypeNormalization
 

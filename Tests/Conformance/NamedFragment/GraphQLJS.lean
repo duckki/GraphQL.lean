@@ -10,43 +10,42 @@ namespace GraphQLJS
 
 -- Source: src/execution/__tests__/fragments-test.ts
 def named_fragment_basic_spreadSchema : GraphQL.Schema :=
-  { queryType := "Query",
+  {
+    queryType := "Query",
     types :=
-      [ .object
-        { name := "Query",
-          fields :=
-            [ { name := "hero", outputType := .named "Character", arguments := [] } ],
-          interfaces := []
-        }
-          , .object
-        { name := "Character",
-          fields :=
-            [ { name := "name", outputType := .named "String", arguments := [] } ],
-          interfaces := []
-        } ]
+      [
+        .object
+          {
+            name := "Query",
+            fields :=
+              [{ name := "hero", outputType := .named "Character", arguments := [] }],
+            interfaces := []
+          },
+        .object
+          {
+            name := "Character",
+            fields :=
+              [{ name := "name", outputType := .named "String", arguments := [] }],
+            interfaces := []
+          }
+      ]
   }
 
 def named_fragment_basic_spreadOperation : GraphQL.NamedFragment.Operation :=
-  { name := none,
+  {
+    name := none,
     rootType := "Query",
     variableDefinitions :=
       [],
     fragmentDefinitions :=
-      [ {
+      [{
         name := "NameFragment"
         typeCondition := "Character"
         selectionSet :=
-          [ .field "name" "name"
-            []
-            []
-            [] ]
-      } ],
+          [.field "name" "name" [] [] []]
+      }],
     selectionSet :=
-      [ .field "hero" "hero"
-        []
-        []
-        [ .fragmentSpread "NameFragment"
-          [] ] ]
+      [.field "hero" "hero" [] [] [.fragmentSpread "NameFragment" []]]
   }
 
 def named_fragment_basic_spreadVariables : GraphQL.Execution.VariableValues :=
@@ -67,15 +66,18 @@ def named_fragment_basic_spreadResolvers : GraphQL.Execution.Resolvers String :=
   }
 
 def named_fragment_basic_spreadExpectedData : GraphQL.Execution.ResponseValue :=
-  .object ([ ("hero", .object ([ ("name", .scalar "Leia") ])) ])
+  .object ([("hero", .object ([("name", .scalar "Leia")]))])
 
-theorem named_fragment_basic_spread_matches_graphql_js_projection :
-    let response :=
-      GraphQL.NamedFragment.Execution.executeQueryWithFuel named_fragment_basic_spreadSchema
-        named_fragment_basic_spreadResolvers named_fragment_basic_spreadVariables named_fragment_basic_spreadOperation 100
-        named_fragment_basic_spreadSource
-    response.errors = 0
-      ∧ GraphQL.Tests.Conformance.Execution.responseEqBool response.data named_fragment_basic_spreadExpectedData = true := by
+theorem named_fragment_basic_spread_matches_graphql_js_projection
+    : let response :=
+        GraphQL.NamedFragment.Execution.executeQueryWithFuel
+          named_fragment_basic_spreadSchema named_fragment_basic_spreadResolvers
+          named_fragment_basic_spreadVariables named_fragment_basic_spreadOperation 100
+          named_fragment_basic_spreadSource
+      response.errors = 0
+      ∧ GraphQL.Tests.Conformance.Execution.responseEqBool response.data
+          named_fragment_basic_spreadExpectedData
+        = true := by
   native_decide
 
 end GraphQLJS

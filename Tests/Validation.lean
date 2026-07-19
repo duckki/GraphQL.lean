@@ -7,18 +7,20 @@ namespace Tests
 namespace Validation
 
 def duplicateEpisodeArguments : List Argument :=
-  [ { name := "episode", value := .enum "NEWHOPE" }
-  , { name := "episode", value := .enum "NEWHOPE" } ]
+  [
+    { name := "episode", value := .enum "NEWHOPE" },
+    { name := "episode", value := .enum "NEWHOPE" }
+  ]
 
-theorem duplicateArgumentNamesRejected :
-    ¬ GraphQL.Validation.argumentsValid sampleSchema
-      [testEpisodeArgumentDefinition] [] duplicateEpisodeArguments := by
+theorem duplicateArgumentNamesRejected
+    : ¬ GraphQL.Validation.argumentsValid sampleSchema
+          [testEpisodeArgumentDefinition] [] duplicateEpisodeArguments := by
   simp [GraphQL.Validation.argumentsValid, duplicateEpisodeArguments]
 
-theorem duplicateArgumentOperationSelectionSetRejected :
-    ¬ GraphQL.Validation.selectionSetValid sampleSchema []
-      sampleDuplicateArgumentQuery.rootType
-      sampleDuplicateArgumentQuery.selectionSet := by
+theorem duplicateArgumentOperationSelectionSetRejected
+    : ¬ GraphQL.Validation.selectionSetValid sampleSchema []
+          sampleDuplicateArgumentQuery.rootType
+          sampleDuplicateArgumentQuery.selectionSet := by
   simp [GraphQL.Validation.selectionSetValid,
     GraphQL.Validation.selectionValid,
     GraphQL.Validation.fieldSelectionSetValid,
@@ -29,47 +31,63 @@ theorem duplicateArgumentOperationSelectionSetRejected :
     testStringFieldDefinition]
 
 def interfaceDefaultedLimitArgument : InputValueDefinition :=
-  { name := "limit"
+  {
+    name := "limit"
     inputType := .nonNull (.named "Int")
-    defaultValue := some (.int 10) }
+    defaultValue := some (.int 10)
+  }
 
 def objectRequiredLimitArgument : InputValueDefinition :=
   { name := "limit", inputType := .nonNull (.named "Int") }
 
 def interfaceImplementationArgumentSchema : Schema :=
-  { queryType := "Query"
+  {
+    queryType := "Query"
     types :=
-      [ .object
-          { name := "Query"
+      [
+        .object
+          {
+            name := "Query"
             fields := [testObjectFieldDefinition "node" "Node"]
-            interfaces := [] }
-      , .interface
-          { name := "Node"
+            interfaces := []
+          },
+        .interface
+          {
+            name := "Node"
             fields :=
-              [{ name := "value"
-                 outputType := .named "String"
-                 arguments := [interfaceDefaultedLimitArgument] }]
-            interfaces := [] }
-      , .object
-          { name := "Human"
+              [{
+                name := "value"
+                outputType := .named "String"
+                arguments := [interfaceDefaultedLimitArgument]
+              }]
+            interfaces := []
+          },
+        .object
+          {
+            name := "Human"
             fields :=
-              [{ name := "value"
-                 outputType := .named "String"
-                 arguments := [objectRequiredLimitArgument] }]
-            interfaces := ["Node"] } ] }
+              [{
+                name := "value"
+                outputType := .named "String"
+                arguments := [objectRequiredLimitArgument]
+              }]
+            interfaces := ["Node"]
+          }
+      ]
+  }
 
 def missingImplementationArgumentQuery : Operation :=
-  { name := some "MissingImplementationArgument"
+  {
+    name := some "MissingImplementationArgument"
     rootType := "Query"
     selectionSet :=
-      [ .field "node" "node" [] [] [
-          .field "value" "value" [] [] []
-        ] ] }
+      [.field "node" "node" [] [] [.field "value" "value" [] [] []]]
+  }
 
-theorem interfaceImplementationArgumentsRejectedByPossibleTypesAssumption :
-    ¬ GraphQL.NormalForm.operationFieldsValidInPossibleTypes
-      interfaceImplementationArgumentSchema
-      missingImplementationArgumentQuery := by
+theorem interfaceImplementationArgumentsRejectedByPossibleTypesAssumption
+    : ¬ GraphQL.NormalForm.operationFieldsValidInPossibleTypes
+          interfaceImplementationArgumentSchema
+          missingImplementationArgumentQuery := by
   intro hfields
   have hrootScope :
       GraphQL.Validation.selectionSetValidInPossibleTypes

@@ -9,20 +9,20 @@ namespace GroundTypeNormalization
 
 theorem normalizeSelectionSet_normalizedValid_of_typeConditionFeasible
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (hschema : SchemaWellFormedness.schemaWellFormed schema) :
-    ∀ parentType selectionSet,
+    (hschema : SchemaWellFormedness.schemaWellFormed schema)
+    : ∀ parentType selectionSet,
       ∀ typeConditions,
-      schema.objectType parentType ->
-      objectSatisfiesTypeConditionStack schema parentType typeConditions ->
-      selectionSetSemanticsReady schema parentType selectionSet ->
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions parentType selectionSet ->
-      FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetTypeConditionFeasible schema parentType typeConditions
-        .allFields selectionSet ->
-        NormalizedSelectionSetValid schema variableDefinitions parentType
-          (normalizeSelectionSet schema parentType selectionSet) := by
+        schema.objectType parentType
+        -> objectSatisfiesTypeConditionStack schema parentType typeConditions
+        -> selectionSetSemanticsReady schema parentType selectionSet
+        -> Validation.selectionSetValidInPossibleTypes schema
+            variableDefinitions parentType selectionSet
+        -> FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+        -> selectionSetDirectiveFree selectionSet
+        -> selectionSetTypeConditionFeasible schema parentType typeConditions
+            .allFields selectionSet
+        -> NormalizedSelectionSetValid schema variableDefinitions parentType
+            (normalizeSelectionSet schema parentType selectionSet) := by
   intro parentType selectionSet
   induction parentType, selectionSet using normalizeSelectionSet.induct schema with
   | case1 parentType =>
@@ -892,17 +892,16 @@ theorem normalizeSelectionSet_normalizedValid_of_typeConditionFeasible
 theorem normalizeSelectionSet_normalizedValid
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (hfeasibleAll :
-      selectionSetsTypeConditionFeasibleInEveryNormalizerScope schema) :
-    ∀ parentType selectionSet,
-      schema.objectType parentType ->
-      selectionSetSemanticsReady schema parentType selectionSet ->
-      Validation.selectionSetValidInPossibleTypes schema
-        variableDefinitions parentType selectionSet ->
-      FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-        NormalizedSelectionSetValid schema variableDefinitions parentType
-          (normalizeSelectionSet schema parentType selectionSet) := by
+    (hfeasibleAll : selectionSetsTypeConditionFeasibleInEveryNormalizerScope schema)
+    : ∀ parentType selectionSet,
+        schema.objectType parentType
+        -> selectionSetSemanticsReady schema parentType selectionSet
+        -> Validation.selectionSetValidInPossibleTypes schema
+            variableDefinitions parentType selectionSet
+        -> FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+        -> selectionSetDirectiveFree selectionSet
+        -> NormalizedSelectionSetValid schema variableDefinitions parentType
+            (normalizeSelectionSet schema parentType selectionSet) := by
   intro parentType selectionSet hobject hready himplementation hmerge hfree
   have hstack :
       objectSatisfiesTypeConditionStack schema parentType [parentType] :=
@@ -928,19 +927,16 @@ mutual
     | .inlineFragment _typeCondition _directives selectionSet =>
         selectionSet ≠ [] ∧ selectionSetInlineFragmentsNonempty selectionSet
 
-  def selectionSetInlineFragmentsNonempty (selectionSet : List Selection) :
-      Prop :=
-    ∀ selection, selection ∈ selectionSet ->
-      selectionInlineFragmentsNonempty selection
+  def selectionSetInlineFragmentsNonempty (selectionSet : List Selection) : Prop :=
+    ∀ selection, selection ∈ selectionSet -> selectionInlineFragmentsNonempty selection
 end
 
 mutual
   theorem selectionInlineFragmentsNonempty_of_selectionValid
-      (schema : Schema) (variableDefinitions : List VariableDefinition) :
-      ∀ parentType selection,
-        Validation.selectionValid schema variableDefinitions parentType
-          selection ->
-          selectionInlineFragmentsNonempty selection
+      (schema : Schema) (variableDefinitions : List VariableDefinition)
+      : ∀ parentType selection,
+          Validation.selectionValid schema variableDefinitions parentType selection
+          -> selectionInlineFragmentsNonempty selection
     | parentType,
       .field _responseName _fieldName _arguments _directives selectionSet,
       hvalid => by
@@ -978,11 +974,11 @@ mutual
             hvalid'.2.2.2.2⟩
 
   theorem selectionSetInlineFragmentsNonempty_of_selectionSetValid
-      (schema : Schema) (variableDefinitions : List VariableDefinition) :
-      ∀ parentType selectionSet,
-        Validation.selectionSetValid schema variableDefinitions parentType
-          selectionSet ->
-          selectionSetInlineFragmentsNonempty selectionSet
+      (schema : Schema) (variableDefinitions : List VariableDefinition)
+      : ∀ parentType selectionSet,
+          Validation.selectionSetValid schema variableDefinitions parentType
+            selectionSet
+          -> selectionSetInlineFragmentsNonempty selectionSet
     | parentType, selectionSet, hvalid => by
         unfold selectionSetInlineFragmentsNonempty
         unfold Validation.selectionSetValid at hvalid
@@ -990,7 +986,6 @@ mutual
         exact selectionInlineFragmentsNonempty_of_selectionValid schema
           variableDefinitions parentType selection (hvalid selection hselection)
 end
-
 
 end GroundTypeNormalization
 

@@ -9,65 +9,75 @@ namespace Tests
 namespace NamedFragment
 
 def characterNameFragment : GraphQL.NamedFragment.FragmentDefinition :=
-  { name := "CharacterName"
+  {
+    name := "CharacterName"
     typeCondition := "Character"
     selectionSet :=
-      [ .field "name" "name" [] [] [] ] }
+      [.field "name" "name" [] [] []]
+  }
 
 def heroWithNamedFragment : GraphQL.NamedFragment.Operation :=
-  { name := some "HeroWithNamedFragment"
+  {
+    name := some "HeroWithNamedFragment"
     rootType := "Query"
     fragmentDefinitions := [characterNameFragment]
     selectionSet :=
-      [ .field "mainHero" "hero" [] [] [
-          .fragmentSpread "CharacterName" []
-        ] ] }
+      [.field "mainHero" "hero" [] [] [.fragmentSpread "CharacterName" []]]
+  }
 
-theorem namedFragmentNamesUniqueSmoke :
-    GraphQL.NamedFragment.Validation.fragmentNamesUnique
-      heroWithNamedFragment.fragmentDefinitions := by
+theorem namedFragmentNamesUniqueSmoke
+    : GraphQL.NamedFragment.Validation.fragmentNamesUnique
+        heroWithNamedFragment.fragmentDefinitions := by
   simp [GraphQL.NamedFragment.Validation.fragmentNamesUnique,
     heroWithNamedFragment, characterNameFragment]
 
-theorem namedFragmentAcyclicSmoke :
-    GraphQL.NamedFragment.Validation.fragmentsAcyclicBool
-      heroWithNamedFragment.fragmentDefinitions = true := by
+theorem namedFragmentAcyclicSmoke
+    : GraphQL.NamedFragment.Validation.fragmentsAcyclicBool
+        heroWithNamedFragment.fragmentDefinitions
+      = true := by
   native_decide
 
-theorem executeNamedFragmentQuerySmoke :
-    Execution.responseEqBool
+theorem executeNamedFragmentQuerySmoke
+    : Execution.responseEqBool
         (GraphQL.NamedFragment.Execution.executeQuery
           Execution.sampleSchema Execution.sampleResolvers []
           heroWithNamedFragment
           (GraphQL.Execution.ResolverValue.object "Query" ())).data
-      (.object [("mainHero", .object [("name", .scalar "Leia")])]) = true := by
+        (.object [("mainHero", .object [("name", .scalar "Leia")])])
+      = true := by
   native_decide
 
 def cyclicFragments : List GraphQL.NamedFragment.FragmentDefinition :=
-  [ { name := "A"
+  [
+    {
+      name := "A"
       typeCondition := "Character"
-      selectionSet := [.fragmentSpread "B" []] }
-  , { name := "B"
+      selectionSet := [.fragmentSpread "B" []]
+    },
+    {
+      name := "B"
       typeCondition := "Character"
-      selectionSet := [.fragmentSpread "A" []] } ]
+      selectionSet := [.fragmentSpread "A" []]
+    }
+  ]
 
-theorem cyclicFragmentsRejectedSmoke :
-    GraphQL.NamedFragment.Validation.fragmentsAcyclicBool cyclicFragments =
-      false := by
+theorem cyclicFragmentsRejectedSmoke
+    : GraphQL.NamedFragment.Validation.fragmentsAcyclicBool cyclicFragments
+      = false := by
   native_decide
 
 def undefinedFragmentOperation : GraphQL.NamedFragment.Operation :=
-  { name := some "UndefinedFragment"
+  {
+    name := some "UndefinedFragment"
     rootType := "Query"
     fragmentDefinitions := []
     selectionSet :=
-      [ .field "mainHero" "hero" [] [] [
-          .fragmentSpread "MissingFragment" []
-        ] ] }
+      [.field "mainHero" "hero" [] [] [.fragmentSpread "MissingFragment" []]]
+  }
 
-theorem undefinedFragmentOperationRejectedSmoke :
-    ¬ GraphQL.NamedFragment.Validation.operationDefinitionValid
-      Execution.sampleSchema undefinedFragmentOperation := by
+theorem undefinedFragmentOperationRejectedSmoke
+    : ¬ GraphQL.NamedFragment.Validation.operationDefinitionValid
+          Execution.sampleSchema undefinedFragmentOperation := by
   intro hvalid
   rcases hvalid with
     ⟨_hroot, _hrootComposite, _hvariables, _huniqueFragments,

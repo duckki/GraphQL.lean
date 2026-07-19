@@ -70,11 +70,11 @@ def hasTab (line : String) : Bool :=
 def hasUnscopedSetOption (line : String) : Bool :=
   let trimmed := trimLeft line
   trimmed.startsWith "set_option"
-    && (trimmed.contains "trace"
+  && (trimmed.contains "trace"
       || trimmed.contains "pp."
       || trimmed.contains "profiler"
       || trimmed.contains "maxHeartbeats")
-    && !trimmed.contains " in "
+  && !trimmed.contains " in "
 
 def hasBareOpenClassical (line : String) : Bool :=
   let trimmed := trimLeft line
@@ -105,29 +105,32 @@ def checkCommonStyleInFile (path : FilePath) : IO (List String) := do
   for rawLine in lines do
     let line := dropTrailingCarriageReturn rawLine
     if line.length > lineWidth && !hasUrl line then
-      failures := failures ++
-        [s!"{path}:{lineNumber}: line has {line.length} columns"]
+      failures := failures ++ [s!"{path}:{lineNumber}: line has {line.length} columns"]
     if hasTrailingWhitespace line then
       failures := failures ++ [s!"{path}:{lineNumber}: trailing whitespace"]
     if hasTab line then
       failures := failures ++ [s!"{path}:{lineNumber}: tab character"]
     if containsLambdaSyntax line then
-      failures := failures ++ [s!"{path}:{lineNumber}: use `fun` instead of lambda syntax"]
+      failures :=
+        failures ++ [s!"{path}:{lineNumber}: use `fun` instead of lambda syntax"]
     if containsDollarSyntax line then
-      failures := failures ++ [s!"{path}:{lineNumber}: use `<|` instead of dollar syntax"]
+      failures :=
+        failures ++ [s!"{path}:{lineNumber}: use `<|` instead of dollar syntax"]
     if hasUnscopedSetOption line then
-      failures := failures ++
-        [s!"{path}:{lineNumber}: avoid unscoped diagnostic/resource `set_option`"]
+      failures :=
+        failures
+        ++ [s!"{path}:{lineNumber}: avoid unscoped diagnostic/resource `set_option`"]
     if hasBareOpenClassical line then
-      failures := failures ++
-        [s!"{path}:{lineNumber}: scope `open Classical` to a declaration"]
+      failures :=
+        failures ++ [s!"{path}:{lineNumber}: scope `open Classical` to a declaration"]
     if hasBadDeclarationName line then
-      failures := failures ++
-        [s!"{path}:{lineNumber}: declaration name contains double underscore"]
+      failures :=
+        failures
+        ++ [s!"{path}:{lineNumber}: declaration name contains double underscore"]
     lineNumber := lineNumber + 1
   if lines.length > fileLineLimit then
-    failures := failures ++
-      [s!"{path}: file has {lines.length} lines; limit is {fileLineLimit}"]
+    failures :=
+      failures ++ [s!"{path}: file has {lines.length} lines; limit is {fileLineLimit}"]
   pure failures
 
 def checkCommonStyle (files : List FilePath) : IO UInt32 := do
@@ -154,8 +157,8 @@ def checkCommentWidthInFile (path : FilePath) : IO (List String) := do
     let startsBlockComment := isBlockCommentStart line
     let isComment := inBlockComment || isLineComment line || startsBlockComment
     if isComment && line.length > commentWidth then
-      failures := failures ++
-        [s!"{path}:{lineNumber}: comment line has {line.length} columns"]
+      failures :=
+        failures ++ [s!"{path}:{lineNumber}: comment line has {line.length} columns"]
     if !inBlockComment && startsBlockComment && !line.contains "-/" then
       inBlockComment := true
     else if inBlockComment && isBlockCommentEnd line then
@@ -177,16 +180,21 @@ def checkCommentWidth (files : List FilePath) : IO UInt32 := do
     pure 1
 
 def runLeanLintOnFile (path : FilePath) : IO UInt32 := do
-  let output ← IO.Process.output {
-    cmd := "lake",
-    args := #[
-      "env",
-      "lean",
-      "-D", "linter.all=true",
-      "-D", "linter.missingDocs=false",
-      path.toString
-    ]
-  }
+  let output ←
+    IO.Process.output
+      {
+        cmd := "lake",
+        args :=
+          #[
+            "env",
+            "lean",
+            "-D",
+            "linter.all=true",
+            "-D",
+            "linter.missingDocs=false",
+            path.toString
+          ]
+      }
   if output.stdout != "" then
     IO.print output.stdout
   if output.stderr != "" then
@@ -212,10 +220,7 @@ def checkLeanLinters (files : List FilePath) : IO UInt32 := do
     pure 1
 
 def buildProject : IO UInt32 := do
-  let output ← IO.Process.output {
-    cmd := "lake",
-    args := #["build"]
-  }
+  let output ← IO.Process.output { cmd := "lake", args := #["build"] }
   if output.stdout != "" then
     IO.print output.stdout
   if output.stderr != "" then
@@ -237,8 +242,8 @@ def main (_args : List String) : IO UInt32 := do
       checkLeanLinters files
     else
       pure 1
-  pure (
-    if buildExit == 0 && commentExit == 0 && styleExit == 0 && leanExit == 0 then
-      0
-    else
-      1)
+  pure
+    ( if buildExit == 0 && commentExit == 0 && styleExit == 0 && leanExit == 0 then
+        0
+      else
+        1)

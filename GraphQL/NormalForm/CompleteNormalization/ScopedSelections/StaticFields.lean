@@ -11,16 +11,15 @@ set_option linter.unusedSimpArgs false in
 theorem fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
     (schema : Schema) (variables : List BoolVar)
     (filterParent lookupParent groundType responseName : Name)
-    (boolCase : BoolCase) :
-    ∀ selectionSet,
-      fieldSelectionsWithResponseNameInScope schema filterParent responseName
+    (boolCase : BoolCase)
+    : ∀ selectionSet,
+        fieldSelectionsWithResponseNameInScope schema filterParent responseName
           (staticCollectForGround schema variables lookupParent
             groundType boolCase selectionSet)
-        =
-      staticCollectCompleteScopedSelectionSet schema variables groundType
-        boolCase
-        (staticScopedFieldsWithResponseName schema boolCase lookupParent
-          groundType responseName selectionSet)
+        = staticCollectCompleteScopedSelectionSet schema variables groundType
+            boolCase
+            (staticScopedFieldsWithResponseName schema boolCase lookupParent
+              groundType responseName selectionSet)
   | [] => by
       simp [fieldSelectionsWithResponseNameInScope, staticCollectForGround,
         staticScopedFieldsWithResponseName,
@@ -183,16 +182,15 @@ theorem fieldSelectionsWithResponseNameInScope_staticCollectForGround_scoped
 theorem fieldSelectionsWithResponseNameInScope_staticCollectCompleteScopedSelectionSet
     (schema : Schema) (variables : List BoolVar)
     (filterParent groundType responseName : Name)
-    (boolCase : BoolCase) :
-    ∀ scopedSelections,
-      fieldSelectionsWithResponseNameInScope schema filterParent responseName
+    (boolCase : BoolCase)
+    : ∀ scopedSelections,
+        fieldSelectionsWithResponseNameInScope schema filterParent responseName
           (staticCollectCompleteScopedSelectionSet schema variables groundType
             boolCase scopedSelections)
-        =
-      staticCollectCompleteScopedSelectionSet schema variables groundType
-        boolCase
-        (completeScopedSelectionSetStaticFieldsWithResponseName schema
-          boolCase groundType responseName scopedSelections)
+        = staticCollectCompleteScopedSelectionSet schema variables groundType
+            boolCase
+            (completeScopedSelectionSetStaticFieldsWithResponseName schema
+              boolCase groundType responseName scopedSelections)
   | [] => by
       simp [fieldSelectionsWithResponseNameInScope,
         staticCollectCompleteScopedSelectionSet,
@@ -261,12 +259,12 @@ theorem fieldSelectionsWithResponseNameInScope_staticCollectCompleteScopedSelect
 
 theorem staticScopedFieldsWithResponseName_lookupValid
     (schema : Schema) (boolCase : BoolCase)
-    (lookupParent groundType responseName : Name) :
-    ∀ selectionSet,
-      selectionSetLookupValid schema lookupParent selectionSet ->
-        completeScopedSelectionSetLookupValid schema
-          (staticScopedFieldsWithResponseName schema boolCase lookupParent
-            groundType responseName selectionSet)
+    (lookupParent groundType responseName : Name)
+    : ∀ selectionSet,
+        selectionSetLookupValid schema lookupParent selectionSet
+        -> completeScopedSelectionSetLookupValid schema
+            (staticScopedFieldsWithResponseName schema boolCase lookupParent
+              groundType responseName selectionSet)
   | [], _hvalid => by
       simp [staticScopedFieldsWithResponseName,
         completeScopedSelectionSetLookupValid]
@@ -331,12 +329,12 @@ theorem staticScopedFieldsWithResponseName_lookupValid
 
 theorem staticScopedFieldsWithResponseName_groundApplies
     (schema : Schema) (boolCase : BoolCase)
-    (lookupParent groundType responseName : Name) :
-    ∀ selectionSet,
-      schema.typeIncludesObjectBool lookupParent groundType = true ->
-        completeScopedSelectionSetGroundApplies schema groundType
-          (staticScopedFieldsWithResponseName schema boolCase lookupParent
-            groundType responseName selectionSet)
+    (lookupParent groundType responseName : Name)
+    : ∀ selectionSet,
+        schema.typeIncludesObjectBool lookupParent groundType = true
+        -> completeScopedSelectionSetGroundApplies schema groundType
+            (staticScopedFieldsWithResponseName schema boolCase lookupParent
+              groundType responseName selectionSet)
   | [], _hincludes => by
       simp [staticScopedFieldsWithResponseName,
         completeScopedSelectionSetGroundApplies]
@@ -394,12 +392,12 @@ theorem staticScopedFieldsWithResponseName_groundApplies
 
 theorem completeScopedSelectionSetStaticFieldsWithResponseName_lookupValid
     (schema : Schema) (boolCase : BoolCase)
-    (groundType responseName : Name) :
-    ∀ scopedSelections,
-      completeScopedSelectionSetLookupValid schema scopedSelections ->
-        completeScopedSelectionSetLookupValid schema
-          (completeScopedSelectionSetStaticFieldsWithResponseName schema
-            boolCase groundType responseName scopedSelections)
+    (groundType responseName : Name)
+    : ∀ scopedSelections,
+        completeScopedSelectionSetLookupValid schema scopedSelections
+        -> completeScopedSelectionSetLookupValid schema
+            (completeScopedSelectionSetStaticFieldsWithResponseName schema
+              boolCase groundType responseName scopedSelections)
   | [], _hvalid => by
       simp [completeScopedSelectionSetStaticFieldsWithResponseName,
         completeScopedSelectionSetLookupValid]
@@ -472,13 +470,12 @@ theorem completeScopedSelectionSetStaticFieldsWithResponseName_lookupValid
 
 theorem completeScopedSelectionSetStaticFieldsWithResponseName_groundApplies
     (schema : Schema) (boolCase : BoolCase)
-    (groundType responseName : Name) :
-    ∀ scopedSelections,
-      completeScopedSelectionSetGroundApplies schema groundType
-          scopedSelections ->
-        completeScopedSelectionSetGroundApplies schema groundType
-          (completeScopedSelectionSetStaticFieldsWithResponseName schema
-            boolCase groundType responseName scopedSelections)
+    (groundType responseName : Name)
+    : ∀ scopedSelections,
+        completeScopedSelectionSetGroundApplies schema groundType scopedSelections
+        -> completeScopedSelectionSetGroundApplies schema groundType
+            (completeScopedSelectionSetStaticFieldsWithResponseName schema
+              boolCase groundType responseName scopedSelections)
   | [], _hground => by
       simp [completeScopedSelectionSetStaticFieldsWithResponseName,
         completeScopedSelectionSetGroundApplies]
@@ -552,10 +549,10 @@ theorem completeScopedSelectionSetStaticFieldsWithResponseName_groundApplies
                       completeScopedSelectionSetGroundApplies_append hbody hrest
 
 theorem typesOverlapBool_true_of_common_ground
-    (schema : Schema) {left right groundType : Name} :
-    schema.typeIncludesObjectBool left groundType = true ->
-    schema.typeIncludesObjectBool right groundType = true ->
-      schema.typesOverlapBool left right = true := by
+    (schema : Schema) {left right groundType : Name}
+    : schema.typeIncludesObjectBool left groundType = true
+      -> schema.typeIncludesObjectBool right groundType = true
+      -> schema.typesOverlapBool left right = true := by
   intro hleft hright
   unfold Schema.typesOverlapBool
   exact List.any_eq_true.mpr
@@ -563,15 +560,16 @@ theorem typesOverlapBool_true_of_common_ground
 
 theorem erase_staticScopedFieldsWithResponseName_mem_fieldSelectionsWithResponseNameInScope
     (schema : Schema) (boolCase : BoolCase)
-    (lookupParent groundType responseName : Name) :
-    ∀ selectionSet selection,
-      schema.typeIncludesObjectBool lookupParent groundType = true ->
-      selection ∈
-          eraseCompleteScopedSelectionSet
-            (staticScopedFieldsWithResponseName schema boolCase lookupParent
-              groundType responseName selectionSet) ->
-        selection ∈ fieldSelectionsWithResponseNameInScope schema lookupParent
-          responseName selectionSet
+    (lookupParent groundType responseName : Name)
+    : ∀ selectionSet selection,
+        schema.typeIncludesObjectBool lookupParent groundType = true
+        -> selection
+            ∈ eraseCompleteScopedSelectionSet
+                (staticScopedFieldsWithResponseName schema boolCase lookupParent
+                  groundType responseName selectionSet)
+        -> selection
+            ∈ fieldSelectionsWithResponseNameInScope schema lookupParent
+                responseName selectionSet
   | [], selection, _hincludes, hmem => by
       simp [staticScopedFieldsWithResponseName,
         eraseCompleteScopedSelectionSet] at hmem
@@ -707,15 +705,15 @@ theorem erase_staticScopedFieldsWithResponseName_mem_fieldSelectionsWithResponse
 
 theorem staticScopedFieldsWithResponseName_mem_field
     (schema : Schema) (boolCase : BoolCase)
-    (lookupParent groundType responseName : Name) :
-    ∀ selectionSet scopedSelection,
-      scopedSelection ∈
-          staticScopedFieldsWithResponseName schema boolCase lookupParent
-            groundType responseName selectionSet ->
-        ∃ fieldResponseName fieldName arguments directives subselections,
-          scopedSelection.selection =
-            Selection.field fieldResponseName fieldName arguments directives
-              subselections
+    (lookupParent groundType responseName : Name)
+    : ∀ selectionSet scopedSelection,
+        scopedSelection
+          ∈ staticScopedFieldsWithResponseName schema boolCase lookupParent
+              groundType responseName selectionSet
+        -> ∃ fieldResponseName fieldName arguments directives subselections,
+            scopedSelection.selection
+            = Selection.field fieldResponseName fieldName arguments directives
+                subselections
   | [], scopedSelection, hmem => by
       simp [staticScopedFieldsWithResponseName] at hmem
   | selection :: rest, scopedSelection, hmem => by
@@ -797,14 +795,13 @@ theorem staticScopedFieldsWithResponseName_mem_field
                       selectionSet scopedSelection hchild
                 · exact hrest htail
 
-theorem collectFields_scoped_mem_lookupValid
-    (schema : Schema) (parentType : Name) :
-    ∀ selectionSet scopedField,
-      selectionSetLookupValid schema parentType selectionSet ->
-      scopedField ∈ FieldMerge.collectFields schema parentType selectionSet ->
-        ∃ fieldDefinition,
-          schema.lookupField scopedField.parentType scopedField.fieldName =
-            some fieldDefinition
+theorem collectFields_scoped_mem_lookupValid (schema : Schema) (parentType : Name)
+    : ∀ selectionSet scopedField,
+        selectionSetLookupValid schema parentType selectionSet
+        -> scopedField ∈ FieldMerge.collectFields schema parentType selectionSet
+        -> ∃ fieldDefinition,
+            schema.lookupField scopedField.parentType scopedField.fieldName
+              = some fieldDefinition
             ∧ fieldDefinition.outputType = scopedField.outputType
   | [], scopedField, _hlookupValid, hscoped => by
       simp [FieldMerge.collectFields] at hscoped
@@ -850,19 +847,18 @@ theorem collectFields_scoped_mem_lookupValid
 
 theorem staticScopedFieldsWithResponseName_mem_fieldMergeCollectFields_lookupValid
     (schema : Schema) (boolCase : BoolCase)
-    (lookupParent groundType responseName : Name) :
-    ∀ selectionSet scopedSelection fieldResponseName fieldName arguments
-      directives subselections,
-      selectionSetLookupValid schema lookupParent selectionSet ->
-      scopedSelection ∈
-          staticScopedFieldsWithResponseName schema boolCase lookupParent
-            groundType responseName selectionSet ->
-      scopedSelection.selection =
-        Selection.field fieldResponseName fieldName arguments directives
-          subselections ->
-        ∃ scopedField,
-          scopedField ∈ FieldMerge.collectFields schema lookupParent
-            selectionSet
+    (lookupParent groundType responseName : Name)
+    : ∀ selectionSet scopedSelection fieldResponseName fieldName arguments
+          directives subselections,
+        selectionSetLookupValid schema lookupParent selectionSet
+        -> scopedSelection
+            ∈ staticScopedFieldsWithResponseName schema boolCase lookupParent
+                groundType responseName selectionSet
+        -> scopedSelection.selection
+            = Selection.field fieldResponseName fieldName arguments directives
+                subselections
+        -> ∃ scopedField,
+            scopedField ∈ FieldMerge.collectFields schema lookupParent selectionSet
             ∧ scopedField.parentType = scopedSelection.lookupParent
             ∧ scopedField.responseName = fieldResponseName
             ∧ scopedField.fieldName = fieldName
@@ -1049,20 +1045,19 @@ theorem staticScopedFieldsWithResponseName_mem_fieldMergeCollectFields_lookupVal
 theorem staticScopedFieldsWithResponseName_mem_fieldMergeCollectFields
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (boolCase : BoolCase)
-    (lookupParent groundType responseName : Name) :
-    ∀ selectionSet scopedSelection fieldResponseName fieldName arguments
-      directives subselections,
-      Validation.selectionSetValid schema variableDefinitions lookupParent
-        selectionSet ->
-      scopedSelection ∈
-          staticScopedFieldsWithResponseName schema boolCase lookupParent
-            groundType responseName selectionSet ->
-      scopedSelection.selection =
-        Selection.field fieldResponseName fieldName arguments directives
-          subselections ->
-        ∃ scopedField,
-          scopedField ∈ FieldMerge.collectFields schema lookupParent
-            selectionSet
+    (lookupParent groundType responseName : Name)
+    : ∀ selectionSet scopedSelection fieldResponseName fieldName arguments
+          directives subselections,
+        Validation.selectionSetValid schema variableDefinitions lookupParent
+          selectionSet
+        -> scopedSelection
+            ∈ staticScopedFieldsWithResponseName schema boolCase lookupParent
+                groundType responseName selectionSet
+        -> scopedSelection.selection
+            = Selection.field fieldResponseName fieldName arguments directives
+                subselections
+        -> ∃ scopedField,
+            scopedField ∈ FieldMerge.collectFields schema lookupParent selectionSet
             ∧ scopedField.parentType = scopedSelection.lookupParent
             ∧ scopedField.responseName = fieldResponseName
             ∧ scopedField.fieldName = fieldName
@@ -1255,16 +1250,16 @@ theorem staticScopedFieldsWithResponseName_mem_fieldMergeCollectFields
 
 theorem staticScopedFieldsWithResponseName_mem_field_allowed
     (schema : Schema) (boolCase : BoolCase)
-    (lookupParent groundType responseName : Name) :
-    ∀ selectionSet scopedSelection fieldResponseName fieldName arguments
-      directives subselections,
-      scopedSelection ∈
-          staticScopedFieldsWithResponseName schema boolCase lookupParent
-            groundType responseName selectionSet ->
-      scopedSelection.selection =
-        Selection.field fieldResponseName fieldName arguments directives
-          subselections ->
-        directivesAllowIn boolCase directives = true
+    (lookupParent groundType responseName : Name)
+    : ∀ selectionSet scopedSelection fieldResponseName fieldName arguments
+          directives subselections,
+        scopedSelection
+          ∈ staticScopedFieldsWithResponseName schema boolCase lookupParent
+              groundType responseName selectionSet
+        -> scopedSelection.selection
+            = Selection.field fieldResponseName fieldName arguments directives
+                subselections
+        -> directivesAllowIn boolCase directives = true
   | [], scopedSelection, fieldResponseName, fieldName, arguments, directives,
       subselections, hmem, _hselection => by
       simp [staticScopedFieldsWithResponseName] at hmem
@@ -1364,16 +1359,16 @@ theorem staticScopedFieldsWithResponseName_mem_field_allowed
 
 theorem completeScopedSelectionSetStaticFieldsWithResponseName_mem_field_allowed
     (schema : Schema) (boolCase : BoolCase)
-    (groundType responseName : Name) :
-    ∀ scopedSelections scopedSelection fieldResponseName fieldName arguments
-      directives subselections,
-      scopedSelection ∈
-          completeScopedSelectionSetStaticFieldsWithResponseName schema
-            boolCase groundType responseName scopedSelections ->
-      scopedSelection.selection =
-        Selection.field fieldResponseName fieldName arguments directives
-          subselections ->
-        directivesAllowIn boolCase directives = true
+    (groundType responseName : Name)
+    : ∀ scopedSelections scopedSelection fieldResponseName fieldName arguments
+          directives subselections,
+        scopedSelection
+          ∈ completeScopedSelectionSetStaticFieldsWithResponseName schema
+              boolCase groundType responseName scopedSelections
+        -> scopedSelection.selection
+            = Selection.field fieldResponseName fieldName arguments directives
+                subselections
+        -> directivesAllowIn boolCase directives = true
   | [], scopedSelection, fieldResponseName, fieldName, arguments, directives,
       subselections, hmem, _hselection => by
       simp [completeScopedSelectionSetStaticFieldsWithResponseName] at hmem
@@ -1486,7 +1481,6 @@ theorem completeScopedSelectionSetStaticFieldsWithResponseName_mem_field_allowed
                           fieldResponseName fieldName arguments directives
                           subselections hchild hselection
                     · exact hrest htail hselection
-
 
 end CompleteNormalization
 

@@ -24,40 +24,40 @@ inductive ProjectionResolverRef (ObjectRef : Type) where
   | filler
 
 def projectionResolverValue {ObjectRef : Type}
-    (wrap : ObjectRef -> ProjectionResolverRef ObjectRef) :
-    Execution.ResolverValue ObjectRef ->
-      Execution.ResolverValue (ProjectionResolverRef ObjectRef)
+    (wrap : ObjectRef -> ProjectionResolverRef ObjectRef)
+    : Execution.ResolverValue ObjectRef
+      -> Execution.ResolverValue (ProjectionResolverRef ObjectRef)
   | .null => .null
   | .scalar value => .scalar value
   | .object typeName ref => .object typeName (wrap ref)
   | .list values => .list (values.map (projectionResolverValue wrap))
 
-def projectionRootResolverValue {ObjectRef : Type} :
-    Execution.ResolverValue ObjectRef ->
-      Execution.ResolverValue (ProjectionResolverRef ObjectRef) :=
+def projectionRootResolverValue {ObjectRef : Type}
+    : Execution.ResolverValue ObjectRef
+      -> Execution.ResolverValue (ProjectionResolverRef ObjectRef) :=
   projectionResolverValue ProjectionResolverRef.root
 
-def projectionTargetResolverValue {ObjectRef : Type} :
-    Execution.ResolverValue ObjectRef ->
-      Execution.ResolverValue (ProjectionResolverRef ObjectRef) :=
+def projectionTargetResolverValue {ObjectRef : Type}
+    : Execution.ResolverValue ObjectRef
+      -> Execution.ResolverValue (ProjectionResolverRef ObjectRef) :=
   projectionResolverValue ProjectionResolverRef.target
 
-def projectionRootRef? {ObjectRef : Type} :
-    ProjectionResolverRef ObjectRef -> Option ObjectRef
+def projectionRootRef? {ObjectRef : Type}
+    : ProjectionResolverRef ObjectRef -> Option ObjectRef
   | .root ref => some ref
   | .target _ref => none
   | .filler => none
 
-def projectionTargetRef? {ObjectRef : Type} :
-    ProjectionResolverRef ObjectRef -> Option ObjectRef
+def projectionTargetRef? {ObjectRef : Type}
+    : ProjectionResolverRef ObjectRef -> Option ObjectRef
   | .root _ref => none
   | .target ref => some ref
   | .filler => none
 
 def lowerProjectionResolverValue? {ObjectRef : Type}
-    (unwrap : ProjectionResolverRef ObjectRef -> Option ObjectRef) :
-    Execution.ResolverValue (ProjectionResolverRef ObjectRef) ->
-      Option (Execution.ResolverValue ObjectRef)
+    (unwrap : ProjectionResolverRef ObjectRef -> Option ObjectRef)
+    : Execution.ResolverValue (ProjectionResolverRef ObjectRef)
+      -> Option (Execution.ResolverValue ObjectRef)
   | .null => some .null
   | .scalar value => some (.scalar value)
   | .object typeName ref => (unwrap ref).map (.object typeName)
@@ -66,11 +66,11 @@ def lowerProjectionResolverValue? {ObjectRef : Type}
         Execution.ResolverValue.list
 
 mutual
-  theorem lowerProjectionResolverValue?_projectionRootResolverValue
-      {ObjectRef : Type} :
-      ∀ value : Execution.ResolverValue ObjectRef,
-        lowerProjectionResolverValue? projectionRootRef?
-          (projectionRootResolverValue value) = some value
+  theorem lowerProjectionResolverValue?_projectionRootResolverValue {ObjectRef : Type}
+      : ∀ value : Execution.ResolverValue ObjectRef,
+          lowerProjectionResolverValue? projectionRootRef?
+            (projectionRootResolverValue value)
+          = some value
     | .null => by
         simp [projectionRootResolverValue, projectionResolverValue,
           lowerProjectionResolverValue?]
@@ -87,11 +87,11 @@ mutual
             values
 
   theorem lowerProjectionResolverValues?_map_projectionRootResolverValue
-      {ObjectRef : Type} :
-      ∀ values : List (Execution.ResolverValue ObjectRef),
-        (values.map projectionRootResolverValue).mapM
-            (lowerProjectionResolverValue? projectionRootRef?) =
-          some values
+      {ObjectRef : Type}
+      : ∀ values : List (Execution.ResolverValue ObjectRef),
+          (values.map projectionRootResolverValue).mapM
+            (lowerProjectionResolverValue? projectionRootRef?)
+          = some values
     | [] => by
         simp
     | value :: rest => by
@@ -100,11 +100,11 @@ mutual
 end
 
 mutual
-  theorem lowerProjectionResolverValue?_projectionTargetResolverValue
-      {ObjectRef : Type} :
-      ∀ value : Execution.ResolverValue ObjectRef,
-        lowerProjectionResolverValue? projectionTargetRef?
-          (projectionTargetResolverValue value) = some value
+  theorem lowerProjectionResolverValue?_projectionTargetResolverValue {ObjectRef : Type}
+      : ∀ value : Execution.ResolverValue ObjectRef,
+          lowerProjectionResolverValue? projectionTargetRef?
+            (projectionTargetResolverValue value)
+          = some value
     | .null => by
         simp [projectionTargetResolverValue, projectionResolverValue,
           lowerProjectionResolverValue?]
@@ -121,11 +121,11 @@ mutual
             values
 
   theorem lowerProjectionResolverValues?_map_projectionTargetResolverValue
-      {ObjectRef : Type} :
-      ∀ values : List (Execution.ResolverValue ObjectRef),
-        (values.map projectionTargetResolverValue).mapM
-            (lowerProjectionResolverValue? projectionTargetRef?) =
-          some values
+      {ObjectRef : Type}
+      : ∀ values : List (Execution.ResolverValue ObjectRef),
+          (values.map projectionTargetResolverValue).mapM
+            (lowerProjectionResolverValue? projectionTargetRef?)
+          = some values
     | [] => by
         simp
     | value :: rest => by
@@ -136,12 +136,12 @@ mutual
 end
 
 mutual
-  theorem lowerProjectionRoot_projectionTargetResolverValue_eq
-      {ObjectRef : Type} :
-      ∀ (value lowered : Execution.ResolverValue ObjectRef),
-        lowerProjectionResolverValue? projectionRootRef?
-          (projectionTargetResolverValue value) = some lowered ->
-          lowered = value
+  theorem lowerProjectionRoot_projectionTargetResolverValue_eq {ObjectRef : Type}
+      : ∀ (value lowered : Execution.ResolverValue ObjectRef),
+          lowerProjectionResolverValue? projectionRootRef?
+              (projectionTargetResolverValue value)
+            = some lowered
+          -> lowered = value
     | .null, lowered, hroot => by
         simp [projectionTargetResolverValue, projectionResolverValue,
           lowerProjectionResolverValue?] at hroot
@@ -170,13 +170,12 @@ mutual
         subst loweredValues
         rfl
 
-  theorem lowerProjectionRoot_projectionTargetResolverValues_eq
-      {ObjectRef : Type} :
-      ∀ (values loweredValues : List (Execution.ResolverValue ObjectRef)),
-        (values.map projectionTargetResolverValue).mapM
-            (lowerProjectionResolverValue? projectionRootRef?) =
-          some loweredValues ->
-          loweredValues = values
+  theorem lowerProjectionRoot_projectionTargetResolverValues_eq {ObjectRef : Type}
+      : ∀ (values loweredValues : List (Execution.ResolverValue ObjectRef)),
+          (values.map projectionTargetResolverValue).mapM
+              (lowerProjectionResolverValue? projectionRootRef?)
+            = some loweredValues
+          -> loweredValues = values
     | [], loweredValues, hroot => by
         simp at hroot
         exact hroot
@@ -211,22 +210,19 @@ end
 theorem runtimeObjectType?_projectionResolverValue
     {ObjectRef : Type}
     (wrap : ObjectRef -> ProjectionResolverRef ObjectRef)
-    (value : Execution.ResolverValue ObjectRef) :
-    Execution.runtimeObjectType? (projectionResolverValue wrap value)
-      =
-    Execution.runtimeObjectType? value := by
+    (value : Execution.ResolverValue ObjectRef)
+    : Execution.runtimeObjectType? (projectionResolverValue wrap value)
+      = Execution.runtimeObjectType? value := by
   cases value <;> simp [projectionResolverValue,
     Execution.runtimeObjectType?]
 
 theorem doesFragmentTypeApplyBool_projectionResolverValue
     {ObjectRef : Type} (schema : Schema) (parentType typeCondition : Name)
     (wrap : ObjectRef -> ProjectionResolverRef ObjectRef)
-    (source : Execution.ResolverValue ObjectRef) :
-    Execution.doesFragmentTypeApplyBool schema parentType
-      (projectionResolverValue wrap source) typeCondition
-      =
-    Execution.doesFragmentTypeApplyBool schema parentType source
-      typeCondition := by
+    (source : Execution.ResolverValue ObjectRef)
+    : Execution.doesFragmentTypeApplyBool schema parentType
+        (projectionResolverValue wrap source) typeCondition
+      = Execution.doesFragmentTypeApplyBool schema parentType source typeCondition := by
   simp [Execution.doesFragmentTypeApplyBool,
     runtimeObjectType?_projectionResolverValue]
 
@@ -234,14 +230,12 @@ mutual
   theorem collectSelection_projectionResolverValue
       {ObjectRef : Type} (schema : Schema)
       (variableValues : Execution.VariableValues)
-      (wrap : ObjectRef -> ProjectionResolverRef ObjectRef) :
-      ∀ (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-        (selection : Selection),
-        Execution.collectSelection schema variableValues parentType
-          (projectionResolverValue wrap source) selection
-        =
-        Execution.collectSelection schema variableValues parentType source
-          selection
+      (wrap : ObjectRef -> ProjectionResolverRef ObjectRef)
+      : ∀ (parentType : Name) (source : Execution.ResolverValue ObjectRef)
+            (selection : Selection),
+          Execution.collectSelection schema variableValues parentType
+            (projectionResolverValue wrap source) selection
+          = Execution.collectSelection schema variableValues parentType source selection
     | parentType, source,
       .field responseName fieldName arguments directives selectionSet => by
         simp [Execution.collectSelection]
@@ -308,14 +302,12 @@ mutual
   theorem collectFields_projectionResolverValue
       {ObjectRef : Type} (schema : Schema)
       (variableValues : Execution.VariableValues)
-      (wrap : ObjectRef -> ProjectionResolverRef ObjectRef) :
-      ∀ (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-        (selectionSet : List Selection),
-        Execution.collectFields schema variableValues parentType
-          (projectionResolverValue wrap source) selectionSet
-        =
-        Execution.collectFields schema variableValues parentType source
-          selectionSet
+      (wrap : ObjectRef -> ProjectionResolverRef ObjectRef)
+      : ∀ (parentType : Name) (source : Execution.ResolverValue ObjectRef)
+            (selectionSet : List Selection),
+          Execution.collectFields schema variableValues parentType
+            (projectionResolverValue wrap source) selectionSet
+          = Execution.collectFields schema variableValues parentType source selectionSet
     | parentType, source, [] => by
         simp [Execution.collectFields]
     | parentType, source, selection :: rest => by
@@ -328,14 +320,12 @@ mutual
   theorem collectSubfields_projectionResolverValue
       {ObjectRef : Type} (schema : Schema)
       (variableValues : Execution.VariableValues)
-      (wrap : ObjectRef -> ProjectionResolverRef ObjectRef) :
-      ∀ (objectType : Name) (source : Execution.ResolverValue ObjectRef)
-        (fields : List Execution.ExecutableField),
-        Execution.collectSubfields schema variableValues objectType
-          (projectionResolverValue wrap source) fields
-        =
-        Execution.collectSubfields schema variableValues objectType source
-          fields
+      (wrap : ObjectRef -> ProjectionResolverRef ObjectRef)
+      : ∀ (objectType : Name) (source : Execution.ResolverValue ObjectRef)
+            (fields : List Execution.ExecutableField),
+          Execution.collectSubfields schema variableValues objectType
+            (projectionResolverValue wrap source) fields
+          = Execution.collectSubfields schema variableValues objectType source fields
     | objectType, source, [] => by
         simp [Execution.collectSubfields]
     | objectType, source, field :: fields => by
@@ -350,12 +340,11 @@ theorem collectFields_projectionTargetResolverValue
     {ObjectRef : Type} (schema : Schema)
     (variableValues : Execution.VariableValues)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    Execution.collectFields schema variableValues parentType
-      (projectionTargetResolverValue source) selectionSet
-      =
-    Execution.collectFields schema variableValues parentType source
-      selectionSet := by
+    (selectionSet : List Selection)
+    : Execution.collectFields schema variableValues parentType
+        (projectionTargetResolverValue source) selectionSet
+      = Execution.collectFields schema variableValues parentType source
+          selectionSet := by
   simpa [projectionTargetResolverValue] using
     collectFields_projectionResolverValue schema variableValues
       ProjectionResolverRef.target parentType source selectionSet
@@ -363,24 +352,23 @@ theorem collectFields_projectionTargetResolverValue
 def fieldPairProjectionTarget
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments : List Argument)
-    (parentType fieldName : Name) (arguments : List Argument) : Prop :=
+    (parentType fieldName : Name) (arguments : List Argument)
+    : Prop :=
   parentType = targetParent
-    ∧ ((fieldName = leftField
-        ∧ Argument.argumentsEquivalent arguments leftArguments)
+  ∧ ((fieldName = leftField ∧ Argument.argumentsEquivalent arguments leftArguments)
       ∨ (fieldName = rightField
-        ∧ Argument.argumentsEquivalent arguments rightArguments))
+          ∧ Argument.argumentsEquivalent arguments rightArguments))
 
 theorem fieldPairProjectionTarget_iff_of_argumentsEquivalent
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments : List Argument)
     (parentType fieldName : Name)
-    (firstArguments laterArguments : List Argument) :
-    Argument.argumentsEquivalent firstArguments laterArguments ->
-      (fieldPairProjectionTarget targetParent leftField rightField
-          leftArguments rightArguments parentType fieldName firstArguments
-        ↔
-        fieldPairProjectionTarget targetParent leftField rightField
-          leftArguments rightArguments parentType fieldName laterArguments) := by
+    (firstArguments laterArguments : List Argument)
+    : Argument.argumentsEquivalent firstArguments laterArguments
+      -> (fieldPairProjectionTarget targetParent leftField rightField
+            leftArguments rightArguments parentType fieldName firstArguments
+          ↔ fieldPairProjectionTarget targetParent leftField rightField
+              leftArguments rightArguments parentType fieldName laterArguments) := by
   intro harguments
   have hleftIff :
       Argument.argumentsEquivalent firstArguments leftArguments
@@ -505,14 +493,13 @@ theorem fieldPairOrDeepSuccessResolvers_left_root
     (base : Execution.Resolvers ObjectRef)
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (source : Execution.ResolverValue ObjectRef) :
-    Argument.argumentsEquivalent arguments leftArguments ->
-      (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-        targetParent leftField rightField leftArguments rightArguments).resolve
-        targetParent leftField arguments (projectionRootResolverValue source)
-      =
-      (base.resolve targetParent leftField arguments source).map
-        projectionTargetResolverValue := by
+    (source : Execution.ResolverValue ObjectRef)
+    : Argument.argumentsEquivalent arguments leftArguments
+      -> (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+            targetParent leftField rightField leftArguments rightArguments).resolve
+            targetParent leftField arguments (projectionRootResolverValue source)
+          = (base.resolve targetParent leftField arguments source).map
+              projectionTargetResolverValue := by
   intro harguments
   classical
   have htarget :
@@ -528,14 +515,13 @@ theorem fieldPairOrDeepSuccessResolvers_right_root
     (base : Execution.Resolvers ObjectRef)
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (source : Execution.ResolverValue ObjectRef) :
-    Argument.argumentsEquivalent arguments rightArguments ->
-      (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-        targetParent leftField rightField leftArguments rightArguments).resolve
-        targetParent rightField arguments (projectionRootResolverValue source)
-      =
-      (base.resolve targetParent rightField arguments source).map
-        projectionTargetResolverValue := by
+    (source : Execution.ResolverValue ObjectRef)
+    : Argument.argumentsEquivalent arguments rightArguments
+      -> (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+            targetParent leftField rightField leftArguments rightArguments).resolve
+            targetParent rightField arguments (projectionRootResolverValue source)
+          = (base.resolve targetParent rightField arguments source).map
+              projectionTargetResolverValue := by
   intro harguments
   classical
   have htarget :
@@ -549,22 +535,19 @@ theorem fieldPairOrDeepSuccessResolvers_other_root
     {ObjectRef : Type} (schema : Schema)
     (rootSelectionSet : List Selection)
     (base : Execution.Resolvers ObjectRef)
-    (targetParent leftField rightField parentType fieldName runtimeType :
-      Name)
+    (targetParent leftField rightField parentType fieldName runtimeType : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (ref : ObjectRef) :
-    ¬ fieldPairProjectionTarget targetParent leftField rightField
-        leftArguments rightArguments parentType fieldName arguments ->
-      (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-        targetParent leftField rightField leftArguments rightArguments).resolve
-        parentType fieldName arguments
-        (.object runtimeType (ProjectionResolverRef.root ref))
-      =
-      (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-        (ProjectionResolverRef.filler :
-          ProjectionResolverRef ObjectRef)).resolve parentType fieldName
-        arguments
-        (.object runtimeType (ProjectionResolverRef.root ref)) := by
+    (ref : ObjectRef)
+    : ¬ fieldPairProjectionTarget targetParent leftField rightField
+          leftArguments rightArguments parentType fieldName arguments
+      -> (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+            targetParent leftField rightField leftArguments rightArguments).resolve
+            parentType fieldName arguments
+            (.object runtimeType (ProjectionResolverRef.root ref))
+          = (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+              (ProjectionResolverRef.filler : ProjectionResolverRef ObjectRef)).resolve
+              parentType fieldName arguments
+              (.object runtimeType (ProjectionResolverRef.root ref)) := by
   intro htarget
   classical
   simp [fieldPairOrDeepSuccessResolvers, htarget,
@@ -576,13 +559,12 @@ theorem fieldPairOrDeepSuccessResolvers_target
     (base : Execution.Resolvers ObjectRef)
     (targetParent leftField rightField parentType fieldName : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (source : Execution.ResolverValue ObjectRef) :
-      (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+    (source : Execution.ResolverValue ObjectRef)
+    : (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
         targetParent leftField rightField leftArguments rightArguments).resolve
         parentType fieldName arguments (projectionTargetResolverValue source)
-      =
-      (base.resolve parentType fieldName arguments source).map
-        projectionTargetResolverValue := by
+      = (base.resolve parentType fieldName arguments source).map
+          projectionTargetResolverValue := by
   classical
   by_cases htarget :
       fieldPairProjectionTarget targetParent leftField rightField
@@ -606,17 +588,15 @@ theorem fieldPairOrDeepSuccessResolvers_target_object
     {ObjectRef : Type} (schema : Schema)
     (rootSelectionSet : List Selection)
     (base : Execution.Resolvers ObjectRef)
-    (targetParent leftField rightField parentType fieldName runtimeType :
-      Name)
+    (targetParent leftField rightField parentType fieldName runtimeType : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (ref : ObjectRef) :
-      (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+    (ref : ObjectRef)
+    : (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
         targetParent leftField rightField leftArguments rightArguments).resolve
         parentType fieldName arguments
         (.object runtimeType (ProjectionResolverRef.target ref))
-      =
-      (base.resolve parentType fieldName arguments (.object runtimeType ref)).map
-        projectionTargetResolverValue := by
+      = (base.resolve parentType fieldName arguments (.object runtimeType ref)).map
+          projectionTargetResolverValue := by
   classical
   by_cases htarget :
       fieldPairProjectionTarget targetParent leftField rightField
@@ -631,21 +611,18 @@ theorem fieldPairOrDeepSuccessResolvers_filler_object
     {ObjectRef : Type} (schema : Schema)
     (rootSelectionSet : List Selection)
     (base : Execution.Resolvers ObjectRef)
-    (targetParent leftField rightField parentType fieldName runtimeType :
-      Name)
-    (leftArguments rightArguments arguments : List Argument) :
-      (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+    (targetParent leftField rightField parentType fieldName runtimeType : Name)
+    (leftArguments rightArguments arguments : List Argument)
+    : (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
         targetParent leftField rightField leftArguments rightArguments).resolve
         parentType fieldName arguments
-        (.object runtimeType (ProjectionResolverRef.filler :
-          ProjectionResolverRef ObjectRef))
-      =
-      (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-        (ProjectionResolverRef.filler :
-          ProjectionResolverRef ObjectRef)).resolve parentType fieldName
-        arguments
-        (.object runtimeType (ProjectionResolverRef.filler :
-          ProjectionResolverRef ObjectRef)) := by
+        (.object runtimeType
+          (ProjectionResolverRef.filler : ProjectionResolverRef ObjectRef))
+      = (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+          (ProjectionResolverRef.filler : ProjectionResolverRef ObjectRef)).resolve
+          parentType fieldName arguments
+          (.object runtimeType
+            (ProjectionResolverRef.filler : ProjectionResolverRef ObjectRef)) := by
   classical
   by_cases htarget :
       fieldPairProjectionTarget targetParent leftField rightField
@@ -658,32 +635,26 @@ theorem fieldPairOrDeepSuccessResolvers_filler_object
 
 mutual
   theorem executeCollectedFields_fieldPairOrDeepSuccessResolvers_filler_object_eq_deepSuccessWithRef
-      {ObjectRef : Type} (schema : Schema)
-      (rootSelectionSet : List Selection)
-      (base : Execution.Resolvers ObjectRef)
-      (variableValues : Execution.VariableValues)
+      {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
+      (base : Execution.Resolvers ObjectRef) (variableValues : Execution.VariableValues)
       (targetParent leftField rightField : Name)
-      (leftArguments rightArguments : List Argument) :
-      ∀ (fuel : Nat) (runtimeType : Name)
-        (fields : List (Name × List Execution.ExecutableField)),
-        Execution.executeCollectedFields schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues fuel
-          (.object runtimeType
-            (ProjectionResolverRef.filler :
-              ProjectionResolverRef ObjectRef))
-          fields
-        =
-        Execution.executeCollectedFields schema
-          (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-            (ProjectionResolverRef.filler :
-              ProjectionResolverRef ObjectRef))
-          variableValues fuel
-          (.object runtimeType
-            (ProjectionResolverRef.filler :
-              ProjectionResolverRef ObjectRef))
-          fields
+      (leftArguments rightArguments : List Argument)
+      : ∀ (fuel : Nat) (runtimeType : Name)
+            (fields : List (Name × List Execution.ExecutableField)),
+          Execution.executeCollectedFields schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues fuel
+            (.object runtimeType
+              (ProjectionResolverRef.filler : ProjectionResolverRef ObjectRef))
+            fields
+          = Execution.executeCollectedFields schema
+              (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                (ProjectionResolverRef.filler : ProjectionResolverRef ObjectRef))
+              variableValues fuel
+              (.object runtimeType
+                (ProjectionResolverRef.filler : ProjectionResolverRef ObjectRef))
+              fields
     | fuel, runtimeType, [] => by
         simp [Execution.executeCollectedFields]
     | fuel, runtimeType, (responseName, fields) :: rest => by
@@ -698,32 +669,26 @@ mutual
             runtimeType rest]
 
   theorem executeField_fieldPairOrDeepSuccessResolvers_filler_object_eq_deepSuccessWithRef
-      {ObjectRef : Type} (schema : Schema)
-      (rootSelectionSet : List Selection)
-      (base : Execution.Resolvers ObjectRef)
-      (variableValues : Execution.VariableValues)
+      {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
+      (base : Execution.Resolvers ObjectRef) (variableValues : Execution.VariableValues)
       (targetParent leftField rightField : Name)
-      (leftArguments rightArguments : List Argument) :
-      ∀ (fuel : Nat) (runtimeType responseName : Name)
-        (fields : List Execution.ExecutableField),
-        Execution.executeField schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues fuel
-          (.object runtimeType
-            (ProjectionResolverRef.filler :
-              ProjectionResolverRef ObjectRef))
-          responseName fields
-        =
-        Execution.executeField schema
-          (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-            (ProjectionResolverRef.filler :
-              ProjectionResolverRef ObjectRef))
-          variableValues fuel
-          (.object runtimeType
-            (ProjectionResolverRef.filler :
-              ProjectionResolverRef ObjectRef))
-          responseName fields
+      (leftArguments rightArguments : List Argument)
+      : ∀ (fuel : Nat) (runtimeType responseName : Name)
+            (fields : List Execution.ExecutableField),
+          Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues fuel
+            (.object runtimeType
+              (ProjectionResolverRef.filler : ProjectionResolverRef ObjectRef))
+            responseName fields
+          = Execution.executeField schema
+              (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                (ProjectionResolverRef.filler : ProjectionResolverRef ObjectRef))
+              variableValues fuel
+              (.object runtimeType
+                (ProjectionResolverRef.filler : ProjectionResolverRef ObjectRef))
+              responseName fields
     | fuel, runtimeType, responseName, [] => by
         simp [Execution.executeField]
     | 0, runtimeType, responseName, field :: fields => by
@@ -754,28 +719,24 @@ mutual
       (base : Execution.Resolvers ObjectRef)
       (variableValues : Execution.VariableValues)
       (targetParent leftField rightField : Name)
-      (leftArguments rightArguments : List Argument) :
-      ∀ (fuel : Nat) (fieldType : TypeRef)
-        (fields : List Execution.ExecutableField)
-        (parentType fieldName : Name),
-        Execution.completeValue schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues fuel fieldType fields
-          (deepSelectionSetSuccessResolverValueWithRef schema rootSelectionSet
-            (ProjectionResolverRef.filler :
-              ProjectionResolverRef ObjectRef)
-            parentType fieldName fieldType)
-        =
-        Execution.completeValue schema
-          (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-            (ProjectionResolverRef.filler :
-              ProjectionResolverRef ObjectRef))
-          variableValues fuel fieldType fields
-          (deepSelectionSetSuccessResolverValueWithRef schema rootSelectionSet
-            (ProjectionResolverRef.filler :
-              ProjectionResolverRef ObjectRef)
-            parentType fieldName fieldType)
+      (leftArguments rightArguments : List Argument)
+      : ∀ (fuel : Nat) (fieldType : TypeRef)
+            (fields : List Execution.ExecutableField)
+            (parentType fieldName : Name),
+          Execution.completeValue schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues fuel fieldType fields
+            (deepSelectionSetSuccessResolverValueWithRef schema rootSelectionSet
+              (ProjectionResolverRef.filler : ProjectionResolverRef ObjectRef)
+              parentType fieldName fieldType)
+          = Execution.completeValue schema
+              (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                (ProjectionResolverRef.filler : ProjectionResolverRef ObjectRef))
+              variableValues fuel fieldType fields
+              (deepSelectionSetSuccessResolverValueWithRef schema rootSelectionSet
+                (ProjectionResolverRef.filler : ProjectionResolverRef ObjectRef)
+                parentType fieldName fieldType)
     | 0, fieldType, fields, parentType, fieldName => by
         simp [Execution.completeValue, Execution.outOfFuel]
     | fuel + 1, .nonNull inner, fields, parentType, fieldName => by
@@ -871,41 +832,39 @@ theorem executeField_fieldPairOrDeepSuccessResolvers_other_root_eq_deepSuccessWi
     (rootSelectionSet : List Selection)
     (base : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
-    (targetParent leftField rightField parentType fieldName runtimeType
-      responseName : Name)
+    (targetParent leftField rightField parentType fieldName runtimeType responseName
+      : Name)
     (leftArguments rightArguments arguments : List Argument)
-    (ref : ObjectRef) (childSelectionSet : List Selection) :
-    ¬ fieldPairProjectionTarget targetParent leftField rightField
-        leftArguments rightArguments parentType fieldName arguments ->
-    ∀ fuel,
-      Execution.executeField schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues fuel
-        (.object runtimeType (ProjectionResolverRef.root ref))
-        responseName
-        [{
-          parentType := parentType,
-          responseName := responseName,
-          fieldName := fieldName,
-          arguments := arguments,
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.executeField schema
-        (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-          (ProjectionResolverRef.filler :
-            ProjectionResolverRef ObjectRef))
-        variableValues fuel
-        (.object runtimeType (ProjectionResolverRef.root ref))
-        responseName
-        [{
-          parentType := parentType,
-          responseName := responseName,
-          fieldName := fieldName,
-          arguments := arguments,
-          selectionSet := childSelectionSet
-        }] := by
+    (ref : ObjectRef) (childSelectionSet : List Selection)
+    : ¬ fieldPairProjectionTarget targetParent leftField rightField
+          leftArguments rightArguments parentType fieldName arguments
+      -> ∀ fuel,
+          Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues fuel
+            (.object runtimeType (ProjectionResolverRef.root ref))
+            responseName
+            [{
+              parentType := parentType,
+              responseName := responseName,
+              fieldName := fieldName,
+              arguments := arguments,
+              selectionSet := childSelectionSet
+            }]
+          = Execution.executeField schema
+              (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                (ProjectionResolverRef.filler : ProjectionResolverRef ObjectRef))
+              variableValues fuel
+              (.object runtimeType (ProjectionResolverRef.root ref))
+              responseName
+              [{
+                parentType := parentType,
+                responseName := responseName,
+                fieldName := fieldName,
+                arguments := arguments,
+                selectionSet := childSelectionSet
+              }] := by
   intro htarget fuel
   cases fuel with
   | zero =>
@@ -939,21 +898,18 @@ theorem executeField_fieldPairOrDeepSuccessResolvers_other_root_eq_deepSuccessWi
 
 mutual
   theorem executeCollectedFields_fieldPairOrDeepSuccessResolvers_projectionTargetResolverValue
-      {ObjectRef : Type} (schema : Schema)
-      (rootSelectionSet : List Selection)
-      (base : Execution.Resolvers ObjectRef)
-      (variableValues : Execution.VariableValues)
+      {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
+      (base : Execution.Resolvers ObjectRef) (variableValues : Execution.VariableValues)
       (targetParent leftField rightField : Name)
-      (leftArguments rightArguments : List Argument) :
-      ∀ (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
-        (fields : List (Name × List Execution.ExecutableField)),
-        Execution.executeCollectedFields schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues fuel (projectionTargetResolverValue source) fields
-        =
-        Execution.executeCollectedFields schema base variableValues fuel source
-          fields
+      (leftArguments rightArguments : List Argument)
+      : ∀ (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
+            (fields : List (Name × List Execution.ExecutableField)),
+          Execution.executeCollectedFields schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues fuel (projectionTargetResolverValue source) fields
+          = Execution.executeCollectedFields schema base variableValues fuel source
+              fields
     | fuel, source, [] => by
         simp [Execution.executeCollectedFields]
     | fuel, source, (responseName, fields) :: rest => by
@@ -972,17 +928,16 @@ mutual
       (base : Execution.Resolvers ObjectRef)
       (variableValues : Execution.VariableValues)
       (targetParent leftField rightField : Name)
-      (leftArguments rightArguments : List Argument) :
-      ∀ (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
-        (responseName : Name) (fields : List Execution.ExecutableField),
-        Execution.executeField schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues fuel (projectionTargetResolverValue source)
-          responseName fields
-        =
-        Execution.executeField schema base variableValues fuel source
-          responseName fields
+      (leftArguments rightArguments : List Argument)
+      : ∀ (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
+            (responseName : Name) (fields : List Execution.ExecutableField),
+          Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues fuel (projectionTargetResolverValue source)
+            responseName fields
+          = Execution.executeField schema base variableValues fuel source
+              responseName fields
     | fuel, source, responseName, [] => by
         simp [Execution.executeField]
     | 0, source, responseName, field :: fields => by
@@ -1020,18 +975,17 @@ mutual
       (base : Execution.Resolvers ObjectRef)
       (variableValues : Execution.VariableValues)
       (targetParent leftField rightField : Name)
-      (leftArguments rightArguments : List Argument) :
-      ∀ (fuel : Nat) (fieldType : TypeRef)
-        (fields : List Execution.ExecutableField)
-        (value : Execution.ResolverValue ObjectRef),
-        Execution.completeValue schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues fuel fieldType fields
-          (projectionTargetResolverValue value)
-        =
-        Execution.completeValue schema base variableValues fuel fieldType
-          fields value
+      (leftArguments rightArguments : List Argument)
+      : ∀ (fuel : Nat) (fieldType : TypeRef)
+            (fields : List Execution.ExecutableField)
+            (value : Execution.ResolverValue ObjectRef),
+          Execution.completeValue schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues fuel fieldType fields
+            (projectionTargetResolverValue value)
+          = Execution.completeValue schema base variableValues fuel fieldType
+              fields value
     | 0, fieldType, fields, value => by
         simp [Execution.completeValue, Execution.outOfFuel]
     | fuel + 1, .nonNull inner, fields, value => by
@@ -1125,23 +1079,20 @@ mutual
             hlist
 
   theorem completeValueList_fieldPairOrDeepSuccessResolvers_projectionTargetResolverValue
-      {ObjectRef : Type} (schema : Schema)
-      (rootSelectionSet : List Selection)
-      (base : Execution.Resolvers ObjectRef)
-      (variableValues : Execution.VariableValues)
+      {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
+      (base : Execution.Resolvers ObjectRef) (variableValues : Execution.VariableValues)
       (targetParent leftField rightField : Name)
-      (leftArguments rightArguments : List Argument) :
-      ∀ (fuel : Nat) (itemType : TypeRef)
-        (fields : List Execution.ExecutableField)
-        (values : List (Execution.ResolverValue ObjectRef)),
-        Execution.completeValueList schema
-          (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-            targetParent leftField rightField leftArguments rightArguments)
-          variableValues fuel itemType fields
-          (values.map projectionTargetResolverValue)
-        =
-        Execution.completeValueList schema base variableValues fuel itemType
-          fields values
+      (leftArguments rightArguments : List Argument)
+      : ∀ (fuel : Nat) (itemType : TypeRef)
+            (fields : List Execution.ExecutableField)
+            (values : List (Execution.ResolverValue ObjectRef)),
+          Execution.completeValueList schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues fuel itemType fields
+            (values.map projectionTargetResolverValue)
+          = Execution.completeValueList schema base variableValues fuel itemType
+              fields values
     | fuel, itemType, fields, [] => by
         simp [Execution.completeValueList]
     | fuel, itemType, fields, value :: values => by
@@ -1156,22 +1107,18 @@ mutual
 end
 
 theorem executeSelectionSet_fieldPairOrDeepSuccessResolvers_projectionTargetResolverValue
-    {ObjectRef : Type} (schema : Schema)
-    (rootSelectionSet : List Selection)
-    (base : Execution.Resolvers ObjectRef)
-    (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField : Name)
-    (leftArguments rightArguments : List Argument)
-    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    Execution.executeSelectionSet schema
-      (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-        targetParent leftField rightField leftArguments rightArguments)
-      variableValues fuel parentType (projectionTargetResolverValue source)
-      selectionSet
-    =
-    Execution.executeSelectionSet schema base variableValues fuel parentType
-      source selectionSet := by
+    {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
+    (base : Execution.Resolvers ObjectRef) (variableValues : Execution.VariableValues)
+    (fuel : Nat) (targetParent leftField rightField : Name)
+    (leftArguments rightArguments : List Argument) (parentType : Name)
+    (source : Execution.ResolverValue ObjectRef) (selectionSet : List Selection)
+    : Execution.executeSelectionSet schema
+        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+          targetParent leftField rightField leftArguments rightArguments)
+        variableValues fuel parentType (projectionTargetResolverValue source)
+        selectionSet
+      = Execution.executeSelectionSet schema base variableValues fuel parentType
+          source selectionSet := by
   simp [Execution.executeSelectionSet, Execution.executeRootSelectionSet]
   rw [collectFields_projectionTargetResolverValue schema variableValues
     parentType source selectionSet]
@@ -1183,22 +1130,18 @@ theorem executeSelectionSet_fieldPairOrDeepSuccessResolvers_projectionTargetReso
         selectionSet)
 
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccessResolvers_projectionTargetResolverValue
-    {ObjectRef : Type} (schema : Schema)
-    (rootSelectionSet : List Selection)
-    (base : Execution.Resolvers ObjectRef)
-    (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField : Name)
-    (leftArguments rightArguments : List Argument)
-    (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (selectionSet : List Selection) :
-    Execution.executeSelectionSetAsResponse schema
-      (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-        targetParent leftField rightField leftArguments rightArguments)
-      variableValues fuel parentType (projectionTargetResolverValue source)
-      selectionSet
-    =
-    Execution.executeSelectionSetAsResponse schema base variableValues fuel parentType
-      source selectionSet := by
+    {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
+    (base : Execution.Resolvers ObjectRef) (variableValues : Execution.VariableValues)
+    (fuel : Nat) (targetParent leftField rightField : Name)
+    (leftArguments rightArguments : List Argument) (parentType : Name)
+    (source : Execution.ResolverValue ObjectRef) (selectionSet : List Selection)
+    : Execution.executeSelectionSetAsResponse schema
+        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+          targetParent leftField rightField leftArguments rightArguments)
+        variableValues fuel parentType (projectionTargetResolverValue source)
+        selectionSet
+      = Execution.executeSelectionSetAsResponse schema base variableValues fuel
+          parentType source selectionSet := by
   simp [Execution.executeSelectionSetAsResponse,
     executeSelectionSet_fieldPairOrDeepSuccessResolvers_projectionTargetResolverValue
       schema rootSelectionSet base variableValues fuel targetParent leftField
@@ -1212,30 +1155,29 @@ theorem executeField_fieldPairOrDeepSuccessResolvers_left_root
     (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
     (source : Execution.ResolverValue ObjectRef)
-    (childSelectionSet : List Selection) :
-    Argument.argumentsEquivalent arguments leftArguments ->
-    ∀ fuel,
-      Execution.executeField schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues fuel (projectionRootResolverValue source) responseName
-        [{
-          parentType := targetParent
-          responseName := responseName
-          fieldName := leftField
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.executeField schema base variableValues fuel source
-        responseName
-        [{
-          parentType := targetParent
-          responseName := responseName
-          fieldName := leftField
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }] := by
+    (childSelectionSet : List Selection)
+    : Argument.argumentsEquivalent arguments leftArguments
+      -> ∀ fuel,
+          Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues fuel (projectionRootResolverValue source) responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := leftField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = Execution.executeField schema base variableValues fuel source
+              responseName
+              [{
+                parentType := targetParent
+                responseName := responseName
+                fieldName := leftField
+                arguments := arguments
+                selectionSet := childSelectionSet
+              }] := by
   intro harguments
   intro fuel
   cases fuel with
@@ -1280,30 +1222,29 @@ theorem executeField_fieldPairOrDeepSuccessResolvers_right_root
     (targetParent leftField rightField responseName : Name)
     (leftArguments rightArguments arguments : List Argument)
     (source : Execution.ResolverValue ObjectRef)
-    (childSelectionSet : List Selection) :
-    Argument.argumentsEquivalent arguments rightArguments ->
-    ∀ fuel,
-      Execution.executeField schema
-        (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
-          targetParent leftField rightField leftArguments rightArguments)
-        variableValues fuel (projectionRootResolverValue source) responseName
-        [{
-          parentType := targetParent
-          responseName := responseName
-          fieldName := rightField
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }]
-      =
-      Execution.executeField schema base variableValues fuel source
-        responseName
-        [{
-          parentType := targetParent
-          responseName := responseName
-          fieldName := rightField
-          arguments := arguments
-          selectionSet := childSelectionSet
-        }] := by
+    (childSelectionSet : List Selection)
+    : Argument.argumentsEquivalent arguments rightArguments
+      -> ∀ fuel,
+          Execution.executeField schema
+            (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
+              targetParent leftField rightField leftArguments rightArguments)
+            variableValues fuel (projectionRootResolverValue source) responseName
+            [{
+              parentType := targetParent
+              responseName := responseName
+              fieldName := rightField
+              arguments := arguments
+              selectionSet := childSelectionSet
+            }]
+          = Execution.executeField schema base variableValues fuel source
+              responseName
+              [{
+                parentType := targetParent
+                responseName := responseName
+                fieldName := rightField
+                arguments := arguments
+                selectionSet := childSelectionSet
+              }] := by
   intro harguments
   intro fuel
   cases fuel with

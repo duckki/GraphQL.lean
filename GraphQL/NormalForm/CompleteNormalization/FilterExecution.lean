@@ -12,47 +12,44 @@ namespace CompleteNormalization
 variable {ObjectRef : Type}
 
 def executableFieldSelectionVarsInOperation
-    (operation : Operation) (field : Execution.ExecutableField) : Prop :=
-  ∀ varName, varName ∈ selectionSetBooleanVariables field.selectionSet ->
-    varName ∈ selectionSetBooleanVariables operation.selectionSet
+    (operation : Operation) (field : Execution.ExecutableField)
+    : Prop :=
+  ∀ varName,
+    varName ∈ selectionSetBooleanVariables field.selectionSet
+    -> varName ∈ selectionSetBooleanVariables operation.selectionSet
 
 def executableFieldsSelectionVarsInOperation
-    (operation : Operation) (fields : List Execution.ExecutableField) : Prop :=
-  ∀ field, field ∈ fields ->
-    executableFieldSelectionVarsInOperation operation field
+    (operation : Operation) (fields : List Execution.ExecutableField)
+    : Prop :=
+  ∀ field, field ∈ fields -> executableFieldSelectionVarsInOperation operation field
 
 def executableGroupsSelectionVarsInOperation
     (operation : Operation)
-    (groups : List (Name × List Execution.ExecutableField)) : Prop :=
-  ∀ group, group ∈ groups ->
-    executableFieldsSelectionVarsInOperation operation group.snd
+    (groups : List (Name × List Execution.ExecutableField))
+    : Prop :=
+  ∀ group,
+    group ∈ groups -> executableFieldsSelectionVarsInOperation operation group.snd
 
 theorem filterExecutableFieldBoolCase_parentType
-    (boolCase : BoolCase) (field : Execution.ExecutableField) :
-    (filterExecutableFieldBoolCase boolCase field).parentType =
-      field.parentType := by
+    (boolCase : BoolCase) (field : Execution.ExecutableField)
+    : (filterExecutableFieldBoolCase boolCase field).parentType = field.parentType := by
   rfl
 
 theorem filterExecutableFieldBoolCase_fieldName
-    (boolCase : BoolCase) (field : Execution.ExecutableField) :
-    (filterExecutableFieldBoolCase boolCase field).fieldName =
-      field.fieldName := by
+    (boolCase : BoolCase) (field : Execution.ExecutableField)
+    : (filterExecutableFieldBoolCase boolCase field).fieldName = field.fieldName := by
   rfl
 
 theorem filterExecutableFieldBoolCase_arguments
-    (boolCase : BoolCase) (field : Execution.ExecutableField) :
-    (filterExecutableFieldBoolCase boolCase field).arguments =
-      field.arguments := by
+    (boolCase : BoolCase) (field : Execution.ExecutableField)
+    : (filterExecutableFieldBoolCase boolCase field).arguments = field.arguments := by
   rfl
 
-theorem mergedFieldSelectionSet_map_filterExecutableFieldBoolCase
-    (boolCase : BoolCase) :
-    ∀ fields,
-      Execution.mergedFieldSelectionSet
+theorem mergedFieldSelectionSet_map_filterExecutableFieldBoolCase (boolCase : BoolCase)
+    : ∀ fields,
+        Execution.mergedFieldSelectionSet
           (fields.map (filterExecutableFieldBoolCase boolCase))
-        =
-      filterSelectionSetBoolCase boolCase
-        (Execution.mergedFieldSelectionSet fields)
+        = filterSelectionSetBoolCase boolCase (Execution.mergedFieldSelectionSet fields)
   | [] => by
       simp [Execution.mergedFieldSelectionSet, filterSelectionSetBoolCase]
   | field :: rest => by
@@ -62,13 +59,11 @@ theorem mergedFieldSelectionSet_map_filterExecutableFieldBoolCase
           rest,
         filterSelectionSetBoolCase_append]
 
-theorem selectionSetBooleanVariables_append_iff
-    (varName : BoolVar) :
-    ∀ left right,
-      varName ∈ selectionSetBooleanVariables (left ++ right)
-        ↔
-      varName ∈ selectionSetBooleanVariables left
-        ∨ varName ∈ selectionSetBooleanVariables right
+theorem selectionSetBooleanVariables_append_iff (varName : BoolVar)
+    : ∀ left right,
+        varName ∈ selectionSetBooleanVariables (left ++ right)
+        ↔ varName ∈ selectionSetBooleanVariables left
+          ∨ varName ∈ selectionSetBooleanVariables right
   | [], right => by
       simp [selectionSetBooleanVariables]
   | selection :: rest, right => by
@@ -90,14 +85,13 @@ theorem selectionSetBooleanVariables_append_iff
             | inr hrest => exact Or.inr (Or.inl hrest)
         | inr hright => exact Or.inr (Or.inr hright)
 
-theorem executableFieldsSelectionVarsInOperation_merged
-    (operation : Operation) :
-    ∀ fields,
-      executableFieldsSelectionVarsInOperation operation fields ->
-        ∀ varName,
-          varName ∈ selectionSetBooleanVariables
-              (Execution.mergedFieldSelectionSet fields) ->
-            varName ∈ selectionSetBooleanVariables operation.selectionSet
+theorem executableFieldsSelectionVarsInOperation_merged (operation : Operation)
+    : ∀ fields,
+        executableFieldsSelectionVarsInOperation operation fields
+        -> ∀ varName,
+            varName
+              ∈ selectionSetBooleanVariables (Execution.mergedFieldSelectionSet fields)
+            -> varName ∈ selectionSetBooleanVariables operation.selectionSet
   | [], _hfields, varName, hmem => by
       simp [Execution.mergedFieldSelectionSet,
         selectionSetBooleanVariables] at hmem
@@ -121,11 +115,11 @@ theorem executableFieldsSelectionVarsInOperation_merged
 theorem executableGroupsSelectionVarsInOperation_addExecutableGroup
     (operation : Operation)
     (group : Name × List Execution.ExecutableField)
-    (groups : List (Name × List Execution.ExecutableField)) :
-    executableFieldsSelectionVarsInOperation operation group.snd ->
-    executableGroupsSelectionVarsInOperation operation groups ->
-      executableGroupsSelectionVarsInOperation operation
-        (Execution.addExecutableGroup group groups) := by
+    (groups : List (Name × List Execution.ExecutableField))
+    : executableFieldsSelectionVarsInOperation operation group.snd
+      -> executableGroupsSelectionVarsInOperation operation groups
+      -> executableGroupsSelectionVarsInOperation operation
+          (Execution.addExecutableGroup group groups) := by
   intro hgroup hgroups
   induction groups with
   | nil =>
@@ -165,11 +159,11 @@ theorem executableGroupsSelectionVarsInOperation_addExecutableGroup
 
 theorem executableGroupsSelectionVarsInOperation_mergeExecutableGroups
     (operation : Operation)
-    (left right : List (Name × List Execution.ExecutableField)) :
-    executableGroupsSelectionVarsInOperation operation left ->
-    executableGroupsSelectionVarsInOperation operation right ->
-      executableGroupsSelectionVarsInOperation operation
-        (Execution.mergeExecutableGroups left right) := by
+    (left right : List (Name × List Execution.ExecutableField))
+    : executableGroupsSelectionVarsInOperation operation left
+      -> executableGroupsSelectionVarsInOperation operation right
+      -> executableGroupsSelectionVarsInOperation operation
+          (Execution.mergeExecutableGroups left right) := by
   intro hleft hright
   unfold Execution.mergeExecutableGroups
   induction right generalizing left with
@@ -186,13 +180,14 @@ theorem executableGroupsSelectionVarsInOperation_mergeExecutableGroups
 mutual
   theorem collectSelection_executableGroupsSelectionVarsInOperation
       (schema : Schema) (variableValues : Execution.VariableValues)
-      (operation : Operation) :
-      ∀ parentType (source : Execution.ResolverValue ObjectRef) selection,
-        (∀ varName, varName ∈ selectionBooleanVariables selection ->
-          varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-          executableGroupsSelectionVarsInOperation operation
-            (Execution.collectSelection schema variableValues parentType
-              source selection)
+      (operation : Operation)
+      : ∀ parentType (source : Execution.ResolverValue ObjectRef) selection,
+          (∀ varName,
+            varName ∈ selectionBooleanVariables selection
+            -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+          -> executableGroupsSelectionVarsInOperation operation
+              (Execution.collectSelection schema variableValues parentType
+                source selection)
     | parentType, source,
       .field responseName fieldName arguments directives selectionSet,
       hvars => by
@@ -254,13 +249,14 @@ mutual
 
   theorem collectFields_executableGroupsSelectionVarsInOperation
       (schema : Schema) (variableValues : Execution.VariableValues)
-      (operation : Operation) :
-      ∀ parentType (source : Execution.ResolverValue ObjectRef) selectionSet,
-        (∀ varName, varName ∈ selectionSetBooleanVariables selectionSet ->
-          varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-          executableGroupsSelectionVarsInOperation operation
-            (Execution.collectFields schema variableValues parentType source
-              selectionSet)
+      (operation : Operation)
+      : ∀ parentType (source : Execution.ResolverValue ObjectRef) selectionSet,
+          (∀ varName,
+            varName ∈ selectionSetBooleanVariables selectionSet
+            -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+          -> executableGroupsSelectionVarsInOperation operation
+              (Execution.collectFields schema variableValues parentType source
+                selectionSet)
     | _parentType, _source, [], _hvars => by
         simp [Execution.collectFields,
           executableGroupsSelectionVarsInOperation]
@@ -300,24 +296,23 @@ theorem executeCollectedFields_filterExecutableGroupsBoolCase_of_rec
     (variableValues : Execution.VariableValues)
     (operation : Operation) (boolCase : BoolCase)
     (depth : Nat) (source : Execution.ResolverValue ObjectRef)
-    (groups : List (Name × List Execution.ExecutableField)) :
-    (∀ childDepth, childDepth < depth ->
-      ∀ parentType (childSource : Execution.ResolverValue ObjectRef)
-        selectionSet,
-        (∀ varName, varName ∈ selectionSetBooleanVariables selectionSet ->
-          varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-          Execution.executeSelectionSet schema resolvers variableValues
-              childDepth parentType childSource
-              (filterSelectionSetBoolCase boolCase selectionSet)
-            =
-          Execution.executeSelectionSet schema resolvers variableValues
-            childDepth parentType childSource selectionSet) ->
-    executableGroupsSelectionVarsInOperation operation groups ->
-      Execution.executeCollectedFields schema resolvers variableValues depth
-          source (filterExecutableGroupsBoolCase boolCase groups)
-        =
-      Execution.executeCollectedFields schema resolvers variableValues depth
-        source groups := by
+    (groups : List (Name × List Execution.ExecutableField))
+    : (∀ childDepth,
+        childDepth < depth
+        -> ∀ parentType (childSource : Execution.ResolverValue ObjectRef) selectionSet,
+            (∀ varName,
+              varName ∈ selectionSetBooleanVariables selectionSet
+              -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+            -> Execution.executeSelectionSet schema resolvers variableValues
+                  childDepth parentType childSource
+                  (filterSelectionSetBoolCase boolCase selectionSet)
+                = Execution.executeSelectionSet schema resolvers variableValues
+                    childDepth parentType childSource selectionSet)
+      -> executableGroupsSelectionVarsInOperation operation groups
+      -> Execution.executeCollectedFields schema resolvers variableValues depth
+            source (filterExecutableGroupsBoolCase boolCase groups)
+          = Execution.executeCollectedFields schema resolvers variableValues depth
+              source groups := by
   intro hrec hgroups
   induction groups with
   | nil =>
@@ -413,19 +408,18 @@ theorem executeSelectionSet_filterSelectionSetBoolCase
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (operation : Operation) (boolCase : BoolCase)
-    (hagrees :
-      variableValuesAgreeWithCase variableValues boolCase
-        (operationBoolVars operation)) :
-    ∀ depth parentType (source : Execution.ResolverValue ObjectRef)
-      selectionSet,
-      (∀ varName, varName ∈ selectionSetBooleanVariables selectionSet ->
-        varName ∈ selectionSetBooleanVariables operation.selectionSet) ->
-        Execution.executeSelectionSet schema resolvers variableValues depth
-            parentType source
-            (filterSelectionSetBoolCase boolCase selectionSet)
-          =
-        Execution.executeSelectionSet schema resolvers variableValues depth
-          parentType source selectionSet := by
+    (hagrees
+      : variableValuesAgreeWithCase variableValues boolCase
+          (operationBoolVars operation))
+    : ∀ depth parentType (source : Execution.ResolverValue ObjectRef) selectionSet,
+        (∀ varName,
+          varName ∈ selectionSetBooleanVariables selectionSet
+          -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
+        -> Execution.executeSelectionSet schema resolvers variableValues depth
+              parentType source
+              (filterSelectionSetBoolCase boolCase selectionSet)
+            = Execution.executeSelectionSet schema resolvers variableValues depth
+                parentType source selectionSet := by
   intro depth
   induction depth using Nat.strongRecOn with
   | ind depth ih =>

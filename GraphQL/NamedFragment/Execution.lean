@@ -27,8 +27,8 @@ structure ExecutableField where
   availableFragments : List FragmentDefinition
 deriving Repr
 
-def addExecutableGroup (group : Name × List ExecutableField) :
-    List (Name × List ExecutableField) -> List (Name × List ExecutableField)
+def addExecutableGroup (group : Name × List ExecutableField)
+    : List (Name × List ExecutableField) -> List (Name × List ExecutableField)
   | [] => [group]
   | (responseName, fields) :: rest =>
       if responseName == group.fst then
@@ -36,8 +36,8 @@ def addExecutableGroup (group : Name × List ExecutableField) :
       else
         (responseName, fields) :: addExecutableGroup group rest
 
-def mergeExecutableGroups (left right : List (Name × List ExecutableField)) :
-    List (Name × List ExecutableField) :=
+def mergeExecutableGroups (left right : List (Name × List ExecutableField))
+    : List (Name × List ExecutableField) :=
   right.foldl (fun grouped group => addExecutableGroup group grouped) left
 
 mutual
@@ -133,8 +133,8 @@ end
 
 def collectSubfields
     (schema : Schema) (variableValues : VariableValues)
-    (objectType : Name) (objectValue : ResolverValue ObjectRef) :
-    List ExecutableField -> List (Name × List ExecutableField)
+    (objectType : Name) (objectValue : ResolverValue ObjectRef)
+    : List ExecutableField -> List (Name × List ExecutableField)
   | [] => []
   | field :: fields =>
       mergeExecutableGroups
@@ -146,25 +146,22 @@ mutual
   def executeCollectedFields
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) (fuel : Nat)
-      (source : ResolverValue ObjectRef) :
-      List (Name × List ExecutableField) ->
-        Result (List (Name × ResponseValue))
+      (source : ResolverValue ObjectRef)
+      : List (Name × List ExecutableField) -> Result (List (Name × ResponseValue))
     | [] => .ok ([], 0)
     | (responseName, fields) :: rest =>
         let head :=
-          executeField schema resolvers variableValues fuel source
-            responseName fields
+          executeField schema resolvers variableValues fuel source responseName fields
         let tail :=
-          executeCollectedFields schema resolvers variableValues
-            fuel source rest
+          executeCollectedFields schema resolvers variableValues fuel source rest
         GraphQL.Execution.Result.combine List.append head tail
 
   def executeField
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues) (fuel : Nat)
       (source : ResolverValue ObjectRef)
-      (responseName : Name) :
-      List ExecutableField -> Result (List (Name × ResponseValue))
+      (responseName : Name)
+      : List ExecutableField -> Result (List (Name × ResponseValue))
     | [] => .error 1
     | field :: fields =>
         match fuel with
@@ -174,11 +171,10 @@ mutual
             | none => .error 1
             | some fieldDefinition =>
                 match resolvers.resolve field.parentType field.fieldName
-                    field.arguments source with
+                        field.arguments source with
                 | none =>
                     GraphQL.Execution.singleFieldResult responseName
-                      (GraphQL.Execution.handleFieldError
-                        fieldDefinition.outputType)
+                      (GraphQL.Execution.handleFieldError fieldDefinition.outputType)
                 | some resolved =>
                     GraphQL.Execution.singleFieldResult responseName
                       (completeValue schema resolvers variableValues
@@ -187,16 +183,14 @@ mutual
 
   def completeValue
       (schema : Schema) (resolvers : Resolvers ObjectRef)
-      (variableValues : VariableValues) :
-      Nat -> TypeRef -> List ExecutableField ->
-        ResolverValue ObjectRef ->
-        Result ResponseValue
+      (variableValues : VariableValues)
+      : Nat -> TypeRef -> List ExecutableField -> ResolverValue ObjectRef
+        -> Result ResponseValue
     | 0, _fieldType, _fields, _value =>
         GraphQL.Execution.outOfFuel
     | fuel, .nonNull inner, fields, value =>
         GraphQL.Execution.nonNullCompletion
-          (completeValue schema resolvers variableValues
-            fuel inner fields value)
+          (completeValue schema resolvers variableValues fuel inner fields value)
     | _fuel + 1, _fieldType, _fields, .null =>
         .ok (.null, 0)
     | _fuel + 1, .named typeName, _fields, .scalar value =>
@@ -204,8 +198,10 @@ mutual
           .error 1
         else
           .ok (.scalar value, 0)
-    | fuel + 1, .named parentType, fields,
-        source@(.object runtimeType _ref) =>
+    | fuel + 1,
+      .named parentType,
+      fields,
+      source@(.object runtimeType _ref) =>
         if schema.typeIncludesObjectBool parentType runtimeType then
           let completed :=
             executeCollectedFields schema resolvers variableValues fuel
@@ -217,8 +213,7 @@ mutual
           .error 1
     | fuel + 1, .list inner, fields, .list values =>
         let completed :=
-          completeValueList schema resolvers variableValues
-            fuel inner fields values
+          completeValueList schema resolvers variableValues fuel inner fields values
         GraphQL.Execution.catchBubbleAsNull
           GraphQL.Execution.ResponseValue.list completed
     | _fuel + 1, .named _typeName, _fields, .list _values =>
@@ -230,37 +225,35 @@ mutual
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues)
       (fuel : Nat) (itemType : TypeRef)
-      (fields : List ExecutableField) :
-      List (ResolverValue ObjectRef) -> Result (List ResponseValue)
+      (fields : List ExecutableField)
+      : List (ResolverValue ObjectRef) -> Result (List ResponseValue)
     | [] => .ok ([], 0)
     | value :: values =>
-      let head :=
-        completeValue schema resolvers variableValues
-          fuel itemType fields value
-      let tail :=
-        completeValueList schema resolvers variableValues
-          fuel itemType fields values
-      GraphQL.Execution.Result.combine List.cons head tail
+        let head :=
+          completeValue schema resolvers variableValues fuel itemType fields value
+        let tail :=
+          completeValueList schema resolvers variableValues fuel itemType fields values
+        GraphQL.Execution.Result.combine List.cons head tail
 end
 
 def executeRootSelectionSet
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues)
     (fuel : Nat) (parentType : Name) (source : ResolverValue ObjectRef)
-    (fragments : List FragmentDefinition) :
-    List Selection -> Result (List (Name × ResponseValue))
+    (fragments : List FragmentDefinition)
+    : List Selection -> Result (List (Name × ResponseValue))
   | selectionSet =>
       executeCollectedFields schema resolvers variableValues
         fuel source
-        (collectFields schema variableValues fragments parentType source
-          selectionSet)
+        (collectFields schema variableValues fragments parentType source selectionSet)
 
 def executeQueryFuelBound (operation : Operation) : Nat :=
   operation.size * 3 + 1
 
 def rootSourceAppliesBool
     (schema : Schema) (operation : Operation)
-    (source : ResolverValue ObjectRef) : Bool :=
+    (source : ResolverValue ObjectRef)
+    : Bool :=
   match GraphQL.Execution.runtimeObjectType? source with
   | some objectName => schema.typeIncludesObjectBool operation.rootType objectName
   | none => false
@@ -268,7 +261,8 @@ def rootSourceAppliesBool
 def executeQueryWithFuel
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
-    (fuel : Nat) (source : ResolverValue ObjectRef) : Response :=
+    (fuel : Nat) (source : ResolverValue ObjectRef)
+    : Response :=
   if rootSourceAppliesBool schema operation source then
     let completed :=
       executeRootSelectionSet schema resolvers variableValues
@@ -283,7 +277,8 @@ def executeQueryWithFuel
 def executeQuery
     (schema : Schema) (resolvers : Resolvers ObjectRef)
     (variableValues : VariableValues) (operation : Operation)
-    (source : ResolverValue ObjectRef) : Response :=
+    (source : ResolverValue ObjectRef)
+    : Response :=
   executeQueryWithFuel schema resolvers variableValues operation
     (executeQueryFuelBound operation) source
 
@@ -291,18 +286,16 @@ end Execution
 
 namespace Semantics
 
-def operationsEquivalent (schema : Schema)
-    (left right : Operation) : Prop :=
+def operationsEquivalent (schema : Schema) (left right : Operation) : Prop :=
   ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
-    variableValues fuel (source : Execution.ResolverValue ObjectRef),
+      variableValues fuel (source : Execution.ResolverValue ObjectRef),
     Execution.executeQueryWithFuel schema resolvers variableValues left fuel source
-      =
-    Execution.executeQueryWithFuel schema resolvers variableValues right fuel source
+    = Execution.executeQueryWithFuel schema resolvers variableValues right fuel source
 
-def operationsSemanticallyEquivalent (schema : Schema)
-    (left right : Operation) : Prop :=
+def operationsSemanticallyEquivalent (schema : Schema) (left right : Operation)
+    : Prop :=
   ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
-    variableValues fuel (source : Execution.ResolverValue ObjectRef),
+      variableValues fuel (source : Execution.ResolverValue ObjectRef),
     GraphQL.Execution.Response.semanticEquivalent
       (Execution.executeQueryWithFuel schema resolvers variableValues left fuel source)
       (Execution.executeQueryWithFuel schema resolvers variableValues right fuel source)

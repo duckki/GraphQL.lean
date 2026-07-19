@@ -16,107 +16,118 @@ namespace GroundTypeNormalization
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_of_field_children
     (schema : Schema) (rootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType
-      sourceRuntimeType : Name)
-    (leftArguments rightArguments : List Argument)
-    {selectionSet : List Selection}
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField parentType sourceRuntimeType : Name)
+    (leftArguments rightArguments : List Argument) {selectionSet : List Selection}
     {responseName fieldName : Name} {arguments : List Argument}
-    {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection}
-    {fieldDefinition : FieldDefinition} :
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = true ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = false ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-        ∃ fieldDefinition,
-          schema.lookupField parentType fieldName = some fieldDefinition
-            ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
-            ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                schema = false
-              ∨ ∃ childRuntimeType responseFields childErrors,
-                (((objectTypeNameBool schema
-                        fieldDefinition.outputType.namedType = true
-                      ∧ childRuntimeType =
-                        fieldDefinition.outputType.namedType)
-                    ∨
-                    ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                        schema = true
-                      ∧ objectTypeNameBool schema
-                          fieldDefinition.outputType.namedType = false
-                      ∧ abstractRuntimeForFieldHeadDeep? schema parentType
-                          fieldName arguments parentType rootSelectionSet =
-                        some childRuntimeType))
-                  ∧ schema.typeIncludesObjectBool
-                      fieldDefinition.outputType.namedType childRuntimeType =
-                    true
-                  ∧ Execution.executeSelectionSetAsResponse schema
-                      (fieldPairProbeResolvers schema rootSelectionSet
-                        targetParent leftField rightField leftArguments
-                        rightArguments)
-                      variableValues
-                      (fuel - leafProbeFuel fieldDefinition.outputType)
-                      childRuntimeType
-                      (.object childRuntimeType (some FieldPairProbeTag.left))
-                      childSelectionSet =
-                    ({ data := Execution.ResponseValue.object responseFields, errors := childErrors } :
-                      Execution.Response)))) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-        ∃ fieldDefinition,
-          schema.lookupField parentType fieldName = some fieldDefinition
-            ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
-            ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                schema = false
-              ∨ ∃ childRuntimeType responseFields childErrors,
-                (((objectTypeNameBool schema
-                        fieldDefinition.outputType.namedType = true
-                      ∧ childRuntimeType =
-                        fieldDefinition.outputType.namedType)
-                    ∨
-                    ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                        schema = true
-                      ∧ objectTypeNameBool schema
-                          fieldDefinition.outputType.namedType = false
-                      ∧ abstractRuntimeForFieldHeadDeep? schema parentType
-                          fieldName arguments parentType rootSelectionSet =
-                        some childRuntimeType))
-                  ∧ schema.typeIncludesObjectBool
-                      fieldDefinition.outputType.namedType childRuntimeType =
-                    true
-                  ∧ Execution.executeSelectionSetAsResponse schema
-                      (fieldPairProbeResolvers schema rootSelectionSet
-                        targetParent leftField rightField leftArguments
-                        rightArguments)
-                      variableValues
-                      (fuel - leafProbeFuel fieldDefinition.outputType)
-                      childRuntimeType
-                      (.object childRuntimeType (some FieldPairProbeTag.right))
-                      childSelectionSet =
-                    ({ data := Execution.ResponseValue.object responseFields, errors := childErrors } :
-                      Execution.Response)))) ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairProbeResolvers schema rootSelectionSet targetParent
-            leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1) parentType
-          (.object sourceRuntimeType (some FieldPairProbeTag.left))
-          selectionSet).data
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairProbeResolvers schema rootSelectionSet targetParent
-            leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1) parentType
-          (.object sourceRuntimeType (some FieldPairProbeTag.right))
-          selectionSet).data := by
+    {directives : List DirectiveApplication} {childSelectionSet : List Selection}
+    {fieldDefinition : FieldDefinition}
+    : selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> ∃ fieldDefinition,
+                schema.lookupField parentType fieldName = some fieldDefinition
+                ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
+                ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                        schema
+                      = false
+                    ∨ ∃ childRuntimeType responseFields childErrors,
+                        (((objectTypeNameBool schema
+                                  fieldDefinition.outputType.namedType
+                                = true
+                              ∧ childRuntimeType = fieldDefinition.outputType.namedType)
+                            ∨ ((TypeRef.named
+                                    fieldDefinition.outputType.namedType).isCompositeBool
+                                    schema
+                                  = true
+                                ∧ objectTypeNameBool schema
+                                    fieldDefinition.outputType.namedType
+                                  = false
+                                ∧ abstractRuntimeForFieldHeadDeep? schema parentType
+                                    fieldName arguments parentType rootSelectionSet
+                                  = some childRuntimeType))
+                          ∧ schema.typeIncludesObjectBool
+                              fieldDefinition.outputType.namedType childRuntimeType
+                            = true
+                          ∧ Execution.executeSelectionSetAsResponse schema
+                              (fieldPairProbeResolvers schema rootSelectionSet
+                                targetParent leftField rightField leftArguments
+                                rightArguments)
+                              variableValues
+                              (fuel - leafProbeFuel fieldDefinition.outputType)
+                              childRuntimeType
+                              (.object childRuntimeType (some FieldPairProbeTag.left))
+                              childSelectionSet
+                            = ({
+                                  data := Execution.ResponseValue.object responseFields,
+                                  errors := childErrors
+                                }
+                                : Execution.Response))))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> ∃ fieldDefinition,
+                schema.lookupField parentType fieldName = some fieldDefinition
+                ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
+                ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                        schema
+                      = false
+                    ∨ ∃ childRuntimeType responseFields childErrors,
+                        (((objectTypeNameBool schema
+                                  fieldDefinition.outputType.namedType
+                                = true
+                              ∧ childRuntimeType = fieldDefinition.outputType.namedType)
+                            ∨ ((TypeRef.named
+                                    fieldDefinition.outputType.namedType).isCompositeBool
+                                    schema
+                                  = true
+                                ∧ objectTypeNameBool schema
+                                    fieldDefinition.outputType.namedType
+                                  = false
+                                ∧ abstractRuntimeForFieldHeadDeep? schema parentType
+                                    fieldName arguments parentType rootSelectionSet
+                                  = some childRuntimeType))
+                          ∧ schema.typeIncludesObjectBool
+                              fieldDefinition.outputType.namedType childRuntimeType
+                            = true
+                          ∧ Execution.executeSelectionSetAsResponse schema
+                              (fieldPairProbeResolvers schema rootSelectionSet
+                                targetParent leftField rightField leftArguments
+                                rightArguments)
+                              variableValues
+                              (fuel - leafProbeFuel fieldDefinition.outputType)
+                              childRuntimeType
+                              (.object childRuntimeType (some FieldPairProbeTag.right))
+                              childSelectionSet
+                            = ({
+                                  data := Execution.ResponseValue.object responseFields,
+                                  errors := childErrors
+                                }
+                                : Execution.Response))))
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues (fuel + 1) parentType
+              (.object sourceRuntimeType (some FieldPairProbeTag.left))
+              selectionSet).data
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues (fuel + 1) parentType
+              (.object sourceRuntimeType (some FieldPairProbeTag.right))
+              selectionSet).data := by
   intro hfree hnormal hobject hmem hlookup hfuel hleaf hleftChildren
     hrightChildren
   let resolvers :=
@@ -224,107 +235,110 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_of_field
 theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_of_field_ok
     (schema : Schema) (rootSelectionSet : List Selection)
     (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType
-      sourceRuntimeType : Name)
+    (fuel : Nat) (targetParent leftField rightField parentType sourceRuntimeType : Name)
     (leftArguments rightArguments : List Argument)
     {selectionSet : List Selection}
     {responseName fieldName : Name} {arguments : List Argument}
     {directives : List DirectiveApplication}
     {childSelectionSet : List Selection}
     {fieldDefinition : FieldDefinition} {runtimeType : Name}
-    {leftChildFields rightChildFields :
-      List (Name × Execution.ResponseValue)}
-    {leftChildErrors rightChildErrors : Nat} :
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    objectTypeNameBool schema parentType = true ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-        ∧ runtimeType = fieldDefinition.outputType.namedType)
-      ∨
-      ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = true
-        ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-          false
-        ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-          arguments parentType rootSelectionSet = some runtimeType)) ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairProbeResolvers schema rootSelectionSet targetParent
-          leftField rightField leftArguments rightArguments)
-        variableValues
-        (fuel - leafProbeFuel fieldDefinition.outputType)
-        runtimeType (.object runtimeType (some FieldPairProbeTag.left))
-        childSelectionSet =
-      ({ data := Execution.ResponseValue.object leftChildFields, errors := leftChildErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairProbeResolvers schema rootSelectionSet targetParent
-          leftField rightField leftArguments rightArguments)
-        variableValues
-        (fuel - leafProbeFuel fieldDefinition.outputType)
-        runtimeType (.object runtimeType (some FieldPairProbeTag.right))
-        childSelectionSet =
-      ({ data := Execution.ResponseValue.object rightChildFields, errors := rightChildErrors } :
-        Execution.Response) ->
-    ¬ Execution.ResponseValue.semanticEquivalent
-      (Execution.ResponseValue.object leftChildFields)
-      (Execution.ResponseValue.object rightChildFields) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema
+    {leftChildFields rightChildFields : List (Name × Execution.ResponseValue)}
+    {leftChildErrors rightChildErrors : Nat}
+    : selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+            ∧ runtimeType = fieldDefinition.outputType.namedType)
+          ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+                = true
+              ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+              ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                  arguments parentType rootSelectionSet
+                = some runtimeType))
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> Execution.executeSelectionSetAsResponse schema
             (fieldPairProbeResolvers schema rootSelectionSet targetParent
               leftField rightField leftArguments rightArguments)
-            variableValues (fuel + 1)
-            (.object sourceRuntimeType (some FieldPairProbeTag.left))
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ selectionSet ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema
+            variableValues
+            (fuel - leafProbeFuel fieldDefinition.outputType)
+            runtimeType (.object runtimeType (some FieldPairProbeTag.left))
+            childSelectionSet
+          = ({
+                data := Execution.ResponseValue.object leftChildFields,
+                errors := leftChildErrors
+              }
+              : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema
             (fieldPairProbeResolvers schema rootSelectionSet targetParent
               leftField rightField leftArguments rightArguments)
-            variableValues (fuel + 1)
-            (.object sourceRuntimeType (some FieldPairProbeTag.right))
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairProbeResolvers schema rootSelectionSet targetParent
-            leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1) parentType
-          (.object sourceRuntimeType (some FieldPairProbeTag.left))
-          selectionSet).data
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairProbeResolvers schema rootSelectionSet targetParent
-            leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1) parentType
-          (.object sourceRuntimeType (some FieldPairProbeTag.right))
-          selectionSet).data := by
+            variableValues
+            (fuel - leafProbeFuel fieldDefinition.outputType)
+            runtimeType (.object runtimeType (some FieldPairProbeTag.right))
+            childSelectionSet
+          = ({
+                data := Execution.ResponseValue.object rightChildFields,
+                errors := rightChildErrors
+              }
+              : Execution.Response)
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.ResponseValue.object leftChildFields)
+            (Execution.ResponseValue.object rightChildFields)
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues (fuel + 1)
+                  (.object sourceRuntimeType (some FieldPairProbeTag.left))
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues (fuel + 1)
+                  (.object sourceRuntimeType (some FieldPairProbeTag.right))
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues (fuel + 1) parentType
+              (.object sourceRuntimeType (some FieldPairProbeTag.left))
+              selectionSet).data
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues (fuel + 1) parentType
+              (.object sourceRuntimeType (some FieldPairProbeTag.right))
+              selectionSet).data := by
   intro hfree hnormal hobject hmem hlookup hruntime hinclude hfuel
     hleftChildResponse hrightChildResponse hchildNot hleftFieldOk
     hrightFieldOk
@@ -418,122 +432,125 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_of_fiel
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_pair_of_field_ok
     (schema : Schema) (rootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField parentType
-      sourceRuntimeType : Name)
+    (variableValues : Execution.VariableValues) (fuel : Nat)
+    (targetParent leftField rightField parentType sourceRuntimeType : Name)
     (targetLeftArguments targetRightArguments : List Argument)
-    {left right : List Selection}
-    {responseName fieldName : Name}
+    {left right : List Selection} {responseName fieldName : Name}
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
     {leftChildSelectionSet rightChildSelectionSet : List Selection}
     {fieldDefinition : FieldDefinition} {runtimeType : Name}
-    {leftChildFields rightChildFields :
-      List (Name × Execution.ResponseValue)}
-    {leftChildErrors rightChildErrors : Nat} :
-    selectionSetDirectiveFree left ->
-    selectionSetDirectiveFree right ->
-    selectionSetNormal schema parentType left ->
-    selectionSetNormal schema parentType right ->
-    objectTypeNameBool schema parentType = true ->
-    Selection.field responseName fieldName leftArguments leftDirectives
-      leftChildSelectionSet ∈ left ->
-    Selection.field responseName fieldName rightArguments rightDirectives
-      rightChildSelectionSet ∈ right ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-        ∧ runtimeType = fieldDefinition.outputType.namedType)
-      ∨
-      ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = true
-        ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-          false
-        ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-          leftArguments parentType rootSelectionSet = some runtimeType)) ->
-    ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-        ∧ runtimeType = fieldDefinition.outputType.namedType)
-      ∨
-      ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-          schema = true
-        ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-          false
-        ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-          rightArguments parentType rootSelectionSet = some runtimeType)) ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-    leafProbeFuel fieldDefinition.outputType ≤ fuel ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairProbeResolvers schema rootSelectionSet targetParent
-          leftField rightField targetLeftArguments targetRightArguments)
-        variableValues
-        (fuel - leafProbeFuel fieldDefinition.outputType)
-        runtimeType (.object runtimeType (some FieldPairProbeTag.left))
-        leftChildSelectionSet =
-      ({ data := Execution.ResponseValue.object leftChildFields, errors := leftChildErrors } :
-        Execution.Response) ->
-    Execution.executeSelectionSetAsResponse schema
-        (fieldPairProbeResolvers schema rootSelectionSet targetParent
-          leftField rightField targetLeftArguments targetRightArguments)
-        variableValues
-        (fuel - leafProbeFuel fieldDefinition.outputType)
-        runtimeType (.object runtimeType (some FieldPairProbeTag.right))
-        rightChildSelectionSet =
-      ({ data := Execution.ResponseValue.object rightChildFields, errors := rightChildErrors } :
-        Execution.Response) ->
-    ¬ Execution.ResponseValue.semanticEquivalent
-      (Execution.ResponseValue.object leftChildFields)
-      (Execution.ResponseValue.object rightChildFields) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ left ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema
+    {leftChildFields rightChildFields : List (Name × Execution.ResponseValue)}
+    {leftChildErrors rightChildErrors : Nat}
+    : selectionSetDirectiveFree left
+      -> selectionSetDirectiveFree right
+      -> selectionSetNormal schema parentType left
+      -> selectionSetNormal schema parentType right
+      -> objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName leftArguments leftDirectives
+            leftChildSelectionSet
+          ∈ left
+      -> Selection.field responseName fieldName rightArguments rightDirectives
+            rightChildSelectionSet
+          ∈ right
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+            ∧ runtimeType = fieldDefinition.outputType.namedType)
+          ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+                = true
+              ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+              ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                  leftArguments parentType rootSelectionSet
+                = some runtimeType))
+      -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+            ∧ runtimeType = fieldDefinition.outputType.namedType)
+          ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+                = true
+              ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+              ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                  rightArguments parentType rootSelectionSet
+                = some runtimeType))
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> leafProbeFuel fieldDefinition.outputType ≤ fuel
+      -> Execution.executeSelectionSetAsResponse schema
             (fieldPairProbeResolvers schema rootSelectionSet targetParent
               leftField rightField targetLeftArguments targetRightArguments)
-            variableValues (fuel + 1)
-            (.object sourceRuntimeType (some FieldPairProbeTag.left))
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-    (∀ responseName fieldName arguments directives childSelectionSet,
-      Selection.field responseName fieldName arguments directives
-          childSelectionSet ∈ right ->
-        ∃ responseValue fieldErrors,
-          Execution.executeField schema
+            variableValues
+            (fuel - leafProbeFuel fieldDefinition.outputType)
+            runtimeType (.object runtimeType (some FieldPairProbeTag.left))
+            leftChildSelectionSet
+          = ({
+                data := Execution.ResponseValue.object leftChildFields,
+                errors := leftChildErrors
+              }
+              : Execution.Response)
+      -> Execution.executeSelectionSetAsResponse schema
             (fieldPairProbeResolvers schema rootSelectionSet targetParent
               leftField rightField targetLeftArguments targetRightArguments)
-            variableValues (fuel + 1)
-            (.object sourceRuntimeType (some FieldPairProbeTag.right))
-            responseName
-            [{
-              parentType := parentType,
-              responseName := responseName,
-              fieldName := fieldName,
-              arguments := arguments,
-              selectionSet := childSelectionSet
-            }]
-          =
-          .ok ([(responseName, responseValue)], fieldErrors)) ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairProbeResolvers schema rootSelectionSet targetParent
-            leftField rightField targetLeftArguments targetRightArguments)
-          variableValues (fuel + 1) parentType
-          (.object sourceRuntimeType (some FieldPairProbeTag.left))
-          left).data
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairProbeResolvers schema rootSelectionSet targetParent
-            leftField rightField targetLeftArguments targetRightArguments)
-          variableValues (fuel + 1) parentType
-          (.object sourceRuntimeType (some FieldPairProbeTag.right))
-          right).data := by
+            variableValues
+            (fuel - leafProbeFuel fieldDefinition.outputType)
+            runtimeType (.object runtimeType (some FieldPairProbeTag.right))
+            rightChildSelectionSet
+          = ({
+                data := Execution.ResponseValue.object rightChildFields,
+                errors := rightChildErrors
+              }
+              : Execution.Response)
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.ResponseValue.object leftChildFields)
+            (Execution.ResponseValue.object rightChildFields)
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField targetLeftArguments targetRightArguments)
+                  variableValues (fuel + 1)
+                  (.object sourceRuntimeType (some FieldPairProbeTag.left))
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> (∀ responseName fieldName arguments directives childSelectionSet,
+            Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+            -> ∃ responseValue fieldErrors,
+                Execution.executeField schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField targetLeftArguments targetRightArguments)
+                  variableValues (fuel + 1)
+                  (.object sourceRuntimeType (some FieldPairProbeTag.right))
+                  responseName
+                  [{
+                    parentType := parentType,
+                    responseName := responseName,
+                    fieldName := fieldName,
+                    arguments := arguments,
+                    selectionSet := childSelectionSet
+                  }]
+                = .ok ([(responseName, responseValue)], fieldErrors))
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                leftField rightField targetLeftArguments targetRightArguments)
+              variableValues (fuel + 1) parentType
+              (.object sourceRuntimeType (some FieldPairProbeTag.left))
+              left).data
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                leftField rightField targetLeftArguments targetRightArguments)
+              variableValues (fuel + 1) parentType
+              (.object sourceRuntimeType (some FieldPairProbeTag.right))
+              right).data := by
   intro hleftFree hrightFree hleftNormal hrightNormal hobject hleftMem
     hrightMem hlookup hleftRuntime hrightRuntime hinclude hfuel
     hleftChildResponse
@@ -629,161 +646,173 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_pair_of
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_pair_of_valid_normal_child_promoted_fuel_ge
     (schema : Schema) (rootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ parentType leftVariableDefinitions rightVariableDefinitions
-      (left right : List Selection) fuel sourceRuntimeType targetParent
-      leftField rightField
-      (targetLeftArguments targetRightArguments : List Argument)
-      {responseName fieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection}
-      {fieldDefinition : FieldDefinition} {runtimeType : Name},
-      Validation.selectionSetValid schema leftVariableDefinitions parentType
-        left ->
-      Validation.selectionSetValid schema rightVariableDefinitions parentType
-        right ->
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema parentType left ->
-      selectionSetNormal schema parentType right ->
-      objectTypeNameBool schema parentType = true ->
-      schema.typeIncludesObjectBool parentType sourceRuntimeType = true ->
-      schema.isCompositeType fieldDefinition.outputType.namedType ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField parentType left = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField parentType right = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField fieldDefinition.outputType.namedType
-            leftChildSelectionSet = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField fieldDefinition.outputType.namedType
-            rightChildSelectionSet = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        parentType left ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        parentType right ->
-      selectionSetDeepProbeFuel schema parentType left ≤ fuel ->
-      selectionSetDeepProbeFuel schema parentType right ≤ fuel ->
-      Selection.field responseName fieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName fieldName rightArguments rightDirectives
-        rightChildSelectionSet ∈ right ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-      ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-          ∧ runtimeType = fieldDefinition.outputType.namedType)
-        ∨
-        ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-            schema = true
-          ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-            false
-          ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-            leftArguments parentType rootSelectionSet = some runtimeType)) ->
-      ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
-          ∧ runtimeType = fieldDefinition.outputType.namedType)
-        ∨
-        ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-            schema = true
-          ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType =
-            false
-          ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-            rightArguments parentType rootSelectionSet = some runtimeType)) ->
-      schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-        runtimeType = true ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairProbeResolvers schema rootSelectionSet targetParent
-            leftField rightField targetLeftArguments targetRightArguments)
-          variableValues
-          (fuel - leafProbeFuel fieldDefinition.outputType)
-          runtimeType (.object runtimeType (some FieldPairProbeTag.left))
-          leftChildSelectionSet).data
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairProbeResolvers schema rootSelectionSet targetParent
-            leftField rightField targetLeftArguments targetRightArguments)
-          variableValues
-          (fuel - leafProbeFuel fieldDefinition.outputType)
-          runtimeType (.object runtimeType (some FieldPairProbeTag.right))
-          rightChildSelectionSet).data ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField targetLeftArguments targetRightArguments)
-            variableValues (fuel + 1) parentType
-            (.object sourceRuntimeType (some FieldPairProbeTag.left))
-            left).data
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField targetLeftArguments targetRightArguments)
-            variableValues (fuel + 1) parentType
-            (.object sourceRuntimeType (some FieldPairProbeTag.right))
-            right).data := by
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ parentType leftVariableDefinitions rightVariableDefinitions
+            (left right : List Selection) fuel sourceRuntimeType targetParent
+            leftField rightField
+            (targetLeftArguments targetRightArguments : List Argument)
+            {responseName fieldName : Name}
+            {leftArguments rightArguments : List Argument}
+            {leftDirectives rightDirectives : List DirectiveApplication}
+            {leftChildSelectionSet rightChildSelectionSet : List Selection}
+            {fieldDefinition : FieldDefinition} {runtimeType : Name},
+          Validation.selectionSetValid schema leftVariableDefinitions parentType left
+          -> Validation.selectionSetValid schema rightVariableDefinitions parentType
+              right
+          -> selectionSetDirectiveFree left
+          -> selectionSetDirectiveFree right
+          -> selectionSetNormal schema parentType left
+          -> selectionSetNormal schema parentType right
+          -> objectTypeNameBool schema parentType = true
+          -> schema.typeIncludesObjectBool parentType sourceRuntimeType = true
+          -> schema.isCompositeType fieldDefinition.outputType.namedType
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField parentType left
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField parentType right
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField fieldDefinition.outputType.namedType
+                      leftChildSelectionSet
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField fieldDefinition.outputType.namedType
+                      rightChildSelectionSet
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              parentType left
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              parentType right
+          -> selectionSetDeepProbeFuel schema parentType left ≤ fuel
+          -> selectionSetDeepProbeFuel schema parentType right ≤ fuel
+          -> Selection.field responseName fieldName leftArguments leftDirectives
+                leftChildSelectionSet
+              ∈ left
+          -> Selection.field responseName fieldName rightArguments rightDirectives
+                rightChildSelectionSet
+              ∈ right
+          -> schema.lookupField parentType fieldName = some fieldDefinition
+          -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+                ∧ runtimeType = fieldDefinition.outputType.namedType)
+              ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
+                    = false
+                  ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                      leftArguments parentType rootSelectionSet
+                    = some runtimeType))
+          -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+                ∧ runtimeType = fieldDefinition.outputType.namedType)
+              ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
+                    = false
+                  ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                      rightArguments parentType rootSelectionSet
+                    = some runtimeType))
+          -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
+                runtimeType
+              = true
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField targetLeftArguments targetRightArguments)
+                  variableValues
+                  (fuel - leafProbeFuel fieldDefinition.outputType)
+                  runtimeType (.object runtimeType (some FieldPairProbeTag.left))
+                  leftChildSelectionSet).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField targetLeftArguments targetRightArguments)
+                  variableValues
+                  (fuel - leafProbeFuel fieldDefinition.outputType)
+                  runtimeType (.object runtimeType (some FieldPairProbeTag.right))
+                  rightChildSelectionSet).data
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField targetLeftArguments targetRightArguments)
+                  variableValues (fuel + 1) parentType
+                  (.object sourceRuntimeType (some FieldPairProbeTag.left))
+                  left).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField targetLeftArguments targetRightArguments)
+                  variableValues (fuel + 1) parentType
+                  (.object sourceRuntimeType (some FieldPairProbeTag.right))
+                  right).data := by
   intro hschema parentType leftVariableDefinitions rightVariableDefinitions
     left right fuel sourceRuntimeType targetParent leftField rightField
     targetLeftArguments targetRightArguments responseName fieldName
@@ -1027,46 +1056,49 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_pair_of
 theorem responseData_not_semanticEquivalent_of_tagged_abstract_inlineFragment_body
     (schema : Schema) (rootSelectionSet : List Selection)
     (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField normalParentType
-      runtimeType : Name)
+    (fuel : Nat) (targetParent leftField rightField normalParentType runtimeType : Name)
     (leftArguments rightArguments : List Argument)
-    {pref suffix bodySelectionSet : List Selection} :
-    objectTypeNameBool schema normalParentType = false ->
-    objectTypeNameBool schema runtimeType = true ->
-    selectionSetDirectiveFree
-      (pref ++ Selection.inlineFragment (some runtimeType) []
-        bodySelectionSet :: suffix) ->
-    selectionSetNormal schema normalParentType
-      (pref ++ Selection.inlineFragment (some runtimeType) []
-        bodySelectionSet :: suffix) ->
-    ¬ Execution.ResponseValue.semanticEquivalent
-      (Execution.executeSelectionSetAsResponse schema
-        (fieldPairProbeResolvers schema rootSelectionSet targetParent
-          leftField rightField leftArguments rightArguments)
-        variableValues (fuel + 1) runtimeType
-        (.object runtimeType (some FieldPairProbeTag.left))
-        bodySelectionSet).data
-      (Execution.executeSelectionSetAsResponse schema
-        (fieldPairProbeResolvers schema rootSelectionSet targetParent
-          leftField rightField leftArguments rightArguments)
-        variableValues (fuel + 1) runtimeType
-        (.object runtimeType (some FieldPairProbeTag.right))
-        bodySelectionSet).data ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairProbeResolvers schema rootSelectionSet targetParent
-            leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1) runtimeType
-          (.object runtimeType (some FieldPairProbeTag.left))
-          (pref ++ Selection.inlineFragment (some runtimeType) []
-            bodySelectionSet :: suffix)).data
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairProbeResolvers schema rootSelectionSet targetParent
-            leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1) runtimeType
-          (.object runtimeType (some FieldPairProbeTag.right))
-          (pref ++ Selection.inlineFragment (some runtimeType) []
-            bodySelectionSet :: suffix)).data := by
+    {pref suffix bodySelectionSet : List Selection}
+    : objectTypeNameBool schema normalParentType = false
+      -> objectTypeNameBool schema runtimeType = true
+      -> selectionSetDirectiveFree
+          (pref
+            ++ Selection.inlineFragment (some runtimeType) [] bodySelectionSet
+                :: suffix)
+      -> selectionSetNormal schema normalParentType
+          (pref
+            ++ Selection.inlineFragment (some runtimeType) [] bodySelectionSet
+                :: suffix)
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues (fuel + 1) runtimeType
+              (.object runtimeType (some FieldPairProbeTag.left))
+              bodySelectionSet).data
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues (fuel + 1) runtimeType
+              (.object runtimeType (some FieldPairProbeTag.right))
+              bodySelectionSet).data
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues (fuel + 1) runtimeType
+              (.object runtimeType (some FieldPairProbeTag.left))
+              (pref
+                ++ Selection.inlineFragment (some runtimeType) [] bodySelectionSet
+                    :: suffix)).data
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues (fuel + 1) runtimeType
+              (.object runtimeType (some FieldPairProbeTag.right))
+              (pref
+                ++ Selection.inlineFragment (some runtimeType) [] bodySelectionSet
+                    :: suffix)).data := by
   intro hnonObject hruntimeObject hfree hnormal hbodyNot hsemantic
   let resolvers :=
     fieldPairProbeResolvers schema rootSelectionSet targetParent leftField
@@ -1152,53 +1184,59 @@ theorem responseData_not_semanticEquivalent_of_tagged_abstract_inlineFragment_bo
 theorem responseData_not_semanticEquivalent_of_tagged_abstract_inlineFragment_body_pair
     (schema : Schema) (rootSelectionSet : List Selection)
     (variableValues : Execution.VariableValues)
-    (fuel : Nat) (targetParent leftField rightField normalParentType
-      runtimeType : Name)
+    (fuel : Nat) (targetParent leftField rightField normalParentType runtimeType : Name)
     (leftArguments rightArguments : List Argument)
     {leftPref rightPref leftSuffix rightSuffix
-      leftBodySelectionSet rightBodySelectionSet : List Selection} :
-    objectTypeNameBool schema normalParentType = false ->
-    objectTypeNameBool schema runtimeType = true ->
-    selectionSetDirectiveFree
-      (leftPref ++ Selection.inlineFragment (some runtimeType) []
-        leftBodySelectionSet :: leftSuffix) ->
-    selectionSetDirectiveFree
-      (rightPref ++ Selection.inlineFragment (some runtimeType) []
-        rightBodySelectionSet :: rightSuffix) ->
-    selectionSetNormal schema normalParentType
-      (leftPref ++ Selection.inlineFragment (some runtimeType) []
-        leftBodySelectionSet :: leftSuffix) ->
-    selectionSetNormal schema normalParentType
-      (rightPref ++ Selection.inlineFragment (some runtimeType) []
-        rightBodySelectionSet :: rightSuffix) ->
-    ¬ Execution.ResponseValue.semanticEquivalent
-      (Execution.executeSelectionSetAsResponse schema
-        (fieldPairProbeResolvers schema rootSelectionSet targetParent
-          leftField rightField leftArguments rightArguments)
-        variableValues (fuel + 1) runtimeType
-        (.object runtimeType (some FieldPairProbeTag.left))
-        leftBodySelectionSet).data
-      (Execution.executeSelectionSetAsResponse schema
-        (fieldPairProbeResolvers schema rootSelectionSet targetParent
-          leftField rightField leftArguments rightArguments)
-        variableValues (fuel + 1) runtimeType
-        (.object runtimeType (some FieldPairProbeTag.right))
-        rightBodySelectionSet).data ->
-      ¬ Execution.ResponseValue.semanticEquivalent
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairProbeResolvers schema rootSelectionSet targetParent
-            leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1) runtimeType
-          (.object runtimeType (some FieldPairProbeTag.left))
-          (leftPref ++ Selection.inlineFragment (some runtimeType) []
-            leftBodySelectionSet :: leftSuffix)).data
-        (Execution.executeSelectionSetAsResponse schema
-          (fieldPairProbeResolvers schema rootSelectionSet targetParent
-            leftField rightField leftArguments rightArguments)
-          variableValues (fuel + 1) runtimeType
-          (.object runtimeType (some FieldPairProbeTag.right))
-          (rightPref ++ Selection.inlineFragment (some runtimeType) []
-            rightBodySelectionSet :: rightSuffix)).data := by
+      leftBodySelectionSet rightBodySelectionSet
+      : List Selection}
+    : objectTypeNameBool schema normalParentType = false
+      -> objectTypeNameBool schema runtimeType = true
+      -> selectionSetDirectiveFree
+          (leftPref
+            ++ Selection.inlineFragment (some runtimeType) [] leftBodySelectionSet
+                :: leftSuffix)
+      -> selectionSetDirectiveFree
+          (rightPref
+            ++ Selection.inlineFragment (some runtimeType) [] rightBodySelectionSet
+                :: rightSuffix)
+      -> selectionSetNormal schema normalParentType
+          (leftPref
+            ++ Selection.inlineFragment (some runtimeType) [] leftBodySelectionSet
+                :: leftSuffix)
+      -> selectionSetNormal schema normalParentType
+          (rightPref
+            ++ Selection.inlineFragment (some runtimeType) [] rightBodySelectionSet
+                :: rightSuffix)
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues (fuel + 1) runtimeType
+              (.object runtimeType (some FieldPairProbeTag.left))
+              leftBodySelectionSet).data
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues (fuel + 1) runtimeType
+              (.object runtimeType (some FieldPairProbeTag.right))
+              rightBodySelectionSet).data
+      -> ¬ Execution.ResponseValue.semanticEquivalent
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues (fuel + 1) runtimeType
+              (.object runtimeType (some FieldPairProbeTag.left))
+              (leftPref
+                ++ Selection.inlineFragment (some runtimeType) [] leftBodySelectionSet
+                    :: leftSuffix)).data
+            (Execution.executeSelectionSetAsResponse schema
+              (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                leftField rightField leftArguments rightArguments)
+              variableValues (fuel + 1) runtimeType
+              (.object runtimeType (some FieldPairProbeTag.right))
+              (rightPref
+                ++ Selection.inlineFragment (some runtimeType) [] rightBodySelectionSet
+                    :: rightSuffix)).data := by
   intro hnonObject hruntimeObject hleftFree hrightFree hleftNormal
     hrightNormal hbodyNot hsemantic
   let resolvers :=
@@ -1286,64 +1324,67 @@ theorem responseData_not_semanticEquivalent_of_tagged_abstract_inlineFragment_bo
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_of_valid_normal_promoted_fuel_ge
     (schema : Schema) (rootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ parentType variableDefinitions (selectionSet : List Selection)
-      fuel sourceRuntimeType targetParent leftField rightField
-      (leftArguments rightArguments : List Argument)
-      {responseName fieldName : Name} {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection}
-      {fieldDefinition : FieldDefinition},
-      Validation.selectionSetValid schema variableDefinitions parentType
-        selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetNormal schema parentType selectionSet ->
-      objectTypeNameBool schema parentType = true ->
-      schema.typeIncludesObjectBool parentType sourceRuntimeType = true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField parentType selectionSet = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        parentType selectionSet ->
-      selectionSetDeepProbeFuel schema parentType selectionSet ≤ fuel ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-      (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues
-            (fuel + 1)
-            parentType
-            (.object sourceRuntimeType (some FieldPairProbeTag.left))
-            selectionSet).data
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues
-            (fuel + 1)
-            parentType
-            (.object sourceRuntimeType (some FieldPairProbeTag.right))
-            selectionSet).data := by
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ parentType variableDefinitions (selectionSet : List Selection)
+            fuel sourceRuntimeType targetParent leftField rightField
+            (leftArguments rightArguments : List Argument)
+            {responseName fieldName : Name} {arguments : List Argument}
+            {directives : List DirectiveApplication}
+            {childSelectionSet : List Selection}
+            {fieldDefinition : FieldDefinition},
+          Validation.selectionSetValid schema variableDefinitions parentType
+            selectionSet
+          -> selectionSetDirectiveFree selectionSet
+          -> selectionSetNormal schema parentType selectionSet
+          -> objectTypeNameBool schema parentType = true
+          -> schema.typeIncludesObjectBool parentType sourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField parentType selectionSet
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              parentType selectionSet
+          -> selectionSetDeepProbeFuel schema parentType selectionSet ≤ fuel
+          -> Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+          -> schema.lookupField parentType fieldName = some fieldDefinition
+          -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+              = false
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues
+                  (fuel + 1)
+                  parentType
+                  (.object sourceRuntimeType (some FieldPairProbeTag.left))
+                  selectionSet).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues
+                  (fuel + 1)
+                  parentType
+                  (.object sourceRuntimeType (some FieldPairProbeTag.right))
+                  selectionSet).data := by
   intro hschema parentType variableDefinitions selectionSet
     fuel sourceRuntimeType targetParent leftField rightField leftArguments
     rightArguments responseName fieldName arguments directives
@@ -1472,63 +1513,66 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_of_valid
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_of_valid_normal_promoted_deepProbeFuel
     (schema : Schema) (rootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ parentType variableDefinitions (selectionSet : List Selection)
-      sourceRuntimeType targetParent leftField rightField
-      (leftArguments rightArguments : List Argument)
-      {responseName fieldName : Name} {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection}
-      {fieldDefinition : FieldDefinition},
-      Validation.selectionSetValid schema variableDefinitions parentType
-        selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetNormal schema parentType selectionSet ->
-      objectTypeNameBool schema parentType = true ->
-      schema.typeIncludesObjectBool parentType sourceRuntimeType = true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField parentType selectionSet = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        parentType selectionSet ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-      (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues
-            (selectionSetDeepProbeFuel schema parentType selectionSet + 1)
-            parentType
-            (.object sourceRuntimeType (some FieldPairProbeTag.left))
-            selectionSet).data
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues
-            (selectionSetDeepProbeFuel schema parentType selectionSet + 1)
-            parentType
-            (.object sourceRuntimeType (some FieldPairProbeTag.right))
-            selectionSet).data := by
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ parentType variableDefinitions (selectionSet : List Selection)
+            sourceRuntimeType targetParent leftField rightField
+            (leftArguments rightArguments : List Argument)
+            {responseName fieldName : Name} {arguments : List Argument}
+            {directives : List DirectiveApplication}
+            {childSelectionSet : List Selection}
+            {fieldDefinition : FieldDefinition},
+          Validation.selectionSetValid schema variableDefinitions parentType
+            selectionSet
+          -> selectionSetDirectiveFree selectionSet
+          -> selectionSetNormal schema parentType selectionSet
+          -> objectTypeNameBool schema parentType = true
+          -> schema.typeIncludesObjectBool parentType sourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField parentType selectionSet
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              parentType selectionSet
+          -> Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ selectionSet
+          -> schema.lookupField parentType fieldName = some fieldDefinition
+          -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+              = false
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues
+                  (selectionSetDeepProbeFuel schema parentType selectionSet + 1)
+                  parentType
+                  (.object sourceRuntimeType (some FieldPairProbeTag.left))
+                  selectionSet).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues
+                  (selectionSetDeepProbeFuel schema parentType selectionSet + 1)
+                  parentType
+                  (.object sourceRuntimeType (some FieldPairProbeTag.right))
+                  selectionSet).data := by
   intro hschema parentType variableDefinitions selectionSet sourceRuntimeType
     targetParent leftField rightField leftArguments rightArguments
     responseName fieldName arguments directives childSelectionSet
@@ -1546,86 +1590,90 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_of_valid
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_diff_of_valid_normal_promoted_fuel_ge
     (schema : Schema) (rootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ parentType leftVariableDefinitions rightVariableDefinitions
-      (left right : List Selection) fuel sourceRuntimeType targetParent
-      leftField rightField (leftArguments rightArguments : List Argument)
-      {responseName fieldName : Name} {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection},
-      Validation.selectionSetValid schema leftVariableDefinitions parentType
-        left ->
-      Validation.selectionSetValid schema rightVariableDefinitions parentType
-        right ->
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema parentType left ->
-      selectionSetNormal schema parentType right ->
-      objectTypeNameBool schema parentType = true ->
-      schema.typeIncludesObjectBool parentType sourceRuntimeType = true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField parentType left = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        parentType left ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField parentType right = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        parentType right ->
-      selectionSetDeepProbeFuel schema parentType left ≤ fuel ->
-      selectionSetDeepProbeFuel schema parentType right ≤ fuel ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-      responseName ∉ right.filterMap Selection.responseName? ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues
-            (fuel + 1)
-            parentType
-            (.object sourceRuntimeType (some FieldPairProbeTag.left))
-            left).data
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues
-            (fuel + 1)
-            parentType
-            (.object sourceRuntimeType (some FieldPairProbeTag.right))
-            right).data := by
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ parentType leftVariableDefinitions rightVariableDefinitions
+            (left right : List Selection) fuel sourceRuntimeType targetParent
+            leftField rightField (leftArguments rightArguments : List Argument)
+            {responseName fieldName : Name} {arguments : List Argument}
+            {directives : List DirectiveApplication}
+            {childSelectionSet : List Selection},
+          Validation.selectionSetValid schema leftVariableDefinitions parentType left
+          -> Validation.selectionSetValid schema rightVariableDefinitions parentType
+              right
+          -> selectionSetDirectiveFree left
+          -> selectionSetDirectiveFree right
+          -> selectionSetNormal schema parentType left
+          -> selectionSetNormal schema parentType right
+          -> objectTypeNameBool schema parentType = true
+          -> schema.typeIncludesObjectBool parentType sourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField parentType left
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              parentType left
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField parentType right
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              parentType right
+          -> selectionSetDeepProbeFuel schema parentType left ≤ fuel
+          -> selectionSetDeepProbeFuel schema parentType right ≤ fuel
+          -> Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+          -> responseName ∉ right.filterMap Selection.responseName?
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues
+                  (fuel + 1)
+                  parentType
+                  (.object sourceRuntimeType (some FieldPairProbeTag.left))
+                  left).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues
+                  (fuel + 1)
+                  parentType
+                  (.object sourceRuntimeType (some FieldPairProbeTag.right))
+                  right).data := by
   intro hschema parentType leftVariableDefinitions rightVariableDefinitions
     left right fuel sourceRuntimeType targetParent leftField rightField
     leftArguments rightArguments responseName fieldName arguments directives
@@ -1698,86 +1746,90 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_d
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_diff_of_valid_normal_promoted_fuel_ge
     (schema : Schema) (rootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ parentType leftVariableDefinitions rightVariableDefinitions
-      (left right : List Selection) fuel sourceRuntimeType targetParent
-      leftField rightField (leftArguments rightArguments : List Argument)
-      {responseName fieldName : Name} {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection},
-      Validation.selectionSetValid schema leftVariableDefinitions parentType
-        left ->
-      Validation.selectionSetValid schema rightVariableDefinitions parentType
-        right ->
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema parentType left ->
-      selectionSetNormal schema parentType right ->
-      objectTypeNameBool schema parentType = true ->
-      schema.typeIncludesObjectBool parentType sourceRuntimeType = true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField parentType left = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        parentType left ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField parentType right = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        parentType right ->
-      selectionSetDeepProbeFuel schema parentType left ≤ fuel ->
-      selectionSetDeepProbeFuel schema parentType right ≤ fuel ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-      responseName ∉ left.filterMap Selection.responseName? ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues
-            (fuel + 1)
-            parentType
-            (.object sourceRuntimeType (some FieldPairProbeTag.left))
-            left).data
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues
-            (fuel + 1)
-            parentType
-            (.object sourceRuntimeType (some FieldPairProbeTag.right))
-            right).data := by
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ parentType leftVariableDefinitions rightVariableDefinitions
+            (left right : List Selection) fuel sourceRuntimeType targetParent
+            leftField rightField (leftArguments rightArguments : List Argument)
+            {responseName fieldName : Name} {arguments : List Argument}
+            {directives : List DirectiveApplication}
+            {childSelectionSet : List Selection},
+          Validation.selectionSetValid schema leftVariableDefinitions parentType left
+          -> Validation.selectionSetValid schema rightVariableDefinitions parentType
+              right
+          -> selectionSetDirectiveFree left
+          -> selectionSetDirectiveFree right
+          -> selectionSetNormal schema parentType left
+          -> selectionSetNormal schema parentType right
+          -> objectTypeNameBool schema parentType = true
+          -> schema.typeIncludesObjectBool parentType sourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField parentType left
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              parentType left
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField parentType right
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              parentType right
+          -> selectionSetDeepProbeFuel schema parentType left ≤ fuel
+          -> selectionSetDeepProbeFuel schema parentType right ≤ fuel
+          -> Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+          -> responseName ∉ left.filterMap Selection.responseName?
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues
+                  (fuel + 1)
+                  parentType
+                  (.object sourceRuntimeType (some FieldPairProbeTag.left))
+                  left).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues
+                  (fuel + 1)
+                  parentType
+                  (.object sourceRuntimeType (some FieldPairProbeTag.right))
+                  right).data := by
   intro hschema parentType leftVariableDefinitions rightVariableDefinitions
     left right fuel sourceRuntimeType targetParent leftField rightField
     leftArguments rightArguments responseName fieldName arguments directives
@@ -1850,87 +1902,90 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_diff_pair_of_valid_normal_promoted_fuel_ge
     (schema : Schema) (rootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ leftParentType rightParentType leftVariableDefinitions
-      rightVariableDefinitions (left right : List Selection) fuel
-      leftSourceRuntimeType rightSourceRuntimeType targetParent leftField
-      rightField (leftArguments rightArguments : List Argument)
-      {responseName fieldName : Name} {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection},
-      Validation.selectionSetValid schema leftVariableDefinitions
-        leftParentType left ->
-      Validation.selectionSetValid schema rightVariableDefinitions
-        rightParentType right ->
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema leftParentType left ->
-      selectionSetNormal schema rightParentType right ->
-      objectTypeNameBool schema leftParentType = true ->
-      objectTypeNameBool schema rightParentType = true ->
-      schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType =
-        true ->
-      schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType =
-        true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField leftParentType left = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        leftParentType left ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField rightParentType right = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        rightParentType right ->
-      selectionSetDeepProbeFuel schema leftParentType left ≤ fuel ->
-      selectionSetDeepProbeFuel schema rightParentType right ≤ fuel ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-      responseName ∉ right.filterMap Selection.responseName? ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues (fuel + 1) leftParentType
-            (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
-            left).data
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues (fuel + 1) rightParentType
-            (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
-            right).data := by
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ leftParentType rightParentType leftVariableDefinitions
+            rightVariableDefinitions (left right : List Selection) fuel
+            leftSourceRuntimeType rightSourceRuntimeType targetParent leftField
+            rightField (leftArguments rightArguments : List Argument)
+            {responseName fieldName : Name} {arguments : List Argument}
+            {directives : List DirectiveApplication}
+            {childSelectionSet : List Selection},
+          Validation.selectionSetValid schema leftVariableDefinitions
+            leftParentType left
+          -> Validation.selectionSetValid schema rightVariableDefinitions
+              rightParentType right
+          -> selectionSetDirectiveFree left
+          -> selectionSetDirectiveFree right
+          -> selectionSetNormal schema leftParentType left
+          -> selectionSetNormal schema rightParentType right
+          -> objectTypeNameBool schema leftParentType = true
+          -> objectTypeNameBool schema rightParentType = true
+          -> schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType = true
+          -> schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField leftParentType left
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              leftParentType left
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField rightParentType right
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              rightParentType right
+          -> selectionSetDeepProbeFuel schema leftParentType left ≤ fuel
+          -> selectionSetDeepProbeFuel schema rightParentType right ≤ fuel
+          -> Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+          -> responseName ∉ right.filterMap Selection.responseName?
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues (fuel + 1) leftParentType
+                  (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
+                  left).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues (fuel + 1) rightParentType
+                  (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
+                  right).data := by
   intro hschema leftParentType rightParentType leftVariableDefinitions
     rightVariableDefinitions left right fuel leftSourceRuntimeType
     rightSourceRuntimeType targetParent leftField rightField leftArguments
@@ -2003,87 +2058,90 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_d
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_diff_pair_of_valid_normal_promoted_fuel_ge
     (schema : Schema) (rootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ leftParentType rightParentType leftVariableDefinitions
-      rightVariableDefinitions (left right : List Selection) fuel
-      leftSourceRuntimeType rightSourceRuntimeType targetParent leftField
-      rightField (leftArguments rightArguments : List Argument)
-      {responseName fieldName : Name} {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection},
-      Validation.selectionSetValid schema leftVariableDefinitions
-        leftParentType left ->
-      Validation.selectionSetValid schema rightVariableDefinitions
-        rightParentType right ->
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema leftParentType left ->
-      selectionSetNormal schema rightParentType right ->
-      objectTypeNameBool schema leftParentType = true ->
-      objectTypeNameBool schema rightParentType = true ->
-      schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType =
-        true ->
-      schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType =
-        true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField leftParentType left = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        leftParentType left ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField rightParentType right = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        rightParentType right ->
-      selectionSetDeepProbeFuel schema leftParentType left ≤ fuel ->
-      selectionSetDeepProbeFuel schema rightParentType right ≤ fuel ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-      responseName ∉ left.filterMap Selection.responseName? ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues (fuel + 1) leftParentType
-            (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
-            left).data
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues (fuel + 1) rightParentType
-            (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
-            right).data := by
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ leftParentType rightParentType leftVariableDefinitions
+            rightVariableDefinitions (left right : List Selection) fuel
+            leftSourceRuntimeType rightSourceRuntimeType targetParent leftField
+            rightField (leftArguments rightArguments : List Argument)
+            {responseName fieldName : Name} {arguments : List Argument}
+            {directives : List DirectiveApplication}
+            {childSelectionSet : List Selection},
+          Validation.selectionSetValid schema leftVariableDefinitions
+            leftParentType left
+          -> Validation.selectionSetValid schema rightVariableDefinitions
+              rightParentType right
+          -> selectionSetDirectiveFree left
+          -> selectionSetDirectiveFree right
+          -> selectionSetNormal schema leftParentType left
+          -> selectionSetNormal schema rightParentType right
+          -> objectTypeNameBool schema leftParentType = true
+          -> objectTypeNameBool schema rightParentType = true
+          -> schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType = true
+          -> schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField leftParentType left
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              leftParentType left
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField rightParentType right
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              rightParentType right
+          -> selectionSetDeepProbeFuel schema leftParentType left ≤ fuel
+          -> selectionSetDeepProbeFuel schema rightParentType right ≤ fuel
+          -> Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+          -> responseName ∉ left.filterMap Selection.responseName?
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues (fuel + 1) leftParentType
+                  (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
+                  left).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues (fuel + 1) rightParentType
+                  (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
+                  right).data := by
   intro hschema leftParentType rightParentType leftVariableDefinitions
     rightVariableDefinitions left right fuel leftSourceRuntimeType
     rightSourceRuntimeType targetParent leftField rightField leftArguments
@@ -2156,88 +2214,91 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_diff_pair_of_valid_normal_promoted_fuel_ge_fuels
     (schema : Schema) (rootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ leftParentType rightParentType leftVariableDefinitions
-      rightVariableDefinitions (left right : List Selection)
-      leftFuel rightFuel leftSourceRuntimeType rightSourceRuntimeType
-      targetParent leftField rightField
-      (leftArguments rightArguments : List Argument)
-      {responseName fieldName : Name} {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection},
-      Validation.selectionSetValid schema leftVariableDefinitions
-        leftParentType left ->
-      Validation.selectionSetValid schema rightVariableDefinitions
-        rightParentType right ->
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema leftParentType left ->
-      selectionSetNormal schema rightParentType right ->
-      objectTypeNameBool schema leftParentType = true ->
-      objectTypeNameBool schema rightParentType = true ->
-      schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType =
-        true ->
-      schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType =
-        true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField leftParentType left = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        leftParentType left ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField rightParentType right = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        rightParentType right ->
-      selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel ->
-      selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-      responseName ∉ right.filterMap Selection.responseName? ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues (leftFuel + 1) leftParentType
-            (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
-            left).data
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues (rightFuel + 1) rightParentType
-            (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
-            right).data := by
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ leftParentType rightParentType leftVariableDefinitions
+            rightVariableDefinitions (left right : List Selection)
+            leftFuel rightFuel leftSourceRuntimeType rightSourceRuntimeType
+            targetParent leftField rightField
+            (leftArguments rightArguments : List Argument)
+            {responseName fieldName : Name} {arguments : List Argument}
+            {directives : List DirectiveApplication}
+            {childSelectionSet : List Selection},
+          Validation.selectionSetValid schema leftVariableDefinitions
+            leftParentType left
+          -> Validation.selectionSetValid schema rightVariableDefinitions
+              rightParentType right
+          -> selectionSetDirectiveFree left
+          -> selectionSetDirectiveFree right
+          -> selectionSetNormal schema leftParentType left
+          -> selectionSetNormal schema rightParentType right
+          -> objectTypeNameBool schema leftParentType = true
+          -> objectTypeNameBool schema rightParentType = true
+          -> schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType = true
+          -> schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField leftParentType left
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              leftParentType left
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField rightParentType right
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              rightParentType right
+          -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
+          -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
+          -> Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+          -> responseName ∉ right.filterMap Selection.responseName?
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues (leftFuel + 1) leftParentType
+                  (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
+                  left).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues (rightFuel + 1) rightParentType
+                  (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
+                  right).data := by
   intro hschema leftParentType rightParentType leftVariableDefinitions
     rightVariableDefinitions left right leftFuel rightFuel
     leftSourceRuntimeType rightSourceRuntimeType targetParent leftField
@@ -2312,88 +2373,91 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_d
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_diff_pair_of_valid_normal_promoted_fuel_ge_fuels
     (schema : Schema) (rootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ leftParentType rightParentType leftVariableDefinitions
-      rightVariableDefinitions (left right : List Selection)
-      leftFuel rightFuel leftSourceRuntimeType rightSourceRuntimeType
-      targetParent leftField rightField
-      (leftArguments rightArguments : List Argument)
-      {responseName fieldName : Name} {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection},
-      Validation.selectionSetValid schema leftVariableDefinitions
-        leftParentType left ->
-      Validation.selectionSetValid schema rightVariableDefinitions
-        rightParentType right ->
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema leftParentType left ->
-      selectionSetNormal schema rightParentType right ->
-      objectTypeNameBool schema leftParentType = true ->
-      objectTypeNameBool schema rightParentType = true ->
-      schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType =
-        true ->
-      schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType =
-        true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField leftParentType left = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        leftParentType left ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField rightParentType right = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        rightParentType right ->
-      selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel ->
-      selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-      responseName ∉ left.filterMap Selection.responseName? ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues (leftFuel + 1) leftParentType
-            (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
-            left).data
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues (rightFuel + 1) rightParentType
-            (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
-            right).data := by
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ leftParentType rightParentType leftVariableDefinitions
+            rightVariableDefinitions (left right : List Selection)
+            leftFuel rightFuel leftSourceRuntimeType rightSourceRuntimeType
+            targetParent leftField rightField
+            (leftArguments rightArguments : List Argument)
+            {responseName fieldName : Name} {arguments : List Argument}
+            {directives : List DirectiveApplication}
+            {childSelectionSet : List Selection},
+          Validation.selectionSetValid schema leftVariableDefinitions
+            leftParentType left
+          -> Validation.selectionSetValid schema rightVariableDefinitions
+              rightParentType right
+          -> selectionSetDirectiveFree left
+          -> selectionSetDirectiveFree right
+          -> selectionSetNormal schema leftParentType left
+          -> selectionSetNormal schema rightParentType right
+          -> objectTypeNameBool schema leftParentType = true
+          -> objectTypeNameBool schema rightParentType = true
+          -> schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType = true
+          -> schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField leftParentType left
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              leftParentType left
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField rightParentType right
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              rightParentType right
+          -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
+          -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
+          -> Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+          -> responseName ∉ left.filterMap Selection.responseName?
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues (leftFuel + 1) leftParentType
+                  (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
+                  left).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues (rightFuel + 1) rightParentType
+                  (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
+                  right).data := by
   intro hschema leftParentType rightParentType leftVariableDefinitions
     rightVariableDefinitions left right leftFuel rightFuel
     leftSourceRuntimeType rightSourceRuntimeType targetParent leftField
@@ -2467,92 +2531,94 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_
       hrightFree hrightMem hleftNoResponseName hleftFieldOk hrightFieldOk
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_diff_pair_of_valid_normal_promoted_fuel_ge_fuels_roots
-    (schema : Schema)
-    (leftRootSelectionSet rightRootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ leftParentType rightParentType leftVariableDefinitions
-      rightVariableDefinitions (left right : List Selection)
-      leftFuel rightFuel leftSourceRuntimeType rightSourceRuntimeType
-      targetParent leftField rightField
-      (leftArguments rightArguments : List Argument)
-      {responseName fieldName : Name} {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection},
-      Validation.selectionSetValid schema leftVariableDefinitions
-        leftParentType left ->
-      Validation.selectionSetValid schema rightVariableDefinitions
-        rightParentType right ->
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema leftParentType left ->
-      selectionSetNormal schema rightParentType right ->
-      objectTypeNameBool schema leftParentType = true ->
-      objectTypeNameBool schema rightParentType = true ->
-      schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType =
-        true ->
-      schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType =
-        true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField leftParentType left = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent
-                leftRootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema leftRootSelectionSet
-        leftParentType left ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField rightParentType right = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent
-                rightRootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rightRootSelectionSet
-        rightParentType right ->
-      selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel ->
-      selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ left ->
-      responseName ∉ right.filterMap Selection.responseName? ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema leftRootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues (leftFuel + 1) leftParentType
-            (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
-            left).data
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rightRootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues (rightFuel + 1) rightParentType
-            (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
-            right).data := by
+    (schema : Schema) (leftRootSelectionSet rightRootSelectionSet : List Selection)
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ leftParentType rightParentType leftVariableDefinitions
+            rightVariableDefinitions (left right : List Selection)
+            leftFuel rightFuel leftSourceRuntimeType rightSourceRuntimeType
+            targetParent leftField rightField
+            (leftArguments rightArguments : List Argument)
+            {responseName fieldName : Name} {arguments : List Argument}
+            {directives : List DirectiveApplication}
+            {childSelectionSet : List Selection},
+          Validation.selectionSetValid schema leftVariableDefinitions
+            leftParentType left
+          -> Validation.selectionSetValid schema rightVariableDefinitions
+              rightParentType right
+          -> selectionSetDirectiveFree left
+          -> selectionSetDirectiveFree right
+          -> selectionSetNormal schema leftParentType left
+          -> selectionSetNormal schema rightParentType right
+          -> objectTypeNameBool schema leftParentType = true
+          -> objectTypeNameBool schema rightParentType = true
+          -> schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType = true
+          -> schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField leftParentType left
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent
+                        leftRootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema leftRootSelectionSet
+              leftParentType left
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField rightParentType right
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent
+                        rightRootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rightRootSelectionSet
+              rightParentType right
+          -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
+          -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
+          -> Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ left
+          -> responseName ∉ right.filterMap Selection.responseName?
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema leftRootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues (leftFuel + 1) leftParentType
+                  (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
+                  left).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rightRootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues (rightFuel + 1) rightParentType
+                  (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
+                  right).data := by
   intro hschema leftParentType rightParentType leftVariableDefinitions
     rightVariableDefinitions left right leftFuel rightFuel
     leftSourceRuntimeType rightSourceRuntimeType targetParent leftField
@@ -2630,92 +2696,94 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_d
       hrightFree hleftMem hrightNoResponseName hleftFieldOk hrightFieldOk
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_diff_pair_of_valid_normal_promoted_fuel_ge_fuels_roots
-    (schema : Schema)
-    (leftRootSelectionSet rightRootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ leftParentType rightParentType leftVariableDefinitions
-      rightVariableDefinitions (left right : List Selection)
-      leftFuel rightFuel leftSourceRuntimeType rightSourceRuntimeType
-      targetParent leftField rightField
-      (leftArguments rightArguments : List Argument)
-      {responseName fieldName : Name} {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet : List Selection},
-      Validation.selectionSetValid schema leftVariableDefinitions
-        leftParentType left ->
-      Validation.selectionSetValid schema rightVariableDefinitions
-        rightParentType right ->
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema leftParentType left ->
-      selectionSetNormal schema rightParentType right ->
-      objectTypeNameBool schema leftParentType = true ->
-      objectTypeNameBool schema rightParentType = true ->
-      schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType =
-        true ->
-      schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType =
-        true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField leftParentType left = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent
-                leftRootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema leftRootSelectionSet
-        leftParentType left ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField rightParentType right = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent
-                rightRootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rightRootSelectionSet
-        rightParentType right ->
-      selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel ->
-      selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ right ->
-      responseName ∉ left.filterMap Selection.responseName? ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema leftRootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues (leftFuel + 1) leftParentType
-            (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
-            left).data
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rightRootSelectionSet targetParent
-              leftField rightField leftArguments rightArguments)
-            variableValues (rightFuel + 1) rightParentType
-            (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
-            right).data := by
+    (schema : Schema) (leftRootSelectionSet rightRootSelectionSet : List Selection)
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ leftParentType rightParentType leftVariableDefinitions
+            rightVariableDefinitions (left right : List Selection)
+            leftFuel rightFuel leftSourceRuntimeType rightSourceRuntimeType
+            targetParent leftField rightField
+            (leftArguments rightArguments : List Argument)
+            {responseName fieldName : Name} {arguments : List Argument}
+            {directives : List DirectiveApplication}
+            {childSelectionSet : List Selection},
+          Validation.selectionSetValid schema leftVariableDefinitions
+            leftParentType left
+          -> Validation.selectionSetValid schema rightVariableDefinitions
+              rightParentType right
+          -> selectionSetDirectiveFree left
+          -> selectionSetDirectiveFree right
+          -> selectionSetNormal schema leftParentType left
+          -> selectionSetNormal schema rightParentType right
+          -> objectTypeNameBool schema leftParentType = true
+          -> objectTypeNameBool schema rightParentType = true
+          -> schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType = true
+          -> schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField leftParentType left
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent
+                        leftRootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema leftRootSelectionSet
+              leftParentType left
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField rightParentType right
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent
+                        rightRootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rightRootSelectionSet
+              rightParentType right
+          -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
+          -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
+          -> Selection.field responseName fieldName arguments directives
+                childSelectionSet
+              ∈ right
+          -> responseName ∉ left.filterMap Selection.responseName?
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema leftRootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues (leftFuel + 1) leftParentType
+                  (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
+                  left).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rightRootSelectionSet targetParent
+                    leftField rightField leftArguments rightArguments)
+                  variableValues (rightFuel + 1) rightParentType
+                  (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
+                  right).data := by
   intro hschema leftParentType rightParentType leftVariableDefinitions
     rightVariableDefinitions left right leftFuel rightFuel
     leftSourceRuntimeType rightSourceRuntimeType targetParent leftField
@@ -2794,98 +2862,103 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_pair_of_valid_normal_promoted_fuel_ge
     (schema : Schema) (rootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ leftParentType rightParentType leftVariableDefinitions
-      rightVariableDefinitions (left right : List Selection) fuel
-      leftSourceRuntimeType rightSourceRuntimeType targetParent leftField
-      rightField (targetLeftArguments targetRightArguments : List Argument)
-      {responseName leftFieldName rightFieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection}
-      {leftFieldDefinition rightFieldDefinition : FieldDefinition},
-      Validation.selectionSetValid schema leftVariableDefinitions
-        leftParentType left ->
-      Validation.selectionSetValid schema rightVariableDefinitions
-        rightParentType right ->
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema leftParentType left ->
-      selectionSetNormal schema rightParentType right ->
-      objectTypeNameBool schema leftParentType = true ->
-      objectTypeNameBool schema rightParentType = true ->
-      schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType =
-        true ->
-      schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType =
-        true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField leftParentType left = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        leftParentType left ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField rightParentType right = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        rightParentType right ->
-      selectionSetDeepProbeFuel schema leftParentType left ≤ fuel ->
-      selectionSetDeepProbeFuel schema rightParentType right ≤ fuel ->
-      Selection.field responseName leftFieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName rightFieldName rightArguments
-        rightDirectives rightChildSelectionSet ∈ right ->
-      schema.lookupField leftParentType leftFieldName =
-        some leftFieldDefinition ->
-      schema.lookupField rightParentType rightFieldName =
-        some rightFieldDefinition ->
-      (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-      (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField targetLeftArguments targetRightArguments)
-            variableValues (fuel + 1) leftParentType
-            (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
-            left).data
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField targetLeftArguments targetRightArguments)
-            variableValues (fuel + 1) rightParentType
-            (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
-            right).data := by
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ leftParentType rightParentType leftVariableDefinitions
+            rightVariableDefinitions (left right : List Selection) fuel
+            leftSourceRuntimeType rightSourceRuntimeType targetParent leftField
+            rightField (targetLeftArguments targetRightArguments : List Argument)
+            {responseName leftFieldName rightFieldName : Name}
+            {leftArguments rightArguments : List Argument}
+            {leftDirectives rightDirectives : List DirectiveApplication}
+            {leftChildSelectionSet rightChildSelectionSet : List Selection}
+            {leftFieldDefinition rightFieldDefinition : FieldDefinition},
+          Validation.selectionSetValid schema leftVariableDefinitions
+            leftParentType left
+          -> Validation.selectionSetValid schema rightVariableDefinitions
+              rightParentType right
+          -> selectionSetDirectiveFree left
+          -> selectionSetDirectiveFree right
+          -> selectionSetNormal schema leftParentType left
+          -> selectionSetNormal schema rightParentType right
+          -> objectTypeNameBool schema leftParentType = true
+          -> objectTypeNameBool schema rightParentType = true
+          -> schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType = true
+          -> schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField leftParentType left
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              leftParentType left
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField rightParentType right
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              rightParentType right
+          -> selectionSetDeepProbeFuel schema leftParentType left ≤ fuel
+          -> selectionSetDeepProbeFuel schema rightParentType right ≤ fuel
+          -> Selection.field responseName leftFieldName leftArguments leftDirectives
+                leftChildSelectionSet
+              ∈ left
+          -> Selection.field responseName rightFieldName rightArguments
+                rightDirectives rightChildSelectionSet
+              ∈ right
+          -> schema.lookupField leftParentType leftFieldName = some leftFieldDefinition
+          -> schema.lookupField rightParentType rightFieldName
+              = some rightFieldDefinition
+          -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
+                schema
+              = false
+          -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+                schema
+              = false
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField targetLeftArguments targetRightArguments)
+                  variableValues (fuel + 1) leftParentType
+                  (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
+                  left).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField targetLeftArguments targetRightArguments)
+                  variableValues (fuel + 1) rightParentType
+                  (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
+                  right).data := by
   intro hschema leftParentType rightParentType leftVariableDefinitions
     rightVariableDefinitions left right fuel leftSourceRuntimeType
     rightSourceRuntimeType targetParent leftField rightField
@@ -3027,99 +3100,104 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_pair_of_
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_pair_of_valid_normal_promoted_fuel_ge_fuels
     (schema : Schema) (rootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ leftParentType rightParentType leftVariableDefinitions
-      rightVariableDefinitions (left right : List Selection)
-      leftFuel rightFuel leftSourceRuntimeType rightSourceRuntimeType
-      targetParent leftField rightField
-      (targetLeftArguments targetRightArguments : List Argument)
-      {responseName leftFieldName rightFieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection}
-      {leftFieldDefinition rightFieldDefinition : FieldDefinition},
-      Validation.selectionSetValid schema leftVariableDefinitions
-        leftParentType left ->
-      Validation.selectionSetValid schema rightVariableDefinitions
-        rightParentType right ->
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema leftParentType left ->
-      selectionSetNormal schema rightParentType right ->
-      objectTypeNameBool schema leftParentType = true ->
-      objectTypeNameBool schema rightParentType = true ->
-      schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType =
-        true ->
-      schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType =
-        true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField leftParentType left = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        leftParentType left ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField rightParentType right = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
-        rightParentType right ->
-      selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel ->
-      selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel ->
-      Selection.field responseName leftFieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName rightFieldName rightArguments
-        rightDirectives rightChildSelectionSet ∈ right ->
-      schema.lookupField leftParentType leftFieldName =
-        some leftFieldDefinition ->
-      schema.lookupField rightParentType rightFieldName =
-        some rightFieldDefinition ->
-      (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-      (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField targetLeftArguments targetRightArguments)
-            variableValues (leftFuel + 1) leftParentType
-            (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
-            left).data
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rootSelectionSet targetParent
-              leftField rightField targetLeftArguments targetRightArguments)
-            variableValues (rightFuel + 1) rightParentType
-            (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
-            right).data := by
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ leftParentType rightParentType leftVariableDefinitions
+            rightVariableDefinitions (left right : List Selection)
+            leftFuel rightFuel leftSourceRuntimeType rightSourceRuntimeType
+            targetParent leftField rightField
+            (targetLeftArguments targetRightArguments : List Argument)
+            {responseName leftFieldName rightFieldName : Name}
+            {leftArguments rightArguments : List Argument}
+            {leftDirectives rightDirectives : List DirectiveApplication}
+            {leftChildSelectionSet rightChildSelectionSet : List Selection}
+            {leftFieldDefinition rightFieldDefinition : FieldDefinition},
+          Validation.selectionSetValid schema leftVariableDefinitions
+            leftParentType left
+          -> Validation.selectionSetValid schema rightVariableDefinitions
+              rightParentType right
+          -> selectionSetDirectiveFree left
+          -> selectionSetDirectiveFree right
+          -> selectionSetNormal schema leftParentType left
+          -> selectionSetNormal schema rightParentType right
+          -> objectTypeNameBool schema leftParentType = true
+          -> objectTypeNameBool schema rightParentType = true
+          -> schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType = true
+          -> schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField leftParentType left
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              leftParentType left
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField rightParentType right
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
+              rightParentType right
+          -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
+          -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
+          -> Selection.field responseName leftFieldName leftArguments leftDirectives
+                leftChildSelectionSet
+              ∈ left
+          -> Selection.field responseName rightFieldName rightArguments
+                rightDirectives rightChildSelectionSet
+              ∈ right
+          -> schema.lookupField leftParentType leftFieldName = some leftFieldDefinition
+          -> schema.lookupField rightParentType rightFieldName
+              = some rightFieldDefinition
+          -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
+                schema
+              = false
+          -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+                schema
+              = false
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField targetLeftArguments targetRightArguments)
+                  variableValues (leftFuel + 1) leftParentType
+                  (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
+                  left).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rootSelectionSet targetParent
+                    leftField rightField targetLeftArguments targetRightArguments)
+                  variableValues (rightFuel + 1) rightParentType
+                  (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
+                  right).data := by
   intro hschema leftParentType rightParentType leftVariableDefinitions
     rightVariableDefinitions left right leftFuel rightFuel
     leftSourceRuntimeType rightSourceRuntimeType targetParent leftField
@@ -3266,101 +3344,105 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_pair_of_
       hleftFieldOk hrightFieldOk
 
 theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_pair_of_valid_normal_promoted_fuel_ge_fuels_roots
-    (schema : Schema)
-    (leftRootSelectionSet rightRootSelectionSet : List Selection)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ leftParentType rightParentType leftVariableDefinitions
-      rightVariableDefinitions (left right : List Selection)
-      leftFuel rightFuel leftSourceRuntimeType rightSourceRuntimeType
-      targetParent leftField rightField
-      (targetLeftArguments targetRightArguments : List Argument)
-      {responseName leftFieldName rightFieldName : Name}
-      {leftArguments rightArguments : List Argument}
-      {leftDirectives rightDirectives : List DirectiveApplication}
-      {leftChildSelectionSet rightChildSelectionSet : List Selection}
-      {leftFieldDefinition rightFieldDefinition : FieldDefinition},
-      Validation.selectionSetValid schema leftVariableDefinitions
-        leftParentType left ->
-      Validation.selectionSetValid schema rightVariableDefinitions
-        rightParentType right ->
-      selectionSetDirectiveFree left ->
-      selectionSetDirectiveFree right ->
-      selectionSetNormal schema leftParentType left ->
-      selectionSetNormal schema rightParentType right ->
-      objectTypeNameBool schema leftParentType = true ->
-      objectTypeNameBool schema rightParentType = true ->
-      schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType =
-        true ->
-      schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType =
-        true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField leftParentType left = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent leftRootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema leftRootSelectionSet
-        leftParentType left ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField rightParentType right = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rightRootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-      selectionSetDeepHeadPromotionAvailable schema rightRootSelectionSet
-        rightParentType right ->
-      selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel ->
-      selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel ->
-      Selection.field responseName leftFieldName leftArguments leftDirectives
-        leftChildSelectionSet ∈ left ->
-      Selection.field responseName rightFieldName rightArguments
-        rightDirectives rightChildSelectionSet ∈ right ->
-      schema.lookupField leftParentType leftFieldName =
-        some leftFieldDefinition ->
-      schema.lookupField rightParentType rightFieldName =
-        some rightFieldDefinition ->
-      (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-      (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-        ¬ Execution.ResponseValue.semanticEquivalent
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema leftRootSelectionSet targetParent
-              leftField rightField targetLeftArguments targetRightArguments)
-            variableValues (leftFuel + 1) leftParentType
-            (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
-            left).data
-          (Execution.executeSelectionSetAsResponse schema
-            (fieldPairProbeResolvers schema rightRootSelectionSet targetParent
-              leftField rightField targetLeftArguments targetRightArguments)
-            variableValues (rightFuel + 1) rightParentType
-            (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
-            right).data := by
+    (schema : Schema) (leftRootSelectionSet rightRootSelectionSet : List Selection)
+    (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ leftParentType rightParentType leftVariableDefinitions
+            rightVariableDefinitions (left right : List Selection)
+            leftFuel rightFuel leftSourceRuntimeType rightSourceRuntimeType
+            targetParent leftField rightField
+            (targetLeftArguments targetRightArguments : List Argument)
+            {responseName leftFieldName rightFieldName : Name}
+            {leftArguments rightArguments : List Argument}
+            {leftDirectives rightDirectives : List DirectiveApplication}
+            {leftChildSelectionSet rightChildSelectionSet : List Selection}
+            {leftFieldDefinition rightFieldDefinition : FieldDefinition},
+          Validation.selectionSetValid schema leftVariableDefinitions
+            leftParentType left
+          -> Validation.selectionSetValid schema rightVariableDefinitions
+              rightParentType right
+          -> selectionSetDirectiveFree left
+          -> selectionSetDirectiveFree right
+          -> selectionSetNormal schema leftParentType left
+          -> selectionSetNormal schema rightParentType right
+          -> objectTypeNameBool schema leftParentType = true
+          -> objectTypeNameBool schema rightParentType = true
+          -> schema.typeIncludesObjectBool leftParentType leftSourceRuntimeType = true
+          -> schema.typeIncludesObjectBool rightParentType rightSourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField leftParentType left
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent leftRootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema leftRootSelectionSet
+              leftParentType left
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField rightParentType right
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rightRootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> selectionSetDeepHeadPromotionAvailable schema rightRootSelectionSet
+              rightParentType right
+          -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
+          -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
+          -> Selection.field responseName leftFieldName leftArguments leftDirectives
+                leftChildSelectionSet
+              ∈ left
+          -> Selection.field responseName rightFieldName rightArguments
+                rightDirectives rightChildSelectionSet
+              ∈ right
+          -> schema.lookupField leftParentType leftFieldName = some leftFieldDefinition
+          -> schema.lookupField rightParentType rightFieldName
+              = some rightFieldDefinition
+          -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
+                schema
+              = false
+          -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
+                schema
+              = false
+          -> ¬ Execution.ResponseValue.semanticEquivalent
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema leftRootSelectionSet targetParent
+                    leftField rightField targetLeftArguments targetRightArguments)
+                  variableValues (leftFuel + 1) leftParentType
+                  (.object leftSourceRuntimeType (some FieldPairProbeTag.left))
+                  left).data
+                (Execution.executeSelectionSetAsResponse schema
+                  (fieldPairProbeResolvers schema rightRootSelectionSet targetParent
+                    leftField rightField targetLeftArguments targetRightArguments)
+                  variableValues (rightFuel + 1) rightParentType
+                  (.object rightSourceRuntimeType (some FieldPairProbeTag.right))
+                  right).data := by
   intro hschema leftParentType rightParentType leftVariableDefinitions
     rightVariableDefinitions left right leftFuel rightFuel
     leftSourceRuntimeType rightSourceRuntimeType targetParent leftField

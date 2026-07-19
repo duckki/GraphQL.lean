@@ -13,13 +13,12 @@ namespace CompleteNormalization
 
 private theorem completeNormalBooleanStem_body_valid_nonempty
     {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType : Name} :
-    ∀ {boolCase : BoolCase} {selection : Selection}
-      {body : List Selection},
-      completeNormalBooleanStem boolCase selection body ->
-      Validation.selectionValid schema variableDefinitions parentType selection ->
-        Validation.selectionSetValid schema variableDefinitions parentType body
-          ∧ body ≠ []
+    {parentType : Name}
+    : ∀ {boolCase : BoolCase} {selection : Selection} {body : List Selection},
+        completeNormalBooleanStem boolCase selection body
+        -> Validation.selectionValid schema variableDefinitions parentType selection
+        -> Validation.selectionSetValid schema variableDefinitions parentType body
+            ∧ body ≠ []
   | [], _selection, _body, hstem, _hvalid => by
       simp [completeNormalBooleanStem] at hstem
   | [(varName, value)],
@@ -65,11 +64,11 @@ private theorem completeNormalBooleanStem_body_valid_nonempty_of_mem
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {selectionSet : List Selection}
     {boolCase : BoolCase} {selection : Selection} {body : List Selection}
-    (hvalid : Validation.selectionSetValid schema variableDefinitions
-      parentType selectionSet)
+    (hvalid
+      : Validation.selectionSetValid schema variableDefinitions parentType selectionSet)
     (hmem : selection ∈ selectionSet)
-    (hstem : completeNormalBooleanStem boolCase selection body) :
-    Validation.selectionSetValid schema variableDefinitions parentType body
+    (hstem : completeNormalBooleanStem boolCase selection body)
+    : Validation.selectionSetValid schema variableDefinitions parentType body
       ∧ body ≠ [] := by
   unfold Validation.selectionSetValid at hvalid
   exact completeNormalBooleanStem_body_valid_nonempty hstem
@@ -83,31 +82,28 @@ private theorem selectedCompleteNormalBodies_semanticallyEquivalent
     {runtimeCase rightCase : BoolCase}
     {leftSelection rightSelection : Selection}
     {leftBody rightBody : List Selection}
-    (hleftNormal : completeNormalSelectionSet schema
-      (leftVarName :: leftVariables) parentType leftSelectionSet)
-    (hrightNormal : completeNormalSelectionSet schema
-      (rightVarName :: rightVariables) parentType rightSelectionSet)
+    (hleftNormal
+      : completeNormalSelectionSet schema
+          (leftVarName :: leftVariables) parentType leftSelectionSet)
+    (hrightNormal
+      : completeNormalSelectionSet schema
+          (rightVarName :: rightVariables) parentType rightSelectionSet)
     (hleftMem : leftSelection ∈ leftSelectionSet)
     (hrightMem : rightSelection ∈ rightSelectionSet)
-    (hruntimeLeft :
-      completeNormalBoolCase (leftVarName :: leftVariables) runtimeCase)
-    (hruntimeRight :
-      completeNormalBoolCase (rightVarName :: rightVariables) runtimeCase)
-    (hrightCase :
-      completeNormalBoolCase (rightVarName :: rightVariables) rightCase)
-    (hequivalent :
-      completeNormalBoolCasesEquivalent runtimeCase rightCase)
-    (hleftStem :
-      completeNormalBooleanStem runtimeCase leftSelection leftBody)
-    (hrightStem :
-      completeNormalBooleanStem rightCase rightSelection rightBody)
+    (hruntimeLeft : completeNormalBoolCase (leftVarName :: leftVariables) runtimeCase)
+    (hruntimeRight
+      : completeNormalBoolCase (rightVarName :: rightVariables) runtimeCase)
+    (hrightCase : completeNormalBoolCase (rightVarName :: rightVariables) rightCase)
+    (hequivalent : completeNormalBoolCasesEquivalent runtimeCase rightCase)
+    (hleftStem : completeNormalBooleanStem runtimeCase leftSelection leftBody)
+    (hrightStem : completeNormalBooleanStem rightCase rightSelection rightBody)
     (hleftFree : selectionSetDirectiveFree leftBody)
     (hrightFree : selectionSetDirectiveFree rightBody)
-    (hsem : selectionSetsSemanticallyEquivalentForCompleteBoolVars schema
-      (leftVarName :: leftVariables) parentType leftSelectionSet
-      rightSelectionSet) :
-    selectionSetsSemanticallyEquivalent schema
-      parentType leftBody rightBody := by
+    (hsem
+      : selectionSetsSemanticallyEquivalentForCompleteBoolVars schema
+          (leftVarName :: leftVariables) parentType leftSelectionSet
+          rightSelectionSet)
+    : selectionSetsSemanticallyEquivalent schema parentType leftBody rightBody := by
   intro ObjectRef resolvers baseValues fuel source hsource
   let caseValues := boolCaseVariableValues runtimeCase baseValues
   have hleftCollect :=
@@ -158,28 +154,29 @@ private theorem selectedCompleteNormalBody_nil_semanticallyEquivalent
     {leftSelectionSet rightSelectionSet : List Selection}
     {runtimeCase : BoolCase} {leftSelection : Selection}
     {leftBody : List Selection}
-    (hleftNormal : completeNormalSelectionSet schema
-      (leftVarName :: leftVariables) parentType leftSelectionSet)
-    (hrightNormal : completeNormalSelectionSet schema
-      (rightVarName :: rightVariables) parentType rightSelectionSet)
+    (hleftNormal
+      : completeNormalSelectionSet schema
+          (leftVarName :: leftVariables) parentType leftSelectionSet)
+    (hrightNormal
+      : completeNormalSelectionSet schema
+          (rightVarName :: rightVariables) parentType rightSelectionSet)
     (hleftMem : leftSelection ∈ leftSelectionSet)
-    (hruntimeLeft :
-      completeNormalBoolCase (leftVarName :: leftVariables) runtimeCase)
-    (hruntimeRight :
-      completeNormalBoolCase (rightVarName :: rightVariables) runtimeCase)
-    (hleftStem :
-      completeNormalBooleanStem runtimeCase leftSelection leftBody)
+    (hruntimeLeft : completeNormalBoolCase (leftVarName :: leftVariables) runtimeCase)
+    (hruntimeRight
+      : completeNormalBoolCase (rightVarName :: rightVariables) runtimeCase)
+    (hleftStem : completeNormalBooleanStem runtimeCase leftSelection leftBody)
     (hleftFree : selectionSetDirectiveFree leftBody)
-    (hnone : ¬ ∃ selection candidate body,
-      selection ∈ rightSelectionSet
-        ∧ completeNormalBoolCase (rightVarName :: rightVariables) candidate
-        ∧ completeNormalBooleanStem candidate selection body
-        ∧ completeNormalBoolCasesEquivalent runtimeCase candidate)
-    (hsem : selectionSetsSemanticallyEquivalentForCompleteBoolVars schema
-      (leftVarName :: leftVariables) parentType leftSelectionSet
-      rightSelectionSet) :
-    selectionSetsSemanticallyEquivalent schema
-      parentType leftBody [] := by
+    (hnone
+      : ¬ ∃ selection candidate body,
+            selection ∈ rightSelectionSet
+            ∧ completeNormalBoolCase (rightVarName :: rightVariables) candidate
+            ∧ completeNormalBooleanStem candidate selection body
+            ∧ completeNormalBoolCasesEquivalent runtimeCase candidate)
+    (hsem
+      : selectionSetsSemanticallyEquivalentForCompleteBoolVars schema
+          (leftVarName :: leftVariables) parentType leftSelectionSet
+          rightSelectionSet)
+    : selectionSetsSemanticallyEquivalent schema parentType leftBody [] := by
   intro ObjectRef resolvers baseValues fuel source hsource
   let caseValues := boolCaseVariableValues runtimeCase baseValues
   have hleftCollect :=
@@ -221,10 +218,8 @@ private theorem selectedCompleteNormalBody_nil_semanticallyEquivalent
   exact hsem resolvers caseValues fuel source
     (boolVarsComplete_boolCaseVariableValues baseValues hruntimeLeft) hsource
 
-private theorem selectionSetEqualUpToReordering_eq_nil
-    {selectionSet : List Selection} :
-    SelectionSetEqualUpToReordering selectionSet [] ->
-      selectionSet = [] := by
+private theorem selectionSetEqualUpToReordering_eq_nil {selectionSet : List Selection}
+    : SelectionSetEqualUpToReordering selectionSet [] -> selectionSet = [] := by
   intro hequal
   cases hequal with
   | paired pairs hleft hright _hpairs =>
@@ -236,17 +231,17 @@ private theorem selectionSetEqualUpToReordering_eq_nil
       simp at hleft
       exact hleft
 
-private theorem selectionSetNormal_nil (schema : Schema) (parentType : Name) :
-    selectionSetNormal schema parentType [] := by
+private theorem selectionSetNormal_nil (schema : Schema) (parentType : Name)
+    : selectionSetNormal schema parentType [] := by
   simp [selectionSetNormal, selectionSetGroundTyped,
     selectionsAllFields, selectionsAllInlineFragments,
     selectionSetNonRedundant, responseNamesNodup,
     inlineFragmentTypeConditionsNodup]
 
 private theorem completeNormalBoolCase_length_eq_variables
-    {variables : List BoolVar} {boolCase : BoolCase} :
-    completeNormalBoolCase variables boolCase ->
-      boolCase.length = variables.length := by
+    {variables : List BoolVar} {boolCase : BoolCase}
+    : completeNormalBoolCase variables boolCase
+      -> boolCase.length = variables.length := by
   intro hcomplete
   have hperm : (boolCase.map Prod.fst).Perm variables :=
     GroundTypeNormalization.listPermOfNodupSubsetSubset
@@ -255,13 +250,12 @@ private theorem completeNormalBoolCase_length_eq_variables
       (fun varName hmem => (hcomplete.2.2 varName).2 hmem)
   simpa using hperm.length_eq
 
-private theorem wrapWithBoolCase_case_body_injective_of_length_eq :
-    ∀ {leftCase rightCase : BoolCase} {leftBody rightBody : List Selection},
-      leftCase.length = rightCase.length ->
-      leftCase ≠ [] ->
-      wrapWithBoolCase leftCase leftBody =
-        wrapWithBoolCase rightCase rightBody ->
-        leftCase = rightCase ∧ leftBody = rightBody
+private theorem wrapWithBoolCase_case_body_injective_of_length_eq
+    : ∀ {leftCase rightCase : BoolCase} {leftBody rightBody : List Selection},
+        leftCase.length = rightCase.length
+        -> leftCase ≠ []
+        -> wrapWithBoolCase leftCase leftBody = wrapWithBoolCase rightCase rightBody
+        -> leftCase = rightCase ∧ leftBody = rightBody
   | [], _rightCase, _leftBody, _rightBody, _hlength, hleftNe, _hwrap => by
       exact False.elim (hleftNe rfl)
   | _leftCase, [], _leftBody, _rightBody, hlength, _hleftNe, _hwrap => by
@@ -302,8 +296,8 @@ theorem completeNormalBooleanStem_case_body_eq
     (hrightCase : completeNormalBoolCase variables rightCase)
     (hvariablesNonempty : variables ≠ [])
     (hleftStem : completeNormalBooleanStem leftCase selection leftBody)
-    (hrightStem : completeNormalBooleanStem rightCase selection rightBody) :
-    leftCase = rightCase ∧ leftBody = rightBody := by
+    (hrightStem : completeNormalBooleanStem rightCase selection rightBody)
+    : leftCase = rightCase ∧ leftBody = rightBody := by
   have hleftLength := completeNormalBoolCase_length_eq_variables hleftCase
   have hrightLength := completeNormalBoolCase_length_eq_variables hrightCase
   have hcaseLength : leftCase.length = rightCase.length := by
@@ -322,26 +316,27 @@ theorem completeNormalBooleanStem_case_body_eq
 
 def CompleteNormalSelectionMatch
     (schema : Schema) (leftVariables rightVariables : List BoolVar)
-    (parentType : Name) (left right : Selection) : Prop :=
+    (parentType : Name) (left right : Selection)
+    : Prop :=
   ∃ leftCase rightCase leftBody rightBody,
     completeNormalBoolCase leftVariables leftCase
-      ∧ completeNormalBoolCase rightVariables rightCase
-      ∧ completeNormalBooleanStem leftCase left leftBody
-      ∧ completeNormalBooleanStem rightCase right rightBody
-      ∧ selectionSetNormal schema parentType leftBody
-      ∧ selectionSetNormal schema parentType rightBody
-      ∧ selectionSetDirectiveFree leftBody
-      ∧ selectionSetDirectiveFree rightBody
-      ∧ completeNormalBoolCasesEquivalent leftCase rightCase
-      ∧ SelectionSetEqualUpToReordering leftBody rightBody
+    ∧ completeNormalBoolCase rightVariables rightCase
+    ∧ completeNormalBooleanStem leftCase left leftBody
+    ∧ completeNormalBooleanStem rightCase right rightBody
+    ∧ selectionSetNormal schema parentType leftBody
+    ∧ selectionSetNormal schema parentType rightBody
+    ∧ selectionSetDirectiveFree leftBody
+    ∧ selectionSetDirectiveFree rightBody
+    ∧ completeNormalBoolCasesEquivalent leftCase rightCase
+    ∧ SelectionSetEqualUpToReordering leftBody rightBody
 
 theorem completeNormalSelectionEqualUpToReordering_of_match
     {schema : Schema} {leftVariables rightVariables : List BoolVar}
-    {parentType : Name} {left right : Selection} :
-    CompleteNormalSelectionMatch schema leftVariables rightVariables
-      parentType left right ->
-      CompleteNormalSelectionEqualUpToReordering
-        leftVariables rightVariables left right := by
+    {parentType : Name} {left right : Selection}
+    : CompleteNormalSelectionMatch schema leftVariables rightVariables
+        parentType left right
+      -> CompleteNormalSelectionEqualUpToReordering
+          leftVariables rightVariables left right := by
   rintro ⟨leftCase, rightCase, leftBody, rightBody, hleftCase,
     hrightCase, hleftStem, hrightStem, _hleftNormal, _hrightNormal,
     _hleftFree, _hrightFree, hequivalent, hequal⟩
@@ -350,34 +345,39 @@ theorem completeNormalSelectionEqualUpToReordering_of_match
 
 theorem completeNormalSelection_has_match
     {schema : Schema}
-    {leftVariableDefinitions rightVariableDefinitions :
-      List VariableDefinition}
+    {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
     {parentType : Name}
     {leftVarName rightVarName : BoolVar}
     {leftVariables rightVariables : List BoolVar}
     {leftSelectionSet rightSelectionSet : List Selection}
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (hleftValid : Validation.selectionSetValid schema
-      leftVariableDefinitions parentType leftSelectionSet)
-    (hrightValid : Validation.selectionSetValid schema
-      rightVariableDefinitions parentType rightSelectionSet)
-    (hleftNormal : completeNormalSelectionSet schema
-      (leftVarName :: leftVariables) parentType leftSelectionSet)
-    (hrightNormal : completeNormalSelectionSet schema
-      (rightVarName :: rightVariables) parentType rightSelectionSet)
-    (hcaseTransport : ∀ boolCase,
-      completeNormalBoolCase (leftVarName :: leftVariables) boolCase ->
-        completeNormalBoolCase (rightVarName :: rightVariables) boolCase)
+    (hleftValid
+      : Validation.selectionSetValid schema
+          leftVariableDefinitions parentType leftSelectionSet)
+    (hrightValid
+      : Validation.selectionSetValid schema
+          rightVariableDefinitions parentType rightSelectionSet)
+    (hleftNormal
+      : completeNormalSelectionSet schema
+          (leftVarName :: leftVariables) parentType leftSelectionSet)
+    (hrightNormal
+      : completeNormalSelectionSet schema
+          (rightVarName :: rightVariables) parentType rightSelectionSet)
+    (hcaseTransport
+      : ∀ boolCase,
+          completeNormalBoolCase (leftVarName :: leftVariables) boolCase
+          -> completeNormalBoolCase (rightVarName :: rightVariables) boolCase)
     (hobject : objectTypeNameBool schema parentType = true)
-    (hsem : selectionSetsSemanticallyEquivalentForCompleteBoolVars schema
-      (leftVarName :: leftVariables) parentType leftSelectionSet
-      rightSelectionSet)
-    {leftSelection : Selection} (hleftMem : leftSelection ∈ leftSelectionSet) :
-    ∃ rightSelection,
-      rightSelection ∈ rightSelectionSet
+    (hsem
+      : selectionSetsSemanticallyEquivalentForCompleteBoolVars schema
+          (leftVarName :: leftVariables) parentType leftSelectionSet
+          rightSelectionSet)
+    {leftSelection : Selection} (hleftMem : leftSelection ∈ leftSelectionSet)
+    : ∃ rightSelection,
+        rightSelection ∈ rightSelectionSet
         ∧ CompleteNormalSelectionMatch schema
-          (leftVarName :: leftVariables) (rightVarName :: rightVariables)
-          parentType leftSelection rightSelection := by
+            (leftVarName :: leftVariables) (rightVarName :: rightVariables)
+            parentType leftSelection rightSelection := by
   have hleftShape := hleftNormal
   rcases hleftShape with ⟨_hleftVarsNodup, _hleftSetNodup,
     hleftBranches, _hleftUnique⟩
@@ -464,18 +464,20 @@ theorem completeNormalSelection_has_match
 theorem completeNormalSelectionMatch_left_unique
     {schema : Schema} {leftVariables rightVariables : List BoolVar}
     {parentType : Name} {leftSelectionSet : List Selection}
-    (hleftNormal : completeNormalSelectionSet schema leftVariables
-      parentType leftSelectionSet)
+    (hleftNormal
+      : completeNormalSelectionSet schema leftVariables parentType leftSelectionSet)
     (hleftVariablesNonempty : leftVariables ≠ [])
     (hrightVariablesNonempty : rightVariables ≠ [])
     {leftFirst leftSecond right : Selection}
     (hleftFirstMem : leftFirst ∈ leftSelectionSet)
     (hleftSecondMem : leftSecond ∈ leftSelectionSet)
-    (hfirst : CompleteNormalSelectionMatch schema leftVariables
-      rightVariables parentType leftFirst right)
-    (hsecond : CompleteNormalSelectionMatch schema leftVariables
-      rightVariables parentType leftSecond right) :
-    leftFirst = leftSecond := by
+    (hfirst
+      : CompleteNormalSelectionMatch schema leftVariables
+          rightVariables parentType leftFirst right)
+    (hsecond
+      : CompleteNormalSelectionMatch schema leftVariables
+          rightVariables parentType leftSecond right)
+    : leftFirst = leftSecond := by
   rcases hfirst with
     ⟨leftCaseFirst, rightCaseFirst, leftBodyFirst, rightBodyFirst,
       hleftCaseFirst, hrightCaseFirst, hleftStemFirst, hrightStemFirst,
@@ -510,18 +512,20 @@ theorem completeNormalSelectionMatch_left_unique
 theorem completeNormalSelectionMatch_reverse_right_unique
     {schema : Schema} {leftVariables rightVariables : List BoolVar}
     {parentType : Name} {rightSelectionSet : List Selection}
-    (hrightNormal : completeNormalSelectionSet schema rightVariables
-      parentType rightSelectionSet)
+    (hrightNormal
+      : completeNormalSelectionSet schema rightVariables parentType rightSelectionSet)
     (hleftVariablesNonempty : leftVariables ≠ [])
     (hrightVariablesNonempty : rightVariables ≠ [])
     {left rightForward rightReverse : Selection}
     (hrightForwardMem : rightForward ∈ rightSelectionSet)
     (hrightReverseMem : rightReverse ∈ rightSelectionSet)
-    (hforward : CompleteNormalSelectionMatch schema leftVariables
-      rightVariables parentType left rightForward)
-    (hreverse : CompleteNormalSelectionMatch schema rightVariables
-      leftVariables parentType rightReverse left) :
-    rightForward = rightReverse := by
+    (hforward
+      : CompleteNormalSelectionMatch schema leftVariables
+          rightVariables parentType left rightForward)
+    (hreverse
+      : CompleteNormalSelectionMatch schema rightVariables
+          leftVariables parentType rightReverse left)
+    : rightForward = rightReverse := by
   rcases hforward with
     ⟨leftCaseForward, rightCaseForward, leftBodyForward,
       rightBodyForward, hleftCaseForward, hrightCaseForward,

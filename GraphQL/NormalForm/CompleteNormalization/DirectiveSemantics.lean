@@ -9,50 +9,41 @@ namespace NormalForm
 
 namespace CompleteNormalization
 
-theorem inputValueBoolIn?_literal
-    (boolCase : BoolCase) (value : Bool) :
-    inputValueBoolIn? boolCase (.boolean value) =
-      some value := by
+theorem inputValueBoolIn?_literal (boolCase : BoolCase) (value : Bool)
+    : inputValueBoolIn? boolCase (.boolean value) = some value := by
   rfl
 
-theorem inputValueBoolIn?_variable
-    (boolCase : BoolCase) (varName : BoolVar) :
-    inputValueBoolIn? boolCase (.variable varName) =
-      BoolCase.lookup? boolCase varName := by
+theorem inputValueBoolIn?_variable (boolCase : BoolCase) (varName : BoolVar)
+    : inputValueBoolIn? boolCase (.variable varName)
+      = BoolCase.lookup? boolCase varName := by
   rfl
 
-theorem directiveAllowsIn_skip_variable_true
-    (boolCase : BoolCase) (varName : BoolVar) :
-    BoolCase.lookup? boolCase varName = some true ->
-      directiveAllowsIn boolCase
-        (.skip (.variable varName)) = false := by
+theorem directiveAllowsIn_skip_variable_true (boolCase : BoolCase) (varName : BoolVar)
+    : BoolCase.lookup? boolCase varName = some true
+      -> directiveAllowsIn boolCase (.skip (.variable varName)) = false := by
   intro hvalue
   simp [directiveAllowsIn,
     inputValueBoolIn?, hvalue]
 
-theorem directiveAllowsIn_skip_variable_false
-    (boolCase : BoolCase) (varName : BoolVar) :
-    BoolCase.lookup? boolCase varName = some false ->
-      directiveAllowsIn boolCase
-        (.skip (.variable varName)) = true := by
+theorem directiveAllowsIn_skip_variable_false (boolCase : BoolCase) (varName : BoolVar)
+    : BoolCase.lookup? boolCase varName = some false
+      -> directiveAllowsIn boolCase (.skip (.variable varName)) = true := by
   intro hvalue
   simp [directiveAllowsIn,
     inputValueBoolIn?, hvalue]
 
 theorem directiveAllowsIn_include_variable_true
-    (boolCase : BoolCase) (varName : BoolVar) :
-    BoolCase.lookup? boolCase varName = some true ->
-      directiveAllowsIn boolCase
-        (.include (.variable varName)) = true := by
+    (boolCase : BoolCase) (varName : BoolVar)
+    : BoolCase.lookup? boolCase varName = some true
+      -> directiveAllowsIn boolCase (.include (.variable varName)) = true := by
   intro hvalue
   simp [directiveAllowsIn,
     inputValueBoolIn?, hvalue]
 
 theorem directiveAllowsIn_include_variable_false
-    (boolCase : BoolCase) (varName : BoolVar) :
-    BoolCase.lookup? boolCase varName = some false ->
-      directiveAllowsIn boolCase
-        (.include (.variable varName)) = false := by
+    (boolCase : BoolCase) (varName : BoolVar)
+    : BoolCase.lookup? boolCase varName = some false
+      -> directiveAllowsIn boolCase (.include (.variable varName)) = false := by
   intro hvalue
   simp [directiveAllowsIn,
     inputValueBoolIn?, hvalue]
@@ -60,23 +51,22 @@ theorem directiveAllowsIn_include_variable_false
 def variableValuesAgreeWithCase
     (variableValues : Execution.VariableValues)
     (boolCase : BoolCase)
-    (variables : List BoolVar) : Prop :=
-  ∀ varName, varName ∈ variables ->
-    Execution.inputValueBoolean? variableValues (.variable varName)
-      =
-    BoolCase.lookup? boolCase varName
+    (variables : List BoolVar)
+    : Prop :=
+  ∀ varName,
+    varName ∈ variables
+    -> Execution.inputValueBoolean? variableValues (.variable varName)
+        = BoolCase.lookup? boolCase varName
 
 theorem inputValueBoolInCase_eq_execution
     (variableValues : Execution.VariableValues)
     (boolCase : BoolCase)
     (variables : List BoolVar)
-    (hagrees :
-      variableValuesAgreeWithCase variableValues boolCase variables) :
-    ∀ value,
-      (∀ varName, varName ∈ inputValueBooleanVariables value ->
-        varName ∈ variables) ->
-        inputValueBoolIn? boolCase value =
-          Execution.inputValueBoolean? variableValues value
+    (hagrees : variableValuesAgreeWithCase variableValues boolCase variables)
+    : ∀ value,
+        (∀ varName, varName ∈ inputValueBooleanVariables value -> varName ∈ variables)
+        -> inputValueBoolIn? boolCase value
+            = Execution.inputValueBoolean? variableValues value
   | .variable varName, hvars => by
       exact (hagrees varName
         (hvars varName (by simp [inputValueBooleanVariables]))).symm
@@ -101,13 +91,12 @@ theorem directiveAllowsInCase_eq_execution
     (variableValues : Execution.VariableValues)
     (boolCase : BoolCase)
     (variables : List BoolVar)
-    (hagrees :
-      variableValuesAgreeWithCase variableValues boolCase variables) :
-    ∀ directive,
-      (∀ varName, varName ∈ directiveBooleanVariables directive ->
-        varName ∈ variables) ->
-        directiveAllowsIn boolCase directive =
-          Execution.directiveAllowsSelectionBool variableValues directive
+    (hagrees : variableValuesAgreeWithCase variableValues boolCase variables)
+    : ∀ directive,
+        (∀ varName,
+          varName ∈ directiveBooleanVariables directive -> varName ∈ variables)
+        -> directiveAllowsIn boolCase directive
+            = Execution.directiveAllowsSelectionBool variableValues directive
   | .skip ifArgument, hvars => by
       rw [directiveAllowsIn,
         Execution.directiveAllowsSelectionBool]
@@ -126,14 +115,14 @@ theorem directivesAllowInCase_eq_execution
     (boolCase : BoolCase)
     (variables : List BoolVar)
     (directiveApplications : List DirectiveApplication)
-    (hagrees :
-      variableValuesAgreeWithCase variableValues boolCase variables)
-    (hvars : ∀ varName,
-      varName ∈ directivesBooleanVariables directiveApplications ->
-        varName ∈ variables) :
-    directivesAllowIn boolCase directiveApplications =
-      Execution.selectionDirectivesAllowBool variableValues
-        directiveApplications := by
+    (hagrees : variableValuesAgreeWithCase variableValues boolCase variables)
+    (hvars
+      : ∀ varName,
+          varName ∈ directivesBooleanVariables directiveApplications
+          -> varName ∈ variables)
+    : directivesAllowIn boolCase directiveApplications
+      = Execution.selectionDirectivesAllowBool variableValues
+          directiveApplications := by
   induction directiveApplications with
   | nil =>
       simp [directivesAllowIn,
@@ -166,16 +155,15 @@ theorem directivesAllowInCase_eq_execution
 
 theorem allBoolCases_complete_for_variableValues
     (variableValues : Execution.VariableValues)
-    (variables : List BoolVar) :
-    (∀ varName, varName ∈ variables ->
-      ∃ value,
-        Execution.inputValueBoolean? variableValues (.variable varName)
-          =
-        some value) ->
-      ∃ boolCase,
-        boolCase ∈ allBoolCases variables
-          ∧ variableValuesAgreeWithCase variableValues boolCase
-              variables := by
+    (variables : List BoolVar)
+    : (∀ varName,
+        varName ∈ variables
+        -> ∃ value,
+            Execution.inputValueBoolean? variableValues (.variable varName)
+            = some value)
+      -> ∃ boolCase,
+          boolCase ∈ allBoolCases variables
+          ∧ variableValuesAgreeWithCase variableValues boolCase variables := by
   intro hcomplete
   rcases
       allBoolCases_complete
@@ -189,14 +177,14 @@ theorem allBoolCases_complete_for_variableValues
     exact (hagrees varName hmem).symm⟩
 
 theorem allBoolCases_variableValuesAgree_unique
-    (variableValues : Execution.VariableValues) :
-    ∀ {variables left right},
-      variables.Nodup ->
-      left ∈ allBoolCases variables ->
-      right ∈ allBoolCases variables ->
-      variableValuesAgreeWithCase variableValues left variables ->
-      variableValuesAgreeWithCase variableValues right variables ->
-        left = right
+    (variableValues : Execution.VariableValues)
+    : ∀ {variables left right},
+        variables.Nodup
+        -> left ∈ allBoolCases variables
+        -> right ∈ allBoolCases variables
+        -> variableValuesAgreeWithCase variableValues left variables
+        -> variableValuesAgreeWithCase variableValues right variables
+        -> left = right
   | [], left, right, _hnodup, hleft, hright, _hleftAgree,
       _hrightAgree => by
       simp [allBoolCases] at hleft hright
@@ -291,18 +279,17 @@ theorem allBoolCases_variableValuesAgree_unique
               hrightRestAgree
           simp [hrestEq]
 
-theorem allBoolCases_mismatch_of_ne_agree
-    (variableValues : Execution.VariableValues) :
-    ∀ {variables left right},
-      variables.Nodup ->
-      left ∈ allBoolCases variables ->
-      right ∈ allBoolCases variables ->
-      variableValuesAgreeWithCase variableValues left variables ->
-      right ≠ left ->
-        ∃ varName value,
-          (varName, value) ∈ right
-            ∧ Execution.inputValueBoolean? variableValues
-                (.variable varName) = some (!value)
+theorem allBoolCases_mismatch_of_ne_agree (variableValues : Execution.VariableValues)
+    : ∀ {variables left right},
+        variables.Nodup
+        -> left ∈ allBoolCases variables
+        -> right ∈ allBoolCases variables
+        -> variableValuesAgreeWithCase variableValues left variables
+        -> right ≠ left
+        -> ∃ varName value,
+            (varName, value) ∈ right
+            ∧ Execution.inputValueBoolean? variableValues (.variable varName)
+              = some (!value)
   | [], left, right, _hnodup, hleft, hright, _hagrees, hne => by
       simp [allBoolCases] at hleft hright
       subst left

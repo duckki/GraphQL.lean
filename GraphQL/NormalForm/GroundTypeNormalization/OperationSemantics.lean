@@ -15,33 +15,29 @@ namespace GroundTypeNormalization
 
 variable {ObjectRef : Type}
 
-theorem normalizeOperation_name (schema : Schema)
-    (operation : Operation) :
-    (normalizeOperation schema operation).name = operation.name := by
+theorem normalizeOperation_name (schema : Schema) (operation : Operation)
+    : (normalizeOperation schema operation).name = operation.name := by
   rfl
 
-theorem normalizeOperation_rootType (schema : Schema)
-    (operation : Operation) :
-    (normalizeOperation schema operation).rootType = operation.rootType := by
+theorem normalizeOperation_rootType (schema : Schema) (operation : Operation)
+    : (normalizeOperation schema operation).rootType = operation.rootType := by
   rfl
 
-theorem normalizeOperation_variableDefinitions (schema : Schema)
-    (operation : Operation) :
-    (normalizeOperation schema operation).variableDefinitions =
-      operation.variableDefinitions := by
+theorem normalizeOperation_variableDefinitions (schema : Schema) (operation : Operation)
+    : (normalizeOperation schema operation).variableDefinitions
+      = operation.variableDefinitions := by
   rfl
 
-theorem normalizeOperation_selectionSet (schema : Schema)
-    (operation : Operation) :
-    (normalizeOperation schema operation).selectionSet =
-      normalizeSelectionSet schema operation.rootType operation.selectionSet := by
+theorem normalizeOperation_selectionSet (schema : Schema) (operation : Operation)
+    : (normalizeOperation schema operation).selectionSet
+      = normalizeSelectionSet schema operation.rootType operation.selectionSet := by
   rfl
 
-theorem rootSourceAppliesBool_normalizeOperation
-    (schema : Schema) (operation : Operation) (source : Execution.ResolverValue ObjectRef) :
-    Execution.rootSourceAppliesBool schema (normalizeOperation schema operation)
-        source =
-      Execution.rootSourceAppliesBool schema operation source := by
+theorem rootSourceAppliesBool_normalizeOperation (schema : Schema)
+    (operation : Operation) (source : Execution.ResolverValue ObjectRef)
+    : Execution.rootSourceAppliesBool schema (normalizeOperation schema operation)
+        source
+      = Execution.rootSourceAppliesBool schema operation source := by
   rw [Execution.rootSourceAppliesBool]
   rw [Execution.rootSourceAppliesBool]
   rw [normalizeOperation_rootType schema operation]
@@ -51,13 +47,12 @@ theorem executeQuery_normalizedOperation_of_rootSource_not_apply
     (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues)
     (operation : Operation) (depth : Nat)
-    (source : Execution.ResolverValue ObjectRef) :
-      Execution.rootSourceAppliesBool schema operation source = false ->
-        Execution.executeQueryWithFuel schema resolvers variableValues operation
-          depth source
-          =
-        Execution.executeQueryWithFuel schema resolvers variableValues
-          (normalizeOperation schema operation) depth source := by
+    (source : Execution.ResolverValue ObjectRef)
+    : Execution.rootSourceAppliesBool schema operation source = false
+      -> Execution.executeQueryWithFuel schema resolvers variableValues operation
+            depth source
+          = Execution.executeQueryWithFuel schema resolvers variableValues
+              (normalizeOperation schema operation) depth source := by
   intro hroot
   have hnormalizedRoot :
       Execution.rootSourceAppliesBool schema (normalizeOperation schema operation)
@@ -68,17 +63,17 @@ theorem executeQuery_normalizedOperation_of_rootSource_not_apply
   simp [Execution.executeQueryWithFuel, hroot, hnormalizedRoot]
 
 theorem groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet
-    (schema : Schema) (operation : Operation) :
-    (∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
-      variableValues depth (source : Execution.ResolverValue ObjectRef),
-      Execution.rootSourceAppliesBool schema operation source = true ->
-        Execution.executeSelectionSet schema resolvers variableValues
-          depth operation.rootType source operation.selectionSet
-          =
-        Execution.executeSelectionSet schema resolvers variableValues
-          depth (normalizeOperation schema operation).rootType source
-          (normalizeOperation schema operation).selectionSet) ->
-      operationsEquivalent schema operation (normalizeOperation schema operation) := by
+    (schema : Schema) (operation : Operation)
+    : (∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
+          variableValues depth (source : Execution.ResolverValue ObjectRef),
+        Execution.rootSourceAppliesBool schema operation source = true
+        -> Execution.executeSelectionSet schema resolvers variableValues
+              depth operation.rootType source operation.selectionSet
+            = Execution.executeSelectionSet schema resolvers variableValues
+                depth (normalizeOperation schema operation).rootType source
+                (normalizeOperation schema operation).selectionSet)
+      -> operationsEquivalent schema operation
+          (normalizeOperation schema operation) := by
   intro hselection
   unfold operationsEquivalent
   intro ObjectRef resolvers variableValues depth source
@@ -111,44 +106,42 @@ theorem groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet
     exact executeQuery_normalizedOperation_of_rootSource_not_apply schema
       resolvers variableValues operation depth source hrootFalse
 
-theorem normalizeOperation_executeQuery
-    (schema : Schema) (operation : Operation) :
-    (∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
-      variableValues depth (source : Execution.ResolverValue ObjectRef),
-      Execution.rootSourceAppliesBool schema operation source = true ->
-        Execution.executeSelectionSet schema resolvers variableValues
-          depth operation.rootType source operation.selectionSet
-          =
-        Execution.executeSelectionSet schema resolvers variableValues
-          depth (normalizeOperation schema operation).rootType source
-          (normalizeOperation schema operation).selectionSet) ->
-      operationsEquivalent schema operation (normalizeOperation schema operation) := by
+theorem normalizeOperation_executeQuery (schema : Schema) (operation : Operation)
+    : (∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
+          variableValues depth (source : Execution.ResolverValue ObjectRef),
+        Execution.rootSourceAppliesBool schema operation source = true
+        -> Execution.executeSelectionSet schema resolvers variableValues
+              depth operation.rootType source operation.selectionSet
+            = Execution.executeSelectionSet schema resolvers variableValues
+                depth (normalizeOperation schema operation).rootType source
+                (normalizeOperation schema operation).selectionSet)
+      -> operationsEquivalent schema operation
+          (normalizeOperation schema operation) := by
   exact groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet schema
     operation
 
 theorem groundTypeNormalFormSemanticsPreservation_of_selectionSet
-    (schema : Schema) (operation : Operation) :
-    (SchemaWellFormedness.schemaWellFormed schema ->
-      Validation.operationDefinitionValid schema operation ->
-        operationDirectiveFree operation ->
-          ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
-            variableValues depth
-            (source : Execution.ResolverValue ObjectRef),
-            Execution.rootSourceAppliesBool schema operation source = true ->
-              Execution.executeSelectionSet schema resolvers variableValues
-                depth operation.rootType source operation.selectionSet
-                =
-              Execution.executeSelectionSet schema resolvers variableValues
-                depth (normalizeOperation schema operation).rootType source
-                (normalizeOperation schema operation).selectionSet) ->
-      NormalForm.groundTypeNormalFormSemanticsPreservation schema operation := by
+    (schema : Schema) (operation : Operation)
+    : (SchemaWellFormedness.schemaWellFormed schema
+        -> Validation.operationDefinitionValid schema operation
+        -> operationDirectiveFree operation
+        -> ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
+              variableValues depth
+              (source : Execution.ResolverValue ObjectRef),
+            Execution.rootSourceAppliesBool schema operation source = true
+            -> Execution.executeSelectionSet schema resolvers variableValues
+                  depth operation.rootType source operation.selectionSet
+                = Execution.executeSelectionSet schema resolvers variableValues
+                    depth (normalizeOperation schema operation).rootType source
+                    (normalizeOperation schema operation).selectionSet)
+      -> NormalForm.groundTypeNormalFormSemanticsPreservation schema operation := by
   intro hselection hschema hvalid hfree
   exact normalizeOperation_executeQuery schema operation
     (hselection hschema hvalid hfree)
 
 theorem groundTypeNormalFormSemanticsPreservation
-    (schema : Schema) (operation : Operation) :
-    NormalForm.groundTypeNormalFormSemanticsPreservation schema operation := by
+    (schema : Schema) (operation : Operation)
+    : NormalForm.groundTypeNormalFormSemanticsPreservation schema operation := by
   intro hschema hvalid hfree
   apply normalizeOperation_executeQuery schema operation
   intro ObjectRef resolvers variableValues depth source hroot

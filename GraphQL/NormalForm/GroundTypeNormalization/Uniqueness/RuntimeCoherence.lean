@@ -13,9 +13,9 @@ namespace NormalForm
 namespace GroundTypeNormalization
 
 theorem firstInlineFragmentTypeCondition?_some_mem_filterMap
-    {selectionSet : List Selection} {typeCondition : Name} :
-    firstInlineFragmentTypeCondition? selectionSet = some typeCondition ->
-      typeCondition ∈ selectionSet.filterMap inlineFragmentTypeCondition? := by
+    {selectionSet : List Selection} {typeCondition : Name}
+    : firstInlineFragmentTypeCondition? selectionSet = some typeCondition
+      -> typeCondition ∈ selectionSet.filterMap inlineFragmentTypeCondition? := by
   intro hfirst
   induction selectionSet with
   | nil =>
@@ -44,25 +44,25 @@ theorem firstInlineFragmentTypeCondition?_some_mem_filterMap
 
 def selectionSetRuntimeAligned
     (schema : Schema) (parentType runtimeType : Name)
-    (selectionSet : List Selection) : Prop :=
+    (selectionSet : List Selection)
+    : Prop :=
   (objectTypeNameBool schema parentType = true ∧ runtimeType = parentType)
-    ∨
-  (objectTypeNameBool schema parentType = false
-    ∧ firstInlineFragmentTypeCondition? selectionSet = some runtimeType)
+  ∨ (objectTypeNameBool schema parentType = false
+      ∧ firstInlineFragmentTypeCondition? selectionSet = some runtimeType)
 
 theorem selectionSetRuntimeAligned_object
-    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
-    objectTypeNameBool schema parentType = true ->
-      selectionSetRuntimeAligned schema parentType parentType selectionSet := by
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetRuntimeAligned schema parentType parentType selectionSet := by
   intro hobject
   exact Or.inl ⟨hobject, rfl⟩
 
 theorem selectionSetRuntimeAligned_runtime_eq_of_object
     {schema : Schema} {parentType runtimeType : Name}
-    {selectionSet : List Selection} :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetRuntimeAligned schema parentType runtimeType selectionSet ->
-      runtimeType = parentType := by
+    {selectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetRuntimeAligned schema parentType runtimeType selectionSet
+      -> runtimeType = parentType := by
   intro hobject haligned
   rcases haligned with hobjectAligned | habstractAligned
   · exact hobjectAligned.2
@@ -71,10 +71,10 @@ theorem selectionSetRuntimeAligned_runtime_eq_of_object
 
 theorem selectionSetRuntimeAligned_firstInline_of_abstract
     {schema : Schema} {parentType runtimeType : Name}
-    {selectionSet : List Selection} :
-    objectTypeNameBool schema parentType = false ->
-    selectionSetRuntimeAligned schema parentType runtimeType selectionSet ->
-      firstInlineFragmentTypeCondition? selectionSet = some runtimeType := by
+    {selectionSet : List Selection}
+    : objectTypeNameBool schema parentType = false
+      -> selectionSetRuntimeAligned schema parentType runtimeType selectionSet
+      -> firstInlineFragmentTypeCondition? selectionSet = some runtimeType := by
   intro hnonObject haligned
   rcases haligned with hobjectAligned | habstractAligned
   · rw [hnonObject] at hobjectAligned
@@ -84,12 +84,11 @@ theorem selectionSetRuntimeAligned_firstInline_of_abstract
 theorem selectionSetRuntimeAligned_typeIncludes_of_normal
     {schema : Schema} {parentType runtimeType : Name}
     {variableDefinitions : List VariableDefinition}
-    {selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    selectionSetRuntimeAligned schema parentType runtimeType selectionSet ->
-      schema.typeIncludesObjectBool parentType runtimeType = true := by
+    {selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> selectionSetRuntimeAligned schema parentType runtimeType selectionSet
+      -> schema.typeIncludesObjectBool parentType runtimeType = true := by
   intro hvalid hnormal haligned
   rcases haligned with hobjectAligned | habstractAligned
   · rcases hobjectAligned with ⟨hobject, hruntime⟩
@@ -123,13 +122,12 @@ theorem selectionSetRuntimeAligned_typeIncludes_of_normal
 theorem selectionSetRuntimeAligned_runtime_object_of_normal
     {schema : Schema} {parentType runtimeType : Name}
     {variableDefinitions : List VariableDefinition}
-    {selectionSet : List Selection} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    selectionSetRuntimeAligned schema parentType runtimeType selectionSet ->
-      objectTypeNameBool schema runtimeType = true := by
+    {selectionSet : List Selection}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> selectionSetRuntimeAligned schema parentType runtimeType selectionSet
+      -> objectTypeNameBool schema runtimeType = true := by
   intro hschema hvalid hnormal haligned
   exact
     objectTypeNameBool_of_typeIncludesObjectBool hschema
@@ -138,29 +136,29 @@ theorem selectionSetRuntimeAligned_runtime_object_of_normal
 
 def selectionSetRuntimeActive
     (schema : Schema) (parentType runtimeType : Name)
-    (selectionSet : List Selection) : Prop :=
+    (selectionSet : List Selection)
+    : Prop :=
   (objectTypeNameBool schema parentType = true ∧ runtimeType = parentType)
-    ∨
-  (objectTypeNameBool schema parentType = false
-    ∧ ∃ directives bodySelectionSet,
-      Selection.inlineFragment (some runtimeType) directives
-        bodySelectionSet ∈ selectionSet
-      ∧ bodySelectionSet ≠ []
-      ∧ selectionSetNormal schema runtimeType bodySelectionSet)
+  ∨ (objectTypeNameBool schema parentType = false
+      ∧ ∃ directives bodySelectionSet,
+          Selection.inlineFragment (some runtimeType) directives bodySelectionSet
+            ∈ selectionSet
+          ∧ bodySelectionSet ≠ []
+          ∧ selectionSetNormal schema runtimeType bodySelectionSet)
 
 theorem selectionSetRuntimeActive_object
-    {schema : Schema} {parentType : Name} {selectionSet : List Selection} :
-    objectTypeNameBool schema parentType = true ->
-      selectionSetRuntimeActive schema parentType parentType selectionSet := by
+    {schema : Schema} {parentType : Name} {selectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetRuntimeActive schema parentType parentType selectionSet := by
   intro hobject
   exact Or.inl ⟨hobject, rfl⟩
 
 theorem selectionSetRuntimeActive_runtime_eq_of_object
     {schema : Schema} {parentType runtimeType : Name}
-    {selectionSet : List Selection} :
-    objectTypeNameBool schema parentType = true ->
-    selectionSetRuntimeActive schema parentType runtimeType selectionSet ->
-      runtimeType = parentType := by
+    {selectionSet : List Selection}
+    : objectTypeNameBool schema parentType = true
+      -> selectionSetRuntimeActive schema parentType runtimeType selectionSet
+      -> runtimeType = parentType := by
   intro hobject hactive
   rcases hactive with hobjectActive | habstractActive
   · exact hobjectActive.2
@@ -170,12 +168,11 @@ theorem selectionSetRuntimeActive_runtime_eq_of_object
 theorem selectionSetRuntimeActive_typeIncludes_of_normal
     {schema : Schema} {parentType runtimeType : Name}
     {variableDefinitions : List VariableDefinition}
-    {selectionSet : List Selection} :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    selectionSetRuntimeActive schema parentType runtimeType selectionSet ->
-      schema.typeIncludesObjectBool parentType runtimeType = true := by
+    {selectionSet : List Selection}
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> selectionSetRuntimeActive schema parentType runtimeType selectionSet
+      -> schema.typeIncludesObjectBool parentType runtimeType = true := by
   intro hvalid hnormal hactive
   rcases hactive with hobjectActive | habstractActive
   · rcases hobjectActive with ⟨hobject, hruntime⟩
@@ -194,13 +191,12 @@ theorem selectionSetRuntimeActive_typeIncludes_of_normal
 theorem selectionSetRuntimeActive_runtime_object_of_normal
     {schema : Schema} {parentType runtimeType : Name}
     {variableDefinitions : List VariableDefinition}
-    {selectionSet : List Selection} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    selectionSetNormal schema parentType selectionSet ->
-    selectionSetRuntimeActive schema parentType runtimeType selectionSet ->
-      objectTypeNameBool schema runtimeType = true := by
+    {selectionSet : List Selection}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> selectionSetNormal schema parentType selectionSet
+      -> selectionSetRuntimeActive schema parentType runtimeType selectionSet
+      -> objectTypeNameBool schema runtimeType = true := by
   intro hschema hvalid hnormal hactive
   exact
     objectTypeNameBool_of_typeIncludesObjectBool hschema
@@ -212,29 +208,29 @@ def fieldHeadProbeRuntimeCoherent
     (parentType fieldName runtimeType : Name)
     (arguments : List Argument)
     (fieldDefinition : FieldDefinition)
-    (childSelectionSet : List Selection) : Prop :=
+    (childSelectionSet : List Selection)
+    : Prop :=
   (objectTypeNameBool schema fieldDefinition.outputType.namedType = true
     ∧ runtimeType = fieldDefinition.outputType.namedType)
-    ∨
-  ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true
-    ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
-    ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-      arguments parentType rootSelectionSet = some runtimeType
-    ∧ selectionSetRuntimeActive schema fieldDefinition.outputType.namedType
-      runtimeType childSelectionSet)
+  ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema = true
+      ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+      ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+          arguments parentType rootSelectionSet
+        = some runtimeType
+      ∧ selectionSetRuntimeActive schema fieldDefinition.outputType.namedType
+          runtimeType childSelectionSet)
 
 def selectionSetProbeRootCoherent
     (schema : Schema) (rootSelectionSet : List Selection)
-    (parentType : Name) (selectionSet : List Selection) : Prop :=
-  ∀ responseName fieldName arguments directives childSelectionSet
-      fieldDefinition,
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-      ∃ runtimeType,
+    (parentType : Name) (selectionSet : List Selection)
+    : Prop :=
+  ∀ responseName fieldName arguments directives childSelectionSet fieldDefinition,
+    Selection.field responseName fieldName arguments directives childSelectionSet
+      ∈ selectionSet
+    -> schema.lookupField parentType fieldName = some fieldDefinition
+    -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+        = true
+    -> ∃ runtimeType,
         fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
           fieldName runtimeType arguments fieldDefinition childSelectionSet
 
@@ -242,69 +238,64 @@ mutual
   inductive SelectionSetProbeRootCoherentDeep
       (schema : Schema) (rootSelectionSet : List Selection)
       : Name -> List Selection -> Prop where
-    | nil {parentType : Name} :
-        SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType []
-    | cons {parentType : Name} {selection : Selection}
-        {rest : List Selection} :
-        SelectionProbeRootCoherentDeep schema rootSelectionSet parentType
-          selection ->
-        SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
-          rest ->
-        SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
-          (selection :: rest)
+    | nil {parentType : Name}
+      : SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType []
+    | cons {parentType : Name} {selection : Selection} {rest : List Selection}
+      : SelectionProbeRootCoherentDeep schema rootSelectionSet parentType selection
+        -> SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType rest
+        -> SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
+            (selection :: rest)
 
   inductive SelectionProbeRootCoherentDeep
       (schema : Schema) (rootSelectionSet : List Selection)
       : Name -> Selection -> Prop where
     | field
-        {parentType : Name}
-        {responseName fieldName : Name}
-        {arguments : List Argument}
-        {directives : List DirectiveApplication}
-        {childSelectionSet : List Selection} :
-        (∀ fieldDefinition,
-          schema.lookupField parentType fieldName = some fieldDefinition ->
-          (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-            schema = true ->
-            ∃ runtimeType,
+      {parentType : Name}
+      {responseName fieldName : Name}
+      {arguments : List Argument}
+      {directives : List DirectiveApplication}
+      {childSelectionSet : List Selection}
+      : (∀ fieldDefinition,
+          schema.lookupField parentType fieldName = some fieldDefinition
+          -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+              = true
+          -> ∃ runtimeType,
               fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
                 fieldName runtimeType arguments fieldDefinition
-                childSelectionSet) ->
-        (∀ fieldDefinition,
-          schema.lookupField parentType fieldName = some fieldDefinition ->
-            SelectionSetProbeRootCoherentDeep schema rootSelectionSet
-              fieldDefinition.outputType.namedType childSelectionSet) ->
-        SelectionProbeRootCoherentDeep schema rootSelectionSet parentType
-          (Selection.field responseName fieldName arguments directives
-            childSelectionSet)
+                childSelectionSet)
+        -> (∀ fieldDefinition,
+              schema.lookupField parentType fieldName = some fieldDefinition
+              -> SelectionSetProbeRootCoherentDeep schema rootSelectionSet
+                  fieldDefinition.outputType.namedType childSelectionSet)
+        -> SelectionProbeRootCoherentDeep schema rootSelectionSet parentType
+            (Selection.field responseName fieldName arguments directives
+              childSelectionSet)
     | inlineFragmentSome
-        {parentType : Name}
-        {typeCondition : Name}
-        {directives : List DirectiveApplication}
-        {childSelectionSet : List Selection} :
-        SelectionSetProbeRootCoherentDeep schema rootSelectionSet
-          typeCondition childSelectionSet ->
-        SelectionProbeRootCoherentDeep schema rootSelectionSet parentType
-          (Selection.inlineFragment (some typeCondition) directives
-            childSelectionSet)
+      {parentType : Name}
+      {typeCondition : Name}
+      {directives : List DirectiveApplication}
+      {childSelectionSet : List Selection}
+      : SelectionSetProbeRootCoherentDeep schema rootSelectionSet
+          typeCondition childSelectionSet
+        -> SelectionProbeRootCoherentDeep schema rootSelectionSet parentType
+            (Selection.inlineFragment (some typeCondition) directives childSelectionSet)
     | inlineFragmentNone
-        {parentType : Name}
-        {directives : List DirectiveApplication}
-        {childSelectionSet : List Selection} :
-        SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
-          childSelectionSet ->
-        SelectionProbeRootCoherentDeep schema rootSelectionSet parentType
-          (Selection.inlineFragment none directives childSelectionSet)
+      {parentType : Name}
+      {directives : List DirectiveApplication}
+      {childSelectionSet : List Selection}
+      : SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
+          childSelectionSet
+        -> SelectionProbeRootCoherentDeep schema rootSelectionSet parentType
+            (Selection.inlineFragment none directives childSelectionSet)
 end
 
 theorem SelectionSetProbeRootCoherentDeep.selection_of_mem
     {schema : Schema} {rootSelectionSet selectionSet : List Selection}
-    {parentType : Name} {selection : Selection} :
-    SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
-      selectionSet ->
-    selection ∈ selectionSet ->
-      SelectionProbeRootCoherentDeep schema rootSelectionSet parentType
-        selection := by
+    {parentType : Name} {selection : Selection}
+    : SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType selectionSet
+      -> selection ∈ selectionSet
+      -> SelectionProbeRootCoherentDeep schema rootSelectionSet parentType
+          selection := by
   revert selection
   induction selectionSet with
   | nil =>
@@ -324,17 +315,16 @@ theorem SelectionSetProbeRootCoherentDeep.field_head_of_mem
     {schema : Schema} {rootSelectionSet selectionSet : List Selection}
     {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} {fieldDefinition : FieldDefinition} :
-    SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
-      selectionSet ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-      ∃ runtimeType,
-        fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
-          fieldName runtimeType arguments fieldDefinition childSelectionSet := by
+    {childSelectionSet : List Selection} {fieldDefinition : FieldDefinition}
+    : SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> ∃ runtimeType,
+          fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
+            fieldName runtimeType arguments fieldDefinition childSelectionSet := by
   intro hcoherent hmem hlookup hcomposite
   have hselection :=
     hcoherent.selection_of_mem hmem
@@ -346,14 +336,13 @@ theorem SelectionSetProbeRootCoherentDeep.field_child_of_mem
     {schema : Schema} {rootSelectionSet selectionSet : List Selection}
     {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} {fieldDefinition : FieldDefinition} :
-    SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
-      selectionSet ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      SelectionSetProbeRootCoherentDeep schema rootSelectionSet
-        fieldDefinition.outputType.namedType childSelectionSet := by
+    {childSelectionSet : List Selection} {fieldDefinition : FieldDefinition}
+    : SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> SelectionSetProbeRootCoherentDeep schema rootSelectionSet
+          fieldDefinition.outputType.namedType childSelectionSet := by
   intro hcoherent hmem hlookup
   have hselection :=
     hcoherent.selection_of_mem hmem
@@ -365,13 +354,12 @@ theorem SelectionSetProbeRootCoherentDeep.inlineFragment_some_child_of_mem
     {schema : Schema} {rootSelectionSet selectionSet : List Selection}
     {parentType typeCondition : Name}
     {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} :
-    SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
-      selectionSet ->
-    Selection.inlineFragment (some typeCondition) directives
-      childSelectionSet ∈ selectionSet ->
-      SelectionSetProbeRootCoherentDeep schema rootSelectionSet
-        typeCondition childSelectionSet := by
+    {childSelectionSet : List Selection}
+    : SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType selectionSet
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet
+      -> SelectionSetProbeRootCoherentDeep schema rootSelectionSet
+          typeCondition childSelectionSet := by
   intro hcoherent hmem
   have hselection :=
     hcoherent.selection_of_mem hmem
@@ -383,13 +371,11 @@ theorem SelectionSetProbeRootCoherentDeep.inlineFragment_none_child_of_mem
     {schema : Schema} {rootSelectionSet selectionSet : List Selection}
     {parentType : Name}
     {directives : List DirectiveApplication}
-    {childSelectionSet : List Selection} :
-    SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
-      selectionSet ->
-    Selection.inlineFragment none directives childSelectionSet ∈
-      selectionSet ->
-      SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
-        childSelectionSet := by
+    {childSelectionSet : List Selection}
+    : SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType selectionSet
+      -> Selection.inlineFragment none directives childSelectionSet ∈ selectionSet
+      -> SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
+          childSelectionSet := by
   intro hcoherent hmem
   have hselection :=
     hcoherent.selection_of_mem hmem
@@ -399,11 +385,10 @@ theorem SelectionSetProbeRootCoherentDeep.inlineFragment_none_child_of_mem
 
 theorem selectionSetProbeRootCoherent_of_deep
     {schema : Schema} {rootSelectionSet selectionSet : List Selection}
-    {parentType : Name} :
-    SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
-      selectionSet ->
-      selectionSetProbeRootCoherent schema rootSelectionSet parentType
-        selectionSet := by
+    {parentType : Name}
+    : SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType selectionSet
+      -> selectionSetProbeRootCoherent schema rootSelectionSet parentType
+          selectionSet := by
   intro hdeep responseName fieldName arguments directives childSelectionSet
     fieldDefinition hmem hlookup hcomposite
   exact
@@ -413,15 +398,15 @@ theorem fieldHeadProbeRuntimeCoherent_typeIncludes_of_child_normal
     {schema : Schema} {rootSelectionSet childSelectionSet : List Selection}
     {parentType fieldName runtimeType : Name}
     {variableDefinitions : List VariableDefinition}
-    {arguments : List Argument} {fieldDefinition : FieldDefinition} :
-    Validation.selectionSetValid schema variableDefinitions
-      fieldDefinition.outputType.namedType childSelectionSet ->
-    selectionSetNormal schema fieldDefinition.outputType.namedType
-      childSelectionSet ->
-    fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
-      fieldName runtimeType arguments fieldDefinition childSelectionSet ->
-      schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-        runtimeType = true := by
+    {arguments : List Argument} {fieldDefinition : FieldDefinition}
+    : Validation.selectionSetValid schema variableDefinitions
+        fieldDefinition.outputType.namedType childSelectionSet
+      -> selectionSetNormal schema fieldDefinition.outputType.namedType
+          childSelectionSet
+      -> fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
+          fieldName runtimeType arguments fieldDefinition childSelectionSet
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true := by
   intro hchildValid hchildNormal hcoherent
   rcases hcoherent with hobject | habstract
   · rcases hobject with ⟨hobject, hruntime⟩
@@ -435,11 +420,11 @@ theorem fieldHeadProbeRuntimeCoherent_typeIncludes_of_child_normal
 theorem selectionSetRuntimeActive_of_fieldHeadProbeRuntimeCoherent
     {schema : Schema} {rootSelectionSet childSelectionSet : List Selection}
     {parentType fieldName runtimeType : Name}
-    {arguments : List Argument} {fieldDefinition : FieldDefinition} :
-    fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
-      fieldName runtimeType arguments fieldDefinition childSelectionSet ->
-      selectionSetRuntimeActive schema fieldDefinition.outputType.namedType
-        runtimeType childSelectionSet := by
+    {arguments : List Argument} {fieldDefinition : FieldDefinition}
+    : fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
+        fieldName runtimeType arguments fieldDefinition childSelectionSet
+      -> selectionSetRuntimeActive schema fieldDefinition.outputType.namedType
+          runtimeType childSelectionSet := by
   intro hcoherent
   rcases hcoherent with hobject | habstract
   · rcases hobject with ⟨hobject, hruntime⟩
@@ -451,15 +436,15 @@ theorem fieldHeadProbeRuntimeCoherent_runtime_object_of_child_normal
     {schema : Schema} {rootSelectionSet childSelectionSet : List Selection}
     {parentType fieldName runtimeType : Name}
     {variableDefinitions : List VariableDefinition}
-    {arguments : List Argument} {fieldDefinition : FieldDefinition} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema variableDefinitions
-      fieldDefinition.outputType.namedType childSelectionSet ->
-    selectionSetNormal schema fieldDefinition.outputType.namedType
-      childSelectionSet ->
-    fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
-      fieldName runtimeType arguments fieldDefinition childSelectionSet ->
-      objectTypeNameBool schema runtimeType = true := by
+    {arguments : List Argument} {fieldDefinition : FieldDefinition}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema variableDefinitions
+          fieldDefinition.outputType.namedType childSelectionSet
+      -> selectionSetNormal schema fieldDefinition.outputType.namedType
+          childSelectionSet
+      -> fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
+          fieldName runtimeType arguments fieldDefinition childSelectionSet
+      -> objectTypeNameBool schema runtimeType = true := by
   intro hschema hchildValid hchildNormal hcoherent
   exact
     objectTypeNameBool_of_typeIncludesObjectBool hschema
@@ -467,34 +452,34 @@ theorem fieldHeadProbeRuntimeCoherent_runtime_object_of_child_normal
         hchildValid hchildNormal hcoherent)
 
 theorem SelectionSetProbeRootCoherentDeep.field_child_runtimeActive_of_mem
-    {schema : Schema} {rootSelectionSet selectionSet childSelectionSet :
-      List Selection}
+    {schema : Schema} {rootSelectionSet selectionSet childSelectionSet : List Selection}
     {parentType responseName fieldName : Name}
     {arguments : List Argument} {directives : List DirectiveApplication}
     {variableDefinitions : List VariableDefinition}
-    {fieldDefinition : FieldDefinition} :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    Validation.selectionSetValid schema variableDefinitions
-      fieldDefinition.outputType.namedType childSelectionSet ->
-    selectionSetNormal schema fieldDefinition.outputType.namedType
-      childSelectionSet ->
-    SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
-      selectionSet ->
-    Selection.field responseName fieldName arguments directives
-      childSelectionSet ∈ selectionSet ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-    (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-      schema = true ->
-      ∃ runtimeType,
-        fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
-          fieldName runtimeType arguments fieldDefinition childSelectionSet
-        ∧ schema.typeIncludesObjectBool
-          fieldDefinition.outputType.namedType runtimeType = true
-        ∧ objectTypeNameBool schema runtimeType = true
-        ∧ selectionSetRuntimeActive schema
-          fieldDefinition.outputType.namedType runtimeType childSelectionSet
-        ∧ SelectionSetProbeRootCoherentDeep schema rootSelectionSet
-          fieldDefinition.outputType.namedType childSelectionSet := by
+    {fieldDefinition : FieldDefinition}
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> Validation.selectionSetValid schema variableDefinitions
+          fieldDefinition.outputType.namedType childSelectionSet
+      -> selectionSetNormal schema fieldDefinition.outputType.namedType
+          childSelectionSet
+      -> SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
+          selectionSet
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = true
+      -> ∃ runtimeType,
+          fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
+            fieldName runtimeType arguments fieldDefinition childSelectionSet
+          ∧ schema.typeIncludesObjectBool
+              fieldDefinition.outputType.namedType runtimeType
+            = true
+          ∧ objectTypeNameBool schema runtimeType = true
+          ∧ selectionSetRuntimeActive schema
+              fieldDefinition.outputType.namedType runtimeType childSelectionSet
+          ∧ SelectionSetProbeRootCoherentDeep schema rootSelectionSet
+              fieldDefinition.outputType.namedType childSelectionSet := by
   intro hschema hchildValid hchildNormal hcoherent hmem hlookup hcomposite
   rcases hcoherent.field_head_of_mem hmem hlookup hcomposite with
     ⟨runtimeType, hhead⟩
@@ -520,20 +505,17 @@ theorem SelectionSetProbeRootCoherentDeep.field_child_runtimeActive_of_mem
 theorem fieldHeadProbeRuntimeCoherent.to_compositeTargetRuntime
     {schema : Schema} {rootSelectionSet childSelectionSet : List Selection}
     {parentType fieldName runtimeType : Name}
-    {arguments : List Argument} {fieldDefinition : FieldDefinition} :
-    fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
-      fieldName runtimeType arguments fieldDefinition childSelectionSet ->
-      ((objectTypeNameBool schema fieldDefinition.outputType.namedType =
-          true
-          ∧ runtimeType = fieldDefinition.outputType.namedType)
-        ∨
-        ((TypeRef.named
-            fieldDefinition.outputType.namedType).isCompositeBool schema =
-            true
-          ∧ objectTypeNameBool schema
-            fieldDefinition.outputType.namedType = false
-          ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
-            arguments parentType rootSelectionSet = some runtimeType)) := by
+    {arguments : List Argument} {fieldDefinition : FieldDefinition}
+    : fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
+        fieldName runtimeType arguments fieldDefinition childSelectionSet
+      -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
+            ∧ runtimeType = fieldDefinition.outputType.namedType)
+          ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+                = true
+              ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
+              ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
+                  arguments parentType rootSelectionSet
+                = some runtimeType)) := by
   intro hcoherent
   rcases hcoherent with hobject | habstract
   · exact Or.inl hobject

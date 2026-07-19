@@ -12,16 +12,16 @@ namespace ExecutionUngrouped
 
 open GraphQL.Execution
 
-def collectedExecutableFields :
-    List (Name × List ExecutableField) -> List ExecutableField
+def collectedExecutableFields
+    : List (Name × List ExecutableField) -> List ExecutableField
   | [] => []
   | (_responseName, fields) :: rest =>
       fields ++ collectedExecutableFields rest
 
 theorem collectedExecutableFields_append
-    (left right : List (Name × List ExecutableField)) :
-    collectedExecutableFields (left ++ right) =
-      collectedExecutableFields left ++ collectedExecutableFields right := by
+    (left right : List (Name × List ExecutableField))
+    : collectedExecutableFields (left ++ right)
+      = collectedExecutableFields left ++ collectedExecutableFields right := by
   induction left with
   | nil =>
       simp [collectedExecutableFields]
@@ -31,10 +31,10 @@ theorem collectedExecutableFields_append
 
 theorem collectedExecutableFields_addExecutableGroup_length
     (group : Name × List ExecutableField)
-    (groups : List (Name × List ExecutableField)) :
-    (collectedExecutableFields
-      (GraphQL.Execution.addExecutableGroup group groups)).length =
-      group.snd.length + (collectedExecutableFields groups).length := by
+    (groups : List (Name × List ExecutableField))
+    : (collectedExecutableFields
+        (GraphQL.Execution.addExecutableGroup group groups)).length
+      = group.snd.length + (collectedExecutableFields groups).length := by
   rcases group with ⟨groupName, groupFields⟩
   induction groups with
   | nil =>
@@ -54,11 +54,11 @@ theorem collectedExecutableFields_addExecutableGroup_length
         omega
 
 theorem collectedExecutableFields_mergeExecutableGroups_length
-    (left right : List (Name × List ExecutableField)) :
-    (collectedExecutableFields
-      (GraphQL.Execution.mergeExecutableGroups left right)).length =
-      (collectedExecutableFields left).length +
-        (collectedExecutableFields right).length := by
+    (left right : List (Name × List ExecutableField))
+    : (collectedExecutableFields
+        (GraphQL.Execution.mergeExecutableGroups left right)).length
+      = (collectedExecutableFields left).length
+        + (collectedExecutableFields right).length := by
   induction right generalizing left with
   | nil =>
       simp [collectedExecutableFields, GraphQL.Execution.mergeExecutableGroups]
@@ -78,10 +78,9 @@ theorem collectedExecutableFields_mergeExecutableGroups_length
 
 theorem addExecutableGroup_key_mem
     (group : Name × List ExecutableField)
-    (groups : List (Name × List ExecutableField)) (responseName : Name) :
-    responseName ∈
-        (GraphQL.Execution.addExecutableGroup group groups).map Prod.fst ↔
-      responseName = group.fst ∨ responseName ∈ groups.map Prod.fst := by
+    (groups : List (Name × List ExecutableField)) (responseName : Name)
+    : responseName ∈ (GraphQL.Execution.addExecutableGroup group groups).map Prod.fst
+      ↔ responseName = group.fst ∨ responseName ∈ groups.map Prod.fst := by
   rcases group with ⟨groupName, groupFields⟩
   induction groups with
   | nil =>
@@ -111,10 +110,9 @@ theorem addExecutableGroup_key_mem
             · exact Or.inr (Or.inr hrest)
 
 theorem mergeExecutableGroups_key_mem
-    (left right : List (Name × List ExecutableField)) (responseName : Name) :
-    responseName ∈
-        (GraphQL.Execution.mergeExecutableGroups left right).map Prod.fst ↔
-      responseName ∈ left.map Prod.fst ∨ responseName ∈ right.map Prod.fst := by
+    (left right : List (Name × List ExecutableField)) (responseName : Name)
+    : responseName ∈ (GraphQL.Execution.mergeExecutableGroups left right).map Prod.fst
+      ↔ responseName ∈ left.map Prod.fst ∨ responseName ∈ right.map Prod.fst := by
   induction right generalizing left with
   | nil =>
       simp [GraphQL.Execution.mergeExecutableGroups]
@@ -144,12 +142,11 @@ theorem mergeExecutableGroups_key_mem
           · exact Or.inr hrest
 
 theorem collectedExecutableFields_mergeExecutableGroups_eq_append_of_namesDisjoint
-    (left right : List (Name × List ExecutableField)) :
-    GraphQL.NormalForm.executableGroupNamesDisjoint left right ->
-    GraphQL.NormalForm.executableGroupNamesNodup right ->
-      collectedExecutableFields
-          (GraphQL.Execution.mergeExecutableGroups left right) =
-        collectedExecutableFields left ++ collectedExecutableFields right := by
+    (left right : List (Name × List ExecutableField))
+    : GraphQL.NormalForm.executableGroupNamesDisjoint left right
+      -> GraphQL.NormalForm.executableGroupNamesNodup right
+      -> collectedExecutableFields (GraphQL.Execution.mergeExecutableGroups left right)
+          = collectedExecutableFields left ++ collectedExecutableFields right := by
   intro hdisjoint hnodup
   rw [GraphQL.NormalForm.mergeExecutableGroups_eq_append_of_namesDisjoint
     left right hdisjoint hnodup]
@@ -157,14 +154,14 @@ theorem collectedExecutableFields_mergeExecutableGroups_eq_append_of_namesDisjoi
 
 theorem collectedExecutableFields_merge_single_duplicate_around_disjoint
     (responseName : Name) (first later : ExecutableField)
-    (middleGroups : List (Name × List ExecutableField)) :
-    responseName ∉ middleGroups.map Prod.fst ->
-    GraphQL.NormalForm.executableGroupNamesNodup middleGroups ->
-      collectedExecutableFields
-          (GraphQL.Execution.mergeExecutableGroups
-            [(responseName, [first])]
-            (middleGroups ++ [(responseName, [later])])) =
-        [first, later] ++ collectedExecutableFields middleGroups := by
+    (middleGroups : List (Name × List ExecutableField))
+    : responseName ∉ middleGroups.map Prod.fst
+      -> GraphQL.NormalForm.executableGroupNamesNodup middleGroups
+      -> collectedExecutableFields
+            (GraphQL.Execution.mergeExecutableGroups
+              [(responseName, [first])]
+              (middleGroups ++ [(responseName, [later])]))
+          = [first, later] ++ collectedExecutableFields middleGroups := by
   intro hnotMiddle hmiddleNodup
   have hdisjoint :
       GraphQL.NormalForm.executableGroupNamesDisjoint
@@ -187,14 +184,14 @@ theorem collectedExecutableFields_merge_single_duplicate_around_disjoint
 theorem collectedExecutableFields_merge_group_duplicate_around_disjoint
     (responseName : Name) (prefixFields : List ExecutableField)
     (later : ExecutableField)
-    (middleGroups : List (Name × List ExecutableField)) :
-    responseName ∉ middleGroups.map Prod.fst ->
-    GraphQL.NormalForm.executableGroupNamesNodup middleGroups ->
-      collectedExecutableFields
-          (GraphQL.Execution.mergeExecutableGroups
-            [(responseName, prefixFields)]
-            (middleGroups ++ [(responseName, [later])])) =
-        (prefixFields ++ [later]) ++ collectedExecutableFields middleGroups := by
+    (middleGroups : List (Name × List ExecutableField))
+    : responseName ∉ middleGroups.map Prod.fst
+      -> GraphQL.NormalForm.executableGroupNamesNodup middleGroups
+      -> collectedExecutableFields
+            (GraphQL.Execution.mergeExecutableGroups
+              [(responseName, prefixFields)]
+              (middleGroups ++ [(responseName, [later])]))
+          = (prefixFields ++ [later]) ++ collectedExecutableFields middleGroups := by
   intro hnotMiddle hmiddleNodup
   have hdisjoint :
       GraphQL.NormalForm.executableGroupNamesDisjoint
@@ -216,25 +213,26 @@ theorem collectedExecutableFields_merge_group_duplicate_around_disjoint
     List.append_assoc]
 
 theorem executableFieldSelections_collectedExecutableFields_collectFields_duplicate_around_disjoint
-    {ObjectIdentity : Type}
-    (schema : Schema) (variableValues : VariableValues)
+    {ObjectIdentity : Type} (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (first later : ExecutableField) (middle : List Selection) :
-    later.responseName = first.responseName ->
-    first.responseName ∉
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          middle).map Prod.fst ->
-      executableFieldSelections
-          (collectedExecutableFields
-            (GraphQL.Execution.collectFields schema variableValues parentType
-              source
-              (executableFieldSelections [first] ++ middle ++
-                executableFieldSelections [later]))) =
-        executableFieldSelections [first, later] ++
-          executableFieldSelections
+    (first later : ExecutableField) (middle : List Selection)
+    : later.responseName = first.responseName
+      -> first.responseName
+          ∉ (GraphQL.Execution.collectFields schema variableValues parentType source
+              middle).map
+              Prod.fst
+      -> executableFieldSelections
             (collectedExecutableFields
               (GraphQL.Execution.collectFields schema variableValues parentType
-                source middle)) := by
+                source
+                (executableFieldSelections [first]
+                  ++ middle
+                  ++ executableFieldSelections [later])))
+          = executableFieldSelections [first, later]
+            ++ executableFieldSelections
+                (collectedExecutableFields
+                  (GraphQL.Execution.collectFields schema variableValues parentType
+                    source middle)) := by
   intro hsame hnotMiddle
   let firstCollected : ExecutableField :=
     executableField parentType first.responseName first.fieldName
@@ -299,28 +297,29 @@ theorem executableFieldSelections_collectedExecutableFields_collectFields_duplic
     laterCollected, executableField, middleGroups, hsame]
 
 theorem executableFieldSelections_collectedExecutableFields_collectFields_group_duplicate_around_disjoint
-    {ObjectIdentity : Type}
-    (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (responseName : Name) (prefixFields : List ExecutableField)
-    (later : ExecutableField) (middle : List Selection) :
-    prefixFields ≠ [] ->
-    (∀ field, field ∈ prefixFields -> field.responseName = responseName) ->
-    later.responseName = responseName ->
-    responseName ∉
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          middle).map Prod.fst ->
-      executableFieldSelections
-          (collectedExecutableFields
-            (GraphQL.Execution.collectFields schema variableValues parentType
-              source
-              (executableFieldSelections prefixFields ++ middle ++
-                executableFieldSelections [later]))) =
-        executableFieldSelections (prefixFields ++ [later]) ++
-          executableFieldSelections
+    {ObjectIdentity : Type} (schema : Schema) (variableValues : VariableValues)
+    (parentType : Name) (source : ResolverValue ObjectIdentity) (responseName : Name)
+    (prefixFields : List ExecutableField) (later : ExecutableField)
+    (middle : List Selection)
+    : prefixFields ≠ []
+      -> (∀ field, field ∈ prefixFields -> field.responseName = responseName)
+      -> later.responseName = responseName
+      -> responseName
+          ∉ (GraphQL.Execution.collectFields schema variableValues parentType source
+              middle).map
+              Prod.fst
+      -> executableFieldSelections
             (collectedExecutableFields
               (GraphQL.Execution.collectFields schema variableValues parentType
-                source middle)) := by
+                source
+                (executableFieldSelections prefixFields
+                  ++ middle
+                  ++ executableFieldSelections [later])))
+          = executableFieldSelections (prefixFields ++ [later])
+            ++ executableFieldSelections
+                (collectedExecutableFields
+                  (GraphQL.Execution.collectFields schema variableValues parentType
+                    source middle)) := by
   intro hprefixNonempty hprefixResponse hlaterResponse hnotMiddle
   cases prefixFields with
   | nil =>
@@ -417,14 +416,14 @@ theorem collectFields_executableFieldSelections_collectedExecutableFields
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (groups : List (Name × List ExecutableField)) :
-    PairKeysNodup groups ->
-    CollectedGroupsFieldsNonempty groups ->
-    CollectedGroupsResponseName groups ->
-    CollectedGroupsParent parentType groups ->
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        (executableFieldSelections (collectedExecutableFields groups)) =
-      groups := by
+    (groups : List (Name × List ExecutableField))
+    : PairKeysNodup groups
+      -> CollectedGroupsFieldsNonempty groups
+      -> CollectedGroupsResponseName groups
+      -> CollectedGroupsParent parentType groups
+      -> GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections (collectedExecutableFields groups))
+          = groups := by
   induction groups with
   | nil =>
       intro _hnodup _hnonempty _hresponse _hparent
@@ -483,14 +482,14 @@ theorem collectFields_executableFieldSelections_collectedExecutableFields_collec
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    GraphQL.Execution.collectFields schema variableValues parentType source
-      (executableFieldSelections
-        (collectedExecutableFields
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source selectionSet))) =
-    GraphQL.Execution.collectFields schema variableValues parentType source
-      selectionSet := by
+    (selectionSet : List Selection)
+    : GraphQL.Execution.collectFields schema variableValues parentType source
+        (executableFieldSelections
+          (collectedExecutableFields
+            (GraphQL.Execution.collectFields schema variableValues parentType
+              source selectionSet)))
+      = GraphQL.Execution.collectFields schema variableValues parentType source
+          selectionSet := by
   apply collectFields_executableFieldSelections_collectedExecutableFields
   · exact PairKeysNodup_of_executableGroupNamesNodup
       (GraphQL.Execution.collectFields schema variableValues parentType source
@@ -508,11 +507,11 @@ theorem collectedExecutableFields_collectFields_executableFieldSelections_length
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (fields : List ExecutableField) :
-    (collectedExecutableFields
-      (GraphQL.Execution.collectFields schema variableValues parentType source
-        (executableFieldSelections fields))).length =
-      fields.length := by
+    (fields : List ExecutableField)
+    : (collectedExecutableFields
+        (GraphQL.Execution.collectFields schema variableValues parentType source
+          (executableFieldSelections fields))).length
+      = fields.length := by
   induction fields with
   | nil =>
       simp [executableFieldSelections, GraphQL.Execution.collectFields,
@@ -543,16 +542,16 @@ theorem specExecuteRootSelectionSet_executableFieldSelections_collectedExecutabl
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (groups : List (Name × List ExecutableField)) :
-    PairKeysNodup groups ->
-    CollectedGroupsFieldsNonempty groups ->
-    CollectedGroupsResponseName groups ->
-    CollectedGroupsParent parentType groups ->
-      GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-        depth parentType source
-        (executableFieldSelections (collectedExecutableFields groups)) =
-      GraphQL.Execution.executeCollectedFields schema resolvers variableValues
-        depth source groups := by
+    (groups : List (Name × List ExecutableField))
+    : PairKeysNodup groups
+      -> CollectedGroupsFieldsNonempty groups
+      -> CollectedGroupsResponseName groups
+      -> CollectedGroupsParent parentType groups
+      -> GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+            depth parentType source
+            (executableFieldSelections (collectedExecutableFields groups))
+          = GraphQL.Execution.executeCollectedFields schema resolvers variableValues
+              depth source groups := by
   intro hnodup hnonempty hresponse hparent
   simp [GraphQL.Execution.executeRootSelectionSet,
     collectFields_executableFieldSelections_collectedExecutableFields schema
@@ -560,19 +559,17 @@ theorem specExecuteRootSelectionSet_executableFieldSelections_collectedExecutabl
       hparent]
 
 theorem specExecuteRootSelectionSet_executableFieldSelections_collectedExecutableFields_collectFields
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      depth parentType source
-      (executableFieldSelections
-        (collectedExecutableFields
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source selectionSet))) =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      depth parentType source selectionSet := by
+    {ObjectIdentity : Type} (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (depth : Nat) (parentType : Name)
+    (source : ResolverValue ObjectIdentity) (selectionSet : List Selection)
+    : GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+        depth parentType source
+        (executableFieldSelections
+          (collectedExecutableFields
+            (GraphQL.Execution.collectFields schema variableValues parentType
+              source selectionSet)))
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          depth parentType source selectionSet := by
   simp [GraphQL.Execution.executeRootSelectionSet,
     collectFields_executableFieldSelections_collectedExecutableFields_collectFields
       schema variableValues parentType source selectionSet]
@@ -583,19 +580,19 @@ theorem executeRootSelectionSet_eq_spec_of_flattened_collectFields_eq
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection)
-    (hflat :
-      executeRootSelectionSet schema resolvers variableValues depth parentType
-        source selectionSet =
-      GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-        depth parentType source
-        (executableFieldSelections
-          (collectedExecutableFields
-            (GraphQL.Execution.collectFields schema variableValues parentType
-              source selectionSet)))) :
-    executeRootSelectionSet schema resolvers variableValues depth parentType
-      source selectionSet =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
-      depth parentType source selectionSet :=
+    (hflat
+      : executeRootSelectionSet schema resolvers variableValues depth parentType
+          source selectionSet
+        = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+            depth parentType source
+            (executableFieldSelections
+              (collectedExecutableFields
+                (GraphQL.Execution.collectFields schema variableValues parentType
+                  source selectionSet))))
+    : executeRootSelectionSet schema resolvers variableValues depth parentType
+        source selectionSet
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
+          depth parentType source selectionSet :=
   hflat.trans
     (specExecuteRootSelectionSet_executableFieldSelections_collectedExecutableFields_collectFields
       schema resolvers variableValues depth parentType source selectionSet)
@@ -603,10 +600,10 @@ theorem executeRootSelectionSet_eq_spec_of_flattened_collectFields_eq
 theorem collectedExecutableFields_mem_of_group_mem
     {groups : List (Name × List ExecutableField)}
     {responseName : Name} {fields : List ExecutableField}
-    {field : ExecutableField} :
-    (responseName, fields) ∈ groups ->
-      field ∈ fields ->
-        field ∈ collectedExecutableFields groups := by
+    {field : ExecutableField}
+    : (responseName, fields) ∈ groups
+      -> field ∈ fields
+      -> field ∈ collectedExecutableFields groups := by
   intro hgroup hfield
   induction groups with
   | nil =>
@@ -621,10 +618,9 @@ theorem collectedExecutableFields_mem_of_group_mem
       · exact Or.inr (ih htail)
 
 theorem CollectedGroupsFieldValidationMergeCompatible.of_collectedExecutableFields
-    (groups : List (Name × List ExecutableField)) :
-    ExecutableFieldsFieldValidationMergeCompatible
-      (collectedExecutableFields groups) ->
-        CollectedGroupsFieldValidationMergeCompatible groups := by
+    (groups : List (Name × List ExecutableField))
+    : ExecutableFieldsFieldValidationMergeCompatible (collectedExecutableFields groups)
+      -> CollectedGroupsFieldValidationMergeCompatible groups := by
   intro hflat responseName fields hgroup first later hfirst hlater hresponse
   exact hflat first later
     (collectedExecutableFields_mem_of_group_mem hgroup hfirst)
@@ -632,10 +628,10 @@ theorem CollectedGroupsFieldValidationMergeCompatible.of_collectedExecutableFiel
     hresponse
 
 theorem CollectedGroupsValidationMergeCompatible.of_collectedExecutableFields
-    (groups : List (Name × List ExecutableField)) :
-    ExecutableFieldsSameParentValidationMergeCompatible
-      (collectedExecutableFields groups) ->
-        CollectedGroupsValidationMergeCompatible groups := by
+    (groups : List (Name × List ExecutableField))
+    : ExecutableFieldsSameParentValidationMergeCompatible
+        (collectedExecutableFields groups)
+      -> CollectedGroupsValidationMergeCompatible groups := by
   intro hflat responseName fields hgroup first later hfirst hlater hresponse
     hparent
   exact hflat first later
@@ -644,19 +640,19 @@ theorem CollectedGroupsValidationMergeCompatible.of_collectedExecutableFields
     hresponse hparent
 
 theorem ExecutableFieldsFieldValidationMergeCompatible.mono
-    (source target : List ExecutableField) :
-    (∀ field, field ∈ target -> field ∈ source) ->
-      ExecutableFieldsFieldValidationMergeCompatible source ->
-        ExecutableFieldsFieldValidationMergeCompatible target := by
+    (source target : List ExecutableField)
+    : (∀ field, field ∈ target -> field ∈ source)
+      -> ExecutableFieldsFieldValidationMergeCompatible source
+      -> ExecutableFieldsFieldValidationMergeCompatible target := by
   intro hsubset hcompatible first later hfirst hlater hresponse
   exact hcompatible first later (hsubset first hfirst)
     (hsubset later hlater) hresponse
 
 theorem ExecutableFieldsSameParentValidationMergeCompatible.mono
-    (source target : List ExecutableField) :
-    (∀ field, field ∈ target -> field ∈ source) ->
-      ExecutableFieldsSameParentValidationMergeCompatible source ->
-        ExecutableFieldsSameParentValidationMergeCompatible target := by
+    (source target : List ExecutableField)
+    : (∀ field, field ∈ target -> field ∈ source)
+      -> ExecutableFieldsSameParentValidationMergeCompatible source
+      -> ExecutableFieldsSameParentValidationMergeCompatible target := by
   intro hsubset hcompatible first later hfirst hlater hresponse hparent
   exact hcompatible first later (hsubset first hfirst)
     (hsubset later hlater) hresponse hparent
@@ -664,12 +660,10 @@ theorem ExecutableFieldsSameParentValidationMergeCompatible.mono
 theorem collectedExecutableFields_mem_addExecutableGroup
     (group : Name × List ExecutableField)
     (groups : List (Name × List ExecutableField))
-    (field : ExecutableField) :
-    field ∈
-        collectedExecutableFields
-          (GraphQL.Execution.addExecutableGroup group groups)
-      ↔
-    field ∈ group.snd ∨ field ∈ collectedExecutableFields groups := by
+    (field : ExecutableField)
+    : field
+        ∈ collectedExecutableFields (GraphQL.Execution.addExecutableGroup group groups)
+      ↔ field ∈ group.snd ∨ field ∈ collectedExecutableFields groups := by
   rcases group with ⟨groupName, groupFields⟩
   induction groups with
   | nil =>
@@ -714,13 +708,11 @@ theorem collectedExecutableFields_mem_addExecutableGroup
 
 theorem collectedExecutableFields_mem_mergeExecutableGroups
     (left right : List (Name × List ExecutableField))
-    (field : ExecutableField) :
-    field ∈
-        collectedExecutableFields
-          (GraphQL.Execution.mergeExecutableGroups left right)
-      ↔
-    field ∈ collectedExecutableFields left
-      ∨ field ∈ collectedExecutableFields right := by
+    (field : ExecutableField)
+    : field
+        ∈ collectedExecutableFields (GraphQL.Execution.mergeExecutableGroups left right)
+      ↔ field ∈ collectedExecutableFields left
+        ∨ field ∈ collectedExecutableFields right := by
   induction right generalizing left with
   | nil =>
       simp [collectedExecutableFields, GraphQL.Execution.mergeExecutableGroups]
@@ -775,12 +767,12 @@ theorem collectedExecutableFields_mem_mergeExecutableGroups
 
 theorem collectedExecutableFields_addExecutableGroup_subset_append
     (group : Name × List ExecutableField)
-    (groups : List (Name × List ExecutableField)) :
-    ∀ field,
-      field ∈
-          collectedExecutableFields
-            (GraphQL.Execution.addExecutableGroup group groups) ->
-        field ∈ group.snd ++ collectedExecutableFields groups := by
+    (groups : List (Name × List ExecutableField))
+    : ∀ field,
+        field
+          ∈ collectedExecutableFields
+              (GraphQL.Execution.addExecutableGroup group groups)
+        -> field ∈ group.snd ++ collectedExecutableFields groups := by
   intro field hmem
   rcases
       (collectedExecutableFields_mem_addExecutableGroup group groups field).mp
@@ -789,12 +781,13 @@ theorem collectedExecutableFields_addExecutableGroup_subset_append
   · exact List.mem_append.mpr (Or.inr hgroups)
 
 theorem collectedExecutableFields_mergeExecutableGroups_subset_append
-    (left right : List (Name × List ExecutableField)) :
-    ∀ field,
-      field ∈
-          collectedExecutableFields
-            (GraphQL.Execution.mergeExecutableGroups left right) ->
-        field ∈ collectedExecutableFields left ++ collectedExecutableFields right := by
+    (left right : List (Name × List ExecutableField))
+    : ∀ field,
+        field
+          ∈ collectedExecutableFields
+              (GraphQL.Execution.mergeExecutableGroups left right)
+        -> field
+            ∈ collectedExecutableFields left ++ collectedExecutableFields right := by
   intro field hmem
   rcases
       (collectedExecutableFields_mem_mergeExecutableGroups left right field).mp
@@ -804,10 +797,10 @@ theorem collectedExecutableFields_mergeExecutableGroups_subset_append
 
 theorem collectedExecutableFields_addExecutableGroup_fieldCompatible_of_append
     (group : Name × List ExecutableField)
-    (groups : List (Name × List ExecutableField)) :
-    ExecutableFieldsFieldValidationMergeCompatible
-      (group.snd ++ collectedExecutableFields groups) ->
-        ExecutableFieldsFieldValidationMergeCompatible
+    (groups : List (Name × List ExecutableField))
+    : ExecutableFieldsFieldValidationMergeCompatible
+        (group.snd ++ collectedExecutableFields groups)
+      -> ExecutableFieldsFieldValidationMergeCompatible
           (collectedExecutableFields
             (GraphQL.Execution.addExecutableGroup group groups)) := by
   intro hcompatible
@@ -819,10 +812,10 @@ theorem collectedExecutableFields_addExecutableGroup_fieldCompatible_of_append
     hcompatible
 
 theorem collectedExecutableFields_mergeExecutableGroups_fieldCompatible_of_append
-    (left right : List (Name × List ExecutableField)) :
-    ExecutableFieldsFieldValidationMergeCompatible
-      (collectedExecutableFields left ++ collectedExecutableFields right) ->
-        ExecutableFieldsFieldValidationMergeCompatible
+    (left right : List (Name × List ExecutableField))
+    : ExecutableFieldsFieldValidationMergeCompatible
+        (collectedExecutableFields left ++ collectedExecutableFields right)
+      -> ExecutableFieldsFieldValidationMergeCompatible
           (collectedExecutableFields
             (GraphQL.Execution.mergeExecutableGroups left right)) := by
   intro hcompatible
@@ -835,16 +828,17 @@ theorem collectedExecutableFields_mergeExecutableGroups_fieldCompatible_of_appen
 
 theorem executableFieldSelections_selectionSetValid_field
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (parentType : Name) :
-    ∀ fields : List ExecutableField,
-      Validation.selectionSetValid schema variableDefinitions parentType
-        (executableFieldSelections fields) ->
-      ExecutableFieldsParent parentType fields ->
-      ∀ field, field ∈ fields ->
-        Validation.selectionSetValid schema variableDefinitions
-          ((schema.fieldReturnType? field.parentType field.fieldName).getD
-            field.fieldName)
-          field.selectionSet
+    (parentType : Name)
+    : ∀ fields : List ExecutableField,
+        Validation.selectionSetValid schema variableDefinitions parentType
+          (executableFieldSelections fields)
+        -> ExecutableFieldsParent parentType fields
+        -> ∀ field,
+            field ∈ fields
+            -> Validation.selectionSetValid schema variableDefinitions
+                ((schema.fieldReturnType? field.parentType field.fieldName).getD
+                  field.fieldName)
+                field.selectionSet
   | [], _hvalid, _hparents, field, hfield => by
       simp at hfield
   | head :: rest, hvalid, hparents, field, hfield => by
@@ -883,16 +877,16 @@ theorem executableFieldSelections_selectionSetValid_field
 theorem executableFieldsScopedBy_selectionSetValid_field
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType : Name) (selectionSet : List Selection)
-    (fields : List ExecutableField) :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    ExecutableFieldsScopedBy
-      (FieldMerge.collectFields schema parentType selectionSet) fields ->
-      ∀ field, field ∈ fields ->
-        Validation.selectionSetValid schema variableDefinitions
-          ((schema.fieldReturnType? field.parentType field.fieldName).getD
-            field.fieldName)
-          field.selectionSet := by
+    (fields : List ExecutableField)
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> ExecutableFieldsScopedBy
+          (FieldMerge.collectFields schema parentType selectionSet) fields
+      -> ∀ field,
+          field ∈ fields
+          -> Validation.selectionSetValid schema variableDefinitions
+              ((schema.fieldReturnType? field.parentType field.fieldName).getD
+                field.fieldName)
+              field.selectionSet := by
   intro hvalid hscoped field hfield
   rcases hscoped field hfield with
     ⟨scopedField, hscopedMem, hmatch⟩
@@ -923,15 +917,15 @@ theorem executableFieldsScopedBy_selectionSetValid_field
 theorem executableFieldsScopedBy_lookupField
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType : Name) (selectionSet : List Selection)
-    (fields : List ExecutableField) :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      selectionSet ->
-    ExecutableFieldsScopedBy
-      (FieldMerge.collectFields schema parentType selectionSet) fields ->
-      ∀ field, field ∈ fields ->
-        ∃ fieldDefinition,
-          schema.lookupField field.parentType field.fieldName =
-            some fieldDefinition := by
+    (fields : List ExecutableField)
+    : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+      -> ExecutableFieldsScopedBy
+          (FieldMerge.collectFields schema parentType selectionSet) fields
+      -> ∀ field,
+          field ∈ fields
+          -> ∃ fieldDefinition,
+              schema.lookupField field.parentType field.fieldName
+              = some fieldDefinition := by
   intro hvalid hscoped field hfield
   rcases hscoped field hfield with
     ⟨scopedField, hscopedMem, hmatch⟩
@@ -948,19 +942,18 @@ theorem executableFieldsScopedBy_lookupField
 theorem executableFieldsRuntimeScopedBy_scopedSelectionSetValid_field
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (validParent runtimeType : Name) (selectionSet : List Selection)
-    (fields : List ExecutableField) :
-    Validation.selectionSetValid schema variableDefinitions validParent
-      selectionSet ->
-    ExecutableFieldsRuntimeScopedBy schema runtimeType
-      (FieldMerge.collectFields schema validParent selectionSet) fields ->
-      ∀ field, field ∈ fields ->
-        ∃ scopedField,
-          scopedField ∈ FieldMerge.collectFields schema validParent
-            selectionSet
-            ∧ ScopedFieldMatchesExecutableIdentity scopedField field
-            ∧ ScopedFieldRuntimeApplies schema runtimeType scopedField
-            ∧ Validation.selectionSetValid schema variableDefinitions
-              scopedField.outputType.namedType field.selectionSet := by
+    (fields : List ExecutableField)
+    : Validation.selectionSetValid schema variableDefinitions validParent selectionSet
+      -> ExecutableFieldsRuntimeScopedBy schema runtimeType
+          (FieldMerge.collectFields schema validParent selectionSet) fields
+      -> ∀ field,
+          field ∈ fields
+          -> ∃ scopedField,
+              scopedField ∈ FieldMerge.collectFields schema validParent selectionSet
+              ∧ ScopedFieldMatchesExecutableIdentity scopedField field
+              ∧ ScopedFieldRuntimeApplies schema runtimeType scopedField
+              ∧ Validation.selectionSetValid schema variableDefinitions
+                  scopedField.outputType.namedType field.selectionSet := by
   intro hvalid hscoped field hfield
   rcases hscoped field hfield with
     ⟨scopedField, hscopedMem, hmatch, hruntime⟩
@@ -984,13 +977,13 @@ theorem executableFieldsRuntimeScopedBy_scopedSelectionSetValid_field
   · simpa [hselectionSet] using hselectionSetValid
 
 theorem selectionSetSemanticsReady_mergedFieldSelectionSet
-    (schema : Schema) (parentType : Name) :
-    ∀ fields : List ExecutableField,
-      (∀ field, field ∈ fields ->
-        NormalForm.selectionSetSemanticsReady schema parentType
-          field.selectionSet) ->
-        NormalForm.selectionSetSemanticsReady schema parentType
-          (GraphQL.Execution.mergedFieldSelectionSet fields)
+    (schema : Schema) (parentType : Name)
+    : ∀ fields : List ExecutableField,
+        (∀ field,
+          field ∈ fields
+          -> NormalForm.selectionSetSemanticsReady schema parentType field.selectionSet)
+        -> NormalForm.selectionSetSemanticsReady schema parentType
+            (GraphQL.Execution.mergedFieldSelectionSet fields)
   | [], _hready => by
       simpa [GraphQL.Execution.mergedFieldSelectionSet] using
         NormalForm.selectionSetSemanticsReady_nil schema parentType
@@ -1012,12 +1005,12 @@ theorem selectionSetSemanticsReady_mergedFieldSelectionSet
 
 theorem selectionSetLookupValid_mergedFieldSelectionSet_of_semanticsReady
     (schema : Schema) (parentType : Name)
-    (fields : List ExecutableField) :
-    (∀ field, field ∈ fields ->
-      NormalForm.selectionSetSemanticsReady schema parentType
-        field.selectionSet) ->
-      NormalForm.selectionSetLookupValid schema parentType
-        (GraphQL.Execution.mergedFieldSelectionSet fields) := by
+    (fields : List ExecutableField)
+    : (∀ field,
+        field ∈ fields
+        -> NormalForm.selectionSetSemanticsReady schema parentType field.selectionSet)
+      -> NormalForm.selectionSetLookupValid schema parentType
+          (GraphQL.Execution.mergedFieldSelectionSet fields) := by
   intro hready
   exact
     NormalForm.selectionSetLookupValid_of_selectionSetSemanticsReady
@@ -1026,13 +1019,13 @@ theorem selectionSetLookupValid_mergedFieldSelectionSet_of_semanticsReady
         fields hready)
 
 theorem selectionSetLookupValid_mergedFieldSelectionSet
-    (schema : Schema) (parentType : Name) :
-    ∀ fields : List ExecutableField,
-      (∀ field, field ∈ fields ->
-        NormalForm.selectionSetLookupValid schema parentType
-          field.selectionSet) ->
-        NormalForm.selectionSetLookupValid schema parentType
-          (GraphQL.Execution.mergedFieldSelectionSet fields)
+    (schema : Schema) (parentType : Name)
+    : ∀ fields : List ExecutableField,
+        (∀ field,
+          field ∈ fields
+          -> NormalForm.selectionSetLookupValid schema parentType field.selectionSet)
+        -> NormalForm.selectionSetLookupValid schema parentType
+            (GraphQL.Execution.mergedFieldSelectionSet fields)
   | [], _hlookup => by
       simpa [GraphQL.Execution.mergedFieldSelectionSet] using
         NormalForm.selectionSetLookupValid_nil schema parentType
@@ -1053,14 +1046,15 @@ theorem selectionSetLookupValid_mergedFieldSelectionSet
 
 theorem selectionSetValidInPossibleTypes_mergedFieldSelectionSet
     (schema : Schema) (variableDefinitions : List VariableDefinition)
-    (parentType : Name) :
-    ∀ fields : List ExecutableField,
-      (∀ field, field ∈ fields ->
-        Validation.selectionSetValidInPossibleTypes schema
-          variableDefinitions parentType field.selectionSet) ->
-        Validation.selectionSetValidInPossibleTypes schema
-          variableDefinitions parentType
-          (GraphQL.Execution.mergedFieldSelectionSet fields)
+    (parentType : Name)
+    : ∀ fields : List ExecutableField,
+        (∀ field,
+          field ∈ fields
+          -> Validation.selectionSetValidInPossibleTypes schema
+              variableDefinitions parentType field.selectionSet)
+        -> Validation.selectionSetValidInPossibleTypes schema
+            variableDefinitions parentType
+            (GraphQL.Execution.mergedFieldSelectionSet fields)
   | [], _hvalid => by
       simp [GraphQL.Execution.mergedFieldSelectionSet,
         Validation.selectionSetValidInPossibleTypes]
@@ -1117,14 +1111,13 @@ mutual
       (variableValues : VariableValues)
       (collectParent validParent : Name)
       (source : ResolverValue ObjectIdentity)
-      (selection : Selection) :
-      Validation.selectionValid schema variableDefinitions validParent
-        selection ->
-        ExecutableFieldsIdentityScopedBy
-          (FieldMerge.collectFields schema validParent [selection])
-          (collectedExecutableFields
-            (GraphQL.Execution.collectSelection schema variableValues
-              collectParent source selection)) := by
+      (selection : Selection)
+      : Validation.selectionValid schema variableDefinitions validParent selection
+        -> ExecutableFieldsIdentityScopedBy
+            (FieldMerge.collectFields schema validParent [selection])
+            (collectedExecutableFields
+              (GraphQL.Execution.collectSelection schema variableValues
+                collectParent source selection)) := by
     intro hvalid field hfield
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
@@ -1239,14 +1232,13 @@ mutual
       (variableValues : VariableValues)
       (collectParent validParent : Name)
       (source : ResolverValue ObjectIdentity)
-      (selectionSet : List Selection) :
-      Validation.selectionSetValid schema variableDefinitions validParent
-        selectionSet ->
-        ExecutableFieldsIdentityScopedBy
-          (FieldMerge.collectFields schema validParent selectionSet)
-          (collectedExecutableFields
-            (GraphQL.Execution.collectFields schema variableValues collectParent
-              source selectionSet)) := by
+      (selectionSet : List Selection)
+      : Validation.selectionSetValid schema variableDefinitions validParent selectionSet
+        -> ExecutableFieldsIdentityScopedBy
+            (FieldMerge.collectFields schema validParent selectionSet)
+            (collectedExecutableFields
+              (GraphQL.Execution.collectFields schema variableValues collectParent
+                source selectionSet)) := by
     intro hvalid field hfield
     cases selectionSet with
     | nil =>
@@ -1299,15 +1291,14 @@ mutual
       (variableValues : VariableValues)
       (collectParent validParent runtimeType : Name)
       (identity : ObjectIdentity)
-      (selection : Selection) :
-      ScopedParentRuntimeApplies schema runtimeType validParent ->
-      Validation.selectionValid schema variableDefinitions validParent
-        selection ->
-        ExecutableFieldsRuntimeScopedBy schema runtimeType
-          (FieldMerge.collectFields schema validParent [selection])
-          (collectedExecutableFields
-            (GraphQL.Execution.collectSelection schema variableValues
-              collectParent (.object runtimeType identity) selection)) := by
+      (selection : Selection)
+      : ScopedParentRuntimeApplies schema runtimeType validParent
+        -> Validation.selectionValid schema variableDefinitions validParent selection
+        -> ExecutableFieldsRuntimeScopedBy schema runtimeType
+            (FieldMerge.collectFields schema validParent [selection])
+            (collectedExecutableFields
+              (GraphQL.Execution.collectSelection schema variableValues
+                collectParent (.object runtimeType identity) selection)) := by
     intro hparentRuntime hvalid field hfield
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
@@ -1428,15 +1419,15 @@ mutual
       (variableValues : VariableValues)
       (collectParent validParent runtimeType : Name)
       (identity : ObjectIdentity)
-      (selectionSet : List Selection) :
-      ScopedParentRuntimeApplies schema runtimeType validParent ->
-      Validation.selectionSetValid schema variableDefinitions validParent
-        selectionSet ->
-        ExecutableFieldsRuntimeScopedBy schema runtimeType
-          (FieldMerge.collectFields schema validParent selectionSet)
-          (collectedExecutableFields
-            (GraphQL.Execution.collectFields schema variableValues collectParent
-              (.object runtimeType identity) selectionSet)) := by
+      (selectionSet : List Selection)
+      : ScopedParentRuntimeApplies schema runtimeType validParent
+        -> Validation.selectionSetValid schema variableDefinitions validParent
+            selectionSet
+        -> ExecutableFieldsRuntimeScopedBy schema runtimeType
+            (FieldMerge.collectFields schema validParent selectionSet)
+            (collectedExecutableFields
+              (GraphQL.Execution.collectFields schema variableValues collectParent
+                (.object runtimeType identity) selectionSet)) := by
     intro hparentRuntime hvalid field hfield
     cases selectionSet with
     | nil =>
@@ -1489,15 +1480,14 @@ mutual
       (variableValues : VariableValues)
       (collectParent validParent runtimeType : Name)
       (identity : ObjectIdentity)
-      (selection : Selection) :
-      ScopedParentRuntimeApplies schema runtimeType validParent ->
-      Validation.selectionValid schema variableDefinitions validParent
-        selection ->
-        ExecutableFieldsRuntimeScopedBy schema runtimeType
-          (FieldMerge.collectFields schema validParent [selection])
-          (collectedExecutableFields
-            (GraphQL.Execution.collectSelection schema variableValues
-              collectParent (.object runtimeType identity) selection)) := by
+      (selection : Selection)
+      : ScopedParentRuntimeApplies schema runtimeType validParent
+        -> Validation.selectionValid schema variableDefinitions validParent selection
+        -> ExecutableFieldsRuntimeScopedBy schema runtimeType
+            (FieldMerge.collectFields schema validParent [selection])
+            (collectedExecutableFields
+              (GraphQL.Execution.collectSelection schema variableValues
+                collectParent (.object runtimeType identity) selection)) := by
     intro hparentRuntime hvalid field hfield
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
@@ -1618,15 +1608,15 @@ mutual
       (variableValues : VariableValues)
       (collectParent validParent runtimeType : Name)
       (identity : ObjectIdentity)
-      (selectionSet : List Selection) :
-      ScopedParentRuntimeApplies schema runtimeType validParent ->
-      Validation.selectionSetValid schema variableDefinitions validParent
-        selectionSet ->
-        ExecutableFieldsRuntimeScopedBy schema runtimeType
-          (FieldMerge.collectFields schema validParent selectionSet)
-          (collectedExecutableFields
-            (GraphQL.Execution.collectFields schema variableValues collectParent
-              (.object runtimeType identity) selectionSet)) := by
+      (selectionSet : List Selection)
+      : ScopedParentRuntimeApplies schema runtimeType validParent
+        -> Validation.selectionSetValid schema variableDefinitions validParent
+            selectionSet
+        -> ExecutableFieldsRuntimeScopedBy schema runtimeType
+            (FieldMerge.collectFields schema validParent selectionSet)
+            (collectedExecutableFields
+              (GraphQL.Execution.collectFields schema variableValues collectParent
+                (.object runtimeType identity) selectionSet)) := by
     intro hparentRuntime hvalid field hfield
     cases selectionSet with
     | nil =>
@@ -1678,14 +1668,14 @@ mutual
       (variableValues : VariableValues)
       (collectParent scopedParent runtimeType : Name)
       (identity : ObjectIdentity)
-      (selection : Selection) :
-      ScopedParentRuntimeApplies schema runtimeType scopedParent ->
-      NormalForm.selectionLookupValid schema scopedParent selection ->
-        ExecutableFieldsRuntimeScopedBy schema runtimeType
-          (FieldMerge.collectFields schema scopedParent [selection])
-          (collectedExecutableFields
-            (GraphQL.Execution.collectSelection schema variableValues
-              collectParent (.object runtimeType identity) selection)) := by
+      (selection : Selection)
+      : ScopedParentRuntimeApplies schema runtimeType scopedParent
+        -> NormalForm.selectionLookupValid schema scopedParent selection
+        -> ExecutableFieldsRuntimeScopedBy schema runtimeType
+            (FieldMerge.collectFields schema scopedParent [selection])
+            (collectedExecutableFields
+              (GraphQL.Execution.collectSelection schema variableValues
+                collectParent (.object runtimeType identity) selection)) := by
     intro hparentRuntime hlookupValid field hfield
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
@@ -1804,14 +1794,14 @@ mutual
       (variableValues : VariableValues)
       (collectParent scopedParent runtimeType : Name)
       (identity : ObjectIdentity)
-      (selectionSet : List Selection) :
-      ScopedParentRuntimeApplies schema runtimeType scopedParent ->
-      NormalForm.selectionSetLookupValid schema scopedParent selectionSet ->
-        ExecutableFieldsRuntimeScopedBy schema runtimeType
-          (FieldMerge.collectFields schema scopedParent selectionSet)
-          (collectedExecutableFields
-            (GraphQL.Execution.collectFields schema variableValues collectParent
-              (.object runtimeType identity) selectionSet)) := by
+      (selectionSet : List Selection)
+      : ScopedParentRuntimeApplies schema runtimeType scopedParent
+        -> NormalForm.selectionSetLookupValid schema scopedParent selectionSet
+        -> ExecutableFieldsRuntimeScopedBy schema runtimeType
+            (FieldMerge.collectFields schema scopedParent selectionSet)
+            (collectedExecutableFields
+              (GraphQL.Execution.collectFields schema variableValues collectParent
+                (.object runtimeType identity) selectionSet)) := by
     intro hparentRuntime hlookupValid field hfield
     cases selectionSet with
     | nil =>
@@ -1870,14 +1860,14 @@ mutual
       (variableValues : VariableValues)
       (collectParent scopedParent runtimeType : Name)
       (identity : ObjectIdentity)
-      (selection : Selection) :
-      ScopedParentRuntimeApplies schema runtimeType scopedParent ->
-      NormalForm.selectionLookupValid schema scopedParent selection ->
-        ExecutableFieldsRuntimeScopedBy schema runtimeType
-          (FieldMerge.collectFields schema scopedParent [selection])
-          (collectedExecutableFields
-            (GraphQL.Execution.collectSelection schema variableValues
-              collectParent (.object runtimeType identity) selection)) := by
+      (selection : Selection)
+      : ScopedParentRuntimeApplies schema runtimeType scopedParent
+        -> NormalForm.selectionLookupValid schema scopedParent selection
+        -> ExecutableFieldsRuntimeScopedBy schema runtimeType
+            (FieldMerge.collectFields schema scopedParent [selection])
+            (collectedExecutableFields
+              (GraphQL.Execution.collectSelection schema variableValues
+                collectParent (.object runtimeType identity) selection)) := by
     intro hparentRuntime hlookupValid field hfield
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
@@ -1999,14 +1989,14 @@ mutual
       (variableValues : VariableValues)
       (collectParent scopedParent runtimeType : Name)
       (identity : ObjectIdentity)
-      (selectionSet : List Selection) :
-      ScopedParentRuntimeApplies schema runtimeType scopedParent ->
-      NormalForm.selectionSetLookupValid schema scopedParent selectionSet ->
-        ExecutableFieldsRuntimeScopedBy schema runtimeType
-          (FieldMerge.collectFields schema scopedParent selectionSet)
-          (collectedExecutableFields
-            (GraphQL.Execution.collectFields schema variableValues collectParent
-              (.object runtimeType identity) selectionSet)) := by
+      (selectionSet : List Selection)
+      : ScopedParentRuntimeApplies schema runtimeType scopedParent
+        -> NormalForm.selectionSetLookupValid schema scopedParent selectionSet
+        -> ExecutableFieldsRuntimeScopedBy schema runtimeType
+            (FieldMerge.collectFields schema scopedParent selectionSet)
+            (collectedExecutableFields
+              (GraphQL.Execution.collectFields schema variableValues collectParent
+                (.object runtimeType identity) selectionSet)) := by
     intro hparentRuntime hlookupValid field hfield
     cases selectionSet with
     | nil =>
@@ -2065,18 +2055,18 @@ mutual
       (variableValues : VariableValues)
       (parentType runtimeType : Name)
       (identity : ObjectIdentity)
-      (selection : Selection) :
-      schema.objectType parentType ->
-      ScopedParentRuntimeApplies schema runtimeType parentType ->
-      NormalForm.selectionSemanticsReady schema parentType selection ->
-        ∀ field,
-          field ∈
-            collectedExecutableFields
-              (GraphQL.Execution.collectSelection schema variableValues
-                parentType (.object runtimeType identity) selection) ->
-            ∃ fieldDefinition,
-              schema.lookupField parentType field.fieldName =
-                some fieldDefinition := by
+      (selection : Selection)
+      : schema.objectType parentType
+        -> ScopedParentRuntimeApplies schema runtimeType parentType
+        -> NormalForm.selectionSemanticsReady schema parentType selection
+        -> ∀ field,
+            field
+              ∈ collectedExecutableFields
+                  (GraphQL.Execution.collectSelection schema variableValues
+                    parentType (.object runtimeType identity) selection)
+            -> ∃ fieldDefinition,
+                schema.lookupField parentType field.fieldName
+                = some fieldDefinition := by
     intro hobject hparentRuntime hready field hfield
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
@@ -2198,18 +2188,18 @@ mutual
       (variableValues : VariableValues)
       (parentType runtimeType : Name)
       (identity : ObjectIdentity)
-      (selectionSet : List Selection) :
-      schema.objectType parentType ->
-      ScopedParentRuntimeApplies schema runtimeType parentType ->
-      NormalForm.selectionSetSemanticsReady schema parentType selectionSet ->
-        ∀ field,
-          field ∈
-            collectedExecutableFields
-              (GraphQL.Execution.collectFields schema variableValues
-                parentType (.object runtimeType identity) selectionSet) ->
-            ∃ fieldDefinition,
-              schema.lookupField parentType field.fieldName =
-                some fieldDefinition := by
+      (selectionSet : List Selection)
+      : schema.objectType parentType
+        -> ScopedParentRuntimeApplies schema runtimeType parentType
+        -> NormalForm.selectionSetSemanticsReady schema parentType selectionSet
+        -> ∀ field,
+            field
+              ∈ collectedExecutableFields
+                  (GraphQL.Execution.collectFields schema variableValues
+                    parentType (.object runtimeType identity) selectionSet)
+            -> ∃ fieldDefinition,
+                schema.lookupField parentType field.fieldName
+                = some fieldDefinition := by
     intro hobject hparentRuntime hready field hfield
     cases selectionSet with
     | nil =>
@@ -2249,24 +2239,24 @@ mutual
       (variableValues : VariableValues)
       (parentType runtimeType : Name)
       (identity : ObjectIdentity)
-      (selection : Selection) :
-      schema.objectType parentType ->
-      ScopedParentRuntimeApplies schema runtimeType parentType ->
-      NormalForm.selectionSemanticsReady schema parentType selection ->
-        ∀ field,
-          field ∈
-            collectedExecutableFields
-              (GraphQL.Execution.collectSelection schema variableValues
-                parentType (.object runtimeType identity) selection) ->
-          ∀ fieldDefinition,
-            schema.lookupField field.parentType field.fieldName =
-              some fieldDefinition ->
-            ∀ childRuntime,
-              schema.typeIncludesObjectBool
-                  fieldDefinition.outputType.namedType childRuntime =
-                true ->
-              NormalForm.selectionSetSemanticsReady schema childRuntime
-                field.selectionSet := by
+      (selection : Selection)
+      : schema.objectType parentType
+        -> ScopedParentRuntimeApplies schema runtimeType parentType
+        -> NormalForm.selectionSemanticsReady schema parentType selection
+        -> ∀ field,
+            field
+              ∈ collectedExecutableFields
+                  (GraphQL.Execution.collectSelection schema variableValues
+                    parentType (.object runtimeType identity) selection)
+            -> ∀ fieldDefinition,
+                schema.lookupField field.parentType field.fieldName
+                  = some fieldDefinition
+                -> ∀ childRuntime,
+                    schema.typeIncludesObjectBool
+                        fieldDefinition.outputType.namedType childRuntime
+                      = true
+                    -> NormalForm.selectionSetSemanticsReady schema childRuntime
+                        field.selectionSet := by
     intro hobject hparentRuntime hready field hfield fieldDefinition hlookup
       childRuntime hinclude
     cases selection with
@@ -2394,24 +2384,24 @@ mutual
       (variableValues : VariableValues)
       (parentType runtimeType : Name)
       (identity : ObjectIdentity)
-      (selectionSet : List Selection) :
-      schema.objectType parentType ->
-      ScopedParentRuntimeApplies schema runtimeType parentType ->
-      NormalForm.selectionSetSemanticsReady schema parentType selectionSet ->
-        ∀ field,
-          field ∈
-            collectedExecutableFields
-              (GraphQL.Execution.collectFields schema variableValues
-                parentType (.object runtimeType identity) selectionSet) ->
-          ∀ fieldDefinition,
-            schema.lookupField field.parentType field.fieldName =
-              some fieldDefinition ->
-            ∀ childRuntime,
-              schema.typeIncludesObjectBool
-                  fieldDefinition.outputType.namedType childRuntime =
-                true ->
-              NormalForm.selectionSetSemanticsReady schema childRuntime
-                field.selectionSet := by
+      (selectionSet : List Selection)
+      : schema.objectType parentType
+        -> ScopedParentRuntimeApplies schema runtimeType parentType
+        -> NormalForm.selectionSetSemanticsReady schema parentType selectionSet
+        -> ∀ field,
+            field
+              ∈ collectedExecutableFields
+                  (GraphQL.Execution.collectFields schema variableValues
+                    parentType (.object runtimeType identity) selectionSet)
+            -> ∀ fieldDefinition,
+                schema.lookupField field.parentType field.fieldName
+                  = some fieldDefinition
+                -> ∀ childRuntime,
+                    schema.typeIncludesObjectBool
+                        fieldDefinition.outputType.namedType childRuntime
+                      = true
+                    -> NormalForm.selectionSetSemanticsReady schema childRuntime
+                        field.selectionSet := by
     intro hobject hparentRuntime hready field hfield fieldDefinition hlookup
       childRuntime hinclude
     cases selectionSet with

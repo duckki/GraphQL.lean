@@ -10,9 +10,9 @@ namespace NormalForm
 namespace CompleteNormalization
 
 theorem leafTypeNameBool_false_of_objectTypeNameBool_true
-    (schema : Schema) {typeName : Name} :
-    objectTypeNameBool schema typeName = true ->
-      leafTypeNameBool schema typeName = false := by
+    (schema : Schema) {typeName : Name}
+    : objectTypeNameBool schema typeName = true
+      -> leafTypeNameBool schema typeName = false := by
   intro hobject
   unfold objectTypeNameBool at hobject
   unfold leafTypeNameBool
@@ -25,9 +25,10 @@ theorem leafTypeNameBool_false_of_objectTypeNameBool_true
 theorem groundObjectTypesForType_objects
     (schema : Schema)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (returnType : Name) :
-    ∀ objectType, objectType ∈ groundObjectTypesForType schema returnType ->
-      objectTypeNameBool schema objectType = true := by
+    (returnType : Name)
+    : ∀ objectType,
+        objectType ∈ groundObjectTypesForType schema returnType
+        -> objectTypeNameBool schema objectType = true := by
   intro objectType hmem
   unfold groundObjectTypesForType at hmem
   cases hobject : objectTypeNameBool schema returnType with
@@ -45,8 +46,8 @@ theorem groundObjectTypesForType_objects
 theorem groundObjectTypesForType_nodup
     (schema : Schema)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
-    (returnType : Name) :
-    (groundObjectTypesForType schema returnType).Nodup := by
+    (returnType : Name)
+    : (groundObjectTypesForType schema returnType).Nodup := by
   unfold groundObjectTypesForType
   cases hobject : objectTypeNameBool schema returnType with
   | false =>
@@ -57,10 +58,10 @@ theorem groundObjectTypesForType_nodup
       simp
 
 theorem typeIncludesObjectBool_mem_groundObjectTypesForType
-    (schema : Schema) (returnType runtimeType : Name) :
-    leafTypeNameBool schema returnType = false ->
-    schema.typeIncludesObjectBool returnType runtimeType = true ->
-      runtimeType ∈ groundObjectTypesForType schema returnType := by
+    (schema : Schema) (returnType runtimeType : Name)
+    : leafTypeNameBool schema returnType = false
+      -> schema.typeIncludesObjectBool returnType runtimeType = true
+      -> runtimeType ∈ groundObjectTypesForType schema returnType := by
   intro _hleafFalse hinclude
   unfold groundObjectTypesForType
   cases hobject : objectTypeNameBool schema returnType with
@@ -76,10 +77,10 @@ theorem typeIncludesObjectBool_mem_groundObjectTypesForType
       simp
 
 theorem groundObjectTypesForType_mem_typeIncludesObjectBool
-    (schema : Schema) (returnType runtimeType : Name) :
-    leafTypeNameBool schema returnType = false ->
-    runtimeType ∈ groundObjectTypesForType schema returnType ->
-      schema.typeIncludesObjectBool returnType runtimeType = true := by
+    (schema : Schema) (returnType runtimeType : Name)
+    : leafTypeNameBool schema returnType = false
+      -> runtimeType ∈ groundObjectTypesForType schema returnType
+      -> schema.typeIncludesObjectBool returnType runtimeType = true := by
   intro _hleafFalse hmem
   unfold groundObjectTypesForType at hmem
   cases hobject : objectTypeNameBool schema returnType with
@@ -93,13 +94,13 @@ theorem groundObjectTypesForType_mem_typeIncludesObjectBool
         schema hobject
 
 theorem fieldMerge_collectFields_mergeSelectionSets_mem_of_mem
-    (schema : Schema) (parentType : Name) :
-    ∀ selections selection scopedField,
-      selection ∈ selections ->
-      scopedField ∈ FieldMerge.collectFields schema parentType
-        selection.subselections ->
-        scopedField ∈ FieldMerge.collectFields schema parentType
-          (mergeSelectionSets selections)
+    (schema : Schema) (parentType : Name)
+    : ∀ selections selection scopedField,
+        selection ∈ selections
+        -> scopedField
+            ∈ FieldMerge.collectFields schema parentType selection.subselections
+        -> scopedField
+            ∈ FieldMerge.collectFields schema parentType (mergeSelectionSets selections)
   | [], selection, scopedField, hselection, _hfield => by
       cases hselection
   | head :: rest, selection, scopedField, hselection, hfield => by
@@ -120,19 +121,21 @@ theorem fieldMerge_collectFields_staticScoped_merged_mem_fieldHead_merged
     (schema : Schema) (boolCase : BoolCase)
     (lookupParent groundType responseName runtimeType : Name)
     (selectionSet rest : List Selection)
-    (scopedField : FieldMerge.ScopedField) :
-    schema.typeIncludesObjectBool lookupParent groundType = true ->
-    scopedField ∈ FieldMerge.collectFields schema runtimeType
-        (selectionSet ++
-          mergeSelectionSets
-            (eraseCompleteScopedSelectionSet
-              (staticScopedFieldsWithResponseName schema boolCase
-                lookupParent groundType responseName rest))) ->
-      scopedField ∈ FieldMerge.collectFields schema runtimeType
-        (selectionSet ++
-          mergeSelectionSets
-            (fieldSelectionsWithResponseNameInScope schema lookupParent responseName
-              rest)) := by
+    (scopedField : FieldMerge.ScopedField)
+    : schema.typeIncludesObjectBool lookupParent groundType = true
+      -> scopedField
+          ∈ FieldMerge.collectFields schema runtimeType
+              (selectionSet
+                ++ mergeSelectionSets
+                    (eraseCompleteScopedSelectionSet
+                      (staticScopedFieldsWithResponseName schema boolCase
+                        lookupParent groundType responseName rest)))
+      -> scopedField
+          ∈ FieldMerge.collectFields schema runtimeType
+              (selectionSet
+                ++ mergeSelectionSets
+                    (fieldSelectionsWithResponseNameInScope schema lookupParent
+                      responseName rest)) := by
   intro hground hfield
   rw [FieldMerge.collectFields_append] at hfield ⊢
   rcases List.mem_append.mp hfield with hchild | hmatched
@@ -166,13 +169,13 @@ theorem fieldMerge_collectFields_staticScoped_merged_mem_fieldHead_merged
 theorem selectionSetLookupValid_field_head_clear_directives
     (schema : Schema) (parentType responseName fieldName : Name)
     (arguments : List Argument) (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    selectionSetLookupValid schema parentType
-      (Selection.field responseName fieldName arguments directives
-        selectionSet :: rest) ->
-      selectionSetLookupValid schema parentType
-        (Selection.field responseName fieldName arguments []
-          selectionSet :: rest) := by
+    (selectionSet rest : List Selection)
+    : selectionSetLookupValid schema parentType
+        (Selection.field responseName fieldName arguments directives selectionSet
+          :: rest)
+      -> selectionSetLookupValid schema parentType
+          (Selection.field responseName fieldName arguments [] selectionSet
+            :: rest) := by
   intro hlookupValid
   unfold selectionSetLookupValid at hlookupValid ⊢
   intro selection hmem
@@ -193,13 +196,13 @@ theorem selectionSetValid_field_head_clear_directives
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType responseName fieldName : Name)
     (arguments : List Argument) (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    Validation.selectionSetValid schema variableDefinitions parentType
-      (Selection.field responseName fieldName arguments directives
-        selectionSet :: rest) ->
-      Validation.selectionSetValid schema variableDefinitions parentType
-        (Selection.field responseName fieldName arguments []
-          selectionSet :: rest) := by
+    (selectionSet rest : List Selection)
+    : Validation.selectionSetValid schema variableDefinitions parentType
+        (Selection.field responseName fieldName arguments directives selectionSet
+          :: rest)
+      -> Validation.selectionSetValid schema variableDefinitions parentType
+          (Selection.field responseName fieldName arguments [] selectionSet
+            :: rest) := by
   intro hvalid
   unfold Validation.selectionSetValid at hvalid ⊢
   intro selection hmem
@@ -226,13 +229,13 @@ theorem selectionSetValid_field_head_clear_directives
 theorem selectionSetSemanticsReady_field_head_clear_directives
     (schema : Schema) (parentType responseName fieldName : Name)
     (arguments : List Argument) (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    selectionSetSemanticsReady schema parentType
-      (Selection.field responseName fieldName arguments directives
-        selectionSet :: rest) ->
-      selectionSetSemanticsReady schema parentType
-        (Selection.field responseName fieldName arguments []
-          selectionSet :: rest) := by
+    (selectionSet rest : List Selection)
+    : selectionSetSemanticsReady schema parentType
+        (Selection.field responseName fieldName arguments directives selectionSet
+          :: rest)
+      -> selectionSetSemanticsReady schema parentType
+          (Selection.field responseName fieldName arguments [] selectionSet
+            :: rest) := by
   intro hready
   unfold selectionSetSemanticsReady at hready ⊢
   intro selection hmem
@@ -252,13 +255,13 @@ theorem selectionSetSemanticsReady_field_head_clear_directives
 theorem fieldsInSetCanMerge_field_head_clear_directives
     (schema : Schema) (parentType responseName fieldName : Name)
     (arguments : List Argument) (directives : List DirectiveApplication)
-    (selectionSet rest : List Selection) :
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.field responseName fieldName arguments directives
-        selectionSet :: rest) ->
-      FieldMerge.fieldsInSetCanMerge schema parentType
-        (Selection.field responseName fieldName arguments []
-          selectionSet :: rest) := by
+    (selectionSet rest : List Selection)
+    : FieldMerge.fieldsInSetCanMerge schema parentType
+        (Selection.field responseName fieldName arguments directives selectionSet
+          :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.field responseName fieldName arguments [] selectionSet
+            :: rest) := by
   intro hmerge
   unfold FieldMerge.fieldsInSetCanMerge
   refine FieldMerge.FieldsInSetCanMerge.intro parentType
@@ -287,25 +290,25 @@ theorem selectionSetLookupValid_field_staticScoped_merged_object
     (arguments : List Argument)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    schema.objectType lookupParent ->
-    Validation.selectionSetValid schema variableDefinitions lookupParent
-      (Selection.field responseName fieldName arguments directives
-        selectionSet :: rest) ->
-    FieldMerge.fieldsInSetCanMerge schema lookupParent
-      (Selection.field responseName fieldName arguments directives
-        selectionSet :: rest) ->
-    schema.lookupField lookupParent fieldName = some fieldDefinition ->
-    schema.typeIncludesObjectBool lookupParent groundType = true ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-      selectionSetLookupValid schema runtimeType
-        (selectionSet ++
-          mergeSelectionSets
-            (eraseCompleteScopedSelectionSet
-              (staticScopedFieldsWithResponseName schema boolCase
-                lookupParent groundType responseName rest))) := by
+    (fieldDefinition : FieldDefinition)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> schema.objectType lookupParent
+      -> Validation.selectionSetValid schema variableDefinitions lookupParent
+          (Selection.field responseName fieldName arguments directives selectionSet
+            :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema lookupParent
+          (Selection.field responseName fieldName arguments directives selectionSet
+            :: rest)
+      -> schema.lookupField lookupParent fieldName = some fieldDefinition
+      -> schema.typeIncludesObjectBool lookupParent groundType = true
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> selectionSetLookupValid schema runtimeType
+          (selectionSet
+            ++ mergeSelectionSets
+                (eraseCompleteScopedSelectionSet
+                  (staticScopedFieldsWithResponseName schema boolCase
+                    lookupParent groundType responseName rest))) := by
   intro hschema hobject hvalid hmerge hlookup hground hinclude
   have hvalidNoDirectives :
       Validation.selectionSetValid schema variableDefinitions lookupParent
@@ -398,22 +401,22 @@ theorem fieldsInSetCanMerge_field_staticScoped_merged_object
     (arguments : List Argument)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    schema.objectType lookupParent ->
-    selectionSetLookupValid schema lookupParent
-      (Selection.field responseName fieldName arguments directives
-        selectionSet :: rest) ->
-    FieldMerge.fieldsInSetCanMerge schema lookupParent
-      (Selection.field responseName fieldName arguments directives
-        selectionSet :: rest) ->
-    schema.lookupField lookupParent fieldName = some fieldDefinition ->
-    schema.typeIncludesObjectBool lookupParent groundType = true ->
-      FieldMerge.fieldsInSetCanMerge schema runtimeType
-        (selectionSet ++
-          mergeSelectionSets
-            (eraseCompleteScopedSelectionSet
-              (staticScopedFieldsWithResponseName schema boolCase
-                lookupParent groundType responseName rest))) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.objectType lookupParent
+      -> selectionSetLookupValid schema lookupParent
+          (Selection.field responseName fieldName arguments directives selectionSet
+            :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema lookupParent
+          (Selection.field responseName fieldName arguments directives selectionSet
+            :: rest)
+      -> schema.lookupField lookupParent fieldName = some fieldDefinition
+      -> schema.typeIncludesObjectBool lookupParent groundType = true
+      -> FieldMerge.fieldsInSetCanMerge schema runtimeType
+          (selectionSet
+            ++ mergeSelectionSets
+                (eraseCompleteScopedSelectionSet
+                  (staticScopedFieldsWithResponseName schema boolCase
+                    lookupParent groundType responseName rest))) := by
   intro hobject hlookupValid hmerge hlookup hground
   have hlookupValidNoDirectives :
       selectionSetLookupValid schema lookupParent
@@ -463,27 +466,27 @@ theorem selectionSetSemanticsReady_field_staticScoped_merged_object
     (arguments : List Argument)
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    schema.objectType lookupParent ->
-    selectionSetSemanticsReady schema lookupParent
-      (Selection.field responseName fieldName arguments directives
-        selectionSet :: rest) ->
-    selectionSetLookupValid schema lookupParent
-      (Selection.field responseName fieldName arguments directives
-        selectionSet :: rest) ->
-    FieldMerge.fieldsInSetCanMerge schema lookupParent
-      (Selection.field responseName fieldName arguments directives
-        selectionSet :: rest) ->
-    schema.lookupField lookupParent fieldName = some fieldDefinition ->
-    schema.typeIncludesObjectBool lookupParent groundType = true ->
-    schema.typeIncludesObjectBool fieldDefinition.outputType.namedType
-      runtimeType = true ->
-      selectionSetSemanticsReady schema runtimeType
-        (selectionSet ++
-          mergeSelectionSets
-            (eraseCompleteScopedSelectionSet
-              (staticScopedFieldsWithResponseName schema boolCase
-                lookupParent groundType responseName rest))) := by
+    (fieldDefinition : FieldDefinition)
+    : schema.objectType lookupParent
+      -> selectionSetSemanticsReady schema lookupParent
+          (Selection.field responseName fieldName arguments directives selectionSet
+            :: rest)
+      -> selectionSetLookupValid schema lookupParent
+          (Selection.field responseName fieldName arguments directives selectionSet
+            :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema lookupParent
+          (Selection.field responseName fieldName arguments directives selectionSet
+            :: rest)
+      -> schema.lookupField lookupParent fieldName = some fieldDefinition
+      -> schema.typeIncludesObjectBool lookupParent groundType = true
+      -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
+          = true
+      -> selectionSetSemanticsReady schema runtimeType
+          (selectionSet
+            ++ mergeSelectionSets
+                (eraseCompleteScopedSelectionSet
+                  (staticScopedFieldsWithResponseName schema boolCase
+                    lookupParent groundType responseName rest))) := by
   intro hobject hready hlookupValid hmerge hlookup hground hinclude
   have hreadyNoDirectives :
       selectionSetSemanticsReady schema lookupParent
@@ -558,9 +561,9 @@ theorem selectionSetSemanticsReady_field_staticScoped_merged_object
           matchedSubselections hvalid
 
 theorem typeIncludesObjectBool_false_of_leafTypeNameBool
-    (schema : Schema) (returnType runtimeType : Name) :
-    leafTypeNameBool schema returnType = true ->
-      schema.typeIncludesObjectBool returnType runtimeType = false := by
+    (schema : Schema) (returnType runtimeType : Name)
+    : leafTypeNameBool schema returnType = true
+      -> schema.typeIncludesObjectBool returnType runtimeType = false := by
   intro hleaf
   unfold leafTypeNameBool at hleaf
   unfold Schema.typeIncludesObjectBool
@@ -583,7 +586,6 @@ theorem typeIncludesObjectBool_false_of_leafTypeNameBool
           simp [Schema.getPossibleTypes, hlookup]
       | inputObject inputObjectType =>
           simp [hlookup] at hleaf
-
 
 end CompleteNormalization
 

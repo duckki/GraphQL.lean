@@ -13,27 +13,23 @@ open GraphQL.Execution
 local instance : Coe (ResponseValue × VisitStatus) ResponseValue where
   coe := Prod.fst
 
-theorem combineVisitStatus_left_rotate
-    (left middle right : VisitStatus) :
-    combineVisitStatus left (combineVisitStatus middle right) =
-      combineVisitStatus middle (combineVisitStatus left right) := by
+theorem combineVisitStatus_left_rotate (left middle right : VisitStatus)
+    : combineVisitStatus left (combineVisitStatus middle right)
+      = combineVisitStatus middle (combineVisitStatus left right) := by
   rw [← combineVisitStatus_assoc,
     combineVisitStatus_comm left middle,
     combineVisitStatus_assoc]
 
-theorem combineVisitStatus_error_one_left_rotate
-    (middle right : VisitStatus) :
-    combineVisitStatus (.error 1 : VisitStatus)
-        (combineVisitStatus middle right) =
-      combineVisitStatus middle
-        (combineVisitStatus (.error 1 : VisitStatus) right) :=
+theorem combineVisitStatus_error_one_left_rotate (middle right : VisitStatus)
+    : combineVisitStatus (.error 1 : VisitStatus) (combineVisitStatus middle right)
+      = combineVisitStatus middle (combineVisitStatus (.error 1 : VisitStatus) right) :=
   combineVisitStatus_left_rotate (.error 1 : VisitStatus) middle right
 
 theorem lookupResponseField?_append_of_not_mem
-    (responseName : Name) (prefixFields suffix : List (Name × ResponseValue)) :
-    responseName ∉ prefixFields.map Prod.fst ->
-      lookupResponseField? responseName (prefixFields ++ suffix) =
-        lookupResponseField? responseName suffix := by
+    (responseName : Name) (prefixFields suffix : List (Name × ResponseValue))
+    : responseName ∉ prefixFields.map Prod.fst
+      -> lookupResponseField? responseName (prefixFields ++ suffix)
+          = lookupResponseField? responseName suffix := by
   induction prefixFields with
   | nil =>
       intro _hfresh
@@ -52,20 +48,20 @@ theorem lookupResponseField?_append_of_not_mem
       simp [lookupResponseField?, hhead, ih hrest]
 
 theorem responseObjectField?_object_append_of_not_mem
-    (responseName : Name) (prefixFields suffix : List (Name × ResponseValue)) :
-    responseName ∉ prefixFields.map Prod.fst ->
-      responseObjectField? responseName (.object (prefixFields ++ suffix)) =
-        responseObjectField? responseName (.object suffix) := by
+    (responseName : Name) (prefixFields suffix : List (Name × ResponseValue))
+    : responseName ∉ prefixFields.map Prod.fst
+      -> responseObjectField? responseName (.object (prefixFields ++ suffix))
+          = responseObjectField? responseName (.object suffix) := by
   intro hfresh
   simp [responseObjectField?,
     lookupResponseField?_append_of_not_mem responseName prefixFields suffix hfresh]
 
 theorem mergeResponseField_append_of_not_mem
     (responseName : Name) (incoming : ResponseValue)
-    (prefixFields suffix : List (Name × ResponseValue)) :
-    responseName ∉ prefixFields.map Prod.fst ->
-      mergeResponseField responseName incoming (prefixFields ++ suffix) =
-        prefixFields ++ mergeResponseField responseName incoming suffix := by
+    (prefixFields suffix : List (Name × ResponseValue))
+    : responseName ∉ prefixFields.map Prod.fst
+      -> mergeResponseField responseName incoming (prefixFields ++ suffix)
+          = prefixFields ++ mergeResponseField responseName incoming suffix := by
   induction prefixFields with
   | nil =>
       intro _hfresh
@@ -83,11 +79,9 @@ theorem mergeResponseField_append_of_not_mem
         exact hfresh (by simp [hmem])
       simp [mergeResponseField, hhead, ih hrest]
 
-theorem mergeResponseField_self_key_mem
-    (responseName : Name) (incoming : ResponseValue) :
-    ∀ fields : List (Name × ResponseValue),
-      responseName ∈ (mergeResponseField responseName incoming fields).map
-        Prod.fst
+theorem mergeResponseField_self_key_mem (responseName : Name) (incoming : ResponseValue)
+    : ∀ fields : List (Name × ResponseValue),
+        responseName ∈ (mergeResponseField responseName incoming fields).map Prod.fst
   | [] => by
       simp [mergeResponseField]
   | (fieldName, response) :: rest => by
@@ -97,10 +91,10 @@ theorem mergeResponseField_self_key_mem
           mergeResponseField_self_key_mem responseName incoming rest]
 
 theorem mergeResponseField_preserves_key_mem
-    (target responseName : Name) (incoming : ResponseValue) :
-    ∀ fields : List (Name × ResponseValue),
-      target ∈ fields.map Prod.fst ->
-        target ∈ (mergeResponseField responseName incoming fields).map Prod.fst
+    (target responseName : Name) (incoming : ResponseValue)
+    : ∀ fields : List (Name × ResponseValue),
+        target ∈ fields.map Prod.fst
+        -> target ∈ (mergeResponseField responseName incoming fields).map Prod.fst
   | [], hmem => by
       simp at hmem
   | (fieldName, response) :: rest, hmem => by
@@ -129,14 +123,14 @@ mutual
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues) (depth : Nat)
       (parentType : Name) (source : ResolverValue ObjectIdentity)
-      (target : Name) :
-      ∀ (selection : Selection) (fields : List (Name × ResponseValue)),
-        target ∈ fields.map Prod.fst ->
-          ∃ outputFields,
-            (visitSelection schema resolvers variableValues depth parentType source
-              selection (.object fields)).fst =
-              .object outputFields
-            ∧ target ∈ outputFields.map Prod.fst
+      (target : Name)
+      : ∀ (selection : Selection) (fields : List (Name × ResponseValue)),
+          target ∈ fields.map Prod.fst
+          -> ∃ outputFields,
+              (visitSelection schema resolvers variableValues depth parentType source
+                  selection (.object fields)).fst
+                = .object outputFields
+              ∧ target ∈ outputFields.map Prod.fst
   := by
     intro selection fields hmem
     cases selection with
@@ -322,14 +316,14 @@ mutual
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues) (depth : Nat)
       (parentType : Name) (source : ResolverValue ObjectIdentity)
-      (target : Name) :
-      ∀ (selectionSet : List Selection) (fields : List (Name × ResponseValue)),
-        target ∈ fields.map Prod.fst ->
-          ∃ outputFields,
-            (visitSubfields schema resolvers variableValues depth parentType source
-              selectionSet (.object fields)).fst =
-              .object outputFields
-            ∧ target ∈ outputFields.map Prod.fst
+      (target : Name)
+      : ∀ (selectionSet : List Selection) (fields : List (Name × ResponseValue)),
+          target ∈ fields.map Prod.fst
+          -> ∃ outputFields,
+              (visitSubfields schema resolvers variableValues depth parentType source
+                  selectionSet (.object fields)).fst
+                = .object outputFields
+              ∧ target ∈ outputFields.map Prod.fst
   := by
     intro selectionSet fields hmem
     cases selectionSet with
@@ -357,14 +351,13 @@ theorem executeField_object_append_fresh_eq
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
     (source : ResolverValue ObjectIdentity) (field : ExecutableField)
-    (prefixFields suffix : List (Name × ResponseValue)) :
-      field.responseName ∉ prefixFields.map Prod.fst ->
-        executeField schema resolvers variableValues depth source
-          (responseObjectField? field.responseName
-            (.object (prefixFields ++ suffix))) field =
-        executeField schema resolvers variableValues depth source
-          (responseObjectField? field.responseName
-            (.object suffix)) field := by
+    (prefixFields suffix : List (Name × ResponseValue))
+    : field.responseName ∉ prefixFields.map Prod.fst
+      -> executeField schema resolvers variableValues depth source
+            (responseObjectField? field.responseName (.object (prefixFields ++ suffix)))
+            field
+          = executeField schema resolvers variableValues depth source
+              (responseObjectField? field.responseName (.object suffix)) field := by
   intro hfresh
   rw [responseObjectField?_object_append_of_not_mem field.responseName
     prefixFields suffix hfresh]
@@ -376,14 +369,14 @@ theorem visitSelection_executableField_prefix_fresh
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (field : ExecutableField)
     (prefixFields suffix result : List (Name × ResponseValue))
-    (status : VisitStatus) :
-    field.responseName ∉ prefixFields.map Prod.fst ->
-    visitSelection schema resolvers variableValues depth parentType source
-      (executableFieldSelection field) (.object suffix) =
-        (.object result, status) ->
-    visitSelection schema resolvers variableValues depth parentType source
-      (executableFieldSelection field) (.object (prefixFields ++ suffix)) =
-      (.object (prefixFields ++ result), status) := by
+    (status : VisitStatus)
+    : field.responseName ∉ prefixFields.map Prod.fst
+      -> visitSelection schema resolvers variableValues depth parentType source
+            (executableFieldSelection field) (.object suffix)
+          = (.object result, status)
+      -> visitSelection schema resolvers variableValues depth parentType source
+            (executableFieldSelection field) (.object (prefixFields ++ suffix))
+          = (.object (prefixFields ++ result), status) := by
   intro hfresh hvisit
   cases field with
   | mk fieldParent responseName fieldName arguments selectionSet =>
@@ -548,18 +541,17 @@ theorem visitSubfields_executableFieldSelections_prefix_fresh
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    ∀ (fields : List ExecutableField)
-      (prefixFields suffix result : List (Name × ResponseValue))
-      (status : VisitStatus),
-      (∀ field, field ∈ fields ->
-        field.responseName ∉ prefixFields.map Prod.fst) ->
-      visitSubfields schema resolvers variableValues depth parentType source
-        (executableFieldSelections fields) (.object suffix) =
-        (.object result, status) ->
-      visitSubfields schema resolvers variableValues depth parentType source
-        (executableFieldSelections fields) (.object (prefixFields ++ suffix)) =
-        (.object (prefixFields ++ result), status)
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : ∀ (fields : List ExecutableField)
+          (prefixFields suffix result : List (Name × ResponseValue))
+          (status : VisitStatus),
+        (∀ field, field ∈ fields -> field.responseName ∉ prefixFields.map Prod.fst)
+        -> visitSubfields schema resolvers variableValues depth parentType source
+              (executableFieldSelections fields) (.object suffix)
+            = (.object result, status)
+        -> visitSubfields schema resolvers variableValues depth parentType source
+              (executableFieldSelections fields) (.object (prefixFields ++ suffix))
+            = (.object (prefixFields ++ result), status)
   | [], prefixFields, suffix, result, status, _hfresh, hvisit => by
       simp [executableFieldSelections, visitSubfields, visitOk] at hvisit
       rcases hvisit with ⟨hresult, hstatus⟩
@@ -642,17 +634,17 @@ theorem visitSelection_field_prefix_fresh
     (responseName fieldName : Name) (arguments : List Argument)
     (directives : List DirectiveApplication) (selectionSet : List Selection)
     (prefixFields suffix result : List (Name × ResponseValue))
-    (status : VisitStatus) :
-    (selectionDirectivesAllowBool variableValues directives = true ->
-      responseName ∉ prefixFields.map Prod.fst) ->
-    visitSelection schema resolvers variableValues depth parentType source
-      (.field responseName fieldName arguments directives selectionSet)
-      (.object suffix) =
-      (.object result, status) ->
-    visitSelection schema resolvers variableValues depth parentType source
-      (.field responseName fieldName arguments directives selectionSet)
-      (.object (prefixFields ++ suffix)) =
-      (.object (prefixFields ++ result), status) := by
+    (status : VisitStatus)
+    : (selectionDirectivesAllowBool variableValues directives = true
+        -> responseName ∉ prefixFields.map Prod.fst)
+      -> visitSelection schema resolvers variableValues depth parentType source
+            (.field responseName fieldName arguments directives selectionSet)
+            (.object suffix)
+          = (.object result, status)
+      -> visitSelection schema resolvers variableValues depth parentType source
+            (.field responseName fieldName arguments directives selectionSet)
+            (.object (prefixFields ++ suffix))
+          = (.object (prefixFields ++ result), status) := by
   intro hfreshIfAllowed hvisit
   by_cases hallowed :
       selectionDirectivesAllowBool variableValues directives = true
@@ -818,22 +810,22 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues) (depth : Nat)
-      (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ (selection : Selection)
-        (prefixFields suffix result : List (Name × ResponseValue))
-        (status : VisitStatus),
-        (∀ field,
-          field ∈
-            collectedExecutableFields
-              (GraphQL.Execution.collectSelection schema variableValues
-                parentType source selection) ->
-          field.responseName ∉ prefixFields.map Prod.fst) ->
-        visitSelection schema resolvers variableValues depth parentType source
-          selection (.object suffix) =
-          (.object result, status) ->
-        visitSelection schema resolvers variableValues depth parentType source
-          selection (.object (prefixFields ++ suffix)) =
-          (.object (prefixFields ++ result), status)
+      (parentType : Name) (source : ResolverValue ObjectIdentity)
+      : ∀ (selection : Selection)
+            (prefixFields suffix result : List (Name × ResponseValue))
+            (status : VisitStatus),
+          (∀ field,
+            field
+              ∈ collectedExecutableFields
+                  (GraphQL.Execution.collectSelection schema variableValues
+                    parentType source selection)
+            -> field.responseName ∉ prefixFields.map Prod.fst)
+          -> visitSelection schema resolvers variableValues depth parentType source
+                selection (.object suffix)
+              = (.object result, status)
+          -> visitSelection schema resolvers variableValues depth parentType source
+                selection (.object (prefixFields ++ suffix))
+              = (.object (prefixFields ++ result), status)
   := by
     intro selection prefixFields suffix result status hfresh hvisit
     cases selection with
@@ -920,22 +912,22 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (resolvers : Resolvers ObjectIdentity)
       (variableValues : VariableValues) (depth : Nat)
-      (parentType : Name) (source : ResolverValue ObjectIdentity) :
-      ∀ (selectionSet : List Selection)
-        (prefixFields suffix result : List (Name × ResponseValue))
-        (status : VisitStatus),
-        (∀ field,
-          field ∈
-            collectedExecutableFields
-              (GraphQL.Execution.collectFields schema variableValues
-                parentType source selectionSet) ->
-          field.responseName ∉ prefixFields.map Prod.fst) ->
-        visitSubfields schema resolvers variableValues depth parentType source
-          selectionSet (.object suffix) =
-          (.object result, status) ->
-        visitSubfields schema resolvers variableValues depth parentType source
-          selectionSet (.object (prefixFields ++ suffix)) =
-          (.object (prefixFields ++ result), status)
+      (parentType : Name) (source : ResolverValue ObjectIdentity)
+      : ∀ (selectionSet : List Selection)
+            (prefixFields suffix result : List (Name × ResponseValue))
+            (status : VisitStatus),
+          (∀ field,
+            field
+              ∈ collectedExecutableFields
+                  (GraphQL.Execution.collectFields schema variableValues
+                    parentType source selectionSet)
+            -> field.responseName ∉ prefixFields.map Prod.fst)
+          -> visitSubfields schema resolvers variableValues depth parentType source
+                selectionSet (.object suffix)
+              = (.object result, status)
+          -> visitSubfields schema resolvers variableValues depth parentType source
+                selectionSet (.object (prefixFields ++ suffix))
+              = (.object (prefixFields ++ result), status)
   | [], prefixFields, suffix, result, status, _hfresh, hvisit => by
       simp [visitSubfields] at hvisit
       rcases hvisit with ⟨hresult, hstatus⟩
@@ -1036,17 +1028,16 @@ theorem visitSubfields_executableFieldSelections_same_response_key_mem
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (completionDepth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (responseName : Name) :
-    ∀ (fields : List ExecutableField)
-      (outputFields : List (Name × ResponseValue)),
-      fields ≠ [] ->
-      (∀ field, field ∈ fields -> field.responseName = responseName) ->
-        ∃ resultFields,
-          (visitSubfields schema resolvers variableValues (completionDepth + 1)
-            parentType source (executableFieldSelections fields)
-            (.object outputFields)).fst =
-            .object resultFields
-          ∧ responseName ∈ resultFields.map Prod.fst
+    (responseName : Name)
+    : ∀ (fields : List ExecutableField) (outputFields : List (Name × ResponseValue)),
+        fields ≠ []
+        -> (∀ field, field ∈ fields -> field.responseName = responseName)
+        -> ∃ resultFields,
+            (visitSubfields schema resolvers variableValues (completionDepth + 1)
+                parentType source (executableFieldSelections fields)
+                (.object outputFields)).fst
+              = .object resultFields
+            ∧ responseName ∈ resultFields.map Prod.fst
   | [], _outputFields, hnonempty, _hresponse => by
       exact False.elim (hnonempty rfl)
   | field :: rest, outputFields, _hnonempty, hresponse => by
@@ -1174,25 +1165,23 @@ theorem visitSubfields_executableFieldSelections_same_response_key_mem
       simpa [executableFieldSelections] using htail
 
 theorem visitSubfields_executableFieldSelections_singleton_append_of_mem_succ
-    {ObjectIdentity : Type}
-    (schema : Schema) (resolvers : Resolvers ObjectIdentity)
-    (variableValues : VariableValues) (completionDepth : Nat)
-    (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (field : ExecutableField) (fields suffix resultFields :
-      List (Name × ResponseValue)) (status : VisitStatus)
+    {ObjectIdentity : Type} (schema : Schema) (resolvers : Resolvers ObjectIdentity)
+    (variableValues : VariableValues) (completionDepth : Nat) (parentType : Name)
+    (source : ResolverValue ObjectIdentity) (field : ExecutableField)
+    (fields suffix resultFields : List (Name × ResponseValue)) (status : VisitStatus)
     (hmem : field.responseName ∈ fields.map Prod.fst)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
-        some fieldDefinition)
-    (hvisit :
-      visitSubfields schema resolvers variableValues (completionDepth + 1)
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField parentType field.fieldName = some fieldDefinition)
+    (hvisit
+      : visitSubfields schema resolvers variableValues (completionDepth + 1)
+          parentType source (executableFieldSelections [field])
+          (.object fields)
+        = (.object resultFields, status))
+    : visitSubfields schema resolvers variableValues (completionDepth + 1)
         parentType source (executableFieldSelections [field])
-        (.object fields) =
-      (.object resultFields, status)) :
-    visitSubfields schema resolvers variableValues (completionDepth + 1)
-      parentType source (executableFieldSelections [field])
-      (.object (fields ++ suffix)) =
-    (.object (resultFields ++ suffix), status) := by
+        (.object (fields ++ suffix))
+      = (.object (resultFields ++ suffix), status) := by
   let executedField :=
     executableField parentType field.responseName field.fieldName
       field.arguments field.selectionSet
@@ -1394,11 +1383,12 @@ theorem collectFields_executableFieldSelections_key_mem_global
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (fields : List ExecutableField) (responseName : Name) :
-    responseName ∈
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections fields)).map Prod.fst ↔
-      responseName ∈ fields.map (fun field => field.responseName) := by
+    (fields : List ExecutableField) (responseName : Name)
+    : responseName
+        ∈ (GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections fields)).map
+            Prod.fst
+      ↔ responseName ∈ fields.map (fun field => field.responseName) := by
   induction fields with
   | nil =>
       simp [executableFieldSelections, GraphQL.Execution.collectFields]
@@ -1434,19 +1424,20 @@ theorem collectFields_executableFieldSelections_key_mem_global
 theorem collectedExecutableFields_collectFields_executableFieldSelections_lookup
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    ∀ fields : List ExecutableField,
-      ExecutableFieldsParent parentType fields ->
-      (∀ field, field ∈ fields ->
-        ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
-          some fieldDefinition) ->
-      ∀ field,
-        field ∈
-          collectedExecutableFields
-            (GraphQL.Execution.collectFields schema variableValues parentType
-              source (executableFieldSelections fields)) ->
-        ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
-          some fieldDefinition
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : ∀ fields : List ExecutableField,
+        ExecutableFieldsParent parentType fields
+        -> (∀ field,
+              field ∈ fields
+              -> ∃ fieldDefinition,
+                  schema.lookupField parentType field.fieldName = some fieldDefinition)
+        -> ∀ field,
+            field
+              ∈ collectedExecutableFields
+                  (GraphQL.Execution.collectFields schema variableValues parentType
+                    source (executableFieldSelections fields))
+            -> ∃ fieldDefinition,
+                schema.lookupField parentType field.fieldName = some fieldDefinition
   | [], _hparents, _hlookups, field, hmem => by
       simp [executableFieldSelections, GraphQL.Execution.collectFields,
         collectedExecutableFields] at hmem
@@ -1503,8 +1494,8 @@ theorem collectedExecutableFields_collectFields_executableFieldSelections_lookup
             field htailMem
 
 mutual
-  def executionSelectionLookupValid (schema : Schema)
-      (parentType : Name) : Selection -> Prop
+  def executionSelectionLookupValid (schema : Schema) (parentType : Name)
+      : Selection -> Prop
     | .field _responseName fieldName _arguments _directives _selectionSet =>
         ∃ fieldDefinition,
           schema.lookupField parentType fieldName = some fieldDefinition
@@ -1514,26 +1505,28 @@ mutual
         executionSelectionSetLookupValid schema parentType selectionSet
 
     def executionSelectionSetLookupValid (schema : Schema)
-        (parentType : Name) (selectionSet : List Selection) : Prop :=
-      ∀ selection, selection ∈ selectionSet ->
-        executionSelectionLookupValid schema parentType selection
-  end
+        (parentType : Name) (selectionSet : List Selection)
+        : Prop :=
+      ∀ selection,
+        selection ∈ selectionSet
+        -> executionSelectionLookupValid schema parentType selection
+end
 
 mutual
   theorem collectedExecutableFields_collectSelection_lookupValid
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
       (parentType : Name) (source : ResolverValue ObjectIdentity)
-      (selection : Selection) :
-      executionSelectionLookupValid schema parentType selection ->
-      ∀ candidate,
-        candidate ∈
-            collectedExecutableFields
-              (GraphQL.Execution.collectSelection schema variableValues
-                parentType source selection) ->
-          ∃ fieldDefinition,
-            schema.lookupField parentType candidate.fieldName =
-              some fieldDefinition := by
+      (selection : Selection)
+      : executionSelectionLookupValid schema parentType selection
+        -> ∀ candidate,
+            candidate
+              ∈ collectedExecutableFields
+                  (GraphQL.Execution.collectSelection schema variableValues
+                    parentType source selection)
+            -> ∃ fieldDefinition,
+                schema.lookupField parentType candidate.fieldName
+                = some fieldDefinition := by
     intro hlookup candidate hcandidate
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
@@ -1618,16 +1611,16 @@ mutual
       {ObjectIdentity : Type}
       (schema : Schema) (variableValues : VariableValues)
       (parentType : Name) (source : ResolverValue ObjectIdentity)
-      (selectionSet : List Selection) :
-      executionSelectionSetLookupValid schema parentType selectionSet ->
-      ∀ candidate,
-        candidate ∈
-            collectedExecutableFields
-              (GraphQL.Execution.collectFields schema variableValues parentType
-                source selectionSet) ->
-          ∃ fieldDefinition,
-            schema.lookupField parentType candidate.fieldName =
-              some fieldDefinition := by
+      (selectionSet : List Selection)
+      : executionSelectionSetLookupValid schema parentType selectionSet
+        -> ∀ candidate,
+            candidate
+              ∈ collectedExecutableFields
+                  (GraphQL.Execution.collectFields schema variableValues parentType
+                    source selectionSet)
+            -> ∃ fieldDefinition,
+                schema.lookupField parentType candidate.fieldName
+                = some fieldDefinition := by
     intro hlookup candidate hcandidate
     cases selectionSet with
     | nil =>
@@ -1666,11 +1659,11 @@ theorem collectedGroupsFieldLookupValid_of_executionSelectionSetLookupValid
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
-    (selectionSet : List Selection) :
-    executionSelectionSetLookupValid schema parentType selectionSet ->
-      CollectedGroupsFieldLookupValid schema parentType
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          selectionSet) := by
+    (selectionSet : List Selection)
+    : executionSelectionSetLookupValid schema parentType selectionSet
+      -> CollectedGroupsFieldLookupValid schema parentType
+          (GraphQL.Execution.collectFields schema variableValues parentType source
+            selectionSet) := by
   intro hlookup responseName field fields hgroup
   exact
     collectedExecutableFields_collectFields_lookupValid schema variableValues
@@ -1683,17 +1676,19 @@ theorem visitSubfields_flattened_empty_key_mem_collectFields
     (variableValues : VariableValues) (depth : Nat)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     (selectionSet : List Selection) (fields : List (Name × ResponseValue))
-    (responseName : Name) :
-    (visitSubfields schema resolvers variableValues depth parentType source
-      (executableFieldSelections
-        (collectedExecutableFields
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source selectionSet)))
-      (.object [])).fst = .object fields ->
-    responseName ∈ fields.map Prod.fst ->
-      responseName ∈
-        (GraphQL.Execution.collectFields schema variableValues parentType source
-          selectionSet).map Prod.fst := by
+    (responseName : Name)
+    : (visitSubfields schema resolvers variableValues depth parentType source
+          (executableFieldSelections
+            (collectedExecutableFields
+              (GraphQL.Execution.collectFields schema variableValues parentType
+                source selectionSet)))
+          (.object [])).fst
+        = .object fields
+      -> responseName ∈ fields.map Prod.fst
+      -> responseName
+          ∈ (GraphQL.Execution.collectFields schema variableValues parentType source
+              selectionSet).map
+              Prod.fst := by
   intro hvisit hmem
   have hflatKey :=
     visitSubfields_object_empty_key_mem_collectFields schema resolvers
@@ -1710,9 +1705,9 @@ theorem visitSubfields_flattened_empty_key_mem_collectFields
 theorem collectedExecutableFields_responseName_mem
     (groups : List (Name × List ExecutableField))
     (hresponses : CollectedGroupsResponseName groups)
-    (field : ExecutableField) :
-    field ∈ collectedExecutableFields groups ->
-      field.responseName ∈ groups.map Prod.fst := by
+    (field : ExecutableField)
+    : field ∈ collectedExecutableFields groups
+      -> field.responseName ∈ groups.map Prod.fst := by
   induction groups with
   | nil =>
       intro hmem
@@ -1734,10 +1729,11 @@ theorem collectedExecutableFields_responseName_mem
 theorem collectedExecutableFields_responseName_ne_of_not_mem
     (responseName : Name)
     (groups : List (Name × List ExecutableField))
-    (hresponses : CollectedGroupsResponseName groups) :
-    responseName ∉ groups.map Prod.fst ->
-      ∀ field, field ∈ collectedExecutableFields groups ->
-        field.responseName ≠ responseName := by
+    (hresponses : CollectedGroupsResponseName groups)
+    : responseName ∉ groups.map Prod.fst
+      -> ∀ field,
+          field ∈ collectedExecutableFields groups
+          -> field.responseName ≠ responseName := by
   intro hnot field hfield heq
   have hmem :
       field.responseName ∈ groups.map Prod.fst :=
@@ -1747,10 +1743,11 @@ theorem collectedExecutableFields_responseName_ne_of_not_mem
 theorem collectedExecutableFields_fresh_singleton_prefix_of_not_mem
     (responseName : Name) (response : ResponseValue)
     (groups : List (Name × List ExecutableField))
-    (hresponses : CollectedGroupsResponseName groups) :
-    responseName ∉ groups.map Prod.fst ->
-      ∀ field, field ∈ collectedExecutableFields groups ->
-        field.responseName ∉ [(responseName, response)].map Prod.fst := by
+    (hresponses : CollectedGroupsResponseName groups)
+    : responseName ∉ groups.map Prod.fst
+      -> ∀ field,
+          field ∈ collectedExecutableFields groups
+          -> field.responseName ∉ [(responseName, response)].map Prod.fst := by
   intro hnot field hfield hprefix
   have hne :=
     collectedExecutableFields_responseName_ne_of_not_mem responseName groups

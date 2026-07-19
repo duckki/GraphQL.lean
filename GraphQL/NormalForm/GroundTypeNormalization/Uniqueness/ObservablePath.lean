@@ -13,53 +13,51 @@ namespace NormalForm
 
 namespace GroundTypeNormalization
 
-inductive NormalSelectionSetObservableLeaf
-    (schema : Schema) : Name -> List Selection -> Prop where
+inductive NormalSelectionSetObservableLeaf (schema : Schema)
+    : Name -> List Selection -> Prop where
   | objectLeaf
-      {parentType responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet selectionSet : List Selection}
-      {fieldDefinition : FieldDefinition} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-      (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-        schema = false ->
-        NormalSelectionSetObservableLeaf schema parentType selectionSet
+    {parentType responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection}
+    {fieldDefinition : FieldDefinition}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
+          = false
+      -> NormalSelectionSetObservableLeaf schema parentType selectionSet
   | objectChild
-      {parentType responseName fieldName : Name}
-      {arguments : List Argument}
-      {directives : List DirectiveApplication}
-      {childSelectionSet selectionSet : List Selection}
-      {fieldDefinition : FieldDefinition} :
-      objectTypeNameBool schema parentType = true ->
-      Selection.field responseName fieldName arguments directives
-        childSelectionSet ∈ selectionSet ->
-      schema.lookupField parentType fieldName = some fieldDefinition ->
-      schema.isCompositeType fieldDefinition.outputType.namedType ->
-      NormalSelectionSetObservableLeaf schema
-        fieldDefinition.outputType.namedType childSelectionSet ->
-        NormalSelectionSetObservableLeaf schema parentType selectionSet
+    {parentType responseName fieldName : Name}
+    {arguments : List Argument}
+    {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection}
+    {fieldDefinition : FieldDefinition}
+    : objectTypeNameBool schema parentType = true
+      -> Selection.field responseName fieldName arguments directives childSelectionSet
+          ∈ selectionSet
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> schema.isCompositeType fieldDefinition.outputType.namedType
+      -> NormalSelectionSetObservableLeaf schema
+          fieldDefinition.outputType.namedType childSelectionSet
+      -> NormalSelectionSetObservableLeaf schema parentType selectionSet
   | abstractInlineFragment
-      {parentType typeCondition : Name}
-      {directives : List DirectiveApplication}
-      {childSelectionSet selectionSet : List Selection} :
-      objectTypeNameBool schema parentType = false ->
-      Selection.inlineFragment (some typeCondition) directives
-        childSelectionSet ∈ selectionSet ->
-      NormalSelectionSetObservableLeaf schema typeCondition childSelectionSet ->
-        NormalSelectionSetObservableLeaf schema parentType selectionSet
+    {parentType typeCondition : Name}
+    {directives : List DirectiveApplication}
+    {childSelectionSet selectionSet : List Selection}
+    : objectTypeNameBool schema parentType = false
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
+          ∈ selectionSet
+      -> NormalSelectionSetObservableLeaf schema typeCondition childSelectionSet
+      -> NormalSelectionSetObservableLeaf schema parentType selectionSet
 
-theorem normalSelectionSetObservableLeaf_of_valid_normal_nonempty
-    (schema : Schema) :
-    ∀ parentType variableDefinitions (selectionSet : List Selection),
-      Validation.selectionSetValid schema variableDefinitions parentType
-        selectionSet ->
-      selectionSetNormal schema parentType selectionSet ->
-      selectionSet ≠ [] ->
-        NormalSelectionSetObservableLeaf schema parentType selectionSet
+theorem normalSelectionSetObservableLeaf_of_valid_normal_nonempty (schema : Schema)
+    : ∀ parentType variableDefinitions (selectionSet : List Selection),
+        Validation.selectionSetValid schema variableDefinitions parentType selectionSet
+        -> selectionSetNormal schema parentType selectionSet
+        -> selectionSet ≠ []
+        -> NormalSelectionSetObservableLeaf schema parentType selectionSet
   | parentType, variableDefinitions, selectionSet, hvalid, hnormal,
       hnonempty => by
       by_cases hparentObject : objectTypeNameBool schema parentType = true

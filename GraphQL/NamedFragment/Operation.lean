@@ -12,18 +12,16 @@ namespace NamedFragment
 -- Spec 2.5-2.9 selection syntax extended with named fragment spreads.
 inductive Selection where
   | field
-      (responseName : Name)
-      (fieldName : Name)
-      (arguments : List Argument)
-      (directives : List DirectiveApplication)
-      (selectionSet : List Selection)
+    (responseName : Name)
+    (fieldName : Name)
+    (arguments : List Argument)
+    (directives : List DirectiveApplication)
+    (selectionSet : List Selection)
   | inlineFragment
-      (typeCondition : Option Name)
-      (directives : List DirectiveApplication)
-      (selectionSet : List Selection)
-  | fragmentSpread
-      (fragmentName : Name)
-      (directives : List DirectiveApplication)
+    (typeCondition : Option Name)
+    (directives : List DirectiveApplication)
+    (selectionSet : List Selection)
+  | fragmentSpread (fragmentName : Name) (directives : List DirectiveApplication)
 deriving Repr
 
 -- Spec 2.9.1 fragment definitions, restricted to the modeled executable subset.
@@ -63,10 +61,10 @@ def FragmentDefinitionList.size : List FragmentDefinition -> Nat
 
 def Operation.size (operation : Operation) : Nat :=
   SelectionSet.size operation.selectionSet
-    + FragmentDefinitionList.size operation.fragmentDefinitions
+  + FragmentDefinitionList.size operation.fragmentDefinitions
 
-def lookupFragment? (fragments : List FragmentDefinition)
-    (name : Name) : Option FragmentDefinition :=
+def lookupFragment? (fragments : List FragmentDefinition) (name : Name)
+    : Option FragmentDefinition :=
   fragments.find? (fun fragment => fragment.name == name)
 
 def lookupFragmentAndRestLt?

@@ -9,16 +9,15 @@ namespace Semantics
 variable {ObjectRef : Type}
 
 mutual
-  theorem executeCollectedFields_toSpec :
-      ∀ (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
-        (variableValues : Execution.VariableValues) (fuel : Nat)
-        (source : Execution.ResolverValue ObjectRef)
-        (groups : List (Name × List Execution.ExecutableField)),
-        Execution.executeCollectedFields schema resolvers variableValues fuel
-          source groups
-          =
-        GraphQL.Execution.executeCollectedFields schema resolvers variableValues
-          fuel source (executableGroupsToSpec groups)
+  theorem executeCollectedFields_toSpec
+      : ∀ (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
+            (variableValues : Execution.VariableValues) (fuel : Nat)
+            (source : Execution.ResolverValue ObjectRef)
+            (groups : List (Name × List Execution.ExecutableField)),
+          Execution.executeCollectedFields schema resolvers variableValues fuel
+            source groups
+          = GraphQL.Execution.executeCollectedFields schema resolvers variableValues
+              fuel source (executableGroupsToSpec groups)
     | schema, resolvers, variableValues, fuel, source, [] => by
         simp [Execution.executeCollectedFields,
           GraphQL.Execution.executeCollectedFields, executableGroupsToSpec]
@@ -35,16 +34,15 @@ mutual
     _schema _resolvers _variableValues fuel _source groups =>
       (fuel, 4, 0, sizeOf groups)
 
-  theorem executeField_toSpec :
-      ∀ (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
-        (variableValues : Execution.VariableValues) (fuel : Nat)
-        (source : Execution.ResolverValue ObjectRef)
-        (responseName : Name) (fields : List Execution.ExecutableField),
-        Execution.executeField schema resolvers variableValues fuel source
-          responseName fields
-          =
-        GraphQL.Execution.executeField schema resolvers variableValues fuel
-          source responseName (fields.map executableFieldToSpec)
+  theorem executeField_toSpec
+      : ∀ (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
+            (variableValues : Execution.VariableValues) (fuel : Nat)
+            (source : Execution.ResolverValue ObjectRef)
+            (responseName : Name) (fields : List Execution.ExecutableField),
+          Execution.executeField schema resolvers variableValues fuel source
+            responseName fields
+          = GraphQL.Execution.executeField schema resolvers variableValues fuel
+              source responseName (fields.map executableFieldToSpec)
     | schema, resolvers, variableValues, fuel, source,
         responseName, [] => by
         simp [Execution.executeField, GraphQL.Execution.executeField]
@@ -75,16 +73,15 @@ mutual
       fields =>
       (fuel, 3, 0, sizeOf fields)
 
-  theorem completeValue_toSpec :
-      ∀ (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
-        (variableValues : Execution.VariableValues) (fuel : Nat)
-        (fieldType : TypeRef) (fields : List Execution.ExecutableField)
-        (value : Execution.ResolverValue ObjectRef),
-        Execution.completeValue schema resolvers variableValues fuel
-          fieldType fields value
-          =
-        GraphQL.Execution.completeValue schema resolvers variableValues fuel
-          fieldType (fields.map executableFieldToSpec) value
+  theorem completeValue_toSpec
+      : ∀ (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
+            (variableValues : Execution.VariableValues) (fuel : Nat)
+            (fieldType : TypeRef) (fields : List Execution.ExecutableField)
+            (value : Execution.ResolverValue ObjectRef),
+          Execution.completeValue schema resolvers variableValues fuel
+            fieldType fields value
+          = GraphQL.Execution.completeValue schema resolvers variableValues fuel
+              fieldType (fields.map executableFieldToSpec) value
     | schema, resolvers, variableValues, 0, fieldType, fields,
         value => by
         simp [Execution.completeValue, GraphQL.Execution.completeValue]
@@ -135,16 +132,15 @@ mutual
     _schema _resolvers _variableValues fuel fieldType fields _value =>
       (fuel, 1, sizeOf fieldType, sizeOf fields)
 
-  theorem completeValueList_toSpec :
-      ∀ (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
-        (variableValues : Execution.VariableValues) (fuel : Nat)
-        (itemType : TypeRef) (fields : List Execution.ExecutableField)
-        (values : List (Execution.ResolverValue ObjectRef)),
-        Execution.completeValueList schema resolvers variableValues fuel
-          itemType fields values
-          =
-        GraphQL.Execution.completeValueList schema resolvers variableValues fuel
-          itemType (fields.map executableFieldToSpec) values
+  theorem completeValueList_toSpec
+      : ∀ (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
+            (variableValues : Execution.VariableValues) (fuel : Nat)
+            (itemType : TypeRef) (fields : List Execution.ExecutableField)
+            (values : List (Execution.ResolverValue ObjectRef)),
+          Execution.completeValueList schema resolvers variableValues fuel
+            itemType fields values
+          = GraphQL.Execution.completeValueList schema resolvers variableValues fuel
+              itemType (fields.map executableFieldToSpec) values
     | schema, resolvers, variableValues, fuel, itemType, fields,
         [] => by
         simp [Execution.completeValueList, GraphQL.Execution.completeValueList]
@@ -171,14 +167,13 @@ theorem executeRootSelectionSet_toSpec
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (parentType : Name) (source : Execution.ResolverValue ObjectRef)
-    (fragments : List FragmentDefinition) (selectionSet : List Selection) :
-    Execution.executeRootSelectionSet schema resolvers variableValues fuel
-      parentType source fragments selectionSet
-      =
-    GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues fuel
-      parentType source
-      (Translate.reduceSelectionSet
-        (Inline.inlineSelectionSet fragments selectionSet)) := by
+    (fragments : List FragmentDefinition) (selectionSet : List Selection)
+    : Execution.executeRootSelectionSet schema resolvers variableValues fuel
+        parentType source fragments selectionSet
+      = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues fuel
+          parentType source
+          (Translate.reduceSelectionSet
+            (Inline.inlineSelectionSet fragments selectionSet)) := by
   simp [Execution.executeRootSelectionSet,
     GraphQL.Execution.executeRootSelectionSet]
   rw [executeCollectedFields_toSpec schema resolvers variableValues fuel
@@ -191,13 +186,12 @@ theorem executeRootSelectionSet_toSpec
 theorem executeQueryWithFuel_toSpec_inlineOperation
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (operation : Operation)
-    (fuel : Nat) (source : Execution.ResolverValue ObjectRef) :
-    Execution.executeQueryWithFuel schema resolvers variableValues operation
-      fuel source
-      =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
-      (Translate.reduceOperation (Inline.inlineOperation operation))
-      fuel source := by
+    (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
+    : Execution.executeQueryWithFuel schema resolvers variableValues operation
+        fuel source
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
+          (Translate.reduceOperation (Inline.inlineOperation operation))
+          fuel source := by
   cases operation with
   | mk name rootType variableDefinitions fragmentDefinitions selectionSet =>
       cases source with
@@ -239,17 +233,15 @@ theorem executeQueryWithFuel_toSpec_inlineOperation
               GraphQL.Execution.runtimeObjectType?,
               Translate.reduceOperation, Inline.inlineOperation, hroot]
 
-
 theorem executeQueryWithFuel_eq_spec_of_inlined
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (operation : Operation)
     (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
-    (hinlined : operationInlined operation) :
-    Execution.executeQueryWithFuel schema resolvers variableValues
+    (hinlined : operationInlined operation)
+    : Execution.executeQueryWithFuel schema resolvers variableValues
         operation fuel source
-      =
-    GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
-      (Translate.reduceOperation operation) fuel source := by
+      = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
+          (Translate.reduceOperation operation) fuel source := by
   rw [executeQueryWithFuel_toSpec_inlineOperation]
   rw [inlineOperation_eq_of_inlined operation hinlined]
 
@@ -258,16 +250,16 @@ theorem executeQueryWithFuel_eq_spec_of_inlined
 -- needs the explicit `operationInlined` hypothesis: once there are no fragment
 -- spreads left, fragment-aware execution is definitionally bridged to spec execution.
 theorem fragmentAwareInlinedExecutionEquivalentToSpecExecution_holds
-    (schema : Schema) (operation : Operation) :
-    fragmentAwareInlinedExecutionEquivalentToSpecExecution schema operation := by
+    (schema : Schema) (operation : Operation)
+    : fragmentAwareInlinedExecutionEquivalentToSpecExecution schema operation := by
   intro _hschema _hvalid hinlined
   intro ObjectRef resolvers variableValues fuel source
   exact executeQueryWithFuel_eq_spec_of_inlined schema resolvers
     variableValues operation fuel source hinlined
 
 theorem fragmentAwareInlineExecutionEquivalentToSpecExecution_holds
-    (schema : Schema) (operation : Operation) :
-    fragmentAwareInlineExecutionEquivalentToSpecExecution schema operation := by
+    (schema : Schema) (operation : Operation)
+    : fragmentAwareInlineExecutionEquivalentToSpecExecution schema operation := by
   intro _hschema _hvalid
   intro ObjectRef resolvers variableValues fuel source
   exact executeQueryWithFuel_toSpec_inlineOperation schema resolvers
@@ -275,8 +267,8 @@ theorem fragmentAwareInlineExecutionEquivalentToSpecExecution_holds
 
 theorem fragmentAwareExecutionEquivalentToInline_of_inlined
     (schema : Schema) (operation : Operation)
-    (hinlined : operationInlined operation) :
-    fragmentAwareExecutionEquivalentToInline schema operation := by
+    (hinlined : operationInlined operation)
+    : fragmentAwareExecutionEquivalentToInline schema operation := by
   intro _hschema _hvalid
   intro ObjectRef resolvers variableValues fuel source
   rw [executeQueryWithFuel_eq_spec_of_inlined schema resolvers
@@ -291,8 +283,8 @@ theorem fragmentAwareExecutionEquivalentToInline_of_inlined
 -- `Inline.inlineOperation operation`. The validity premise is part of the public
 -- theorem shape, not a dependency of the executable equality proof.
 theorem fragmentAwareExecutionEquivalentToInline_holds
-    (schema : Schema) (operation : Operation) :
-    fragmentAwareExecutionEquivalentToInline schema operation := by
+    (schema : Schema) (operation : Operation)
+    : fragmentAwareExecutionEquivalentToInline schema operation := by
   intro _hschema _hvalid
   intro ObjectRef resolvers variableValues fuel source
   calc

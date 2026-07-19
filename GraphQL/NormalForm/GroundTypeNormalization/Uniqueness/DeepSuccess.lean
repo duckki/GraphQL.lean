@@ -13,41 +13,40 @@ namespace NormalForm
 namespace GroundTypeNormalization
 
 theorem executeSelectionSetAsResponse_deepSelectionSetSuccessWithRef_abstract_matching_inlineFragment_nonempty
-    {ObjectRef : Type}
-    (schema : Schema) (rootSelectionSet : List Selection)
-    (objectRef : ObjectRef)
-    (variableValues : Execution.VariableValues) (fuel : Nat)
+    {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
+    (objectRef : ObjectRef) (variableValues : Execution.VariableValues) (fuel : Nat)
     {normalParentType runtimeType : Name}
-    {selectionSet bodySelectionSet : List Selection} :
-    objectTypeNameBool schema normalParentType = false ->
-    objectTypeNameBool schema runtimeType = true ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetNormal schema normalParentType selectionSet ->
-    Selection.inlineFragment (some runtimeType) [] bodySelectionSet ∈
-      selectionSet ->
-    bodySelectionSet ≠ [] ->
-    (∀ bodyResponseName bodyFieldName bodyArguments bodyDirectives
-        bodyChildSelectionSet,
-      Selection.field bodyResponseName bodyFieldName bodyArguments
-          bodyDirectives bodyChildSelectionSet ∈ bodySelectionSet ->
-        ∃ bodyFieldDefinition,
-          schema.lookupField runtimeType bodyFieldName =
-            some bodyFieldDefinition
-            ∧ leafProbeFuel bodyFieldDefinition.outputType ≤ fuel
-            ∧ deepFieldSelectionSetExecutionReadyWithRef schema
-              rootSelectionSet objectRef variableValues
-              (fuel - leafProbeFuel bodyFieldDefinition.outputType)
-              runtimeType bodyResponseName bodyFieldName bodyArguments
-              bodyChildSelectionSet bodyFieldDefinition) ->
-      ∃ responseField responseFields errors,
-        Execution.executeSelectionSetAsResponse schema
-          (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-            objectRef)
-          variableValues (fuel + 1) runtimeType
-          (.object runtimeType objectRef) selectionSet =
-        ({ data := Execution.ResponseValue.object
-            (responseField :: responseFields), errors := errors } :
-          Execution.Response) := by
+    {selectionSet bodySelectionSet : List Selection}
+    : objectTypeNameBool schema normalParentType = false
+      -> objectTypeNameBool schema runtimeType = true
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetNormal schema normalParentType selectionSet
+      -> Selection.inlineFragment (some runtimeType) [] bodySelectionSet ∈ selectionSet
+      -> bodySelectionSet ≠ []
+      -> (∀ bodyResponseName bodyFieldName bodyArguments bodyDirectives
+              bodyChildSelectionSet,
+            Selection.field bodyResponseName bodyFieldName bodyArguments
+                bodyDirectives bodyChildSelectionSet
+              ∈ bodySelectionSet
+            -> ∃ bodyFieldDefinition,
+                schema.lookupField runtimeType bodyFieldName = some bodyFieldDefinition
+                ∧ leafProbeFuel bodyFieldDefinition.outputType ≤ fuel
+                ∧ deepFieldSelectionSetExecutionReadyWithRef schema
+                    rootSelectionSet objectRef variableValues
+                    (fuel - leafProbeFuel bodyFieldDefinition.outputType)
+                    runtimeType bodyResponseName bodyFieldName bodyArguments
+                    bodyChildSelectionSet bodyFieldDefinition)
+      -> ∃ responseField responseFields errors,
+          Execution.executeSelectionSetAsResponse schema
+            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet objectRef)
+            variableValues (fuel + 1) runtimeType
+            (.object runtimeType objectRef) selectionSet
+          = ({
+                data :=
+                  Execution.ResponseValue.object (responseField :: responseFields),
+                errors := errors
+              }
+              : Execution.Response) := by
   intro hnonObject hruntimeObject hfree hnormal hinlineMem hbodyNonempty
     hbodyReady
   rcases List.mem_iff_append.mp hinlineMem with
@@ -151,46 +150,49 @@ theorem executeSelectionSetAsResponse_deepSelectionSetSuccessWithRef_abstract_ma
         hmiddle, hflatten, hbodyExecute]
 
 theorem executeSelectionSetAsResponse_deepSelectionSetSuccessWithRef_valid_normal_promoted_fuel_ge_size
-    {ObjectRef : Type} (schema : Schema)
-    (rootSelectionSet : List Selection) (objectRef : ObjectRef)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ n parentType variableDefinitions (selectionSet : List Selection)
-      fuel sourceRuntimeType,
-      SelectionSet.size selectionSet < n ->
-      selectionSetDeepProbeFuel schema parentType selectionSet ≤ fuel ->
-      Validation.selectionSetValid schema variableDefinitions parentType
-        selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetNormal schema parentType selectionSet ->
-      schema.typeIncludesObjectBool parentType sourceRuntimeType = true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField parentType selectionSet = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-        ∃ responseFields errors,
-          Execution.executeSelectionSetAsResponse schema
-            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-              objectRef)
-            variableValues (fuel + 1) sourceRuntimeType
-            (.object sourceRuntimeType objectRef) selectionSet =
-          ({ data := Execution.ResponseValue.object responseFields,
-             errors := errors } :
-            Execution.Response) := by
+    {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
+    (objectRef : ObjectRef) (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ n parentType variableDefinitions (selectionSet : List Selection)
+            fuel sourceRuntimeType,
+          SelectionSet.size selectionSet < n
+          -> selectionSetDeepProbeFuel schema parentType selectionSet ≤ fuel
+          -> Validation.selectionSetValid schema variableDefinitions parentType
+              selectionSet
+          -> selectionSetDirectiveFree selectionSet
+          -> selectionSetNormal schema parentType selectionSet
+          -> schema.typeIncludesObjectBool parentType sourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField parentType selectionSet
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> ∃ responseFields errors,
+              Execution.executeSelectionSetAsResponse schema
+                (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                  objectRef)
+                variableValues (fuel + 1) sourceRuntimeType
+                (.object sourceRuntimeType objectRef) selectionSet
+              = ({
+                    data := Execution.ResponseValue.object responseFields,
+                    errors := errors
+                  }
+                  : Execution.Response) := by
   intro hschema n
   induction n with
   | zero =>
@@ -380,46 +382,49 @@ theorem executeSelectionSetAsResponse_deepSelectionSetSuccessWithRef_valid_norma
             hcollect, Execution.executeCollectedFields]
 
 theorem executeSelectionSetAsResponse_deepSelectionSetSuccessWithRef_valid_normal_promoted_deepProbeFuel
-    {ObjectRef : Type} (schema : Schema)
-    (rootSelectionSet : List Selection) (objectRef : ObjectRef)
-    (variableValues : Execution.VariableValues) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    ∀ parentType variableDefinitions (selectionSet : List Selection)
-      sourceRuntimeType,
-      Validation.selectionSetValid schema variableDefinitions parentType
-        selectionSet ->
-      selectionSetDirectiveFree selectionSet ->
-      selectionSetNormal schema parentType selectionSet ->
-      schema.typeIncludesObjectBool parentType sourceRuntimeType = true ->
-      (∀ abstractTargetParent abstractTargetField targetRuntimeType
-          targetFieldDefinition,
-        schema.lookupField abstractTargetParent abstractTargetField =
-          some targetFieldDefinition ->
-        (TypeRef.named
-            targetFieldDefinition.outputType.namedType).isCompositeBool
-          schema = true ->
-        objectTypeNameBool schema
-            targetFieldDefinition.outputType.namedType = false ->
-        abstractRuntimeForFieldDeep? schema abstractTargetParent
-          abstractTargetField parentType selectionSet = some targetRuntimeType ->
-          ∃ runtimeType,
-            abstractRuntimeForFieldDeep? schema abstractTargetParent
-              abstractTargetField abstractTargetParent rootSelectionSet =
-              some runtimeType
-              ∧ schema.typeIncludesObjectBool
-                targetFieldDefinition.outputType.namedType runtimeType =
-                true) ->
-        ∃ responseFields errors,
-          Execution.executeSelectionSetAsResponse schema
-            (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-              objectRef)
-            variableValues
-            (selectionSetDeepProbeFuel schema parentType selectionSet + 1)
-            sourceRuntimeType (.object sourceRuntimeType objectRef)
-            selectionSet =
-          ({ data := Execution.ResponseValue.object responseFields,
-             errors := errors } :
-            Execution.Response) := by
+    {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
+    (objectRef : ObjectRef) (variableValues : Execution.VariableValues)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> ∀ parentType variableDefinitions (selectionSet : List Selection)
+            sourceRuntimeType,
+          Validation.selectionSetValid schema variableDefinitions parentType
+            selectionSet
+          -> selectionSetDirectiveFree selectionSet
+          -> selectionSetNormal schema parentType selectionSet
+          -> schema.typeIncludesObjectBool parentType sourceRuntimeType = true
+          -> (∀ abstractTargetParent abstractTargetField targetRuntimeType
+                  targetFieldDefinition,
+                schema.lookupField abstractTargetParent abstractTargetField
+                  = some targetFieldDefinition
+                -> (TypeRef.named
+                      targetFieldDefinition.outputType.namedType).isCompositeBool
+                      schema
+                    = true
+                -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType
+                    = false
+                -> abstractRuntimeForFieldDeep? schema abstractTargetParent
+                      abstractTargetField parentType selectionSet
+                    = some targetRuntimeType
+                -> ∃ runtimeType,
+                    abstractRuntimeForFieldDeep? schema abstractTargetParent
+                        abstractTargetField abstractTargetParent rootSelectionSet
+                      = some runtimeType
+                    ∧ schema.typeIncludesObjectBool
+                        targetFieldDefinition.outputType.namedType runtimeType
+                      = true)
+          -> ∃ responseFields errors,
+              Execution.executeSelectionSetAsResponse schema
+                (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
+                  objectRef)
+                variableValues
+                (selectionSetDeepProbeFuel schema parentType selectionSet + 1)
+                sourceRuntimeType (.object sourceRuntimeType objectRef)
+                selectionSet
+              = ({
+                    data := Execution.ResponseValue.object responseFields,
+                    errors := errors
+                  }
+                  : Execution.Response) := by
   intro hschema parentType variableDefinitions selectionSet sourceRuntimeType
     hvalid hfree hnormal hinclude hpromote
   exact

@@ -12,16 +12,16 @@ namespace TranslateValidation
 
 theorem reduceSelection_nonempty_of_inlined
     (selection : Selection)
-    (hinlined : Semantics.selectionInlined selection) :
-    Translate.reduceSelection selection ≠ [] := by
+    (hinlined : Semantics.selectionInlined selection)
+    : Translate.reduceSelection selection ≠ [] := by
   cases selection <;>
     simp [Semantics.selectionInlined, Translate.reduceSelection] at hinlined ⊢
 
 theorem reduceSelectionSet_nonempty_of_inlined
     {selectionSet : List Selection}
     (hnonempty : selectionSet ≠ [])
-    (hinlined : Semantics.selectionSetInlined selectionSet) :
-    Translate.reduceSelectionSet selectionSet ≠ [] := by
+    (hinlined : Semantics.selectionSetInlined selectionSet)
+    : Translate.reduceSelectionSet selectionSet ≠ [] := by
   cases selectionSet with
   | nil =>
       exact False.elim (hnonempty rfl)
@@ -34,8 +34,8 @@ theorem reduceSelectionSet_nonempty_of_inlined
 theorem selectionSetInlined_append
     {left right : List Selection}
     (hleft : Semantics.selectionSetInlined left)
-    (hright : Semantics.selectionSetInlined right) :
-    Semantics.selectionSetInlined (left ++ right) := by
+    (hright : Semantics.selectionSetInlined right)
+    : Semantics.selectionSetInlined (left ++ right) := by
   induction left with
   | nil =>
       simpa using hright
@@ -43,12 +43,9 @@ theorem selectionSetInlined_append
       simp [Semantics.selectionSetInlined] at hleft ⊢
       exact ⟨hleft.1, ih hleft.2⟩
 
-theorem reduceSelectionSet_append
-    (left right : List Selection) :
-    Translate.reduceSelectionSet (left ++ right)
-      =
-    Translate.reduceSelectionSet left
-      ++ Translate.reduceSelectionSet right := by
+theorem reduceSelectionSet_append (left right : List Selection)
+    : Translate.reduceSelectionSet (left ++ right)
+      = Translate.reduceSelectionSet left ++ Translate.reduceSelectionSet right := by
   induction left with
   | nil =>
       simp [Translate.reduceSelectionSet]
@@ -56,10 +53,10 @@ theorem reduceSelectionSet_append
       simp [Translate.reduceSelectionSet, ih, List.append_assoc]
 
 mutual
-  theorem inlineSelection_nil_eq_of_inlined :
-      ∀ (selection : Selection),
-        Semantics.selectionInlined selection ->
-          Inline.inlineSelection [] selection = selection
+  theorem inlineSelection_nil_eq_of_inlined
+      : ∀ (selection : Selection),
+          Semantics.selectionInlined selection
+          -> Inline.inlineSelection [] selection = selection
     | .field responseName fieldName arguments directives selectionSet,
         hinlined => by
         simp [Semantics.selectionInlined] at hinlined
@@ -72,10 +69,10 @@ mutual
     | .fragmentSpread fragmentName directives, hinlined => by
         simp [Semantics.selectionInlined] at hinlined
 
-  theorem inlineSelectionSet_nil_eq_of_inlined :
-      ∀ (selectionSet : List Selection),
-        Semantics.selectionSetInlined selectionSet ->
-          Inline.inlineSelectionSet [] selectionSet = selectionSet
+  theorem inlineSelectionSet_nil_eq_of_inlined
+      : ∀ (selectionSet : List Selection),
+          Semantics.selectionSetInlined selectionSet
+          -> Inline.inlineSelectionSet [] selectionSet = selectionSet
     | [], _hinlined => by
         simp
     | selection :: rest, hinlined => by
@@ -86,13 +83,13 @@ mutual
 end
 
 mutual
-  theorem selectionValid_toSpec_of_inlined :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {parentType : Name} {selection : Selection},
-        selectionValid schema variableDefinitions [] parentType selection ->
-        Semantics.selectionInlined selection ->
-        GraphQL.Validation.selectionSetValid schema variableDefinitions parentType
-          (Translate.reduceSelection selection)
+  theorem selectionValid_toSpec_of_inlined
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {parentType : Name} {selection : Selection},
+          selectionValid schema variableDefinitions [] parentType selection
+          -> Semantics.selectionInlined selection
+          -> GraphQL.Validation.selectionSetValid schema variableDefinitions parentType
+              (Translate.reduceSelection selection)
     | schema, variableDefinitions, parentType,
         .field responseName fieldName arguments directives selectionSet,
         hvalid, hinlined => by
@@ -147,13 +144,13 @@ mutual
         .fragmentSpread _fragmentName _directives, _hvalid, hinlined => by
         simp [Semantics.selectionInlined] at hinlined
 
-  theorem selectionSetValid_toSpec_of_inlined :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {parentType : Name} {selectionSet : List Selection},
-        selectionSetValid schema variableDefinitions [] parentType selectionSet ->
-        Semantics.selectionSetInlined selectionSet ->
-        GraphQL.Validation.selectionSetValid schema variableDefinitions parentType
-          (Translate.reduceSelectionSet selectionSet)
+  theorem selectionSetValid_toSpec_of_inlined
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {parentType : Name} {selectionSet : List Selection},
+          selectionSetValid schema variableDefinitions [] parentType selectionSet
+          -> Semantics.selectionSetInlined selectionSet
+          -> GraphQL.Validation.selectionSetValid schema variableDefinitions parentType
+              (Translate.reduceSelectionSet selectionSet)
     | _schema, _variableDefinitions, _parentType, [], _hvalid, _hinlined => by
         simp [Translate.reduceSelectionSet,
           GraphQL.Validation.selectionSetValid]
@@ -180,14 +177,14 @@ mutual
           GraphQL.Validation.selectionSetValid_append htranslatedSelection
             htranslatedRest
 
-  theorem fieldSelectionSetValid_toSpec_of_inlined :
-      ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
-        {fieldDefinition : FieldDefinition} {selectionSet : List Selection},
-        fieldSelectionSetValid schema variableDefinitions []
-          fieldDefinition selectionSet ->
-        Semantics.selectionSetInlined selectionSet ->
-        GraphQL.Validation.fieldSelectionSetValid schema variableDefinitions
-          fieldDefinition (Translate.reduceSelectionSet selectionSet)
+  theorem fieldSelectionSetValid_toSpec_of_inlined
+      : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
+            {fieldDefinition : FieldDefinition} {selectionSet : List Selection},
+          fieldSelectionSetValid schema variableDefinitions []
+            fieldDefinition selectionSet
+          -> Semantics.selectionSetInlined selectionSet
+          -> GraphQL.Validation.fieldSelectionSetValid schema variableDefinitions
+              fieldDefinition (Translate.reduceSelectionSet selectionSet)
     | schema, variableDefinitions, fieldDefinition, selectionSet,
         hvalid, hinlined => by
         simp [fieldSelectionSetValid,
@@ -209,8 +206,8 @@ mutual
               selectionSetValid_toSpec_of_inlined hselectionSetValid hinlined⟩
 end
 
-def scopedFieldToSpec
-    (field : FieldMerge.ScopedField) : GraphQL.FieldMerge.ScopedField :=
+def scopedFieldToSpec (field : FieldMerge.ScopedField)
+    : GraphQL.FieldMerge.ScopedField :=
   {
     parentType := field.parentType
     responseName := field.responseName
@@ -220,8 +217,8 @@ def scopedFieldToSpec
     selectionSet := Translate.reduceSelectionSet field.selectionSet
   }
 
-private def collectExpandedFields (schema : Schema) :
-    Name -> List Selection -> List FieldMerge.ScopedField
+private def collectExpandedFields (schema : Schema)
+    : Name -> List Selection -> List FieldMerge.ScopedField
   | _parentType, [] => []
   | parentType, selection :: rest =>
       let current :=
@@ -246,15 +243,12 @@ private def collectExpandedFields (schema : Schema) :
         | .fragmentSpread _fragmentName _directives => []
       current ++ collectExpandedFields schema parentType rest
 
-theorem collectExpandedFields_toSpec_of_inlined
-    (schema : Schema) (parentType : Name) :
-    ∀ (selectionSet : List Selection),
-      Semantics.selectionSetInlined selectionSet ->
-        (collectExpandedFields schema parentType selectionSet).map
-            scopedFieldToSpec
-          =
-        GraphQL.FieldMerge.collectFields schema parentType
-          (Translate.reduceSelectionSet selectionSet)
+theorem collectExpandedFields_toSpec_of_inlined (schema : Schema) (parentType : Name)
+    : ∀ (selectionSet : List Selection),
+        Semantics.selectionSetInlined selectionSet
+        -> (collectExpandedFields schema parentType selectionSet).map scopedFieldToSpec
+            = GraphQL.FieldMerge.collectFields schema parentType
+                (Translate.reduceSelectionSet selectionSet)
   | [], _hinlined => by
       simp [collectExpandedFields, GraphQL.FieldMerge.collectFields,
         Translate.reduceSelectionSet]
@@ -301,11 +295,11 @@ theorem collectExpandedFields_toSpec_of_inlined
           simp [Semantics.selectionInlined] at hinlined
 
 theorem collectExpandedFields_mem_selectionSetInlined
-    (schema : Schema) (parentType : Name) :
-    ∀ {selectionSet : List Selection} {field : FieldMerge.ScopedField},
-      field ∈ collectExpandedFields schema parentType selectionSet ->
-      Semantics.selectionSetInlined selectionSet ->
-        Semantics.selectionSetInlined field.selectionSet
+    (schema : Schema) (parentType : Name)
+    : ∀ {selectionSet : List Selection} {field : FieldMerge.ScopedField},
+        field ∈ collectExpandedFields schema parentType selectionSet
+        -> Semantics.selectionSetInlined selectionSet
+        -> Semantics.selectionSetInlined field.selectionSet
   | [], _field, hfield, _hinlined => by
       simp [collectExpandedFields] at hfield
   | selection :: rest, field, hfield, hinlined => by
@@ -344,10 +338,10 @@ theorem collectExpandedFields_mem_selectionSetInlined
           simp [Semantics.selectionInlined] at hinlined
 
 theorem collectExpandedFields_mem_availableFragments_nil
-    (schema : Schema) (parentType : Name) :
-    ∀ {selectionSet : List Selection} {field : FieldMerge.ScopedField},
-      field ∈ collectExpandedFields schema parentType selectionSet ->
-        field.availableFragments = []
+    (schema : Schema) (parentType : Name)
+    : ∀ {selectionSet : List Selection} {field : FieldMerge.ScopedField},
+        field ∈ collectExpandedFields schema parentType selectionSet
+        -> field.availableFragments = []
   | [], _field, hfield => by
       simp [collectExpandedFields] at hfield
   | selection :: rest, field, hfield => by
@@ -387,11 +381,11 @@ theorem collectExpandedFields_mem_availableFragments_nil
             parentType hfield
 
 theorem collectFields_nil_eq_collectExpandedFields_of_inlined
-    (schema : Schema) (parentType : Name) :
-    ∀ (selectionSet : List Selection),
-      Semantics.selectionSetInlined selectionSet ->
-        FieldMerge.collectFields schema [] parentType selectionSet =
-          collectExpandedFields schema parentType selectionSet
+    (schema : Schema) (parentType : Name)
+    : ∀ (selectionSet : List Selection),
+        Semantics.selectionSetInlined selectionSet
+        -> FieldMerge.collectFields schema [] parentType selectionSet
+            = collectExpandedFields schema parentType selectionSet
   | [], _hinlined => by
       simp [FieldMerge.collectFields, collectExpandedFields]
   | selection :: rest, hinlined => by
@@ -430,12 +424,10 @@ theorem collectFields_nil_eq_collectExpandedFields_of_inlined
 
 theorem collectFields_toSpec_of_inlined
     (schema : Schema) (parentType : Name) (selectionSet : List Selection)
-    (hinlined : Semantics.selectionSetInlined selectionSet) :
-    (FieldMerge.collectFields schema [] parentType selectionSet).map
-        scopedFieldToSpec
-      =
-    GraphQL.FieldMerge.collectFields schema parentType
-      (Translate.reduceSelectionSet selectionSet) := by
+    (hinlined : Semantics.selectionSetInlined selectionSet)
+    : (FieldMerge.collectFields schema [] parentType selectionSet).map scopedFieldToSpec
+      = GraphQL.FieldMerge.collectFields schema parentType
+          (Translate.reduceSelectionSet selectionSet) := by
   rw [collectFields_nil_eq_collectExpandedFields_of_inlined schema parentType
     selectionSet hinlined]
   exact collectExpandedFields_toSpec_of_inlined schema parentType selectionSet
@@ -445,8 +437,8 @@ theorem collectFields_mem_selectionSetInlined
     (schema : Schema) (parentType : Name)
     {selectionSet : List Selection} {field : FieldMerge.ScopedField}
     (hfield : field ∈ FieldMerge.collectFields schema [] parentType selectionSet)
-    (hinlined : Semantics.selectionSetInlined selectionSet) :
-    Semantics.selectionSetInlined field.selectionSet := by
+    (hinlined : Semantics.selectionSetInlined selectionSet)
+    : Semantics.selectionSetInlined field.selectionSet := by
   rw [collectFields_nil_eq_collectExpandedFields_of_inlined schema parentType
     selectionSet hinlined] at hfield
   exact collectExpandedFields_mem_selectionSetInlined schema parentType hfield
@@ -456,8 +448,8 @@ theorem collectFields_nil_mem_availableFragments_nil
     (schema : Schema) (parentType : Name)
     {selectionSet : List Selection} {field : FieldMerge.ScopedField}
     (hfield : field ∈ FieldMerge.collectFields schema [] parentType selectionSet)
-    (hinlined : Semantics.selectionSetInlined selectionSet) :
-    field.availableFragments = [] := by
+    (hinlined : Semantics.selectionSetInlined selectionSet)
+    : field.availableFragments = [] := by
   rw [collectFields_nil_eq_collectExpandedFields_of_inlined schema parentType
     selectionSet hinlined] at hfield
   exact collectExpandedFields_mem_availableFragments_nil schema parentType hfield
@@ -465,9 +457,9 @@ theorem collectFields_nil_mem_availableFragments_nil
 theorem fieldsInSetCanMerge_toSpecInductive_of_inlined
     {schema : Schema} {parentType : Name} {selectionSet : List Selection}
     (hinlined : Semantics.selectionSetInlined selectionSet)
-    (hmerge : FieldMerge.FieldsInSetCanMerge schema [] parentType selectionSet) :
-    GraphQL.FieldMerge.FieldsInSetCanMerge schema parentType
-      (Translate.reduceSelectionSet selectionSet) := by
+    (hmerge : FieldMerge.FieldsInSetCanMerge schema [] parentType selectionSet)
+    : GraphQL.FieldMerge.FieldsInSetCanMerge schema parentType
+        (Translate.reduceSelectionSet selectionSet) := by
   revert hinlined
   refine FieldMerge.FieldsInSetCanMerge.rec
     (motive_1 := fun parentType selectionSet _ =>
@@ -594,9 +586,9 @@ theorem fieldsInSetCanMerge_toSpecInductive_of_inlined
 theorem fieldsInSetCanMerge_toSpec_of_inlined
     {schema : Schema} {parentType : Name} {selectionSet : List Selection}
     (hinlined : Semantics.selectionSetInlined selectionSet)
-    (hmerge : FieldMerge.fieldsInSetCanMerge schema [] parentType selectionSet) :
-    GraphQL.FieldMerge.fieldsInSetCanMerge schema parentType
-      (Translate.reduceSelectionSet selectionSet) := by
+    (hmerge : FieldMerge.fieldsInSetCanMerge schema [] parentType selectionSet)
+    : GraphQL.FieldMerge.fieldsInSetCanMerge schema parentType
+        (Translate.reduceSelectionSet selectionSet) := by
   unfold FieldMerge.fieldsInSetCanMerge at hmerge
   unfold GraphQL.FieldMerge.fieldsInSetCanMerge
   exact fieldsInSetCanMerge_toSpecInductive_of_inlined hinlined hmerge
@@ -604,9 +596,9 @@ theorem fieldsInSetCanMerge_toSpec_of_inlined
 theorem operationDefinitionValid_toSpec_of_inlined
     {schema : Schema} {operation : Operation}
     (hvalid : operationDefinitionValid schema operation)
-    (hinlined : Semantics.operationInlined operation) :
-    GraphQL.Validation.operationDefinitionValid schema
-      (Translate.reduceOperation operation) := by
+    (hinlined : Semantics.operationInlined operation)
+    : GraphQL.Validation.operationDefinitionValid schema
+        (Translate.reduceOperation operation) := by
   rcases hinlined with ⟨hfragments, hselectionInlined⟩
   rcases hvalid with
     ⟨hroot, hrootComposite, hvariables, _huniqueFragments,

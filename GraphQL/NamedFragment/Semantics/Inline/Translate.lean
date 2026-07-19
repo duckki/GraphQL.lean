@@ -8,9 +8,8 @@ namespace Semantics
 
 variable {ObjectRef : Type}
 
-def executableFieldToSpec
-    (field : Execution.ExecutableField) :
-    GraphQL.Execution.ExecutableField :=
+def executableFieldToSpec (field : Execution.ExecutableField)
+    : GraphQL.Execution.ExecutableField :=
   {
     parentType := field.parentType
     responseName := field.responseName
@@ -18,18 +17,15 @@ def executableFieldToSpec
     arguments := field.arguments
     selectionSet :=
       Translate.reduceSelectionSet
-        (Inline.inlineSelectionSet field.availableFragments
-          field.selectionSet)
+        (Inline.inlineSelectionSet field.availableFragments field.selectionSet)
   }
 
-def executableGroupToSpec
-    (group : Name × List Execution.ExecutableField) :
-    Name × List GraphQL.Execution.ExecutableField :=
+def executableGroupToSpec (group : Name × List Execution.ExecutableField)
+    : Name × List GraphQL.Execution.ExecutableField :=
   (group.fst, group.snd.map executableFieldToSpec)
 
-def executableGroupsToSpec
-    (groups : List (Name × List Execution.ExecutableField)) :
-    List (Name × List GraphQL.Execution.ExecutableField) :=
+def executableGroupsToSpec (groups : List (Name × List Execution.ExecutableField))
+    : List (Name × List GraphQL.Execution.ExecutableField) :=
   groups.map executableGroupToSpec
 
 def inlinedSelectionToSpec : Selection -> GraphQL.Selection
@@ -43,16 +39,14 @@ def inlinedSelectionToSpec : Selection -> GraphQL.Selection
       .inlineFragment none directives []
 
 def selectionToSpecAfterInline
-    (fragments : List FragmentDefinition) (selection : Selection) :
-    GraphQL.Selection :=
+    (fragments : List FragmentDefinition) (selection : Selection)
+    : GraphQL.Selection :=
   inlinedSelectionToSpec (Inline.inlineSelection fragments selection)
 
 theorem translate_inlineSelection_singleton
-    (fragments : List FragmentDefinition) (selection : Selection) :
-    Translate.reduceSelection
-        (Inline.inlineSelection fragments selection)
-      =
-    [selectionToSpecAfterInline fragments selection] := by
+    (fragments : List FragmentDefinition) (selection : Selection)
+    : Translate.reduceSelection (Inline.inlineSelection fragments selection)
+      = [selectionToSpecAfterInline fragments selection] := by
   cases selection with
   | field responseName fieldName arguments directives selectionSet =>
       simp [selectionToSpecAfterInline, inlinedSelectionToSpec,
@@ -73,11 +67,9 @@ theorem translate_inlineSelection_singleton
 
 theorem translate_inlineSelectionSet_map
     (fragments : List FragmentDefinition)
-    (selectionSet : List Selection) :
-    Translate.reduceSelectionSet
-        (Inline.inlineSelectionSet fragments selectionSet)
-      =
-    selectionSet.map (selectionToSpecAfterInline fragments) := by
+    (selectionSet : List Selection)
+    : Translate.reduceSelectionSet (Inline.inlineSelectionSet fragments selectionSet)
+      = selectionSet.map (selectionToSpecAfterInline fragments) := by
   induction selectionSet with
   | nil =>
       simp [Translate.reduceSelectionSet]
@@ -88,11 +80,10 @@ theorem translate_inlineSelectionSet_map
 
 theorem addExecutableGroup_toSpec
     (group : Name × List Execution.ExecutableField)
-    (groups : List (Name × List Execution.ExecutableField)) :
-    executableGroupsToSpec (Execution.addExecutableGroup group groups)
-      =
-    GraphQL.Execution.addExecutableGroup (executableGroupToSpec group)
-      (executableGroupsToSpec groups) := by
+    (groups : List (Name × List Execution.ExecutableField))
+    : executableGroupsToSpec (Execution.addExecutableGroup group groups)
+      = GraphQL.Execution.addExecutableGroup (executableGroupToSpec group)
+          (executableGroupsToSpec groups) := by
   induction groups with
   | nil =>
       simp [executableGroupsToSpec, executableGroupToSpec,
@@ -113,11 +104,10 @@ theorem addExecutableGroup_toSpec
                 simpa [executableGroupsToSpec, executableGroupToSpec] using ih
 
 theorem mergeExecutableGroups_toSpec
-    (left right : List (Name × List Execution.ExecutableField)) :
-    executableGroupsToSpec (Execution.mergeExecutableGroups left right)
-      =
-    GraphQL.Execution.mergeExecutableGroups (executableGroupsToSpec left)
-      (executableGroupsToSpec right) := by
+    (left right : List (Name × List Execution.ExecutableField))
+    : executableGroupsToSpec (Execution.mergeExecutableGroups left right)
+      = GraphQL.Execution.mergeExecutableGroups (executableGroupsToSpec left)
+          (executableGroupsToSpec right) := by
   induction right generalizing left with
   | nil =>
       simp [executableGroupsToSpec, Execution.mergeExecutableGroups,
@@ -136,16 +126,15 @@ theorem mergeExecutableGroups_toSpec
       rw [addExecutableGroup_toSpec]
 
 mutual
-  theorem collectSelection_toSpec :
-      ∀ (schema : Schema) (variableValues : Execution.VariableValues)
-        (fragments : List FragmentDefinition) (parentType : Name)
-        (source : Execution.ResolverValue ObjectRef) (selection : Selection),
-        executableGroupsToSpec
-          (Execution.collectSelection schema variableValues fragments
-            parentType source selection)
-          =
-        GraphQL.Execution.collectSelection schema variableValues parentType
-          source (selectionToSpecAfterInline fragments selection)
+  theorem collectSelection_toSpec
+      : ∀ (schema : Schema) (variableValues : Execution.VariableValues)
+            (fragments : List FragmentDefinition) (parentType : Name)
+            (source : Execution.ResolverValue ObjectRef) (selection : Selection),
+          executableGroupsToSpec
+            (Execution.collectSelection schema variableValues fragments
+              parentType source selection)
+          = GraphQL.Execution.collectSelection schema variableValues parentType
+              source (selectionToSpecAfterInline fragments selection)
     | schema, variableValues, fragments, parentType, source,
         .field responseName fieldName arguments directives selectionSet => by
         by_cases hdirectives :
@@ -255,18 +244,17 @@ mutual
           apply Prod.Lex.right
           omega
 
-  theorem collectFields_toSpec :
-      ∀ (schema : Schema) (variableValues : Execution.VariableValues)
-        (fragments : List FragmentDefinition) (parentType : Name)
-        (source : Execution.ResolverValue ObjectRef)
-        (selectionSet : List Selection),
-        executableGroupsToSpec
-          (Execution.collectFields schema variableValues fragments parentType
-            source selectionSet)
-          =
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          (Translate.reduceSelectionSet
-            (Inline.inlineSelectionSet fragments selectionSet))
+  theorem collectFields_toSpec
+      : ∀ (schema : Schema) (variableValues : Execution.VariableValues)
+            (fragments : List FragmentDefinition) (parentType : Name)
+            (source : Execution.ResolverValue ObjectRef)
+            (selectionSet : List Selection),
+          executableGroupsToSpec
+            (Execution.collectFields schema variableValues fragments parentType
+              source selectionSet)
+          = GraphQL.Execution.collectFields schema variableValues parentType source
+              (Translate.reduceSelectionSet
+                (Inline.inlineSelectionSet fragments selectionSet))
     | schema, variableValues, fragments, parentType, source, [] => by
         simp [Execution.collectFields, GraphQL.Execution.collectFields,
           executableGroupsToSpec, Translate.reduceSelectionSet]
@@ -295,13 +283,11 @@ end
 theorem collectSubfields_toSpec
     (schema : Schema) (variableValues : Execution.VariableValues)
     (objectType : Name) (objectValue : Execution.ResolverValue ObjectRef)
-    (fields : List Execution.ExecutableField) :
-    executableGroupsToSpec
-      (Execution.collectSubfields schema variableValues objectType
-        objectValue fields)
-      =
-    GraphQL.Execution.collectSubfields schema variableValues objectType
-      objectValue (fields.map executableFieldToSpec) := by
+    (fields : List Execution.ExecutableField)
+    : executableGroupsToSpec
+        (Execution.collectSubfields schema variableValues objectType objectValue fields)
+      = GraphQL.Execution.collectSubfields schema variableValues objectType
+          objectValue (fields.map executableFieldToSpec) := by
   induction fields with
   | nil =>
       simp [Execution.collectSubfields, GraphQL.Execution.collectSubfields,
@@ -312,7 +298,6 @@ theorem collectSubfields_toSpec
       rw [collectFields_toSpec schema variableValues field.availableFragments
         objectType objectValue field.selectionSet
       ]
-
 
 end Semantics
 end NamedFragment

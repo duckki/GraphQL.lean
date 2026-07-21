@@ -112,8 +112,7 @@ theorem collectFields_inlineFragment_some_directives_allowed_flatten
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection)
     : Execution.selectionDirectivesAllowBool variableValues directives = true
-      -> Execution.doesFragmentTypeApplyBool schema parentType source typeCondition
-          = true
+      -> Execution.doesFragmentTypeApplyBool schema parentType source typeCondition = true
       -> Execution.collectFields schema variableValues parentType source
             (Selection.inlineFragment (some typeCondition) directives selectionSet
               :: rest)
@@ -161,8 +160,7 @@ theorem executeSelectionSet_inlineFragment_some_directives_allowed_flatten
     (directives : List DirectiveApplication)
     (selectionSet rest : List Selection)
     : Execution.selectionDirectivesAllowBool variableValues directives = true
-      -> Execution.doesFragmentTypeApplyBool schema parentType source typeCondition
-          = true
+      -> Execution.doesFragmentTypeApplyBool schema parentType source typeCondition = true
       -> Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
             (Selection.inlineFragment (some typeCondition) directives selectionSet

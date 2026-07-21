@@ -135,8 +135,7 @@ theorem specExecuteRootSelectionSet_append_of_namesDisjoint
     (hdisjoint
       : GraphQL.NormalForm.executableGroupNamesDisjoint
           (GraphQL.Execution.collectFields schema variableValues parentType source left)
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source right))
+          (GraphQL.Execution.collectFields schema variableValues parentType source right))
     : GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
         depth parentType source (left ++ right)
       = Result.combine List.append
@@ -1592,8 +1591,7 @@ theorem stateEquivalent_of_append_single_field_of_disjoint
               parentType := parentType
               source := source
               selectionSet :=
-                left
-                ++ [.field responseName fieldName arguments directives selectionSet]
+                left ++ [.field responseName fieldName arguments directives selectionSet]
             }
           initial := .object []
         } := by
@@ -1861,8 +1859,7 @@ theorem stateEquivalent_of_append_single_field_blocked
               parentType := parentType
               source := source
               selectionSet :=
-                left
-                ++ [.field responseName fieldName arguments directives selectionSet]
+                left ++ [.field responseName fieldName arguments directives selectionSet]
             }
           initial := .object []
         } :=
@@ -2157,8 +2154,7 @@ theorem stateEquivalent_of_append_single_inline_some_not_apply
             initial := .object []
           })
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (hnotApply
-      : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
+    (hnotApply : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
     : ExecutionStateEquivalent
         {
           window :=

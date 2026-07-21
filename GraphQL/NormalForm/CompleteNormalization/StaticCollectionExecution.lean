@@ -125,8 +125,7 @@ theorem collectFields_staticCollectForGround_inline_none_allowed_case
             (staticCollectForGround schema
               (operationBoolVars operation) lookupParent
               groundType boolCase selectionSet)
-          = Execution.collectFields schema variableValues lookupParent source
-              selectionSet
+          = Execution.collectFields schema variableValues lookupParent source selectionSet
       -> Execution.collectFields schema variableValues lookupParent source
             (staticCollectForGround schema
               (operationBoolVars operation) lookupParent
@@ -489,8 +488,7 @@ theorem executeSelectionSet_staticCollectForGround_inline_none_allowed_case
             (staticCollectForGround schema
               (operationBoolVars operation) lookupParent
               groundType boolCase selectionSet)
-          = Execution.collectFields schema variableValues lookupParent source
-              selectionSet
+          = Execution.collectFields schema variableValues lookupParent source selectionSet
       -> Execution.collectFields schema variableValues lookupParent source
             (staticCollectForGround schema
               (operationBoolVars operation) lookupParent

@@ -403,8 +403,7 @@ theorem selectedPathTaggedSelectionSetResponseDiffWitness_of_object_leaf_field_v
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection}
             {fieldDefinition : FieldDefinition},
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
@@ -412,8 +411,7 @@ theorem selectedPathTaggedSelectionSetResponseDiffWitness_of_object_leaf_field_v
           -> SelectedFieldSpineRuntimeValid schema parentType parentType spine
           -> PathLocalSupportValidNormal schema parentType currentSelectionSet
           -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
           -> schema.lookupField parentType fieldName = some fieldDefinition
           -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
@@ -573,8 +571,7 @@ theorem selectedPathTaggedSelectionSetResponseDiffWitness_of_object_leaf_field_v
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection}
             {fieldDefinition : FieldDefinition},
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
@@ -585,8 +582,7 @@ theorem selectedPathTaggedSelectionSetResponseDiffWitness_of_object_leaf_field_v
           -> PathLocalSupportValidNormal schema parentType rightCurrentSelectionSet
           -> PathLocalSelectionSetCurrentContext selectionSet leftCurrentSelectionSet
           -> PathLocalSelectionSetCurrentContext selectionSet rightCurrentSelectionSet
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
           -> schema.lookupField parentType fieldName = some fieldDefinition
           -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
@@ -752,8 +748,7 @@ theorem selectedPathTaggedSelectionSetResponseDiffWitness_of_object_child_field_
             {childSelectionSet : List Selection}
             {fieldDefinition : FieldDefinition} {runtimeType : Name}
             {leftTail rightTail : List NormalSelectionSetObservableFieldStep},
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
@@ -764,8 +759,7 @@ theorem selectedPathTaggedSelectionSetResponseDiffWitness_of_object_child_field_
           -> PathLocalSupportValidNormal schema parentType rightCurrentSelectionSet
           -> PathLocalSelectionSetCurrentContext selectionSet leftCurrentSelectionSet
           -> PathLocalSelectionSetCurrentContext selectionSet rightCurrentSelectionSet
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
           -> schema.lookupField parentType fieldName = some fieldDefinition
           -> selectedObservableFieldSpineNext? fieldName arguments leftSpine
@@ -961,10 +955,8 @@ theorem selectedPathTaggedSelectionSetResponseDiffWitness_of_abstract_inlineFrag
           -> objectTypeNameBool schema runtimeType = true
           -> schema.typeIncludesObjectBool normalParentType runtimeType = true
           -> selectionSetDeepProbeFuel schema normalParentType selectionSet ≤ fuel
-          -> SelectedFieldSpineRuntimeValid schema normalParentType runtimeType
-              leftSpine
-          -> SelectedFieldSpineRuntimeValid schema normalParentType runtimeType
-              rightSpine
+          -> SelectedFieldSpineRuntimeValid schema normalParentType runtimeType leftSpine
+          -> SelectedFieldSpineRuntimeValid schema normalParentType runtimeType rightSpine
           -> PathLocalSupportValidNormal schema runtimeType leftCurrentSelectionSet
           -> PathLocalSupportValidNormal schema runtimeType rightCurrentSelectionSet
           -> (∀ {bodyDirectives bodySelectionSet},
@@ -1146,8 +1138,7 @@ theorem selectedPathTaggedSelectionSetResponseDiffWitness_of_observableFieldSpin
               -> selectionSetDeepProbeFuel schema normalParentType selectionSet ≤ fuel
               -> PathLocalSupportValidNormal schema runtimeType currentSelectionSet
               -> (objectTypeNameBool schema normalParentType = true
-                  -> PathLocalSelectionSetCurrentContext selectionSet
-                      currentSelectionSet)
+                  -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet)
               -> (objectTypeNameBool schema normalParentType = false
                   -> ∀ {directives bodySelectionSet},
                       Selection.inlineFragment (some runtimeType) directives
@@ -2117,16 +2108,14 @@ theorem pathLocalTaggedSelectionSetResponseDiffWitness_of_object_leaf_field_vali
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection}
             {fieldDefinition : FieldDefinition},
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
           -> selectionSetDeepProbeFuel schema parentType selectionSet ≤ fuel
           -> PathLocalSupportValidNormal schema parentType currentSelectionSet
           -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
           -> schema.lookupField parentType fieldName = some fieldDefinition
           -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
@@ -2262,16 +2251,14 @@ theorem pathLocalTaggedSelectionSetResponseDiffWitness_of_object_child_field_val
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection}
             {fieldDefinition : FieldDefinition} {runtimeType : Name},
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
           -> selectionSetDeepProbeFuel schema parentType selectionSet ≤ fuel
           -> PathLocalSupportValidNormal schema parentType currentSelectionSet
           -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
           -> schema.lookupField parentType fieldName = some fieldDefinition
           -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
@@ -2279,8 +2266,7 @@ theorem pathLocalTaggedSelectionSetResponseDiffWitness_of_object_child_field_val
               ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
                       schema
                     = true
-                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
-                    = false
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
                   ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
                       arguments parentType currentSelectionSet
                     = some runtimeType))
@@ -2658,8 +2644,7 @@ theorem pathLocalTaggedSelectionSetResponseDiffWitness_of_observableLeafAtRuntim
               -> selectionSetDeepProbeFuel schema normalParentType selectionSet ≤ fuel
               -> PathLocalSupportValidNormal schema runtimeType currentSelectionSet
               -> (objectTypeNameBool schema normalParentType = true
-                  -> PathLocalSelectionSetCurrentContext selectionSet
-                      currentSelectionSet)
+                  -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet)
               -> (objectTypeNameBool schema normalParentType = false
                   -> ∀ {directives bodySelectionSet},
                       Selection.inlineFragment (some runtimeType) directives
@@ -2998,8 +2983,7 @@ theorem responseData_not_semanticEquivalent_of_pathLocalProbe_observableLeafAtRu
               -> selectionSetDeepProbeFuel schema normalParentType selectionSet ≤ fuel
               -> PathLocalSupportValidNormal schema runtimeType currentSelectionSet
               -> (objectTypeNameBool schema normalParentType = true
-                  -> PathLocalSelectionSetCurrentContext selectionSet
-                      currentSelectionSet)
+                  -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet)
               -> (objectTypeNameBool schema normalParentType = false
                   -> ∀ {directives bodySelectionSet},
                       Selection.inlineFragment (some runtimeType) directives
@@ -3078,11 +3062,9 @@ theorem not_selectionSetsDataEquivalent_of_pathLocalProbe_singleton_arguments_ob
           -> PathLocalSelectionSetCurrentContext childSelectionSet currentSelectionSet)
       -> (objectTypeNameBool schema childParentType = false
           -> ∀ {directives bodySelectionSet},
-              Selection.inlineFragment (some childRuntimeType) directives
-                  bodySelectionSet
+              Selection.inlineFragment (some childRuntimeType) directives bodySelectionSet
                 ∈ childSelectionSet
-              -> PathLocalSelectionSetCurrentContext bodySelectionSet
-                  currentSelectionSet)
+              -> PathLocalSelectionSetCurrentContext bodySelectionSet currentSelectionSet)
       -> selectionSetDirectiveFree
           [Selection.field responseName fieldName leftArguments [] childSelectionSet]
       -> selectionSetDirectiveFree
@@ -3328,8 +3310,7 @@ theorem not_selectionSetsDataEquivalent_of_pathLocalProbe_singleton_arguments_ch
             childDirectives grandChildSelectionSet
           ∈ childSelectionSet
       -> schema.lookupField childParentType childFieldName = some childFieldDefinition
-      -> (TypeRef.named childFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named childFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> selectionSetDirectiveFree
           [Selection.field responseName fieldName leftArguments [] childSelectionSet]

@@ -187,8 +187,7 @@ theorem executeQueryWithFuel_toSpec_inlineOperation
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (operation : Operation)
     (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
-    : Execution.executeQueryWithFuel schema resolvers variableValues operation
-        fuel source
+    : Execution.executeQueryWithFuel schema resolvers variableValues operation fuel source
       = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
           (Translate.reduceOperation (Inline.inlineOperation operation))
           fuel source := by
@@ -238,8 +237,7 @@ theorem executeQueryWithFuel_eq_spec_of_inlined
     (variableValues : Execution.VariableValues) (operation : Operation)
     (fuel : Nat) (source : Execution.ResolverValue ObjectRef)
     (hinlined : operationInlined operation)
-    : Execution.executeQueryWithFuel schema resolvers variableValues
-        operation fuel source
+    : Execution.executeQueryWithFuel schema resolvers variableValues operation fuel source
       = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
           (Translate.reduceOperation operation) fuel source := by
   rw [executeQueryWithFuel_toSpec_inlineOperation]

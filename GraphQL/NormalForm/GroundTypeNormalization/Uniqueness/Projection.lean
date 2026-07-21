@@ -343,8 +343,7 @@ theorem collectFields_projectionTargetResolverValue
     (selectionSet : List Selection)
     : Execution.collectFields schema variableValues parentType
         (projectionTargetResolverValue source) selectionSet
-      = Execution.collectFields schema variableValues parentType source
-          selectionSet := by
+      = Execution.collectFields schema variableValues parentType source selectionSet := by
   simpa [projectionTargetResolverValue] using
     collectFields_projectionResolverValue schema variableValues
       ProjectionResolverRef.target parentType source selectionSet
@@ -356,8 +355,7 @@ def fieldPairProjectionTarget
     : Prop :=
   parentType = targetParent
   ∧ ((fieldName = leftField ∧ Argument.argumentsEquivalent arguments leftArguments)
-      ∨ (fieldName = rightField
-          ∧ Argument.argumentsEquivalent arguments rightArguments))
+      ∨ (fieldName = rightField ∧ Argument.argumentsEquivalent arguments rightArguments))
 
 theorem fieldPairProjectionTarget_iff_of_argumentsEquivalent
     (targetParent leftField rightField : Name)
@@ -908,8 +906,7 @@ mutual
             (fieldPairOrDeepSuccessResolvers schema rootSelectionSet base
               targetParent leftField rightField leftArguments rightArguments)
             variableValues fuel (projectionTargetResolverValue source) fields
-          = Execution.executeCollectedFields schema base variableValues fuel source
-              fields
+          = Execution.executeCollectedFields schema base variableValues fuel source fields
     | fuel, source, [] => by
         simp [Execution.executeCollectedFields]
     | fuel, source, (responseName, fields) :: rest => by
@@ -984,8 +981,7 @@ mutual
               targetParent leftField rightField leftArguments rightArguments)
             variableValues fuel fieldType fields
             (projectionTargetResolverValue value)
-          = Execution.completeValue schema base variableValues fuel fieldType
-              fields value
+          = Execution.completeValue schema base variableValues fuel fieldType fields value
     | 0, fieldType, fields, value => by
         simp [Execution.completeValue, Execution.outOfFuel]
     | fuel + 1, .nonNull inner, fields, value => by

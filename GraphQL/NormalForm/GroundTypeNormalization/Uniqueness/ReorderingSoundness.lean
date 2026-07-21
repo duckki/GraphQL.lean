@@ -27,8 +27,7 @@ def ResponseValueResultEquivalent (left right : Result ResponseValue) : Prop :=
       ResponseValue.semanticEquivalent leftValue rightValue ∧ leftErrors = rightErrors
   | _, _ => False
 
-def ListResponseValueResultEquivalent (left right : Result (List ResponseValue))
-    : Prop :=
+def ListResponseValueResultEquivalent (left right : Result (List ResponseValue)) : Prop :=
   match left, right with
   | .error leftErrors, .error rightErrors => leftErrors = rightErrors
   | .ok (leftValues, leftErrors), .ok (rightValues, rightErrors) =>
@@ -580,8 +579,7 @@ private theorem executeCollectedFields_cons_equivalent
     (leftFields rightFields : List ExecutableField)
     (leftTail rightTail : List (Name × List ExecutableField))
     : SelectionSetResultEquivalent
-        (executeField schema resolvers variableValues fuel source responseName
-          leftFields)
+        (executeField schema resolvers variableValues fuel source responseName leftFields)
         (executeField schema resolvers variableValues fuel source responseName
           rightFields)
       -> SelectionSetResultEquivalent
@@ -646,8 +644,7 @@ theorem executeCollectedFields_equivalent_of_perm
       -> (left.map Prod.fst).Nodup
       -> SelectionSetResultEquivalent
           (executeCollectedFields schema resolvers variableValues fuel source left)
-          (executeCollectedFields schema resolvers variableValues fuel source
-            right) := by
+          (executeCollectedFields schema resolvers variableValues fuel source right) := by
   intro hperm
   induction hperm with
   | nil =>
@@ -964,16 +961,12 @@ private theorem execute_paired_normal_field_groups_equivalent
     : ∀ pairs : List (Selection × Selection),
         (∀ pair,
           pair ∈ pairs
-          -> pair.1 ∈ left
-              ∧ pair.2 ∈ right
-              ∧ SelectionEqualUpToReordering pair.1 pair.2)
+          -> pair.1 ∈ left ∧ pair.2 ∈ right ∧ SelectionEqualUpToReordering pair.1 pair.2)
         -> SelectionSetResultEquivalent
             (executeCollectedFields schema resolvers variableValues fuel source
-              (pairs.map
-                (fun pair => fieldGroupOfSelection executionParentType pair.1)))
+              (pairs.map (fun pair => fieldGroupOfSelection executionParentType pair.1)))
             (executeCollectedFields schema resolvers variableValues fuel source
-              (pairs.map
-                (fun pair => fieldGroupOfSelection executionParentType pair.2)))
+              (pairs.map (fun pair => fieldGroupOfSelection executionParentType pair.2)))
   | [], _hpairs => selectionSetResultEquivalent_of_eq rfl
   | pair :: rest, hpairs => by
       rcases pair with ⟨leftSelection, rightSelection⟩

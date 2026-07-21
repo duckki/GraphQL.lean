@@ -435,8 +435,7 @@ theorem selectionSetValid_of_allFields_validInPossibleTypes
         selectionsAllFields selectionSet
         -> Validation.selectionSetValidInPossibleTypes schema
             variableDefinitions parentType selectionSet
-        -> Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+        -> Validation.selectionSetValid schema variableDefinitions parentType selectionSet
   | [], _hallFields, _himplementation => by
       simp [Validation.selectionSetValid]
   | selection :: rest, hallFields, himplementation => by

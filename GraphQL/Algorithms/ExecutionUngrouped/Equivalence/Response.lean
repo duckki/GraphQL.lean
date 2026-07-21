@@ -10,8 +10,7 @@ open GraphQL.Execution
 theorem lookupResponseField?_mergeResponseField_same
     (responseName : Name) (incoming : ResponseValue)
     (fields : List (Name × ResponseValue))
-    : lookupResponseField? responseName
-        (mergeResponseField responseName incoming fields)
+    : lookupResponseField? responseName (mergeResponseField responseName incoming fields)
       = some
           (match lookupResponseField? responseName fields with
             | some existing => mergeResponse existing incoming
@@ -230,8 +229,7 @@ theorem mergeResponseFields_append_of_disjoint
     (existing incoming : List (Name × ResponseValue))
     : PairKeysNodup incoming
       -> (∀ responseName,
-            responseName ∈ incoming.map Prod.fst
-            -> responseName ∉ existing.map Prod.fst)
+            responseName ∈ incoming.map Prod.fst -> responseName ∉ existing.map Prod.fst)
       -> mergeResponseFields existing incoming = existing ++ incoming := by
   intro hnodup hdisjoint
   induction incoming generalizing existing with
@@ -304,8 +302,7 @@ theorem mergeResponse_object_append_of_disjoint
     (existing incoming : List (Name × ResponseValue))
     : PairKeysNodup incoming
       -> (∀ responseName,
-            responseName ∈ incoming.map Prod.fst
-            -> responseName ∉ existing.map Prod.fst)
+            responseName ∈ incoming.map Prod.fst -> responseName ∉ existing.map Prod.fst)
       -> mergeResponse (.object existing) (.object incoming)
           = .object (existing ++ incoming) := by
   intro hnodup hdisjoint
@@ -589,8 +586,7 @@ theorem mergeResponseField_field_ready
             (responseName, existing) ∈ fields
             -> ResponseMergeReady (mergeResponse existing incoming))
       -> ∀ fieldResponseName response,
-          (fieldResponseName, response)
-            ∈ mergeResponseField responseName incoming fields
+          (fieldResponseName, response) ∈ mergeResponseField responseName incoming fields
           -> ResponseMergeReady response := by
   intro hincoming hfields hmerge
   induction fields with
@@ -828,8 +824,7 @@ mutual
 
   theorem ResponseFieldsAbsorptionShape.output_ready
       : ∀ {base output : List (Name × ResponseValue)},
-          ResponseFieldsAbsorptionShape base output
-          -> ResponseMergeReady (.object output)
+          ResponseFieldsAbsorptionShape base output -> ResponseMergeReady (.object output)
     | _base, _output, hshape => by
         cases hshape with
         | nil _ hready => exact hready

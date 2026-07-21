@@ -188,8 +188,7 @@ structure NormalizedFieldGroupSource
     : ∀ runtimeType,
         runtimeType ∈ schema.getPossibleTypes normalized.outputType.namedType
         -> selectionSetSemanticsReady schema runtimeType childSource
-  childLookup
-    : selectionSetLookupValid schema normalized.outputType.namedType childSource
+  childLookup : selectionSetLookupValid schema normalized.outputType.namedType childSource
   childImplementation
     : ∀ runtimeType,
         runtimeType ∈ schema.getPossibleTypes normalized.outputType.namedType

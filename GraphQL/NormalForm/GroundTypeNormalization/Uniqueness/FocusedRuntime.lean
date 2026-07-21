@@ -427,8 +427,7 @@ theorem fieldHeadProbeRuntimeCoherent_of_child_pathCoherent
     {fieldDefinition : FieldDefinition} {childPath : List Name}
     : Validation.selectionSetValid schema variableDefinitions
         fieldDefinition.outputType.namedType childSelectionSet
-      -> selectionSetNormal schema fieldDefinition.outputType.namedType
-          childSelectionSet
+      -> selectionSetNormal schema fieldDefinition.outputType.namedType childSelectionSet
       -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> SelectionSetProbePathCoherent schema rootSelectionSet
@@ -478,8 +477,7 @@ theorem SelectionSetProbePathCoherent.objectChild_of_runtimePreserving
       -> schema.lookupField parentType fieldName = some fieldDefinition
       -> Validation.selectionSetValid schema variableDefinitions
           fieldDefinition.outputType.namedType childSelectionSet
-      -> selectionSetNormal schema fieldDefinition.outputType.namedType
-          childSelectionSet
+      -> selectionSetNormal schema fieldDefinition.outputType.namedType childSelectionSet
       -> SelectionSetProbePathCoherent schema rootSelectionSet
           fieldDefinition.outputType.namedType childSelectionSet childPath
       -> (∀ runtimeType,

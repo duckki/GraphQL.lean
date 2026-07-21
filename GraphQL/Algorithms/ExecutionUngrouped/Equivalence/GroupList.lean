@@ -1497,8 +1497,7 @@ mutual
   def executionSelectionLookupValid (schema : Schema) (parentType : Name)
       : Selection -> Prop
     | .field _responseName fieldName _arguments _directives _selectionSet =>
-        ∃ fieldDefinition,
-          schema.lookupField parentType fieldName = some fieldDefinition
+        ∃ fieldDefinition, schema.lookupField parentType fieldName = some fieldDefinition
     | .inlineFragment none _directives selectionSet =>
         executionSelectionSetLookupValid schema parentType selectionSet
     | .inlineFragment (some _typeCondition) _directives selectionSet =>

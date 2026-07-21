@@ -31,8 +31,7 @@ private theorem completeNormalSelection_body_normal_free
     {schema : Schema} {leftVar : BoolVar} {variables : List BoolVar}
     {parentType : Name} {selectionSet : List Selection}
     (hnormal
-      : completeNormalSelectionSet schema (leftVar :: variables)
-          parentType selectionSet)
+      : completeNormalSelectionSet schema (leftVar :: variables) parentType selectionSet)
     {selection : Selection} {boolCase : BoolCase}
     {body : List Selection}
     (hmem : selection ∈ selectionSet)

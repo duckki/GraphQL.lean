@@ -1322,8 +1322,7 @@ theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_selectedPathPr
       -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> schema.typeIncludesObjectBool leftFieldDefinition.outputType.namedType
             leftRuntimeType
@@ -2196,8 +2195,8 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
           hrightObjectContext hleftAbstractContext hrightAbstractContext))
 
 theorem pathLocalSelectionSetObservableFieldSpineAtSelectedRuntime_of_valid_normal_nonempty
-    {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType : Name} {selectionSet : List Selection}
+    {schema : Schema} {variableDefinitions : List VariableDefinition} {parentType : Name}
+    {selectionSet : List Selection}
     : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
       -> selectionSetNormal schema parentType selectionSet
       -> selectionSet ≠ []
@@ -2253,8 +2252,7 @@ theorem selectedFieldSpineRuntimeValid_exists_of_observableResponsePath_valid_no
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {selectionSet : List Selection}
     {responsePath : List Name}
-    : NormalSelectionSetObservableResponsePath schema parentType selectionSet
-        responsePath
+    : NormalSelectionSetObservableResponsePath schema parentType selectionSet responsePath
       -> Validation.selectionSetValid schema variableDefinitions parentType selectionSet
       -> selectionSetNormal schema parentType selectionSet
       -> ∃ runtimeType fieldSpine,
@@ -2277,8 +2275,7 @@ theorem selectedFieldSpineRuntimeValid_exists_of_observableResponsePath_valid_no
 
 theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_of_valid_normal_runtimeSpine
     (schema : Schema) {variableDefinitions : List VariableDefinition}
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
@@ -2311,8 +2308,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_selectedPathProbe_tag
                 variableValues (fuel + 1)
                 (projectionTargetResolverValue
                   (.object sourceRuntimeType
-                    (FieldPairSelectedPathProbeRef.target tag
-                      currentSelectionSet spine)))
+                    (FieldPairSelectedPathProbeRef.target tag currentSelectionSet spine)))
                 responseName
                 [{
                   parentType := parentType
@@ -2543,8 +2539,7 @@ theorem selectedPathSelectionSetContextReady_fieldPairPathLocalNextSelectionSet_
       -> Selection.field responseName fieldName arguments directives childSelectionSet
           ∈ selectionSet
       -> schema.lookupField parentType fieldName = some fieldDefinition
-      -> selectionSetNormal schema fieldDefinition.outputType.namedType
-          childSelectionSet
+      -> selectionSetNormal schema fieldDefinition.outputType.namedType childSelectionSet
       -> SelectedPathCompositeFieldChildSource schema parentType fieldName
           arguments currentSelectionSet spine fieldDefinition childRuntimeType
           childSpine
@@ -2645,8 +2640,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_t
                 variableValues (fuel + 1) runtimeType
                 (projectionTargetResolverValue
                   (.object runtimeType
-                    (FieldPairSelectedPathProbeRef.target tag
-                      currentSelectionSet spine)))
+                    (FieldPairSelectedPathProbeRef.target tag currentSelectionSet spine)))
                 selectionSet
               = ({ data := Execution.ResponseValue.object fields, errors := errors }
                   : Execution.Response) := by

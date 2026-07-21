@@ -10,8 +10,7 @@ theorem selectionSetLookupValid_field_head_lookup_none_false
     {arguments : List Argument} {directives : List DirectiveApplication}
     {selectionSet rest : List Selection}
     : selectionSetLookupValid schema parentType
-        (Selection.field responseName fieldName arguments directives selectionSet
-          :: rest)
+        (Selection.field responseName fieldName arguments directives selectionSet :: rest)
       -> schema.lookupField parentType fieldName = none
       -> False := by
   intro hvalid hnone
@@ -93,8 +92,7 @@ theorem selectionSetLookupValid_fieldHead_merged_of_matching
     : selectionSetLookupValid schema childType subselections
       -> (∀ selection,
             selection
-              ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
-                  rest
+              ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest
             -> ∃ matchedArguments matchedDirectives matchedSubselections,
                 selection
                 = Selection.field responseName fieldName matchedArguments
@@ -102,8 +100,7 @@ theorem selectionSetLookupValid_fieldHead_merged_of_matching
       -> (∀ matchedArguments matchedDirectives matchedSubselections,
             Selection.field responseName fieldName matchedArguments matchedDirectives
                 matchedSubselections
-              ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
-                  rest
+              ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest
             -> selectionSetLookupValid schema childType matchedSubselections)
       -> selectionSetLookupValid schema childType
           (subselections

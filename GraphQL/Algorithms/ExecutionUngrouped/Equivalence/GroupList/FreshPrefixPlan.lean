@@ -30,8 +30,7 @@ inductive FreshPrefixSelectionPlan
           parentType source right
       -> GraphQL.NormalForm.executableGroupNamesDisjoint
           (GraphQL.Execution.collectFields schema variableValues parentType source left)
-          (GraphQL.Execution.collectFields schema variableValues parentType source
-            right)
+          (GraphQL.Execution.collectFields schema variableValues parentType source right)
       -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
           parentType source (left ++ right)
   | sameGroup (responseName : Name) (fields : List ExecutableField)
@@ -88,8 +87,7 @@ inductive FreshPrefixSelectionPlan
             (executableFieldSelections [first]
               ++ middle
               ++ executableFieldSelections [later]))
-          (GraphQL.Execution.collectFields schema variableValues parentType source
-            suffix)
+          (GraphQL.Execution.collectFields schema variableValues parentType source suffix)
       -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
           parentType source middle
       -> FreshPrefixSelectionPlan schema resolvers variableValues completionDepth
@@ -112,8 +110,7 @@ inductive FreshPrefixSelectionDerivation
       -> FreshPrefixSelectionDerivation schema variableValues parentType source right
       -> GraphQL.NormalForm.executableGroupNamesDisjoint
           (GraphQL.Execution.collectFields schema variableValues parentType source left)
-          (GraphQL.Execution.collectFields schema variableValues parentType source
-            right)
+          (GraphQL.Execution.collectFields schema variableValues parentType source right)
       -> FreshPrefixSelectionDerivation schema variableValues parentType source
           (left ++ right)
   | sameGroup (responseName : Name) (fields : List ExecutableField)
@@ -181,8 +178,7 @@ inductive FreshPrefixSelectionDerivation
             (executableFieldSelections [first]
               ++ middle
               ++ executableFieldSelections [later]))
-          (GraphQL.Execution.collectFields schema variableValues parentType source
-            suffix)
+          (GraphQL.Execution.collectFields schema variableValues parentType source suffix)
       -> FreshPrefixSelectionDerivation schema variableValues parentType source middle
       -> FreshPrefixSelectionDerivation schema variableValues parentType source suffix
       -> FreshPrefixSelectionDerivation schema variableValues parentType source
@@ -326,8 +322,7 @@ theorem duplicateFieldPair_of_headDisjointMiddle
         simp [SelectionSetCollectFieldsHeadDisjointTree,
           SelectionSetCollectFieldsHeadDisjoint])
 
-def singletonExecutableGroups
-    : List ExecutableField -> List (Name × List ExecutableField)
+def singletonExecutableGroups : List ExecutableField -> List (Name × List ExecutableField)
   | [] => []
   | field :: rest =>
       (field.responseName, [field]) :: singletonExecutableGroups rest
@@ -844,8 +839,7 @@ theorem responseNamesNodup_map_executableFieldOfSelection
       -> NormalForm.responseNamesNodup selectionSet
       -> (selectionSet.map
             (fun selection =>
-              (executableFieldOfSelection parentType
-                selection).responseName)).Nodup := by
+              (executableFieldOfSelection parentType selection).responseName)).Nodup := by
   intro hall hnodup
   have hnames :=
     responseNames_map_executableFieldOfSelection parentType selectionSet hall
@@ -948,8 +942,7 @@ theorem collectFields_allFields_directiveFree_responseNamesNodup_field_mem_prefi
     ⟨hfield, hfieldsTail, hprefixTail⟩
   exact ⟨by simpa [fields] using hfield, hfieldsTail, hprefixTail⟩
 
-theorem fieldMerge_collectFields_parent_of_allFields
-    (schema : Schema) (parentType : Name)
+theorem fieldMerge_collectFields_parent_of_allFields (schema : Schema) (parentType : Name)
     : ∀ selectionSet scopedField,
         NormalForm.selectionsAllFields selectionSet
         -> scopedField ∈ FieldMerge.collectFields schema parentType selectionSet

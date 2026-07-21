@@ -29,8 +29,7 @@ theorem mergeResponseField_null_of_lookup_null (responseName : Name)
 theorem responseObjectField?_append_singleton_null_of_not_mem (responseName : Name)
     : ∀ fields : List (Name × ResponseValue),
         responseName ∉ fields.map Prod.fst
-        -> responseObjectField? responseName
-              (.object (fields ++ [(responseName, .null)]))
+        -> responseObjectField? responseName (.object (fields ++ [(responseName, .null)]))
             = some .null
   | [], _hfresh => by
       simp [responseObjectField?, lookupResponseField?]
@@ -333,8 +332,7 @@ theorem executeRootSelectionSet_append_one_aligned_of_complete
               (GraphQL.Execution.singleFieldResult responseName prefixCompleted)).fst)
     (haligned
       : ResponseValueResultAlignedEquivalent
-          (GraphQL.Execution.Result.combine mergeResponse prefixCompleted
-            laterCompleted)
+          (GraphQL.Execution.Result.combine mergeResponse prefixCompleted laterCompleted)
           combinedCompleted)
     : RootSelectionResultAlignedEquivalent
         (executeRootSelectionSet schema resolvers variableValues depth parentType
@@ -432,8 +430,7 @@ theorem executeRootSelectionSet_append_one_visit_aligned_of_complete
               prefixSelectionSet (.object [])).fst)
     (haligned
       : ResponseValueResultAlignedEquivalent
-          (GraphQL.Execution.Result.combine mergeResponse prefixCompleted
-            laterCompleted)
+          (GraphQL.Execution.Result.combine mergeResponse prefixCompleted laterCompleted)
           combinedCompleted)
     : RootSelectionResultAlignedEquivalent
         (executeRootSelectionSet schema resolvers variableValues depth parentType
@@ -474,8 +471,7 @@ theorem visitSubfields_append_one_visit_aligned_of_complete
               prefixSelectionSet (.object [])).fst)
     (haligned
       : ResponseValueResultAlignedEquivalent
-          (GraphQL.Execution.Result.combine mergeResponse prefixCompleted
-            laterCompleted)
+          (GraphQL.Execution.Result.combine mergeResponse prefixCompleted laterCompleted)
           combinedCompleted)
     : GroupedFieldVisitAlignedEquivalent responseName
         (visitSubfields schema resolvers variableValues depth parentType source
@@ -526,8 +522,7 @@ def VisitSubfieldsErrorNeutral
   = visitOk
 
 theorem resultValueOrNull_nonNullCompletion (completed : Result ResponseValue)
-    : resultValueOrNull (nonNullCompletion completed)
-      = resultValueOrNull completed := by
+    : resultValueOrNull (nonNullCompletion completed) = resultValueOrNull completed := by
   cases completed with
   | error errors =>
       simp [nonNullCompletion, resultValueOrNull]
@@ -1027,8 +1022,7 @@ theorem completeValue_named_group_append_one_result_eq_spec
                     parentType := runtimeType
                     source := .object runtimeType identity
                     selectionSet :=
-                      GraphQL.Execution.mergedFieldSelectionSet
-                        (prefixFields ++ [later])
+                      GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later])
                   }
                 initial := .object []
               })
@@ -1288,8 +1282,7 @@ theorem completeValue_named_group_append_one_result_aligned_spec
                     parentType := runtimeType
                     source := .object runtimeType identity
                     selectionSet :=
-                      GraphQL.Execution.mergedFieldSelectionSet
-                        (prefixFields ++ [later])
+                      GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later])
                   }
                 initial := .object []
               })
@@ -1432,8 +1425,7 @@ theorem completeValue_named_group_append_one_result_aligned_spec_of_contained
                     parentType := runtimeType
                     source := .object runtimeType identity
                     selectionSet :=
-                      GraphQL.Execution.mergedFieldSelectionSet
-                        (prefixFields ++ [later])
+                      GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later])
                   }
                 initial := .object []
               })
@@ -1799,8 +1791,7 @@ theorem completeValue_named_group_append_one_result_eq_spec_of_contained
                     parentType := runtimeType
                     source := .object runtimeType identity
                     selectionSet :=
-                      GraphQL.Execution.mergedFieldSelectionSet
-                        (prefixFields ++ [later])
+                      GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later])
                   }
                 initial := .object []
               })

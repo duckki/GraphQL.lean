@@ -18,8 +18,7 @@ theorem fieldsInSetCanMerge_field_cons_of_lookup_none
       -> FieldMerge.fieldsInSetCanMerge schema parentType
             (Selection.field responseName fieldName arguments [] selectionSet :: rest)
           ∧ FieldMerge.fieldsInSetCanMerge schema parentType
-              ((Selection.field responseName fieldName arguments [] selectionSet
-                  :: rest)
+              ((Selection.field responseName fieldName arguments [] selectionSet :: rest)
                 ++ (Selection.field responseName fieldName arguments [] selectionSet
                     :: rest)) := by
   intro hlookup hrestMerge hrestSelf
@@ -135,8 +134,7 @@ theorem fieldsInSetCanMerge_field_cons_of_rest_responseNameFree
             FieldMerge.fieldsInSetCanMerge schema objectType
               (selectionSet ++ selectionSet))
       -> FieldMerge.fieldsInSetCanMerge schema parentType rest
-      -> (∀ mergeParent,
-            FieldMerge.fieldsInSetCanMerge schema mergeParent (rest ++ rest))
+      -> (∀ mergeParent, FieldMerge.fieldsInSetCanMerge schema mergeParent (rest ++ rest))
       -> selectionsAllFields rest
       -> selectionSetResponseNameFree schema parentType responseName rest
       -> FieldMerge.fieldsInSetCanMerge schema parentType

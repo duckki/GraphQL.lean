@@ -23,8 +23,7 @@ structure ExecutedFieldGroupComplete
   parent_eq
     : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType
   resolved_eq
-    : resolvers.resolve field.parentType field.fieldName field.arguments source
-      = resolved
+    : resolvers.resolve field.parentType field.fieldName field.arguments source = resolved
   mergedComplete
     : ExecutableFieldsMergedComplete schema resolvers variableValues depth
         parentType source responseName field fields resolved
@@ -43,8 +42,7 @@ theorem mergedComplete_resolved
           parentType source responseName field fields)
     : ExecutableFieldsMergedComplete schema resolvers variableValues depth
         parentType source responseName field fields
-        (resolvers.resolve field.parentType field.fieldName field.arguments
-          source) := by
+        (resolvers.resolve field.parentType field.fieldName field.arguments source) := by
   rw [group.resolved_eq]
   exact group.mergedComplete
 

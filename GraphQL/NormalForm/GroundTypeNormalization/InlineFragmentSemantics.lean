@@ -86,8 +86,7 @@ theorem normalizeSelectionSet_executeSelectionSet_inlineFragment_some_apply_case
     (source : Execution.ResolverValue ObjectRef)
     (selectionSet rest : List Selection)
     : schema.typesOverlapBool parentType typeCondition = true
-      -> Execution.doesFragmentTypeApplyBool schema parentType source typeCondition
-          = true
+      -> Execution.doesFragmentTypeApplyBool schema parentType source typeCondition = true
       -> Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
             (normalizeSelectionSet schema parentType (selectionSet ++ rest))

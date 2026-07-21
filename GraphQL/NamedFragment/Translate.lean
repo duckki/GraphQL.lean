@@ -42,8 +42,7 @@ def fragmentAwareInlinedExecutionEquivalentToSpecExecution
   -> operationInlined operation
   -> ∀ {ObjectRef : Type} (resolvers : GraphQL.Execution.Resolvers ObjectRef)
         variableValues fuel (source : GraphQL.Execution.ResolverValue ObjectRef),
-      Execution.executeQueryWithFuel schema resolvers variableValues
-        operation fuel source
+      Execution.executeQueryWithFuel schema resolvers variableValues operation fuel source
       = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
           (Translate.reduceOperation operation) fuel source
 
@@ -56,15 +55,13 @@ def fragmentAwareInlineExecutionEquivalentToSpecExecution
   -> GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation
   -> ∀ {ObjectRef : Type} (resolvers : GraphQL.Execution.Resolvers ObjectRef)
         variableValues fuel (source : GraphQL.Execution.ResolverValue ObjectRef),
-      Execution.executeQueryWithFuel schema resolvers variableValues
-        operation fuel source
+      Execution.executeQueryWithFuel schema resolvers variableValues operation fuel source
       = GraphQL.Execution.executeQueryWithFuel schema resolvers variableValues
           (Translate.reduceOperation (Inline.inlineOperation operation)) fuel source
 
 -- Reducing an inlined operation preserves validity.
 -- Witness: `GraphQL.NamedFragment.Semantics.fragmentAwareInlinedValidityPreservedToSpec_holds`.
-def fragmentAwareInlinedValidityPreservedToSpec
-    (schema : Schema) (operation : Operation)
+def fragmentAwareInlinedValidityPreservedToSpec (schema : Schema) (operation : Operation)
     : Prop :=
   GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation
   -> operationInlined operation

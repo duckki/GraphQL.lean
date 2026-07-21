@@ -123,8 +123,7 @@ theorem inlineSelectionSet_valid_changeFragments
 
 theorem inlineOperation_valid_of_inlinedSelectionSetValidWithFragments
     {schema : Schema} {operation : Operation}
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     (hselectionValid
       : GraphQL.NamedFragment.Validation.selectionSetValid schema
           (Inline.inlineOperation operation).variableDefinitions

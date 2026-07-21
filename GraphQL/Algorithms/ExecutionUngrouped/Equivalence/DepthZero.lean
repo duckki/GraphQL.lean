@@ -325,7 +325,8 @@ theorem collectedExecutableFields_responseNames_nodup_of_singletons
     (hresponses : CollectedGroupsResponseName groups)
     (hsingletons
       : ∀ responseName fields, (responseName, fields) ∈ groups -> fields.length = 1)
-    : (collectedExecutableFields groups).map (fun field => field.responseName) |>.Nodup := by
+    : (collectedExecutableFields groups).map (fun field => field.responseName)
+      |>.Nodup := by
   induction groups with
   | nil =>
       simp [collectedExecutableFields]

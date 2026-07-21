@@ -279,8 +279,7 @@ theorem executeRootSelectionSet_eq_spec_of_allFieldsNormal
       -> NormalForm.selectionSetNormal schema parentType selectionSet
       -> executionSelectionSetLookupValid schema parentType selectionSet
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> childReady
                 ((schema.fieldReturnType? parentType fieldName).getD fieldName)
@@ -352,11 +351,9 @@ theorem executeQueryWithFuel_eq_spec_of_allFieldsNormal
     : NormalForm.selectionsAllFields operation.selectionSet
       -> NormalForm.operationDirectiveFree operation
       -> NormalForm.operationNormal schema operation
-      -> executionSelectionSetLookupValid schema operation.rootType
-          operation.selectionSet
+      -> executionSelectionSetLookupValid schema operation.rootType operation.selectionSet
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ operation.selectionSet
             -> childReady
                 ((schema.fieldReturnType? operation.rootType fieldName).getD fieldName)
@@ -664,8 +661,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_source_eq_s
             source = .object runtimeType ref
             ∧ schema.typeIncludesObjectBool operation.rootType runtimeType = true)
       -> (∀ runtimeCase,
-            runtimeCase
-              ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
+            runtimeCase ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
             -> NormalForm.CompleteNormalization.variableValuesAgreeWithCase
                 variableValues runtimeCase
                 (NormalForm.operationBoolVars operation)
@@ -673,8 +669,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_source_eq_s
                 (NormalForm.filterSelectionSetBoolCase runtimeCase
                   operation.selectionSet))
       -> (∀ runtimeCase,
-            runtimeCase
-              ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
+            runtimeCase ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
             -> NormalForm.CompleteNormalization.variableValuesAgreeWithCase
                 variableValues runtimeCase
                 (NormalForm.operationBoolVars operation)
@@ -682,8 +677,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_source_eq_s
                 (NormalForm.filterSelectionSetBoolCase runtimeCase
                   operation.selectionSet))
       -> (∀ runtimeCase,
-            runtimeCase
-              ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
+            runtimeCase ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
             -> NormalForm.CompleteNormalization.variableValuesAgreeWithCase
                 variableValues runtimeCase
                 (NormalForm.operationBoolVars operation)
@@ -691,8 +685,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_source_eq_s
                 (NormalForm.filterSelectionSetBoolCase runtimeCase
                   operation.selectionSet))
       -> (∀ runtimeCase,
-            runtimeCase
-              ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
+            runtimeCase ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
             -> NormalForm.CompleteNormalization.variableValuesAgreeWithCase
                 variableValues runtimeCase
                 (NormalForm.operationBoolVars operation)
@@ -805,8 +798,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_source_eq_s
   simp [hrootResult, NormalForm.completeNormalizeOperation]
 
 theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_recursiveGroupedStates
-    (schema : Schema) (operation : Operation)
-    (resolvers : Execution.Resolvers ObjectRef)
+    (schema : Schema) (operation : Operation) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (depth : Nat)
     (source : Execution.ResolverValue ObjectRef)
     : SchemaWellFormedness.schemaWellFormed schema
@@ -816,8 +808,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_recursiveGr
             source = .object runtimeType ref
             ∧ schema.typeIncludesObjectBool operation.rootType runtimeType = true)
       -> (∀ runtimeCase,
-            runtimeCase
-              ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
+            runtimeCase ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
             -> NormalForm.CompleteNormalization.variableValuesAgreeWithCase
                 variableValues runtimeCase
                 (NormalForm.operationBoolVars operation)
@@ -825,8 +816,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_recursiveGr
                 (NormalForm.filterSelectionSetBoolCase runtimeCase
                   operation.selectionSet))
       -> (∀ runtimeCase,
-            runtimeCase
-              ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
+            runtimeCase ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
             -> NormalForm.CompleteNormalization.variableValuesAgreeWithCase
                 variableValues runtimeCase
                 (NormalForm.operationBoolVars operation)
@@ -834,8 +824,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_recursiveGr
                 (NormalForm.filterSelectionSetBoolCase runtimeCase
                   operation.selectionSet))
       -> (∀ runtimeCase,
-            runtimeCase
-              ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
+            runtimeCase ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
             -> NormalForm.CompleteNormalization.variableValuesAgreeWithCase
                 variableValues runtimeCase
                 (NormalForm.operationBoolVars operation)
@@ -843,8 +832,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_recursiveGr
                 (NormalForm.filterSelectionSetBoolCase runtimeCase
                   operation.selectionSet))
       -> (∀ runtimeCase,
-            runtimeCase
-              ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
+            runtimeCase ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
             -> NormalForm.CompleteNormalization.variableValuesAgreeWithCase
                 variableValues runtimeCase
                 (NormalForm.operationBoolVars operation)
@@ -852,8 +840,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_eq_of_filter_recursiveGr
                 operation.rootType source
                 (NormalForm.filterSelectionSetBoolCase runtimeCase
                   operation.selectionSet))
-      -> executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
-            source
+      -> executeQueryWithFuel schema resolvers variableValues operation (depth + 1) source
           = executeQueryWithFuel schema resolvers variableValues
               (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
               source := by
@@ -873,11 +860,9 @@ theorem executeQueryWithFuel_eq_spec_of_generatedNormalOperation
       -> NormalForm.selectionsAllFields operation.selectionSet
       -> NormalForm.operationDirectiveFree operation
       -> NormalForm.operationNormal schema operation
-      -> executionSelectionSetLookupValid schema operation.rootType
-          operation.selectionSet
+      -> executionSelectionSetLookupValid schema operation.rootType operation.selectionSet
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ operation.selectionSet
             -> generatedNormalizedFieldChild schema
                 ((schema.fieldReturnType? operation.rootType fieldName).getD fieldName)
@@ -1017,8 +1002,7 @@ theorem executeRootSelectionSet_completeNormalizeOperation_eq_spec_of_runtime_bo
       -> executeRootSelectionSet schema resolvers variableValues depth
             operation.rootType source
             (NormalForm.normalizeSelectionSet schema operation.rootType
-              (NormalForm.filterSelectionSetBoolCase runtimeCase
-                operation.selectionSet))
+              (NormalForm.filterSelectionSetBoolCase runtimeCase operation.selectionSet))
           = Execution.executeRootSelectionSet schema resolvers variableValues depth
               operation.rootType source
               (NormalForm.normalizeSelectionSet schema operation.rootType
@@ -1029,8 +1013,7 @@ theorem executeRootSelectionSet_completeNormalizeOperation_eq_spec_of_runtime_bo
             (NormalForm.completeNormalizeOperation schema operation).selectionSet
           = Execution.executeRootSelectionSet schema resolvers variableValues depth
               operation.rootType source
-              (NormalForm.completeNormalizeOperation schema
-                operation).selectionSet := by
+              (NormalForm.completeNormalizeOperation schema operation).selectionSet := by
   intro hruntime hagrees hbody
   have hungrouped :
       executeRootSelectionSet schema resolvers variableValues depth
@@ -1089,8 +1072,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_eq_spec_of_runtime_body
       -> executeRootSelectionSet schema resolvers variableValues depth
             operation.rootType source
             (NormalForm.normalizeSelectionSet schema operation.rootType
-              (NormalForm.filterSelectionSetBoolCase runtimeCase
-                operation.selectionSet))
+              (NormalForm.filterSelectionSetBoolCase runtimeCase operation.selectionSet))
           = Execution.executeRootSelectionSet schema resolvers variableValues depth
               operation.rootType source
               (NormalForm.normalizeSelectionSet schema operation.rootType
@@ -1279,8 +1261,7 @@ theorem executeQueryWithFuel_responseEquivalent_of_ungroupedRootSelectionResult
   · exact ⟨hdata, hzero, hpositive⟩
 
 theorem executeQueryWithFuel_completeNormalizeOperation_responseEquivalent_of_filter_source_rootEquivalent
-    (schema : Schema) (operation : Operation)
-    (resolvers : Execution.Resolvers ObjectRef)
+    (schema : Schema) (operation : Operation) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (depth : Nat)
     (source : Execution.ResolverValue ObjectRef)
     : SchemaWellFormedness.schemaWellFormed schema
@@ -1290,8 +1271,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_responseEquivalent_of_fi
             source = .object runtimeType ref
             ∧ schema.typeIncludesObjectBool operation.rootType runtimeType = true)
       -> (∀ runtimeCase,
-            runtimeCase
-              ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
+            runtimeCase ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
             -> NormalForm.CompleteNormalization.variableValuesAgreeWithCase
                 variableValues runtimeCase
                 (NormalForm.operationBoolVars operation)
@@ -1299,8 +1279,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_responseEquivalent_of_fi
                 (NormalForm.filterSelectionSetBoolCase runtimeCase
                   operation.selectionSet))
       -> (∀ runtimeCase,
-            runtimeCase
-              ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
+            runtimeCase ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
             -> NormalForm.CompleteNormalization.variableValuesAgreeWithCase
                 variableValues runtimeCase
                 (NormalForm.operationBoolVars operation)
@@ -1308,8 +1287,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_responseEquivalent_of_fi
                 (NormalForm.filterSelectionSetBoolCase runtimeCase
                   operation.selectionSet))
       -> (∀ runtimeCase,
-            runtimeCase
-              ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
+            runtimeCase ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
             -> NormalForm.CompleteNormalization.variableValuesAgreeWithCase
                 variableValues runtimeCase
                 (NormalForm.operationBoolVars operation)
@@ -1317,8 +1295,7 @@ theorem executeQueryWithFuel_completeNormalizeOperation_responseEquivalent_of_fi
                 (NormalForm.filterSelectionSetBoolCase runtimeCase
                   operation.selectionSet))
       -> (∀ runtimeCase,
-            runtimeCase
-              ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
+            runtimeCase ∈ NormalForm.allBoolCases (NormalForm.operationBoolVars operation)
             -> NormalForm.CompleteNormalization.variableValuesAgreeWithCase
                 variableValues runtimeCase
                 (NormalForm.operationBoolVars operation)
@@ -1586,8 +1563,7 @@ theorem completeNormalizationPreservesUngroupedExecution_of_executedGroupedOpera
   exact state.executeQueryWithFuel_eq_spec
 
 theorem completeNormalizationPreservesUngroupedExecution_of_collected_groups_recursiveAppendState
-    (schema : Schema) (operation : Operation)
-    (resolvers : Execution.Resolvers ObjectRef)
+    (schema : Schema) (operation : Operation) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (depth : Nat)
     (source : Execution.ResolverValue ObjectRef)
     {groups : List (Name × List Execution.ExecutableField)}
@@ -1622,8 +1598,7 @@ theorem completeNormalizationPreservesUngroupedExecution_of_collected_groups_rec
     : SchemaWellFormedness.schemaWellFormed schema
       -> Validation.operationDefinitionValid schema operation
       -> NormalForm.operationBoolVarsComplete operation variableValues
-      -> executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
-            source
+      -> executeQueryWithFuel schema resolvers variableValues operation (depth + 1) source
           = executeQueryWithFuel schema resolvers variableValues
               (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
               source := by
@@ -1646,8 +1621,7 @@ theorem completeNormalizationPreservesUngroupedExecution_of_recursiveGroupedOper
     : SchemaWellFormedness.schemaWellFormed schema
       -> Validation.operationDefinitionValid schema operation
       -> NormalForm.operationBoolVarsComplete operation variableValues
-      -> executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
-            source
+      -> executeQueryWithFuel schema resolvers variableValues operation (depth + 1) source
           = executeQueryWithFuel schema resolvers variableValues
               (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
               source := by
@@ -1658,8 +1632,7 @@ theorem completeNormalizationPreservesUngroupedExecution_of_recursiveGroupedOper
       state.toExecutedGroupedOperationState hschema hvalid hcomplete
 
 theorem executeQueryWithFuel_semanticsPreserved_via_completeNormalization_of_recursiveGroupedOperationState
-    (schema : Schema) (operation : Operation)
-    (resolvers : Execution.Resolvers ObjectRef)
+    (schema : Schema) (operation : Operation) (resolvers : Execution.Resolvers ObjectRef)
     (variableValues : Execution.VariableValues) (depth : Nat)
     (source : Execution.ResolverValue ObjectRef)
     (state
@@ -1668,8 +1641,7 @@ theorem executeQueryWithFuel_semanticsPreserved_via_completeNormalization_of_rec
     : SchemaWellFormedness.schemaWellFormed schema
       -> Validation.operationDefinitionValid schema operation
       -> NormalForm.operationBoolVarsComplete operation variableValues
-      -> executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
-            source
+      -> executeQueryWithFuel schema resolvers variableValues operation (depth + 1) source
           = Execution.executeQueryWithFuel schema resolvers variableValues operation
               (depth + 1) source := by
   intro hschema hvalid hcomplete
@@ -1705,8 +1677,7 @@ theorem completeNormalizationPreservesUngroupedExecution_of_globalInvariants
     : SchemaWellFormedness.schemaWellFormed schema
       -> Validation.operationDefinitionValid schema operation
       -> NormalForm.operationBoolVarsComplete operation variableValues
-      -> executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
-            source
+      -> executeQueryWithFuel schema resolvers variableValues operation (depth + 1) source
           = executeQueryWithFuel schema resolvers variableValues
               (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
               source := by
@@ -1724,13 +1695,11 @@ theorem completeNormalizationPreservesUngroupedExecution_of_globalFreshPrefixInv
     (depth : Nat) (source : Execution.ResolverValue ObjectRef)
     (hroot : Execution.rootSourceAppliesBool schema operation source = true)
     (invariants
-      : RecursiveSelectionSetGlobalFreshPrefixInvariants schema resolvers
-          variableValues)
+      : RecursiveSelectionSetGlobalFreshPrefixInvariants schema resolvers variableValues)
     : SchemaWellFormedness.schemaWellFormed schema
       -> Validation.operationDefinitionValid schema operation
       -> NormalForm.operationBoolVarsComplete operation variableValues
-      -> executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
-            source
+      -> executeQueryWithFuel schema resolvers variableValues operation (depth + 1) source
           = executeQueryWithFuel schema resolvers variableValues
               (NormalForm.completeNormalizeOperation schema operation) (depth + 1)
               source := by
@@ -1747,13 +1716,11 @@ theorem executeQueryWithFuel_semanticsPreserved_of_globalFreshPrefixInvariants
     (depth : Nat) (source : Execution.ResolverValue ObjectRef)
     (hroot : Execution.rootSourceAppliesBool schema operation source = true)
     (invariants
-      : RecursiveSelectionSetGlobalFreshPrefixInvariants schema resolvers
-          variableValues)
+      : RecursiveSelectionSetGlobalFreshPrefixInvariants schema resolvers variableValues)
     : SchemaWellFormedness.schemaWellFormed schema
       -> Validation.operationDefinitionValid schema operation
       -> NormalForm.operationBoolVarsComplete operation variableValues
-      -> executeQueryWithFuel schema resolvers variableValues operation (depth + 1)
-            source
+      -> executeQueryWithFuel schema resolvers variableValues operation (depth + 1) source
           = Execution.executeQueryWithFuel schema resolvers variableValues operation
               (depth + 1) source := by
   intro hschema hvalid hcomplete
@@ -1846,8 +1813,7 @@ theorem completeNormalizationPreservesUngroupedExecution_of_source_semanticsPres
       -> (∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
               variableValues depth (source : Execution.ResolverValue ObjectRef),
             NormalForm.operationBoolVarsComplete operation variableValues
-            -> executeQueryWithFuel schema resolvers variableValues operation
-                  depth source
+            -> executeQueryWithFuel schema resolvers variableValues operation depth source
                 = Execution.executeQueryWithFuel schema resolvers variableValues
                     operation depth source)
       -> ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
@@ -1875,11 +1841,9 @@ theorem completeNormalizationPreservesUngroupedExecution_of_generatedNormalOpera
       -> NormalForm.selectionsAllFields operation.selectionSet
       -> NormalForm.operationDirectiveFree operation
       -> NormalForm.operationNormal schema operation
-      -> executionSelectionSetLookupValid schema operation.rootType
-          operation.selectionSet
+      -> executionSelectionSetLookupValid schema operation.rootType operation.selectionSet
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ operation.selectionSet
             -> generatedNormalizedFieldChild schema
                 ((schema.fieldReturnType? operation.rootType fieldName).getD fieldName)

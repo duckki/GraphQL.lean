@@ -90,8 +90,7 @@ inductive NormalSelectionSetDiff (schema : Schema)
     {directives : List DirectiveApplication}
     {childSelectionSet : List Selection}
     : objectTypeNameBool schema parentType = false
-      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
-          ∈ left
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet ∈ left
       -> typeCondition ∉ right.filterMap inlineFragmentTypeCondition?
       -> NormalSelectionSetDiff schema parentType left right
   | abstractRightTypeCondition
@@ -639,8 +638,7 @@ theorem selectionSetNormal_inlineFragment_child_of_mem
       (⟨hchildGround, hchildNonRedundant⟩ :
         selectionSetNormal schema typeCondition childSelectionSet)⟩
 
-theorem mem_erase_of_ne_of_mem {α : Type} [BEq α] [LawfulBEq α]
-    {a b : α} {items : List α}
+theorem mem_erase_of_ne_of_mem {α : Type} [BEq α] [LawfulBEq α] {a b : α} {items : List α}
     : a ≠ b -> a ∈ items -> a ∈ items.erase b := by
   intro hne hmem
   induction items with
@@ -686,8 +684,7 @@ theorem not_mem_erase_self {α : Type} [BEq α] [LawfulBEq α] (a : α)
         · exact hhead hheadMem.symm
         · exact not_mem_erase_self a tail htailNodup htailMem
 
-theorem listPermOfNodupSubsetSubset {α : Type}
-    [BEq α] [LawfulBEq α] {left right : List α}
+theorem listPermOfNodupSubsetSubset {α : Type} [BEq α] [LawfulBEq α] {left right : List α}
     : left.Nodup
       -> right.Nodup
       -> (∀ item, item ∈ left -> item ∈ right)
@@ -749,8 +746,7 @@ theorem responseNamesNodup_remove_middle_field
     {childSelectionSet : List Selection}
     : responseNamesNodup
         (pref
-          ++ Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          ++ Selection.field responseName fieldName arguments directives childSelectionSet
               :: suffix)
       -> responseNamesNodup (pref ++ suffix) := by
   intro hnodup
@@ -776,8 +772,7 @@ theorem responseName_not_mem_remove_middle_field
     {childSelectionSet : List Selection}
     : responseNamesNodup
         (pref
-          ++ Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          ++ Selection.field responseName fieldName arguments directives childSelectionSet
               :: suffix)
       -> responseName ∉ (pref ++ suffix).filterMap Selection.responseName? := by
   intro hnodup hmem

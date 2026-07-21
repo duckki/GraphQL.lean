@@ -239,8 +239,7 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_diff_observable_t
             ∈ right
         -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
         -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
-        -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-              schema
+        -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
             = true
         -> NormalSelectionSetObservableResponsePath schema
             leftFieldDefinition.outputType.namedType leftChildSelectionSet
@@ -281,8 +280,7 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_diff_observable_t
                   rightChildSelectionSet
                 ∈ right
             -> schema.lookupField parentType fieldName = some fieldDefinition
-            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                  schema
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                 = true
             -> NormalSelectionSetObservableResponsePath schema
                 fieldDefinition.outputType.namedType leftChildSelectionSet
@@ -414,8 +412,7 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_diff_observable_t
             ∈ right
         -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
         -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
-        -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-              schema
+        -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
             = true
         -> NormalSelectionSetObservableResponsePath schema
             leftFieldDefinition.outputType.namedType leftChildSelectionSet
@@ -456,8 +453,7 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_diff_observable_t
                   rightChildSelectionSet
                 ∈ right
             -> schema.lookupField parentType fieldName = some fieldDefinition
-            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                  schema
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                 = true
             -> NormalSelectionSetObservableResponsePath schema
                 fieldDefinition.outputType.namedType leftChildSelectionSet

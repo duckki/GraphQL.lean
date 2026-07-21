@@ -41,8 +41,7 @@ theorem abstractRuntimeForFieldDeep?_framed_promote_some_of_include
     {rootParent targetParent targetField runtimeType : Name}
     {selectionSet : List Selection}
     {targetFieldDefinition : FieldDefinition}
-    : abstractRuntimeForFieldDeep? schema targetParent targetField rootParent
-          selectionSet
+    : abstractRuntimeForFieldDeep? schema targetParent targetField rootParent selectionSet
         = some runtimeType
       -> schema.typeIncludesObjectBool
             targetFieldDefinition.outputType.namedType runtimeType
@@ -490,8 +489,7 @@ theorem abstractRuntimeForFieldHeadDeep?_append_some_include_of_valid_normal_or_
                   targetFieldDefinition.outputType.namedType rightRuntimeType
                 = true)
       -> schema.lookupField targetParent targetField = some targetFieldDefinition
-      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
       -> abstractRuntimeForFieldHeadDeep? schema targetParent targetField
@@ -687,8 +685,7 @@ theorem abstractRuntimeForFieldHeadDeep?_join_some_include_of_valid_normal_membe
             ∧ selectionSetDirectiveFree selectionSet
             ∧ selectionSetNormal schema currentParent selectionSet)
       -> schema.lookupField targetParent targetField = some targetFieldDefinition
-      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
       -> abstractRuntimeForFieldHeadDeep? schema targetParent targetField
@@ -745,8 +742,7 @@ theorem abstractRuntimeForFieldHeadDeep?_member_framed_promote_some_of_valid_nor
             ∧ selectionSetNormal schema currentParent memberSelectionSet)
       -> selectionSet ∈ members
       -> schema.lookupField targetParent targetField = some targetFieldDefinition
-      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
       -> abstractRuntimeForFieldHeadDeep? schema targetParent targetField
@@ -828,15 +824,13 @@ theorem abstractRuntimeForFieldDeep?_append_some_include_of_valid_normal
     {left right : List Selection}
     {targetFieldDefinition : FieldDefinition}
     : Validation.selectionSetValid schema leftVariableDefinitions currentParent left
-      -> Validation.selectionSetValid schema rightVariableDefinitions currentParent
-          right
+      -> Validation.selectionSetValid schema rightVariableDefinitions currentParent right
       -> selectionSetDirectiveFree left
       -> selectionSetDirectiveFree right
       -> selectionSetNormal schema currentParent left
       -> selectionSetNormal schema currentParent right
       -> schema.lookupField targetParent targetField = some targetFieldDefinition
-      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
       -> abstractRuntimeForFieldDeep? schema targetParent targetField
@@ -1081,8 +1075,7 @@ theorem abstractRuntimeForFieldDeep?_append_some_include_of_valid_normal_or_righ
                   targetFieldDefinition.outputType.namedType rightRuntimeType
                 = true)
       -> schema.lookupField targetParent targetField = some targetFieldDefinition
-      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
       -> abstractRuntimeForFieldDeep? schema targetParent targetField
@@ -1320,8 +1313,7 @@ theorem abstractRuntimeForFieldDeep?_join_some_include_of_valid_normal_members
             ∧ selectionSetDirectiveFree selectionSet
             ∧ selectionSetNormal schema currentParent selectionSet)
       -> schema.lookupField targetParent targetField = some targetFieldDefinition
-      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
       -> abstractRuntimeForFieldDeep? schema targetParent targetField
@@ -1377,8 +1369,7 @@ theorem abstractRuntimeForFieldDeep?_member_framed_promote_some_of_valid_normal_
             ∧ selectionSetNormal schema currentParent memberSelectionSet)
       -> selectionSet ∈ members
       -> schema.lookupField targetParent targetField = some targetFieldDefinition
-      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
       -> abstractRuntimeForFieldDeep? schema targetParent targetField
@@ -1454,15 +1445,13 @@ theorem abstractRuntimeForFieldDeep?_append_left_promote_some_of_valid_normal
     {left right : List Selection}
     {targetFieldDefinition : FieldDefinition}
     : Validation.selectionSetValid schema leftVariableDefinitions currentParent left
-      -> Validation.selectionSetValid schema rightVariableDefinitions currentParent
-          right
+      -> Validation.selectionSetValid schema rightVariableDefinitions currentParent right
       -> selectionSetDirectiveFree left
       -> selectionSetDirectiveFree right
       -> selectionSetNormal schema currentParent left
       -> selectionSetNormal schema currentParent right
       -> schema.lookupField targetParent targetField = some targetFieldDefinition
-      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
       -> abstractRuntimeForFieldDeep? schema targetParent targetField currentParent left
@@ -1494,19 +1483,16 @@ theorem abstractRuntimeForFieldDeep?_append_right_promote_some_of_valid_normal
     {left right : List Selection}
     {targetFieldDefinition : FieldDefinition}
     : Validation.selectionSetValid schema leftVariableDefinitions currentParent left
-      -> Validation.selectionSetValid schema rightVariableDefinitions currentParent
-          right
+      -> Validation.selectionSetValid schema rightVariableDefinitions currentParent right
       -> selectionSetDirectiveFree left
       -> selectionSetDirectiveFree right
       -> selectionSetNormal schema currentParent left
       -> selectionSetNormal schema currentParent right
       -> schema.lookupField targetParent targetField = some targetFieldDefinition
-      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
-      -> abstractRuntimeForFieldDeep? schema targetParent targetField
-            currentParent right
+      -> abstractRuntimeForFieldDeep? schema targetParent targetField currentParent right
           = some targetRuntimeType
       -> ∃ runtimeType,
           abstractRuntimeForFieldDeep? schema targetParent targetField
@@ -2084,13 +2070,11 @@ theorem left_selectionSet_fieldPairProbeProjectionFieldOk_append_framed_leaf_tar
       -> objectTypeNameBool schema parentType = true
       -> (∀ fieldDefinition,
             schema.lookupField parentType leftField = some fieldDefinition
-            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                  schema
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                 = false)
       -> (∀ fieldDefinition,
             schema.lookupField parentType rightField = some fieldDefinition
-            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                  schema
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                 = false)
       -> (∀ arguments,
             Argument.argumentsEquivalent arguments rightArguments
@@ -2238,13 +2222,11 @@ theorem right_selectionSet_fieldPairProbeProjectionFieldOk_append_framed_leaf_ta
       -> objectTypeNameBool schema parentType = true
       -> (∀ fieldDefinition,
             schema.lookupField parentType leftField = some fieldDefinition
-            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                  schema
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                 = false)
       -> (∀ fieldDefinition,
             schema.lookupField parentType rightField = some fieldDefinition
-            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                  schema
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                 = false)
       -> (∀ arguments,
             Argument.argumentsEquivalent arguments rightArguments
@@ -2399,8 +2381,7 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_arguments_diff_le
           ∈ right
       -> (∀ fieldDefinition,
             schema.lookupField parentType fieldName = some fieldDefinition
-            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                  schema
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                 = false)
       -> ¬ Argument.argumentsEquivalent leftArguments rightArguments
       -> ¬ selectionSetsDataEquivalent schema parentType left right := by
@@ -2561,13 +2542,11 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_fieldName_diff_le
           ∈ right
       -> (∀ fieldDefinition,
             schema.lookupField parentType leftFieldName = some fieldDefinition
-            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                  schema
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                 = false)
       -> (∀ fieldDefinition,
             schema.lookupField parentType rightFieldName = some fieldDefinition
-            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                  schema
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                 = false)
       -> leftFieldName ≠ rightFieldName
       -> ¬ selectionSetsDataEquivalent schema parentType left right := by
@@ -2723,14 +2702,12 @@ theorem not_selectionSetsDataEquivalent_of_object_child_diff_singleton
       -> fieldDefinition.outputType.namedType = returnType
       -> Argument.argumentsEquivalent leftArguments rightArguments
       -> selectionSetDirectiveFree
-          [Selection.field responseName fieldName leftArguments []
-            leftChildSelectionSet]
+          [Selection.field responseName fieldName leftArguments [] leftChildSelectionSet]
       -> selectionSetDirectiveFree
           [Selection.field responseName fieldName rightArguments []
             rightChildSelectionSet]
       -> selectionSetNormal schema parentType
-          [Selection.field responseName fieldName leftArguments []
-            leftChildSelectionSet]
+          [Selection.field responseName fieldName leftArguments [] leftChildSelectionSet]
       -> selectionSetNormal schema parentType
           [Selection.field responseName fieldName rightArguments []
             rightChildSelectionSet]
@@ -2943,8 +2920,7 @@ theorem not_selectionSetsDataEquivalent_of_object_child_responseData_diff_concre
             variableValues
             (fuel + leafProbeFuel fieldDefinition.outputType + 1)
             targetParent
-            (projectionRootResolverValue
-              (.object targetParent (none : Option ObjectRef)))
+            (projectionRootResolverValue (.object targetParent (none : Option ObjectRef)))
             leftPref
           ∧ selectionSetFieldsExecuteOk schema
               (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
@@ -3021,8 +2997,7 @@ theorem responseData_not_semanticEquivalent_of_valid_normal_abstract_left_typeCo
       -> selectionSetNormal schema parentType left
       -> selectionSetNormal schema parentType right
       -> objectTypeNameBool schema parentType = false
-      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
-          ∈ left
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet ∈ left
       -> typeCondition ∉ right.filterMap inlineFragmentTypeCondition?
       -> ¬ Execution.ResponseValue.semanticEquivalent
             (Execution.executeSelectionSetAsResponse schema

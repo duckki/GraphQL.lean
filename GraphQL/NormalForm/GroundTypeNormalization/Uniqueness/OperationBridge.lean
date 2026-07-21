@@ -82,8 +82,7 @@ theorem normal_operations_semanticallyEquivalent_equalUpToReordering_of_selectio
     {schema : Schema} {left right : Operation}
     : normalSelectionSetsSemanticallyEquivalentEqualUpToReordering schema
         left.rootType left.selectionSet right.selectionSet
-      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema
-          left right := by
+      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema left right := by
   intro hselection hschema hleftValid hrightValid hleftFree hrightFree
     hleftNormal hrightNormal hsem
   have hroot :
@@ -110,8 +109,7 @@ theorem normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_se
     : validNormalSelectionSetsSemanticallyEquivalentEqualUpToReordering schema
         left.variableDefinitions right.variableDefinitions left.rootType
         left.selectionSet right.selectionSet
-      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema
-          left right := by
+      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema left right := by
   intro hselection hschema hleftValid hrightValid hleftFree hrightFree
     hleftNormal hrightNormal hsem
   have hroot :
@@ -156,8 +154,7 @@ theorem normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_ob
             right.selectionSet
         -> ¬ selectionSetsDataEquivalent schema left.rootType left.selectionSet
               right.selectionSet)
-      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema
-          left right := by
+      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema left right := by
   intro hdiffSeparates hschema hleftValid hrightValid hleftFree hrightFree
     hleftNormal hrightNormal hsem
   have hroot :

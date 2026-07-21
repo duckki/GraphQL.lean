@@ -32,16 +32,14 @@ theorem directiveAllowsIn_skip_variable_false (boolCase : BoolCase) (varName : B
   simp [directiveAllowsIn,
     inputValueBoolIn?, hvalue]
 
-theorem directiveAllowsIn_include_variable_true
-    (boolCase : BoolCase) (varName : BoolVar)
+theorem directiveAllowsIn_include_variable_true (boolCase : BoolCase) (varName : BoolVar)
     : BoolCase.lookup? boolCase varName = some true
       -> directiveAllowsIn boolCase (.include (.variable varName)) = true := by
   intro hvalue
   simp [directiveAllowsIn,
     inputValueBoolIn?, hvalue]
 
-theorem directiveAllowsIn_include_variable_false
-    (boolCase : BoolCase) (varName : BoolVar)
+theorem directiveAllowsIn_include_variable_false (boolCase : BoolCase) (varName : BoolVar)
     : BoolCase.lookup? boolCase varName = some false
       -> directiveAllowsIn boolCase (.include (.variable varName)) = false := by
   intro hvalue
@@ -93,8 +91,7 @@ theorem directiveAllowsInCase_eq_execution
     (variables : List BoolVar)
     (hagrees : variableValuesAgreeWithCase variableValues boolCase variables)
     : ∀ directive,
-        (∀ varName,
-          varName ∈ directiveBooleanVariables directive -> varName ∈ variables)
+        (∀ varName, varName ∈ directiveBooleanVariables directive -> varName ∈ variables)
         -> directiveAllowsIn boolCase directive
             = Execution.directiveAllowsSelectionBool variableValues directive
   | .skip ifArgument, hvars => by
@@ -121,8 +118,7 @@ theorem directivesAllowInCase_eq_execution
           varName ∈ directivesBooleanVariables directiveApplications
           -> varName ∈ variables)
     : directivesAllowIn boolCase directiveApplications
-      = Execution.selectionDirectivesAllowBool variableValues
-          directiveApplications := by
+      = Execution.selectionDirectivesAllowBool variableValues directiveApplications := by
   induction directiveApplications with
   | nil =>
       simp [directivesAllowIn,
@@ -159,8 +155,7 @@ theorem allBoolCases_complete_for_variableValues
     : (∀ varName,
         varName ∈ variables
         -> ∃ value,
-            Execution.inputValueBoolean? variableValues (.variable varName)
-            = some value)
+            Execution.inputValueBoolean? variableValues (.variable varName) = some value)
       -> ∃ boolCase,
           boolCase ∈ allBoolCases variables
           ∧ variableValuesAgreeWithCase variableValues boolCase variables := by

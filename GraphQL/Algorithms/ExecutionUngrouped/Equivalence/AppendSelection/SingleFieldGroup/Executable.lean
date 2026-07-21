@@ -835,8 +835,7 @@ theorem executeRootSelectionSet_executableFieldSelections_group_eq_spec_of_merge
     (field : ExecutableField) (fields : List ExecutableField)
     (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (_hresolve
@@ -1227,8 +1226,7 @@ theorem ExecutableFieldsFlatSpecEquivalent_nonempty_group_of_merged_complete
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hresolve
@@ -1254,8 +1252,7 @@ theorem ExecutableFieldsFlatSpecEquivalent_nonempty_group_of_mergedComplete
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hresolve
@@ -1280,8 +1277,7 @@ theorem ExecutableGroupsFlatSpecEquivalent_nonempty_single_group_of_merged_compl
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hresolve
@@ -1309,8 +1305,7 @@ theorem ExecutableGroupsFlatSpecEquivalent_nonempty_single_group_of_mergedComple
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hresolve

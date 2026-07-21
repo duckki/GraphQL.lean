@@ -164,8 +164,7 @@ mutual
     | _, _ => false
 end
 
-def optionConstInputValueEqBool
-    : Option ConstInputValue -> Option ConstInputValue -> Bool
+def optionConstInputValueEqBool : Option ConstInputValue -> Option ConstInputValue -> Bool
   | none, none => true
   | some left, some right => constInputValueEqBool left right
   | _, _ => false
@@ -185,8 +184,7 @@ def directiveEqBool : DirectiveApplication -> DirectiveApplication -> Bool
 
 mutual
   def selectionEqBool : Selection -> Selection -> Bool
-    | .field leftResponseName leftFieldName leftArguments leftDirectives
-        leftSelectionSet,
+    | .field leftResponseName leftFieldName leftArguments leftDirectives leftSelectionSet,
       .field rightResponseName rightFieldName rightArguments rightDirectives
         rightSelectionSet =>
         (leftResponseName == rightResponseName)

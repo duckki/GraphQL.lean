@@ -153,11 +153,9 @@ theorem collectFields_completeNormalSelectionSet_eq_nil_of_missing_variable
     {varName : BoolVar} {variables : List BoolVar}
     {selectionSet : List Selection}
     (hnormal
-      : completeNormalSelectionSet schema (varName :: variables)
-          parentType selectionSet)
+      : completeNormalSelectionSet schema (varName :: variables) parentType selectionSet)
     {missingVar : BoolVar} (hmissingMem : missingVar ∈ varName :: variables)
-    (hmissing
-      : Execution.inputValueBoolean? variableValues (.variable missingVar) = none)
+    (hmissing : Execution.inputValueBoolean? variableValues (.variable missingVar) = none)
     : Execution.collectFields schema variableValues parentType source selectionSet
       = [] := by
   rcases hnormal with ⟨_hvariablesNodup, _hselectionSetNodup,
@@ -183,8 +181,7 @@ theorem collectFields_completeNormalSelectionSet_eq_nil_of_no_equivalent_of_agre
     {varName : BoolVar} {variables : List BoolVar}
     {runtimeCase : BoolCase} {selectionSet : List Selection}
     (hnormal
-      : completeNormalSelectionSet schema (varName :: variables)
-          parentType selectionSet)
+      : completeNormalSelectionSet schema (varName :: variables) parentType selectionSet)
     (hruntime : completeNormalBoolCase (varName :: variables) runtimeCase)
     (hagrees
       : variableValuesAgreeWithCase variableValues runtimeCase (varName :: variables))
@@ -217,8 +214,7 @@ theorem collectFields_completeNormalSelectionSet_eq_body_of_equivalent_of_agrees
     {runtimeCase selected : BoolCase} {selectedSelection : Selection}
     {selectedBody selectionSet : List Selection}
     (hnormal
-      : completeNormalSelectionSet schema (varName :: variables)
-          parentType selectionSet)
+      : completeNormalSelectionSet schema (varName :: variables) parentType selectionSet)
     (hselectedMem : selectedSelection ∈ selectionSet)
     (hruntime : completeNormalBoolCase (varName :: variables) runtimeCase)
     (hselected : completeNormalBoolCase (varName :: variables) selected)
@@ -228,8 +224,7 @@ theorem collectFields_completeNormalSelectionSet_eq_body_of_equivalent_of_agrees
     (hselectedStem : completeNormalBooleanStem selected selectedSelection selectedBody)
     (hselectedBodyFree : selectionSetDirectiveFree selectedBody)
     : Execution.collectFields schema variableValues parentType source selectionSet
-      = Execution.collectFields schema variableValues parentType source
-          selectedBody := by
+      = Execution.collectFields schema variableValues parentType source selectedBody := by
   rcases hnormal with ⟨_hvariablesNodup, hselectionSetNodup,
     hbranches, hunique⟩
   rcases list_split_of_mem_nodup hselectionSetNodup hselectedMem with
@@ -295,8 +290,7 @@ theorem collectFields_completeNormalSelectionSet_eq_nil_of_no_equivalent
     {varName : BoolVar} {variables : List BoolVar}
     {selected : BoolCase} {selectionSet : List Selection}
     (hnormal
-      : completeNormalSelectionSet schema (varName :: variables)
-          parentType selectionSet)
+      : completeNormalSelectionSet schema (varName :: variables) parentType selectionSet)
     (hselected : completeNormalBoolCase (varName :: variables) selected)
     (hnone
       : ¬ ∃ selection candidate body,
@@ -320,8 +314,7 @@ theorem collectFields_completeNormalSelectionSet_eq_body_of_equivalent
     {runtimeCase selected : BoolCase} {selectedSelection : Selection}
     {selectedBody selectionSet : List Selection}
     (hnormal
-      : completeNormalSelectionSet schema (varName :: variables)
-          parentType selectionSet)
+      : completeNormalSelectionSet schema (varName :: variables) parentType selectionSet)
     (hselectedMem : selectedSelection ∈ selectionSet)
     (hruntime : completeNormalBoolCase (varName :: variables) runtimeCase)
     (hselected : completeNormalBoolCase (varName :: variables) selected)
@@ -347,8 +340,7 @@ theorem collectFields_completeNormalSelectionSet_eq_body
     {selected : BoolCase} {selectedSelection : Selection}
     {selectedBody selectionSet : List Selection}
     (hnormal
-      : completeNormalSelectionSet schema (varName :: variables)
-          parentType selectionSet)
+      : completeNormalSelectionSet schema (varName :: variables) parentType selectionSet)
     (hselectedMem : selectedSelection ∈ selectionSet)
     (hselected : completeNormalBoolCase (varName :: variables) selected)
     (hselectedStem : completeNormalBooleanStem selected selectedSelection selectedBody)

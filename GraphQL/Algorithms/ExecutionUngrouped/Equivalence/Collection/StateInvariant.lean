@@ -10,8 +10,7 @@ namespace ExecutionUngrouped
 
 open GraphQL.Execution
 
-def CollectedGroupsArgumentsNodup (groups : List (Name × List ExecutableField))
-    : Prop :=
+def CollectedGroupsArgumentsNodup (groups : List (Name × List ExecutableField)) : Prop :=
   ∀ responseName fields,
     (responseName, fields) ∈ groups -> ExecutableFieldsArgumentsNodup fields
 
@@ -530,8 +529,7 @@ structure ExecutionStateInvariant (state : ExecutionEquivalenceState ObjectIdent
           ∈ GraphQL.Execution.collectFields state.window.schema
               state.window.variableValues state.window.parentType state.window.source
               state.window.selectionSet
-        -> ExecutableFieldsResolveStable state.window.resolvers state.window.source
-            fields
+        -> ExecutableFieldsResolveStable state.window.resolvers state.window.source fields
 
 structure ExecutionSemanticStateInvariant
     (state : ExecutionEquivalenceState ObjectIdentity)
@@ -1351,8 +1349,7 @@ theorem ExecutionCollectedFieldInvariant.resolveStable_of_collect_eq
           state.window.variableValues state.window.parentType state.window.source
           state.window.selectionSet
         = groups)
-    : CollectedGroupsResolveStable state.window.resolvers state.window.source
-        groups := by
+    : CollectedGroupsResolveStable state.window.resolvers state.window.source groups := by
   rw [← hcollect]
   exact hinvariant.groupedFieldsResolveStable
 

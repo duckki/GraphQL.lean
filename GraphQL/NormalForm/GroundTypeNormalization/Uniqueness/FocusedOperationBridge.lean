@@ -30,8 +30,7 @@ theorem normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_ob
               right.selectionSet responsePath
             -> ¬ selectionSetsDataEquivalent schema left.rootType left.selectionSet
                   right.selectionSet)
-      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema
-          left right := by
+      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema left right := by
   intro htraceSeparates
   exact
     normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_object_diff_data_separates
@@ -65,8 +64,7 @@ theorem normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_ob
               left.selectionSet right.selectionSet responsePath
             -> ¬ selectionSetsDataEquivalent schema left.rootType left.selectionSet
                   right.selectionSet)
-      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema
-          left right := by
+      -> normalOperationsSemanticallyEquivalentEqualUpToReordering schema left right := by
   intro htraceSeparates
   exact
     normal_operations_semanticallyEquivalent_equalUpToReordering_of_valid_object_diff_data_separates

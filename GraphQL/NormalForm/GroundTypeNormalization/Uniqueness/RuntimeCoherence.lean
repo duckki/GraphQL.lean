@@ -228,8 +228,7 @@ def selectionSetProbeRootCoherent
     Selection.field responseName fieldName arguments directives childSelectionSet
       ∈ selectionSet
     -> schema.lookupField parentType fieldName = some fieldDefinition
-    -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
-        = true
+    -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema = true
     -> ∃ runtimeType,
         fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
           fieldName runtimeType arguments fieldDefinition childSelectionSet
@@ -294,8 +293,7 @@ theorem SelectionSetProbeRootCoherentDeep.selection_of_mem
     {parentType : Name} {selection : Selection}
     : SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType selectionSet
       -> selection ∈ selectionSet
-      -> SelectionProbeRootCoherentDeep schema rootSelectionSet parentType
-          selection := by
+      -> SelectionProbeRootCoherentDeep schema rootSelectionSet parentType selection := by
   revert selection
   induction selectionSet with
   | nil =>
@@ -401,8 +399,7 @@ theorem fieldHeadProbeRuntimeCoherent_typeIncludes_of_child_normal
     {arguments : List Argument} {fieldDefinition : FieldDefinition}
     : Validation.selectionSetValid schema variableDefinitions
         fieldDefinition.outputType.namedType childSelectionSet
-      -> selectionSetNormal schema fieldDefinition.outputType.namedType
-          childSelectionSet
+      -> selectionSetNormal schema fieldDefinition.outputType.namedType childSelectionSet
       -> fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
           fieldName runtimeType arguments fieldDefinition childSelectionSet
       -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
@@ -440,8 +437,7 @@ theorem fieldHeadProbeRuntimeCoherent_runtime_object_of_child_normal
     : SchemaWellFormedness.schemaWellFormed schema
       -> Validation.selectionSetValid schema variableDefinitions
           fieldDefinition.outputType.namedType childSelectionSet
-      -> selectionSetNormal schema fieldDefinition.outputType.namedType
-          childSelectionSet
+      -> selectionSetNormal schema fieldDefinition.outputType.namedType childSelectionSet
       -> fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
           fieldName runtimeType arguments fieldDefinition childSelectionSet
       -> objectTypeNameBool schema runtimeType = true := by
@@ -460,10 +456,8 @@ theorem SelectionSetProbeRootCoherentDeep.field_child_runtimeActive_of_mem
     : SchemaWellFormedness.schemaWellFormed schema
       -> Validation.selectionSetValid schema variableDefinitions
           fieldDefinition.outputType.namedType childSelectionSet
-      -> selectionSetNormal schema fieldDefinition.outputType.namedType
-          childSelectionSet
-      -> SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType
-          selectionSet
+      -> selectionSetNormal schema fieldDefinition.outputType.namedType childSelectionSet
+      -> SelectionSetProbeRootCoherentDeep schema rootSelectionSet parentType selectionSet
       -> Selection.field responseName fieldName arguments directives childSelectionSet
           ∈ selectionSet
       -> schema.lookupField parentType fieldName = some fieldDefinition
@@ -472,8 +466,7 @@ theorem SelectionSetProbeRootCoherentDeep.field_child_runtimeActive_of_mem
       -> ∃ runtimeType,
           fieldHeadProbeRuntimeCoherent schema rootSelectionSet parentType
             fieldName runtimeType arguments fieldDefinition childSelectionSet
-          ∧ schema.typeIncludesObjectBool
-              fieldDefinition.outputType.namedType runtimeType
+          ∧ schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
             = true
           ∧ objectTypeNameBool schema runtimeType = true
           ∧ selectionSetRuntimeActive schema

@@ -36,8 +36,7 @@ def PathLocalSelectionSetHeadReady (schema : Schema)
     Selection.field responseName fieldName arguments directives childSelectionSet
       ∈ selectionSet
     -> schema.lookupField parentType fieldName = some fieldDefinition
-    -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
-        = true
+    -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema = true
     -> objectTypeNameBool schema fieldDefinition.outputType.namedType = false
     -> ∃ runtimeType,
         abstractRuntimeForFieldHeadDeep? schema parentType fieldName
@@ -83,8 +82,7 @@ theorem PathLocalSelectionSetHeadReady.of_valid_normal_self
     {parentType : Name} {selectionSet : List Selection}
     : Validation.selectionSetValid schema variableDefinitions parentType selectionSet
       -> selectionSetNormal schema parentType selectionSet
-      -> PathLocalSelectionSetHeadReady schema parentType selectionSet
-          selectionSet := by
+      -> PathLocalSelectionSetHeadReady schema parentType selectionSet selectionSet := by
   intro hvalid hnormal responseName fieldName arguments directives
     childSelectionSet fieldDefinition hmem hlookup hcomposite hnonObject
   exact
@@ -104,8 +102,7 @@ theorem abstractRuntimeForFieldHeadDeep?_member_flatten_promote_some_of_valid_no
             ∧ selectionSetNormal schema currentParent memberSelectionSet)
       -> selectionSet ∈ members
       -> schema.lookupField currentParent targetField = some targetFieldDefinition
-      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
       -> abstractRuntimeForFieldHeadDeep? schema currentParent targetField
@@ -737,8 +734,7 @@ theorem pathLocalCompositeFieldRuntime_of_valid_normal_support_context
               ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
                       schema
                     = true
-                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
-                    = false
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
                   ∧ abstractRuntimeForFieldHeadDeep? schema parentType
                       fieldName arguments parentType currentSelectionSet
                     = some runtimeType))
@@ -1144,8 +1140,7 @@ theorem fieldChildMembersByHeadAtRuntime_sound_of_valid_normal_object
       -> memberSelectionSet
           ∈ fieldChildMembersByHeadAtRuntime schema currentRuntimeType
               childRuntimeType targetField targetArguments currentSelectionSet
-      -> PathLocalCurrentRuntimeSound schema
-          (childRuntimeType, memberSelectionSet) := by
+      -> PathLocalCurrentRuntimeSound schema (childRuntimeType, memberSelectionSet) := by
   intro hvalid hfree hnormal hcurrentObject hchildObject htargetLookup
     hinclude hmember
   induction currentSelectionSet with
@@ -1334,8 +1329,7 @@ theorem fieldChildMembersByHeadAtRuntime_mem_exists_field_of_allFields
           ∈ fieldChildMembersByHeadAtRuntime schema currentRuntimeType
               childRuntimeType targetField targetArguments currentSelectionSet
       -> ∃ responseName arguments directives childSelectionSet,
-          Selection.field responseName targetField arguments directives
-              childSelectionSet
+          Selection.field responseName targetField arguments directives childSelectionSet
             ∈ currentSelectionSet
           ∧ Argument.argumentsEquivalent arguments targetArguments
           ∧ memberSelectionSet
@@ -1449,8 +1443,7 @@ theorem PathLocalSupportValidNormal.field_child_valid_normal_of_mem_lookup
       -> Selection.field responseName targetField arguments directives childSelectionSet
           ∈ currentSelectionSet
       -> schema.lookupField currentRuntimeType targetField = some targetFieldDefinition
-      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> ∃ variableDefinitions,
           Validation.selectionSetValid schema variableDefinitions
@@ -1551,8 +1544,7 @@ theorem PathLocalSupportValidNormal.fieldPairPathLocalNextSelectionSet_of_abstra
       -> objectTypeNameBool schema currentRuntimeType = true
       -> objectTypeNameBool schema childRuntimeType = true
       -> schema.lookupField currentRuntimeType targetField = some targetFieldDefinition
-      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> schema.typeIncludesObjectBool
             targetFieldDefinition.outputType.namedType childRuntimeType
@@ -1800,13 +1792,11 @@ theorem PathLocalSelectionSetHeadReady.fieldPairPathLocalNextSelectionSet_abstra
       -> objectTypeNameBool schema childRuntimeType = true
       -> Selection.field responseName targetField arguments directives childSelectionSet
           ∈ currentSelectionSet
-      -> Selection.inlineFragment (some childRuntimeType) bodyDirectives
-            bodySelectionSet
+      -> Selection.inlineFragment (some childRuntimeType) bodyDirectives bodySelectionSet
           ∈ childSelectionSet
       -> Argument.argumentsEquivalent arguments targetArguments
       -> schema.lookupField currentRuntimeType targetField = some targetFieldDefinition
-      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named targetFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> objectTypeNameBool schema targetFieldDefinition.outputType.namedType = false
       -> abstractRuntimeForFieldHeadDeep? schema currentRuntimeType targetField
@@ -1875,12 +1865,10 @@ theorem PathLocalSelectionSetHeadReady.fieldPairPathLocalNextSelectionSet_abstra
 
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectProbe_response_of_sound_fuel_ge
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -1954,12 +1942,10 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectP
 
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectProbe_ok_of_child_response_of_sound
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -2041,8 +2027,7 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectP
 
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_field_ok_of_field_children_of_sound
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (targetParent leftField rightField parentType sourceRuntimeType : Name)
@@ -2050,8 +2035,7 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_field_o
     (tag : FieldPairProbeTag) (selectionSet : List Selection)
     : PathLocalCurrentRuntimeSound schema (parentType, currentSelectionSet)
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ fieldDefinition,
                 schema.lookupField parentType fieldName = some fieldDefinition
@@ -2060,8 +2044,7 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_field_o
                         schema
                       = false
                     ∨ ∃ childRuntimeType responseFields childErrors,
-                        (((objectTypeNameBool schema
-                                  fieldDefinition.outputType.namedType
+                        (((objectTypeNameBool schema fieldDefinition.outputType.namedType
                                 = true
                               ∧ childRuntimeType = fieldDefinition.outputType.namedType)
                             ∨ ((TypeRef.named
@@ -2158,8 +2141,7 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_field_o
 
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_of_field_children_of_sound
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (targetParent leftField rightField parentType sourceRuntimeType : Name)
@@ -2170,8 +2152,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagg
       -> objectTypeNameBool schema parentType = true
       -> PathLocalCurrentRuntimeSound schema (parentType, currentSelectionSet)
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ fieldDefinition,
                 schema.lookupField parentType fieldName = some fieldDefinition
@@ -2180,8 +2161,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagg
                         schema
                       = false
                     ∨ ∃ childRuntimeType responseFields childErrors,
-                        (((objectTypeNameBool schema
-                                  fieldDefinition.outputType.namedType
+                        (((objectTypeNameBool schema fieldDefinition.outputType.namedType
                                 = true
                               ∧ childRuntimeType = fieldDefinition.outputType.namedType)
                             ∨ ((TypeRef.named
@@ -2270,8 +2250,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagg
 
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagged_abstract_of_inlineFragment_body_children_of_sound
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (targetParent leftField rightField normalParentType runtimeType : Name)
@@ -2507,8 +2486,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagg
 
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagged_abstract_of_runtime_inlineFragment_body_children_of_sound
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (targetParent leftField rightField normalParentType runtimeType : Name)
@@ -2520,8 +2498,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagg
       -> selectionSetNormal schema normalParentType selectionSet
       -> PathLocalCurrentRuntimeSound schema (runtimeType, currentSelectionSet)
       -> (∀ bodySelectionSet,
-            Selection.inlineFragment (some runtimeType) [] bodySelectionSet
-              ∈ selectionSet
+            Selection.inlineFragment (some runtimeType) [] bodySelectionSet ∈ selectionSet
             -> ∀ bodyResponseName bodyFieldName bodyArguments bodyDirectives
                   bodyChildSelectionSet,
                 Selection.field bodyResponseName bodyFieldName bodyArguments
@@ -2744,8 +2721,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagg
 
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagged_abstract_of_runtime_inlineFragment_body_response
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (targetParent leftField rightField normalParentType runtimeType : Name)
@@ -2756,8 +2732,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagg
       -> selectionSetDirectiveFree selectionSet
       -> selectionSetNormal schema normalParentType selectionSet
       -> (∀ bodySelectionSet,
-            Selection.inlineFragment (some runtimeType) [] bodySelectionSet
-              ∈ selectionSet
+            Selection.inlineFragment (some runtimeType) [] bodySelectionSet ∈ selectionSet
             -> ∃ responseFields errors,
                 Execution.executeSelectionSetAsResponse schema
                   (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
@@ -3007,8 +2982,7 @@ theorem normalSelectionSetResponsePath_of_fieldPairPathLocalNextSelectionSet_fie
   simpa [hnext] using hmergedPath
 
 theorem normalSelectionSetResponsePath_runtime_of_fieldPairPathLocalNextSelectionSet_field_mem
-    {schema : Schema}
-    {currentRuntimeType childParentType targetField responseName : Name}
+    {schema : Schema} {currentRuntimeType childParentType targetField responseName : Name}
     {targetArguments arguments : List Argument} {directives : List DirectiveApplication}
     {variableDefinitions : List VariableDefinition}
     {childSelectionSet currentSelectionSet : List Selection} {responsePath : List Name}
@@ -3099,8 +3073,7 @@ theorem normalSelectionSetObservableResponsePath_of_fieldPairPathLocalNextSelect
   simpa [hnext] using hmergedPath
 
 theorem normalSelectionSetObservableResponsePath_runtime_of_fieldPairPathLocalNextSelectionSet_field_mem
-    {schema : Schema}
-    {currentRuntimeType childParentType targetField responseName : Name}
+    {schema : Schema} {currentRuntimeType childParentType targetField responseName : Name}
     {targetArguments arguments : List Argument} {directives : List DirectiveApplication}
     {variableDefinitions : List VariableDefinition}
     {childSelectionSet currentSelectionSet : List Selection} {responsePath : List Name}
@@ -3182,17 +3155,14 @@ theorem PathLocalSelectionSetCurrentContext.fieldPairPathLocalNextSelectionSet_f
 
 theorem PathLocalSelectionSetCurrentContext.fieldPairPathLocalNextSelectionSet_inlineFragment_body
     {schema : Schema}
-    {currentRuntimeType childRuntimeType childParentType targetField responseName
-      : Name}
+    {currentRuntimeType childRuntimeType childParentType targetField responseName : Name}
     {targetArguments arguments : List Argument}
     {directives bodyDirectives : List DirectiveApplication}
-    {selectionSet childSelectionSet bodySelectionSet currentSelectionSet
-      : List Selection}
+    {selectionSet childSelectionSet bodySelectionSet currentSelectionSet : List Selection}
     : PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet
       -> Selection.field responseName targetField arguments directives childSelectionSet
           ∈ selectionSet
-      -> Selection.inlineFragment (some childRuntimeType) bodyDirectives
-            bodySelectionSet
+      -> Selection.inlineFragment (some childRuntimeType) bodyDirectives bodySelectionSet
           ∈ childSelectionSet
       -> Argument.argumentsEquivalent arguments targetArguments
       -> selectionSetNormal schema childParentType childSelectionSet
@@ -3269,8 +3239,7 @@ theorem pathLocalCompositeFieldChildReady_of_valid_normal_support_context
               ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
                       schema
                     = true
-                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
-                    = false
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
                   ∧ abstractRuntimeForFieldHeadDeep? schema parentType
                       fieldName arguments parentType currentSelectionSet
                     = some childRuntime))

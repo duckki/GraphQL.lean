@@ -45,8 +45,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
           leftSourceRuntimeType leftSpine
       -> SelectedFieldSpineRuntimeValid schema rightParentType
           rightSourceRuntimeType rightSpine
-      -> PathLocalSupportValidNormal schema leftSourceRuntimeType
-          leftCurrentSelectionSet
+      -> PathLocalSupportValidNormal schema leftSourceRuntimeType leftCurrentSelectionSet
       -> PathLocalSupportValidNormal schema rightSourceRuntimeType
           rightCurrentSelectionSet
       -> PathLocalSelectionSetCurrentContext left leftCurrentSelectionSet
@@ -61,8 +60,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> ¬ Execution.ResponseValue.semanticEquivalent
             (Execution.executeSelectionSetAsResponse schema
@@ -320,8 +318,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
           leftSourceRuntimeType leftSpine
       -> SelectedFieldSpineRuntimeValid schema rightParentType
           rightSourceRuntimeType rightSpine
-      -> PathLocalSupportValidNormal schema leftSourceRuntimeType
-          leftCurrentSelectionSet
+      -> PathLocalSupportValidNormal schema leftSourceRuntimeType leftCurrentSelectionSet
       -> PathLocalSupportValidNormal schema rightSourceRuntimeType
           rightCurrentSelectionSet
       -> PathLocalSelectionSetCurrentContext left leftCurrentSelectionSet
@@ -336,8 +333,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> ¬ Execution.ResponseValue.semanticEquivalent
             (Execution.executeSelectionSetAsResponse schema
@@ -603,8 +599,7 @@ theorem selectedPathTaggedSelectionSetsResponseDiffWitness_of_leaf_field_pair_va
       -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> SelectedPathTaggedSelectionSetsResponseDiffWitness schema
           rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
@@ -735,8 +730,7 @@ theorem selectedPathTaggedSelectionSetsResponseDiffWitness_of_object_fieldName_d
       -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> leftFieldName ≠ rightFieldName
       -> ∃ leftSpine rightSpine,
@@ -900,8 +894,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
           leftSourceRuntimeType leftSpine
       -> SelectedFieldSpineRuntimeValid schema rightParentType
           rightSourceRuntimeType rightSpine
-      -> PathLocalSupportValidNormal schema leftSourceRuntimeType
-          leftCurrentSelectionSet
+      -> PathLocalSupportValidNormal schema leftSourceRuntimeType leftCurrentSelectionSet
       -> PathLocalSupportValidNormal schema rightSourceRuntimeType
           rightCurrentSelectionSet
       -> PathLocalSelectionSetCurrentContext left leftCurrentSelectionSet
@@ -912,8 +905,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
             rightDirectives rightChildSelectionSet
           ∈ right
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> ¬ Execution.ResponseValue.semanticEquivalent
             (Execution.executeSelectionSetAsResponse schema
@@ -1007,8 +999,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
           leftSourceRuntimeType leftSpine
       -> SelectedFieldSpineRuntimeValid schema rightParentType
           rightSourceRuntimeType rightSpine
-      -> PathLocalSupportValidNormal schema leftSourceRuntimeType
-          leftCurrentSelectionSet
+      -> PathLocalSupportValidNormal schema leftSourceRuntimeType leftCurrentSelectionSet
       -> PathLocalSupportValidNormal schema rightSourceRuntimeType
           rightCurrentSelectionSet
       -> PathLocalSelectionSetCurrentContext left leftCurrentSelectionSet
@@ -1019,8 +1010,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
             rightDirectives rightChildSelectionSet
           ∈ right
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> ¬ Execution.ResponseValue.semanticEquivalent
             (Execution.executeSelectionSetAsResponse schema
@@ -1096,8 +1086,8 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
     (targetLeftArguments targetRightArguments : List Argument)
     (leftRuntime rightRuntime : Name) {left right : List Selection}
     {responseName leftFieldName : Name} {leftArguments : List Argument}
-    {leftDirectives : List DirectiveApplication}
-    {leftChildSelectionSet : List Selection} {leftFieldDefinition : FieldDefinition}
+    {leftDirectives : List DirectiveApplication} {leftChildSelectionSet : List Selection}
+    {leftFieldDefinition : FieldDefinition}
     : SchemaWellFormedness.schemaWellFormed schema
       -> Validation.selectionSetValid schema leftVariableDefinitions leftParentType left
       -> Validation.selectionSetValid schema rightVariableDefinitions
@@ -1114,8 +1104,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
           leftSourceRuntimeType leftSpine
       -> SelectedFieldSpineRuntimeValid schema rightParentType
           rightSourceRuntimeType rightSpine
-      -> PathLocalSupportValidNormal schema leftSourceRuntimeType
-          leftCurrentSelectionSet
+      -> PathLocalSupportValidNormal schema leftSourceRuntimeType leftCurrentSelectionSet
       -> PathLocalSupportValidNormal schema rightSourceRuntimeType
           rightCurrentSelectionSet
       -> PathLocalSelectionSetCurrentContext left leftCurrentSelectionSet
@@ -1203,8 +1192,8 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
     (targetLeftArguments targetRightArguments : List Argument)
     (leftRuntime rightRuntime : Name) {left right : List Selection}
     {responseName leftFieldName : Name} {leftArguments : List Argument}
-    {leftDirectives : List DirectiveApplication}
-    {leftChildSelectionSet : List Selection} {leftFieldDefinition : FieldDefinition}
+    {leftDirectives : List DirectiveApplication} {leftChildSelectionSet : List Selection}
+    {leftFieldDefinition : FieldDefinition}
     : SchemaWellFormedness.schemaWellFormed schema
       -> Validation.selectionSetValid schema leftVariableDefinitions leftParentType left
       -> Validation.selectionSetValid schema rightVariableDefinitions
@@ -1221,8 +1210,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
           leftSourceRuntimeType leftSpine
       -> SelectedFieldSpineRuntimeValid schema rightParentType
           rightSourceRuntimeType rightSpine
-      -> PathLocalSupportValidNormal schema leftSourceRuntimeType
-          leftCurrentSelectionSet
+      -> PathLocalSupportValidNormal schema leftSourceRuntimeType leftCurrentSelectionSet
       -> PathLocalSupportValidNormal schema rightSourceRuntimeType
           rightCurrentSelectionSet
       -> PathLocalSelectionSetCurrentContext left leftCurrentSelectionSet
@@ -1329,8 +1317,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
       -> schema.lookupField leftParentType leftFieldName = some leftFieldDefinition
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> objectTypeNameBool schema leftFieldDefinition.outputType.namedType = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> leafProbeFuel leftFieldDefinition.outputType ≤ fuel
       -> leafProbeFuel rightFieldDefinition.outputType ≤ fuel
@@ -1361,8 +1348,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
               }
               : Execution.Response)
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ left
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema
@@ -1389,8 +1375,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
                   }]
                 = .ok ([(responseName, responseValue)], fieldErrors))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ right
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema
@@ -1596,8 +1581,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
       -> schema.lookupField leftParentType leftFieldName = some leftFieldDefinition
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> objectTypeNameBool schema leftFieldDefinition.outputType.namedType = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> leafProbeFuel leftFieldDefinition.outputType ≤ leftFuel
       -> leafProbeFuel rightFieldDefinition.outputType ≤ rightFuel
@@ -1628,8 +1612,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
               }
               : Execution.Response)
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ left
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema
@@ -1656,8 +1639,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
                   }]
                 = .ok ([(responseName, responseValue)], fieldErrors))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ right
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema
@@ -1864,8 +1846,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
           leftSourceRuntimeType leftSpine
       -> SelectedFieldSpineRuntimeValid schema rightParentType
           rightSourceRuntimeType rightSpine
-      -> PathLocalSupportValidNormal schema leftSourceRuntimeType
-          leftCurrentSelectionSet
+      -> PathLocalSupportValidNormal schema leftSourceRuntimeType leftCurrentSelectionSet
       -> PathLocalSupportValidNormal schema rightSourceRuntimeType
           rightCurrentSelectionSet
       -> PathLocalSelectionSetCurrentContext left leftCurrentSelectionSet
@@ -1879,8 +1860,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
       -> schema.lookupField leftParentType leftFieldName = some leftFieldDefinition
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> objectTypeNameBool schema leftFieldDefinition.outputType.namedType = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> ¬ Execution.ResponseValue.semanticEquivalent
             (Execution.executeSelectionSetAsResponse schema
@@ -2108,8 +2088,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
           leftSourceRuntimeType leftSpine
       -> SelectedFieldSpineRuntimeValid schema rightParentType
           rightSourceRuntimeType rightSpine
-      -> PathLocalSupportValidNormal schema leftSourceRuntimeType
-          leftCurrentSelectionSet
+      -> PathLocalSupportValidNormal schema leftSourceRuntimeType leftCurrentSelectionSet
       -> PathLocalSupportValidNormal schema rightSourceRuntimeType
           rightCurrentSelectionSet
       -> PathLocalSelectionSetCurrentContext left leftCurrentSelectionSet
@@ -2123,8 +2102,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
       -> schema.lookupField leftParentType leftFieldName = some leftFieldDefinition
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> objectTypeNameBool schema leftFieldDefinition.outputType.namedType = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> ¬ Execution.ResponseValue.semanticEquivalent
             (Execution.executeSelectionSetAsResponse schema
@@ -2358,8 +2336,7 @@ theorem selectedPathTaggedSelectionSetsResponseDiffWitness_of_left_objectOutput_
       -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
       -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
       -> objectTypeNameBool schema leftFieldDefinition.outputType.namedType = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> SelectedPathTaggedSelectionSetsResponseDiffWitness schema
           rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
@@ -2492,8 +2469,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
       -> leafProbeFuel rightFieldDefinition.outputType ≤ fuel
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> SelectedPathSelectionSetFieldChildrenReady schema rootSelectionSet
           leftInitialSelectionSet rightInitialSelectionSet leftCurrentSelectionSet
@@ -2856,8 +2832,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
       -> leafProbeFuel rightFieldDefinition.outputType ≤ rightFuel
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> SelectedPathSelectionSetFieldChildrenReady schema rootSelectionSet
           leftInitialSelectionSet rightInitialSelectionSet leftCurrentSelectionSet
@@ -3223,8 +3198,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
           leftSourceRuntimeType leftSpine
       -> SelectedFieldSpineRuntimeValid schema rightParentType
           rightSourceRuntimeType rightSpine
-      -> PathLocalSupportValidNormal schema leftSourceRuntimeType
-          leftCurrentSelectionSet
+      -> PathLocalSupportValidNormal schema leftSourceRuntimeType leftCurrentSelectionSet
       -> PathLocalSupportValidNormal schema rightSourceRuntimeType
           rightCurrentSelectionSet
       -> PathLocalSelectionSetCurrentContext left leftCurrentSelectionSet
@@ -3239,8 +3213,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> ¬ Execution.ResponseValue.semanticEquivalent
             (Execution.executeSelectionSetAsResponse schema
@@ -3372,8 +3345,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
           leftSourceRuntimeType leftSpine
       -> SelectedFieldSpineRuntimeValid schema rightParentType
           rightSourceRuntimeType rightSpine
-      -> PathLocalSupportValidNormal schema leftSourceRuntimeType
-          leftCurrentSelectionSet
+      -> PathLocalSupportValidNormal schema leftSourceRuntimeType leftCurrentSelectionSet
       -> PathLocalSupportValidNormal schema rightSourceRuntimeType
           rightCurrentSelectionSet
       -> PathLocalSelectionSetCurrentContext left leftCurrentSelectionSet
@@ -3388,8 +3360,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> ¬ Execution.ResponseValue.semanticEquivalent
             (Execution.executeSelectionSetAsResponse schema
@@ -3528,8 +3499,7 @@ theorem selectedPathTaggedSelectionSetsResponseDiffWitness_of_left_composite_rig
       -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> SelectedPathTaggedSelectionSetsResponseDiffWitness schema
           rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet

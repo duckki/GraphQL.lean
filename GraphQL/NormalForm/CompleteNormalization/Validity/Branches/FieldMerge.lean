@@ -91,8 +91,7 @@ theorem fieldsInSetCanMerge_mergeSelectionSets_pair_of_scoped
                 ∧ scopedField.responseName = responseName
                 ∧ scopedField.selectionSet = selection.subselections
                 ∧ (schema.objectType scopedField.parentType
-                    -> schema.typesOverlapBool parentType scopedField.parentType
-                        = true))
+                    -> schema.typesOverlapBool parentType scopedField.parentType = true))
       -> FieldMerge.fieldsInSetCanMerge schema objectType
           (mergeSelectionSets leftGroup ++ mergeSelectionSets rightGroup) := by
   intro hobject hmerge hscopedOf
@@ -167,8 +166,7 @@ theorem fieldsInSetCanMerge_mergeSelectionSets_pair_of_scoped_source_object
                 scopedField ∈ FieldMerge.collectFields schema parentType selectionSet
                 ∧ scopedField.responseName = responseName
                 ∧ scopedField.selectionSet = selection.subselections
-                ∧ schema.typeIncludesObjectBool scopedField.parentType parentType
-                  = true)
+                ∧ schema.typeIncludesObjectBool scopedField.parentType parentType = true)
       -> FieldMerge.fieldsInSetCanMerge schema objectType
           (mergeSelectionSets leftGroup ++ mergeSelectionSets rightGroup) := by
   intro hobject hmerge hscopedOf
@@ -367,8 +365,7 @@ theorem fieldsInSetCanMerge_fieldHead_merged_pair_of_canMerge_object_lookupValid
               rightSubselections
             :: rightRest)
       -> FieldMerge.fieldsInSetCanMerge schema parentType
-          ((Selection.field responseName leftFieldName leftArguments []
-                leftSubselections
+          ((Selection.field responseName leftFieldName leftArguments [] leftSubselections
               :: leftRest)
             ++ (Selection.field responseName rightFieldName rightArguments []
                   rightSubselections

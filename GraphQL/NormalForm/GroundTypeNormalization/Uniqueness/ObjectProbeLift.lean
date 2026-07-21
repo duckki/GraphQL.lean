@@ -62,8 +62,7 @@ theorem parentObjectProbeFieldResolvers_target
     : (parentObjectProbeFieldResolvers base targetParent targetField
         runtimeType ref outputType).resolve
         targetParent targetField arguments (.object targetParent none)
-      = some
-          (objectProbeResolverValueWithRuntime runtimeType (some ref) outputType) := by
+      = some (objectProbeResolverValueWithRuntime runtimeType (some ref) outputType) := by
   simp [parentObjectProbeFieldResolvers]
 
 theorem parentObjectProbeFieldResolvers_resolve_liftResolverValue

@@ -31,8 +31,7 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_appendSteps
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           parentType source selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hfieldLookup
@@ -105,8 +104,7 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_contained_append
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           parentType source selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hfieldLookup
@@ -116,8 +114,7 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_contained_append
       : ∀ childDepth runtimeType identity,
           childDepth < depth
           -> ValueContainsObject
-              (resolvers.resolve field.parentType field.fieldName field.arguments
-                source)
+              (resolvers.resolve field.parentType field.fieldName field.arguments source)
               runtimeType identity
           -> schema.typeIncludesObjectBool
                 ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -181,8 +178,7 @@ theorem executeQueryWithFuel_eq_spec_of_exact_nonempty_group_appendSteps
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           operation.rootType source operation.selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate,
           candidate ∈ field :: fields -> candidate.parentType = operation.rootType)
@@ -242,8 +238,7 @@ theorem executeQueryWithFuel_eq_spec_of_exact_nonempty_group_contained_appendSte
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           operation.rootType source operation.selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate,
           candidate ∈ field :: fields -> candidate.parentType = operation.rootType)
@@ -254,8 +249,7 @@ theorem executeQueryWithFuel_eq_spec_of_exact_nonempty_group_contained_appendSte
       : ∀ childDepth runtimeType identity,
           childDepth < depth
           -> ValueContainsObject
-              (resolvers.resolve field.parentType field.fieldName field.arguments
-                source)
+              (resolvers.resolve field.parentType field.fieldName field.arguments source)
               runtimeType identity
           -> schema.typeIncludesObjectBool
                 ((schema.fieldReturnType? field.parentType field.fieldName).getD
@@ -309,8 +303,7 @@ theorem executeQuery_eq_spec_of_exact_nonempty_group_appendSteps
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           operation.rootType source operation.selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate,
           candidate ∈ field :: fields -> candidate.parentType = operation.rootType)
@@ -367,8 +360,7 @@ theorem executeQuery_eq_spec_of_exact_nonempty_group_contained_appendSteps
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           operation.rootType source operation.selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate,
           candidate ∈ field :: fields -> candidate.parentType = operation.rootType)
@@ -379,8 +371,7 @@ theorem executeQuery_eq_spec_of_exact_nonempty_group_contained_appendSteps
       : ∀ childDepth runtimeType identity,
           childDepth < depth
           -> ValueContainsObject
-              (resolvers.resolve field.parentType field.fieldName field.arguments
-                source)
+              (resolvers.resolve field.parentType field.fieldName field.arguments source)
               runtimeType identity
           -> ExecutionStateEquivalent
               {
@@ -516,8 +507,7 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_appendPlan
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           parentType source selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hfieldLookup
@@ -582,8 +572,7 @@ theorem executeQueryWithFuel_eq_spec_of_exact_nonempty_group_appendPlan
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           operation.rootType source operation.selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate,
           candidate ∈ field :: fields -> candidate.parentType = operation.rootType)
@@ -645,8 +634,7 @@ theorem executeQuery_eq_spec_of_exact_nonempty_group_appendPlan
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           operation.rootType source operation.selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate,
           candidate ∈ field :: fields -> candidate.parentType = operation.rootType)

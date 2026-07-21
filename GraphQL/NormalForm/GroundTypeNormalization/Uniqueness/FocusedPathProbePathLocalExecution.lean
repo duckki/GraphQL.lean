@@ -31,8 +31,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagg
               -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet)
           -> (objectTypeNameBool schema normalParentType = false
               -> ∀ {directives bodySelectionSet},
-                  Selection.inlineFragment (some runtimeType) directives
-                      bodySelectionSet
+                  Selection.inlineFragment (some runtimeType) directives bodySelectionSet
                     ∈ selectionSet
                   -> PathLocalSelectionSetCurrentContext bodySelectionSet
                       currentSelectionSet)
@@ -552,8 +551,7 @@ theorem PathLocalSelectionSetFieldChildrenReady.response_of_mem_lookup_runtime
 
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_target_child_of_valid_normal_context_fuel_ge
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues)
     : SchemaWellFormedness.schemaWellFormed schema
@@ -568,16 +566,14 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_targ
             {selectionSet childSelectionSet : List Selection}
             {fieldDefinition : FieldDefinition} {fuel : Nat}
             {tag : FieldPairProbeTag},
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
           -> selectionSetDeepProbeFuel schema parentType selectionSet ≤ fuel
           -> PathLocalSupportValidNormal schema parentType currentSelectionSet
           -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
           -> schema.lookupField parentType fieldName = some fieldDefinition
           -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
@@ -1136,8 +1132,7 @@ theorem normalSelectionSetObservableLeaf_of_fieldPairPathLocalNextSelectionSet_o
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {currentRuntimeType responseName fieldName : Name}
     {targetArguments arguments : List Argument} {directives : List DirectiveApplication}
-    {childSelectionSet selectionSet : List Selection}
-    {fieldDefinition : FieldDefinition}
+    {childSelectionSet selectionSet : List Selection} {fieldDefinition : FieldDefinition}
     : Validation.selectionSetValid schema variableDefinitions currentRuntimeType
         selectionSet
       -> selectionSetNormal schema currentRuntimeType selectionSet
@@ -1200,8 +1195,7 @@ theorem normalSelectionSetObservableLeaf_of_valid_normal_fieldName_composite_mem
           ∈ right
       -> schema.lookupField parentType leftFieldName = some leftFieldDefinition
       -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
-      -> ((TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
-              schema
+      -> ((TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
             = true
           ∨ (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
               schema
@@ -2138,8 +2132,7 @@ theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_pathLocalProbe
             (Execution.ResponseValue.object leftChildFields)
             (Execution.ResponseValue.object rightChildFields)
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ left
             -> Argument.argumentsEquivalent arguments leftArguments
             -> ∃ childFields childErrors,
@@ -2163,8 +2156,7 @@ theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_pathLocalProbe
                     }
                     : Execution.Response))
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ left
             -> Argument.argumentsEquivalent arguments rightArguments
             -> ∃ childFields childErrors,
@@ -2188,8 +2180,7 @@ theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_pathLocalProbe
                     }
                     : Execution.Response))
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ right
             -> Argument.argumentsEquivalent arguments leftArguments
             -> ∃ childFields childErrors,
@@ -2213,8 +2204,7 @@ theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_pathLocalProbe
                     }
                     : Execution.Response))
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ right
             -> Argument.argumentsEquivalent arguments rightArguments
             -> ∃ childFields childErrors,
@@ -3228,8 +3218,7 @@ theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_pathLocalProbe
 theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_pathLocalProbe_root_fieldName_child_data_diff_of_valid_normal_append_context_fuel_ge
     {schema : Schema}
     {leftVariableDefinitions rightVariableDefinitions : List VariableDefinition}
-    {parentType responseName leftFieldName rightFieldName leftRuntime rightRuntime
-      : Name}
+    {parentType responseName leftFieldName rightFieldName leftRuntime rightRuntime : Name}
     {leftArguments rightArguments : List Argument}
     {leftDirectives rightDirectives : List DirectiveApplication}
     {leftChildSelectionSet rightChildSelectionSet left right : List Selection}
@@ -3253,8 +3242,7 @@ theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_pathLocalProbe
       -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> schema.typeIncludesObjectBool leftFieldDefinition.outputType.namedType
             leftRuntime

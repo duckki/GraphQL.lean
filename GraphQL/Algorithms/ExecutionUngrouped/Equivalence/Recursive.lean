@@ -170,8 +170,7 @@ theorem toGlobalInvariants
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
     (invariants
-      : RecursiveSelectionSetGlobalFreshPrefixInvariants schema resolvers
-          variableValues)
+      : RecursiveSelectionSetGlobalFreshPrefixInvariants schema resolvers variableValues)
     : RecursiveSelectionSetGlobalInvariants schema resolvers variableValues :=
   { flat := by
       intro depth parentType source selectionSet
@@ -467,8 +466,7 @@ def of_localInvariants
         parentType source selectionSet :=
   {
     groups :=
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet
+      GraphQL.Execution.collectFields schema variableValues parentType source selectionSet
     collect_eq := rfl
     flatCollects := invariants.flat
     collected := invariants.collected
@@ -574,8 +572,7 @@ def of_globalFreshPrefixInvariants
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
     (invariants
-      : RecursiveSelectionSetGlobalFreshPrefixInvariants schema resolvers
-          variableValues)
+      : RecursiveSelectionSetGlobalFreshPrefixInvariants schema resolvers variableValues)
     : ∀ depth parentType source selectionSet,
         RecursiveGroupedSelectionSetState schema resolvers variableValues depth
           parentType source selectionSet :=
@@ -758,8 +755,7 @@ def of_globalFreshPrefixInvariants
     {depth : Nat} {source : ResolverValue ObjectIdentity}
     (hroot : rootSourceAppliesBool schema operation source = true)
     (invariants
-      : RecursiveSelectionSetGlobalFreshPrefixInvariants schema resolvers
-          variableValues)
+      : RecursiveSelectionSetGlobalFreshPrefixInvariants schema resolvers variableValues)
     : RecursiveGroupedOperationState schema resolvers variableValues operation
         depth source :=
   of_globalInvariants hroot invariants.toGlobalInvariants
@@ -789,8 +785,7 @@ theorem executeQuery_eq_spec_of_recursiveGroupedOperationState
           depth source)
     (hdepth : GraphQL.Execution.executeQueryFuelBound operation = depth + 1)
     : executeQuery schema resolvers variableValues operation source
-      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
-          source :=
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation source :=
   state.executeQuery_eq_spec hdepth
 
 end ExecutionUngrouped

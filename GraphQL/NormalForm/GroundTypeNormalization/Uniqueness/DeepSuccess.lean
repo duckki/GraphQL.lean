@@ -15,8 +15,7 @@ namespace GroundTypeNormalization
 theorem executeSelectionSetAsResponse_deepSelectionSetSuccessWithRef_abstract_matching_inlineFragment_nonempty
     {ObjectRef : Type} (schema : Schema) (rootSelectionSet : List Selection)
     (objectRef : ObjectRef) (variableValues : Execution.VariableValues) (fuel : Nat)
-    {normalParentType runtimeType : Name}
-    {selectionSet bodySelectionSet : List Selection}
+    {normalParentType runtimeType : Name} {selectionSet bodySelectionSet : List Selection}
     : objectTypeNameBool schema normalParentType = false
       -> objectTypeNameBool schema runtimeType = true
       -> selectionSetDirectiveFree selectionSet
@@ -387,8 +386,7 @@ theorem executeSelectionSetAsResponse_deepSelectionSetSuccessWithRef_valid_norma
     : SchemaWellFormedness.schemaWellFormed schema
       -> ∀ parentType variableDefinitions (selectionSet : List Selection)
             sourceRuntimeType,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> schema.typeIncludesObjectBool parentType sourceRuntimeType = true

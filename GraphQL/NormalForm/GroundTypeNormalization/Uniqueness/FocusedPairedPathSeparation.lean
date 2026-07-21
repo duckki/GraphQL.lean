@@ -352,8 +352,7 @@ theorem normalSelectionSetPairedPathDataDiffAt_of_object_composite_pair
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> Validation.selectionSetValid schema leftVariableDefinitions
           leftFieldDefinition.outputType.namedType leftChildSelectionSet
@@ -663,8 +662,7 @@ theorem normalSelectionSetPairedPathDataDiffAt_of_object_left_responseName
       -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
       -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
       -> SelectedFieldSpineRuntimeValid schema leftParentType leftRuntimeType leftSpine
-      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType
-          rightSpine
+      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType rightSpine
       -> Selection.field responseName fieldName arguments directives childSelectionSet
           ∈ left
       -> responseName ∉ right.filterMap Selection.responseName?
@@ -739,8 +737,7 @@ theorem normalSelectionSetPairedPathDataDiffAt_of_object_leaf_pair
       -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
       -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
       -> SelectedFieldSpineRuntimeValid schema leftParentType leftRuntimeType leftSpine
-      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType
-          rightSpine
+      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType rightSpine
       -> Selection.field responseName leftFieldName leftArguments leftDirectives
             leftChildSelectionSet
           ∈ left
@@ -751,8 +748,7 @@ theorem normalSelectionSetPairedPathDataDiffAt_of_object_leaf_pair
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> NormalSelectionSetPairedPathDataDiffAt schema rootSelectionSet
           leftInitialSelectionSet rightInitialSelectionSet leftInitialSpine
@@ -826,8 +822,7 @@ theorem normalSelectionSetPairedPathDataDiffAt_of_object_composite_left_leaf
       -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
       -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
       -> SelectedFieldSpineRuntimeValid schema leftParentType leftRuntimeType leftSpine
-      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType
-          rightSpine
+      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType rightSpine
       -> Selection.field responseName leftFieldName leftArguments leftDirectives
             leftChildSelectionSet
           ∈ left
@@ -838,8 +833,7 @@ theorem normalSelectionSetPairedPathDataDiffAt_of_object_composite_left_leaf
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> NormalSelectionSetPairedPathDataDiffAt schema rootSelectionSet
           leftInitialSelectionSet rightInitialSelectionSet leftInitialSpine
@@ -914,8 +908,7 @@ theorem normalSelectionSetPairedPathDataDiffAt_of_object_leaf_composite_right
       -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
       -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
       -> SelectedFieldSpineRuntimeValid schema leftParentType leftRuntimeType leftSpine
-      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType
-          rightSpine
+      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType rightSpine
       -> Selection.field responseName leftFieldName leftArguments leftDirectives
             leftChildSelectionSet
           ∈ left
@@ -926,8 +919,7 @@ theorem normalSelectionSetPairedPathDataDiffAt_of_object_leaf_composite_right
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> NormalSelectionSetPairedPathDataDiffAt schema rootSelectionSet
           leftInitialSelectionSet rightInitialSelectionSet leftInitialSpine

@@ -28,8 +28,7 @@ theorem ExecutableFieldsMergedRaw_append_one_of_prefix
       : ExecutableFieldsMergedRaw schema resolvers variableValues depth
           parentType source responseName field fields resolved)
     (hprefixResponses
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hfieldResponse : field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hfieldParent : field.parentType = parentType)
@@ -1018,8 +1017,7 @@ theorem ExecutableFieldsMergedRoot_append_one_aligned_of_prefix_contained
       : ExecutableFieldsMergedRaw schema resolvers variableValues depth
           parentType source responseName field fields resolved)
     (hprefixResponses
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hfieldResponse : field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hfieldParent : field.parentType = parentType)
@@ -1352,8 +1350,7 @@ theorem ExecutableFieldsMergedRoot_append_one_visit_aligned_of_prefix_contained_
           (GraphQL.Execution.executeField schema resolvers variableValues
             (completionDepth + 2) source responseName (field :: fields)))
     (hprefixResponses
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hfieldResponse : field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hfieldParent : field.parentType = parentType)
@@ -1728,8 +1725,7 @@ theorem ExecutableFieldsMergedRoot_append_one_visit_aligned_of_prefix_contained_
           (GraphQL.Execution.executeField schema resolvers variableValues
             (completionDepth + 2) source responseName (field :: fields)))
     (hprefixResponses
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hfieldResponse : field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hfieldParent : field.parentType = parentType)
@@ -2090,8 +2086,7 @@ theorem ExecutableFieldsMergedVisit_append_one_visit_aligned_of_prefix_contained
           (GraphQL.Execution.executeField schema resolvers variableValues
             (completionDepth + 2) source responseName (field :: fields)))
     (hprefixResponses
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hfieldResponse : field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hfieldParent : field.parentType = parentType)
@@ -2451,8 +2446,7 @@ theorem ExecutableFieldsMergedResponse_append_one_of_prefix
       : ExecutableFieldsMergedRaw schema resolvers variableValues depth
           parentType source responseName field fields resolved)
     (hprefixResponses
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hfieldResponse : field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hfieldParent : field.parentType = parentType)
@@ -2574,8 +2568,7 @@ theorem ExecutableFieldsMergedComplete_append_one_of_prefix
       : ExecutableFieldsMergedRaw schema resolvers variableValues depth
           parentType source responseName field fields resolved)
     (hprefixResponses
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hfieldResponse : field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hfieldParent : field.parentType = parentType)
@@ -2696,8 +2689,7 @@ theorem ExecutableFieldsMergedResponse_append_one_of_prefix_contained
       : ExecutableFieldsMergedRaw schema resolvers variableValues depth
           parentType source responseName field fields resolved)
     (hprefixResponses
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hfieldResponse : field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hfieldParent : field.parentType = parentType)
@@ -2813,8 +2805,7 @@ theorem ExecutableFieldsMergedComplete_append_one_of_prefix_contained
       : ExecutableFieldsMergedRaw schema resolvers variableValues depth
           parentType source responseName field fields resolved)
     (hprefixResponses
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hfieldResponse : field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hfieldParent : field.parentType = parentType)

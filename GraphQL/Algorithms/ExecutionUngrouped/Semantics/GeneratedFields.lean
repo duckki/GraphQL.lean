@@ -86,8 +86,7 @@ theorem selectionSetNormal_field_child
     {directives : List DirectiveApplication}
     {selectionSet rest : List Selection}
     : NormalForm.selectionSetNormal schema parentType
-        (Selection.field responseName fieldName arguments directives selectionSet
-          :: rest)
+        (Selection.field responseName fieldName arguments directives selectionSet :: rest)
       -> NormalForm.selectionSetNormal schema
           ((schema.fieldReturnType? parentType fieldName).getD fieldName)
           selectionSet := by
@@ -177,8 +176,7 @@ def outputNamesFreeForSelectionSet
     : Prop :=
   ∀ responseName,
     responseName ∈ outputFields.map Prod.fst
-    -> NormalForm.selectionSetResponseNameFree schema parentType responseName
-        selectionSet
+    -> NormalForm.selectionSetResponseNameFree schema parentType responseName selectionSet
 
 theorem outputNamesFreeForSelectionSet_nil
     (schema : Schema) (parentType : Name)
@@ -193,8 +191,7 @@ theorem outputNamesFreeForSelectionSet_tail
     {outputFields : List (Name × Execution.ResponseValue)}
     : outputNamesFreeForSelectionSet schema parentType outputFields
         (selection :: selectionSet)
-      -> outputNamesFreeForSelectionSet schema parentType outputFields
-          selectionSet := by
+      -> outputNamesFreeForSelectionSet schema parentType outputFields selectionSet := by
   intro hfree responseName hmem
   exact NormalForm.selectionSetResponseNameFree_tail
     (hfree responseName hmem)
@@ -226,8 +223,7 @@ theorem responseName_not_mem_output_of_field_head_outputNamesFree
     {selectionSet rest : List Selection}
     {outputFields : List (Name × Execution.ResponseValue)}
     : outputNamesFreeForSelectionSet schema parentType outputFields
-        (Selection.field responseName fieldName arguments directives selectionSet
-          :: rest)
+        (Selection.field responseName fieldName arguments directives selectionSet :: rest)
       -> responseName ∉ outputFields.map Prod.fst := by
   intro houtput hmem
   have hfree := houtput responseName hmem
@@ -2341,8 +2337,7 @@ theorem collectedFieldGroupLocalAppendInvariant_of_allFieldsNormal
       -> NormalForm.selectionSetDirectiveFree selectionSet
       -> NormalForm.selectionSetNormal schema parentType selectionSet
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> childReady
                 ((schema.fieldReturnType? parentType fieldName).getD fieldName)

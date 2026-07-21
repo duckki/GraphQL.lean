@@ -28,8 +28,7 @@ structure ExecutedFieldGroup
   parent_eq
     : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType
   resolved_eq
-    : resolvers.resolve field.parentType field.fieldName field.arguments source
-      = resolved
+    : resolvers.resolve field.parentType field.fieldName field.arguments source = resolved
   headLookup
     : ∃ fieldDefinition,
         schema.lookupField parentType field.fieldName = some fieldDefinition
@@ -83,8 +82,7 @@ theorem ExecutableFieldsMergedComplete_of_appendSteps_from_prefix
               depth parentType source responseName field resolved prefixTail
               remaining
           -> (∀ candidate,
-                candidate ∈ field :: prefixTail
-                -> candidate.responseName = responseName)
+                candidate ∈ field :: prefixTail -> candidate.responseName = responseName)
           -> (∀ candidate,
                 candidate ∈ prefixTail
                 -> ∃ fieldDefinition,
@@ -254,8 +252,7 @@ theorem ExecutableFieldsMergedComplete_of_contained_appendSteps_from_prefix
               variableValues depth parentType source responseName field resolved
               prefixTail remaining
           -> (∀ candidate,
-                candidate ∈ field :: prefixTail
-                -> candidate.responseName = responseName)
+                candidate ∈ field :: prefixTail -> candidate.responseName = responseName)
           -> (∀ candidate,
                 candidate ∈ prefixTail
                 -> ∃ fieldDefinition,
@@ -402,8 +399,7 @@ def of_appendPlan
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hresolve
@@ -505,8 +501,7 @@ theorem mergedComplete_resolved
           source responseName field fields)
     : ExecutableFieldsMergedComplete schema resolvers variableValues depth
         parentType source responseName field fields
-        (resolvers.resolve field.parentType field.fieldName field.arguments
-          source) := by
+        (resolvers.resolve field.parentType field.fieldName field.arguments source) := by
   rw [group.resolved_eq]
   exact group.mergedComplete
 
@@ -578,8 +573,7 @@ def ExecutedFieldGroups.cons
       : ExecutedFieldGroup schema resolvers variableValues depth parentType source
           responseName field fields)
     (hrest
-      : ExecutedFieldGroups schema resolvers variableValues depth parentType
-          source rest)
+      : ExecutedFieldGroups schema resolvers variableValues depth parentType source rest)
     : ExecutedFieldGroups schema resolvers variableValues depth parentType source
         ((responseName, field :: fields) :: rest) :=
   (hgroup, hrest)
@@ -777,8 +771,7 @@ theorem ExecutableFieldsFlatSpecEquivalent_nonempty_group_of_appendSteps
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hresolve
@@ -839,8 +832,7 @@ theorem ExecutableGroupsFlatSpecEquivalent_nonempty_single_group_of_appendSteps
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hresolve
@@ -947,8 +939,7 @@ theorem ExecutableFieldsFlatSpecEquivalent_nonempty_group_of_contained_appendSte
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField) (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hresolve
@@ -1008,8 +999,7 @@ theorem ExecutableGroupsFlatSpecEquivalent_nonempty_single_group_of_contained_ap
     (field : ExecutableField) (fields : List ExecutableField)
     (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hresolve

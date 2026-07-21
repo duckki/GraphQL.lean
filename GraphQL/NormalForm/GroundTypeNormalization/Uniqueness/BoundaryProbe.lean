@@ -510,8 +510,7 @@ private def selectionSetMembersOption : List (List Selection) -> Option (List Se
   | [] => none
   | members => some (List.flatten members)
 
-private theorem mergeFieldChildOptions_membersOption
-    (left right : List (List Selection))
+private theorem mergeFieldChildOptions_membersOption (left right : List (List Selection))
     : mergeFieldChildOptions (selectionSetMembersOption left)
         (selectionSetMembersOption right)
       = selectionSetMembersOption (left ++ right) := by
@@ -521,8 +520,7 @@ private theorem mergeFieldChildOptions_membersOption
 private theorem mergeFieldChildOptions_some_membersOption
     (childSelectionSet : List Selection)
     (members : List (List Selection))
-    : mergeFieldChildOptions (some childSelectionSet)
-        (selectionSetMembersOption members)
+    : mergeFieldChildOptions (some childSelectionSet) (selectionSetMembersOption members)
       = selectionSetMembersOption (childSelectionSet :: members) := by
   cases members <;> simp [selectionSetMembersOption, mergeFieldChildOptions]
 
@@ -1093,8 +1091,8 @@ theorem fieldPairPathLocalProbeHeadResolverValue_leaf_eq_leafProbeResolverValue
           (by simpa [TypeRef.namedType] using hleaf)
 
 theorem fieldPairPathLocalProbeHeadResolverValue_object_eq_objectProbeResolverValueWithRuntime
-    (schema : Schema) (currentSelectionSet : List Selection)
-    (parentType fieldName : Name) (arguments : List Argument) (tag : FieldPairProbeTag)
+    (schema : Schema) (currentSelectionSet : List Selection) (parentType fieldName : Name)
+    (arguments : List Argument) (tag : FieldPairProbeTag)
     : ∀ outputType,
         objectTypeNameBool schema outputType.namedType = true
         -> fieldPairPathLocalProbeHeadResolverValue schema currentSelectionSet
@@ -1415,8 +1413,7 @@ theorem executeField_fieldPairPathLocalProbe_tagged_object_leaf (schema : Schema
     (leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -1482,12 +1479,10 @@ theorem executeField_fieldPairPathLocalProbe_tagged_object_leaf (schema : Schema
 
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_leaf
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -1555,8 +1550,7 @@ theorem executeField_fieldPairPathLocalProbe_tagged_object_objectProbe_response_
     (leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -1646,8 +1640,7 @@ theorem executeField_fieldPairPathLocalProbe_tagged_object_objectProbe_ok_of_chi
     (leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -1720,12 +1713,10 @@ theorem executeField_fieldPairPathLocalProbe_tagged_object_objectProbe_ok_of_chi
 
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectProbe_response_of_fuel_ge
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -1819,12 +1810,10 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectP
 
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectProbe_ok_of_child_response
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -1903,8 +1892,7 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_objectP
 
 theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_field_ok_of_field_children
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (targetParent leftField rightField parentType sourceRuntimeType : Name)
@@ -1916,8 +1904,7 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_field_o
         -> ∃ fieldDefinition,
             schema.lookupField parentType fieldName = some fieldDefinition
             ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
-            ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                    schema
+            ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                   = false
                 ∨ ∃ childRuntimeType responseFields childErrors,
                     (((objectTypeNameBool schema fieldDefinition.outputType.namedType
@@ -2018,8 +2005,7 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_field_o
 
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagged_object_of_field_children
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
     (targetParent leftField rightField parentType sourceRuntimeType : Name)
@@ -2029,8 +2015,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagg
       -> selectionSetNormal schema parentType selectionSet
       -> objectTypeNameBool schema parentType = true
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ fieldDefinition,
                 schema.lookupField parentType fieldName = some fieldDefinition
@@ -2039,8 +2024,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_pathLocalProbe_tagg
                         schema
                       = false
                     ∨ ∃ childRuntimeType responseFields childErrors,
-                        (((objectTypeNameBool schema
-                                  fieldDefinition.outputType.namedType
+                        (((objectTypeNameBool schema fieldDefinition.outputType.namedType
                                 = true
                               ∧ childRuntimeType = fieldDefinition.outputType.namedType)
                             ∨ ((TypeRef.named
@@ -2549,10 +2533,7 @@ theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_left_root_ok_of_child_o
             (projectionTargetResolverValue
               (.object leftRuntime (some FieldPairProbeTag.left)))
             childSelectionSet
-          = ({
-                data := Execution.ResponseValue.object childFields,
-                errors := childErrors
-              }
+          = ({ data := Execution.ResponseValue.object childFields, errors := childErrors }
               : Execution.Response)
       -> ∃ responseValue fieldErrors,
           Execution.executeField schema
@@ -2633,10 +2614,7 @@ theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_right_root_ok_of_child_
             (projectionTargetResolverValue
               (.object rightRuntime (some FieldPairProbeTag.right)))
             childSelectionSet
-          = ({
-                data := Execution.ResponseValue.object childFields,
-                errors := childErrors
-              }
+          = ({ data := Execution.ResponseValue.object childFields, errors := childErrors }
               : Execution.Response)
       -> ∃ responseValue fieldErrors,
           Execution.executeField schema
@@ -2717,10 +2695,7 @@ theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_left_root_ok_of_child_o
             (projectionTargetResolverValue
               (.object leftRuntime (some FieldPairProbeTag.left)))
             childSelectionSet
-          = ({
-                data := Execution.ResponseValue.object childFields,
-                errors := childErrors
-              }
+          = ({ data := Execution.ResponseValue.object childFields, errors := childErrors }
               : Execution.Response)
       -> ∃ responseValue fieldErrors,
           Execution.executeField schema
@@ -2784,10 +2759,7 @@ theorem executeField_fieldPairOrDeepSuccess_runtimeProbe_right_root_ok_of_child_
             (projectionTargetResolverValue
               (.object rightRuntime (some FieldPairProbeTag.right)))
             childSelectionSet
-          = ({
-                data := Execution.ResponseValue.object childFields,
-                errors := childErrors
-              }
+          = ({ data := Execution.ResponseValue.object childFields, errors := childErrors }
               : Execution.Response)
       -> ∃ responseValue fieldErrors,
           Execution.executeField schema
@@ -3256,10 +3228,7 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_left_root_ok_of_child
                 (FieldPairPathLocalProbeRef.target FieldPairProbeTag.left
                   leftInitialSelectionSet)))
             childSelectionSet
-          = ({
-                data := Execution.ResponseValue.object childFields,
-                errors := childErrors
-              }
+          = ({ data := Execution.ResponseValue.object childFields, errors := childErrors }
               : Execution.Response)
       -> ∃ responseValue fieldErrors,
           Execution.executeField schema
@@ -3358,10 +3327,7 @@ theorem executeField_fieldPairOrDeepSuccess_pathLocalProbe_right_root_ok_of_chil
                 (FieldPairPathLocalProbeRef.target FieldPairProbeTag.right
                   rightInitialSelectionSet)))
             childSelectionSet
-          = ({
-                data := Execution.ResponseValue.object childFields,
-                errors := childErrors
-              }
+          = ({ data := Execution.ResponseValue.object childFields, errors := childErrors }
               : Execution.Response)
       -> ∃ responseValue fieldErrors,
           Execution.executeField schema
@@ -3457,10 +3423,7 @@ theorem executeField_fieldPairOrDeepSuccess_sideRuntimeProbe_left_root_ok_of_chi
             (projectionTargetResolverValue
               (.object leftRuntime (some FieldPairProbeTag.left)))
             childSelectionSet
-          = ({
-                data := Execution.ResponseValue.object childFields,
-                errors := childErrors
-              }
+          = ({ data := Execution.ResponseValue.object childFields, errors := childErrors }
               : Execution.Response)
       -> ∃ responseValue fieldErrors,
           Execution.executeField schema
@@ -3555,10 +3518,7 @@ theorem executeField_fieldPairOrDeepSuccess_sideRuntimeProbe_right_root_ok_of_ch
             (projectionTargetResolverValue
               (.object rightRuntime (some FieldPairProbeTag.right)))
             childSelectionSet
-          = ({
-                data := Execution.ResponseValue.object childFields,
-                errors := childErrors
-              }
+          = ({ data := Execution.ResponseValue.object childFields, errors := childErrors }
               : Execution.Response)
       -> ∃ responseValue fieldErrors,
           Execution.executeField schema
@@ -3645,8 +3605,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_pathLocalProbe_of_fie
       -> leafProbeFuel leftFieldDefinition.outputType ≤ parentFuel
       -> leafProbeFuel rightFieldDefinition.outputType ≤ parentFuel
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName leftField arguments directives
-                childSelectionSet
+            Selection.field responseName leftField arguments directives childSelectionSet
               ∈ selectionSet
             -> Argument.argumentsEquivalent arguments leftArguments
             -> ∃ childFields childErrors,
@@ -3671,8 +3630,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_pathLocalProbe_of_fie
                     }
                     : Execution.Response))
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName rightField arguments directives
-                childSelectionSet
+            Selection.field responseName rightField arguments directives childSelectionSet
               ∈ selectionSet
             -> Argument.argumentsEquivalent arguments rightArguments
             -> ∃ childFields childErrors,
@@ -3697,8 +3655,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_pathLocalProbe_of_fie
                     }
                     : Execution.Response))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ¬ fieldPairProjectionTarget targetParent leftField rightField
                   leftArguments rightArguments targetParent fieldName arguments
@@ -3806,8 +3763,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_sideRuntimeProbe_of_f
       -> leafProbeFuel leftFieldDefinition.outputType ≤ parentFuel
       -> leafProbeFuel rightFieldDefinition.outputType ≤ parentFuel
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName leftField arguments directives
-                childSelectionSet
+            Selection.field responseName leftField arguments directives childSelectionSet
               ∈ selectionSet
             -> Argument.argumentsEquivalent arguments leftArguments
             -> ∃ childFields childErrors,
@@ -3831,8 +3787,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_sideRuntimeProbe_of_f
                     }
                     : Execution.Response))
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName rightField arguments directives
-                childSelectionSet
+            Selection.field responseName rightField arguments directives childSelectionSet
               ∈ selectionSet
             -> Argument.argumentsEquivalent arguments rightArguments
             -> ∃ childFields childErrors,
@@ -3856,8 +3811,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_sideRuntimeProbe_of_f
                     }
                     : Execution.Response))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ¬ fieldPairProjectionTarget targetParent leftField rightField
                   leftArguments rightArguments targetParent fieldName arguments
@@ -3965,8 +3919,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_runtimeProbe_of_field
       -> leafProbeFuel leftFieldDefinition.outputType ≤ parentFuel
       -> leafProbeFuel rightFieldDefinition.outputType ≤ parentFuel
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName leftField arguments directives
-                childSelectionSet
+            Selection.field responseName leftField arguments directives childSelectionSet
               ∈ selectionSet
             -> Argument.argumentsEquivalent arguments leftArguments
             -> ∃ childFields childErrors,
@@ -3989,8 +3942,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_runtimeProbe_of_field
                     }
                     : Execution.Response))
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName rightField arguments directives
-                childSelectionSet
+            Selection.field responseName rightField arguments directives childSelectionSet
               ∈ selectionSet
             -> Argument.argumentsEquivalent arguments rightArguments
             -> ∃ childFields childErrors,
@@ -4013,8 +3965,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_runtimeProbe_of_field
                     }
                     : Execution.Response))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ¬ fieldPairProjectionTarget targetParent leftField rightField
                   leftArguments rightArguments targetParent fieldName arguments

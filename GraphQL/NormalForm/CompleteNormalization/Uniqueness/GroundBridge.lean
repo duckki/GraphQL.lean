@@ -16,8 +16,7 @@ variable {ObjectRef : Type}
 def executableFieldListDirectiveFree (fields : List Execution.ExecutableField) : Prop :=
   ∀ field, field ∈ fields -> selectionSetDirectiveFree field.selectionSet
 
-def executableGroupsDirectiveFree
-    (groups : List (Name × List Execution.ExecutableField))
+def executableGroupsDirectiveFree (groups : List (Name × List Execution.ExecutableField))
     : Prop :=
   ∀ group, group ∈ groups -> executableFieldListDirectiveFree group.2
 
@@ -68,8 +67,7 @@ theorem executableGroupsDirectiveFree_mergeExecutableGroups
     {left right : List (Name × List Execution.ExecutableField)}
     : executableGroupsDirectiveFree left
       -> executableGroupsDirectiveFree right
-      -> executableGroupsDirectiveFree
-          (Execution.mergeExecutableGroups left right) := by
+      -> executableGroupsDirectiveFree (Execution.mergeExecutableGroups left right) := by
   intro hleft hright
   unfold Execution.mergeExecutableGroups
   induction right generalizing left with
@@ -89,8 +87,7 @@ mutual
       : ∀ selection,
           selectionDirectiveFree selection
           -> Execution.collectSelection schema leftValues parentType source selection
-              = Execution.collectSelection schema rightValues parentType source
-                  selection
+              = Execution.collectSelection schema rightValues parentType source selection
     | .field responseName fieldName arguments directives selectionSet, hfree => by
         rcases hfree with ⟨hdirectives, _hchildren⟩
         subst directives
@@ -121,8 +118,7 @@ mutual
       : ∀ selectionSet,
           selectionSetDirectiveFree selectionSet
           -> Execution.collectFields schema leftValues parentType source selectionSet
-              = Execution.collectFields schema rightValues parentType source
-                  selectionSet
+              = Execution.collectFields schema rightValues parentType source selectionSet
     | [], _hfree => rfl
     | selection :: rest, hfree => by
         rw [Execution.collectFields, Execution.collectFields]
@@ -195,8 +191,7 @@ theorem collectSubfields_eq_of_directiveFree
     : ∀ fields : List Execution.ExecutableField,
         executableFieldListDirectiveFree fields
         -> Execution.collectSubfields schema leftValues objectType objectValue fields
-            = Execution.collectSubfields schema rightValues objectType objectValue
-                fields
+            = Execution.collectSubfields schema rightValues objectType objectValue fields
   | [], _hfree => rfl
   | field :: rest, hfree => by
       rw [Execution.collectSubfields, Execution.collectSubfields]

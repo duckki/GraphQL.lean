@@ -106,8 +106,7 @@ theorem lookupFragmentAndRestLt?_found_name
 theorem lookupFragment?_found_mem
     {fragmentName : Name} {fragments : List FragmentDefinition}
     {fragment : FragmentDefinition}
-    : lookupFragment? fragments fragmentName = some fragment
-      -> fragment ∈ fragments := by
+    : lookupFragment? fragments fragmentName = some fragment -> fragment ∈ fragments := by
   induction fragments generalizing fragment with
   | nil =>
       intro hlookup
@@ -284,8 +283,7 @@ theorem lookupFragment?_remaining_of_ne
     {removed other : FragmentDefinition}
     {remaining
       : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
-    (hremove
-      : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
+    (hremove : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
     (hlookup : lookupFragment? fragments otherName = some other)
     (hne : removedName ≠ otherName)
     : lookupFragment? remaining.val otherName = some other := by
@@ -383,8 +381,7 @@ theorem lookupFragment?_of_lookupFragmentAndRestLt?_remaining_original
       : { targetRemaining : List FragmentDefinition
           // targetRemaining.length < remaining.val.length }}
     (hunique : fragmentNamesUnique fragments)
-    (hremove
-      : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
+    (hremove : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
     (htarget
       : lookupFragmentAndRestLt? targetName remaining.val
         = some (target, targetRemaining))
@@ -409,8 +406,7 @@ theorem lookupFragmentAndRestLt?_remaining_lift
     {targetRemaining
       : { xs : List FragmentDefinition // xs.length < remaining.val.length }}
     (hne : removedName ≠ targetName)
-    (hremove
-      : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
+    (hremove : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
     (htarget
       : lookupFragmentAndRestLt? targetName remaining.val
         = some (target, targetRemaining))

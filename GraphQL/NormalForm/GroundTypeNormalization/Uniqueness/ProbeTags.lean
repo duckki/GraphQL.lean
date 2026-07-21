@@ -638,8 +638,7 @@ theorem fieldPairProbeResolvers_tagged_object
 theorem executeField_fieldPairProbe_tagged_object_leaf (schema : Schema)
     (rootSelectionSet : List Selection) (variableValues : Execution.VariableValues)
     (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument) (tag : FieldPairProbeTag)
     (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
@@ -695,8 +694,7 @@ theorem executeField_fieldPairProbe_tagged_object_leaf (schema : Schema)
 theorem executeField_fieldPairProbe_tagged_object_objectProbe_response_of_fuel_ge
     (schema : Schema) (rootSelectionSet : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument) (tag : FieldPairProbeTag)
     (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
@@ -761,8 +759,7 @@ theorem executeField_fieldPairProbe_tagged_object_objectProbe_response_of_fuel_g
 theorem executeField_fieldPairProbe_tagged_object_objectProbe_ok_of_child_response
     (schema : Schema) (rootSelectionSet : List Selection)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument) (tag : FieldPairProbeTag)
     (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)

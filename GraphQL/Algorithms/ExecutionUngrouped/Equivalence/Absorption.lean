@@ -297,8 +297,7 @@ theorem VisitSubfieldsAbsorbsFrom_single_inline_some_not_apply
     (typeCondition : Name) (directives : List DirectiveApplication)
     (selectionSet : List Selection) (output : ResponseValue)
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (hnotApply
-      : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
+    (hnotApply : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
     : ResponseMergeReady output
       -> VisitSubfieldsAbsorbsFrom schema resolvers variableValues depth
           parentType source output
@@ -563,8 +562,7 @@ theorem resultValueOrNull_catchVisitBubbleAsNull_ready
 
 theorem resultValueOrNull_catchBubbleAsNull_ready
     {α : Type} (wrap : α -> ResponseValue) (completed : Result α)
-    : (∀ value errors,
-        completed = .ok (value, errors) -> ResponseMergeReady (wrap value))
+    : (∀ value errors, completed = .ok (value, errors) -> ResponseMergeReady (wrap value))
       -> ResponseMergeReady (resultValueOrNull (catchBubbleAsNull wrap completed)) := by
   intro hok
   cases completed with
@@ -1142,8 +1140,7 @@ mutual
               -> ∀ response, response ∈ tailValues -> ResponseMergeReady response)
         -> ∀ completedValues errors,
             Result.combine List.cons head tail = .ok (completedValues, errors)
-            -> ∀ response,
-                response ∈ completedValues -> ResponseMergeReady response := by
+            -> ∀ response, response ∈ completedValues -> ResponseMergeReady response := by
     intro hheadReady htailReady completedValues errors hok response hmem
     cases head with
     | error headErrors =>

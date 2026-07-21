@@ -20,8 +20,7 @@ theorem resultValueOrNull_executeField_depth_zero_none
     (variableValues : VariableValues)
     (source : ResolverValue ObjectIdentity)
     (field : ExecutableField)
-    : resultValueOrNull
-        (executeField schema resolvers variableValues 0 source none field)
+    : resultValueOrNull (executeField schema resolvers variableValues 0 source none field)
       = .null := by
   cases hlookup : schema.lookupField field.parentType field.fieldName with
       | none =>
@@ -489,7 +488,8 @@ theorem visitSubfields_executableFieldSelections_completion_zero_same_response_f
             (executableField parentType responseName field.fieldName field.arguments
               field.selectionSet)
         (
-          .object (outputFields ++ [(responseName, .null)]), resultStatus fieldResult
+          .object (outputFields ++ [(responseName, .null)]),
+          resultStatus fieldResult
         ) := by
   have hfieldResponse : field.responseName = responseName :=
     hresponse field (by simp)
@@ -655,8 +655,7 @@ theorem executeRootSelectionSet_executableFieldSelections_append_one_aligned_res
     (hresolveFirst
       : resolvers.resolve parentType fieldName arguments source = some resolvedValue)
     (hresolveLater
-      : resolvers.resolve parentType fieldName laterArguments source
-        = some resolvedValue)
+      : resolvers.resolve parentType fieldName laterArguments source = some resolvedValue)
     (hprefixChildren
       : ∀ childDepth runtimeType identity,
           childDepth < completionDepth + 1
@@ -909,8 +908,7 @@ theorem executeRootSelectionSet_executableFieldSelections_append_one_visit_align
               resolvedValue)))
     (hlookup : schema.lookupField parentType fieldName = some fieldDefinition)
     (hresolveLater
-      : resolvers.resolve parentType fieldName laterArguments source
-        = some resolvedValue)
+      : resolvers.resolve parentType fieldName laterArguments source = some resolvedValue)
     (hprefixChildren
       : ∀ childDepth runtimeType identity,
           childDepth < completionDepth + 1
@@ -1163,8 +1161,7 @@ theorem executeRootSelectionSet_executableFieldSelections_append_one_visit_align
               resolvedValue)))
     (hlookup : schema.lookupField parentType fieldName = some fieldDefinition)
     (hresolveLater
-      : resolvers.resolve parentType fieldName laterArguments source
-        = some resolvedValue)
+      : resolvers.resolve parentType fieldName laterArguments source = some resolvedValue)
     (hprefixChildren
       : ∀ childDepth runtimeType identity,
           childDepth < completionDepth + 1
@@ -1424,8 +1421,7 @@ theorem visitSubfields_executableFieldSelections_append_one_visit_aligned_resolv
               resolvedValue)))
     (hlookup : schema.lookupField parentType fieldName = some fieldDefinition)
     (hresolveLater
-      : resolvers.resolve parentType fieldName laterArguments source
-        = some resolvedValue)
+      : resolvers.resolve parentType fieldName laterArguments source = some resolvedValue)
     (hprefixChildren
       : ∀ childDepth runtimeType identity,
           childDepth < completionDepth + 1

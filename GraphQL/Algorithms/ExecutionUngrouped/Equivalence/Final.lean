@@ -35,8 +35,7 @@ structure ExecutedGroupedSelectionSetState
     : Type where
   groups : List (Name × List ExecutableField)
   collect_eq
-    : GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet
+    : GraphQL.Execution.collectFields schema variableValues parentType source selectionSet
       = groups
   flatCollects
     : VisitSubfieldsFlatCollects schema resolvers variableValues depth parentType
@@ -54,8 +53,7 @@ structure ExecutedGroupedSelectionSetAlignedState
     : Type where
   groups : List (Name × List ExecutableField)
   collect_eq
-    : GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet
+    : GraphQL.Execution.collectFields schema variableValues parentType source selectionSet
       = groups
   flatCollects
     : VisitSubfieldsFlatCollects schema resolvers variableValues depth parentType
@@ -162,8 +160,7 @@ def depth_zero_general
         parentType source selectionSet :=
   {
     groups :=
-      GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet
+      GraphQL.Execution.collectFields schema variableValues parentType source selectionSet
     collect_eq := rfl
     flatCollects :=
       VisitSubfieldsFlatCollects_depth_zero schema resolvers variableValues
@@ -180,8 +177,7 @@ def depth_zero_general
             parentType source selectionSet))
         (collectFields_fieldsNonempty schema variableValues parentType source
           selectionSet)
-        (collectFields_responseName schema variableValues parentType source
-          selectionSet)
+        (collectFields_responseName schema variableValues parentType source selectionSet)
         (collectFields_parent schema variableValues parentType source selectionSet)
   }
 
@@ -950,8 +946,7 @@ structure RecursiveGroupedSelectionSetState
     : Type where
   groups : List (Name × List ExecutableField)
   collect_eq
-    : GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet
+    : GraphQL.Execution.collectFields schema variableValues parentType source selectionSet
       = groups
   flatCollects
     : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
@@ -974,8 +969,7 @@ structure RecursiveGroupedSelectionSetState
   lookups : CollectedGroupsFieldLookupValid schema parentType groups
   compatible : CollectedGroupsFieldValidationMergeCompatible groups
   recursiveAppend
-    : CollectedFieldGroupRecursiveAppendState schema resolvers variableValues
-        depth groups
+    : CollectedFieldGroupRecursiveAppendState schema resolvers variableValues depth groups
 
 namespace RecursiveGroupedSelectionSetState
 

@@ -112,8 +112,7 @@ theorem mem_dedupBoolVars_iff (varName : BoolVar)
               ((mem_dedupBoolVars_iff headVar rest).2 hheadRest)
           simp [dedupBoolVars, hmem, hrest]
 
-theorem mem_operationBoolVars_of_selectionSet
-    (operation : Operation) (varName : BoolVar)
+theorem mem_operationBoolVars_of_selectionSet (operation : Operation) (varName : BoolVar)
     : varName ∈ selectionSetBooleanVariables operation.selectionSet
       -> varName ∈ operationBoolVars operation := by
   intro hmem
@@ -405,8 +404,7 @@ theorem sourceSelectionSetVariables_withoutFieldSelectionsWithResponseName
       -> ∀ varName,
           varName
             ∈ selectionSetBooleanVariables
-                (withoutFieldSelectionsWithResponseName schema responseName
-                  selectionSet)
+                (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
           -> varName ∈ selectionSetBooleanVariables operation.selectionSet := by
   intro hsourceVars varName hmem
   exact hsourceVars varName

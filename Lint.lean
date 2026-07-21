@@ -114,8 +114,7 @@ def checkCommonStyleInFile (path : FilePath) : IO (List String) := do
       failures :=
         failures ++ [s!"{path}:{lineNumber}: use `fun` instead of lambda syntax"]
     if containsDollarSyntax line then
-      failures :=
-        failures ++ [s!"{path}:{lineNumber}: use `<|` instead of dollar syntax"]
+      failures := failures ++ [s!"{path}:{lineNumber}: use `<|` instead of dollar syntax"]
     if hasUnscopedSetOption line then
       failures :=
         failures
@@ -125,8 +124,7 @@ def checkCommonStyleInFile (path : FilePath) : IO (List String) := do
         failures ++ [s!"{path}:{lineNumber}: scope `open Classical` to a declaration"]
     if hasBadDeclarationName line then
       failures :=
-        failures
-        ++ [s!"{path}:{lineNumber}: declaration name contains double underscore"]
+        failures ++ [s!"{path}:{lineNumber}: declaration name contains double underscore"]
     lineNumber := lineNumber + 1
   if lines.length > fileLineLimit then
     failures :=

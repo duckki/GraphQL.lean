@@ -11,8 +11,7 @@ mutual
       {removedName : Name} {fragments : List FragmentDefinition}
       {removed : FragmentDefinition}
       {remaining
-        : { remaining : List FragmentDefinition
-            // remaining.length < fragments.length }}
+        : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
       (hremove
         : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
       : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
@@ -69,8 +68,7 @@ mutual
       {removedName : Name} {fragments : List FragmentDefinition}
       {removed : FragmentDefinition}
       {remaining
-        : { remaining : List FragmentDefinition
-            // remaining.length < fragments.length }}
+        : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
       (hremove
         : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
       : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
@@ -124,8 +122,7 @@ mutual
       {removedName : Name} {fragments : List FragmentDefinition}
       {removed : FragmentDefinition}
       {remaining
-        : { remaining : List FragmentDefinition
-            // remaining.length < fragments.length }}
+        : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
       (hremove
         : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
       : ∀ {schema : Schema} {variableDefinitions : List VariableDefinition}
@@ -231,8 +228,7 @@ inductive ReachableAncestorRemovals
     {fuel : Nat}
     (hprevious : ReachableAncestorRemovals original targetName final current)
     (hancestorMem : ancestor ∈ original)
-    (hlookup
-      : lookupFragmentAndRestLt? ancestorName current = some (ancestor, remaining))
+    (hlookup : lookupFragmentAndRestLt? ancestorName current = some (ancestor, remaining))
     (hreachable
       : GraphQL.NamedFragment.Validation.fragmentReachableBool original fuel
           ancestor.name targetName
@@ -548,8 +544,7 @@ theorem descendantSelectionSetValid_after_two_ancestor_lookup_removals
     {firstName secondName targetName : Name}
     {first second target : FragmentDefinition}
     {afterFirst
-      : { afterFirst : List FragmentDefinition
-          // afterFirst.length < fragments.length }}
+      : { afterFirst : List FragmentDefinition // afterFirst.length < fragments.length }}
     {afterSecond
       : { afterSecond : List FragmentDefinition
           // afterSecond.length < afterFirst.val.length }}
@@ -613,8 +608,7 @@ theorem descendantFragmentDefinitionValid_after_two_ancestor_lookup_removals
     {firstName secondName targetName : Name}
     {first second target : FragmentDefinition}
     {afterFirst
-      : { afterFirst : List FragmentDefinition
-          // afterFirst.length < fragments.length }}
+      : { afterFirst : List FragmentDefinition // afterFirst.length < fragments.length }}
     {afterSecond
       : { afterSecond : List FragmentDefinition
           // afterSecond.length < afterFirst.val.length }}
@@ -845,8 +839,7 @@ theorem fragmentInlineSelectionSetValid_after_reachable_removals
     (hremovals : ReachableAncestorRemovals original fragmentName current current)
     (hlookupOriginal
       : GraphQL.NamedFragment.lookupFragment? original fragmentName = some fragment)
-    (hlookup
-      : lookupFragmentAndRestLt? fragmentName current = some (fragment, remaining))
+    (hlookup : lookupFragmentAndRestLt? fragmentName current = some (fragment, remaining))
     : fragment.selectionSet ≠ []
       ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
           variableDefinitions [] fragment.typeCondition
@@ -878,8 +871,7 @@ theorem fragmentInlineSelectionSetValid_after_lookup_removal_of_fragmentBodiesVa
           -> nextFragment.selectionSet ≠ []
               ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
                   variableDefinitions [] nextFragment.typeCondition
-                  (Inline.inlineSelectionSet nextRemaining.val
-                    nextFragment.selectionSet))
+                  (Inline.inlineSelectionSet nextRemaining.val nextFragment.selectionSet))
     : fragment.selectionSet ≠ []
       ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
           variableDefinitions [] fragment.typeCondition
@@ -925,8 +917,7 @@ theorem fragmentInlineSelectionSetValid_after_lookup_removal_of_localFragmentBod
           -> nextFragment.selectionSet ≠ []
               ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
                   variableDefinitions [] nextFragment.typeCondition
-                  (Inline.inlineSelectionSet nextRemaining.val
-                    nextFragment.selectionSet))
+                  (Inline.inlineSelectionSet nextRemaining.val nextFragment.selectionSet))
     : fragment.selectionSet ≠ []
       ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
           variableDefinitions [] fragment.typeCondition
@@ -948,8 +939,7 @@ theorem fragmentInlineSelectionSetValid_after_lookup_removal_of_localFragmentBod
 
 theorem operationFragmentInlineSelectionSetValid_after_lookup_removal
     {schema : Schema} {operation : Operation}
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     {fragmentName : Name} {fragment : FragmentDefinition}
     {remaining
       : { remaining : List FragmentDefinition
@@ -970,8 +960,7 @@ theorem operationFragmentInlineSelectionSetValid_after_lookup_removal
           -> nextFragment.selectionSet ≠ []
               ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
                   operation.variableDefinitions [] nextFragment.typeCondition
-                  (Inline.inlineSelectionSet nextRemaining.val
-                    nextFragment.selectionSet))
+                  (Inline.inlineSelectionSet nextRemaining.val nextFragment.selectionSet))
     : fragment.selectionSet ≠ []
       ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
           operation.variableDefinitions [] fragment.typeCondition
@@ -1019,8 +1008,7 @@ theorem childFragmentInlineSelectionSetValid_after_lookup_removals_of_localFragm
           -> nextFragment.selectionSet ≠ []
               ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
                   variableDefinitions [] nextFragment.typeCondition
-                  (Inline.inlineSelectionSet nextRemaining.val
-                    nextFragment.selectionSet))
+                  (Inline.inlineSelectionSet nextRemaining.val nextFragment.selectionSet))
     : child.selectionSet ≠ []
       ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
           variableDefinitions [] child.typeCondition
@@ -1133,8 +1121,7 @@ theorem descendantFragmentInlineSelectionSetValid_after_lookup_removals_of_local
           -> nextFragment.selectionSet ≠ []
               ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
                   variableDefinitions [] nextFragment.typeCondition
-                  (Inline.inlineSelectionSet nextRemaining.val
-                    nextFragment.selectionSet))
+                  (Inline.inlineSelectionSet nextRemaining.val nextFragment.selectionSet))
     : target.selectionSet ≠ []
       ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
           variableDefinitions [] target.typeCondition
@@ -1196,8 +1183,7 @@ theorem descendantFragmentInlineSelectionSetValid_after_two_ancestor_lookup_remo
     {fragments : List FragmentDefinition} {firstName secondName targetName : Name}
     {first second target : FragmentDefinition}
     {afterFirst
-      : { afterFirst : List FragmentDefinition
-          // afterFirst.length < fragments.length }}
+      : { afterFirst : List FragmentDefinition // afterFirst.length < fragments.length }}
     {afterSecond
       : { afterSecond : List FragmentDefinition
           // afterSecond.length < afterFirst.val.length }}
@@ -1240,8 +1226,7 @@ theorem descendantFragmentInlineSelectionSetValid_after_two_ancestor_lookup_remo
           -> nextFragment.selectionSet ≠ []
               ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
                   variableDefinitions [] nextFragment.typeCondition
-                  (Inline.inlineSelectionSet nextRemaining.val
-                    nextFragment.selectionSet))
+                  (Inline.inlineSelectionSet nextRemaining.val nextFragment.selectionSet))
     : target.selectionSet ≠ []
       ∧ GraphQL.NamedFragment.Validation.selectionSetValid schema
           variableDefinitions [] target.typeCondition

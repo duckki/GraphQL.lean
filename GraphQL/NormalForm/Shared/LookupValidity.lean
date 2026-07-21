@@ -12,8 +12,7 @@ namespace NormalForm
 mutual
   def selectionLookupValid (schema : Schema) (parentType : Name) : Selection -> Prop
     | .field _responseName fieldName _arguments _directives _selectionSet =>
-        ∃ fieldDefinition,
-          schema.lookupField parentType fieldName = some fieldDefinition
+        ∃ fieldDefinition, schema.lookupField parentType fieldName = some fieldDefinition
     | .inlineFragment none _directives selectionSet =>
         selectionSetLookupValid schema parentType selectionSet
     | .inlineFragment (some typeCondition) _directives selectionSet =>
@@ -168,8 +167,7 @@ mutual
       {schema : Schema} {variableDefinitions : List VariableDefinition}
       {parentType : Name}
       : ∀ selectionSet,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetLookupValid schema parentType selectionSet
     | [], _hvalid => by
         exact selectionSetLookupValid_nil schema parentType
@@ -230,8 +228,7 @@ theorem selectionSetLookupValid_of_selectionSetValid_possibleObject
     : SchemaWellFormedness.schemaWellFormed schema
       -> objectType ∈ schema.getPossibleTypes parentType
       -> ∀ selectionSet,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetLookupValid schema objectType selectionSet
     | _hschema, _hpossible, [], _hvalid => by
         exact selectionSetLookupValid_nil schema objectType

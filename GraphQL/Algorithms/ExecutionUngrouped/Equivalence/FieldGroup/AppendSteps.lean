@@ -357,8 +357,7 @@ theorem ExecutableFieldsFlatSpecAlignedEquivalent_nonempty_group_of_alignedAppen
     (field : ExecutableField) (fields : List ExecutableField)
     (resolved : Option (ResolverValue ObjectIdentity))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hresolve
@@ -470,8 +469,7 @@ structure ExecutedFieldAppendStep
   parent_eq : later.parentType = parentType
   fieldName_eq : later.fieldName = field.fieldName
   resolved_eq
-    : resolvers.resolve later.parentType later.fieldName later.arguments source
-      = resolved
+    : resolvers.resolve later.parentType later.fieldName later.arguments source = resolved
   prefixChildren
     : ∀ childDepth runtimeType identity,
         childDepth < depth

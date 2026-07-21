@@ -655,8 +655,7 @@ theorem normalSelectionSetObservableLeafAtRuntime_runtime_eq_of_object
 theorem normalSelectionSetObservableLeafAtRuntime_typeIncludes
     {schema : Schema} {parentType runtimeType : Name}
     {selectionSet : List Selection}
-    : NormalSelectionSetObservableLeafAtRuntime schema parentType runtimeType
-        selectionSet
+    : NormalSelectionSetObservableLeafAtRuntime schema parentType runtimeType selectionSet
       -> schema.typeIncludesObjectBool parentType runtimeType = true := by
   intro hobservable
   cases hobservable with
@@ -690,8 +689,7 @@ theorem normalSelectionSetObservableLeafAtRuntime_firstInline_of_abstract
 theorem selectionSet_nonempty_of_normalSelectionSetObservableLeafAtRuntime
     {schema : Schema} {parentType runtimeType : Name}
     {selectionSet : List Selection}
-    : NormalSelectionSetObservableLeafAtRuntime schema parentType runtimeType
-        selectionSet
+    : NormalSelectionSetObservableLeafAtRuntime schema parentType runtimeType selectionSet
       -> selectionSet ≠ [] := by
   intro hobservable hempty
   cases hobservable with

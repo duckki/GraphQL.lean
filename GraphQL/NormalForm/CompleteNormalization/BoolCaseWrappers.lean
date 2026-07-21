@@ -46,8 +46,7 @@ theorem collectFields_wrapWithBoolCase_nil
     (selectionSet : List Selection)
     : Execution.collectFields schema variableValues parentType source
         (wrapWithBoolCase [] selectionSet)
-      = Execution.collectFields schema variableValues parentType source
-          selectionSet := by
+      = Execution.collectFields schema variableValues parentType source selectionSet := by
   rfl
 
 theorem collectFields_wrapWithBoolCase_cons_allowed
@@ -174,12 +173,10 @@ theorem collectFields_wrapWithBoolCase_of_agrees
     : ∀ boolCase : BoolCase,
         (∀ varName value,
           (varName, value) ∈ boolCase
-          -> Execution.inputValueBoolean? variableValues (.variable varName)
-              = some value)
+          -> Execution.inputValueBoolean? variableValues (.variable varName) = some value)
         -> Execution.collectFields schema variableValues parentType source
               (wrapWithBoolCase boolCase selectionSet)
-            = Execution.collectFields schema variableValues parentType source
-                selectionSet
+            = Execution.collectFields schema variableValues parentType source selectionSet
   | [], _hagrees => by
       rfl
   | (varName, value) :: rest, hagrees => by

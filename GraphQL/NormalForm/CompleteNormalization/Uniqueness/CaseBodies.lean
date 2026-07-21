@@ -91,8 +91,7 @@ private theorem selectedCompleteNormalBodies_semanticallyEquivalent
     (hleftMem : leftSelection ∈ leftSelectionSet)
     (hrightMem : rightSelection ∈ rightSelectionSet)
     (hruntimeLeft : completeNormalBoolCase (leftVarName :: leftVariables) runtimeCase)
-    (hruntimeRight
-      : completeNormalBoolCase (rightVarName :: rightVariables) runtimeCase)
+    (hruntimeRight : completeNormalBoolCase (rightVarName :: rightVariables) runtimeCase)
     (hrightCase : completeNormalBoolCase (rightVarName :: rightVariables) rightCase)
     (hequivalent : completeNormalBoolCasesEquivalent runtimeCase rightCase)
     (hleftStem : completeNormalBooleanStem runtimeCase leftSelection leftBody)
@@ -162,8 +161,7 @@ private theorem selectedCompleteNormalBody_nil_semanticallyEquivalent
           (rightVarName :: rightVariables) parentType rightSelectionSet)
     (hleftMem : leftSelection ∈ leftSelectionSet)
     (hruntimeLeft : completeNormalBoolCase (leftVarName :: leftVariables) runtimeCase)
-    (hruntimeRight
-      : completeNormalBoolCase (rightVarName :: rightVariables) runtimeCase)
+    (hruntimeRight : completeNormalBoolCase (rightVarName :: rightVariables) runtimeCase)
     (hleftStem : completeNormalBooleanStem runtimeCase leftSelection leftBody)
     (hleftFree : selectionSetDirectiveFree leftBody)
     (hnone

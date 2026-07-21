@@ -35,8 +35,7 @@ theorem normalizeOperation_selectionSet (schema : Schema) (operation : Operation
 
 theorem rootSourceAppliesBool_normalizeOperation (schema : Schema)
     (operation : Operation) (source : Execution.ResolverValue ObjectRef)
-    : Execution.rootSourceAppliesBool schema (normalizeOperation schema operation)
-        source
+    : Execution.rootSourceAppliesBool schema (normalizeOperation schema operation) source
       = Execution.rootSourceAppliesBool schema operation source := by
   rw [Execution.rootSourceAppliesBool]
   rw [Execution.rootSourceAppliesBool]
@@ -72,8 +71,7 @@ theorem groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet
             = Execution.executeSelectionSet schema resolvers variableValues
                 depth (normalizeOperation schema operation).rootType source
                 (normalizeOperation schema operation).selectionSet)
-      -> operationsEquivalent schema operation
-          (normalizeOperation schema operation) := by
+      -> operationsEquivalent schema operation (normalizeOperation schema operation) := by
   intro hselection
   unfold operationsEquivalent
   intro ObjectRef resolvers variableValues depth source
@@ -115,8 +113,7 @@ theorem normalizeOperation_executeQuery (schema : Schema) (operation : Operation
             = Execution.executeSelectionSet schema resolvers variableValues
                 depth (normalizeOperation schema operation).rootType source
                 (normalizeOperation schema operation).selectionSet)
-      -> operationsEquivalent schema operation
-          (normalizeOperation schema operation) := by
+      -> operationsEquivalent schema operation (normalizeOperation schema operation) := by
   exact groundTypeNormalFormSemanticsPreserved_of_executeSelectionSet schema
     operation
 

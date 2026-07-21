@@ -27,8 +27,7 @@ def executableGroupsSelectionVarsInOperation
     (operation : Operation)
     (groups : List (Name × List Execution.ExecutableField))
     : Prop :=
-  ∀ group,
-    group ∈ groups -> executableFieldsSelectionVarsInOperation operation group.snd
+  ∀ group, group ∈ groups -> executableFieldsSelectionVarsInOperation operation group.snd
 
 theorem filterExecutableFieldBoolCase_parentType
     (boolCase : BoolCase) (field : Execution.ExecutableField)
@@ -409,8 +408,7 @@ theorem executeSelectionSet_filterSelectionSetBoolCase
     (variableValues : Execution.VariableValues)
     (operation : Operation) (boolCase : BoolCase)
     (hagrees
-      : variableValuesAgreeWithCase variableValues boolCase
-          (operationBoolVars operation))
+      : variableValuesAgreeWithCase variableValues boolCase (operationBoolVars operation))
     : ∀ depth parentType (source : Execution.ResolverValue ObjectRef) selectionSet,
         (∀ varName,
           varName ∈ selectionSetBooleanVariables selectionSet

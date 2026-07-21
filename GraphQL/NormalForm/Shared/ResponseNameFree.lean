@@ -75,8 +75,7 @@ theorem selectionSetResponseNameFree_append {schema : Schema}
     {parentType responseName : Name} {left right : List Selection}
     : selectionSetResponseNameFree schema parentType responseName left
       -> selectionSetResponseNameFree schema parentType responseName right
-      -> selectionSetResponseNameFree schema parentType responseName
-          (left ++ right) := by
+      -> selectionSetResponseNameFree schema parentType responseName (left ++ right) := by
   unfold selectionSetResponseNameFree
   intro hleft hright selection hselection
   rcases List.mem_append.mp hselection with hselection | hselection

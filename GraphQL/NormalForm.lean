@@ -72,8 +72,7 @@ mutual
         | .inlineFragment none _directives selectionSet =>
             fieldSelectionsWithResponseNameInScope schema parentType responseName
               selectionSet
-            ++ fieldSelectionsWithResponseNameInScope schema parentType responseName
-                rest
+            ++ fieldSelectionsWithResponseNameInScope schema parentType responseName rest
         | .inlineFragment (some typeCondition) _directives selectionSet =>
             let restFields :=
               fieldSelectionsWithResponseNameInScope schema parentType responseName rest
@@ -436,8 +435,7 @@ mutual
           | none => False
           | some fieldDefinition =>
               ∀ objectType,
-                objectType
-                  ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType
+                objectType ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType
                 -> selectionSetValidInPossibleTypes schema
                     variableDefinitions objectType selectionSet
     | .inlineFragment none _directives selectionSet =>
@@ -480,8 +478,7 @@ def operationFieldsValidInPossibleTypes (schema : Schema) (operation : Operation
 def typeConditionStackFeasible (schema : Schema) (typeConditions : List Name) : Prop :=
   ∃ objectType,
     ∀ typeCondition,
-      typeCondition ∈ typeConditions
-      -> objectType ∈ schema.getPossibleTypes typeCondition
+      typeCondition ∈ typeConditions -> objectType ∈ schema.getPossibleTypes typeCondition
 
 /-- Feasibility has two proof roles: `existsField` witnesses one feasible field
 through inline fragments, while `allFields` recursively checks every selected
@@ -580,8 +577,7 @@ def normalizeOperationValid (schema : Schema) (operation : Operation) : Prop :=
 
 -- Operation semantic equivalence (`≈`): a relaxed version of `operationsEquivalent`,
 -- where fields can be reordered in the response values.
-def operationsSemanticallyEquivalent (schema : Schema) (left right : Operation)
-    : Prop :=
+def operationsSemanticallyEquivalent (schema : Schema) (left right : Operation) : Prop :=
   ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
       variableValues fuel (source : Execution.ResolverValue ObjectRef),
     Execution.Response.semanticEquivalent
@@ -728,11 +724,9 @@ def directivesBooleanVariables : List DirectiveApplication -> List BoolVar
 mutual
   def selectionBooleanVariables : Selection -> List BoolVar
     | .field _responseName _fieldName _arguments directives selectionSet =>
-        directivesBooleanVariables directives
-        ++ selectionSetBooleanVariables selectionSet
+        directivesBooleanVariables directives ++ selectionSetBooleanVariables selectionSet
     | .inlineFragment _typeCondition directives selectionSet =>
-        directivesBooleanVariables directives
-        ++ selectionSetBooleanVariables selectionSet
+        directivesBooleanVariables directives ++ selectionSetBooleanVariables selectionSet
 
   def selectionSetBooleanVariables : List Selection -> List BoolVar
     | [] => []
@@ -1134,8 +1128,7 @@ surviving feasible composite field. This joins Boolean directive filtering and
 type-condition feasibility in one assumption, instead of pairing independent
 survival and type-condition predicates.
 -/
-def operationBoolTypeConditionFeasible (schema : Schema) (operation : Operation)
-    : Prop :=
+def operationBoolTypeConditionFeasible (schema : Schema) (operation : Operation) : Prop :=
   (∃ boolCase,
     boolCase ∈ allBoolCases (operationBoolVars operation)
     ∧ selectionSetBoolTypeConditionFeasible schema operation.rootType
@@ -1244,10 +1237,8 @@ def operationsSemanticallyEquivalentForCompleteBoolVars
       variableValues fuel (source : Execution.ResolverValue ObjectRef),
     boolVarsComplete variables variableValues
     -> Execution.Response.semanticEquivalent
-        (Execution.executeQueryWithFuel schema resolvers variableValues left
-          fuel source)
-        (Execution.executeQueryWithFuel schema resolvers variableValues right
-          fuel source)
+        (Execution.executeQueryWithFuel schema resolvers variableValues left fuel source)
+        (Execution.executeQueryWithFuel schema resolvers variableValues right fuel source)
 
 -- States: N(φ) ≡ N(ψ) → φ ≈ ψ
 -- The theorem witness is

@@ -234,8 +234,7 @@ inductive SelectionSetFreshPlanNormalizationTree
             (executableFieldSelections [first]
               ++ middle
               ++ executableFieldSelections [later]))
-          (GraphQL.Execution.collectFields schema variableValues parentType source
-            suffix)
+          (GraphQL.Execution.collectFields schema variableValues parentType source suffix)
       -> SelectionSetCollectFieldsHeadDisjointTree schema variableValues
           parentType source middle
       -> SelectionSetCollectFieldsHeadDisjointTree schema variableValues
@@ -747,11 +746,10 @@ theorem VisitSubfieldsFlatCollects_duplicate_field_middle_of_flat_middle_allOutp
     (hmiddle
       : VisitSubfieldsFlatCollectsAllOutputs schema resolvers variableValues
           (completionDepth + 1) parentType source middle)
-    : VisitSubfieldsFlatCollects schema resolvers variableValues
-        (completionDepth + 1) parentType source
-        (executableFieldSelections [first]
-          ++ middle
-          ++ executableFieldSelections [later]) (.object []) := by
+    : VisitSubfieldsFlatCollects schema resolvers variableValues (completionDepth + 1)
+        parentType source
+        (executableFieldSelections [first] ++ middle ++ executableFieldSelections [later])
+        (.object []) := by
   obtain ⟨suffix, hsuffix⟩ :=
     visitSubfields_preserves_object schema resolvers variableValues
       (completionDepth + 1) parentType source

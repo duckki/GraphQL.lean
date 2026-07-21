@@ -82,8 +82,7 @@ theorem taggedSelectionSetResponseDiffWitness_of_object_leaf_field_valid_normal_
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection}
             {fieldDefinition : FieldDefinition},
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
@@ -110,8 +109,7 @@ theorem taggedSelectionSetResponseDiffWitness_of_object_leaf_field_valid_normal_
           -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
               parentType selectionSet
           -> selectionSetDeepProbeFuel schema parentType selectionSet ≤ fuel
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
           -> schema.lookupField parentType fieldName = some fieldDefinition
           -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
@@ -180,8 +178,7 @@ theorem taggedSelectionSetResponseDiffWitness_of_object_child_field_valid_normal
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection}
             {fieldDefinition : FieldDefinition} {runtimeType : Name},
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
@@ -208,8 +205,7 @@ theorem taggedSelectionSetResponseDiffWitness_of_object_child_field_valid_normal
           -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
               parentType selectionSet
           -> selectionSetDeepProbeFuel schema parentType selectionSet ≤ fuel
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
           -> schema.lookupField parentType fieldName = some fieldDefinition
           -> ((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
@@ -217,8 +213,7 @@ theorem taggedSelectionSetResponseDiffWitness_of_object_child_field_valid_normal
               ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
                       schema
                     = true
-                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
-                    = false
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
                   ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
                       arguments parentType rootSelectionSet
                     = some runtimeType))

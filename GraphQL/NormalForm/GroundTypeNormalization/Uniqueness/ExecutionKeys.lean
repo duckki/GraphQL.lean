@@ -157,8 +157,7 @@ theorem collectFields_normal_object_field_head
     : selectionSetDirectiveFree
         (Selection.field responseName fieldName arguments [] childSelectionSet :: rest)
       -> selectionSetNormal schema parentType
-          (Selection.field responseName fieldName arguments [] childSelectionSet
-            :: rest)
+          (Selection.field responseName fieldName arguments [] childSelectionSet :: rest)
       -> objectTypeNameBool schema parentType = true
       -> Execution.collectFields schema variableValues parentType source
             (Selection.field responseName fieldName arguments [] childSelectionSet
@@ -173,8 +172,7 @@ theorem collectFields_normal_object_field_head
                 selectionSet := childSelectionSet
               }]
             )
-            :: Execution.collectFields schema variableValues parentType source
-                rest := by
+            :: Execution.collectFields schema variableValues parentType source rest := by
   intro hfree hnormal hobject
   have hrestFree : selectionSetDirectiveFree rest :=
     selectionSetDirectiveFree_tail hfree

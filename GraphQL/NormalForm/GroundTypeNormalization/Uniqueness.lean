@@ -52,8 +52,7 @@ theorem normal_operations_equalUpToReordering_semanticallyEquivalent
 
 theorem normalizeOperations_equalUpToReordering_semanticallyEquivalent
     {schema : Schema} {left right : Operation}
-    : normalizeOperationsEqualUpToReorderingSemanticallyEquivalent schema
-        left right := by
+    : normalizeOperationsEqualUpToReorderingSemanticallyEquivalent schema left right := by
   intro hschema hleftValid hrightValid hleftFree hrightFree hequal
   have hleftNormalizedFree :
       operationDirectiveFree (normalizeOperation schema left) :=
@@ -103,8 +102,7 @@ theorem normal_operations_semanticallyEquivalent_equalUpToReordering
           hschema hleftValid hrightValid hleftFree hrightFree hleftNormal
           hrightNormal hobject htrace)
 
-theorem normalizeOperation_uniqueUpToReordering
-    {schema : Schema} {left right : Operation}
+theorem normalizeOperation_uniqueUpToReordering {schema : Schema} {left right : Operation}
     : normalizeOperationUniqueUpToReordering schema left right := by
   exact
     normalizeOperation_uniqueUpToReordering_of_normal_operations

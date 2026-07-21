@@ -976,8 +976,7 @@ mutual
   theorem selectionSetInlineFragmentsNonempty_of_selectionSetValid
       (schema : Schema) (variableDefinitions : List VariableDefinition)
       : ∀ parentType selectionSet,
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetInlineFragmentsNonempty selectionSet
     | parentType, selectionSet, hvalid => by
         unfold selectionSetInlineFragmentsNonempty

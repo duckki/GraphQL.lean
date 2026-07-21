@@ -26,8 +26,7 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_merged_complete
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           parentType source selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hungrouped
@@ -73,8 +72,7 @@ theorem executeRootSelectionSet_eq_spec_of_exact_nonempty_group_mergedComplete
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           parentType source selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     (hmerged
@@ -107,8 +105,7 @@ theorem executeQueryWithFuel_eq_spec_of_exact_nonempty_group_merged_complete
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           operation.rootType source operation.selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate,
           candidate ∈ field :: fields -> candidate.parentType = operation.rootType)
@@ -145,8 +142,7 @@ theorem executeQueryWithFuel_eq_spec_of_exact_nonempty_group_mergedComplete
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           operation.rootType source operation.selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate,
           candidate ∈ field :: fields -> candidate.parentType = operation.rootType)
@@ -182,8 +178,7 @@ theorem executeQuery_eq_spec_of_exact_nonempty_group_merged_complete
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           operation.rootType source operation.selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate,
           candidate ∈ field :: fields -> candidate.parentType = operation.rootType)
@@ -220,8 +215,7 @@ theorem executeQuery_eq_spec_of_exact_nonempty_group_mergedComplete
       : VisitSubfieldsFlatCollects schema resolvers variableValues (depth + 1)
           operation.rootType source operation.selectionSet (.object []))
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate,
           candidate ∈ field :: fields -> candidate.parentType = operation.rootType)

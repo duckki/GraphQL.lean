@@ -54,8 +54,7 @@ theorem fragmentReachableBool_append_direct
     {targetFragment : FragmentDefinition}
     (hreachable : fragmentReachableBool fragments fuel source target = true)
     (htarget : lookupFragment? fragments target = some targetFragment)
-    (htargetSpread
-      : final ∈ selectionSetFragmentSpreadNames targetFragment.selectionSet)
+    (htargetSpread : final ∈ selectionSetFragmentSpreadNames targetFragment.selectionSet)
     : fragmentReachableBool fragments (fuel + 1) source final = true := by
   induction fuel generalizing source with
   | zero =>
@@ -231,8 +230,7 @@ theorem lookupFragment?_remaining_to_original
     {remaining
       : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
     (hunique : fragmentNamesUnique fragments)
-    (hremove
-      : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
+    (hremove : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
     (hlookup : lookupFragment? remaining.val sourceName = some source)
     : lookupFragment? fragments sourceName = some source := by
   have hsourceMemRemaining : source ∈ remaining.val :=
@@ -255,8 +253,7 @@ theorem fragmentReachableBool_remaining_to_original
       : { remaining : List FragmentDefinition // remaining.length < fragments.length }}
     {fuel : Nat} {source target : Name}
     (hunique : fragmentNamesUnique fragments)
-    (hremove
-      : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
+    (hremove : lookupFragmentAndRestLt? removedName fragments = some (removed, remaining))
     (hreachable : fragmentReachableBool remaining.val fuel source target = true)
     : fragmentReachableBool fragments fuel source target = true := by
   induction fuel generalizing source with

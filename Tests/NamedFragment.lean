@@ -62,8 +62,7 @@ def cyclicFragments : List GraphQL.NamedFragment.FragmentDefinition :=
   ]
 
 theorem cyclicFragmentsRejectedSmoke
-    : GraphQL.NamedFragment.Validation.fragmentsAcyclicBool cyclicFragments
-      = false := by
+    : GraphQL.NamedFragment.Validation.fragmentsAcyclicBool cyclicFragments = false := by
   native_decide
 
 def undefinedFragmentOperation : GraphQL.NamedFragment.Operation :=

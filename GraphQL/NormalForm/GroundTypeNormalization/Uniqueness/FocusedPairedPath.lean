@@ -48,8 +48,7 @@ inductive NormalSelectionSetPairedPath (schema : Schema)
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> NormalSelectionSetPairedPath schema leftParentType rightParentType left right
   | objectCompositeLeftLeaf
@@ -70,8 +69,7 @@ inductive NormalSelectionSetPairedPath (schema : Schema)
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> NormalSelectionSetPairedPath schema leftParentType rightParentType left right
   | objectLeafCompositeRight
@@ -92,8 +90,7 @@ inductive NormalSelectionSetPairedPath (schema : Schema)
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> NormalSelectionSetPairedPath schema leftParentType rightParentType left right
   | objectCompositePair
@@ -114,8 +111,7 @@ inductive NormalSelectionSetPairedPath (schema : Schema)
       -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> NormalSelectionSetPairedPath schema
           leftFieldDefinition.outputType.namedType

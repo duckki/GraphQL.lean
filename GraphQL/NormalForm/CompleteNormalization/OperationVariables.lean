@@ -26,8 +26,7 @@ theorem allBoolCases_operationBoolVars_nodup (operation : Operation)
   exact allBoolCases_nodup
     (operationBoolVars_nodup operation)
 
-theorem allBoolCases_operationBoolVars_split
-    (operation : Operation) {boolCase : BoolCase}
+theorem allBoolCases_operationBoolVars_split (operation : Operation) {boolCase : BoolCase}
     : boolCase ∈ allBoolCases (operationBoolVars operation)
       -> ∃ before after,
           allBoolCases (operationBoolVars operation) = before ++ boolCase :: after
@@ -120,8 +119,7 @@ theorem directivesAllowInCase_eq_execution_of_inline_head
       -> (∀ varName,
             varName
               ∈ selectionSetBooleanVariables
-                  (Selection.inlineFragment typeCondition directives selectionSet
-                    :: rest)
+                  (Selection.inlineFragment typeCondition directives selectionSet :: rest)
             -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
       -> directivesAllowIn boolCase directives
           = Execution.selectionDirectivesAllowBool variableValues directives := by
@@ -166,8 +164,7 @@ theorem operationBoolVars_caseForVariableValues
     : (∀ varName,
         varName ∈ operationBoolVars operation
         -> ∃ value,
-            Execution.inputValueBoolean? variableValues (.variable varName)
-            = some value)
+            Execution.inputValueBoolean? variableValues (.variable varName) = some value)
       -> ∃ boolCase,
           boolCase ∈ allBoolCases (operationBoolVars operation)
           ∧ variableValuesAgreeWithCase variableValues boolCase

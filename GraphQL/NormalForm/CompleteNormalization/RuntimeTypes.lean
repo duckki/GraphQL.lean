@@ -171,11 +171,9 @@ theorem selectionSetLookupValid_field_head_clear_directives
     (arguments : List Argument) (directives : List DirectiveApplication)
     (selectionSet rest : List Selection)
     : selectionSetLookupValid schema parentType
-        (Selection.field responseName fieldName arguments directives selectionSet
-          :: rest)
+        (Selection.field responseName fieldName arguments directives selectionSet :: rest)
       -> selectionSetLookupValid schema parentType
-          (Selection.field responseName fieldName arguments [] selectionSet
-            :: rest) := by
+          (Selection.field responseName fieldName arguments [] selectionSet :: rest) := by
   intro hlookupValid
   unfold selectionSetLookupValid at hlookupValid ⊢
   intro selection hmem
@@ -198,11 +196,9 @@ theorem selectionSetValid_field_head_clear_directives
     (arguments : List Argument) (directives : List DirectiveApplication)
     (selectionSet rest : List Selection)
     : Validation.selectionSetValid schema variableDefinitions parentType
-        (Selection.field responseName fieldName arguments directives selectionSet
-          :: rest)
+        (Selection.field responseName fieldName arguments directives selectionSet :: rest)
       -> Validation.selectionSetValid schema variableDefinitions parentType
-          (Selection.field responseName fieldName arguments [] selectionSet
-            :: rest) := by
+          (Selection.field responseName fieldName arguments [] selectionSet :: rest) := by
   intro hvalid
   unfold Validation.selectionSetValid at hvalid ⊢
   intro selection hmem
@@ -231,11 +227,9 @@ theorem selectionSetSemanticsReady_field_head_clear_directives
     (arguments : List Argument) (directives : List DirectiveApplication)
     (selectionSet rest : List Selection)
     : selectionSetSemanticsReady schema parentType
-        (Selection.field responseName fieldName arguments directives selectionSet
-          :: rest)
+        (Selection.field responseName fieldName arguments directives selectionSet :: rest)
       -> selectionSetSemanticsReady schema parentType
-          (Selection.field responseName fieldName arguments [] selectionSet
-            :: rest) := by
+          (Selection.field responseName fieldName arguments [] selectionSet :: rest) := by
   intro hready
   unfold selectionSetSemanticsReady at hready ⊢
   intro selection hmem
@@ -257,11 +251,9 @@ theorem fieldsInSetCanMerge_field_head_clear_directives
     (arguments : List Argument) (directives : List DirectiveApplication)
     (selectionSet rest : List Selection)
     : FieldMerge.fieldsInSetCanMerge schema parentType
-        (Selection.field responseName fieldName arguments directives selectionSet
-          :: rest)
+        (Selection.field responseName fieldName arguments directives selectionSet :: rest)
       -> FieldMerge.fieldsInSetCanMerge schema parentType
-          (Selection.field responseName fieldName arguments [] selectionSet
-            :: rest) := by
+          (Selection.field responseName fieldName arguments [] selectionSet :: rest) := by
   intro hmerge
   unfold FieldMerge.fieldsInSetCanMerge
   refine FieldMerge.FieldsInSetCanMerge.intro parentType

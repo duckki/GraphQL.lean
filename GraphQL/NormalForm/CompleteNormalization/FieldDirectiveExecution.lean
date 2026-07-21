@@ -119,8 +119,7 @@ theorem collectFields_field_directives_allowed_cons_of_responseName_not_mem
                 selectionSet := selectionSet
               }]
             )
-            :: Execution.collectFields schema variableValues parentType source
-                rest := by
+            :: Execution.collectFields schema variableValues parentType source rest := by
   intro hallow hnotin
   rw [GroundTypeNormalization.collectFields_cons]
   simp [Execution.collectSelection, hallow]
@@ -215,8 +214,7 @@ theorem collectFields_field_directives_allowed_cons_of_case_not_mem
                 selectionSet := selectionSet
               }]
             )
-            :: Execution.collectFields schema variableValues parentType source
-                rest := by
+            :: Execution.collectFields schema variableValues parentType source rest := by
   intro hagrees hsourceVars hallow hnotin
   have hdirectiveEq :=
     directivesAllowInCase_eq_execution_of_field_head

@@ -150,8 +150,7 @@ def directiveAllowsSelectionBool (variableValues : VariableValues)
 def selectionDirectivesAllowBool (variableValues : VariableValues)
     (directives : List DirectiveApplication)
     : Bool :=
-  directives.all
-    (fun directive => directiveAllowsSelectionBool variableValues directive)
+  directives.all (fun directive => directiveAllowsSelectionBool variableValues directive)
 
 -- Spec 6.3.2 `DoesFragmentTypeApply` needs a runtime object type when the source value
 -- is object-like.
@@ -236,8 +235,7 @@ mutual
   -- Spec 6.3.2 `CollectFields` selection step: partial; handles built-in directives and
   -- inline fragments.
   def collectSelection (schema : Schema) (variableValues : VariableValues)
-      : Name -> ResolverValue ObjectRef -> Selection
-        -> List (Name × List ExecutableField)
+      : Name -> ResolverValue ObjectRef -> Selection -> List (Name × List ExecutableField)
     | parentType,
       _source,
       .field responseName fieldName arguments directives selectionSet =>
@@ -291,8 +289,7 @@ mutual
     | [] => []
     | field :: fields =>
         mergeExecutableGroups
-          (collectFields schema variableValues objectType objectValue
-            field.selectionSet)
+          (collectFields schema variableValues objectType objectValue field.selectionSet)
           (collectSubfields schema variableValues objectType objectValue fields)
 end
 

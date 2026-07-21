@@ -9,8 +9,7 @@ namespace Semantics
 
 theorem inlineOperation_selectionSetValid_of_fragmentBodiesValid
     {schema : Schema} {operation : Operation}
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     (hfragmentBodies
       : ∀ {fragmentName : Name} {fragment : FragmentDefinition}
             {remaining
@@ -41,8 +40,7 @@ theorem inlineOperation_selectionSetValid_of_fragmentBodiesValid
 
 theorem inlineOperation_valid_of_fragmentBodiesValid
     {schema : Schema} {operation : Operation}
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     (hfragmentBodies
       : ∀ {fragmentName : Name} {fragment : FragmentDefinition}
             {remaining
@@ -62,8 +60,7 @@ theorem inlineOperation_valid_of_fragmentBodiesValid
 
 theorem inlineOperation_selectionSetValid_of_localFragmentBodiesValid
     {schema : Schema} {operation : Operation}
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     (hfragmentBodies
       : ∀ {fragmentName : Name} {fragment : FragmentDefinition}
             {remaining
@@ -96,8 +93,7 @@ theorem inlineOperation_selectionSetValid_of_localFragmentBodiesValid
 
 theorem inlineOperation_valid_of_localFragmentBodiesValid
     {schema : Schema} {operation : Operation}
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     (hfragmentBodies
       : ∀ {fragmentName : Name} {fragment : FragmentDefinition}
             {remaining
@@ -120,8 +116,7 @@ theorem inlineOperation_valid_of_localFragmentBodiesValid
 
 theorem inlineOperation_valid_of_reachable_removals
     {schema : Schema} {operation : Operation}
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     : GraphQL.NamedFragment.Validation.operationDefinitionValid schema
         (Inline.inlineOperation operation) := by
   have hvalidOriginal := hvalid
@@ -143,8 +138,7 @@ theorem inlineOperation_valid_of_reachable_removals
 -- operation is valid and contains no fragment spreads.
 theorem inlinedOperation_translatesToSpecValid
     (schema : Schema) (operation : Operation)
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     (hinlined : operationInlined operation)
     : GraphQL.Validation.operationDefinitionValid schema
         (Translate.reduceOperation operation) :=
@@ -159,8 +153,7 @@ theorem fragmentAwareInlinedValidityPreservedToSpec_holds
 
 theorem inlinedOperation_specValidAndExecutionEquivalent
     (schema : Schema) (operation : Operation)
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     (hinlined : operationInlined operation)
     : GraphQL.Validation.operationDefinitionValid schema
         (Translate.reduceOperation operation)
@@ -214,8 +207,7 @@ theorem fragmentAwareInlineValidityPreservedToSpec_holds
 
 theorem inlineOperation_specValidAndExecutionEquivalent_of_selectionSetValid
     (schema : Schema) (operation : Operation)
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     (hselectionValid
       : GraphQL.NamedFragment.Validation.selectionSetValid schema
           (Inline.inlineOperation operation).variableDefinitions
@@ -238,8 +230,7 @@ theorem inlineOperation_specValidAndExecutionEquivalent_of_selectionSetValid
 
 theorem inlineOperation_specValidAndExecutionEquivalent_of_fragmentBodiesValid
     (schema : Schema) (operation : Operation)
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     (hfragmentBodies
       : ∀ {fragmentName : Name} {fragment : FragmentDefinition}
             {remaining
@@ -267,8 +258,7 @@ theorem inlineOperation_specValidAndExecutionEquivalent_of_fragmentBodiesValid
 
 theorem inlineOperation_specValidAndExecutionEquivalent_of_localFragmentBodiesValid
     (schema : Schema) (operation : Operation)
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     (hfragmentBodies
       : ∀ {fragmentName : Name} {fragment : FragmentDefinition}
             {remaining

@@ -103,8 +103,7 @@ theorem mergedFieldSelectionSet_selectionExecutableField_map
 @[simp]
 theorem mergedFieldSelectionSet_map_selectionExecutableField_comp
     {α : Type} (items : List α) (f : α -> Selection)
-    : mergedFieldSelectionSet
-        (items.map (fun item => selectionExecutableField (f item)))
+    : mergedFieldSelectionSet (items.map (fun item => selectionExecutableField (f item)))
       = items.map f := by
   induction items with
   | nil =>
@@ -216,8 +215,7 @@ theorem collectSelection_inlineFragment_none_noDirectives
     (selectionSet : List Selection)
     : Execution.collectSelection schema variableValues parentType source
         (Selection.inlineFragment none [] selectionSet)
-      = Execution.collectFields schema variableValues parentType source
-          selectionSet := by
+      = Execution.collectFields schema variableValues parentType source selectionSet := by
   simp [Execution.collectSelection, Execution.selectionDirectivesAllowBool]
 
 theorem collectSelection_inlineFragment_some_noDirectives
@@ -227,8 +225,7 @@ theorem collectSelection_inlineFragment_some_noDirectives
     (selectionSet : List Selection)
     : Execution.collectSelection schema variableValues parentType source
         (Selection.inlineFragment (some typeCondition) [] selectionSet)
-      = if Execution.doesFragmentTypeApplyBool schema parentType source
-            typeCondition then
+      = if Execution.doesFragmentTypeApplyBool schema parentType source typeCondition then
           Execution.collectFields schema variableValues parentType source selectionSet
         else
           [] := by
@@ -404,8 +401,7 @@ theorem addExecutableGroup_mergeExecutableGroups_of_responseName_not_mem
     (left middle : List (Name × List Execution.ExecutableField))
     : group.fst ∉ middle.map Prod.fst
       -> group.fst ∈ left.map Prod.fst
-      -> Execution.addExecutableGroup group
-            (Execution.mergeExecutableGroups left middle)
+      -> Execution.addExecutableGroup group (Execution.mergeExecutableGroups left middle)
           = Execution.mergeExecutableGroups
               (Execution.addExecutableGroup group left) middle := by
   intro hnotin hleftMem
@@ -447,8 +443,7 @@ theorem addExecutableGroup_mergeExecutableGroups_of_namesNodup
     (group : Name × List Execution.ExecutableField)
     (left middle : List (Name × List Execution.ExecutableField))
     : executableGroupNamesNodup middle
-      -> Execution.addExecutableGroup group
-            (Execution.mergeExecutableGroups left middle)
+      -> Execution.addExecutableGroup group (Execution.mergeExecutableGroups left middle)
           = Execution.mergeExecutableGroups left
               (Execution.addExecutableGroup group middle) := by
   intro hmiddle
@@ -939,8 +934,7 @@ theorem completeValue_eq_mergedFieldSelectionSet
     (depth : Nat) (fieldType : TypeRef)
     (fields : List Execution.ExecutableField)
     (value : Execution.ResolverValue ObjectRef)
-    : Execution.completeValue schema resolvers variableValues depth
-        fieldType fields value
+    : Execution.completeValue schema resolvers variableValues depth fieldType fields value
       = Execution.completeValue schema resolvers variableValues depth
           fieldType (Execution.mergedFieldSelectionSet fields) value := by
   apply completeValue_eq_of_mergedFieldSelectionSet_eq

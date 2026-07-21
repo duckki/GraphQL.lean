@@ -87,8 +87,7 @@ theorem executeRootSelectionSet_single_field_succ_aligned_of_completeValue
       : RootSelectionResultAlignedEquivalent
           (GraphQL.Execution.singleFieldResult responseName
             (executeField schema resolvers variableValues depth source none
-              (executableField parentType responseName fieldName arguments
-                selectionSet)))
+              (executableField parentType responseName fieldName arguments selectionSet)))
           (GraphQL.Execution.executeField schema resolvers variableValues (depth + 1)
             source responseName
             [executableField parentType responseName fieldName arguments selectionSet]))

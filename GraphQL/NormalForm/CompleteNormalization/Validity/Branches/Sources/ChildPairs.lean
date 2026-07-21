@@ -395,8 +395,7 @@ theorem normalizedFields_fieldsForNameCanMerge_of_childPairs
                       GroundTypeNormalization.possibleTypeNormalizations schema
                         (schema.getPossibleTypes leftField.outputType.namedType)
                         leftGroup.childSource)
-                    ++ (if objectTypeNameBool schema
-                            rightField.outputType.namedType then
+                    ++ (if objectTypeNameBool schema rightField.outputType.namedType then
                           normalizeSelectionSet schema rightField.outputType.namedType
                             rightGroup.childSource
                         else

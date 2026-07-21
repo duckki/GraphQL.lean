@@ -214,8 +214,7 @@ mutual
     | fuel + 1, .list inner, fields, .list values =>
         let completed :=
           completeValueList schema resolvers variableValues fuel inner fields values
-        GraphQL.Execution.catchBubbleAsNull
-          GraphQL.Execution.ResponseValue.list completed
+        GraphQL.Execution.catchBubbleAsNull GraphQL.Execution.ResponseValue.list completed
     | _fuel + 1, .named _typeName, _fields, .list _values =>
         .error 1
     | _fuel + 1, .list _inner, _fields, _value =>
@@ -292,8 +291,7 @@ def operationsEquivalent (schema : Schema) (left right : Operation) : Prop :=
     Execution.executeQueryWithFuel schema resolvers variableValues left fuel source
     = Execution.executeQueryWithFuel schema resolvers variableValues right fuel source
 
-def operationsSemanticallyEquivalent (schema : Schema) (left right : Operation)
-    : Prop :=
+def operationsSemanticallyEquivalent (schema : Schema) (left right : Operation) : Prop :=
   ∀ {ObjectRef : Type} (resolvers : Execution.Resolvers ObjectRef)
       variableValues fuel (source : Execution.ResolverValue ObjectRef),
     GraphQL.Execution.Response.semanticEquivalent

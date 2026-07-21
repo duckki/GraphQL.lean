@@ -33,13 +33,11 @@ mutual
           | none => False
           | some fieldDefinition =>
               ∀ objectType,
-                objectType
-                  ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType
+                objectType ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType
                 -> selectionSetValidInCurrentScope schema
                     variableDefinitions objectType selectionSet
     | .inlineFragment none _directives selectionSet =>
-        selectionSetValidInCurrentScope schema variableDefinitions
-          parentType selectionSet
+        selectionSetValidInCurrentScope schema variableDefinitions parentType selectionSet
     | .inlineFragment (some typeCondition) _directives selectionSet =>
         schema.typesOverlapBool parentType typeCondition = true
         -> selectionSetValidInCurrentScope schema variableDefinitions
@@ -180,8 +178,7 @@ private theorem selectionSet_size_child_lt_cons_inline_for_currentScopeValidity
   simp [SelectionSet.size, Selection.size]
   omega
 
-private theorem selectionSet_size_append_for_filterValidity
-    (left right : List Selection)
+private theorem selectionSet_size_append_for_filterValidity (left right : List Selection)
     : SelectionSet.size (left ++ right)
       = SelectionSet.size left + SelectionSet.size right := by
   induction left with
@@ -189,8 +186,7 @@ private theorem selectionSet_size_append_for_filterValidity
   | cons selection rest ih =>
       simp [SelectionSet.size, ih, Nat.add_assoc]
 
-private theorem mergeSelectionSets_append_for_filterValidity
-    (left right : List Selection)
+private theorem mergeSelectionSets_append_for_filterValidity (left right : List Selection)
     : mergeSelectionSets (left ++ right)
       = mergeSelectionSets left ++ mergeSelectionSets right := by
   induction left with
@@ -321,8 +317,7 @@ theorem selectionSetValidInCurrentScope_tail
     {parentType : Name} {selection : Selection} {rest : List Selection}
     : selectionSetValidInCurrentScope schema variableDefinitions parentType
         (selection :: rest)
-      -> selectionSetValidInCurrentScope schema variableDefinitions parentType
-          rest := by
+      -> selectionSetValidInCurrentScope schema variableDefinitions parentType rest := by
   intro hvalid
   simpa [selectionSetValidInCurrentScope] using hvalid.2
 
@@ -353,8 +348,7 @@ theorem selectionSetValidInCurrentScope_withoutFieldSelectionsWithResponseName
     (schema : Schema) (responseName parentType : Name)
     (variableDefinitions : List VariableDefinition)
     : ∀ selectionSet,
-        selectionSetValidInCurrentScope schema variableDefinitions parentType
-          selectionSet
+        selectionSetValidInCurrentScope schema variableDefinitions parentType selectionSet
         -> selectionSetValidInCurrentScope schema variableDefinitions parentType
             (withoutFieldSelectionsWithResponseName schema responseName
               selectionSet) := by
@@ -495,8 +489,7 @@ mutual
                 (Selection.field responseName fieldName arguments
                   sourceDirectives sourceSelectionSet)
             ∧ ∀ objectType,
-                objectType
-                  ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType
+                objectType ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType
                 -> selectionSetFilteredCurrentSourceValid schema
                     variableDefinitions objectType selectionSet
     | .inlineFragment none directives selectionSet =>
@@ -1239,8 +1232,7 @@ mutual
               ∧ ∀ objectType,
                   objectType
                     ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType
-                  -> selectionSetFilteredReturnLookupValid schema objectType
-                      selectionSet
+                  -> selectionSetFilteredReturnLookupValid schema objectType selectionSet
     | .inlineFragment none _directives selectionSet =>
         selectionSetFilteredReturnLookupValid schema parentType selectionSet
     | .inlineFragment (some typeCondition) _directives selectionSet =>
@@ -1718,8 +1710,7 @@ theorem selectionSetFilteredCompositeChildrenNonempty_tail
 theorem selectionSetFilteredCompositeChildrenNonempty_append
     {schema : Schema} {parentType : Name} {typeConditions : List Name}
     {left right : List Selection}
-    : selectionSetFilteredCompositeChildrenNonempty schema parentType
-        typeConditions left
+    : selectionSetFilteredCompositeChildrenNonempty schema parentType typeConditions left
       -> selectionSetFilteredCompositeChildrenNonempty schema parentType
           typeConditions right
       -> selectionSetFilteredCompositeChildrenNonempty schema parentType
@@ -2304,8 +2295,7 @@ theorem normalizedField_selectionValidInPossibleTypes_of_directedSource
     {fieldDefinition : FieldDefinition}
     : Validation.selectionValidInPossibleTypes schema variableDefinitions
         parentType
-        (Selection.field responseName fieldName arguments directives
-          sourceSubselections)
+        (Selection.field responseName fieldName arguments directives sourceSubselections)
       -> schema.lookupField parentType fieldName = some fieldDefinition
       -> Validation.selectionSetValid schema variableDefinitions
           fieldDefinition.outputType.namedType normalizedSubselections
@@ -2387,8 +2377,7 @@ theorem fieldSelectionsWithResponseNameInScope_field_validInCurrentScope
     (schema : Schema) (variableDefinitions : List VariableDefinition)
     (parentType responseName : Name)
     : ∀ selectionSet,
-        selectionSetValidInCurrentScope schema variableDefinitions parentType
-          selectionSet
+        selectionSetValidInCurrentScope schema variableDefinitions parentType selectionSet
         -> ∀ fieldName arguments directives subselections,
             Selection.field responseName fieldName arguments directives subselections
               ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
@@ -5506,8 +5495,7 @@ structure FilteredNormalizedFieldGroupSource
     : ∀ runtimeType,
         runtimeType ∈ schema.getPossibleTypes normalized.outputType.namedType
         -> selectionSetSemanticsReady schema runtimeType childSource
-  childLookup
-    : selectionSetLookupValid schema normalized.outputType.namedType childSource
+  childLookup : selectionSetLookupValid schema normalized.outputType.namedType childSource
   childCurrentSource
     : ∀ runtimeType,
         runtimeType ∈ schema.getPossibleTypes normalized.outputType.namedType
@@ -7540,8 +7528,7 @@ theorem completeNormalizeBranches_selectionSetValid
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (hoperation : Validation.operationDefinitionValid schema operation)
     (hrootObject : schema.objectType operation.rootType)
-    (hready
-      : selectionSetSemanticsReady schema operation.rootType operation.selectionSet)
+    (hready : selectionSetSemanticsReady schema operation.rootType operation.selectionSet)
     (himplementation
       : Validation.selectionSetValidInPossibleTypes schema
           operation.variableDefinitions operation.rootType operation.selectionSet)
@@ -7644,8 +7631,7 @@ theorem completeNormalizeBranches_validInPossibleTypes
     (schema : Schema) (operation : Operation)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (hrootObject : schema.objectType operation.rootType)
-    (hready
-      : selectionSetSemanticsReady schema operation.rootType operation.selectionSet)
+    (hready : selectionSetSemanticsReady schema operation.rootType operation.selectionSet)
     (himplementation
       : Validation.selectionSetValidInPossibleTypes schema
           operation.variableDefinitions operation.rootType operation.selectionSet)

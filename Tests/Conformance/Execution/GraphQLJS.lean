@@ -92,9 +92,7 @@ def directives_inline_fragment_skip_falseOperation : GraphQL.Operation :=
     selectionSet :=
       [
         .field "a" "a" [] [] [],
-        .inlineFragment (some "Query")
-          [.skip (.boolean false)]
-          [.field "b" "b" [] [] []]
+        .inlineFragment (some "Query") [.skip (.boolean false)] [.field "b" "b" [] [] []]
       ]
   }
 
@@ -116,8 +114,7 @@ def directives_inline_fragment_skip_falseResolvers : GraphQL.Execution.Resolvers
       rfl
   }
 
-def directives_inline_fragment_skip_falseExpectedData
-    : GraphQL.Execution.ResponseValue :=
+def directives_inline_fragment_skip_falseExpectedData : GraphQL.Execution.ResponseValue :=
   .object ([("a", .scalar "a"), ("b", .scalar "b")])
 
 theorem directives_inline_fragment_skip_false_matches_graphql_js_projection
@@ -150,15 +147,12 @@ def directives_anonymous_inline_fragment_include_variableSchema : GraphQL.Schema
         }]
   }
 
-def directives_anonymous_inline_fragment_include_variableOperation
-    : GraphQL.Operation :=
+def directives_anonymous_inline_fragment_include_variableOperation : GraphQL.Operation :=
   {
     name := none,
     rootType := "Query",
     variableDefinitions :=
-      [{
-        name := "withB", typeRef := .nonNull (.named "Boolean"), defaultValue := none
-      }],
+      [{ name := "withB", typeRef := .nonNull (.named "Boolean"), defaultValue := none }],
     selectionSet :=
       [
         .field "a" "a" [] [] [],
@@ -353,9 +347,7 @@ def non_null_nested_null_bubbles_to_nullable_parentSchema : GraphQL.Schema :=
             name := "Character",
             fields :=
               [{
-                name := "name",
-                outputType := .nonNull (.named "String"),
-                arguments := []
+                name := "name", outputType := .nonNull (.named "String"), arguments := []
               }],
             interfaces := []
           }
@@ -431,9 +423,7 @@ def non_null_root_bubbles_to_data_nullSchema : GraphQL.Schema :=
             name := "Character",
             fields :=
               [{
-                name := "name",
-                outputType := .nonNull (.named "String"),
-                arguments := []
+                name := "name", outputType := .nonNull (.named "String"), arguments := []
               }],
             interfaces := []
           }
@@ -726,8 +716,7 @@ def abstract_interface_inline_fragmentsOperation : GraphQL.Operation :=
 def abstract_interface_inline_fragmentsVariables : GraphQL.Execution.VariableValues :=
   []
 
-def abstract_interface_inline_fragmentsSource
-    : GraphQL.Execution.ResolverValue String :=
+def abstract_interface_inline_fragmentsSource : GraphQL.Execution.ResolverValue String :=
   .object "Query" "root"
 
 def abstract_interface_inline_fragmentsResolvers : GraphQL.Execution.Resolvers String :=

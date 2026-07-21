@@ -103,8 +103,7 @@ theorem selectionValid_field_lookup
         (.field responseName fieldName arguments directives selectionSet)
       -> ∃ fieldDefinition,
           schema.lookupField parentType fieldName = some fieldDefinition
-          ∧ argumentsValid schema fieldDefinition.arguments
-              variableDefinitions arguments
+          ∧ argumentsValid schema fieldDefinition.arguments variableDefinitions arguments
           ∧ fieldSelectionSetValid schema variableDefinitions
               fieldDefinition selectionSet := by
   intro hvalid
@@ -210,8 +209,7 @@ theorem selectionSetValid_tail
     {schema : Schema} {variableDefinitions : List VariableDefinition}
     {parentType : Name} {selection : Selection}
     {selectionSet : List Selection}
-    : selectionSetValid schema variableDefinitions parentType
-        (selection :: selectionSet)
+    : selectionSetValid schema variableDefinitions parentType (selection :: selectionSet)
       -> selectionSetValid schema variableDefinitions parentType selectionSet := by
   intro hvalid
   simp [selectionSetValid] at hvalid ⊢
@@ -226,8 +224,7 @@ theorem selectionSetValid_field_head_lookup
         (.field responseName fieldName arguments directives selectionSet :: rest)
       -> ∃ fieldDefinition,
           schema.lookupField parentType fieldName = some fieldDefinition
-          ∧ argumentsValid schema fieldDefinition.arguments
-              variableDefinitions arguments
+          ∧ argumentsValid schema fieldDefinition.arguments variableDefinitions arguments
           ∧ fieldSelectionSetValid schema variableDefinitions
               fieldDefinition selectionSet := by
   intro hvalid

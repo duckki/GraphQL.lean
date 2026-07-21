@@ -18,8 +18,7 @@ def completeScopedFieldOutputsInclude
     -> ∃ responseName fieldName arguments directives subselections fieldDefinition,
         scopedSelection.selection
           = Selection.field responseName fieldName arguments directives subselections
-        ∧ schema.lookupField scopedSelection.lookupParent fieldName
-          = some fieldDefinition
+        ∧ schema.lookupField scopedSelection.lookupParent fieldName = some fieldDefinition
         ∧ schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
           = true
 
@@ -70,8 +69,7 @@ theorem completeScopedFieldOutputsInclude_head
             = Selection.field responseName fieldName arguments directives subselections
           ∧ schema.lookupField scopedSelection.lookupParent fieldName
             = some fieldDefinition
-          ∧ schema.typeIncludesObjectBool
-              fieldDefinition.outputType.namedType runtimeType
+          ∧ schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
             = true := by
   intro hmatches
   exact hmatches scopedSelection (by simp)
@@ -105,10 +103,8 @@ theorem completeScopedFieldOutputsInclude_lookup
       -> scopedSelection.selection
           = Selection.field responseName fieldName arguments directives subselections
       -> ∃ fieldDefinition,
-          schema.lookupField scopedSelection.lookupParent fieldName
-            = some fieldDefinition
-          ∧ schema.typeIncludesObjectBool
-              fieldDefinition.outputType.namedType runtimeType
+          schema.lookupField scopedSelection.lookupParent fieldName = some fieldDefinition
+          ∧ schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
             = true := by
   intro hmatches hmem hselection
   rcases hmatches scopedSelection hmem with

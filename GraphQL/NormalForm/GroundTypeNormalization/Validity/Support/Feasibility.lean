@@ -14,8 +14,7 @@ mutual
     | .field _responseName _fieldName _arguments _directives _selectionSet =>
         typeConditionStackFeasible schema typeConditions
     | .inlineFragment none _directives selectionSet =>
-        selectionSetContainsTypeConditionFeasibleField schema typeConditions
-          selectionSet
+        selectionSetContainsTypeConditionFeasibleField schema typeConditions selectionSet
     | .inlineFragment (some typeCondition) _directives selectionSet =>
         selectionSetContainsTypeConditionFeasibleField schema
           (typeCondition :: typeConditions) selectionSet
@@ -566,8 +565,7 @@ theorem fieldSelectionsWithResponseNameInScope_field_child_branch_forObject
                 ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
                     selectionSet
               -> schema.lookupField parentType fieldName = some fieldDefinition
-              -> childType
-                  ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType
+              -> childType ∈ schema.getPossibleTypes fieldDefinition.outputType.namedType
               -> selectionSetTypeConditionFeasible schema childType [childType]
                   .allFields subselections
   | hobject, hstack, [], hfeasible, fieldName, arguments, directives,
@@ -786,8 +784,7 @@ theorem typesOverlapBool_eq_true_of_object_stack_feasible_forValidity
     (schema : Schema) {parentType typeCondition : Name}
     {typeConditions : List Name}
     : schema.objectType parentType
-      -> typeConditionStackFeasible schema
-          (typeCondition :: parentType :: typeConditions)
+      -> typeConditionStackFeasible schema (typeCondition :: parentType :: typeConditions)
       -> schema.typesOverlapBool parentType typeCondition = true := by
   intro hobject hfeasible
   rcases hfeasible with ⟨objectType, hobjectType⟩
@@ -806,8 +803,7 @@ theorem normalizeSelectionSet_ne_nil_of_contains (schema : Schema)
     : ∀ parentType selectionSet,
         schema.objectType parentType
         -> selectionSetSemanticsReady schema parentType selectionSet
-        -> selectionSetContainsTypeConditionFeasibleField schema [parentType]
-            selectionSet
+        -> selectionSetContainsTypeConditionFeasibleField schema [parentType] selectionSet
         -> normalizeSelectionSet schema parentType selectionSet ≠ [] := by
   intro parentType selectionSet
   induction parentType, selectionSet using normalizeSelectionSet.induct schema with

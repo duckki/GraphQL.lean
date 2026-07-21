@@ -492,10 +492,9 @@ theorem selectedFieldSpineRuntimeValid_of_observableFieldSpineAtSelectedRuntime
           hruntimeObject hinclude ih
 
 theorem pathLocalSelectionSetObservableLeafAtSelectedRuntime_of_observableResponsePath_valid_normal
-    {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType : Name} {selectionSet : List Selection} {responsePath : List Name}
-    : NormalSelectionSetObservableResponsePath schema parentType selectionSet
-        responsePath
+    {schema : Schema} {variableDefinitions : List VariableDefinition} {parentType : Name}
+    {selectionSet : List Selection} {responsePath : List Name}
+    : NormalSelectionSetObservableResponsePath schema parentType selectionSet responsePath
       -> Validation.selectionSetValid schema variableDefinitions parentType selectionSet
       -> selectionSetNormal schema parentType selectionSet
       -> ∃ runtimeType,
@@ -586,10 +585,9 @@ theorem pathLocalSelectionSetObservableLeafAtSelectedRuntime_of_observableRespon
               (hchildObservable currentSelectionSet)⟩
 
 theorem pathLocalSelectionSetObservableFieldSpineAtSelectedRuntime_of_observableResponsePath_valid_normal
-    {schema : Schema} {variableDefinitions : List VariableDefinition}
-    {parentType : Name} {selectionSet : List Selection} {responsePath : List Name}
-    : NormalSelectionSetObservableResponsePath schema parentType selectionSet
-        responsePath
+    {schema : Schema} {variableDefinitions : List VariableDefinition} {parentType : Name}
+    {selectionSet : List Selection} {responsePath : List Name}
+    : NormalSelectionSetObservableResponsePath schema parentType selectionSet responsePath
       -> Validation.selectionSetValid schema variableDefinitions parentType selectionSet
       -> selectionSetNormal schema parentType selectionSet
       -> ∃ runtimeType fieldSpine,
@@ -951,8 +949,8 @@ theorem fieldPairSelectedPathProbeHeadResolverValue_selected_eq_objectProbeResol
           (by simpa [TypeRef.namedType] using hcase)
 
 theorem fieldPairSelectedPathProbeHeadResolverValue_object_eq_objectProbeResolverValueWithRuntime
-    (schema : Schema) (currentSelectionSet : List Selection)
-    (parentType fieldName : Name) (arguments : List Argument) (tag : FieldPairProbeTag)
+    (schema : Schema) (currentSelectionSet : List Selection) (parentType fieldName : Name)
+    (arguments : List Argument) (tag : FieldPairProbeTag)
     (spine : List NormalSelectionSetObservableFieldStep)
     : ∀ outputType,
         objectTypeNameBool schema outputType.namedType = true
@@ -1205,11 +1203,9 @@ theorem selectedFieldSpineRuntimeValid_child_of_selectedNext
           = some (some selectedRuntime, tail)
       -> (((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
               ∧ selectedRuntime = fieldDefinition.outputType.namedType)
-            ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                    schema
+            ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                   = true
-                ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
-                  = false))
+                ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false))
           ∧ schema.typeIncludesObjectBool
               fieldDefinition.outputType.namedType selectedRuntime
             = true
@@ -1807,10 +1803,7 @@ theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_left_root_ok_of_ch
                 (FieldPairSelectedPathProbeRef.target FieldPairProbeTag.left
                   leftInitialSelectionSet leftInitialSpine)))
             childSelectionSet
-          = ({
-                data := Execution.ResponseValue.object childFields,
-                errors := childErrors
-              }
+          = ({ data := Execution.ResponseValue.object childFields, errors := childErrors }
               : Execution.Response)
       -> ∃ responseValue fieldErrors,
           Execution.executeField schema
@@ -1915,10 +1908,7 @@ theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_right_root_ok_of_c
                 (FieldPairSelectedPathProbeRef.target FieldPairProbeTag.right
                   rightInitialSelectionSet rightInitialSpine)))
             childSelectionSet
-          = ({
-                data := Execution.ResponseValue.object childFields,
-                errors := childErrors
-              }
+          = ({ data := Execution.ResponseValue.object childFields, errors := childErrors }
               : Execution.Response)
       -> ∃ responseValue fieldErrors,
           Execution.executeField schema
@@ -2012,8 +2002,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_selectedPathProbe_of_
       -> leafProbeFuel leftFieldDefinition.outputType ≤ parentFuel
       -> leafProbeFuel rightFieldDefinition.outputType ≤ parentFuel
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName leftField arguments directives
-                childSelectionSet
+            Selection.field responseName leftField arguments directives childSelectionSet
               ∈ selectionSet
             -> Argument.argumentsEquivalent arguments leftArguments
             -> ∃ childFields childErrors,
@@ -2041,8 +2030,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_selectedPathProbe_of_
                     }
                     : Execution.Response))
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName rightField arguments directives
-                childSelectionSet
+            Selection.field responseName rightField arguments directives childSelectionSet
               ∈ selectionSet
             -> Argument.argumentsEquivalent arguments rightArguments
             -> ∃ childFields childErrors,
@@ -2070,8 +2058,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_selectedPathProbe_of_
                     }
                     : Execution.Response))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ¬ fieldPairProjectionTarget targetParent leftField rightField
                   leftArguments rightArguments targetParent fieldName arguments
@@ -2273,8 +2260,7 @@ theorem executeField_fieldPairSelectedPathProbe_tagged_object_leaf (schema : Sch
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -2347,14 +2333,12 @@ theorem executeField_fieldPairSelectedPathProbe_tagged_object_leaf (schema : Sch
 
 theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_leaf
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -2428,8 +2412,7 @@ theorem executeField_fieldPairSelectedPathProbe_tagged_object_objectOutput_respo
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -2530,14 +2513,12 @@ theorem executeField_fieldPairSelectedPathProbe_tagged_object_objectOutput_respo
 
 theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_objectOutput_response_of_fuel_ge
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -2634,14 +2615,12 @@ theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_obje
 
 theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_objectOutput_ok_of_child_response
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -2722,8 +2701,7 @@ theorem executeField_fieldPairSelectedPathProbe_tagged_object_abstractFallback_r
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -2822,14 +2800,12 @@ theorem executeField_fieldPairSelectedPathProbe_tagged_object_abstractFallback_r
 
 theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_abstractFallback_response_of_fuel_ge
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -2930,14 +2906,12 @@ theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_abst
 
 theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_abstractFallback_ok_of_child_response
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -3026,8 +3000,7 @@ theorem executeField_fieldPairSelectedPathProbe_tagged_object_objectProbe_respon
     (leftInitialSpine rightInitialSpine spine tail
       : List NormalSelectionSetObservableFieldStep)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -3122,14 +3095,12 @@ theorem executeField_fieldPairSelectedPathProbe_tagged_object_objectProbe_respon
 
 theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_objectProbe_response_of_fuel_ge
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine tail
       : List NormalSelectionSetObservableFieldStep)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -3229,14 +3200,12 @@ theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_obje
 
 theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_objectProbe_ok_of_child_response
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine tail
       : List NormalSelectionSetObservableFieldStep)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (leftArguments rightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)

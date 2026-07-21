@@ -80,8 +80,7 @@ theorem mergeResponseField_comm_across_mergeResponseFields_of_mem_not_mem
     : ∀ (incoming fields : List (Name × ResponseValue)),
         target ∈ fields.map Prod.fst
         -> target ∉ incoming.map Prod.fst
-        -> mergeResponseField target targetResponse
-              (mergeResponseFields fields incoming)
+        -> mergeResponseField target targetResponse (mergeResponseFields fields incoming)
             = mergeResponseFields
                 (mergeResponseField target targetResponse fields)
                 incoming
@@ -791,8 +790,7 @@ theorem visitSubfields_executableFieldSelections_adjacent_existing_second_swap_o
     (source : ResolverValue ObjectIdentity)
     (first second : ExecutableField) (rest : List ExecutableField)
     (fields : List (Name × ResponseValue))
-    (hparents
-      : ∀ field, field ∈ first :: second :: rest -> field.parentType = parentType)
+    (hparents : ∀ field, field ∈ first :: second :: rest -> field.parentType = parentType)
     (hsecond : second.responseName ∈ fields.map Prod.fst)
     (hne : second.responseName ≠ first.responseName)
     (hleftTrace

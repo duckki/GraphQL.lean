@@ -158,8 +158,7 @@ mutual
       (variableValues : VariableValues) (completionFuel : Nat)
       (source : ResolverValue ObjectRef) (previous? : Option ResponseValue)
       (field : ExecutableField) errors
-      : executeField schema resolvers variableValues completionFuel source
-            previous? field
+      : executeField schema resolvers variableValues completionFuel source previous? field
           = .error errors
         -> 0 < errors := by
     intro h
@@ -199,8 +198,7 @@ mutual
   theorem completeValue_error_positive
       (schema : Schema) (resolvers : Resolvers ObjectRef)
       (variableValues : VariableValues)
-      : ∀ fuel fieldType selectionSet (value : ResolverValue ObjectRef)
-            previous? errors,
+      : ∀ fuel fieldType selectionSet (value : ResolverValue ObjectRef) previous? errors,
           completeValue schema resolvers variableValues fuel fieldType selectionSet
               value previous?
             = .error errors

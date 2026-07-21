@@ -122,8 +122,7 @@ theorem executeSelectionSetAsResponse_object_of_field_ok
       -> selectionSetNormal schema parentType selectionSet
       -> objectTypeNameBool schema parentType = true
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema resolvers variableValues fuel source
@@ -339,8 +338,7 @@ theorem executeSelectionSetAsResponse_object_field_mem_of_field_ok
             }]
           = .ok ([(targetResponseName, targetValue)], targetErrors)
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema resolvers variableValues fuel source
@@ -356,8 +354,7 @@ theorem executeSelectionSetAsResponse_object_field_mem_of_field_ok
       -> ∃ responseFields errors,
           Execution.executeSelectionSetAsResponse schema resolvers variableValues fuel
               parentType source selectionSet
-            = ({ data := .object responseFields, errors := errors }
-                : Execution.Response)
+            = ({ data := .object responseFields, errors := errors } : Execution.Response)
           ∧ (targetResponseName, targetValue) ∈ responseFields := by
   intro hfree hnormal hobject htargetMem htargetExecute hfieldOk
   rcases

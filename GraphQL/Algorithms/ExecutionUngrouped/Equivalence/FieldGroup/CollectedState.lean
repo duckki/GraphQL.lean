@@ -25,8 +25,7 @@ structure ExecutedSingleGroupSelectionState
   field : ExecutableField
   fields : List ExecutableField
   collect_eq
-    : GraphQL.Execution.collectFields schema variableValues parentType source
-        selectionSet
+    : GraphQL.Execution.collectFields schema variableValues parentType source selectionSet
       = groups
   group_mem : (responseName, field :: fields) ∈ groups
   exact_groups : groups = [(responseName, field :: fields)]
@@ -1838,8 +1837,7 @@ theorem executeQuery_eq_spec_of_collected_field_group_steps_of_invariant
                     initial := .object []
                   })
     : executeQuery schema resolvers variableValues operation source
-      = GraphQL.Execution.executeQuery schema resolvers variableValues operation
-          source :=
+      = GraphQL.Execution.executeQuery schema resolvers variableValues operation source :=
   executeQuery_eq_spec_of_collected_field_group_state_of_invariant schema
     resolvers variableValues operation depth source groups responseName field
     fields hdepth hroot hcollect hgroup hexact hdirect hinvariant hcompatible

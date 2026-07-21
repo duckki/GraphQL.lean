@@ -110,8 +110,7 @@ mutual
       (hinput : (TypeRef.nonNull inner).isInputType schema)
       (hnotNull : value ≠ InputValue.null)
       (hnotVariable : ∀ variableName, value ≠ InputValue.variable variableName)
-      (hinner
-        : ValueIsCorrectTypeAtLocation schema variableDefinitions value inner none)
+      (hinner : ValueIsCorrectTypeAtLocation schema variableDefinitions value inner none)
       : ValueIsCorrectTypeAtLocation schema variableDefinitions
           value (TypeRef.nonNull inner) locationDefault
     | list (values : List InputValue) (inner : TypeRef)
@@ -237,8 +236,7 @@ def directiveIfArgumentValid (schema : Schema)
   | .boolean _ => True
   | .variable variableName =>
       ∃ variableDefinition,
-        getVariableDefinition? variableDefinitions variableName
-          = some variableDefinition
+        getVariableDefinition? variableDefinitions variableName = some variableDefinition
         ∧ variableUsageAllowed schema variableDefinition booleanNonNullType none
   | _ => False
 

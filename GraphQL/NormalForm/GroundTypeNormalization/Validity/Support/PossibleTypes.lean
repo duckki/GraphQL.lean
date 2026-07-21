@@ -330,11 +330,9 @@ theorem possibleTypeNormalizations_fieldsInSetCanMerge_pair
                       -> ∀ rightField,
                           rightField
                             ∈ FieldMerge.collectFields schema rightType
-                                (normalizeSelectionSet schema rightType
-                                  rightSelectionSet)
+                                (normalizeSelectionSet schema rightType rightSelectionSet)
                           -> leftField.responseName = rightField.responseName
-                          -> FieldMerge.fieldsForNameCanMerge schema leftField
-                              rightField)
+                          -> FieldMerge.fieldsForNameCanMerge schema leftField rightField)
         -> FieldMerge.fieldsInSetCanMerge schema mergeParent
             (possibleTypeNormalizations schema possibleTypes leftSelectionSet
               ++ possibleTypeNormalizations schema possibleTypes rightSelectionSet)

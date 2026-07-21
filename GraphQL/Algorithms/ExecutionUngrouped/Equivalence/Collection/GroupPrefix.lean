@@ -21,8 +21,7 @@ theorem collectFields_group_prefix_runtimeScopedBy_of_selectionSetValid
     (responseName : Name) (field : ExecutableField)
     (fields prefixTail : List ExecutableField)
     : ScopedParentRuntimeApplies schema runtimeType validParent
-      -> Validation.selectionSetValid schema variableDefinitions validParent
-          selectionSet
+      -> Validation.selectionSetValid schema variableDefinitions validParent selectionSet
       -> (responseName, field :: fields)
           ∈ GraphQL.Execution.collectFields schema variableValues collectParent
               (.object runtimeType identity) selectionSet
@@ -66,8 +65,7 @@ theorem collectFields_group_prefix_runtimeScopedBy_of_selectionSetValid_object
     (responseName : Name) (field : ExecutableField)
     (fields prefixTail : List ExecutableField)
     : ScopedParentRuntimeApplies schema runtimeType validParent
-      -> Validation.selectionSetValid schema variableDefinitions validParent
-          selectionSet
+      -> Validation.selectionSetValid schema variableDefinitions validParent selectionSet
       -> (responseName, field :: fields)
           ∈ GraphQL.Execution.collectFields schema variableValues collectParent
               (.object runtimeType identity) selectionSet
@@ -137,8 +135,7 @@ theorem collectFields_group_prefix_childFieldSemanticsReady_of_selectionSetValid
     (fields prefixTail : List ExecutableField)
     : SchemaWellFormedness.schemaWellFormed schema
       -> ScopedParentRuntimeApplies schema runtimeType validParent
-      -> Validation.selectionSetValid schema variableDefinitions validParent
-          selectionSet
+      -> Validation.selectionSetValid schema variableDefinitions validParent selectionSet
       -> (responseName, field :: fields)
           ∈ GraphQL.Execution.collectFields schema variableValues collectParent
               (.object runtimeType identity) selectionSet
@@ -192,8 +189,7 @@ theorem collectFields_group_prefix_childFieldSemanticsReady_of_selectionSetValid
     (fields prefixTail : List ExecutableField)
     : SchemaWellFormedness.schemaWellFormed schema
       -> ScopedParentRuntimeApplies schema runtimeType validParent
-      -> Validation.selectionSetValid schema variableDefinitions validParent
-          selectionSet
+      -> Validation.selectionSetValid schema variableDefinitions validParent selectionSet
       -> (responseName, field :: fields)
           ∈ GraphQL.Execution.collectFields schema variableValues collectParent
               (.object runtimeType identity) selectionSet
@@ -243,8 +239,7 @@ theorem collectFields_group_prefix_mergedFieldSelectionSet_lookupValid_of_select
     (field : ExecutableField) (fields prefixTail : List ExecutableField)
     : SchemaWellFormedness.schemaWellFormed schema
       -> ScopedParentRuntimeApplies schema runtimeType validParent
-      -> Validation.selectionSetValid schema variableDefinitions validParent
-          selectionSet
+      -> Validation.selectionSetValid schema variableDefinitions validParent selectionSet
       -> (responseName, field :: fields)
           ∈ GraphQL.Execution.collectFields schema variableValues collectParent
               (.object runtimeType identity) selectionSet
@@ -537,8 +532,7 @@ theorem collectFields_group_prefix_mergedFieldSelectionSet_lookupValid_of_select
     (field : ExecutableField) (fields prefixTail : List ExecutableField)
     : SchemaWellFormedness.schemaWellFormed schema
       -> ScopedParentRuntimeApplies schema runtimeType validParent
-      -> Validation.selectionSetValid schema variableDefinitions validParent
-          selectionSet
+      -> Validation.selectionSetValid schema variableDefinitions validParent selectionSet
       -> Validation.selectionSetValidInPossibleTypes schema variableDefinitions
           validParent selectionSet
       -> (responseName, field :: fields)
@@ -1235,8 +1229,7 @@ theorem collectFields_group_prefix_mergedFieldSelectionSet_childLocalFacts_objec
     (fields prefixTail : List ExecutableField)
     : SchemaWellFormedness.schemaWellFormed schema
       -> ScopedParentRuntimeApplies schema runtimeType validParent
-      -> Validation.selectionSetValid schema variableDefinitions validParent
-          selectionSet
+      -> Validation.selectionSetValid schema variableDefinitions validParent selectionSet
       -> NormalForm.selectionSetLookupValid schema validParent selectionSet
       -> Validation.selectionSetValidInPossibleTypes schema variableDefinitions
           validParent selectionSet

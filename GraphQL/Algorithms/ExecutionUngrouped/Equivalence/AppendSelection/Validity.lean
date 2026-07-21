@@ -249,8 +249,8 @@ theorem ExecutionValidFieldSemanticStateInvariant.of_valid_object_selectionSet_c
 theorem ExecutionValidFieldSemanticStateInvariant.of_valid_object_selectionSet_canMerge_optional
     {ObjectIdentity : Type} (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat) (parentType runtimeType : Name)
-    (identity : ObjectIdentity) (selectionSet : List Selection)
-    (initial : ResponseValue) (variableDefinitions : List VariableDefinition)
+    (identity : ObjectIdentity) (selectionSet : List Selection) (initial : ResponseValue)
+    (variableDefinitions : List VariableDefinition)
     (hparentRuntime : ScopedParentRuntimeApplies schema runtimeType parentType)
     (hselectionSet
       : Validation.selectionSetValid schema variableDefinitions parentType selectionSet)
@@ -328,8 +328,7 @@ theorem ExecutionValidFieldSemanticStateInvariant.of_valid_root_operation_canMer
     (variableValues : VariableValues) (depth : Nat)
     (operation : Operation) (runtimeType : Name)
     (identity : ObjectIdentity) (initial : ResponseValue)
-    (hroot
-      : rootSourceAppliesBool schema operation (.object runtimeType identity) = true)
+    (hroot : rootSourceAppliesBool schema operation (.object runtimeType identity) = true)
     (hvalid : Validation.operationDefinitionValid schema operation)
     (hresolvers
       : ResolversRespectValidFieldAndArgumentEquivalence resolvers
@@ -360,8 +359,7 @@ theorem ExecutionCollectedFieldInvariant.of_valid_root_operation_canMerge
     (variableValues : VariableValues) (depth : Nat)
     (operation : Operation) (runtimeType : Name)
     (identity : ObjectIdentity) (initial : ResponseValue)
-    (hroot
-      : rootSourceAppliesBool schema operation (.object runtimeType identity) = true)
+    (hroot : rootSourceAppliesBool schema operation (.object runtimeType identity) = true)
     (hvalid : Validation.operationDefinitionValid schema operation)
     (hresolvers
       : ResolversRespectValidFieldAndArgumentEquivalence resolvers
@@ -393,8 +391,7 @@ theorem ExecutionCollectedFieldInvariant.of_valid_object_selectionSet_canMerge_a
     (variableDefinitions : List VariableDefinition)
     (hparentRuntime : ScopedParentRuntimeApplies schema runtimeType validParent)
     (hselectionSet
-      : Validation.selectionSetValid schema variableDefinitions validParent
-          selectionSet)
+      : Validation.selectionSetValid schema variableDefinitions validParent selectionSet)
     (hmerge : FieldMerge.fieldsInSetCanMerge schema validParent selectionSet)
     : ExecutionCollectedFieldInvariant
         {
@@ -448,8 +445,7 @@ theorem ExecutionCollectedFieldInvariant.of_valid_root_operation_canMerge_argume
     {ObjectIdentity : Type} (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat) (operation : Operation)
     (runtimeType : Name) (identity : ObjectIdentity) (initial : ResponseValue)
-    (hroot
-      : rootSourceAppliesBool schema operation (.object runtimeType identity) = true)
+    (hroot : rootSourceAppliesBool schema operation (.object runtimeType identity) = true)
     (hvalid : Validation.operationDefinitionValid schema operation)
     : ExecutionCollectedFieldInvariant
         {

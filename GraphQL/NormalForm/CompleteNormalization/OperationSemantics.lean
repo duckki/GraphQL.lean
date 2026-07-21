@@ -8,8 +8,7 @@ namespace NormalForm
 
 namespace CompleteNormalization
 
-theorem completeNormalizationSemanticsPreserved
-    (schema : Schema) (operation : Operation)
+theorem completeNormalizationSemanticsPreserved (schema : Schema) (operation : Operation)
     : NormalForm.completeNormalizationSemanticsPreserved schema operation := by
   apply completeNormalizationSemanticsPreserved_of_selectionSet schema operation
   intro hschema hvalid ObjectRef resolvers variableValues depth source hcomplete

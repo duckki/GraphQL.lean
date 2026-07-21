@@ -766,8 +766,7 @@ theorem fieldsInSetCanMerge_withoutFieldSelectionsWithResponseName
     (selectionSet : List Selection)
     : FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
       -> FieldMerge.fieldsInSetCanMerge schema parentType
-          (withoutFieldSelectionsWithResponseName schema responseName
-            selectionSet) := by
+          (withoutFieldSelectionsWithResponseName schema responseName selectionSet) := by
   intro hmerge
   unfold FieldMerge.fieldsInSetCanMerge
   refine FieldMerge.FieldsInSetCanMerge.intro parentType
@@ -1041,8 +1040,7 @@ theorem selectionSetValid_fieldHead_merged_of_matching
     : Validation.selectionSetValid schema variableDefinitions childType subselections
       -> (∀ selection,
             selection
-              ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
-                  rest
+              ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest
             -> ∃ matchedArguments matchedDirectives matchedSubselections,
                 selection
                 = Selection.field responseName fieldName matchedArguments
@@ -1050,8 +1048,7 @@ theorem selectionSetValid_fieldHead_merged_of_matching
       -> (∀ matchedArguments matchedDirectives matchedSubselections,
             Selection.field responseName fieldName matchedArguments matchedDirectives
                 matchedSubselections
-              ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName
-                  rest
+              ∈ fieldSelectionsWithResponseNameInScope schema parentType responseName rest
             -> Validation.selectionSetValid schema variableDefinitions childType
                 matchedSubselections)
       -> Validation.selectionSetValid schema variableDefinitions childType

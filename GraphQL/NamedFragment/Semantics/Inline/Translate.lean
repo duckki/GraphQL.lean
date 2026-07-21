@@ -33,8 +33,7 @@ def inlinedSelectionToSpec : Selection -> GraphQL.Selection
       .field responseName fieldName arguments directives
         (Translate.reduceSelectionSet selectionSet)
   | .inlineFragment typeCondition directives selectionSet =>
-      .inlineFragment typeCondition directives
-        (Translate.reduceSelectionSet selectionSet)
+      .inlineFragment typeCondition directives (Translate.reduceSelectionSet selectionSet)
   | .fragmentSpread _fragmentName directives =>
       .inlineFragment none directives []
 

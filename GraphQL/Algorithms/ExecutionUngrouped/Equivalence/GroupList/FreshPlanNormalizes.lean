@@ -23,8 +23,7 @@ structure SelectionSetFreshPlanNormalizes
     : Prop where
   collect_eq
     : GraphQL.Execution.collectFields schema variableValues parentType source raw
-      = GraphQL.Execution.collectFields schema variableValues parentType source
-          normalized
+      = GraphQL.Execution.collectFields schema variableValues parentType source normalized
   rawFreshFlat
     : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
         (completionDepth + 1) parentType source raw
@@ -252,8 +251,7 @@ theorem consDisjoint
       : GraphQL.NormalForm.executableGroupNamesDisjoint
           (GraphQL.Execution.collectFields schema variableValues parentType source
             [selection])
-          (GraphQL.Execution.collectFields schema variableValues parentType source
-            rest))
+          (GraphQL.Execution.collectFields schema variableValues parentType source rest))
     : SelectionSetFreshPlanNormalizes schema resolvers variableValues
         completionDepth parentType source (selection :: rest)
         (normalizedSelection ++ normalizedRest) := by
@@ -378,8 +376,7 @@ theorem executablePrefixFieldConsAllowed {ObjectIdentity : Type} {schema : Schem
           completionDepth parentType source
           (executableFieldSelections prefixFields
             ++ executableFieldSelections
-                [executableField parentType responseName fieldName arguments
-                  selectionSet]
+                [executableField parentType responseName fieldName arguments selectionSet]
             ++ rest)
           normalized)
     : SelectionSetFreshPlanNormalizes schema resolvers variableValues
@@ -622,8 +619,7 @@ theorem normalizeSelectionSet_inlineFragmentNoneCons
     (tail
       : SelectionSetFreshPlanNormalizes schema resolvers variableValues
           completionDepth parentType source (rawChild ++ rest)
-          (GraphQL.NormalForm.normalizeSelectionSet schema parentType
-            (rawChild ++ rest)))
+          (GraphQL.NormalForm.normalizeSelectionSet schema parentType (rawChild ++ rest)))
     : SelectionSetFreshPlanNormalizes schema resolvers variableValues
         completionDepth parentType source
         (Selection.inlineFragment none [] rawChild :: rest)
@@ -810,8 +806,7 @@ theorem inlineFragmentSomeConsDoesNotApply
     (typeCondition : Name) (directives : List DirectiveApplication)
     (rawChild : List Selection) {rest normalized : List Selection}
     (hallows : selectionDirectivesAllowBool variableValues directives = true)
-    (hnotApply
-      : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
+    (hnotApply : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
     (tail
       : SelectionSetFreshPlanNormalizes schema resolvers variableValues
           completionDepth parentType source rest normalized)
@@ -1115,8 +1110,7 @@ theorem executablePrefixInlineFragmentSomeConsDoesNotApply
     (typeCondition : Name) (directives : List DirectiveApplication)
     (rawChild : List Selection) {rest normalized : List Selection}
     (hallows : selectionDirectivesAllowBool variableValues directives = true)
-    (hnotApply
-      : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
+    (hnotApply : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
     (tail
       : SelectionSetFreshPlanNormalizes schema resolvers variableValues
           completionDepth parentType source
@@ -1186,8 +1180,7 @@ theorem inlineFragmentSomeDoesNotApply
     (typeCondition : Name) (directives : List DirectiveApplication)
     (selectionSet : List Selection)
     (hallows : selectionDirectivesAllowBool variableValues directives = true)
-    (hnotApply
-      : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
+    (hnotApply : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
     : SelectionSetFreshPlanNormalizes schema resolvers variableValues
         completionDepth parentType source
         [.inlineFragment (some typeCondition) directives selectionSet] [] :=
@@ -1284,8 +1277,7 @@ theorem executableFieldSinglePrefixDuplicateFreshMiddle
       : ∃ fieldDefinition,
           schema.lookupField parentType later.fieldName = some fieldDefinition)
     (hparents
-      : ∀ field,
-          field ∈ [first] ++ (middle ++ [later]) -> field.parentType = parentType)
+      : ∀ field, field ∈ [first] ++ (middle ++ [later]) -> field.parentType = parentType)
     (hmiddleNodup : (middle.map (fun field => field.responseName)).Nodup)
     (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
     : SelectionSetFreshPlanNormalizes schema resolvers variableValues
@@ -1398,14 +1390,12 @@ theorem executableFieldPrefixDuplicateFreshMiddle
     (responseName : Name) (prefixFields : List ExecutableField)
     (later : ExecutableField) (middle : List Selection)
     (hprefixNonempty : prefixFields ≠ [])
-    (hprefixResponse
-      : ∀ field, field ∈ prefixFields -> field.responseName = responseName)
+    (hprefixResponse : ∀ field, field ∈ prefixFields -> field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hlaterLookup
       : ∃ fieldDefinition,
           schema.lookupField parentType later.fieldName = some fieldDefinition)
-    (hparents
-      : ∀ field, field ∈ prefixFields ++ [later] -> field.parentType = parentType)
+    (hparents : ∀ field, field ∈ prefixFields ++ [later] -> field.parentType = parentType)
     (hnotMiddle
       : responseName
         ∉ (GraphQL.Execution.collectFields schema variableValues parentType
@@ -1515,8 +1505,7 @@ theorem duplicateFieldPrefixBlockNormalizeTrans_of_middleNormalizes
     (later : ExecutableField)
     (middle suffix normalizedMiddle normalizedTail : List Selection)
     (hprefixNonempty : prefixFields ≠ [])
-    (hprefixResponse
-      : ∀ field, field ∈ prefixFields -> field.responseName = responseName)
+    (hprefixResponse : ∀ field, field ∈ prefixFields -> field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hlaterLookup
       : ∃ fieldDefinition,
@@ -1747,8 +1736,7 @@ theorem executableFieldDuplicateBlockNormalizeTrans
     (hlaterLookup
       : ∃ fieldDefinition,
           schema.lookupField parentType later.fieldName = some fieldDefinition)
-    (hnotMiddle
-      : first.responseName ∉ middleFields.map (fun field => field.responseName))
+    (hnotMiddle : first.responseName ∉ middleFields.map (fun field => field.responseName))
     (hmiddle
       : FreshPrefixSelectionDerivation schema variableValues parentType source
           (executableFieldSelections middleFields))
@@ -1811,8 +1799,7 @@ theorem executableFieldDuplicateBlockNormalizeTrans_of_middleNormalizes
     (hlaterLookup
       : ∃ fieldDefinition,
           schema.lookupField parentType later.fieldName = some fieldDefinition)
-    (hnotMiddle
-      : first.responseName ∉ middleFields.map (fun field => field.responseName))
+    (hnotMiddle : first.responseName ∉ middleFields.map (fun field => field.responseName))
     (hmiddle
       : SelectionSetFreshPlanNormalizes schema resolvers variableValues
           completionDepth parentType source
@@ -1859,8 +1846,7 @@ theorem executableFieldPrefixDuplicateBlockNormalizeTrans_of_middleNormalizes
     (middleFields suffixFields : List ExecutableField)
     (normalizedMiddle normalized : List Selection)
     (hprefixNonempty : prefixFields ≠ [])
-    (hprefixResponse
-      : ∀ field, field ∈ prefixFields -> field.responseName = responseName)
+    (hprefixResponse : ∀ field, field ∈ prefixFields -> field.responseName = responseName)
     (hlaterResponse : later.responseName = responseName)
     (hlaterLookup
       : ∃ fieldDefinition,
@@ -1913,8 +1899,7 @@ theorem executableFieldPrefixNormalizesOfCases_middleNormalizes
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     (responseName : Name) (prefixFields rest : List ExecutableField)
     (hprefixNonempty : prefixFields ≠ [])
-    (hprefixResponse
-      : ∀ field, field ∈ prefixFields -> field.responseName = responseName)
+    (hprefixResponse : ∀ field, field ∈ prefixFields -> field.responseName = responseName)
     (hprefixParents : ∀ field, field ∈ prefixFields -> field.parentType = parentType)
     (hrestLookups
       : ∀ field,
@@ -2027,8 +2012,7 @@ theorem executableFieldPrefixNormalizes_of_smaller
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     (responseName : Name) (prefixFields rest : List ExecutableField)
     (hprefixNonempty : prefixFields ≠ [])
-    (hprefixResponse
-      : ∀ field, field ∈ prefixFields -> field.responseName = responseName)
+    (hprefixResponse : ∀ field, field ∈ prefixFields -> field.responseName = responseName)
     (hwholeParents : ExecutableFieldsParent parentType (prefixFields ++ rest))
     (hwholeLookups
       : ∀ field,
@@ -2042,8 +2026,7 @@ theorem executableFieldPrefixNormalizes_of_smaller
           -> (∀ field,
                 field ∈ fields
                 -> ∃ fieldDefinition,
-                    schema.lookupField parentType field.fieldName
-                    = some fieldDefinition)
+                    schema.lookupField parentType field.fieldName = some fieldDefinition)
           -> ∃ normalized,
               SelectionSetFreshPlanNormalizes schema resolvers variableValues
                 completionDepth parentType source

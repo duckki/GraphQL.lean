@@ -33,8 +33,7 @@ theorem collectSubfields_cons
     (field : ExecutableField) (rest : List ExecutableField)
     : collectSubfields schema variableValues objectType objectValue (field :: rest)
       = mergeExecutableGroups
-          (collectFields schema variableValues objectType objectValue
-            field.selectionSet)
+          (collectFields schema variableValues objectType objectValue field.selectionSet)
           (collectSubfields schema variableValues objectType objectValue rest) := by
   rfl
 
@@ -45,13 +44,11 @@ theorem executeCollectedFields_cons_eq_of_parts
     (depth : Nat) (source : ResolverValue ObjectRef)
     (leftHead rightHead : Name × List ExecutableField)
     (leftTail rightTail : List (Name × List ExecutableField))
-    : executeField schema resolvers variableValues depth source
-          leftHead.fst leftHead.snd
+    : executeField schema resolvers variableValues depth source leftHead.fst leftHead.snd
         = executeField schema resolvers variableValues depth source
             rightHead.fst rightHead.snd
       -> executeCollectedFields schema resolvers variableValues depth source leftTail
-          = executeCollectedFields schema resolvers variableValues depth source
-              rightTail
+          = executeCollectedFields schema resolvers variableValues depth source rightTail
       -> executeCollectedFields schema resolvers variableValues depth source
             (leftHead :: leftTail)
           = executeCollectedFields schema resolvers variableValues depth source
@@ -80,10 +77,8 @@ theorem executeSelectionSet_eq_of_collectFields_head_parts
           = executeField schema resolvers variableValues depth source
               rightGroup.fst rightGroup.snd
       -> executeCollectedFields schema resolvers variableValues depth source leftRest
-          = executeCollectedFields schema resolvers variableValues depth
-              source rightRest
-      -> executeSelectionSet schema resolvers variableValues depth
-            parentType source left
+          = executeCollectedFields schema resolvers variableValues depth source rightRest
+      -> executeSelectionSet schema resolvers variableValues depth parentType source left
           = executeSelectionSet schema resolvers variableValues depth
               parentType source right := by
   intro hleftCollect hrightCollect hhead htail

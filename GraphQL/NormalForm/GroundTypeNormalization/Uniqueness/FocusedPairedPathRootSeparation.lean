@@ -50,8 +50,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_selectedPathProbe_roo
       -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> schema.typeIncludesObjectBool leftFieldDefinition.outputType.namedType
             leftRuntime
@@ -315,8 +314,8 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_selectedPathProbe_roo
 theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPathProbe_root_field_head_child_response_diff_of_field_ok
     (schema : Schema)
     (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet : List Selection)
-    (leftSpine rightSpine : List NormalSelectionSetObservableFieldStep)
-    (parentFuel : Nat) (parentType responseName leftFieldName rightFieldName : Name)
+    (leftSpine rightSpine : List NormalSelectionSetObservableFieldStep) (parentFuel : Nat)
+    (parentType responseName leftFieldName rightFieldName : Name)
     (leftArguments rightArguments : List Argument) (leftRuntime rightRuntime : Name)
     {left right : List Selection}
     {leftDirectives rightDirectives : List DirectiveApplication}
@@ -623,8 +622,7 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_o
       -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> (∀ arguments,
             Argument.argumentsEquivalent arguments rightArguments
@@ -1872,8 +1870,7 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_fieldName_diff_co
       -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> leftFieldName ≠ rightFieldName
       -> ¬ selectionSetsDataEquivalent schema parentType left right := by

@@ -216,8 +216,7 @@ end FieldMergeInline
 
 theorem inlineOperation_fieldMerge_of_valid
     {schema : Schema} {operation : Operation}
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     : GraphQL.NamedFragment.Validation.FieldMerge.fieldsInSetCanMerge schema
         (Inline.inlineOperation operation).fragmentDefinitions
         (Inline.inlineOperation operation).rootType
@@ -249,8 +248,7 @@ theorem inlineOperation_fragmentSideConditions (schema : Schema) (operation : Op
 
 theorem inlineOperation_valid_of_selectionSetValid
     {schema : Schema} {operation : Operation}
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     (hselectionValid
       : GraphQL.NamedFragment.Validation.selectionSetValid schema
           (Inline.inlineOperation operation).variableDefinitions

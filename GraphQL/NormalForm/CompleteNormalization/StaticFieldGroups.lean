@@ -19,8 +19,7 @@ theorem collectedResponseSelectionSet_collectFields_staticScopedFieldsWithRespon
     (boolCase : BoolCase)
     (ref : ObjectRef)
     : ∀ selectionSet,
-        variableValuesAgreeWithCase variableValues boolCase
-          (operationBoolVars operation)
+        variableValuesAgreeWithCase variableValues boolCase (operationBoolVars operation)
         -> (∀ varName,
               varName ∈ selectionSetBooleanVariables selectionSet
               -> varName ∈ selectionSetBooleanVariables operation.selectionSet)
@@ -226,10 +225,9 @@ theorem collectedResponseSelectionSet_collectFields_staticScopedFieldsWithRespon
             (Execution.ResolverValue.object (ObjectRef := ObjectRef) groundType ref) rest
 
 theorem collectedResponseSelectionSet_collectFields_completeScopedSelectionSetStaticFieldsWithResponseName
-    (schema : Schema) (variableValues : Execution.VariableValues)
-    (operation : Operation) (execParent groundType responseName : Name)
-    (boolCase : BoolCase) (scopedSelections : List CompleteScopedSelection)
-    (ref : ObjectRef)
+    (schema : Schema) (variableValues : Execution.VariableValues) (operation : Operation)
+    (execParent groundType responseName : Name) (boolCase : BoolCase)
+    (scopedSelections : List CompleteScopedSelection) (ref : ObjectRef)
     : variableValuesAgreeWithCase variableValues boolCase (operationBoolVars operation)
       -> (∀ varName,
             varName
@@ -466,8 +464,7 @@ theorem collectFields_withoutFieldSelectionsWithResponseName_directives
           (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
         = withoutExecutableGroupsWithResponseName
             responseName
-            (Execution.collectFields schema variableValues parentType source
-              selectionSet)
+            (Execution.collectFields schema variableValues parentType source selectionSet)
   | [] => by
       simp [Execution.collectFields, withoutFieldSelectionsWithResponseName,
         withoutExecutableGroupsWithResponseName]
@@ -664,8 +661,7 @@ theorem collectFields_withoutFieldSelectionsWithResponseName_fieldHead_rest_eq_s
     (schema : Schema) (variableValues : Execution.VariableValues) (parentType : Name)
     (source : Execution.ResolverValue ObjectRef) (responseName fieldName : Name)
     (arguments : List Argument) (directives : List DirectiveApplication)
-    (subselections rest : List Selection)
-    (sourceFields : List Execution.ExecutableField)
+    (subselections rest : List Selection) (sourceFields : List Execution.ExecutableField)
     (sourceRest : List (Name × List Execution.ExecutableField))
     : let sourceField : Execution.ExecutableField :=
         {

@@ -17,8 +17,7 @@ def groundObjectTypesForType (schema : Schema) (returnType : Name) : List Name :
   else
     schema.getPossibleTypes returnType
 
-theorem objectTypeNameBool_eq_true_of_objectType_base
-    (schema : Schema) {typeName : Name}
+theorem objectTypeNameBool_eq_true_of_objectType_base (schema : Schema) {typeName : Name}
     : schema.objectType typeName -> objectTypeNameBool schema typeName = true := by
   intro hobject
   unfold Schema.objectType at hobject
@@ -70,8 +69,7 @@ theorem object_typesOverlapBool_eq (schema : Schema) {left right : Name}
     (typeName := right) (objectName := left) hright hoverlap).symm
 
 theorem object_typesOverlapBool_self (schema : Schema) {typeName : Name}
-    : schema.objectType typeName
-      -> schema.typesOverlapBool typeName typeName = true := by
+    : schema.objectType typeName -> schema.typesOverlapBool typeName typeName = true := by
   intro hobject
   rcases hobject with ⟨objectType, hlookup⟩
   have hname : objectType.name = typeName := by

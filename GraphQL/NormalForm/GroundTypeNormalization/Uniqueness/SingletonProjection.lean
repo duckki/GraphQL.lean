@@ -125,8 +125,7 @@ theorem executeSelectionSet_normal_object_field_head_eq_combine
     : selectionSetDirectiveFree
         (Selection.field responseName fieldName arguments [] childSelectionSet :: rest)
       -> selectionSetNormal schema parentType
-          (Selection.field responseName fieldName arguments [] childSelectionSet
-            :: rest)
+          (Selection.field responseName fieldName arguments [] childSelectionSet :: rest)
       -> objectTypeNameBool schema parentType = true
       -> Execution.executeSelectionSet schema resolvers variableValues fuel
             parentType source
@@ -688,8 +687,7 @@ theorem dataEquivalent_singleton_response_of_combine_ok_tail
     : (∀ fields errors,
         leftHead = .ok (fields, errors) -> ∃ value, fields = [(responseName, value)])
       -> (∀ fields errors,
-            rightHead = .ok (fields, errors)
-            -> ∃ value, fields = [(responseName, value)])
+            rightHead = .ok (fields, errors) -> ∃ value, fields = [(responseName, value)])
       -> (∀ value errors,
             leftHead = .ok ([(responseName, value)], errors)
             -> (((responseName, value) :: leftTailFields).map Prod.fst).Nodup)
@@ -801,8 +799,7 @@ theorem dataEquivalent_singleton_response_of_context_ok
     : (∀ fields errors,
         leftHead = .ok (fields, errors) -> ∃ value, fields = [(responseName, value)])
       -> (∀ fields errors,
-            rightHead = .ok (fields, errors)
-            -> ∃ value, fields = [(responseName, value)])
+            rightHead = .ok (fields, errors) -> ∃ value, fields = [(responseName, value)])
       -> (∀ value errors,
             leftHead = .ok ([(responseName, value)], errors)
             -> ((leftPrefixFields ++ [(responseName, value)] ++ leftSuffixFields).map

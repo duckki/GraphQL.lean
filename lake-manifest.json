@@ -5,7 +5,7 @@
    "type": "git",
    "subDir": null,
    "scope": "",
-   "rev": "5e0e3d70ba6fccae2979dcdc40c4366fdcf914ff",
+   "rev": "9a96ddafc8e00cf013c5cd536548b7b5d589c6c7",
    "name": "leanfmt",
    "manifestFile": "lake-manifest.json",
    "inputRev": "main",

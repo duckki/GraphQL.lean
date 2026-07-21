@@ -51,8 +51,7 @@ def fieldDefinitionWellFormed (schema : Schema) (field : FieldDefinition) : Prop
 
 -- Spec 3.6 / 3.7 output field lists must be non-empty, uniquely named, and individually
 -- well-formed. Field argument lists themselves may be empty.
-def fieldDefinitionsWellFormed (schema : Schema) (fields : List FieldDefinition)
-    : Prop :=
+def fieldDefinitionsWellFormed (schema : Schema) (fields : List FieldDefinition) : Prop :=
   listNonempty fields
   ∧ namesAreUnique (fields.map FieldDefinition.name)
   ∧ ∀ field, field ∈ fields -> fieldDefinitionWellFormed schema field

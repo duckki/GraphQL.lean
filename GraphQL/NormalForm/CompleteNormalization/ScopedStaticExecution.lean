@@ -324,8 +324,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_
               ({
                   lookupParent := lookupParent,
                   selection :=
-                    Selection.inlineFragment (some typeCondition) directives
-                      selectionSet
+                    Selection.inlineFragment (some typeCondition) directives selectionSet
                 }
                 :: rest))
           = Execution.executeSelectionSet schema resolvers variableValues depth
@@ -411,8 +410,7 @@ theorem executeSelectionSet_staticCollectCompleteScopedSelectionSet_inline_some_
               ({
                   lookupParent := lookupParent,
                   selection :=
-                    Selection.inlineFragment (some typeCondition) directives
-                      selectionSet
+                    Selection.inlineFragment (some typeCondition) directives selectionSet
                 }
                 :: rest))
           = Execution.executeSelectionSet schema resolvers variableValues depth

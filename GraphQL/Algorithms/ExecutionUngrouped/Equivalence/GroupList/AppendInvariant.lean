@@ -467,8 +467,7 @@ theorem CollectedFieldGroupContainedAppendInvariant.of_prefixChildren
                         parentType := runtimeType
                         source := .object runtimeType identity
                         selectionSet :=
-                          GraphQL.Execution.mergedFieldSelectionSet
-                            (field :: prefixTail)
+                          GraphQL.Execution.mergedFieldSelectionSet (field :: prefixTail)
                       }
                     initial := .object []
                   })
@@ -518,17 +517,15 @@ theorem CollectedFieldGroupContainedAppendInvariant.of_prefixChildren
 theorem ExecutableFieldsMergedCompleteContainedAppendSteps.of_collectedInvariant_from_prefix
     {ObjectIdentity : Type} {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues} {depth : Nat} {parentType : Name}
-    {source : ResolverValue ObjectIdentity}
-    {groups : List (Name × List ExecutableField)}
+    {source : ResolverValue ObjectIdentity} {groups : List (Name × List ExecutableField)}
     (hinvariant
       : CollectedFieldGroupContainedAppendInvariant schema resolvers
           variableValues depth source groups)
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent parentType groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
-    (hstable : CollectedGroupsResolveStable resolvers source groups)
-    (responseName : Name) (field : ExecutableField)
-    (fields prefixTail remaining : List ExecutableField)
+    (hstable : CollectedGroupsResolveStable resolvers source groups) (responseName : Name)
+    (field : ExecutableField) (fields prefixTail remaining : List ExecutableField)
     (hgroup : (responseName, field :: fields) ∈ groups)
     (hprefix : ∀ candidate, candidate ∈ prefixTail -> candidate ∈ fields)
     (hremaining : ∀ later, later ∈ remaining -> later ∈ fields)
@@ -1047,8 +1044,7 @@ theorem fieldsNonempty
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     : ∀ {groups : List (Name × List ExecutableField)},
-        ExecutedFieldGroups schema resolvers variableValues depth parentType
-          source groups
+        ExecutedFieldGroups schema resolvers variableValues depth parentType source groups
         -> CollectedGroupsFieldsNonempty groups
   | [], _hgroups => CollectedGroupsFieldsNonempty_nil
   | (groupResponseName, []) :: rest, hgroups =>
@@ -1069,8 +1065,7 @@ theorem responseName
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     : ∀ {groups : List (Name × List ExecutableField)},
-        ExecutedFieldGroups schema resolvers variableValues depth parentType
-          source groups
+        ExecutedFieldGroups schema resolvers variableValues depth parentType source groups
         -> CollectedGroupsResponseName groups
   | [], _hgroups => by
       intro _responseName _fields hmem
@@ -1094,8 +1089,7 @@ theorem parent
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     : ∀ {groups : List (Name × List ExecutableField)},
-        ExecutedFieldGroups schema resolvers variableValues depth parentType
-          source groups
+        ExecutedFieldGroups schema resolvers variableValues depth parentType source groups
         -> CollectedGroupsParent parentType groups
   | [], _hgroups => by
       intro _responseName _fields hmem
@@ -1743,8 +1737,7 @@ theorem ExecutableGroupsFlatSpecAlignedEquivalent_of_alignedAppendSteps_positive
           (responseName, field :: fields) ∈ groups
           -> ExecutableFieldsMergedAlignedAppendSteps schema resolvers variableValues
               (completionDepth + 1) parentType source responseName field
-              (resolvers.resolve field.parentType field.fieldName field.arguments
-                source)
+              (resolvers.resolve field.parentType field.fieldName field.arguments source)
               [] fields)
     (hnodup : PairKeysNodup groups)
     : ExecutableGroupsFlatSpecAlignedEquivalent schema resolvers variableValues

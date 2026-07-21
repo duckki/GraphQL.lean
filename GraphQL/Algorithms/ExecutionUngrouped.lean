@@ -89,9 +89,7 @@ mutual
         -> List (Name × ResponseValue)
     | existingFields, [] => existingFields
     | existingFields, (responseName, incoming) :: rest =>
-        mergeResponseFields
-          (mergeResponseField responseName incoming existingFields)
-          rest
+        mergeResponseFields (mergeResponseField responseName incoming existingFields) rest
 
   def mergeResponseField (responseName : Name) (incoming : ResponseValue)
       : List (Name × ResponseValue) -> List (Name × ResponseValue)
@@ -102,8 +100,7 @@ mutual
         else
           (fieldResponseName, existing) :: mergeResponseField responseName incoming rest
 
-  def mergeResponseLists
-      : List ResponseValue -> List ResponseValue -> List ResponseValue
+  def mergeResponseLists : List ResponseValue -> List ResponseValue -> List ResponseValue
     | [], _incomingValues => []
     | existingValues, [] => existingValues
     | existing :: existingRest, incoming :: incomingRest =>
@@ -185,10 +182,8 @@ mutual
                 | none => outOfFuel
             | fuel' + 1 =>
                 let field :=
-                  executableField parentType responseName fieldName arguments
-                    selectionSet
-                executeField schema resolvers variableValues fuel' source
-                  previous? field
+                  executableField parentType responseName fieldName arguments selectionSet
+                executeField schema resolvers variableValues fuel' source previous? field
           mergeResponseFieldResult responseName fieldResult output
         else
           (output, visitOk)

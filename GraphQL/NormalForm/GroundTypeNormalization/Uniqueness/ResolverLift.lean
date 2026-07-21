@@ -220,8 +220,7 @@ mutual
             (fields : List (Name × List Execution.ExecutableField)),
           Execution.executeCollectedFields schema (liftResolvers base)
             variableValues fuel (liftResolverValue source) fields
-          = Execution.executeCollectedFields schema base variableValues fuel source
-              fields
+          = Execution.executeCollectedFields schema base variableValues fuel source fields
     | fuel, source, [] => by
         simp [Execution.executeCollectedFields]
     | fuel, source, (responseName, fields) :: rest => by
@@ -275,8 +274,7 @@ mutual
             (value : Execution.ResolverValue ObjectRef),
           Execution.completeValue schema (liftResolvers base) variableValues
             fuel fieldType fields (liftResolverValue value)
-          = Execution.completeValue schema base variableValues fuel fieldType
-              fields value
+          = Execution.completeValue schema base variableValues fuel fieldType fields value
     | 0, fieldType, fields, value => by
         simp [Execution.completeValue, Execution.outOfFuel]
     | fuel + 1, .nonNull inner, fields, value => by

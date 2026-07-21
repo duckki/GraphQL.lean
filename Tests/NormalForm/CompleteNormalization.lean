@@ -123,18 +123,14 @@ def completeNormalizationAbstractOutputSnapshot : Operation :=
             [.field "search" "search" [] []
               [
                 .inlineFragment (some "Human") []
-                  [
-                    .field "id" "id" [] [] [], .field "homePlanet" "homePlanet" [] [] []
-                  ],
+                  [.field "id" "id" [] [] [], .field "homePlanet" "homePlanet" [] [] []],
                 .inlineFragment (some "Droid") [] [.field "id" "id" [] [] []]
               ]]
         | [("x", true)] =>
             [.field "search" "search" [] []
               [
                 .inlineFragment (some "Human") []
-                  [
-                    .field "id" "id" [] [] [], .field "homePlanet" "homePlanet" [] [] []
-                  ],
+                  [.field "id" "id" [] [] [], .field "homePlanet" "homePlanet" [] [] []],
                 .inlineFragment (some "Droid") []
                   [
                     .field "id" "id" [] [] [],
@@ -228,8 +224,7 @@ def completeNormalizationSpineConflictInputQuery : Operation :=
     [.inlineFragment none [.skip (.variable "x")]
       [
         .field "hero" "hero" [] [] [.field "id" "id" [] [] []],
-        .field "hero" "hero" [] [.include (.variable "x")]
-          [.field "name" "name" [] [] []]
+        .field "hero" "hero" [] [.include (.variable "x")] [.field "name" "name" [] [] []]
       ]]
 
 def completeNormalizationSpineConflictOutputSnapshot : Operation :=

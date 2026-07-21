@@ -27,8 +27,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_case
       -> Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
             (normalizeSelectionSet schema parentType
-              (Selection.field responseName fieldName arguments [] selectionSet
-                :: rest))
+              (Selection.field responseName fieldName arguments [] selectionSet :: rest))
           = Execution.executeSelectionSet schema resolvers variableValues depth
               parentType source
               (Selection.field responseName fieldName arguments [] selectionSet
@@ -51,8 +50,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_lookup_none_lookupValid_
       -> Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
             (normalizeSelectionSet schema parentType
-              (Selection.field responseName fieldName arguments [] selectionSet
-                :: rest))
+              (Selection.field responseName fieldName arguments [] selectionSet :: rest))
           = Execution.executeSelectionSet schema resolvers variableValues depth
               parentType source
               (Selection.field responseName fieldName arguments [] selectionSet
@@ -385,8 +383,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_of_completeValue
       -> Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
             (normalizeSelectionSet schema parentType
-              (Selection.field responseName fieldName arguments [] subselections
-                :: rest))
+              (Selection.field responseName fieldName arguments [] subselections :: rest))
           = Execution.executeSelectionSet schema resolvers variableValues depth
               parentType source
               (Selection.field responseName fieldName arguments [] subselections
@@ -433,8 +430,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case
       -> schema.lookupField parentType fieldName = some fieldDefinition
       -> normalizedSubselections
           = ( let matching :=
-                fieldSelectionsWithResponseNameInScope schema parentType responseName
-                  rest
+                fieldSelectionsWithResponseNameInScope schema parentType responseName rest
               let mergedSubselections := subselections ++ mergeSelectionSets matching
               let returnType := fieldDefinition.outputType.namedType
               if objectTypeNameBool schema returnType then
@@ -475,8 +471,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case
       -> Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
             (normalizeSelectionSet schema parentType
-              (Selection.field responseName fieldName arguments [] subselections
-                :: rest))
+              (Selection.field responseName fieldName arguments [] subselections :: rest))
           = Execution.executeSelectionSet schema resolvers variableValues depth
               parentType source
               (Selection.field responseName fieldName arguments [] subselections
@@ -662,8 +657,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case_of_recursive
       -> Execution.executeSelectionSet schema resolvers variableValues depth
             parentType source
             (normalizeSelectionSet schema parentType
-              (Selection.field responseName fieldName arguments [] subselections
-                :: rest))
+              (Selection.field responseName fieldName arguments [] subselections :: rest))
           = Execution.executeSelectionSet schema resolvers variableValues depth
               parentType source
               (Selection.field responseName fieldName arguments [] subselections

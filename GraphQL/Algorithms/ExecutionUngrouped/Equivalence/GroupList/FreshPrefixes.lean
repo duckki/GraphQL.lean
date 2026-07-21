@@ -751,8 +751,7 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_prefix_field_cons_allowed
           depth parentType source
           (executableFieldSelections prefixFields
             ++ executableFieldSelections
-                [executableField parentType responseName fieldName arguments
-                  selectionSet]
+                [executableField parentType responseName fieldName arguments selectionSet]
             ++ rest)
       -> VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
           depth parentType source
@@ -1149,8 +1148,7 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_append_of_namesDisjoint
     (hdisjoint
       : GraphQL.NormalForm.executableGroupNamesDisjoint
           (GraphQL.Execution.collectFields schema variableValues parentType source left)
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source right))
+          (GraphQL.Execution.collectFields schema variableValues parentType source right))
     (hleft
       : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
           depth parentType source left)
@@ -1282,8 +1280,7 @@ theorem VisitSubfieldsFlatCollectsFreshPrefixes_cons_of_namesDisjoint
       : GraphQL.NormalForm.executableGroupNamesDisjoint
           (GraphQL.Execution.collectFields schema variableValues parentType
             source [selection])
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source rest))
+          (GraphQL.Execution.collectFields schema variableValues parentType source rest))
     (hselection
       : VisitSubfieldsFlatCollectsFreshPrefixes schema resolvers variableValues
           depth parentType source [selection])
@@ -1349,21 +1346,18 @@ def SelectionSetCollectFieldsHeadDisjoint
         (GraphQL.Execution.collectFields schema variableValues parentType source
           [selection])
         (GraphQL.Execution.collectFields schema variableValues parentType source rest)
-      ∧ SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
-          source rest
+      ∧ SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType source rest
 
 theorem SelectionSetCollectFieldsHeadDisjoint_append_of_namesDisjoint
     {ObjectIdentity : Type}
     (schema : Schema) (variableValues : VariableValues)
     (parentType : Name) (source : ResolverValue ObjectIdentity)
     : ∀ left right,
-        SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
-          source left
+        SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType source left
         -> SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType
             source right
         -> GraphQL.NormalForm.executableGroupNamesDisjoint
-            (GraphQL.Execution.collectFields schema variableValues parentType source
-              left)
+            (GraphQL.Execution.collectFields schema variableValues parentType source left)
             (GraphQL.Execution.collectFields schema variableValues parentType source
               right)
         -> SelectionSetCollectFieldsHeadDisjoint schema variableValues parentType

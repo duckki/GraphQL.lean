@@ -215,8 +215,7 @@ decreasing_by
 
 theorem wrapWithBoolCase_singleton_of_ne
     : ∀ boolCase selectionSet,
-        boolCase ≠ []
-        -> ∃ selection, wrapWithBoolCase boolCase selectionSet = [selection]
+        boolCase ≠ [] -> ∃ selection, wrapWithBoolCase boolCase selectionSet = [selection]
   | [], _selectionSet, hne => by
       exact False.elim (hne rfl)
   | (varName, value) :: rest, selectionSet, _hne => by

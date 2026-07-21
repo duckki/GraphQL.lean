@@ -35,13 +35,11 @@ theorem selectionSet_fieldPairProjectionFieldOk_framed_leaf_targets_of_valid_nor
       -> selectionSetDeepProbeFuel schema parentType (List.flatten members) ≤ fuel
       -> (∀ fieldDefinition,
             schema.lookupField parentType leftField = some fieldDefinition
-            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                  schema
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                 = false)
       -> (∀ fieldDefinition,
             schema.lookupField parentType rightField = some fieldDefinition
-            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                  schema
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                 = false)
       -> (∀ arguments,
             Argument.argumentsEquivalent arguments rightArguments
@@ -55,8 +53,7 @@ theorem selectionSet_fieldPairProjectionFieldOk_framed_leaf_targets_of_valid_nor
                 (fieldPairOrDeepSuccessResolvers schema
                   [Selection.inlineFragment (some parentType) [] (List.flatten members)]
                   (fieldPairProbeResolvers schema
-                    [Selection.inlineFragment (some parentType) []
-                      (List.flatten members)]
+                    [Selection.inlineFragment (some parentType) [] (List.flatten members)]
                     parentType leftField rightField leftArguments rightArguments)
                   parentType leftField rightField leftArguments rightArguments)
                 variableValues
@@ -241,13 +238,11 @@ theorem selectionSet_fieldPairProjectionFieldOk_framed_left_leaf_right_composite
       -> selectionSetDeepProbeFuel schema parentType (List.flatten members) ≤ fuel
       -> (∀ fieldDefinition,
             schema.lookupField parentType leftField = some fieldDefinition
-            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                  schema
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                 = false)
       -> (∀ fieldDefinition,
             schema.lookupField parentType rightField = some fieldDefinition
-            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                  schema
+            -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                 = true)
       -> (∀ arguments,
             Argument.argumentsEquivalent arguments rightArguments
@@ -261,8 +256,7 @@ theorem selectionSet_fieldPairProjectionFieldOk_framed_left_leaf_right_composite
                 (fieldPairOrDeepSuccessResolvers schema
                   [Selection.inlineFragment (some parentType) [] (List.flatten members)]
                   (fieldPairProbeResolvers schema
-                    [Selection.inlineFragment (some parentType) []
-                      (List.flatten members)]
+                    [Selection.inlineFragment (some parentType) [] (List.flatten members)]
                     parentType leftField rightField leftArguments rightArguments)
                   parentType leftField rightField leftArguments rightArguments)
                 variableValues
@@ -853,8 +847,7 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_o
       -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> leftFieldName ≠ rightFieldName
       -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
@@ -1174,8 +1167,7 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_o
       -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> leftFieldName ≠ rightFieldName
       -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
@@ -1862,8 +1854,7 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_a
                   supportSelectionSet
                 ∧ selectionSetDirectiveFree supportSelectionSet
                 ∧ selectionSetNormal schema parentType supportSelectionSet)
-      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet
-          ∈ left
+      -> Selection.inlineFragment (some typeCondition) directives childSelectionSet ∈ left
       -> typeCondition ∉ right.filterMap inlineFragmentTypeCondition?
       -> selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema
           parentType typeCondition left right
@@ -2240,8 +2231,7 @@ theorem selectionSetTargetInlineFragmentSelectionSets_of_mem
     : Selection.inlineFragment (some typeCondition) directives childSelectionSet
         ∈ selectionSet
       -> childSelectionSet
-          ∈ selectionSetTargetInlineFragmentSelectionSets typeCondition
-              selectionSet := by
+          ∈ selectionSetTargetInlineFragmentSelectionSets typeCondition selectionSet := by
   intro hmem
   induction selectionSet with
   | nil =>

@@ -206,8 +206,7 @@ mutual
               selectionSetValid_toSpec_of_inlined hselectionSetValid hinlined⟩
 end
 
-def scopedFieldToSpec (field : FieldMerge.ScopedField)
-    : GraphQL.FieldMerge.ScopedField :=
+def scopedFieldToSpec (field : FieldMerge.ScopedField) : GraphQL.FieldMerge.ScopedField :=
   {
     parentType := field.parentType
     responseName := field.responseName

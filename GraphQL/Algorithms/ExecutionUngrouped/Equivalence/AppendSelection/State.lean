@@ -187,8 +187,7 @@ theorem AppendSelectionState.inline_some_not_apply
     {left : List Selection} {typeCondition : Name}
     {directives : List DirectiveApplication} {selectionSet : List Selection}
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (hnotApply
-      : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
+    (hnotApply : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
     : AppendSelectionState schema resolvers variableValues depth parentType
         source left
         (.inlineFragment (some typeCondition) directives selectionSet) := by

@@ -50,8 +50,7 @@ theorem executeField_fieldPairProbe_tagged_object_field_ok_of_field_children
         -> ∃ fieldDefinition,
             schema.lookupField parentType fieldName = some fieldDefinition
             ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
-            ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                    schema
+            ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                   = false
                 ∨ ∃ childRuntimeType responseFields childErrors,
                     (((objectTypeNameBool schema fieldDefinition.outputType.namedType
@@ -140,8 +139,7 @@ theorem executeSelectionSetAsResponse_fieldPairProbe_tagged_object_of_field_chil
       -> selectionSetNormal schema parentType selectionSet
       -> objectTypeNameBool schema parentType = true
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ fieldDefinition,
                 schema.lookupField parentType fieldName = some fieldDefinition
@@ -150,8 +148,7 @@ theorem executeSelectionSetAsResponse_fieldPairProbe_tagged_object_of_field_chil
                         schema
                       = false
                     ∨ ∃ childRuntimeType responseFields childErrors,
-                        (((objectTypeNameBool schema
-                                  fieldDefinition.outputType.namedType
+                        (((objectTypeNameBool schema fieldDefinition.outputType.namedType
                                 = true
                               ∧ childRuntimeType = fieldDefinition.outputType.namedType)
                             ∨ ((TypeRef.named
@@ -1015,8 +1012,7 @@ theorem executeSelectionSetAsResponse_fieldPairProbe_tagged_of_valid_normal_prom
             sourceRuntimeType targetParent leftField rightField
             (leftArguments rightArguments : List Argument)
             (tag : FieldPairProbeTag),
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> schema.typeIncludesObjectBool parentType sourceRuntimeType = true
@@ -1342,8 +1338,7 @@ theorem executeField_fieldPairProbe_tagged_object_field_ok_of_valid_normal_promo
             sourceRuntimeType targetParent leftField rightField
             (leftArguments rightArguments : List Argument)
             (tag : FieldPairProbeTag),
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true

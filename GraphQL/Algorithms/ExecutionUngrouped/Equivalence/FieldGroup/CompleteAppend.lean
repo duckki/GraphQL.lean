@@ -474,8 +474,7 @@ theorem completeValue_group_append_one_result_aligned_spec_of_aligned_children
               -> RootSelectionResultAlignedEquivalent
                   (executeRootSelectionSet schema resolvers variableValues childDepth
                     runtimeType (.object runtimeType identity)
-                    (GraphQL.Execution.mergedFieldSelectionSet
-                      (prefixFields ++ [later])))
+                    (GraphQL.Execution.mergedFieldSelectionSet (prefixFields ++ [later])))
                   (GraphQL.Execution.executeRootSelectionSet schema resolvers
                     variableValues childDepth runtimeType (.object runtimeType identity)
                     (GraphQL.Execution.mergedFieldSelectionSet

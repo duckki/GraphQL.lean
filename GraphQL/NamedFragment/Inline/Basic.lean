@@ -24,8 +24,7 @@ theorem inlineSelection_nil (selection : Selection)
             .field responseName fieldName arguments directives
               (inlineSelectionSet [] selectionSet)
         | .inlineFragment typeCondition directives selectionSet =>
-            .inlineFragment typeCondition directives
-              (inlineSelectionSet [] selectionSet)
+            .inlineFragment typeCondition directives (inlineSelectionSet [] selectionSet)
         | .fragmentSpread _fragmentName directives =>
             .inlineFragment none directives [] := by
   cases selection <;> simp [inlineSelection, lookupFragmentAndRestLt?]

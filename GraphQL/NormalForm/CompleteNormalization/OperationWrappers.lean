@@ -25,8 +25,7 @@ theorem completeNormalizeOperation_variableDefinitions
       = operation.variableDefinitions := by
   rfl
 
-theorem completeNormalizeOperation_selectionSet
-    (schema : Schema) (operation : Operation)
+theorem completeNormalizeOperation_selectionSet (schema : Schema) (operation : Operation)
     : (completeNormalizeOperation schema operation).selectionSet
       = completeNormalizeRootSelectionSet schema (operationBoolVars operation)
           operation.rootType operation.selectionSet := by

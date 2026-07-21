@@ -139,8 +139,7 @@ theorem abstractFieldEmptyGroundBranchSmoke
     : operationWellFormedBool abstractFieldEmptyGroundBranchInputQuery = true
       ∧ operationWellFormedBool abstractFieldEmptyGroundBranchOutputSnapshot = true
       ∧ operationEqBool
-          (normalizeOperation groundTypingSchema
-            abstractFieldEmptyGroundBranchInputQuery)
+          (normalizeOperation groundTypingSchema abstractFieldEmptyGroundBranchInputQuery)
           abstractFieldEmptyGroundBranchOutputSnapshot
         = true := by
   native_decide

@@ -343,8 +343,7 @@ theorem possibleTypeNormalizations_groundTyped
     (parentType : Name)
     (possibleTypes : List Name) (selectionSet : List Selection)
     (hparentAbstract : objectTypeNameBool schema parentType = false)
-    (hpossible
-      : ∀ objectType, objectType ∈ possibleTypes -> schema.objectType objectType)
+    (hpossible : ∀ objectType, objectType ∈ possibleTypes -> schema.objectType objectType)
     (_hincludes
       : ∀ objectType,
           objectType ∈ possibleTypes

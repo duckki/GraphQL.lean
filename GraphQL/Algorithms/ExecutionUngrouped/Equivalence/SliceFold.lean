@@ -104,8 +104,7 @@ def visitFieldSliceFold
     : ResponseValue :=
   fields.foldl
     (fun output field =>
-      visitFieldSlice schema resolvers variableValues selectionDepth source
-        field output)
+      visitFieldSlice schema resolvers variableValues selectionDepth source field output)
     output
 
 theorem visitFieldSliceResult_fst_eq_visitFieldSlice
@@ -1594,8 +1593,7 @@ theorem null_responseFieldSlice
       : resolvers.resolve later.parentType later.fieldName later.arguments source
         = some .null)
     : CompleteValuePopulates schema resolvers variableValues completionDepth
-        ((schema.fieldReturnType? later.parentType later.fieldName).getD
-          later.fieldName)
+        ((schema.fieldReturnType? later.parentType later.fieldName).getD later.fieldName)
         later.selectionSet
         (resolvers.resolve later.parentType later.fieldName later.arguments source)
         (responseFieldSlice schema resolvers variableValues completionDepth source
@@ -1662,8 +1660,7 @@ theorem scalar_responseFieldSlice
               later.fieldName)
             completionDepth value)
     : CompleteValuePopulates schema resolvers variableValues completionDepth
-        ((schema.fieldReturnType? later.parentType later.fieldName).getD
-          later.fieldName)
+        ((schema.fieldReturnType? later.parentType later.fieldName).getD later.fieldName)
         later.selectionSet
         (resolvers.resolve later.parentType later.fieldName later.arguments source)
         (responseFieldSlice schema resolvers variableValues completionDepth source

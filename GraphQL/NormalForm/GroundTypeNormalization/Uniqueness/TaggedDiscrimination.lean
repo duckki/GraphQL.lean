@@ -32,8 +32,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_of_field
       -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ fieldDefinition,
                 schema.lookupField parentType fieldName = some fieldDefinition
@@ -42,8 +41,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_of_field
                         schema
                       = false
                     ∨ ∃ childRuntimeType responseFields childErrors,
-                        (((objectTypeNameBool schema
-                                  fieldDefinition.outputType.namedType
+                        (((objectTypeNameBool schema fieldDefinition.outputType.namedType
                                 = true
                               ∧ childRuntimeType = fieldDefinition.outputType.namedType)
                             ∨ ((TypeRef.named
@@ -74,8 +72,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_of_field
                                 }
                                 : Execution.Response))))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ fieldDefinition,
                 schema.lookupField parentType fieldName = some fieldDefinition
@@ -84,8 +81,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_of_field
                         schema
                       = false
                     ∨ ∃ childRuntimeType responseFields childErrors,
-                        (((objectTypeNameBool schema
-                                  fieldDefinition.outputType.namedType
+                        (((objectTypeNameBool schema fieldDefinition.outputType.namedType
                                 = true
                               ∧ childRuntimeType = fieldDefinition.outputType.namedType)
                             ∨ ((TypeRef.named
@@ -289,8 +285,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_of_fiel
             (Execution.ResponseValue.object leftChildFields)
             (Execution.ResponseValue.object rightChildFields)
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema
@@ -308,8 +303,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_of_fiel
                   }]
                 = .ok ([(responseName, responseValue)], fieldErrors))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema
@@ -501,8 +495,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_pair_of
             (Execution.ResponseValue.object leftChildFields)
             (Execution.ResponseValue.object rightChildFields)
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ left
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema
@@ -520,8 +513,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_pair_of
                   }]
                 = .ok ([(responseName, responseValue)], fieldErrors))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ right
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema
@@ -658,8 +650,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_pair_of
             {leftChildSelectionSet rightChildSelectionSet : List Selection}
             {fieldDefinition : FieldDefinition} {runtimeType : Name},
           Validation.selectionSetValid schema leftVariableDefinitions parentType left
-          -> Validation.selectionSetValid schema rightVariableDefinitions parentType
-              right
+          -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
           -> selectionSetDirectiveFree left
           -> selectionSetDirectiveFree right
           -> selectionSetNormal schema parentType left
@@ -767,8 +758,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_pair_of
               ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
                       schema
                     = true
-                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
-                    = false
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
                   ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
                       leftArguments parentType rootSelectionSet
                     = some runtimeType))
@@ -777,8 +767,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_child_field_pair_of
               ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
                       schema
                     = true
-                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
-                    = false
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
                   ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
                       rightArguments parentType rootSelectionSet
                     = some runtimeType))
@@ -1063,12 +1052,10 @@ theorem responseData_not_semanticEquivalent_of_tagged_abstract_inlineFragment_bo
       -> objectTypeNameBool schema runtimeType = true
       -> selectionSetDirectiveFree
           (pref
-            ++ Selection.inlineFragment (some runtimeType) [] bodySelectionSet
-                :: suffix)
+            ++ Selection.inlineFragment (some runtimeType) [] bodySelectionSet :: suffix)
       -> selectionSetNormal schema normalParentType
           (pref
-            ++ Selection.inlineFragment (some runtimeType) [] bodySelectionSet
-                :: suffix)
+            ++ Selection.inlineFragment (some runtimeType) [] bodySelectionSet :: suffix)
       -> ¬ Execution.ResponseValue.semanticEquivalent
             (Execution.executeSelectionSetAsResponse schema
               (fieldPairProbeResolvers schema rootSelectionSet targetParent
@@ -1186,8 +1173,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_abstract_inlineFragment_bo
     (variableValues : Execution.VariableValues)
     (fuel : Nat) (targetParent leftField rightField normalParentType runtimeType : Name)
     (leftArguments rightArguments : List Argument)
-    {leftPref rightPref leftSuffix rightSuffix
-      leftBodySelectionSet rightBodySelectionSet
+    {leftPref rightPref leftSuffix rightSuffix leftBodySelectionSet rightBodySelectionSet
       : List Selection}
     : objectTypeNameBool schema normalParentType = false
       -> objectTypeNameBool schema runtimeType = true
@@ -1333,8 +1319,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_of_valid
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection}
             {fieldDefinition : FieldDefinition},
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
@@ -1362,8 +1347,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_of_valid
           -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
               parentType selectionSet
           -> selectionSetDeepProbeFuel schema parentType selectionSet ≤ fuel
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
           -> schema.lookupField parentType fieldName = some fieldDefinition
           -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
@@ -1522,8 +1506,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_of_valid
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection}
             {fieldDefinition : FieldDefinition},
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
@@ -1550,8 +1533,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_of_valid
                       = true)
           -> selectionSetDeepHeadPromotionAvailable schema rootSelectionSet
               parentType selectionSet
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
           -> schema.lookupField parentType fieldName = some fieldDefinition
           -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
@@ -1599,8 +1581,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_d
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection},
           Validation.selectionSetValid schema leftVariableDefinitions parentType left
-          -> Validation.selectionSetValid schema rightVariableDefinitions parentType
-              right
+          -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
           -> selectionSetDirectiveFree left
           -> selectionSetDirectiveFree right
           -> selectionSetNormal schema parentType left
@@ -1653,8 +1634,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_d
               parentType right
           -> selectionSetDeepProbeFuel schema parentType left ≤ fuel
           -> selectionSetDeepProbeFuel schema parentType right ≤ fuel
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ left
           -> responseName ∉ right.filterMap Selection.responseName?
           -> ¬ Execution.ResponseValue.semanticEquivalent
@@ -1755,8 +1735,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection},
           Validation.selectionSetValid schema leftVariableDefinitions parentType left
-          -> Validation.selectionSetValid schema rightVariableDefinitions parentType
-              right
+          -> Validation.selectionSetValid schema rightVariableDefinitions parentType right
           -> selectionSetDirectiveFree left
           -> selectionSetDirectiveFree right
           -> selectionSetNormal schema parentType left
@@ -1809,8 +1788,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_
               parentType right
           -> selectionSetDeepProbeFuel schema parentType left ≤ fuel
           -> selectionSetDeepProbeFuel schema parentType right ≤ fuel
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ right
           -> responseName ∉ left.filterMap Selection.responseName?
           -> ¬ Execution.ResponseValue.semanticEquivalent
@@ -1911,8 +1889,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_d
             {responseName fieldName : Name} {arguments : List Argument}
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection},
-          Validation.selectionSetValid schema leftVariableDefinitions
-            leftParentType left
+          Validation.selectionSetValid schema leftVariableDefinitions leftParentType left
           -> Validation.selectionSetValid schema rightVariableDefinitions
               rightParentType right
           -> selectionSetDirectiveFree left
@@ -1969,8 +1946,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_d
               rightParentType right
           -> selectionSetDeepProbeFuel schema leftParentType left ≤ fuel
           -> selectionSetDeepProbeFuel schema rightParentType right ≤ fuel
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ left
           -> responseName ∉ right.filterMap Selection.responseName?
           -> ¬ Execution.ResponseValue.semanticEquivalent
@@ -2067,8 +2043,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_
             {responseName fieldName : Name} {arguments : List Argument}
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection},
-          Validation.selectionSetValid schema leftVariableDefinitions
-            leftParentType left
+          Validation.selectionSetValid schema leftVariableDefinitions leftParentType left
           -> Validation.selectionSetValid schema rightVariableDefinitions
               rightParentType right
           -> selectionSetDirectiveFree left
@@ -2125,8 +2100,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_
               rightParentType right
           -> selectionSetDeepProbeFuel schema leftParentType left ≤ fuel
           -> selectionSetDeepProbeFuel schema rightParentType right ≤ fuel
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ right
           -> responseName ∉ left.filterMap Selection.responseName?
           -> ¬ Execution.ResponseValue.semanticEquivalent
@@ -2224,8 +2198,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_d
             {responseName fieldName : Name} {arguments : List Argument}
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection},
-          Validation.selectionSetValid schema leftVariableDefinitions
-            leftParentType left
+          Validation.selectionSetValid schema leftVariableDefinitions leftParentType left
           -> Validation.selectionSetValid schema rightVariableDefinitions
               rightParentType right
           -> selectionSetDirectiveFree left
@@ -2282,8 +2255,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_d
               rightParentType right
           -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
           -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ left
           -> responseName ∉ right.filterMap Selection.responseName?
           -> ¬ Execution.ResponseValue.semanticEquivalent
@@ -2383,8 +2355,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_
             {responseName fieldName : Name} {arguments : List Argument}
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection},
-          Validation.selectionSetValid schema leftVariableDefinitions
-            leftParentType left
+          Validation.selectionSetValid schema leftVariableDefinitions leftParentType left
           -> Validation.selectionSetValid schema rightVariableDefinitions
               rightParentType right
           -> selectionSetDirectiveFree left
@@ -2441,8 +2412,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_
               rightParentType right
           -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
           -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ right
           -> responseName ∉ left.filterMap Selection.responseName?
           -> ¬ Execution.ResponseValue.semanticEquivalent
@@ -2542,8 +2512,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_d
             {responseName fieldName : Name} {arguments : List Argument}
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection},
-          Validation.selectionSetValid schema leftVariableDefinitions
-            leftParentType left
+          Validation.selectionSetValid schema leftVariableDefinitions leftParentType left
           -> Validation.selectionSetValid schema rightVariableDefinitions
               rightParentType right
           -> selectionSetDirectiveFree left
@@ -2602,8 +2571,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_left_responseName_d
               rightParentType right
           -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
           -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ left
           -> responseName ∉ right.filterMap Selection.responseName?
           -> ¬ Execution.ResponseValue.semanticEquivalent
@@ -2707,8 +2675,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_
             {responseName fieldName : Name} {arguments : List Argument}
             {directives : List DirectiveApplication}
             {childSelectionSet : List Selection},
-          Validation.selectionSetValid schema leftVariableDefinitions
-            leftParentType left
+          Validation.selectionSetValid schema leftVariableDefinitions leftParentType left
           -> Validation.selectionSetValid schema rightVariableDefinitions
               rightParentType right
           -> selectionSetDirectiveFree left
@@ -2767,8 +2734,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_right_responseName_
               rightParentType right
           -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
           -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ right
           -> responseName ∉ left.filterMap Selection.responseName?
           -> ¬ Execution.ResponseValue.semanticEquivalent
@@ -2873,8 +2839,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_pair_of_
             {leftDirectives rightDirectives : List DirectiveApplication}
             {leftChildSelectionSet rightChildSelectionSet : List Selection}
             {leftFieldDefinition rightFieldDefinition : FieldDefinition},
-          Validation.selectionSetValid schema leftVariableDefinitions
-            leftParentType left
+          Validation.selectionSetValid schema leftVariableDefinitions leftParentType left
           -> Validation.selectionSetValid schema rightVariableDefinitions
               rightParentType right
           -> selectionSetDirectiveFree left
@@ -2938,8 +2903,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_pair_of_
                 rightDirectives rightChildSelectionSet
               ∈ right
           -> schema.lookupField leftParentType leftFieldName = some leftFieldDefinition
-          -> schema.lookupField rightParentType rightFieldName
-              = some rightFieldDefinition
+          -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
           -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
                 schema
               = false
@@ -3112,8 +3076,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_pair_of_
             {leftDirectives rightDirectives : List DirectiveApplication}
             {leftChildSelectionSet rightChildSelectionSet : List Selection}
             {leftFieldDefinition rightFieldDefinition : FieldDefinition},
-          Validation.selectionSetValid schema leftVariableDefinitions
-            leftParentType left
+          Validation.selectionSetValid schema leftVariableDefinitions leftParentType left
           -> Validation.selectionSetValid schema rightVariableDefinitions
               rightParentType right
           -> selectionSetDirectiveFree left
@@ -3177,8 +3140,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_pair_of_
                 rightDirectives rightChildSelectionSet
               ∈ right
           -> schema.lookupField leftParentType leftFieldName = some leftFieldDefinition
-          -> schema.lookupField rightParentType rightFieldName
-              = some rightFieldDefinition
+          -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
           -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
                 schema
               = false
@@ -3357,8 +3319,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_pair_of_
             {leftDirectives rightDirectives : List DirectiveApplication}
             {leftChildSelectionSet rightChildSelectionSet : List Selection}
             {leftFieldDefinition rightFieldDefinition : FieldDefinition},
-          Validation.selectionSetValid schema leftVariableDefinitions
-            leftParentType left
+          Validation.selectionSetValid schema leftVariableDefinitions leftParentType left
           -> Validation.selectionSetValid schema rightVariableDefinitions
               rightParentType right
           -> selectionSetDirectiveFree left
@@ -3422,8 +3383,7 @@ theorem responseData_not_semanticEquivalent_of_tagged_object_leaf_field_pair_of_
                 rightDirectives rightChildSelectionSet
               ∈ right
           -> schema.lookupField leftParentType leftFieldName = some leftFieldDefinition
-          -> schema.lookupField rightParentType rightFieldName
-              = some rightFieldDefinition
+          -> schema.lookupField rightParentType rightFieldName = some rightFieldDefinition
           -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool
                 schema
               = false

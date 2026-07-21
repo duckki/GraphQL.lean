@@ -89,8 +89,7 @@ theorem normalizedSelectionSetsPairFieldsCanMerge
       -> (∀ leftField,
             leftField ∈ FieldMerge.collectFields schema parentType leftSelectionSet
             -> ∀ rightField,
-                rightField
-                  ∈ FieldMerge.collectFields schema parentType rightSelectionSet
+                rightField ∈ FieldMerge.collectFields schema parentType rightSelectionSet
                 -> leftField.responseName = rightField.responseName
                 -> FieldMerge.fieldsForNameCanMerge schema leftField rightField)
       -> FieldMerge.fieldsInSetCanMerge schema parentType

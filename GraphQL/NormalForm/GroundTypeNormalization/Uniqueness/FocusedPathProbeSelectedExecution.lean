@@ -32,8 +32,7 @@ theorem pathLocalSelectionSetObservableLeafAtRuntime_object_child_of_valid_norma
               ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
                       schema
                     = true
-                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
-                    = false
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
                   ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
                       arguments parentType currentSelectionSet
                     = some childRuntime))
@@ -237,8 +236,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
       -> (TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema
@@ -265,8 +263,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
                   }]
                 = .ok ([(responseName, responseValue)], fieldErrors))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema
@@ -479,8 +476,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
             (Execution.ResponseValue.object leftChildFields)
             (Execution.ResponseValue.object rightChildFields)
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema
@@ -507,8 +503,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
                   }]
                 = .ok ([(responseName, responseValue)], fieldErrors))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema
@@ -707,10 +702,7 @@ theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_selectedPathPr
             (projectionRootResolverValue
               (.object parentType FieldPairSelectedPathProbeRef.root))
             right
-          = ({
-                data := Execution.ResponseValue.object rightFields,
-                errors := rightErrors
-              }
+          = ({ data := Execution.ResponseValue.object rightFields, errors := rightErrors }
               : Execution.Response)
       -> (leftFields.map Prod.fst).Nodup
       -> (rightFields.map Prod.fst).Nodup
@@ -1491,8 +1483,7 @@ theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_selectedPathPr
             (Execution.ResponseValue.object leftChildFields)
             (Execution.ResponseValue.object rightChildFields)
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ left
             -> Argument.argumentsEquivalent arguments leftArguments
             -> ∃ childFields childErrors,
@@ -1519,8 +1510,7 @@ theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_selectedPathPr
                     }
                     : Execution.Response))
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ left
             -> Argument.argumentsEquivalent arguments rightArguments
             -> ∃ childFields childErrors,
@@ -1547,8 +1537,7 @@ theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_selectedPathPr
                     }
                     : Execution.Response))
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ right
             -> Argument.argumentsEquivalent arguments leftArguments
             -> ∃ childFields childErrors,
@@ -1575,8 +1564,7 @@ theorem not_selectionSetsDataEquivalent_of_fieldPairOrDeepSuccess_selectedPathPr
                     }
                     : Execution.Response))
       -> (∀ responseName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ right
             -> Argument.argumentsEquivalent arguments rightArguments
             -> ∃ childFields childErrors,
@@ -2202,12 +2190,10 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
       -> objectTypeNameBool schema runtimeType = true
       -> selectionSetDirectiveFree
           (pref
-            ++ Selection.inlineFragment (some runtimeType) [] bodySelectionSet
-                :: suffix)
+            ++ Selection.inlineFragment (some runtimeType) [] bodySelectionSet :: suffix)
       -> selectionSetNormal schema normalParentType
           (pref
-            ++ Selection.inlineFragment (some runtimeType) [] bodySelectionSet
-                :: suffix)
+            ++ Selection.inlineFragment (some runtimeType) [] bodySelectionSet :: suffix)
       -> ¬ Execution.ResponseValue.semanticEquivalent
             (Execution.executeSelectionSetAsResponse schema
               (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
@@ -2374,8 +2360,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
 
 theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_field_ok_of_field_children
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
@@ -2389,14 +2374,12 @@ theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_fiel
         -> ∃ fieldDefinition,
             schema.lookupField parentType fieldName = some fieldDefinition
             ∧ leafProbeFuel fieldDefinition.outputType ≤ fuel
-            ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
-                    schema
+            ∧ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool schema
                   = false
                 ∨ ∃ childRuntimeType tail responseFields childErrors,
                     (selectedObservableFieldSpineNext? fieldName arguments spine
                         = some (some childRuntimeType, tail)
-                      ∧ (((objectTypeNameBool schema
-                                  fieldDefinition.outputType.namedType
+                      ∧ (((objectTypeNameBool schema fieldDefinition.outputType.namedType
                                 = true
                               ∧ childRuntimeType = fieldDefinition.outputType.namedType)
                             ∨ ((TypeRef.named
@@ -2498,8 +2481,7 @@ theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_fiel
 
 def SelectedPathSelectionSetFieldChildrenReady
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
@@ -2520,15 +2502,13 @@ def SelectedPathSelectionSetFieldChildrenReady
             ∨ (∃ childRuntimeType tail responseFields childErrors,
                 selectedObservableFieldSpineNext? fieldName arguments spine
                   = some (some childRuntimeType, tail)
-                ∧ (((objectTypeNameBool schema fieldDefinition.outputType.namedType
-                          = true
+                ∧ (((objectTypeNameBool schema fieldDefinition.outputType.namedType = true
                         ∧ childRuntimeType = fieldDefinition.outputType.namedType)
                       ∨ ((TypeRef.named
                               fieldDefinition.outputType.namedType).isCompositeBool
                               schema
                             = true
-                          ∧ objectTypeNameBool schema
-                              fieldDefinition.outputType.namedType
+                          ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
                             = false))
                     ∧ schema.typeIncludesObjectBool
                         fieldDefinition.outputType.namedType
@@ -2628,8 +2608,7 @@ def SelectedPathSelectionSetFieldChildrenReady
 
 theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_field_ok_of_selectedPathFieldChildrenReady
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
@@ -2736,8 +2715,7 @@ theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_fiel
 
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_of_field_children
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
@@ -2749,8 +2727,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_t
       -> selectionSetNormal schema parentType selectionSet
       -> objectTypeNameBool schema parentType = true
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ∃ fieldDefinition,
                 schema.lookupField parentType fieldName = some fieldDefinition
@@ -2818,10 +2795,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_t
                 (.object sourceRuntimeType
                   (FieldPairSelectedPathProbeRef.target tag currentSelectionSet spine)))
               selectionSet
-            = ({
-                  data := Execution.ResponseValue.object responseFields,
-                  errors := errors
-                }
+            = ({ data := Execution.ResponseValue.object responseFields, errors := errors }
                 : Execution.Response)) := by
   intro hfree hnormal hobject hchildren
   let resolvers :=
@@ -2869,8 +2843,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_t
 
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_of_selectedPathFieldChildrenReady
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
@@ -2900,10 +2873,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_t
                 (.object sourceRuntimeType
                   (FieldPairSelectedPathProbeRef.target tag currentSelectionSet spine)))
               selectionSet
-            = ({
-                  data := Execution.ResponseValue.object responseFields,
-                  errors := errors
-                }
+            = ({ data := Execution.ResponseValue.object responseFields, errors := errors }
                 : Execution.Response)) := by
   intro hfree hnormal hobject hchildren
   let resolvers :=
@@ -2951,8 +2921,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_t
 
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_tagged_abstract_of_runtime_inlineFragment_body_response
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
@@ -2965,8 +2934,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_t
       -> selectionSetDirectiveFree selectionSet
       -> selectionSetNormal schema normalParentType selectionSet
       -> (∀ bodySelectionSet,
-            Selection.inlineFragment (some runtimeType) [] bodySelectionSet
-              ∈ selectionSet
+            Selection.inlineFragment (some runtimeType) [] bodySelectionSet ∈ selectionSet
             -> ∃ responseFields errors,
                 Execution.executeSelectionSetAsResponse schema
                   (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
@@ -3159,8 +3127,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_t
               -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet)
           -> (objectTypeNameBool schema normalParentType = false
               -> ∀ {directives bodySelectionSet},
-                  Selection.inlineFragment (some runtimeType) directives
-                      bodySelectionSet
+                  Selection.inlineFragment (some runtimeType) directives bodySelectionSet
                     ∈ selectionSet
                   -> PathLocalSelectionSetCurrentContext bodySelectionSet
                       currentSelectionSet)
@@ -3546,8 +3513,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_t
               -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet)
           -> (objectTypeNameBool schema normalParentType = false
               -> ∀ {directives bodySelectionSet},
-                  Selection.inlineFragment (some runtimeType) directives
-                      bodySelectionSet
+                  Selection.inlineFragment (some runtimeType) directives bodySelectionSet
                     ∈ selectionSet
                   -> PathLocalSelectionSetCurrentContext bodySelectionSet
                       currentSelectionSet)
@@ -3564,8 +3530,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_t
                 variableValues (fuel + 1) runtimeType
                 (projectionTargetResolverValue
                   (.object runtimeType
-                    (FieldPairSelectedPathProbeRef.target tag
-                      currentSelectionSet spine)))
+                    (FieldPairSelectedPathProbeRef.target tag currentSelectionSet spine)))
                 selectionSet
               = ({
                     data := Execution.ResponseValue.object responseFields,
@@ -4063,8 +4028,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_t
               -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet)
           -> (objectTypeNameBool schema normalParentType = false
               -> ∀ {directives bodySelectionSet},
-                  Selection.inlineFragment (some runtimeType) directives
-                      bodySelectionSet
+                  Selection.inlineFragment (some runtimeType) directives bodySelectionSet
                     ∈ selectionSet
                   -> PathLocalSelectionSetCurrentContext bodySelectionSet
                       currentSelectionSet)
@@ -4081,8 +4045,7 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_t
                 variableValues (fuel + 1) runtimeType
                 (projectionTargetResolverValue
                   (.object runtimeType
-                    (FieldPairSelectedPathProbeRef.target tag
-                      currentSelectionSet spine)))
+                    (FieldPairSelectedPathProbeRef.target tag currentSelectionSet spine)))
                 selectionSet
               = ({
                     data := Execution.ResponseValue.object responseFields,
@@ -4117,13 +4080,11 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_l
             (childSelectionSet : List Selection)
             (fieldDefinition : FieldDefinition)
             (spine : List NormalSelectionSetObservableFieldStep),
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
           -> Argument.argumentsEquivalent arguments leftArguments
           -> schema.lookupField parentType fieldName = some fieldDefinition
@@ -4273,13 +4234,11 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_r
             (childSelectionSet : List Selection)
             (fieldDefinition : FieldDefinition)
             (spine : List NormalSelectionSetObservableFieldStep),
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
           -> Argument.argumentsEquivalent arguments rightArguments
           -> schema.lookupField parentType fieldName = some fieldDefinition
@@ -4431,15 +4390,13 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_t
             (childSelectionSet : List Selection) (fieldDefinition : FieldDefinition)
             (spine : List NormalSelectionSetObservableFieldStep)
             (tag : FieldPairProbeTag),
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
           -> PathLocalSupportValidNormal schema parentType currentSelectionSet
           -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
           -> Argument.argumentsEquivalent arguments targetArguments
           -> schema.lookupField parentType fieldName = some fieldDefinition
@@ -4586,15 +4543,13 @@ theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_t
             (leftRuntime rightRuntime : Name)
             (spine : List NormalSelectionSetObservableFieldStep)
             (tag : FieldPairProbeTag),
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
           -> PathLocalSupportValidNormal schema parentType currentSelectionSet
           -> PathLocalSelectionSetCurrentContext selectionSet currentSelectionSet
-          -> Selection.field responseName fieldName arguments directives
-                childSelectionSet
+          -> Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
           -> Argument.argumentsEquivalent arguments targetArguments
           -> schema.lookupField parentType fieldName = some fieldDefinition

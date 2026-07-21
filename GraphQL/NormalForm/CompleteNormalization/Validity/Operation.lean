@@ -72,8 +72,7 @@ theorem operation_selectionSetSemanticsReady_of_valid
     {schema : Schema} {operation : Operation}
     : SchemaWellFormedness.schemaWellFormed schema
       -> Validation.operationDefinitionValid schema operation
-      -> selectionSetSemanticsReady schema operation.rootType
-          operation.selectionSet := by
+      -> selectionSetSemanticsReady schema operation.rootType operation.selectionSet := by
   intro hschema hoperation
   exact selectionSetSemanticsReady_of_selectionSetValid_object schema
     operation.variableDefinitions operation.rootType hschema
@@ -196,8 +195,7 @@ theorem completeNormalizeRootSelectionSet_ne_nil_of_boolTypeFeasible
   | cons selection rest =>
       exact wrapWithBoolCase_ne_nil boolCase (selection :: rest) (by simp)
 
-theorem completeFilteredBoolCasesFieldsCanMerge
-    (schema : Schema) (operation : Operation)
+theorem completeFilteredBoolCasesFieldsCanMerge (schema : Schema) (operation : Operation)
     : Validation.operationDefinitionValid schema operation
       -> ∀ leftCase,
           leftCase ∈ allBoolCases (operationBoolVars operation)
@@ -205,8 +203,7 @@ theorem completeFilteredBoolCasesFieldsCanMerge
               rightCase ∈ allBoolCases (operationBoolVars operation)
               -> FieldMerge.fieldsInSetCanMerge schema operation.rootType
                   (filterSelectionSetBoolCase leftCase operation.selectionSet
-                    ++ filterSelectionSetBoolCase rightCase
-                        operation.selectionSet) := by
+                    ++ filterSelectionSetBoolCase rightCase operation.selectionSet) := by
   intro hoperation leftCase _hleftCase rightCase _hrightCase
   have hsourceMerge :
       FieldMerge.fieldsInSetCanMerge schema operation.rootType

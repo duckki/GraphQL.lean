@@ -538,8 +538,7 @@ theorem executeField_resolved_eq_completeResolvedValue
     (source : ResolverValue ObjectIdentity) (field : ExecutableField)
     (fieldDefinition : FieldDefinition) (resolved : ResolverValue ObjectIdentity)
     (previous : ResponseValue)
-    (hlookup
-      : schema.lookupField field.parentType field.fieldName = some fieldDefinition)
+    (hlookup : schema.lookupField field.parentType field.fieldName = some fieldDefinition)
     (hresolve
       : resolvers.resolve field.parentType field.fieldName field.arguments source
         = some resolved)
@@ -1185,10 +1184,8 @@ theorem completeValue_list_fold_previous_map_eq_map
 theorem mergeResponseLists_map_of_forall
     {α : Type} (values : List α)
     (left right merged : α -> ResponseValue)
-    : (∀ value,
-        value ∈ values -> mergeResponse (left value) (right value) = merged value)
-      -> mergeResponseLists (values.map left) (values.map right)
-          = values.map merged := by
+    : (∀ value, value ∈ values -> mergeResponse (left value) (right value) = merged value)
+      -> mergeResponseLists (values.map left) (values.map right) = values.map merged := by
   intro hvalues
   induction values with
   | nil =>
@@ -1461,8 +1458,7 @@ theorem visitSelection_field_allowed_succ_ready
           (resultValueOrNull
             (executeField schema resolvers variableValues depth source
               (responseObjectField? responseName (.object fields))
-              (executableField parentType responseName fieldName arguments
-                selectionSet)))
+              (executableField parentType responseName fieldName arguments selectionSet)))
       -> ResponseMergeReady
           (visitSelection schema resolvers variableValues (depth + 1)
             parentType source
@@ -1630,8 +1626,7 @@ theorem visitSelection_inline_some_type_not_apply
     (typeCondition : Name) (directives : List DirectiveApplication)
     (selectionSet : List Selection) (output : ResponseValue)
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (hnotApply
-      : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
+    (hnotApply : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
     : visitSelection schema resolvers variableValues depth parentType source
         (.inlineFragment (some typeCondition) directives selectionSet) output
       = (output, visitOk) := by
@@ -2059,8 +2054,7 @@ theorem visitSelection_inline_some_not_apply_absorbs_of_ready
     (typeCondition : Name) (directives : List DirectiveApplication)
     (selectionSet : List Selection) (output : ResponseValue)
     (hallowed : selectionDirectivesAllowBool variableValues directives = true)
-    (hnotApply
-      : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
+    (hnotApply : doesFragmentTypeApplyBool schema parentType source typeCondition = false)
     : ResponseMergeReady output
       -> ResponseAbsorbs output
           (visitSelection schema resolvers variableValues depth parentType source
@@ -2209,12 +2203,10 @@ theorem VisitSubfieldsRawFlatCollects_append_of_namesDisjoint
     (hdisjoint
       : GraphQL.NormalForm.executableGroupNamesDisjoint
           (GraphQL.Execution.collectFields schema variableValues parentType source left)
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source right))
+          (GraphQL.Execution.collectFields schema variableValues parentType source right))
     (hrightNodup
       : GraphQL.NormalForm.executableGroupNamesNodup
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source right))
+          (GraphQL.Execution.collectFields schema variableValues parentType source right))
     (hleft
       : VisitSubfieldsRawFlatCollects schema resolvers variableValues depth
           parentType source left output)
@@ -2287,12 +2279,10 @@ theorem VisitSubfieldsRawFlatCollectsAllOutputs_append_of_namesDisjoint
     (hdisjoint
       : GraphQL.NormalForm.executableGroupNamesDisjoint
           (GraphQL.Execution.collectFields schema variableValues parentType source left)
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source right))
+          (GraphQL.Execution.collectFields schema variableValues parentType source right))
     (hrightNodup
       : GraphQL.NormalForm.executableGroupNamesNodup
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source right))
+          (GraphQL.Execution.collectFields schema variableValues parentType source right))
     (hleft
       : VisitSubfieldsRawFlatCollectsAllOutputs schema resolvers variableValues
           depth parentType source left)
@@ -2405,12 +2395,10 @@ theorem VisitSubfieldsFlatCollects_append_of_namesDisjoint
     (hdisjoint
       : GraphQL.NormalForm.executableGroupNamesDisjoint
           (GraphQL.Execution.collectFields schema variableValues parentType source left)
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source right))
+          (GraphQL.Execution.collectFields schema variableValues parentType source right))
     (hrightNodup
       : GraphQL.NormalForm.executableGroupNamesNodup
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source right))
+          (GraphQL.Execution.collectFields schema variableValues parentType source right))
     (hleft
       : VisitSubfieldsRawFlatCollects schema resolvers variableValues depth
           parentType source left output)
@@ -2441,12 +2429,10 @@ theorem VisitSubfieldsFlatCollectsAllOutputs_append_of_namesDisjoint
     (hdisjoint
       : GraphQL.NormalForm.executableGroupNamesDisjoint
           (GraphQL.Execution.collectFields schema variableValues parentType source left)
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source right))
+          (GraphQL.Execution.collectFields schema variableValues parentType source right))
     (hrightNodup
       : GraphQL.NormalForm.executableGroupNamesNodup
-          (GraphQL.Execution.collectFields schema variableValues parentType
-            source right))
+          (GraphQL.Execution.collectFields schema variableValues parentType source right))
     (hleft
       : VisitSubfieldsRawFlatCollectsAllOutputs schema resolvers variableValues
           depth parentType source left)
@@ -2792,8 +2778,7 @@ theorem mergeResponseFieldIntoObject_commutes_with_appended_visitSubfields
           selectionSet (.object fields)).fst
       = (visitSubfields schema resolvers variableValues depth parentType source
           selectionSet
-          (mergeResponseFieldIntoObject responseName incoming
-            (.object fields))).fst := by
+          (mergeResponseFieldIntoObject responseName incoming (.object fields))).fst := by
   rw [hbase, hmerged]
   simp [mergeResponseFieldIntoObject,
     mergeResponseField_append_of_mem_left responseName incoming fields suffix

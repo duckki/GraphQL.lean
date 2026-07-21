@@ -411,8 +411,7 @@ def lookupInterface (schema : Schema) (typeName : Name) : Option InterfaceType :
 
 -- Spec 3.6 / 3.7 interface implementation transitivity as proof-facing
 -- reachability over declared interface inheritance.
-inductive InterfaceTypeImplementsInterface (schema : Schema)
-    : Name -> Name -> Prop where
+inductive InterfaceTypeImplementsInterface (schema : Schema) : Name -> Name -> Prop where
   | refl (interfaceName : Name)
     : InterfaceTypeImplementsInterface schema interfaceName interfaceName
   | trans (interfaceName targetName : Name) (interfaceType : InterfaceType)
@@ -519,8 +518,7 @@ def typeIncludesObjectBool (schema : Schema) (typeName objectName : Name) : Bool
 -- possible-object lists.
 def typesOverlap (schema : Schema) (left right : Name) : Prop :=
   ∃ objectName,
-    schema.typeIncludesObject left objectName
-    ∧ schema.typeIncludesObject right objectName
+    schema.typeIncludesObject left objectName ∧ schema.typeIncludesObject right objectName
 
 -- Boolean counterpart to `typesOverlap`.
 def typesOverlapBool (schema : Schema) (left right : Name) : Bool :=
@@ -606,8 +604,7 @@ mutual
   inductive ConstInputValueIsCorrectType (schema : Schema)
       : ConstInputValue -> TypeRef -> Prop where
     | nullNamed (typeName : Name) (hinput : (TypeRef.named typeName).isInputType schema)
-      : ConstInputValueIsCorrectType schema
-          ConstInputValue.null (TypeRef.named typeName)
+      : ConstInputValueIsCorrectType schema ConstInputValue.null (TypeRef.named typeName)
     | nullList (inner : TypeRef) (hinput : (TypeRef.list inner).isInputType schema)
       : ConstInputValueIsCorrectType schema ConstInputValue.null (TypeRef.list inner)
     | nonNull (value : ConstInputValue) (inner : TypeRef)
@@ -680,8 +677,7 @@ mutual
   inductive ConstInputObjectAsListItemValid (schema : Schema)
       : List (Name × ConstInputValue) -> TypeRef -> Prop where
     | intro (fields : List (Name × ConstInputValue)) (inner : TypeRef)
-      (hvalue
-        : ConstInputValueIsCorrectType schema (ConstInputValue.object fields) inner)
+      (hvalue : ConstInputValueIsCorrectType schema (ConstInputValue.object fields) inner)
       : ConstInputObjectAsListItemValid schema fields inner
 end
 

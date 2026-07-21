@@ -325,8 +325,7 @@ theorem fieldsInSetCanMerge_wrapWithBoolCase_pair
     (leftSet rightSet : List Selection)
     : FieldMerge.fieldsInSetCanMerge schema parentType (leftSet ++ rightSet)
       -> FieldMerge.fieldsInSetCanMerge schema parentType
-          (wrapWithBoolCase leftCase leftSet
-            ++ wrapWithBoolCase rightCase rightSet) := by
+          (wrapWithBoolCase leftCase leftSet ++ wrapWithBoolCase rightCase rightSet) := by
   intro hmerge
   unfold FieldMerge.fieldsInSetCanMerge at hmerge ⊢
   cases hmerge with

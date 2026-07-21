@@ -17,8 +17,7 @@ theorem inlineSelectionSet_nonempty
 
 theorem inlineOperation_selectionSet_nonempty_of_valid
     {schema : Schema} {operation : Operation}
-    (hvalid
-      : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
+    (hvalid : GraphQL.NamedFragment.Validation.operationDefinitionValid schema operation)
     : (Inline.inlineOperation operation).selectionSet ≠ [] := by
   rcases hvalid with
     ⟨_hroot, _hrootComposite, _hvariables, _huniqueFragments,

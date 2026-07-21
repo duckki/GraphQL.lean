@@ -149,8 +149,7 @@ theorem selectedPathSelectionSetsResponseDataDiff_of_dataNot
     : schema.typeIncludesObjectBool leftParentType leftRuntimeType = true
       -> schema.typeIncludesObjectBool rightParentType rightRuntimeType = true
       -> SelectedFieldSpineRuntimeValid schema leftParentType leftRuntimeType leftSpine
-      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType
-          rightSpine
+      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType rightSpine
       -> ¬ Execution.ResponseValue.semanticEquivalent
             (Execution.executeSelectionSetAsResponse schema
               (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
@@ -255,8 +254,7 @@ theorem selectedPathSelectionSetsResponseDataDiffLeftPruned_of_dataNot
     {left right : List Selection}
     : schema.typeIncludesObjectBool leftParentType leftRuntimeType = true
       -> schema.typeIncludesObjectBool rightParentType rightRuntimeType = true
-      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType
-          rightSpine
+      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType rightSpine
       -> ¬ Execution.ResponseValue.semanticEquivalent
             (Execution.ResponseValue.object [])
             (Execution.executeSelectionSetAsResponse schema
@@ -326,8 +324,7 @@ theorem selectedPathSelectionSetsResponseDataDiff_of_taggedWitness_sameFuel
 
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_tagged_abstract_inlineFragment_body_eq
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
@@ -485,8 +482,7 @@ theorem selectedPathTaggedSelectionSetsResponseDiffWitness_of_abstract_sameTypeC
 
 theorem executeSelectionSetAsResponse_fieldPairOrDeepSuccess_selectedPathProbe_tagged_abstract_missing_runtime_eq_empty
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
@@ -810,8 +806,7 @@ theorem responseData_not_semanticEquivalent_of_fieldPairOrDeepSuccess_selectedPa
     (leftInitialSpine rightInitialSpine leftSpine rightSpine
       : List NormalSelectionSetObservableFieldStep)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField leftParentType rightParentType runtimeType
-      : Name)
+    (targetParent leftField rightField leftParentType rightParentType runtimeType : Name)
     (leftArguments rightArguments : List Argument) (leftRuntime rightRuntime : Name)
     {left right leftBodySelectionSet rightBodySelectionSet : List Selection}
     : objectTypeNameBool schema leftParentType = false
@@ -916,8 +911,7 @@ theorem selectedPathSelectionSetsResponseDataDiff_of_right_abstract_inlineFragme
       -> schema.typeIncludesObjectBool rightParentType rightRuntimeType = true
       -> selectionSetDirectiveFree right
       -> selectionSetNormal schema rightParentType right
-      -> Selection.inlineFragment (some rightRuntimeType) [] rightBodySelectionSet
-          ∈ right
+      -> Selection.inlineFragment (some rightRuntimeType) [] rightBodySelectionSet ∈ right
       -> SelectedPathSelectionSetsResponseDataDiff schema rootSelectionSet
           leftInitialSelectionSet rightInitialSelectionSet leftInitialSpine
           rightInitialSpine variableValues leftFuel rightFuel leftParentType
@@ -1225,8 +1219,7 @@ theorem selectedPathSelectionSetsResponseDataDiff_of_right_abstract_missing_runt
     : schema.typeIncludesObjectBool leftParentType leftRuntimeType = true
       -> schema.typeIncludesObjectBool rightParentType rightRuntimeType = true
       -> SelectedFieldSpineRuntimeValid schema leftParentType leftRuntimeType leftSpine
-      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType
-          rightSpine
+      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType rightSpine
       -> objectTypeNameBool schema rightParentType = false
       -> selectionSetDirectiveFree right
       -> selectionSetNormal schema rightParentType right
@@ -1289,8 +1282,7 @@ theorem selectedPathSelectionSetsResponseDataDiff_of_left_abstract_missing_runti
     : schema.typeIncludesObjectBool leftParentType leftRuntimeType = true
       -> schema.typeIncludesObjectBool rightParentType rightRuntimeType = true
       -> SelectedFieldSpineRuntimeValid schema leftParentType leftRuntimeType leftSpine
-      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType
-          rightSpine
+      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType rightSpine
       -> objectTypeNameBool schema leftParentType = false
       -> selectionSetDirectiveFree left
       -> selectionSetNormal schema leftParentType left
@@ -1347,8 +1339,7 @@ theorem responseData_not_semanticEquivalent_empty_object_of_fieldPairOrDeepSucce
             (selectionSet : List Selection) fuel targetParent leftField
             rightField (targetLeftArguments targetRightArguments : List Argument)
             (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag),
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
@@ -1418,8 +1409,7 @@ theorem responseData_empty_object_not_semanticEquivalent_of_fieldPairOrDeepSucce
             (selectionSet : List Selection) fuel targetParent leftField
             rightField (targetLeftArguments targetRightArguments : List Argument)
             (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag),
-          Validation.selectionSetValid schema variableDefinitions parentType
-            selectionSet
+          Validation.selectionSetValid schema variableDefinitions parentType selectionSet
           -> selectionSetDirectiveFree selectionSet
           -> selectionSetNormal schema parentType selectionSet
           -> objectTypeNameBool schema parentType = true
@@ -1502,8 +1492,7 @@ theorem selectedPathSelectionSetsResponseDataDiff_of_right_abstract_missing_runt
       -> schema.typeIncludesObjectBool rightParentType rightRuntimeType = true
       -> selectionSetDeepProbeFuel schema leftParentType left ≤ leftFuel
       -> SelectedFieldSpineRuntimeValid schema leftParentType leftParentType leftSpine
-      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType
-          rightSpine
+      -> SelectedFieldSpineRuntimeValid schema rightParentType rightRuntimeType rightSpine
       -> PathLocalSupportValidNormal schema leftParentType leftCurrentSelectionSet
       -> SelectedPathSelectionSetContextReady schema leftParentType
           leftParentType leftCurrentSelectionSet left
@@ -1598,8 +1587,7 @@ theorem selectedPathSelectionSetsResponseDataDiff_of_left_abstract_missing_runti
       -> schema.typeIncludesObjectBool leftParentType leftRuntimeType = true
       -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
       -> SelectedFieldSpineRuntimeValid schema leftParentType leftRuntimeType leftSpine
-      -> SelectedFieldSpineRuntimeValid schema rightParentType rightParentType
-          rightSpine
+      -> SelectedFieldSpineRuntimeValid schema rightParentType rightParentType rightSpine
       -> PathLocalSupportValidNormal schema rightParentType rightCurrentSelectionSet
       -> SelectedPathSelectionSetContextReady schema rightParentType
           rightParentType rightCurrentSelectionSet right
@@ -1778,8 +1766,7 @@ theorem selectedPathSelectionSetsResponseDataDiffLeftPruned_of_right_object_none
       -> objectTypeNameBool schema rightParentType = true
       -> schema.typeIncludesObjectBool leftParentType leftRuntimeType = true
       -> selectionSetDeepProbeFuel schema rightParentType right ≤ rightFuel
-      -> SelectedFieldSpineRuntimeValid schema rightParentType rightParentType
-          rightSpine
+      -> SelectedFieldSpineRuntimeValid schema rightParentType rightParentType rightSpine
       -> PathLocalSupportValidNormal schema rightParentType rightCurrentSelectionSet
       -> SelectedPathSelectionSetContextReady schema rightParentType
           rightParentType rightCurrentSelectionSet right
@@ -1847,14 +1834,12 @@ theorem selectedPathSelectionSetsResponseDataDiffLeftPruned_of_right_object_none
 
 theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_abstract_missing_ok_of_fuel_ge
     (schema : Schema)
-    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet
-      currentSelectionSet
+    (rootSelectionSet leftInitialSelectionSet rightInitialSelectionSet currentSelectionSet
       : List Selection)
     (leftInitialSpine rightInitialSpine spine
       : List NormalSelectionSetObservableFieldStep)
     (variableValues : Execution.VariableValues) (fuel : Nat)
-    (targetParent leftField rightField parentType fieldName
-      sourceRuntimeType responseName
+    (targetParent leftField rightField parentType fieldName sourceRuntimeType responseName
       : Name)
     (targetLeftArguments targetRightArguments arguments : List Argument)
     (leftRuntime rightRuntime : Name) (tag : FieldPairProbeTag)
@@ -1865,8 +1850,7 @@ theorem executeField_fieldPairOrDeepSuccess_selectedPathProbe_tagged_object_abst
           = true
       -> objectTypeNameBool schema fieldDefinition.outputType.namedType = false
       -> selectionSetDirectiveFree childSelectionSet
-      -> selectionSetNormal schema fieldDefinition.outputType.namedType
-          childSelectionSet
+      -> selectionSetNormal schema fieldDefinition.outputType.namedType childSelectionSet
       -> selectedObservableFieldSpineNext? fieldName arguments spine = none
       -> abstractRuntimeForFieldHeadDeep? schema parentType fieldName arguments
             parentType currentSelectionSet

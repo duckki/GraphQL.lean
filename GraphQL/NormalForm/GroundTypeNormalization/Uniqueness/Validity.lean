@@ -56,8 +56,7 @@ theorem fieldDefinition_namedType_eq_of_fieldReturnType?
 
 theorem normalSelectionSetDiff_left_or_right_nonempty
     {schema : Schema} {parentType : Name} {left right : List Selection}
-    : NormalSelectionSetDiff schema parentType left right
-      -> left ≠ [] ∨ right ≠ [] := by
+    : NormalSelectionSetDiff schema parentType left right -> left ≠ [] ∨ right ≠ [] := by
   intro hdiff
   cases hdiff with
   | objectLeftResponseName hobject hmem hrightNo =>

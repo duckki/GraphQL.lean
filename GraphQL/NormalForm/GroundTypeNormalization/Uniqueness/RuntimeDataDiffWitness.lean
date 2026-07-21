@@ -96,8 +96,7 @@ theorem selectionSetRuntimeDataDiffWitness_of_contextualRuntimeDataDiffWitness
     {left right : List Selection} {support : List Selection -> Prop}
     : selectionSetContextualRuntimeDataDiffWitness schema parentType runtimeType
         left right support
-      -> selectionSetRuntimeDataDiffWitness schema parentType runtimeType
-          left right := by
+      -> selectionSetRuntimeDataDiffWitness schema parentType runtimeType left right := by
   intro hwitness
   rcases hwitness with
     ⟨hinclude, ObjectRef, resolvers, variableValues, fuel, ref,
@@ -127,8 +126,7 @@ theorem selectionSetRuntimeDataDiffWitness_of_contextualRuntimeDataDiffWitnessWi
     {minFuel : Nat}
     : selectionSetContextualRuntimeDataDiffWitnessWithFuelGe schema parentType
         runtimeType left right support minFuel
-      -> selectionSetRuntimeDataDiffWitness schema parentType runtimeType
-          left right := by
+      -> selectionSetRuntimeDataDiffWitness schema parentType runtimeType left right := by
   intro hwitness
   exact
     selectionSetRuntimeDataDiffWitness_of_contextualRuntimeDataDiffWitness

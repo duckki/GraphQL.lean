@@ -73,8 +73,7 @@ theorem filterExecutableGroupsBoolCase_addExecutableGroup
 theorem filterExecutableGroupsBoolCase_mergeExecutableGroups
     (boolCase : BoolCase)
     (left right : List (Name × List Execution.ExecutableField))
-    : filterExecutableGroupsBoolCase boolCase
-        (Execution.mergeExecutableGroups left right)
+    : filterExecutableGroupsBoolCase boolCase (Execution.mergeExecutableGroups left right)
       = Execution.mergeExecutableGroups
           (filterExecutableGroupsBoolCase boolCase left)
           (filterExecutableGroupsBoolCase boolCase right) := by

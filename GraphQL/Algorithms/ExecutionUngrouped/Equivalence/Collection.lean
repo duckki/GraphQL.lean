@@ -12,14 +12,12 @@ namespace ExecutionUngrouped
 
 open GraphQL.Execution
 
-def collectedExecutableFields
-    : List (Name × List ExecutableField) -> List ExecutableField
+def collectedExecutableFields : List (Name × List ExecutableField) -> List ExecutableField
   | [] => []
   | (_responseName, fields) :: rest =>
       fields ++ collectedExecutableFields rest
 
-theorem collectedExecutableFields_append
-    (left right : List (Name × List ExecutableField))
+theorem collectedExecutableFields_append (left right : List (Name × List ExecutableField))
     : collectedExecutableFields (left ++ right)
       = collectedExecutableFields left ++ collectedExecutableFields right := by
   induction left with
@@ -770,8 +768,7 @@ theorem collectedExecutableFields_addExecutableGroup_subset_append
     (groups : List (Name × List ExecutableField))
     : ∀ field,
         field
-          ∈ collectedExecutableFields
-              (GraphQL.Execution.addExecutableGroup group groups)
+          ∈ collectedExecutableFields (GraphQL.Execution.addExecutableGroup group groups)
         -> field ∈ group.snd ++ collectedExecutableFields groups := by
   intro field hmem
   rcases
@@ -784,10 +781,8 @@ theorem collectedExecutableFields_mergeExecutableGroups_subset_append
     (left right : List (Name × List ExecutableField))
     : ∀ field,
         field
-          ∈ collectedExecutableFields
-              (GraphQL.Execution.mergeExecutableGroups left right)
-        -> field
-            ∈ collectedExecutableFields left ++ collectedExecutableFields right := by
+          ∈ collectedExecutableFields (GraphQL.Execution.mergeExecutableGroups left right)
+        -> field ∈ collectedExecutableFields left ++ collectedExecutableFields right := by
   intro field hmem
   rcases
       (collectedExecutableFields_mem_mergeExecutableGroups left right field).mp
@@ -2065,8 +2060,7 @@ mutual
                   (GraphQL.Execution.collectSelection schema variableValues
                     parentType (.object runtimeType identity) selection)
             -> ∃ fieldDefinition,
-                schema.lookupField parentType field.fieldName
-                = some fieldDefinition := by
+                schema.lookupField parentType field.fieldName = some fieldDefinition := by
     intro hobject hparentRuntime hready field hfield
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
@@ -2198,8 +2192,7 @@ mutual
                   (GraphQL.Execution.collectFields schema variableValues
                     parentType (.object runtimeType identity) selectionSet)
             -> ∃ fieldDefinition,
-                schema.lookupField parentType field.fieldName
-                = some fieldDefinition := by
+                schema.lookupField parentType field.fieldName = some fieldDefinition := by
     intro hobject hparentRuntime hready field hfield
     cases selectionSet with
     | nil =>
@@ -2249,8 +2242,7 @@ mutual
                   (GraphQL.Execution.collectSelection schema variableValues
                     parentType (.object runtimeType identity) selection)
             -> ∀ fieldDefinition,
-                schema.lookupField field.parentType field.fieldName
-                  = some fieldDefinition
+                schema.lookupField field.parentType field.fieldName = some fieldDefinition
                 -> ∀ childRuntime,
                     schema.typeIncludesObjectBool
                         fieldDefinition.outputType.namedType childRuntime
@@ -2394,8 +2386,7 @@ mutual
                   (GraphQL.Execution.collectFields schema variableValues
                     parentType (.object runtimeType identity) selectionSet)
             -> ∀ fieldDefinition,
-                schema.lookupField field.parentType field.fieldName
-                  = some fieldDefinition
+                schema.lookupField field.parentType field.fieldName = some fieldDefinition
                 -> ∀ childRuntime,
                     schema.typeIncludesObjectBool
                         fieldDefinition.outputType.namedType childRuntime

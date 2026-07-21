@@ -44,8 +44,7 @@ theorem fieldHeadCompositeRuntime_framed_members_of_valid_normal_mem
               ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
                       schema
                     = true
-                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
-                    = false
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
                   ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
                       arguments parentType
                       [Selection.inlineFragment (some parentType) []
@@ -107,8 +106,7 @@ theorem fieldHeadCompositeRuntime_of_valid_normal_mem
               ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
                       schema
                     = true
-                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
-                    = false
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
                   ∧ abstractRuntimeForFieldHeadDeep? schema parentType fieldName
                       arguments parentType rootSelectionSet
                     = some runtimeType))
@@ -159,8 +157,7 @@ theorem fieldCompositeSelectedChildRuntime_of_valid_normal_mem
               ∨ ((TypeRef.named fieldDefinition.outputType.namedType).isCompositeBool
                       schema
                     = true
-                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType
-                    = false
+                  ∧ objectTypeNameBool schema fieldDefinition.outputType.namedType = false
                   ∧ firstInlineFragmentTypeCondition? childSelectionSet
                     = some runtimeType))
             ∧ schema.typeIncludesObjectBool

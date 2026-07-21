@@ -210,8 +210,7 @@ mutual
                 -> FieldsForNameCanMerge schema fragments left right)
       : FieldsInSetCanMerge schema fragments parentType selectionSet
 
-  inductive FieldsForNameCanMerge
-      (schema : Schema) (fragments : List FragmentDefinition)
+  inductive FieldsForNameCanMerge (schema : Schema) (fragments : List FragmentDefinition)
       : ScopedField -> ScopedField -> Prop where
     | intro (left right : ScopedField)
       (hshape
@@ -228,8 +227,7 @@ mutual
             ∨ ¬ schema.objectType right.parentType)
           -> ∀ objectType,
               let fields :=
-                collectFields schema left.availableFragments objectType
-                  left.selectionSet
+                collectFields schema left.availableFragments objectType left.selectionSet
                 ++ collectFields schema right.availableFragments objectType
                     right.selectionSet
               ∀ subLeft,

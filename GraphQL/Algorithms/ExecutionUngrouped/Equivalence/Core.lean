@@ -265,8 +265,7 @@ theorem ResultDataAndErrorPresenceEquivalent.errorPresence
   intro h
   exact ⟨h.2.1, h.2.2⟩
 
-def ResponseValueResultAlignedEquivalent (ungrouped spec : Result ResponseValue)
-    : Prop :=
+def ResponseValueResultAlignedEquivalent (ungrouped spec : Result ResponseValue) : Prop :=
   match ungrouped, spec with
   | .error ungroupedErrors, .error specErrors =>
       ErrorPresenceEquivalent ungroupedErrors specErrors
@@ -759,8 +758,7 @@ def ResponseAbsorbs (base output : ResponseValue) : Prop :=
 def ExecutionWindowEquivalent (window : ExecutionWindow ObjectIdentity) : Prop :=
   ResponseResultEquivalent window.ungroupedResult window.specResult
 
-def ExecutionStateEquivalent (state : ExecutionEquivalenceState ObjectIdentity)
-    : Prop :=
+def ExecutionStateEquivalent (state : ExecutionEquivalenceState ObjectIdentity) : Prop :=
   ResponseResultEquivalent state.ungroupedProjectionResult state.specProjectionResult
 
 def PairKeysNodup {α : Type} (fields : List (Name × α)) : Prop :=
@@ -918,8 +916,7 @@ def ExecutableFieldsSameResponseParent (fields : List ExecutableField) : Prop :=
 def ExecutableFieldsParent (parentType : Name) (fields : List ExecutableField) : Prop :=
   ∀ field, field ∈ fields -> field.parentType = parentType
 
-def ScopedFieldsValidationMergeCompatible (fields : List FieldMerge.ScopedField)
-    : Prop :=
+def ScopedFieldsValidationMergeCompatible (fields : List FieldMerge.ScopedField) : Prop :=
   ∀ first later,
     first ∈ fields
     -> later ∈ fields
@@ -960,8 +957,7 @@ def ScopedFieldRuntimeApplies
     : Prop :=
   schema.typeIncludesObjectBool field.parentType runtimeType = true
 
-def ScopedParentRuntimeApplies (schema : Schema) (runtimeType parentType : Name)
-    : Prop :=
+def ScopedParentRuntimeApplies (schema : Schema) (runtimeType parentType : Name) : Prop :=
   schema.typeIncludesObjectBool parentType runtimeType = true
 
 theorem ScopedParentRuntimeApplies.of_rootSourceAppliesBool
@@ -1334,8 +1330,7 @@ structure ExecutedResponseFieldAt
   previous_eq
     : previous = (responseObjectField? field.responseName output).getD (.object [])
   resolved_eq
-    : resolved
-      = resolvers.resolve field.parentType field.fieldName field.arguments source
+    : resolved = resolvers.resolve field.parentType field.fieldName field.arguments source
   response_eq
     : response
       = completeValue schema resolvers variableValues completionDepth
@@ -1441,8 +1436,7 @@ theorem specExecuteRootSelectionSet_executableFieldSelections_same_group
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
     (hresponse
-      : ∀ candidate,
-          candidate ∈ field :: fields -> candidate.responseName = responseName)
+      : ∀ candidate, candidate ∈ field :: fields -> candidate.responseName = responseName)
     (hparent
       : ∀ candidate, candidate ∈ field :: fields -> candidate.parentType = parentType)
     : GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
@@ -1493,8 +1487,7 @@ def CollectedGroupsResponseName (groups : List (Name × List ExecutableField)) :
   ∀ responseName fields,
     (responseName, fields) ∈ groups -> ExecutableFieldsResponseName responseName fields
 
-def CollectedGroupsFieldsNonempty (groups : List (Name × List ExecutableField))
-    : Prop :=
+def CollectedGroupsFieldsNonempty (groups : List (Name × List ExecutableField)) : Prop :=
   ∀ responseName fields, (responseName, fields) ∈ groups -> fields ≠ []
 
 theorem CollectedGroupsFieldsNonempty_nil : CollectedGroupsFieldsNonempty [] := by
@@ -2133,8 +2126,7 @@ theorem collectFields_sameResponseParent
       selectionSet)
     (collectFields_parent schema variableValues parentType source selectionSet)
 
-def CollectedGroupsValidationMergeCompatible
-    (groups : List (Name × List ExecutableField))
+def CollectedGroupsValidationMergeCompatible (groups : List (Name × List ExecutableField))
     : Prop :=
   ∀ responseName fields,
     (responseName, fields) ∈ groups

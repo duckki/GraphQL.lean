@@ -64,8 +64,7 @@ theorem zeroDepthResponseNameResult_of_lookup_some_ready
     (existing : ResponseValue)
     : ResponseMergeReady (.object fields)
       -> lookupResponseField? responseName fields = some existing
-      -> zeroDepthResponseNameResult responseName fields
-          = (.object fields, visitOk) := by
+      -> zeroDepthResponseNameResult responseName fields = (.object fields, visitOk) := by
   intro hready hlookup
   have hresult :=
     zeroDepthResponseNameResult_of_lookup_some_merge responseName fields existing
@@ -97,8 +96,7 @@ theorem zeroDepthResponseNameResult_of_lookup_none
     mergeResponseFieldIntoObject, GraphQL.Execution.outOfFuel,
     resultValueOrNull, resultStatus]
 
-theorem zeroDepthExecutableFieldsResult_same_response_of_lookup_some
-    (responseName : Name)
+theorem zeroDepthExecutableFieldsResult_same_response_of_lookup_some (responseName : Name)
     : ∀ (fields : List ExecutableField)
           (outputFields : List (Name × ResponseValue)) (existing : ResponseValue),
         (∀ field, field ∈ fields -> field.responseName = responseName)
@@ -138,8 +136,7 @@ theorem lookupResponseField?_mergeResponseField_null_same
 theorem zeroDepthResponseNameResult_of_lookup_null
     (responseName : Name) (fields : List (Name × ResponseValue))
     : lookupResponseField? responseName fields = some .null
-      -> zeroDepthResponseNameResult responseName fields
-          = (.object fields, visitOk) := by
+      -> zeroDepthResponseNameResult responseName fields = (.object fields, visitOk) := by
   intro hlookup
   have hresult :=
     zeroDepthResponseNameResult_of_lookup_some_merge responseName fields .null
@@ -149,8 +146,7 @@ theorem zeroDepthResponseNameResult_of_lookup_null
     mergeResponseField_null_of_lookup_null responseName fields hlookup
   simpa [hmerge] using hresult
 
-theorem zeroDepthExecutableFieldsResult_same_response_of_lookup_null
-    (responseName : Name)
+theorem zeroDepthExecutableFieldsResult_same_response_of_lookup_null (responseName : Name)
     : ∀ (fields : List ExecutableField) (outputFields : List (Name × ResponseValue)),
         (∀ field, field ∈ fields -> field.responseName = responseName)
         -> lookupResponseField? responseName outputFields = some .null
@@ -519,8 +515,7 @@ theorem ZeroDepthGroupsNullCompatible_of_fresh
           exact hfresh field hfieldMem (by simpa [hfieldResponse] using hkey))
 
 theorem zeroDepthExecutableFieldsResult_append
-    : ∀ (left right : List ExecutableField)
-          (outputFields : List (Name × ResponseValue)),
+    : ∀ (left right : List ExecutableField) (outputFields : List (Name × ResponseValue)),
         zeroDepthExecutableFieldsResult (left ++ right) outputFields
         = let leftResult := zeroDepthExecutableFieldsResult left outputFields
           let rightFields :=
@@ -678,8 +673,7 @@ theorem zeroDepthExecutableGroupsResult_status_fresh
           (outputFields : List (Name × ResponseValue)),
         PairKeysNodup groups
         -> (∀ responseName fields,
-              (responseName, fields) ∈ groups
-              -> responseName ∉ outputFields.map Prod.fst)
+              (responseName, fields) ∈ groups -> responseName ∉ outputFields.map Prod.fst)
         -> (zeroDepthExecutableGroupsResult groups outputFields).snd
             = depthZeroVisitStatus groups.length
   | [], outputFields, _hnodup, _hfresh => by
@@ -807,8 +801,7 @@ theorem zeroDepthExecutableGroupsResult_preserves_object
     : ∀ (groups : List (Name × List ExecutableField))
           (outputFields : List (Name × ResponseValue)),
         ∃ resultFields,
-          (zeroDepthExecutableGroupsResult groups outputFields).fst
-          = .object resultFields
+          (zeroDepthExecutableGroupsResult groups outputFields).fst = .object resultFields
   | [], outputFields => by
       exact ⟨outputFields, by simp [zeroDepthExecutableGroupsResult]⟩
   | (responseName, fields) :: rest, outputFields => by
@@ -961,8 +954,7 @@ theorem zeroDepthExecutableGroupsResult_append_existing_key
     (outputFields : List (Name × ResponseValue))
     : ResponseMergeReady (.object outputFields)
       -> target ∈ groups.map Prod.fst
-      -> zeroDepthExecutableGroupsResult (groups ++ [(target, groupFields)])
-            outputFields
+      -> zeroDepthExecutableGroupsResult (groups ++ [(target, groupFields)]) outputFields
           = zeroDepthExecutableGroupsResult groups outputFields := by
   intro hready hmem
   obtain ⟨prefixFields, existing, hprefixFst, hlookup, hprefixReady⟩ :=

@@ -580,8 +580,7 @@ theorem mergeExecutableGroups_preserves_head
     (responseName : Name) (currentFields : List Execution.ExecutableField)
     (headRest right : List (Name × List Execution.ExecutableField))
     : ∃ appendedFields mergedRest,
-        Execution.mergeExecutableGroups
-          ((responseName, currentFields) :: headRest) right
+        Execution.mergeExecutableGroups ((responseName, currentFields) :: headRest) right
         = (responseName, currentFields ++ appendedFields) :: mergedRest := by
   induction right generalizing currentFields headRest with
   | nil =>
@@ -662,8 +661,7 @@ theorem collectFields_cons
     (parentType : Name)
     (source : Execution.ResolverValue ObjectRef)
     (selection : Selection) (rest : List Selection)
-    : Execution.collectFields schema variableValues parentType source
-        (selection :: rest)
+    : Execution.collectFields schema variableValues parentType source (selection :: rest)
       = Execution.mergeExecutableGroups
           (Execution.collectSelection schema variableValues parentType source selection)
           (Execution.collectFields schema variableValues parentType source rest) := by
@@ -714,8 +712,7 @@ theorem collectFields_inlineFragment_some_directiveFree_apply
           = Execution.mergeExecutableGroups
               (Execution.collectFields schema variableValues parentType source
                 selectionSet)
-              (Execution.collectFields schema variableValues parentType source
-                rest) := by
+              (Execution.collectFields schema variableValues parentType source rest) := by
   intro happly
   simp [collectFields_cons, collectSelection_inlineFragment_some_noDirectives,
     happly]
@@ -729,8 +726,7 @@ theorem collectFields_inlineFragment_some_directiveFree_skip
       -> Execution.collectFields schema variableValues parentType source
             (Selection.inlineFragment (some typeCondition) [] selectionSet :: rest)
           = Execution.mergeExecutableGroups []
-              (Execution.collectFields schema variableValues parentType source
-                rest) := by
+              (Execution.collectFields schema variableValues parentType source rest) := by
   intro hskip
   simp [collectFields_cons, collectSelection_inlineFragment_some_noDirectives,
     hskip]
@@ -1043,8 +1039,7 @@ theorem collectFields_field_noDirectives_cons_of_responseName_not_mem
                 selectionSet := selectionSet
               }]
             )
-            :: Execution.collectFields schema variableValues parentType source
-                rest := by
+            :: Execution.collectFields schema variableValues parentType source rest := by
   intro hnotin
   rw [collectFields_field_noDirectives]
   rw [mergeExecutableGroups_eq_append_of_namesDisjoint]
@@ -1105,8 +1100,7 @@ theorem collectFields_withoutFieldSelectionsWithResponseName_directiveFree
       -> ∀ selectionSet,
           selectionSetDirectiveFree selectionSet
           -> Execution.collectFields schema variableValues parentType source
-                (withoutFieldSelectionsWithResponseName schema responseName
-                  selectionSet)
+                (withoutFieldSelectionsWithResponseName schema responseName selectionSet)
               = withoutExecutableGroupsWithResponseName responseName
                   (Execution.collectFields schema variableValues parentType
                     source selectionSet)
@@ -1356,8 +1350,7 @@ theorem collectFields_fieldSelectionsWithResponseNameInScope_responseSelection
             ∧ schema.typeIncludesObjectBool parentType runtimeType = true)
       -> selectionSetDirectiveFree selectionSet
       -> collectedResponseSelectionSet responseName
-            (Execution.collectFields schema variableValues parentType source
-              selectionSet)
+            (Execution.collectFields schema variableValues parentType source selectionSet)
           = mergeSelectionSets
               (fieldSelectionsWithResponseNameInScope schema parentType responseName
                 selectionSet) := by
@@ -1512,8 +1505,7 @@ theorem mergeExecutableGroups_nil_left_collectFields_eq
     (selectionSet : List Selection)
     : Execution.mergeExecutableGroups []
         (Execution.collectFields schema variableValues parentType source selectionSet)
-      = Execution.collectFields schema variableValues parentType source
-          selectionSet := by
+      = Execution.collectFields schema variableValues parentType source selectionSet := by
   exact mergeExecutableGroups_nil_left_of_namesNodup
     (Execution.collectFields schema variableValues parentType source selectionSet)
     (collectFields_namesNodup schema variableValues parentType source

@@ -246,8 +246,7 @@ theorem fieldsForNameCanMerge_of_sameSelection_bridge
     (objectLeft objectRight abstractLeft abstractRight : FieldMerge.ScopedField)
     : scopedFieldSameSelection objectLeft abstractLeft
       -> scopedFieldSameSelection objectRight abstractRight
-      -> FieldMerge.sameResponseShape schema objectLeft.outputType
-          abstractLeft.outputType
+      -> FieldMerge.sameResponseShape schema objectLeft.outputType abstractLeft.outputType
       -> FieldMerge.sameResponseShape schema objectRight.outputType
           abstractRight.outputType
       -> (abstractLeft.parentType = objectLeft.parentType

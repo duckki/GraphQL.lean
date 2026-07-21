@@ -69,8 +69,7 @@ theorem executeField_fieldPairOrDeepSuccess_parentObjectProbe_left_root_response
                 runtimeType ref fieldDefinition.outputType)
               targetParent targetField targetField leftArguments rightArguments)
             variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-            (projectionRootResolverValue
-              (.object targetParent (none : Option ObjectRef)))
+            (projectionRootResolverValue (.object targetParent (none : Option ObjectRef)))
             responseName
             [{
               parentType := targetParent,
@@ -178,8 +177,7 @@ theorem executeField_fieldPairOrDeepSuccess_parentObjectProbe_right_root_respons
                 runtimeType ref fieldDefinition.outputType)
               targetParent targetField targetField leftArguments rightArguments)
             variableValues (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-            (projectionRootResolverValue
-              (.object targetParent (none : Option ObjectRef)))
+            (projectionRootResolverValue (.object targetParent (none : Option ObjectRef)))
             responseName
             [{
               parentType := targetParent,
@@ -281,10 +279,7 @@ theorem executeField_fieldPairOrDeepSuccess_parentObjectProbe_left_root_ok_of_ch
           = true
       -> Execution.executeSelectionSetAsResponse schema base variableValues fuel
             runtimeType (.object runtimeType ref) childSelectionSet
-          = ({
-                data := Execution.ResponseValue.object childFields,
-                errors := childErrors
-              }
+          = ({ data := Execution.ResponseValue.object childFields, errors := childErrors }
               : Execution.Response)
       -> ∃ responseValue fieldErrors,
           Execution.executeField schema
@@ -295,8 +290,7 @@ theorem executeField_fieldPairOrDeepSuccess_parentObjectProbe_left_root_ok_of_ch
               rightArguments)
             variableValues
             (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-            (projectionRootResolverValue
-              (.object targetParent (none : Option ObjectRef)))
+            (projectionRootResolverValue (.object targetParent (none : Option ObjectRef)))
             responseName
             [{
               parentType := targetParent,
@@ -334,10 +328,7 @@ theorem executeField_fieldPairOrDeepSuccess_parentObjectProbe_right_root_ok_of_c
           = true
       -> Execution.executeSelectionSetAsResponse schema base variableValues fuel
             runtimeType (.object runtimeType ref) childSelectionSet
-          = ({
-                data := Execution.ResponseValue.object childFields,
-                errors := childErrors
-              }
+          = ({ data := Execution.ResponseValue.object childFields, errors := childErrors }
               : Execution.Response)
       -> ∃ responseValue fieldErrors,
           Execution.executeField schema
@@ -348,8 +339,7 @@ theorem executeField_fieldPairOrDeepSuccess_parentObjectProbe_right_root_ok_of_c
               rightArguments)
             variableValues
             (fuel + leafProbeFuel fieldDefinition.outputType + 1)
-            (projectionRootResolverValue
-              (.object targetParent (none : Option ObjectRef)))
+            (projectionRootResolverValue (.object targetParent (none : Option ObjectRef)))
             responseName
             [{
               parentType := targetParent,
@@ -409,8 +399,7 @@ theorem selectionSetFieldsExecuteOk_fieldPairOrDeepSuccess_parentObjectProbe_of_
                     }
                     : Execution.Response))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ selectionSet
             -> ¬ fieldPairProjectionTarget targetParent targetField targetField
                   leftArguments rightArguments targetParent fieldName arguments
@@ -502,8 +491,7 @@ theorem executeField_fieldPairOrDeepSuccess_parentObjectProbe_other_root_ok_of_d
             (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
               (ProjectionResolverRef.filler : ProjectionResolverRef (Option ObjectRef)))
             variableValues parentFuel
-            (projectionRootResolverValue
-              (.object targetParent (none : Option ObjectRef)))
+            (projectionRootResolverValue (.object targetParent (none : Option ObjectRef)))
             responseName
             [{
               parentType := targetParent,
@@ -519,8 +507,7 @@ theorem executeField_fieldPairOrDeepSuccess_parentObjectProbe_other_root_ok_of_d
                 childRuntimeType ref outputType)
               targetParent targetField targetField leftArguments rightArguments)
             variableValues parentFuel
-            (projectionRootResolverValue
-              (.object targetParent (none : Option ObjectRef)))
+            (projectionRootResolverValue (.object targetParent (none : Option ObjectRef)))
             responseName
             [{
               parentType := targetParent,
@@ -554,8 +541,7 @@ theorem selectionSetOtherFieldsExecuteOk_fieldPairOrDeepSuccess_parentObjectProb
         -> ∃ responseValue fieldErrors,
             Execution.executeField schema
               (deepSelectionSetSuccessResolversWithRef schema rootSelectionSet
-                (ProjectionResolverRef.filler
-                  : ProjectionResolverRef (Option ObjectRef)))
+                (ProjectionResolverRef.filler : ProjectionResolverRef (Option ObjectRef)))
               variableValues parentFuel
               (projectionRootResolverValue
                 (.object targetParent (none : Option ObjectRef)))
@@ -619,15 +605,13 @@ theorem selectionSetsDataEquivalent_object_child_of_parent_tail_ok
           (Selection.field responseName fieldName leftArguments [] leftChildSelectionSet
             :: leftRest)
       -> selectionSetDirectiveFree
-          (Selection.field responseName fieldName rightArguments []
-              rightChildSelectionSet
+          (Selection.field responseName fieldName rightArguments [] rightChildSelectionSet
             :: rightRest)
       -> selectionSetNormal schema targetParent
           (Selection.field responseName fieldName leftArguments [] leftChildSelectionSet
             :: leftRest)
       -> selectionSetNormal schema targetParent
-          (Selection.field responseName fieldName rightArguments []
-              rightChildSelectionSet
+          (Selection.field responseName fieldName rightArguments [] rightChildSelectionSet
             :: rightRest)
       -> objectTypeNameBool schema targetParent = true
       -> objectTypeNameBool schema runtimeType = true
@@ -668,8 +652,7 @@ theorem selectionSetsDataEquivalent_object_child_of_parent_tail_ok
       -> selectionSetsDataEquivalent schema targetParent
           (Selection.field responseName fieldName leftArguments [] leftChildSelectionSet
             :: leftRest)
-          (Selection.field responseName fieldName rightArguments []
-              rightChildSelectionSet
+          (Selection.field responseName fieldName rightArguments [] rightChildSelectionSet
             :: rightRest)
       -> selectionSetsDataEquivalent schema runtimeType
           leftChildSelectionSet rightChildSelectionSet := by
@@ -825,8 +808,7 @@ theorem split_context_selectionSets_ok_of_field_ok
       -> selectionSetNormal schema parentType rightSuffix
       -> objectTypeNameBool schema parentType = true
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ leftPref
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema resolvers variableValues fuel source
@@ -840,8 +822,7 @@ theorem split_context_selectionSets_ok_of_field_ok
                   }]
                 = .ok ([(responseName, responseValue)], fieldErrors))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ rightPref
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema resolvers variableValues fuel source
@@ -855,8 +836,7 @@ theorem split_context_selectionSets_ok_of_field_ok
                   }]
                 = .ok ([(responseName, responseValue)], fieldErrors))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ leftSuffix
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema resolvers variableValues fuel source
@@ -870,8 +850,7 @@ theorem split_context_selectionSets_ok_of_field_ok
                   }]
                 = .ok ([(responseName, responseValue)], fieldErrors))
       -> (∀ responseName fieldName arguments directives childSelectionSet,
-            Selection.field responseName fieldName arguments directives
-                childSelectionSet
+            Selection.field responseName fieldName arguments directives childSelectionSet
               ∈ rightSuffix
             -> ∃ responseValue fieldErrors,
                 Execution.executeField schema resolvers variableValues fuel source
@@ -940,8 +919,7 @@ theorem object_child_split_context_ok_of_fieldsExecuteOk
     {fieldDefinition : FieldDefinition}
     : selectionSetDirectiveFree
         (leftPref
-          ++ Selection.field responseName fieldName leftArguments []
-                leftChildSelectionSet
+          ++ Selection.field responseName fieldName leftArguments [] leftChildSelectionSet
               :: leftSuffix)
       -> selectionSetDirectiveFree
           (rightPref
@@ -1120,8 +1098,7 @@ theorem object_child_split_context_ok_of_concrete_fieldsExecuteOk
     (childRuntimeType : Name) (ref : ObjectRef)
     : selectionSetDirectiveFree
         (leftPref
-          ++ Selection.field responseName fieldName leftArguments []
-                leftChildSelectionSet
+          ++ Selection.field responseName fieldName leftArguments [] leftChildSelectionSet
               :: leftSuffix)
       -> selectionSetDirectiveFree
           (rightPref
@@ -1157,8 +1134,7 @@ theorem object_child_split_context_ok_of_concrete_fieldsExecuteOk
               variableValues
               (fuel + leafProbeFuel fieldDefinition.outputType + 1)
               parentType
-              (projectionRootResolverValue
-                (.object parentType (none : Option ObjectRef)))
+              (projectionRootResolverValue (.object parentType (none : Option ObjectRef)))
               rightPref
           ∧ selectionSetFieldsExecuteOk schema
               (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
@@ -1168,8 +1144,7 @@ theorem object_child_split_context_ok_of_concrete_fieldsExecuteOk
               variableValues
               (fuel + leafProbeFuel fieldDefinition.outputType + 1)
               parentType
-              (projectionRootResolverValue
-                (.object parentType (none : Option ObjectRef)))
+              (projectionRootResolverValue (.object parentType (none : Option ObjectRef)))
               leftSuffix
           ∧ selectionSetFieldsExecuteOk schema
               (fieldPairOrDeepSuccessResolvers schema rootSelectionSet
@@ -1179,8 +1154,7 @@ theorem object_child_split_context_ok_of_concrete_fieldsExecuteOk
               variableValues
               (fuel + leafProbeFuel fieldDefinition.outputType + 1)
               parentType
-              (projectionRootResolverValue
-                (.object parentType (none : Option ObjectRef)))
+              (projectionRootResolverValue (.object parentType (none : Option ObjectRef)))
               rightSuffix
       -> ∃ leftPrefixFields leftPrefixErrors rightPrefixFields
             rightPrefixErrors leftSuffixFields leftSuffixErrors
@@ -1193,8 +1167,7 @@ theorem object_child_split_context_ok_of_concrete_fieldsExecuteOk
               variableValues
               (fuel + leafProbeFuel fieldDefinition.outputType + 1)
               parentType
-              (projectionRootResolverValue
-                (.object parentType (none : Option ObjectRef)))
+              (projectionRootResolverValue (.object parentType (none : Option ObjectRef)))
               leftPref
             = .ok (leftPrefixFields, leftPrefixErrors)
           ∧ Execution.executeSelectionSet schema
@@ -1206,8 +1179,7 @@ theorem object_child_split_context_ok_of_concrete_fieldsExecuteOk
               variableValues
               (fuel + leafProbeFuel fieldDefinition.outputType + 1)
               parentType
-              (projectionRootResolverValue
-                (.object parentType (none : Option ObjectRef)))
+              (projectionRootResolverValue (.object parentType (none : Option ObjectRef)))
               rightPref
             = .ok (rightPrefixFields, rightPrefixErrors)
           ∧ Execution.executeSelectionSet schema
@@ -1219,8 +1191,7 @@ theorem object_child_split_context_ok_of_concrete_fieldsExecuteOk
               variableValues
               (fuel + leafProbeFuel fieldDefinition.outputType + 1)
               parentType
-              (projectionRootResolverValue
-                (.object parentType (none : Option ObjectRef)))
+              (projectionRootResolverValue (.object parentType (none : Option ObjectRef)))
               leftSuffix
             = .ok (leftSuffixFields, leftSuffixErrors)
           ∧ Execution.executeSelectionSet schema
@@ -1232,8 +1203,7 @@ theorem object_child_split_context_ok_of_concrete_fieldsExecuteOk
               variableValues
               (fuel + leafProbeFuel fieldDefinition.outputType + 1)
               parentType
-              (projectionRootResolverValue
-                (.object parentType (none : Option ObjectRef)))
+              (projectionRootResolverValue (.object parentType (none : Option ObjectRef)))
               rightSuffix
             = .ok (rightSuffixFields, rightSuffixErrors) := by
   intro hleftFree hrightFree hleftNormal hrightNormal hobject hfieldsOk
@@ -1625,8 +1595,7 @@ theorem responseData_semanticEquivalent_object_child_of_parent_responseData_spli
             variableValues
             (fuel + leafProbeFuel fieldDefinition.outputType + 1)
             targetParent
-            (projectionRootResolverValue
-              (.object targetParent (none : Option ObjectRef)))
+            (projectionRootResolverValue (.object targetParent (none : Option ObjectRef)))
             (leftPref
               ++ Selection.field responseName fieldName leftArguments []
                     leftChildSelectionSet
@@ -1639,8 +1608,7 @@ theorem responseData_semanticEquivalent_object_child_of_parent_responseData_spli
             variableValues
             (fuel + leafProbeFuel fieldDefinition.outputType + 1)
             targetParent
-            (projectionRootResolverValue
-              (.object targetParent (none : Option ObjectRef)))
+            (projectionRootResolverValue (.object targetParent (none : Option ObjectRef)))
             (rightPref
               ++ Selection.field responseName fieldName rightArguments []
                     rightChildSelectionSet
@@ -2156,14 +2124,12 @@ theorem selectionSetsDataEquivalent_object_child_of_parent_empty_tail
     : Argument.argumentsEquivalent leftArguments rightArguments
       -> schema.lookupField targetParent fieldName = some fieldDefinition
       -> selectionSetDirectiveFree
-          [Selection.field responseName fieldName leftArguments []
-            leftChildSelectionSet]
+          [Selection.field responseName fieldName leftArguments [] leftChildSelectionSet]
       -> selectionSetDirectiveFree
           [Selection.field responseName fieldName rightArguments []
             rightChildSelectionSet]
       -> selectionSetNormal schema targetParent
-          [Selection.field responseName fieldName leftArguments []
-            leftChildSelectionSet]
+          [Selection.field responseName fieldName leftArguments [] leftChildSelectionSet]
       -> selectionSetNormal schema targetParent
           [Selection.field responseName fieldName rightArguments []
             rightChildSelectionSet]
@@ -2172,8 +2138,7 @@ theorem selectionSetsDataEquivalent_object_child_of_parent_empty_tail
       -> schema.typeIncludesObjectBool fieldDefinition.outputType.namedType runtimeType
           = true
       -> selectionSetsDataEquivalent schema targetParent
-          [Selection.field responseName fieldName leftArguments []
-            leftChildSelectionSet]
+          [Selection.field responseName fieldName leftArguments [] leftChildSelectionSet]
           [Selection.field responseName fieldName rightArguments []
             rightChildSelectionSet]
       -> selectionSetsDataEquivalent schema runtimeType

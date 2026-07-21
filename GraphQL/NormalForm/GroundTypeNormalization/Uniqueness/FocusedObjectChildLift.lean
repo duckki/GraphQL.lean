@@ -169,8 +169,7 @@ theorem focusedSelectionSetTargetChildSelectionSets_mem
         ∈ focusedSelectionSetTargetChildSelectionSets targetField leftArguments
             rightArguments selectionSet
       -> ∃ responseName arguments directives,
-          Selection.field responseName targetField arguments directives
-              childSelectionSet
+          Selection.field responseName targetField arguments directives childSelectionSet
             ∈ selectionSet
           ∧ (Argument.argumentsEquivalent arguments leftArguments
               ∨ Argument.argumentsEquivalent arguments rightArguments) := by
@@ -269,8 +268,7 @@ theorem focusedSelectionSetTargetChildSelectionSets_child_valid_free_normal_of_f
     : (∀ responseName arguments directives childSelectionSet,
         Selection.field responseName targetField arguments directives childSelectionSet
           ∈ selectionSet
-        -> Selection.field responseName targetField arguments directives
-              childSelectionSet
+        -> Selection.field responseName targetField arguments directives childSelectionSet
             ∈ whole)
       -> Validation.selectionSetValid schema variableDefinitions parentType whole
       -> selectionSetDirectiveFree whole
@@ -391,8 +389,7 @@ theorem focusedSplitTargetChildSelectionSets_child_exists_valid_free_normal
     {fieldDefinition : FieldDefinition}
     : Validation.selectionSetValid schema leftVariableDefinitions parentType
         (leftPref
-          ++ Selection.field responseName fieldName leftArguments []
-                leftChildSelectionSet
+          ++ Selection.field responseName fieldName leftArguments [] leftChildSelectionSet
               :: leftSuffix)
       -> Validation.selectionSetValid schema rightVariableDefinitions parentType
           (rightPref
@@ -541,8 +538,7 @@ theorem focusedObjectChildSupportSelectionSets_child_exists_valid_free_normal
     {fieldDefinition : FieldDefinition}
     : Validation.selectionSetValid schema leftVariableDefinitions parentType
         (leftPref
-          ++ Selection.field responseName fieldName leftArguments []
-                leftChildSelectionSet
+          ++ Selection.field responseName fieldName leftArguments [] leftChildSelectionSet
               :: leftSuffix)
       -> Validation.selectionSetValid schema rightVariableDefinitions parentType
           (rightPref
@@ -625,8 +621,7 @@ theorem not_selectionSetsDataEquivalent_of_object_child_contextualRuntimeDiff_fi
     {leftChildSelectionSet rightChildSelectionSet
       leftPref rightPref leftSuffix rightSuffix
       : List Selection}
-    {fieldDefinition : FieldDefinition} {support : List Selection -> Prop}
-    {minFuel : Nat}
+    {fieldDefinition : FieldDefinition} {support : List Selection -> Prop} {minFuel : Nat}
     : schema.lookupField parentType fieldName = some fieldDefinition
       -> fieldDefinition.outputType.namedType = returnType
       -> selectionSetDirectiveFree
@@ -674,8 +669,7 @@ theorem not_selectionSetsDataEquivalent_of_object_child_contextualRuntimeDiff_fi
                 let parentSource :=
                   projectionRootResolverValue
                     (.object parentType (none : Option ObjectRef))
-                ∀ otherResponseName otherFieldName arguments directives
-                    childSelectionSet,
+                ∀ otherResponseName otherFieldName arguments directives childSelectionSet,
                   Selection.field otherResponseName otherFieldName arguments directives
                       childSelectionSet
                     ∈ leftPref
@@ -709,8 +703,7 @@ theorem not_selectionSetsDataEquivalent_of_object_child_contextualRuntimeDiff_fi
                 let parentSource :=
                   projectionRootResolverValue
                     (.object parentType (none : Option ObjectRef))
-                ∀ otherResponseName otherFieldName arguments directives
-                    childSelectionSet,
+                ∀ otherResponseName otherFieldName arguments directives childSelectionSet,
                   Selection.field otherResponseName otherFieldName arguments directives
                       childSelectionSet
                     ∈ rightPref
@@ -744,8 +737,7 @@ theorem not_selectionSetsDataEquivalent_of_object_child_contextualRuntimeDiff_fi
                 let parentSource :=
                   projectionRootResolverValue
                     (.object parentType (none : Option ObjectRef))
-                ∀ otherResponseName otherFieldName arguments directives
-                    childSelectionSet,
+                ∀ otherResponseName otherFieldName arguments directives childSelectionSet,
                   Selection.field otherResponseName otherFieldName arguments directives
                       childSelectionSet
                     ∈ leftSuffix
@@ -779,8 +771,7 @@ theorem not_selectionSetsDataEquivalent_of_object_child_contextualRuntimeDiff_fi
                 let parentSource :=
                   projectionRootResolverValue
                     (.object parentType (none : Option ObjectRef))
-                ∀ otherResponseName otherFieldName arguments directives
-                    childSelectionSet,
+                ∀ otherResponseName otherFieldName arguments directives childSelectionSet,
                   Selection.field otherResponseName otherFieldName arguments directives
                       childSelectionSet
                     ∈ rightSuffix

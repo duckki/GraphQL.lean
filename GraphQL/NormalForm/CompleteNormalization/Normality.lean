@@ -51,8 +51,7 @@ def boolCaseVars : BoolCase -> List BoolVar
   | (varName, _value) :: rest => varName :: boolCaseVars rest
 
 theorem boolCaseVars_cons (varName : BoolVar) (value : Bool) (boolCase : BoolCase)
-    : boolCaseVars ((varName, value) :: boolCase)
-      = varName :: boolCaseVars boolCase := by
+    : boolCaseVars ((varName, value) :: boolCase) = varName :: boolCaseVars boolCase := by
   rfl
 
 theorem boolCaseWrapperShape_wrapWithBoolCase

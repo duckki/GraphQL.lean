@@ -830,8 +830,7 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_fieldName_diff_le
       -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
       -> leftFieldName ≠ rightFieldName
       -> ¬ selectionSetsDataEquivalent schema parentType left right := by
@@ -894,8 +893,7 @@ theorem not_selectionSetsDataEquivalent_of_valid_normal_object_fieldName_diff_le
       -> schema.lookupField parentType rightFieldName = some rightFieldDefinition
       -> (TypeRef.named leftFieldDefinition.outputType.namedType).isCompositeBool schema
           = true
-      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool
-            schema
+      -> (TypeRef.named rightFieldDefinition.outputType.namedType).isCompositeBool schema
           = false
       -> leftFieldName ≠ rightFieldName
       -> ¬ selectionSetsDataEquivalent schema parentType left right := by

@@ -8,6 +8,7 @@
     "graphql": "17.0.1"
   },
   "scripts": {
+    "lean:import-closure": "lake exe import-closure",
     "oracle:graphql-js": "node scripts/graphql-js-oracle.mjs --check",
     "oracle:graphql-js:named-fragment": "node scripts/graphql-js-oracle.mjs --cases conformance/graphql-js/named-fragment-cases --check"
   }

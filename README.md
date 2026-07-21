@@ -29,19 +29,29 @@ Run linting:
 lake lint
 ```
 
+Check that every tracked Lean file is reachable from the public roots:
+
+```sh
+lake exe import-closure
+```
+
 This package uses LeanFmt from
 [duckki/LeanFmt](https://github.com/duckki/LeanFmt) as a Lake dependency.
 
 Format all Lean sources:
 
 ```sh
-lake exe fmt --recursive GraphQL.lean Tests.lean Lint.lean GraphQL Tests
+lake exe fmt --recursive \
+  GraphQL.lean Tests.lean Lint.lean LeanImportClosure.lean \
+  LeanImportClosureMain.lean GraphQL Tests
 ```
 
 Check formatting without rewriting files:
 
 ```sh
-lake exe fmt --check --recursive GraphQL.lean Tests.lean Lint.lean GraphQL Tests
+lake exe fmt --check --recursive \
+  GraphQL.lean Tests.lean Lint.lean LeanImportClosure.lean \
+  LeanImportClosureMain.lean GraphQL Tests
 ```
 
 The lint target runs Lean's built-in linters with documentation warnings disabled.
@@ -49,7 +59,9 @@ It also enforces project-local community-style checks inspired by common
 Mathlib/CSLib practice: lines at 100 columns except URLs, no trailing
 whitespace or tabs, no unscoped diagnostic/resource `set_option`, no bare
 `open Classical`, no lambda or dollar syntax, no double underscores in
-declaration names, and a 1500-line soft file limit.
+declaration names, a 1500-line soft file limit, and no tracked Lean files
+outside the transitive import closure of `GraphQL`, `Tests`, `Lint`, and
+`LeanImportClosureMain`.
 
 The main top-level libraries are:
 

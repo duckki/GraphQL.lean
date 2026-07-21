@@ -1,3 +1,4 @@
+import LeanImportClosure
 import Lake
 
 open System
@@ -9,7 +10,7 @@ def commentWidth : Nat := lineWidth
 def fileLineLimit : Nat := 1500
 
 def rootLeanFiles : List FilePath :=
-  ["GraphQL.lean", "Lint.lean"]
+  ["GraphQL.lean", "Lint.lean", "LeanImportClosure.lean", "LeanImportClosureMain.lean"]
 
 def sourceDirs : List FilePath :=
   ["GraphQL"]
@@ -229,19 +230,27 @@ def buildProject : IO UInt32 := do
     IO.eprintln "build: failed before linting"
     pure output.exitCode
 
+def checkLeanImportClosure : IO UInt32 := do
+  LeanImportClosure.checkLeanImportClosure
+
 def main (_args : List String) : IO UInt32 := do
   let files ← allLeanFiles
   let textFiles ← allTextLintFiles
   let buildExit ← buildProject
   let commentExit ← checkCommentWidth textFiles
   let styleExit ← checkCommonStyle textFiles
+  let importClosureExit ← checkLeanImportClosure
   let leanExit ←
     if buildExit == 0 then
       checkLeanLinters files
     else
       pure 1
   pure
-    ( if buildExit == 0 && commentExit == 0 && styleExit == 0 && leanExit == 0 then
+    ( if buildExit == 0
+          && commentExit == 0
+          && styleExit == 0
+          && importClosureExit == 0
+          && leanExit == 0 then
         0
       else
         1)

@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupList.DuplicateFiel
 /-!
 Fresh-prefix selection plans for group-list selection sets.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -199,10 +200,7 @@ theorem single_of_headDisjointTree
           source selection)
     : FreshPrefixSelectionDerivation schema variableValues parentType source
         [selection] :=
-  .consHeadDisjoint selection []
-    htree
-    .nil
-    (by
+  .consHeadDisjoint selection [] htree .nil (by
       intro responseName _hleft hright
       simp [GraphQL.Execution.collectFields] at hright)
 
@@ -654,17 +652,14 @@ theorem of_collectedCollectFields
             (GraphQL.Execution.collectFields schema variableValues parentType
               source selectionSet))) :=
   of_collectedGroups schema variableValues parentType source
-    (GraphQL.Execution.collectFields schema variableValues parentType source
-      selectionSet)
+    (GraphQL.Execution.collectFields schema variableValues parentType source selectionSet)
     (PairKeysNodup_of_executableGroupNamesNodup
       (GraphQL.Execution.collectFields schema variableValues parentType source
         selectionSet)
       (GraphQL.NormalForm.collectFields_namesNodup schema variableValues
         parentType source selectionSet))
-    (collectFields_fieldsNonempty schema variableValues parentType source
-      selectionSet)
-    (collectFields_responseName schema variableValues parentType source
-      selectionSet)
+    (collectFields_fieldsNonempty schema variableValues parentType source selectionSet)
+    (collectFields_responseName schema variableValues parentType source selectionSet)
     (collectFields_parent schema variableValues parentType source selectionSet)
 
 theorem of_executableFieldSelections_responseNamesNodup
@@ -1590,17 +1585,14 @@ theorem of_collectedCollectFields
               source selectionSet))) :=
   of_collectedGroups schema resolvers variableValues completionDepth parentType
     source
-    (GraphQL.Execution.collectFields schema variableValues parentType source
-      selectionSet)
+    (GraphQL.Execution.collectFields schema variableValues parentType source selectionSet)
     (PairKeysNodup_of_executableGroupNamesNodup
       (GraphQL.Execution.collectFields schema variableValues parentType source
         selectionSet)
       (GraphQL.NormalForm.collectFields_namesNodup schema variableValues
         parentType source selectionSet))
-    (collectFields_fieldsNonempty schema variableValues parentType source
-      selectionSet)
-    (collectFields_responseName schema variableValues parentType source
-      selectionSet)
+    (collectFields_fieldsNonempty schema variableValues parentType source selectionSet)
+    (collectFields_responseName schema variableValues parentType source selectionSet)
     (collectFields_parent schema variableValues parentType source selectionSet)
 
 theorem duplicateFieldBlockNormalizePlan_of_headDisjointSuffix

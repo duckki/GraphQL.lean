@@ -3,6 +3,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.FocusedSelectedPath
 /-!
 Object-output response paths and response-name absence separation.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

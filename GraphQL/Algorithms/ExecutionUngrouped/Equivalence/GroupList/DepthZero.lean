@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupList.FreshPlanNorm
 /-!
 Depth-zero group-list execution helpers.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

@@ -6,6 +6,7 @@ This module deliberately does not change `GraphQL.Operation`. It defines a
 separate operation surface for named-fragment work while reusing the existing
 schema, argument, variable, and directive syntax.
 -/
+
 namespace GraphQL
 namespace NamedFragment
 
@@ -67,11 +68,12 @@ def lookupFragment? (fragments : List FragmentDefinition) (name : Name)
     : Option FragmentDefinition :=
   fragments.find? (fun fragment => fragment.name == name)
 
-def lookupFragmentAndRestLt?
-    (fragmentName : Name) :
-    (fragments : List FragmentDefinition) ->
-      Option (FragmentDefinition × { remaining : List FragmentDefinition //
-        remaining.length < fragments.length })
+def lookupFragmentAndRestLt? (fragmentName : Name)
+    : (fragments : List FragmentDefinition)
+      -> Option
+          (FragmentDefinition
+            × { remaining : List FragmentDefinition
+                // remaining.length < fragments.length })
   | [] => none
   | fragment :: rest =>
       if fragment.name == fragmentName then

@@ -815,11 +815,13 @@ mutual
         ResponseMergeReady.null
     | .scalar value, .scalar _, ResponseAbsorptionShape.scalar _ =>
         ResponseMergeReady.scalar value
-    | .object _base, .object _output,
-        ResponseAbsorptionShape.object hfields =>
+    | .object _base,
+      .object _output,
+      ResponseAbsorptionShape.object hfields =>
         ResponseFieldsAbsorptionShape.output_ready hfields
-    | .list _base, .list _output,
-        ResponseAbsorptionShape.list hvalues =>
+    | .list _base,
+      .list _output,
+      ResponseAbsorptionShape.list hvalues =>
         ResponseListAbsorptionShape.output_ready hvalues
 
   theorem ResponseFieldsAbsorptionShape.output_ready
@@ -835,8 +837,9 @@ mutual
           ResponseListAbsorptionShape base output -> ResponseMergeReady (.list output)
     | [], [], ResponseListAbsorptionShape.nil =>
         ResponseMergeReady_empty_list
-    | _baseResponse :: _baseRest, _outputResponse :: _outputRest,
-        ResponseListAbsorptionShape.cons hready _ _ =>
+    | _baseResponse :: _baseRest,
+      _outputResponse :: _outputRest,
+      ResponseListAbsorptionShape.cons hready _ _ =>
         hready
 end
 
@@ -889,20 +892,21 @@ mutual
           ResponseListAbsorptionShape base middle
           -> ResponseListAbsorptionShape middle output
           -> ResponseListAbsorptionShape base output
-    | [], [], [], ResponseListAbsorptionShape.nil,
-        ResponseListAbsorptionShape.nil =>
+    | [],
+      [],
+      [],
+      ResponseListAbsorptionShape.nil,
+      ResponseListAbsorptionShape.nil =>
         ResponseListAbsorptionShape.nil
-    | _baseResponse :: _baseRest, _middleResponse :: _middleRest,
-        _outputResponse :: _outputRest,
-        ResponseListAbsorptionShape.cons _ hbaseMiddleResponse
-          hbaseMiddleRest,
-        ResponseListAbsorptionShape.cons houtputReady hmiddleOutputResponse
-          hmiddleOutputRest =>
+    | _baseResponse :: _baseRest,
+      _middleResponse :: _middleRest,
+      _outputResponse :: _outputRest,
+      ResponseListAbsorptionShape.cons _ hbaseMiddleResponse hbaseMiddleRest,
+      ResponseListAbsorptionShape.cons houtputReady hmiddleOutputResponse
+        hmiddleOutputRest =>
         ResponseListAbsorptionShape.cons houtputReady
-          (ResponseAbsorptionShape.trans hbaseMiddleResponse
-            hmiddleOutputResponse)
-          (ResponseListAbsorptionShape.trans hbaseMiddleRest
-            hmiddleOutputRest)
+          (ResponseAbsorptionShape.trans hbaseMiddleResponse hmiddleOutputResponse)
+          (ResponseListAbsorptionShape.trans hbaseMiddleRest hmiddleOutputRest)
 end
 
 mutual

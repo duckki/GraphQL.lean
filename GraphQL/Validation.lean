@@ -10,6 +10,7 @@ Spec reference: GraphQL September 2025.
   input coercion and literal type checking, all-variables-used, fragment-must-be-used,
   and meta-field rules.
 -/
+
 namespace GraphQL
 
 namespace Validation

@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.TwoField
 /-!
 Group-list proof helpers for the final ungrouped execution equivalence theorem.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -130,8 +131,7 @@ mutual
               (visitSelection schema resolvers variableValues depth parentType source
                   selection (.object fields)).fst
                 = .object outputFields
-              ∧ target ∈ outputFields.map Prod.fst
-  := by
+              ∧ target ∈ outputFields.map Prod.fst := by
     intro selection fields hmem
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>
@@ -323,8 +323,7 @@ mutual
               (visitSubfields schema resolvers variableValues depth parentType source
                   selectionSet (.object fields)).fst
                 = .object outputFields
-              ∧ target ∈ outputFields.map Prod.fst
-  := by
+              ∧ target ∈ outputFields.map Prod.fst := by
     intro selectionSet fields hmem
     cases selectionSet with
     | nil =>
@@ -825,8 +824,7 @@ mutual
               = (.object result, status)
           -> visitSelection schema resolvers variableValues depth parentType source
                 selection (.object (prefixFields ++ suffix))
-              = (.object (prefixFields ++ result), status)
-  := by
+              = (.object (prefixFields ++ result), status) := by
     intro selection prefixFields suffix result status hfresh hvisit
     cases selection with
     | field responseName fieldName arguments directives selectionSet =>

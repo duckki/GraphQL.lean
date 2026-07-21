@@ -3,6 +3,7 @@ import GraphQL.NormalForm.CompleteNormalization.DirectiveSemantics
 /-!
 BoolCase-wrapper facts for complete normalization.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

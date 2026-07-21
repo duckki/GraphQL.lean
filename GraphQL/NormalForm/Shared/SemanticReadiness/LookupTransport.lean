@@ -1,6 +1,7 @@
 import GraphQL.NormalForm.Shared.SemanticReadiness.Readiness
 
 /-! Lookup and merge transport facts for semantic readiness. -/
+
 namespace GraphQL
 
 namespace NormalForm

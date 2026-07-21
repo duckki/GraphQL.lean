@@ -3,6 +3,7 @@ import GraphQL.NormalForm.CompleteNormalization.Validity.Branches.Sources.GroupS
 /-!
 Child-pair merge transport facts for complete-normalization branch validity.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

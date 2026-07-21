@@ -5,6 +5,7 @@ import GraphQL.NormalForm.CompleteNormalization.Uniqueness.BoolCases
 /-!
 Execution of arbitrary complete-normal Boolean stems and root branch lists.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

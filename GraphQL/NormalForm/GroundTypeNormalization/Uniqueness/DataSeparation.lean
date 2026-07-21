@@ -12,6 +12,7 @@ This module assembles the existing probe resolvers, deep-success readiness, and
 semantic-separation lemmas into the second half of the uniqueness implication:
 normal syntactic differences can be observed semantically.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

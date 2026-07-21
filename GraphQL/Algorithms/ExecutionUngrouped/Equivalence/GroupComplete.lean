@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupList.AppendInvaria
 /-!
 Group-list proof helpers that carry final merged-complete evidence per group.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -52,9 +53,9 @@ def of_containedAppendInvariant
     {variableValues : VariableValues} {depth : Nat}
     {parentType : Name} {source : ResolverValue ObjectIdentity}
     {groups : List (Name × List ExecutableField)}
-    (hinvariant :
-      CollectedFieldGroupContainedAppendInvariant schema resolvers
-        variableValues depth source groups)
+    (hinvariant
+      : CollectedFieldGroupContainedAppendInvariant schema resolvers
+          variableValues depth source groups)
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent parentType groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
@@ -62,9 +63,9 @@ def of_containedAppendInvariant
     (hstable : CollectedGroupsResolveStable resolvers source groups)
     (responseName : Name) (field : ExecutableField)
     (fields : List ExecutableField)
-    (hgroup : (responseName, field :: fields) ∈ groups) :
-    ExecutedFieldGroupComplete schema resolvers variableValues depth parentType
-      source responseName field fields where
+    (hgroup : (responseName, field :: fields) ∈ groups)
+    : ExecutedFieldGroupComplete schema resolvers variableValues depth parentType
+        source responseName field fields where
   resolved :=
     resolvers.resolve field.parentType field.fieldName field.arguments source
   responseName_eq := hresponses responseName (field :: fields) hgroup
@@ -205,19 +206,18 @@ def of_collected_groups_containedAppendInvariant
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
     (hlookups : CollectedGroupsFieldLookupValid schema parentType groups)
     (hstable : CollectedGroupsResolveStable resolvers source groups)
-    (hinvariant :
-      CollectedFieldGroupContainedAppendInvariant schema resolvers
-        variableValues depth source groups) :
-    ExecutedFieldGroupsComplete schema resolvers variableValues depth parentType
-      source groups :=
+    (hinvariant
+      : CollectedFieldGroupContainedAppendInvariant schema resolvers
+          variableValues depth source groups)
+    : ExecutedFieldGroupsComplete schema resolvers variableValues depth parentType
+        source groups :=
   match groups with
   | [] => ()
   | (responseName, []) :: _rest =>
       False.elim (hnonempty responseName [] (by simp) rfl)
   | (responseName, field :: fields) :: rest =>
-      let tailInvariant :
-          CollectedFieldGroupContainedAppendInvariant schema resolvers
-            variableValues depth source rest :=
+      let tailInvariant : CollectedFieldGroupContainedAppendInvariant schema resolvers
+                            variableValues depth source rest :=
         { prefixChildren := by
             intro tailResponseName tailField tailFields prefixTail hgroup
               hprefix childDepth runtimeType identity hlt hcontains hincludes
@@ -243,8 +243,7 @@ def of_collected_groups_containedAppendInvariant
             exact hinvariant.extendedChildren tailResponseName tailField
               tailFields prefixTail later (by simp [hgroup]) hprefix hlater
               childDepth runtimeType identity hlt hcontains hincludes }
-      let tailLookups :
-          CollectedGroupsFieldLookupValid schema parentType rest := by
+      let tailLookups : CollectedGroupsFieldLookupValid schema parentType rest := by
         intro tailResponseName tailField tailFields hgroup
         exact hlookups tailResponseName tailField tailFields (by simp [hgroup])
       ⟨ExecutedFieldGroupComplete.of_containedAppendInvariant hinvariant

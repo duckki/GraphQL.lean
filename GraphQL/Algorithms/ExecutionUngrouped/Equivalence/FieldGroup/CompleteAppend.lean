@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.FieldGroup
 /-!
 Complete-value append-one proofs for executable field groups.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

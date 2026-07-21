@@ -4,6 +4,7 @@ import GraphQL.Execution
 /-!
 Directive-free execution collection facts shared by NormalForm proof modules.
 -/
+
 namespace GraphQL
 
 namespace Execution

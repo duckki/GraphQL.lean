@@ -6,6 +6,7 @@ Runtime data-difference witness predicates and conversions.
 Finite-support construction proofs live in `FocusedContextualSeparation`.
 This module keeps the shared witness surface independent of those constructions.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

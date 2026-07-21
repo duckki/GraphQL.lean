@@ -6,6 +6,7 @@ Syntactic decomposition support for ground-type normal-form uniqueness.
 This module is intentionally semantic-free: it only relates normal selection-set
 syntax, directive-freedom, and the explicit equality-up-to-reordering relation.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

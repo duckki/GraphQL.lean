@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.Collection
 /-!
 Collected-group argument, resolver, and execution-state invariants.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

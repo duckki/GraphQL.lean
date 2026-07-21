@@ -9,6 +9,7 @@ generalizes the parent probe to fields whose output type wraps the same composit
 named type in list/non-null constructors, while preserving the existing resolver
 lifting behavior inside the child object.
 -/
+
 namespace GraphQL
 
 namespace NormalForm
@@ -18,8 +19,8 @@ namespace GroundTypeNormalization
 def parentObjectProbeFieldResolvers {ObjectRef : Type}
     (base : Execution.Resolvers ObjectRef)
     (targetParent targetField runtimeType : Name) (ref : ObjectRef)
-    (outputType : TypeRef) :
-    Execution.Resolvers (Option ObjectRef) where
+    (outputType : TypeRef)
+    : Execution.Resolvers (Option ObjectRef) where
   resolve parentType fieldName arguments source :=
     match source with
     | .object _ none =>

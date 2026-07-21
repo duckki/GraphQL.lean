@@ -1,6 +1,7 @@
 import GraphQL.Execution
 
 /-! General laws for response equivalence modulo object-field ordering. -/
+
 namespace GraphQL
 namespace Execution
 

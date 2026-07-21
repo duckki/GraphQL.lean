@@ -7,6 +7,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.FocusedTrace
 /-!
 Path-local runtime, support, and response-path context for focused probes.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

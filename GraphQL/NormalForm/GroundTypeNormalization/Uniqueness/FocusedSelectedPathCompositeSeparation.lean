@@ -3,6 +3,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.FocusedSelectedPath
 /-!
 Composite-child lifting and object-output witness construction.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

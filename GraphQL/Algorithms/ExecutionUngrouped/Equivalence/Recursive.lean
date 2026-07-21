@@ -6,6 +6,7 @@ Recursive proof-facing constructors for the ungrouped execution equivalence.
 These helpers separate the depth induction from the resolver and validation invariants
 that supply collection flatness and collected-field invariants.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -526,11 +527,10 @@ def of_globalInvariants
     {ObjectIdentity : Type}
     {schema : Schema} {resolvers : Resolvers ObjectIdentity}
     {variableValues : VariableValues}
-    (invariants :
-      RecursiveSelectionSetGlobalInvariants schema resolvers variableValues) :
-    ∀ depth parentType source selectionSet,
-      RecursiveGroupedSelectionSetState schema resolvers variableValues depth
-        parentType source selectionSet
+    (invariants : RecursiveSelectionSetGlobalInvariants schema resolvers variableValues)
+    : ∀ depth parentType source selectionSet,
+        RecursiveGroupedSelectionSetState schema resolvers variableValues depth
+          parentType source selectionSet
   | depth, parentType, source, selectionSet => by
       refine
           { groups :=

@@ -3,6 +3,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.FocusedPathProbeCon
 /-!
 Execution and parent-lift lemmas for path-local focused probes.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

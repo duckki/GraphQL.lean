@@ -5,6 +5,7 @@ import GraphQL.NormalForm.Shared.FieldMerge
 /-!
 Semantic readiness facts for ground-type normalization proofs.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

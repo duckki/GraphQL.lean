@@ -1,6 +1,7 @@
 import GraphQL.NamedFragment.Inline
 
 /-! Translation from spread-free named-fragment operations to core operations. -/
+
 namespace GraphQL
 namespace NamedFragment
 namespace Translate

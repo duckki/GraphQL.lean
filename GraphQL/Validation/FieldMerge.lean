@@ -3,6 +3,7 @@ import GraphQL.Validation
 /-!
 Facts for same-response-name field merge validation.
 -/
+
 namespace GraphQL
 
 namespace FieldMerge

@@ -3,6 +3,7 @@ import GraphQL.NormalForm.CompleteNormalization.OperationNormality
 /-!
 Boolean-case assignments used to isolate complete-normal root branches.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

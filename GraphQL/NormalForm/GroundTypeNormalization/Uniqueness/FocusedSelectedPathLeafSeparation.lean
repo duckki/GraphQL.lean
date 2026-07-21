@@ -3,6 +3,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.FocusedSelectedPath
 /-!
 Leaf field-head and leaf/composite boundary separation.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

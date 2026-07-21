@@ -8,6 +8,7 @@ Semantic discriminators for tagged uniqueness probes.
 The tagged probe resolvers make left/right field-head choices visible in leaf
 values.  These lemmas package the response-level consequences of that fact.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

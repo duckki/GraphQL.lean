@@ -2519,8 +2519,7 @@ mutual
           -> responseObjectField? responseName
                 (visitSelection schema resolvers variableValues depth parentType
                   source selection output).fst
-              = responseObjectField? responseName output
-    := by
+              = responseObjectField? responseName output := by
       intro selection output hnot
       cases selection with
       | field fieldResponseName fieldName arguments directives selectionSet =>
@@ -2718,8 +2717,7 @@ mutual
           -> responseObjectField? responseName
                 (visitSubfields schema resolvers variableValues depth parentType
                   source selectionSet output).fst
-              = responseObjectField? responseName output
-    := by
+              = responseObjectField? responseName output := by
       intro selectionSet output hnot
       cases selectionSet with
       | nil =>
@@ -2794,8 +2792,7 @@ mutual
           ∃ outputFields,
             (visitSelection schema resolvers variableValues depth parentType source
               selection (.object fields)).fst
-            = .object outputFields
-    := by
+            = .object outputFields := by
       intro selection fields
       cases selection with
       | field responseName fieldName arguments directives selectionSet =>
@@ -2935,8 +2932,7 @@ mutual
             ∃ outputFields,
               (visitSubfields schema resolvers variableValues depth parentType source
                 selectionSet (.object fields)).fst
-              = .object outputFields
-    := by
+              = .object outputFields := by
       intro selectionSet fields
       cases selectionSet with
       | nil =>

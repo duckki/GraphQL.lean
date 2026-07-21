@@ -4,6 +4,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.SyntaxDiff
 /-!
 Operation-level wrappers for the selection-set uniqueness proof surface.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

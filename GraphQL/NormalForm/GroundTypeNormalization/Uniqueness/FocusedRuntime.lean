@@ -9,6 +9,7 @@ a selection set.  That is stronger than the uniqueness proof needs: semantic
 separation follows one response path selected by `NormalSelectionSetDiffTrace`.
 This module records only that path-local coherence.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

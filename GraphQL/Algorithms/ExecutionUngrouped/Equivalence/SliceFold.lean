@@ -9,6 +9,7 @@ proof-facing fold over field slices, so equivalence proofs can reason about
 accumulating response slices and absorption instead of normalizing raw selection
 order syntactically.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

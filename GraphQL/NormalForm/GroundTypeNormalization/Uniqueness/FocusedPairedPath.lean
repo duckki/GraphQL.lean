@@ -10,6 +10,7 @@ different normal parent types after a field-name mismatch.  It follows one
 concrete executable branch on each side and records the first object layer at
 which response keys or leaf/composite shapes already separate the executions.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

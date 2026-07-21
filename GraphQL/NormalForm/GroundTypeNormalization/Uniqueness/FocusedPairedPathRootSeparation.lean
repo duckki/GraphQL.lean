@@ -8,6 +8,7 @@ The paired path may choose different concrete child runtimes on the two sides.
 These lemmas lift the resulting child-data distinction through a root field
 whose arguments or field names distinguish the two resolver targets.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

@@ -3,6 +3,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.RuntimeFragmentSemantics
 /-!
 Inline-fragment semantic cases for ground-type normalization.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

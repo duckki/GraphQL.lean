@@ -12,6 +12,7 @@ selection set.  For field-head separators we often already have a concrete
 runtime from the selected child.  This resolver lets the parent target choose
 that runtime explicitly, while preserving the existing tagged child behaviour.
 -/
+
 namespace GraphQL
 
 namespace NormalForm
@@ -24,8 +25,8 @@ noncomputable def fieldPairRuntimeProbeResolve
     (leftArguments rightArguments : List Argument)
     (leftRuntime rightRuntime parentType fieldName : Name)
     (arguments : List Argument)
-    (source : Execution.ResolverValue (Option FieldPairProbeTag)) :
-    Option (Execution.ResolverValue (Option FieldPairProbeTag)) := by
+    (source : Execution.ResolverValue (Option FieldPairProbeTag))
+    : Option (Execution.ResolverValue (Option FieldPairProbeTag)) := by
   classical
   exact
     match source with
@@ -58,8 +59,8 @@ noncomputable def fieldPairRuntimeProbeResolvers
     (schema : Schema) (childRootSelectionSet : List Selection)
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments : List Argument)
-    (leftRuntime rightRuntime : Name) :
-    Execution.Resolvers (Option FieldPairProbeTag) where
+    (leftRuntime rightRuntime : Name)
+    : Execution.Resolvers (Option FieldPairProbeTag) where
   resolve parentType fieldName arguments source :=
     fieldPairRuntimeProbeResolve schema childRootSelectionSet targetParent
       leftField rightField leftArguments rightArguments leftRuntime
@@ -142,8 +143,8 @@ noncomputable def fieldPairSideRuntimeProbeResolve
     (leftArguments rightArguments : List Argument)
     (leftRuntime rightRuntime parentType fieldName : Name)
     (arguments : List Argument)
-    (source : Execution.ResolverValue (Option FieldPairProbeTag)) :
-    Option (Execution.ResolverValue (Option FieldPairProbeTag)) := by
+    (source : Execution.ResolverValue (Option FieldPairProbeTag))
+    : Option (Execution.ResolverValue (Option FieldPairProbeTag)) := by
   classical
   exact
     match source with
@@ -179,8 +180,8 @@ noncomputable def fieldPairSideRuntimeProbeResolvers
     (leftChildRootSelectionSet rightChildRootSelectionSet : List Selection)
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments : List Argument)
-    (leftRuntime rightRuntime : Name) :
-    Execution.Resolvers (Option FieldPairProbeTag) where
+    (leftRuntime rightRuntime : Name)
+    : Execution.Resolvers (Option FieldPairProbeTag) where
   resolve parentType fieldName arguments source :=
     fieldPairSideRuntimeProbeResolve schema leftChildRootSelectionSet
       rightChildRootSelectionSet targetParent leftField rightField
@@ -384,8 +385,8 @@ private def mergeFieldChildOptions
   | some left, some right => some (left ++ right)
 
 noncomputable def firstFieldChildByHead?
-    (targetField : Name) (targetArguments : List Argument) :
-    List Selection -> Option (List Selection)
+    (targetField : Name) (targetArguments : List Argument)
+    : List Selection -> Option (List Selection)
   | [] => none
   | Selection.field _responseName fieldName arguments _directives
       childSelectionSet :: rest =>
@@ -413,8 +414,8 @@ decreasing_by
     simp [SelectionSet.size, Selection.size]
     omega
 
-def runtimePrunedSelectionSet (schema : Schema) (runtimeType : Name) :
-    List Selection -> List Selection
+def runtimePrunedSelectionSet (schema : Schema) (runtimeType : Name)
+    : List Selection -> List Selection
   | [] => []
   | Selection.field responseName fieldName arguments directives
       childSelectionSet :: rest =>
@@ -460,8 +461,8 @@ theorem runtimePrunedSelectionSet_eq_self_of_allFields
 
 noncomputable def firstFieldChildByHeadAtRuntime?
     (schema : Schema) (currentRuntimeType childRuntimeType targetField : Name)
-    (targetArguments : List Argument) :
-    List Selection -> Option (List Selection)
+    (targetArguments : List Argument)
+    : List Selection -> Option (List Selection)
   | [] => none
   | Selection.field _responseName fieldName arguments _directives
       childSelectionSet :: rest =>
@@ -526,8 +527,8 @@ private theorem mergeFieldChildOptions_some_membersOption
 
 noncomputable def fieldChildMembersByHeadAtRuntime
     (schema : Schema) (currentRuntimeType childRuntimeType targetField : Name)
-    (targetArguments : List Argument) :
-    List Selection -> List (List Selection)
+    (targetArguments : List Argument)
+    : List Selection -> List (List Selection)
   | [] => []
   | Selection.field _responseName fieldName arguments _directives
       childSelectionSet :: rest =>
@@ -1213,8 +1214,8 @@ noncomputable def fieldPairPathLocalProbeResolve
     (leftArguments rightArguments : List Argument)
     (leftRuntime rightRuntime parentType fieldName : Name)
     (arguments : List Argument)
-    (source : Execution.ResolverValue FieldPairPathLocalProbeRef) :
-    Option (Execution.ResolverValue FieldPairPathLocalProbeRef) := by
+    (source : Execution.ResolverValue FieldPairPathLocalProbeRef)
+    : Option (Execution.ResolverValue FieldPairPathLocalProbeRef) := by
   classical
   exact
     match source with
@@ -1254,8 +1255,8 @@ noncomputable def fieldPairPathLocalProbeResolvers
     (leftInitialSelectionSet rightInitialSelectionSet : List Selection)
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments : List Argument)
-    (leftRuntime rightRuntime : Name) :
-    Execution.Resolvers FieldPairPathLocalProbeRef where
+    (leftRuntime rightRuntime : Name)
+    : Execution.Resolvers FieldPairPathLocalProbeRef where
   resolve parentType fieldName arguments source :=
     fieldPairPathLocalProbeResolve schema leftInitialSelectionSet
       rightInitialSelectionSet targetParent leftField rightField

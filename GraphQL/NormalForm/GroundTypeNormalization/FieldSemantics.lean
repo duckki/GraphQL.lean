@@ -5,6 +5,7 @@ import GraphQL.NormalForm.Shared.SemanticReadiness
 /-!
 Field execution semantic cases for ground-type normalization.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

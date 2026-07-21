@@ -3,6 +3,7 @@ import GraphQL.NormalForm.CompleteNormalization.Validity.Branches.Directives
 /-!
 Field-merge facts for complete-normalization Boolean branches.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

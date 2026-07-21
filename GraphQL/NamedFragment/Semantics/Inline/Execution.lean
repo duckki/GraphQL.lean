@@ -2,6 +2,7 @@ import GraphQL.NamedFragment.Semantics.Inline.Translate
 import GraphQL.NamedFragment.Semantics.Inline.Operation
 
 /-! Direct-execution proof witnesses for fragment-free named-fragment operations. -/
+
 namespace GraphQL
 namespace NamedFragment
 namespace Semantics

@@ -4,6 +4,7 @@ import GraphQL.NormalForm.Shared.FieldMergeLookup
 /-!
 Merge-readiness and scoped field-head lookup facts for complete normalization.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

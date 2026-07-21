@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.AppendSelection.SingleF
 /-!
 Root-selection and query wrappers for exact single-field groups.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

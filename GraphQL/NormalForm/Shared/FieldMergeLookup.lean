@@ -4,6 +4,7 @@ import GraphQL.NormalForm.Shared.FieldMerge
 /-!
 Field-merge lookup bridge facts shared by NormalForm proof families.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

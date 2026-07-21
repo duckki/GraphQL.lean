@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.Collection
 /-!
 Collected group-prefix facts for merged field selection sets.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

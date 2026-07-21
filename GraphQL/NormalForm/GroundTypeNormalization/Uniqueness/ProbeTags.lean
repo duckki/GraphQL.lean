@@ -9,6 +9,7 @@ values expose the tag as a scalar, so field-head differences can be observed
 inside arbitrary composite return values without making unrelated sibling fields
 fail.
 -/
+
 namespace GraphQL
 
 namespace NormalForm
@@ -62,8 +63,8 @@ theorem fieldProbeTarget_iff_of_argumentsEquivalent
 noncomputable def fieldPairProbeTag
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments : List Argument)
-    (parentType fieldName : Name) (arguments : List Argument) :
-    FieldPairProbeTag := by
+    (parentType fieldName : Name) (arguments : List Argument)
+    : FieldPairProbeTag := by
   classical
   exact
     if fieldProbeTarget targetParent leftField leftArguments parentType
@@ -466,8 +467,8 @@ theorem fieldPairProbeHeadResolverValue_eq_objectProbeResolverValueWithRuntime
 noncomputable def fieldPairProbeResolvers
     (schema : Schema) (rootSelectionSet : List Selection)
     (targetParent leftField rightField : Name)
-    (leftArguments rightArguments : List Argument) :
-    Execution.Resolvers (Option FieldPairProbeTag) where
+    (leftArguments rightArguments : List Argument)
+    : Execution.Resolvers (Option FieldPairProbeTag) where
   resolve parentType fieldName arguments source := by
     classical
     exact

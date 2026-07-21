@@ -3,6 +3,7 @@ import GraphQL.NormalForm.CompleteNormalization.StaticFieldGroups
 /-!
 Source static-collection field and inline-fragment execution cases.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

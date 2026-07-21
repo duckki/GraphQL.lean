@@ -7,6 +7,7 @@ Operation-level semantic bridge facts for ground-type normalization.
 This module lifts the selection-set semantic preservation theorem to operation-level
 resolver-parametric equivalence.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

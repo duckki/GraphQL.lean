@@ -7,6 +7,7 @@ import GraphQL.NormalForm.CompleteNormalization.Validity
 Bridge from uniqueness of complete-normal operations to uniqueness of complete
 normalization results.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupList
 /-!
 Append-invariant and aligned group-list assembly helpers.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -93,21 +94,17 @@ theorem ExecutedFieldAppendPlanState.of_appendInvariant
     (field : ExecutableField) (fields : List ExecutableField)
     : ExecutedFieldAppendPlanState schema resolvers variableValues depth field
         fields [] fields :=
-  ExecutedFieldAppendPlanState.of_all_prefixes
-    (by
+  ExecutedFieldAppendPlanState.of_all_prefixes (by
       intro prefixTail childDepth runtimeType identity hlt _hincludes
       exact hinvariant.childEquivalent
         (GraphQL.Execution.mergedFieldSelectionSet (field :: prefixTail))
-        childDepth runtimeType identity hlt)
-    (by
+        childDepth runtimeType identity hlt) (by
       intro prefixTail later _hlater childDepth runtimeType identity hlt
       exact hinvariant.absorbs (field :: prefixTail) later childDepth
-        runtimeType identity hlt)
-    (by
+        runtimeType identity hlt) (by
       intro prefixTail later _hlater childDepth runtimeType identity hlt
       exact hinvariant.errorNeutral (field :: prefixTail) later childDepth
-        runtimeType identity hlt)
-    (by
+        runtimeType identity hlt) (by
       intro prefixTail later _hlater childDepth runtimeType identity hlt
         _hincludes
       exact hinvariant.childEquivalent
@@ -1110,23 +1107,23 @@ def of_collected_groups_state
     {ObjectIdentity : Type}
     (schema : Schema) (resolvers : Resolvers ObjectIdentity)
     (variableValues : VariableValues) (depth : Nat)
-    (parentType : Name) (source : ResolverValue ObjectIdentity) :
-    ∀ (groups : List (Name × List ExecutableField)),
-      CollectedGroupsFieldsNonempty groups ->
-      CollectedGroupsResponseName groups ->
-      CollectedGroupsParent parentType groups ->
-      (∀ responseName field fields,
-        (responseName, field :: fields) ∈ groups ->
-          ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
-            some fieldDefinition) ->
-      CollectedGroupsFieldValidationMergeCompatible groups ->
-      CollectedGroupsResolveStable resolvers source groups ->
-      (∀ responseName field fields,
-        (responseName, field :: fields) ∈ groups ->
-          ExecutedFieldAppendPlanState schema resolvers variableValues depth
-            field fields [] fields) ->
-      ExecutedFieldGroups schema resolvers variableValues depth parentType
-        source groups
+    (parentType : Name) (source : ResolverValue ObjectIdentity)
+    : ∀ (groups : List (Name × List ExecutableField)),
+        CollectedGroupsFieldsNonempty groups
+        -> CollectedGroupsResponseName groups
+        -> CollectedGroupsParent parentType groups
+        -> (∀ responseName field fields,
+              (responseName, field :: fields) ∈ groups
+              -> ∃ fieldDefinition,
+                  schema.lookupField parentType field.fieldName = some fieldDefinition)
+        -> CollectedGroupsFieldValidationMergeCompatible groups
+        -> CollectedGroupsResolveStable resolvers source groups
+        -> (∀ responseName field fields,
+              (responseName, field :: fields) ∈ groups
+              -> ExecutedFieldAppendPlanState schema resolvers variableValues depth
+                  field fields [] fields)
+        -> ExecutedFieldGroups schema resolvers variableValues depth parentType
+            source groups
   | [], _hnonempty, _hresponses, _hparents, _hlookups, _hcompatible, _hstable,
       _hplanStates =>
       ExecutedFieldGroups.nil
@@ -1171,17 +1168,16 @@ def of_collected_groups_appendInvariant
     (hnonempty : CollectedGroupsFieldsNonempty groups)
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent parentType groups)
-    (hlookups :
-      ∀ responseName field fields,
-        (responseName, field :: fields) ∈ groups ->
-          ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
-            some fieldDefinition)
+    (hlookups
+      : ∀ responseName field fields,
+          (responseName, field :: fields) ∈ groups
+          -> ∃ fieldDefinition,
+              schema.lookupField parentType field.fieldName = some fieldDefinition)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
     (hstable : CollectedGroupsResolveStable resolvers source groups)
-    (hinvariant :
-      FieldGroupAppendInvariant schema resolvers variableValues depth) :
-    ExecutedFieldGroups schema resolvers variableValues depth parentType source
-      groups :=
+    (hinvariant : FieldGroupAppendInvariant schema resolvers variableValues depth)
+    : ExecutedFieldGroups schema resolvers variableValues depth parentType source
+        groups :=
   of_collected_groups_state schema resolvers variableValues depth parentType
     source groups hnonempty hresponses hparents hlookups hcompatible hstable
     (by
@@ -1198,18 +1194,17 @@ def of_collected_groups_collectedAppendInvariant
     (hnonempty : CollectedGroupsFieldsNonempty groups)
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent parentType groups)
-    (hlookups :
-      ∀ responseName field fields,
-        (responseName, field :: fields) ∈ groups ->
-          ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
-            some fieldDefinition)
+    (hlookups
+      : ∀ responseName field fields,
+          (responseName, field :: fields) ∈ groups
+          -> ∃ fieldDefinition,
+              schema.lookupField parentType field.fieldName = some fieldDefinition)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
     (hstable : CollectedGroupsResolveStable resolvers source groups)
-    (hinvariant :
-      CollectedFieldGroupAppendInvariant schema resolvers variableValues depth
-        groups) :
-    ExecutedFieldGroups schema resolvers variableValues depth parentType source
-      groups :=
+    (hinvariant
+      : CollectedFieldGroupAppendInvariant schema resolvers variableValues depth groups)
+    : ExecutedFieldGroups schema resolvers variableValues depth parentType source
+        groups :=
   of_collected_groups_state schema resolvers variableValues depth parentType
     source groups hnonempty hresponses hparents hlookups hcompatible hstable
     (by
@@ -1227,18 +1222,18 @@ def of_collected_groups_collectedLocalAppendInvariant
     (hnonempty : CollectedGroupsFieldsNonempty groups)
     (hresponses : CollectedGroupsResponseName groups)
     (hparents : CollectedGroupsParent parentType groups)
-    (hlookups :
-      ∀ responseName field fields,
-        (responseName, field :: fields) ∈ groups ->
-          ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
-            some fieldDefinition)
+    (hlookups
+      : ∀ responseName field fields,
+          (responseName, field :: fields) ∈ groups
+          -> ∃ fieldDefinition,
+              schema.lookupField parentType field.fieldName = some fieldDefinition)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
     (hstable : CollectedGroupsResolveStable resolvers source groups)
-    (hinvariant :
-      CollectedFieldGroupLocalAppendInvariant schema resolvers variableValues
-        depth groups) :
-    ExecutedFieldGroups schema resolvers variableValues depth parentType source
-      groups :=
+    (hinvariant
+      : CollectedFieldGroupLocalAppendInvariant schema resolvers variableValues
+          depth groups)
+    : ExecutedFieldGroups schema resolvers variableValues depth parentType source
+        groups :=
   of_collected_groups_state schema resolvers variableValues depth parentType
     source groups hnonempty hresponses hparents hlookups hcompatible hstable
     (by

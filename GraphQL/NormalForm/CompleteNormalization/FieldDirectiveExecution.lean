@@ -3,6 +3,7 @@ import GraphQL.NormalForm.CompleteNormalization.ExecutionPrelude
 /-!
 Field directive execution cases for complete normalization static collection.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

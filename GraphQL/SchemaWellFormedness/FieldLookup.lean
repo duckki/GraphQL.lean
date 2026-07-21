@@ -3,6 +3,7 @@ import GraphQL.SchemaWellFormedness
 /-!
 Field lookup facts derived from schema well-formedness predicates.
 -/
+
 namespace GraphQL
 
 namespace SchemaWellFormedness

@@ -1,6 +1,7 @@
 import GraphQL.NormalForm.CompleteNormalization.ScopedSelections.StaticFields
 
 /-! Boolean-variable preservation for complete-normalization scoped selections. -/
+
 namespace GraphQL
 
 namespace NormalForm

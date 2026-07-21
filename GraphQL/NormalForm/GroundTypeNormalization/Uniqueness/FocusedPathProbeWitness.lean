@@ -3,6 +3,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.FocusedPathProbeSel
 /-!
 Final selected-path and path-local response-difference witness constructors.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

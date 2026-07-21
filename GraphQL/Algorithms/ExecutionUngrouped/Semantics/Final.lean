@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Semantics.AlignedReady
 /-!
 Final semantic-preservation theorems for ungrouped execution.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -470,13 +471,13 @@ def selectionSetLocalFreshPrefixInvariants_of_generatedNormalizedFieldChild
     (variableValues : Execution.VariableValues)
     (depth : Nat) (childType childRuntime : Name)
     (ref : ObjectRef)
-    (childSelectionSet : List Selection) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    schema.typeIncludesObjectBool childType childRuntime = true ->
-    generatedNormalizedFieldChild schema childType childSelectionSet ->
-      SelectionSetLocalFreshPrefixInvariants schema resolvers variableValues
-        depth childRuntime (Execution.ResolverValue.object childRuntime ref)
-        childSelectionSet := by
+    (childSelectionSet : List Selection)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> schema.typeIncludesObjectBool childType childRuntime = true
+      -> generatedNormalizedFieldChild schema childType childSelectionSet
+      -> SelectionSetLocalFreshPrefixInvariants schema resolvers variableValues
+          depth childRuntime (Execution.ResolverValue.object childRuntime ref)
+          childSelectionSet := by
   intro hschema hinclude hgenerated
   exact
     SelectionSetLocalFreshPrefixInvariants.of_freshPrefixDerivation
@@ -516,13 +517,13 @@ def recursiveGroupedSelectionSetState_of_generatedNormalizedFieldChild
     (variableValues : Execution.VariableValues)
     (depth : Nat) (childType childRuntime : Name)
     (ref : ObjectRef)
-    (childSelectionSet : List Selection) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    schema.typeIncludesObjectBool childType childRuntime = true ->
-    generatedNormalizedFieldChild schema childType childSelectionSet ->
-      RecursiveGroupedSelectionSetState schema resolvers variableValues depth
-        childRuntime (Execution.ResolverValue.object childRuntime ref)
-        childSelectionSet := by
+    (childSelectionSet : List Selection)
+    : SchemaWellFormedness.schemaWellFormed schema
+      -> schema.typeIncludesObjectBool childType childRuntime = true
+      -> generatedNormalizedFieldChild schema childType childSelectionSet
+      -> RecursiveGroupedSelectionSetState schema resolvers variableValues depth
+          childRuntime (Execution.ResolverValue.object childRuntime ref)
+          childSelectionSet := by
   intro hschema hinclude hgenerated
   apply RecursiveGroupedSelectionSetState.of_localFreshPrefixInvariants
     (selectionSetLocalFreshPrefixInvariants_of_generatedNormalizedFieldChild

@@ -4,6 +4,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Validity
 /-!
 Directive and wrapper validity facts for complete-normalization branches.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

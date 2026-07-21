@@ -3,6 +3,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.FocusedPathProbePat
 /-!
 Composite-child and abstract-body separation through path-local focused probes.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

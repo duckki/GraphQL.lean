@@ -9,6 +9,7 @@ directly, while leaving composite field-head, composite argument, and recursive
 child cases as callbacks. Keeping this split at the observable-trace level
 avoids routing the public proof through a collapsed diff trace.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

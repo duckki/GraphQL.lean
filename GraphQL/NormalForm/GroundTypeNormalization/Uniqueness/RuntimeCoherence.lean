@@ -6,6 +6,7 @@ Runtime-coherence support for focused normal-form uniqueness proofs.
 This module contains the reusable runtime-active and root-coherence invariants
 used by focused path and contextual witness constructions.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

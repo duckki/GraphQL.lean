@@ -5,6 +5,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.Statements
 Proof-only selection-set semantic equivalence restricted to runtime environments
 that bind every Boolean variable used to select a complete-normal branch.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

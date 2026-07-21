@@ -1,6 +1,7 @@
 import GraphQL.NamedFragment.Validation
 
 /-! Lookup bookkeeping lemmas for fragment-definition lists. -/
+
 namespace GraphQL
 namespace NamedFragment
 namespace Validation

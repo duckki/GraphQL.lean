@@ -8,6 +8,7 @@ Validity projections used by the ground-type normal-form uniqueness proof.
 These lemmas keep the semantic separation proof from repeatedly unfolding
 `selectionSetValid` and `fieldSelectionSetValid` at arbitrary list members.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

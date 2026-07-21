@@ -10,6 +10,7 @@ This module closes the observable-trace case split used by the public
 uniqueness theorem. Composite field-head differences use paired selected paths;
 recursive child differences use finite-support contextual witnesses.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

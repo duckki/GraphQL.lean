@@ -10,6 +10,7 @@ used by the probe resolvers.  This module names that hypothesis and proves the
 small child-projection lemmas needed when following a syntactic diff into a field
 or inline-fragment body.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

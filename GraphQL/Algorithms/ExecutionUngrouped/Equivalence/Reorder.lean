@@ -8,6 +8,7 @@ left across a different response key only after the duplicate key has already
 been populated by the prefix. This preserves GraphQL's first-seen response field
 order while exposing the grouped order used by the spec definition.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

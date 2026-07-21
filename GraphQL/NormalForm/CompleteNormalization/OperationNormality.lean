@@ -4,6 +4,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Normality
 /-!
 Normality proof for the current partial complete normalizer.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

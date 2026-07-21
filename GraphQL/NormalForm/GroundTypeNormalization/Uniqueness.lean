@@ -6,6 +6,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.ReorderingSoundness
 /-!
 Ground-type normal-form uniqueness theorem surface.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

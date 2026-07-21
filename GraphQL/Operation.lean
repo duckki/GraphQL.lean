@@ -12,6 +12,7 @@ Spec reference: GraphQL September 2025.
   scope. This keeps the core closer to GraphCoQL's query fragment and avoids a separate
   fragment-expansion semantic layer.
 -/
+
 namespace GraphQL
 
 -- Spec 2.7 `Argument`: faithful shape for a name/value pair; directive arguments are only

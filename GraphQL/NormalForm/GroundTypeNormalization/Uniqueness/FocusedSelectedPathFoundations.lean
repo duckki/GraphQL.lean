@@ -4,6 +4,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.FocusedPathProbe
 /-!
 Selected-path witnesses, parent lifts, and execution-context foundations.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

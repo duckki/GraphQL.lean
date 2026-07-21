@@ -11,6 +11,7 @@ Finite-support contextual runtime witnesses used by observable-trace separation.
 This module contains the leaf field-head, response-name, type-condition, and
 abstract-child witness constructors needed by the final focused proof.
 -/
+
 namespace GraphQL
 
 namespace NormalForm
@@ -2147,8 +2148,8 @@ theorem selectionSetContextualRuntimeDataDiffWitnessWithFuelGe_of_valid_normal_a
         hschema hrightValid hleftValid hrightFree hleftFree hrightNormal
         hleftNormal hnonObject hsupportValid hrightMem hleftNoTypeCondition)
 
-noncomputable def selectionSetTargetInlineFragmentSelectionSets
-    (typeCondition : Name) : List Selection -> List (List Selection)
+noncomputable def selectionSetTargetInlineFragmentSelectionSets (typeCondition : Name)
+    : List Selection -> List (List Selection)
   | [] => []
   | Selection.inlineFragment (some headTypeCondition) _directives
       childSelectionSet :: rest => by

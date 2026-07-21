@@ -10,6 +10,7 @@ transported back to the original order when a later duplicate field is moved
 left across a response-name-fresh middle block after its response key is already
 populated by the prefix.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -46,36 +47,33 @@ def of_middle_existing_last_swap_after_prefix
     {pre middle : List ExecutableField} {later : ExecutableField}
     {rest : List ExecutableField}
     {fields : List (Name × ResponseValue)}
-    (normalized :
-      ExecutedGroupedSelectionSetState schema resolvers variableValues
-        (completionDepth + 1) parentType source
-        (executableFieldSelections (pre ++ ((later :: middle) ++ rest))))
-    (hprefix :
-      visitFieldSliceFold schema resolvers variableValues
-        (completionDepth + 1) source pre (.object []) =
-      .object fields)
-    (hparents :
-      ∀ field, field ∈ pre ++ ((middle ++ [later]) ++ rest) ->
-        field.parentType = parentType)
+    (normalized
+      : ExecutedGroupedSelectionSetState schema resolvers variableValues
+          (completionDepth + 1) parentType source
+          (executableFieldSelections (pre ++ ((later :: middle) ++ rest))))
+    (hprefix
+      : visitFieldSliceFold schema resolvers variableValues
+          (completionDepth + 1) source pre (.object [])
+        = .object fields)
+    (hparents
+      : ∀ field,
+          field ∈ pre ++ ((middle ++ [later]) ++ rest) -> field.parentType = parentType)
     (hlater : later.responseName ∈ fields.map Prod.fst)
-    (hnotMiddle :
-      later.responseName ∉ middle.map (fun field => field.responseName))
-    (hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((middle ++ [later]) ++ rest) (.object fields))
-    (hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((later :: middle) ++ rest) (.object fields))
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections
-            (pre ++ ((middle ++ [later]) ++ rest))) =
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections
-            (pre ++ ((later :: middle) ++ rest)))) :
-    ExecutedGroupedSelectionSetState schema resolvers variableValues
-      (completionDepth + 1) parentType source
-      (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest))) :=
+    (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
+    (hleftTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((middle ++ [later]) ++ rest) (.object fields))
+    (hrightTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((later :: middle) ++ rest) (.object fields))
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest)))
+        = GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections (pre ++ ((later :: middle) ++ rest))))
+    : ExecutedGroupedSelectionSetState schema resolvers variableValues
+        (completionDepth + 1) parentType source
+        (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest))) :=
   { groups := normalized.groups
     collect_eq := by
       rw [hcollect]
@@ -136,42 +134,42 @@ def of_middle_existing_last_swap_after_single_prefix
     {completionDepth : Nat} {parentType : Name}
     {source : ResolverValue ObjectIdentity}
     {first later : ExecutableField} {middle rest : List ExecutableField}
-    (normalized :
-      ExecutedGroupedSelectionSetState schema resolvers variableValues
-        (completionDepth + 1) parentType source
-        (executableFieldSelections
-          ([first] ++ ((later :: middle) ++ rest))))
+    (normalized
+      : ExecutedGroupedSelectionSetState schema resolvers variableValues
+          (completionDepth + 1) parentType source
+          (executableFieldSelections ([first] ++ ((later :: middle) ++ rest))))
     (hsameResponse : later.responseName = first.responseName)
-    (hparents :
-      ∀ field, field ∈ [first] ++ ((middle ++ [later]) ++ rest) ->
-        field.parentType = parentType)
-    (hnotMiddle :
-      later.responseName ∉ middle.map (fun field => field.responseName))
-    (hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((middle ++ [later]) ++ rest)
-        (.object
-          [(first.responseName,
-            responseFieldSlice schema resolvers variableValues completionDepth
-              source first)]))
-    (hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((later :: middle) ++ rest)
-        (.object
-          [(first.responseName,
-            responseFieldSlice schema resolvers variableValues completionDepth
-              source first)]))
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections
-            ([first] ++ ((middle ++ [later]) ++ rest))) =
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections
-            ([first] ++ ((later :: middle) ++ rest)))) :
-    ExecutedGroupedSelectionSetState schema resolvers variableValues
-      (completionDepth + 1) parentType source
-      (executableFieldSelections
-        ([first] ++ ((middle ++ [later]) ++ rest))) :=
+    (hparents
+      : ∀ field,
+          field ∈ [first] ++ ((middle ++ [later]) ++ rest)
+          -> field.parentType = parentType)
+    (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
+    (hleftTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((middle ++ [later]) ++ rest)
+          (.object
+            [(
+              first.responseName,
+              responseFieldSlice schema resolvers variableValues completionDepth
+                source first
+            )]))
+    (hrightTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((later :: middle) ++ rest)
+          (.object
+            [(
+              first.responseName,
+              responseFieldSlice schema resolvers variableValues completionDepth
+                source first
+            )]))
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          (executableFieldSelections ([first] ++ ((middle ++ [later]) ++ rest)))
+        = GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections ([first] ++ ((later :: middle) ++ rest))))
+    : ExecutedGroupedSelectionSetState schema resolvers variableValues
+        (completionDepth + 1) parentType source
+        (executableFieldSelections ([first] ++ ((middle ++ [later]) ++ rest))) :=
   of_middle_existing_last_swap_after_prefix normalized
     (visitFieldSliceFold_succ_single_empty_eq_object schema resolvers
       variableValues completionDepth source first)
@@ -242,36 +240,33 @@ def of_middle_existing_last_swap_after_prefix
     {pre middle : List ExecutableField} {later : ExecutableField}
     {rest : List ExecutableField}
     {fields : List (Name × ResponseValue)}
-    (normalized :
-      RecursiveGroupedSelectionSetState schema resolvers variableValues
-        completionDepth parentType source
-        (executableFieldSelections (pre ++ ((later :: middle) ++ rest))))
-    (hprefix :
-      visitFieldSliceFold schema resolvers variableValues
-        (completionDepth + 1) source pre (.object []) =
-      .object fields)
-    (hparents :
-      ∀ field, field ∈ pre ++ ((middle ++ [later]) ++ rest) ->
-        field.parentType = parentType)
+    (normalized
+      : RecursiveGroupedSelectionSetState schema resolvers variableValues
+          completionDepth parentType source
+          (executableFieldSelections (pre ++ ((later :: middle) ++ rest))))
+    (hprefix
+      : visitFieldSliceFold schema resolvers variableValues
+          (completionDepth + 1) source pre (.object [])
+        = .object fields)
+    (hparents
+      : ∀ field,
+          field ∈ pre ++ ((middle ++ [later]) ++ rest) -> field.parentType = parentType)
     (hlater : later.responseName ∈ fields.map Prod.fst)
-    (hnotMiddle :
-      later.responseName ∉ middle.map (fun field => field.responseName))
-    (hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((middle ++ [later]) ++ rest) (.object fields))
-    (hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((later :: middle) ++ rest) (.object fields))
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections
-            (pre ++ ((middle ++ [later]) ++ rest))) =
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections
-            (pre ++ ((later :: middle) ++ rest)))) :
-    RecursiveGroupedSelectionSetState schema resolvers variableValues
-      completionDepth parentType source
-      (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest))) :=
+    (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
+    (hleftTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((middle ++ [later]) ++ rest) (.object fields))
+    (hrightTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((later :: middle) ++ rest) (.object fields))
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest)))
+        = GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections (pre ++ ((later :: middle) ++ rest))))
+    : RecursiveGroupedSelectionSetState schema resolvers variableValues
+        completionDepth parentType source
+        (executableFieldSelections (pre ++ ((middle ++ [later]) ++ rest))) :=
   { groups := normalized.groups
     collect_eq := by
       rw [hcollect]
@@ -341,42 +336,42 @@ def of_middle_existing_last_swap_after_single_prefix
     {completionDepth : Nat} {parentType : Name}
     {source : ResolverValue ObjectIdentity}
     {first later : ExecutableField} {middle rest : List ExecutableField}
-    (normalized :
-      RecursiveGroupedSelectionSetState schema resolvers variableValues
-        completionDepth parentType source
-        (executableFieldSelections
-          ([first] ++ ((later :: middle) ++ rest))))
+    (normalized
+      : RecursiveGroupedSelectionSetState schema resolvers variableValues
+          completionDepth parentType source
+          (executableFieldSelections ([first] ++ ((later :: middle) ++ rest))))
     (hsameResponse : later.responseName = first.responseName)
-    (hparents :
-      ∀ field, field ∈ [first] ++ ((middle ++ [later]) ++ rest) ->
-        field.parentType = parentType)
-    (hnotMiddle :
-      later.responseName ∉ middle.map (fun field => field.responseName))
-    (hleftTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((middle ++ [later]) ++ rest)
-        (.object
-          [(first.responseName,
-            responseFieldSlice schema resolvers variableValues completionDepth
-              source first)]))
-    (hrightTrace :
-      FieldSliceMergeTrace schema resolvers variableValues completionDepth
-        source ((later :: middle) ++ rest)
-        (.object
-          [(first.responseName,
-            responseFieldSlice schema resolvers variableValues completionDepth
-              source first)]))
-    (hcollect :
-      GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections
-            ([first] ++ ((middle ++ [later]) ++ rest))) =
-        GraphQL.Execution.collectFields schema variableValues parentType source
-          (executableFieldSelections
-            ([first] ++ ((later :: middle) ++ rest)))) :
-    RecursiveGroupedSelectionSetState schema resolvers variableValues
-      completionDepth parentType source
-      (executableFieldSelections
-        ([first] ++ ((middle ++ [later]) ++ rest))) :=
+    (hparents
+      : ∀ field,
+          field ∈ [first] ++ ((middle ++ [later]) ++ rest)
+          -> field.parentType = parentType)
+    (hnotMiddle : later.responseName ∉ middle.map (fun field => field.responseName))
+    (hleftTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((middle ++ [later]) ++ rest)
+          (.object
+            [(
+              first.responseName,
+              responseFieldSlice schema resolvers variableValues completionDepth
+                source first
+            )]))
+    (hrightTrace
+      : FieldSliceMergeTrace schema resolvers variableValues completionDepth
+          source ((later :: middle) ++ rest)
+          (.object
+            [(
+              first.responseName,
+              responseFieldSlice schema resolvers variableValues completionDepth
+                source first
+            )]))
+    (hcollect
+      : GraphQL.Execution.collectFields schema variableValues parentType source
+          (executableFieldSelections ([first] ++ ((middle ++ [later]) ++ rest)))
+        = GraphQL.Execution.collectFields schema variableValues parentType source
+            (executableFieldSelections ([first] ++ ((later :: middle) ++ rest))))
+    : RecursiveGroupedSelectionSetState schema resolvers variableValues
+        completionDepth parentType source
+        (executableFieldSelections ([first] ++ ((middle ++ [later]) ++ rest))) :=
   of_middle_existing_last_swap_after_prefix normalized
     (visitFieldSliceFold_succ_single_empty_eq_object schema resolvers
       variableValues completionDepth source first)

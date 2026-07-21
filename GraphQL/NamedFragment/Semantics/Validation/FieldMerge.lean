@@ -1,6 +1,7 @@
 import GraphQL.NamedFragment.Semantics.Validation.Base
 
 /-! Named-fragment validation preservation proofs. -/
+
 namespace GraphQL
 namespace NamedFragment
 namespace Semantics

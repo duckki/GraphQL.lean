@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.AppendSelection
 /-!
 Validation-derived execution-state invariants for append-selection equivalence.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

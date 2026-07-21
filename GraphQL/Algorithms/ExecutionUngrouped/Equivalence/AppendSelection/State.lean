@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.AppendSelection
 /-!
 Append-selection state witnesses and query-level wrappers.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -576,13 +577,15 @@ theorem executeRootSelectionSet_eq_spec_of_selectionSet_state
       = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
           depth parentType source selectionSet :=
   executeRootSelectionSet_eq_spec_of_state_equivalent_auto_nodup
-    { schema := schema
+    {
+      schema := schema
       resolvers := resolvers
       variableValues := variableValues
       depth := depth
       parentType := parentType
       source := source
-      selectionSet := selectionSet }
+      selectionSet := selectionSet
+    }
     (stateEquivalent_of_selectionSet_state hstate)
 
 theorem executeRootSelectionSet_eq_spec_of_selectionSet_prefix_state

@@ -16,6 +16,7 @@ import GraphQL.NormalForm.Shared.Execution
 /-!
 Bool-case execution lemmas for the ungrouped execution algorithm.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

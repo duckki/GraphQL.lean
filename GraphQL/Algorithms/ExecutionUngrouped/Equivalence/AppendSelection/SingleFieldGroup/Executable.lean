@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.AppendSelection.SingleF
 /-!
 Executable-field and executable-group wrappers for single-field groups.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -206,8 +207,7 @@ theorem AppendSelectionState.field_allowed_of_child_states
         parentType source left
         (.field responseName fieldName arguments directives selectionSet) :=
   AppendSelectionState.field_allowed
-    (AppendAllowedFieldState.of_child_states hallowed hresolve hchildren
-      hdisjoint)
+    (AppendAllowedFieldState.of_child_states hallowed hresolve hchildren hdisjoint)
 
 theorem AppendSelectionState.field_allowed_of_guarded_child_states
     {ObjectIdentity : Type}
@@ -322,12 +322,10 @@ theorem AppendAllowedFieldState.of_child_selectionSet_states
     : AppendAllowedFieldState schema resolvers variableValues (depth + 1)
         parentType source left responseName fieldName arguments directives
         selectionSet depth :=
-  AppendAllowedFieldState.of_child_states hallowed hresolve
-    (by
+  AppendAllowedFieldState.of_child_states hallowed hresolve (by
       intro childDepth runtimeType identity hlt
       exact stateEquivalent_of_selectionSet_state
-        (hchildren childDepth runtimeType identity hlt))
-    hdisjoint
+        (hchildren childDepth runtimeType identity hlt)) hdisjoint
 
 theorem AppendSelectionState.field_allowed_of_child_selectionSet_states
     {ObjectIdentity : Type}
@@ -382,12 +380,10 @@ theorem AppendAllowedFieldState.of_child_prefix_states
     : AppendAllowedFieldState schema resolvers variableValues (depth + 1)
         parentType source left responseName fieldName arguments directives
         selectionSet depth :=
-  AppendAllowedFieldState.of_child_states hallowed hresolve
-    (by
+  AppendAllowedFieldState.of_child_states hallowed hresolve (by
       intro childDepth runtimeType identity hlt
       exact stateEquivalent_of_selectionSet_prefix_state
-        (hchildren childDepth runtimeType identity hlt))
-    hdisjoint
+        (hchildren childDepth runtimeType identity hlt)) hdisjoint
 
 theorem AppendSelectionState.field_allowed_of_child_prefix_states
     {ObjectIdentity : Type}
@@ -415,8 +411,7 @@ theorem AppendSelectionState.field_allowed_of_child_prefix_states
         parentType source left
         (.field responseName fieldName arguments directives selectionSet) :=
   AppendSelectionState.field_allowed
-    (AppendAllowedFieldState.of_child_prefix_states hallowed hresolve
-      hchildren hdisjoint)
+    (AppendAllowedFieldState.of_child_prefix_states hallowed hresolve hchildren hdisjoint)
 
 theorem AppendSelectionState.field_allowed_of_child_prefix_states_fresh
     {ObjectIdentity : Type}

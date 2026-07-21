@@ -10,6 +10,7 @@ invariant then works for every path-local support containing the current pair
 of selection sets.  This ordering is important for abstract return types,
 where the selected runtime determines the child support.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

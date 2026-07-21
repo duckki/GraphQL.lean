@@ -3,6 +3,7 @@ import GraphQL.NormalForm.CompleteNormalization.ScopedSelections
 /-!
 Scoped field-output facts for complete-normalization proofs.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

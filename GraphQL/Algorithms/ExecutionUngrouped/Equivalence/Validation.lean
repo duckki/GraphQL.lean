@@ -6,6 +6,7 @@ import GraphQL.Validation.SelectionValidity
 /-!
 Validation and field-merge compatibility lemmas for the ungrouped equivalence proof.
 -/
+
 namespace GraphQL
 
 namespace Validation

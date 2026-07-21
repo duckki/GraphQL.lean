@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.FieldGroup.PrefixAppend
 /-!
 Append-step and append-plan machinery for field-group equivalence.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

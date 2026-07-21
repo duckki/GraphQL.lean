@@ -168,7 +168,8 @@ def directives_anonymous_inline_fragment_include_variableSource
     : GraphQL.Execution.ResolverValue String :=
   .object "Query" "root"
 
-def directives_anonymous_inline_fragment_include_variableResolvers : GraphQL.Execution.Resolvers String :=
+def directives_anonymous_inline_fragment_include_variableResolvers
+    : GraphQL.Execution.Resolvers String :=
   { resolve := fun parentType fieldName _arguments source =>
       match parentType, fieldName, source with
       | "Query", "a", .object _ "root" => some (.scalar "a")
@@ -372,7 +373,8 @@ def non_null_nested_null_bubbles_to_nullable_parentSource
     : GraphQL.Execution.ResolverValue String :=
   .object "Query" "root"
 
-def non_null_nested_null_bubbles_to_nullable_parentResolvers : GraphQL.Execution.Resolvers String :=
+def non_null_nested_null_bubbles_to_nullable_parentResolvers
+    : GraphQL.Execution.Resolvers String :=
   { resolve := fun parentType fieldName _arguments source =>
       match parentType, fieldName, source with
       | "Query", "hero", .object _ "root" => some (.object "Character" "hero")

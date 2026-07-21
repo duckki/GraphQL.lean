@@ -10,6 +10,7 @@ response path through that difference, not a proof that every sibling and every
 support selection set is observable.  This module records that focused path and
 proves it is available from any valid normal diff.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

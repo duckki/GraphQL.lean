@@ -7,6 +7,7 @@ The executable definitions live in `GraphQL.NormalForm` because
 `filterSelectionSetBoolCase` and `normalizeBoolCaseForType` live with the public
 normalizer definitions.
 -/
+
 namespace GraphQL
 
 namespace NormalForm
@@ -44,8 +45,8 @@ private theorem selectionSet_size_child_lt_cons_inline
 
 def staticCollectForGround
     (schema : Schema) (variables : List BoolVar)
-    (lookupParent groundType : Name) (boolCase : BoolCase) :
-    List Selection -> List Selection
+    (lookupParent groundType : Name) (boolCase : BoolCase)
+    : List Selection -> List Selection
   | [] => []
   | selection :: rest =>
       let collectedRest :=

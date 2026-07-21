@@ -5,6 +5,7 @@ import GraphQL.Validation.FieldMerge
 import GraphQL.Validation.SelectionValidity
 
 /-! Validation preservation facts for translating spread-free named-fragment operations. -/
+
 namespace GraphQL
 namespace NamedFragment
 namespace Validation

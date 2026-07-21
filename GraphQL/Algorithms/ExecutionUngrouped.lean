@@ -12,6 +12,7 @@ to the same response key reuse the previous value: composite values are revisite
 through their subselections, while a previous `null` short-circuits sibling
 subselections and may therefore count fewer subfield errors than collected execution.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

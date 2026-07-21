@@ -5,6 +5,7 @@ import GraphQL.Validation.SelectionValidity
 /-!
 Lookup-validity facts shared by NormalForm proof families.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

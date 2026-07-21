@@ -10,6 +10,7 @@ These lemmas select the concrete object runtime used when a composite field is
 observed by a tagged probe. They are shared by contextual and selected-path
 witness constructions.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

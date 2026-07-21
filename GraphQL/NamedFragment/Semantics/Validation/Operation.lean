@@ -3,6 +3,7 @@ import GraphQL.NamedFragment.Semantics.Inline.Execution
 import GraphQL.NamedFragment.Validation.Translate
 
 /-! Named-fragment validation preservation proofs. -/
+
 namespace GraphQL
 namespace NamedFragment
 namespace Semantics

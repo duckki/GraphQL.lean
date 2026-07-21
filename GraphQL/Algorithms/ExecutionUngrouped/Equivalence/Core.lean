@@ -17,6 +17,7 @@ resolve the same source data. The algorithm itself remains operationally direct 
 call resolvers more often than the grouped spec; equivalence is about the public response
 envelope, including response data and the counted execution errors.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -2122,8 +2123,7 @@ theorem collectFields_sameResponseParent
         (GraphQL.Execution.collectFields schema variableValues parentType source
           selectionSet) :=
   CollectedGroupsParent.sameResponseParent parentType
-    (GraphQL.Execution.collectFields schema variableValues parentType source
-      selectionSet)
+    (GraphQL.Execution.collectFields schema variableValues parentType source selectionSet)
     (collectFields_parent schema variableValues parentType source selectionSet)
 
 def CollectedGroupsValidationMergeCompatible (groups : List (Name × List ExecutableField))

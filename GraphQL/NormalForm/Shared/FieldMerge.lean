@@ -4,6 +4,7 @@ import GraphQL.Validation.FieldMerge
 /-!
 Validation facts transported through ground-type normalization helpers.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

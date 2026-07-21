@@ -3,6 +3,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.FocusedPathProbePat
 /-!
 Selected-runtime spines, resolver references, and field execution for focused probes.
 -/
+
 namespace GraphQL
 
 namespace NormalForm
@@ -693,9 +694,9 @@ inductive FieldPairSelectedPathProbeRef where
   | filler
 
 noncomputable def selectedObservableFieldSpineNext?
-    (fieldName : Name) (arguments : List Argument) :
-    List NormalSelectionSetObservableFieldStep ->
-      Option (Option Name × List NormalSelectionSetObservableFieldStep)
+    (fieldName : Name) (arguments : List Argument)
+    : List NormalSelectionSetObservableFieldStep
+      -> Option (Option Name × List NormalSelectionSetObservableFieldStep)
   | [] => none
   | step :: rest => by
       classical
@@ -1044,14 +1045,13 @@ theorem fieldPairSelectedPathProbeHeadResolverValue_abstractFallback_eq_objectPr
 noncomputable def fieldPairSelectedPathProbeResolve
     (schema : Schema)
     (leftInitialSelectionSet rightInitialSelectionSet : List Selection)
-    (leftInitialSpine rightInitialSpine :
-      List NormalSelectionSetObservableFieldStep)
+    (leftInitialSpine rightInitialSpine : List NormalSelectionSetObservableFieldStep)
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments : List Argument)
     (leftRuntime rightRuntime parentType fieldName : Name)
     (arguments : List Argument)
-    (source : Execution.ResolverValue FieldPairSelectedPathProbeRef) :
-    Option (Execution.ResolverValue FieldPairSelectedPathProbeRef) := by
+    (source : Execution.ResolverValue FieldPairSelectedPathProbeRef)
+    : Option (Execution.ResolverValue FieldPairSelectedPathProbeRef) := by
   classical
   exact
     match source with
@@ -1090,12 +1090,11 @@ noncomputable def fieldPairSelectedPathProbeResolve
 noncomputable def fieldPairSelectedPathProbeResolvers
     (schema : Schema)
     (leftInitialSelectionSet rightInitialSelectionSet : List Selection)
-    (leftInitialSpine rightInitialSpine :
-      List NormalSelectionSetObservableFieldStep)
+    (leftInitialSpine rightInitialSpine : List NormalSelectionSetObservableFieldStep)
     (targetParent leftField rightField : Name)
     (leftArguments rightArguments : List Argument)
-    (leftRuntime rightRuntime : Name) :
-    Execution.Resolvers FieldPairSelectedPathProbeRef where
+    (leftRuntime rightRuntime : Name)
+    : Execution.Resolvers FieldPairSelectedPathProbeRef where
   resolve parentType fieldName arguments source :=
     fieldPairSelectedPathProbeResolve schema leftInitialSelectionSet
       rightInitialSelectionSet leftInitialSpine rightInitialSpine

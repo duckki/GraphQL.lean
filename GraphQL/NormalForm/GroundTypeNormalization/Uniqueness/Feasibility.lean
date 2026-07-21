@@ -10,6 +10,7 @@ subtree must contain a field that can be reached through its enclosing
 type-condition stack.  This module packages that proof-only obligation and
 small projections from the existing feasibility predicates.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

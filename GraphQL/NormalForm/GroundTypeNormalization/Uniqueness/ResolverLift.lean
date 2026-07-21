@@ -7,6 +7,7 @@ These lemmas let a parent-level probe use `Option ObjectRef` to reserve `none`
 for the synthetic parent source while delegating child execution at `some ref`
 back to an arbitrary base resolver environment.
 -/
+
 namespace GraphQL
 
 namespace NormalForm
@@ -54,9 +55,8 @@ mutual
           lowerResolverValues?_map_liftResolverValue rest]
 end
 
-def liftResolvers {ObjectRef : Type}
-    (base : Execution.Resolvers ObjectRef) :
-    Execution.Resolvers (Option ObjectRef) where
+def liftResolvers {ObjectRef : Type} (base : Execution.Resolvers ObjectRef)
+    : Execution.Resolvers (Option ObjectRef) where
   resolve parentType fieldName arguments source :=
     match lowerResolverValue? source with
     | none => none
@@ -397,8 +397,8 @@ theorem executeSelectionSetAsResponse_liftResolvers
 
 def parentObjectFieldResolvers {ObjectRef : Type}
     (base : Execution.Resolvers ObjectRef)
-    (targetParent targetField runtimeType : Name) (ref : ObjectRef) :
-    Execution.Resolvers (Option ObjectRef) where
+    (targetParent targetField runtimeType : Name) (ref : ObjectRef)
+    : Execution.Resolvers (Option ObjectRef) where
   resolve parentType fieldName arguments source :=
     match source with
     | .object _ none =>

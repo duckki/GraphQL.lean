@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.AppendSelection.State
 /-!
 Single-field and single-group execution bridges for append-selection equivalence.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

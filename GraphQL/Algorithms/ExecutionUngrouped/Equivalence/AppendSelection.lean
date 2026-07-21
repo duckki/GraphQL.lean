@@ -643,8 +643,7 @@ theorem collectFields_pairKeysNodup
         (GraphQL.Execution.collectFields schema variableValues parentType source
           selectionSet) :=
   PairKeysNodup_of_executableGroupNamesNodup
-    (GraphQL.Execution.collectFields schema variableValues parentType source
-      selectionSet)
+    (GraphQL.Execution.collectFields schema variableValues parentType source selectionSet)
     (NormalForm.collectFields_namesNodup schema variableValues parentType
       source selectionSet)
 
@@ -1081,10 +1080,8 @@ theorem specExecuteCollectedFields_collectFields_response_ready
               source selectionSet))) :=
   specExecuteCollectedFields_response_ready schema resolvers variableValues
     depth source
-    (GraphQL.Execution.collectFields schema variableValues parentType source
-      selectionSet)
-    (collectFields_pairKeysNodup schema variableValues parentType source
-      selectionSet)
+    (GraphQL.Execution.collectFields schema variableValues parentType source selectionSet)
+    (collectFields_pairKeysNodup schema variableValues parentType source selectionSet)
 
 theorem specExecuteRootSelectionSet_response_ready
     {ObjectIdentity : Type}
@@ -1115,10 +1112,8 @@ theorem executeCollectedFields_collectFields_pairKeysNodup
             selectionSet)) :=
   executeCollectedFields_pairKeysNodup schema resolvers variableValues depth
     source
-    (GraphQL.Execution.collectFields schema variableValues parentType source
-      selectionSet)
-    (collectFields_pairKeysNodup schema variableValues parentType source
-      selectionSet)
+    (GraphQL.Execution.collectFields schema variableValues parentType source selectionSet)
+    (collectFields_pairKeysNodup schema variableValues parentType source selectionSet)
 
 theorem executeRootSelectionSet_pairKeysNodup
     {ObjectIdentity : Type}
@@ -1377,7 +1372,7 @@ theorem executeRootSelectionSet_eq_spec_of_state_equivalent_nodup
             (GraphQL.Execution.collectFields window.schema window.variableValues
               window.parentType window.source window.selectionSet)))
     : window.ungroupedResult = window.specResult :=
-    executeRootSelectionSet_eq_spec_of_state_equivalent window hstate
+  executeRootSelectionSet_eq_spec_of_state_equivalent window hstate
     (mergeResponse_empty_object_left_of_pairKeysNodup
       (GraphQL.Execution.executeCollectedFieldsData window.schema
         window.resolvers window.variableValues window.depth window.source
@@ -1390,7 +1385,7 @@ theorem executeRootSelectionSet_eq_spec_of_state_equivalent_auto_nodup
     (window : ExecutionWindow ObjectIdentity)
     (hstate : ExecutionStateEquivalent { window := window, initial := .object [] })
     : window.ungroupedResult = window.specResult :=
-    executeRootSelectionSet_eq_spec_of_state_equivalent_nodup window hstate
+  executeRootSelectionSet_eq_spec_of_state_equivalent_nodup window hstate
     (executeCollectedFields_collectFields_pairKeysNodup window.schema
       window.resolvers window.variableValues window.depth window.parentType
       window.source window.selectionSet)
@@ -1866,8 +1861,7 @@ theorem stateEquivalent_of_append_single_field_blocked
   stateEquivalent_of_executeRootSelectionSet_eq_spec schema resolvers
     variableValues depth parentType source
     (left ++ [.field responseName fieldName arguments directives selectionSet])
-    (executeRootSelectionSet_eq_spec_of_append_single_field_blocked hleft
-      hblocked)
+    (executeRootSelectionSet_eq_spec_of_append_single_field_blocked hleft hblocked)
 
 theorem executeRootSelectionSet_append_single_selection_noop_eq_left
     {ObjectIdentity : Type}
@@ -2073,13 +2067,11 @@ theorem stateEquivalent_of_append_single_inline_none_blocked
             }
           initial := .object []
         } :=
-  stateEquivalent_of_append_single_selection_noop hleft
-    (by
+  stateEquivalent_of_append_single_selection_noop hleft (by
       intro fields
       exact visitSelection_inline_none_directives_blocked schema resolvers
         variableValues depth parentType source directives selectionSet
-        (.object fields) hblocked)
-    (by
+        (.object fields) hblocked) (by
       simp [GraphQL.Execution.collectSelection, hblocked])
 
 theorem stateEquivalent_of_append_single_inline_some_blocked
@@ -2121,13 +2113,11 @@ theorem stateEquivalent_of_append_single_inline_some_blocked
             }
           initial := .object []
         } :=
-  stateEquivalent_of_append_single_selection_noop hleft
-    (by
+  stateEquivalent_of_append_single_selection_noop hleft (by
       intro fields
       exact visitSelection_inline_some_directives_blocked schema resolvers
         variableValues depth parentType source typeCondition directives
-        selectionSet (.object fields) hblocked)
-    (by
+        selectionSet (.object fields) hblocked) (by
       simp [GraphQL.Execution.collectSelection, hblocked])
 
 theorem stateEquivalent_of_append_single_inline_some_not_apply
@@ -2170,13 +2160,11 @@ theorem stateEquivalent_of_append_single_inline_some_not_apply
             }
           initial := .object []
         } :=
-  stateEquivalent_of_append_single_selection_noop hleft
-    (by
+  stateEquivalent_of_append_single_selection_noop hleft (by
       intro fields
       exact visitSelection_inline_some_type_not_apply schema resolvers
         variableValues depth parentType source typeCondition directives
-        selectionSet (.object fields) hallowed hnotApply)
-    (by
+        selectionSet (.object fields) hallowed hnotApply) (by
       simp [GraphQL.Execution.collectSelection, hallowed, hnotApply])
 
 theorem executeRootSelectionSet_append_single_inline_none_allowed_eq_body_append
@@ -2330,8 +2318,7 @@ theorem stateEquivalent_of_append_single_inline_none_allowed
   stateEquivalent_of_executeRootSelectionSet_eq_spec schema resolvers
     variableValues depth parentType source
     (left ++ [.inlineFragment none directives selectionSet])
-    (executeRootSelectionSet_eq_spec_of_append_single_inline_none_allowed
-      hbody hallowed)
+    (executeRootSelectionSet_eq_spec_of_append_single_inline_none_allowed hbody hallowed)
 
 theorem executeRootSelectionSet_append_single_inline_some_apply_eq_body_append
     {ObjectIdentity : Type}

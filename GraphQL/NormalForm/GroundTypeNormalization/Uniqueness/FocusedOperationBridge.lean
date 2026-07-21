@@ -7,6 +7,7 @@ Operation-level bridge for the focused-trace uniqueness route.
 This module keeps the focused trace dependency downstream of
 `OperationBridge`, avoiding an import cycle through the existing probe modules.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

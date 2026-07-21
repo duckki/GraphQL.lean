@@ -3,6 +3,7 @@ import GraphQL.NormalForm
 /-!
 Directive-freeness facts for ground-type normalization proofs.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

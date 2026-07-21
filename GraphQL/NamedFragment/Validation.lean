@@ -2,6 +2,7 @@ import GraphQL.NamedFragment.Operation
 import GraphQL.Validation
 
 /-! Validation predicates for fragment-aware operations. -/
+
 namespace GraphQL
 namespace NamedFragment
 
@@ -131,9 +132,8 @@ structure ScopedField where
 deriving Repr
 
 mutual
-  def collectSelection
-      (schema : Schema) :
-      List FragmentDefinition -> Name -> Selection -> List ScopedField
+  def collectSelection (schema : Schema)
+      : List FragmentDefinition -> Name -> Selection -> List ScopedField
     | fragments, parentType,
         .field responseName fieldName arguments _directives selectionSet =>
         match schema.lookupField parentType fieldName with
@@ -177,9 +177,8 @@ mutual
           apply Prod.Lex.right
           omega
 
-  def collectFields
-      (schema : Schema) :
-      List FragmentDefinition -> Name -> List Selection -> List ScopedField
+  def collectFields (schema : Schema)
+      : List FragmentDefinition -> Name -> List Selection -> List ScopedField
     | _fragments, _parentType, [] => []
     | fragments, parentType, selection :: rest =>
         collectSelection schema fragments parentType selection

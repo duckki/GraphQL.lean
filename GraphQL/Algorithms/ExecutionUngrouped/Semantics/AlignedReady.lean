@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Semantics.GeneratedFields
 /-!
 Semantic-ready aligned execution bridge for ungrouped execution.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -393,16 +394,16 @@ theorem executionCollectedFieldInvariant_of_collectedFieldCompatibility
 
 noncomputable def executedGroupedSelectionSetAlignedState_of_selectionSetSemanticsReady_object
     (schema : Schema) (resolvers : Execution.Resolvers ObjectRef)
-    (variableValues : Execution.VariableValues) :
-    ∀ depth parentType runtimeType (identity : ObjectRef)
-      (selectionSet : List Selection),
-      SchemaWellFormedness.schemaWellFormed schema ->
-      schema.objectType parentType ->
-      ScopedParentRuntimeApplies schema runtimeType parentType ->
-      NormalForm.selectionSetSemanticsReady schema parentType selectionSet ->
-      FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-        ExecutedGroupedSelectionSetAlignedState schema resolvers variableValues
-          depth parentType (.object runtimeType identity) selectionSet := by
+    (variableValues : Execution.VariableValues)
+    : ∀ depth parentType runtimeType (identity : ObjectRef)
+          (selectionSet : List Selection),
+        SchemaWellFormedness.schemaWellFormed schema
+        -> schema.objectType parentType
+        -> ScopedParentRuntimeApplies schema runtimeType parentType
+        -> NormalForm.selectionSetSemanticsReady schema parentType selectionSet
+        -> FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+        -> ExecutedGroupedSelectionSetAlignedState schema resolvers variableValues
+            depth parentType (.object runtimeType identity) selectionSet := by
   intro depth
   induction depth using Nat.strongRecOn with
   | ind depth ih =>

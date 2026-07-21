@@ -3,6 +3,7 @@ import GraphQL.SchemaWellFormedness
 import GraphQL.Validation
 
 /-! GraphQL operation normal forms -/
+
 namespace GraphQL
 
 namespace NormalForm
@@ -219,8 +220,8 @@ def normalizedField
 -- same-response-name fields, recursively normalizes child selections, and grounds
 -- abstract field return types through possible object types. This is terminating by
 -- selection-set size.
-def normalizeSelectionSet (schema : Schema) (parentType : Name) :
-    List Selection -> List Selection
+def normalizeSelectionSet (schema : Schema) (parentType : Name)
+    : List Selection -> List Selection
   | [] => []
   | selection :: rest =>
       match selection with
@@ -830,9 +831,7 @@ private theorem selectionSet_size_child_lt_cons_inline
 
 end FilterSelectionSetBoolCaseTermination
 
-def filterSelectionSetBoolCase
-    (boolCase : BoolCase) :
-    List Selection -> List Selection
+def filterSelectionSetBoolCase (boolCase : BoolCase) : List Selection -> List Selection
   | [] => []
   | selection :: rest =>
       let collectedRest :=

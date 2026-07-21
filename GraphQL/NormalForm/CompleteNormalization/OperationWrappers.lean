@@ -3,6 +3,7 @@ import GraphQL.NormalForm.CompleteNormalization.OperationVariables
 /-!
 Operation projection and top-level correctness-wrapper facts for complete normalization.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

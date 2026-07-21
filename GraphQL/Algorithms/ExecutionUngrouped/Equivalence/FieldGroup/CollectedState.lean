@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.FieldGroup.AppendSteps.
 /-!
 Collected single-group state constructors for field-group equivalence.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -116,51 +117,50 @@ def of_collected_appendPlan
           (resolvers.resolve field.parentType field.fieldName field.arguments source)
           [] fields)
     : ExecutedSingleGroupSelectionState schema resolvers variableValues depth
-        parentType source selectionSet
-  where
-    groups := groups
-    responseName := responseName
-    field := field
-    fields := fields
-    collect_eq := hcollect
-    group_mem := hgroup
-    exact_groups := hexact
-    direct := hdirect
-    responses :=
-      ExecutionCollectedFieldInvariant.responseName_of_collect_eq
-        {
-          window :=
-            {
-              schema := schema
-              resolvers := resolvers
-              variableValues := variableValues
-              depth := depth
-              parentType := parentType
-              source := source
-              selectionSet := selectionSet
-            }
-          initial := .object []
-        }
-        groups hcollect
-    parents :=
-      ExecutionCollectedFieldInvariant.parent_of_collect_eq
-        {
-          window :=
-            {
-              schema := schema
-              resolvers := resolvers
-              variableValues := variableValues
-              depth := depth
-              parentType := parentType
-              source := source
-              selectionSet := selectionSet
-            }
-          initial := .object []
-        }
-        groups hcollect
-    headLookup := hfieldLookup
-    headChildren := hfieldChildren
-    appendPlan := plan
+        parentType source selectionSet where
+  groups := groups
+  responseName := responseName
+  field := field
+  fields := fields
+  collect_eq := hcollect
+  group_mem := hgroup
+  exact_groups := hexact
+  direct := hdirect
+  responses :=
+    ExecutionCollectedFieldInvariant.responseName_of_collect_eq
+      {
+        window :=
+          {
+            schema := schema
+            resolvers := resolvers
+            variableValues := variableValues
+            depth := depth
+            parentType := parentType
+            source := source
+            selectionSet := selectionSet
+          }
+        initial := .object []
+      }
+      groups hcollect
+  parents :=
+    ExecutionCollectedFieldInvariant.parent_of_collect_eq
+      {
+        window :=
+          {
+            schema := schema
+            resolvers := resolvers
+            variableValues := variableValues
+            depth := depth
+            parentType := parentType
+            source := source
+            selectionSet := selectionSet
+          }
+        initial := .object []
+      }
+      groups hcollect
+  headLookup := hfieldLookup
+  headChildren := hfieldChildren
+  appendPlan := plan
 
 def toExecutedFieldGroup
     {ObjectIdentity : Type}
@@ -824,74 +824,78 @@ def ExecutedFieldGroup.of_collected_group
     (hparents : CollectedGroupsParent parentType groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
     (hstable : CollectedGroupsResolveStable resolvers source groups)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
-        some fieldDefinition)
-    (hprefixChildren :
-      ∀ prefixTail childDepth runtimeType identity,
-        childDepth < depth ->
-          ExecutionStateEquivalent
-            { window :=
-              { schema := schema
-                resolvers := resolvers
-                variableValues := variableValues
-                depth := childDepth
-                parentType := runtimeType
-                source := .object runtimeType identity
-                selectionSet :=
-                  GraphQL.Execution.mergedFieldSelectionSet
-                    (field :: prefixTail) }
-              initial := .object [] })
-    (hobjects :
-      ∀ prefixTail later,
-        later ∈ fields ->
-          ∀ childDepth runtimeType identity,
-            childDepth < depth ->
-              ResponseAbsorbs
-                (visitSubfields schema resolvers variableValues childDepth
-                  runtimeType (.object runtimeType identity)
-                  (GraphQL.Execution.mergedFieldSelectionSet
-                    (field :: prefixTail))
-                  (.object []))
-                (visitSubfields schema resolvers variableValues childDepth
-                  runtimeType (.object runtimeType identity) later.selectionSet
-                  (visitSubfields schema resolvers variableValues childDepth
-                    runtimeType (.object runtimeType identity)
-                    (GraphQL.Execution.mergedFieldSelectionSet
-                      (field :: prefixTail))
-                    (.object []))))
-    (herrors :
-      ∀ prefixTail later,
-        later ∈ fields ->
-          ∀ childDepth runtimeType identity,
-            childDepth < depth ->
-              VisitSubfieldsErrorNeutral schema resolvers variableValues
-                childDepth runtimeType (.object runtimeType identity)
-                later.selectionSet
-                (visitSubfields schema resolvers variableValues childDepth
-                  runtimeType (.object runtimeType identity)
-                  (GraphQL.Execution.mergedFieldSelectionSet
-                    (field :: prefixTail))
-                  (.object [])))
-    (hchildren :
-      ∀ prefixTail later,
-        later ∈ fields ->
-          ∀ childDepth runtimeType identity,
-            childDepth < depth ->
-              ExecutionStateEquivalent
-                { window :=
-                  { schema := schema
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField parentType field.fieldName = some fieldDefinition)
+    (hprefixChildren
+      : ∀ prefixTail childDepth runtimeType identity,
+          childDepth < depth
+          -> ExecutionStateEquivalent
+              {
+                window :=
+                  {
+                    schema := schema
                     resolvers := resolvers
                     variableValues := variableValues
                     depth := childDepth
                     parentType := runtimeType
                     source := .object runtimeType identity
                     selectionSet :=
-                      GraphQL.Execution.mergedFieldSelectionSet
-                        ((field :: prefixTail) ++ [later]) }
-                  initial := .object [] }) :
-    ExecutedFieldGroup schema resolvers variableValues depth parentType source
-      responseName field fields := by
+                      GraphQL.Execution.mergedFieldSelectionSet (field :: prefixTail)
+                  }
+                initial := .object []
+              })
+    (hobjects
+      : ∀ prefixTail later,
+          later ∈ fields
+          -> ∀ childDepth runtimeType identity,
+              childDepth < depth
+              -> ResponseAbsorbs
+                  (visitSubfields schema resolvers variableValues childDepth
+                    runtimeType (.object runtimeType identity)
+                    (GraphQL.Execution.mergedFieldSelectionSet (field :: prefixTail))
+                    (.object []))
+                  (visitSubfields schema resolvers variableValues childDepth
+                    runtimeType (.object runtimeType identity) later.selectionSet
+                    (visitSubfields schema resolvers variableValues childDepth
+                      runtimeType (.object runtimeType identity)
+                      (GraphQL.Execution.mergedFieldSelectionSet (field :: prefixTail))
+                      (.object []))))
+    (herrors
+      : ∀ prefixTail later,
+          later ∈ fields
+          -> ∀ childDepth runtimeType identity,
+              childDepth < depth
+              -> VisitSubfieldsErrorNeutral schema resolvers variableValues
+                  childDepth runtimeType (.object runtimeType identity)
+                  later.selectionSet
+                  (visitSubfields schema resolvers variableValues childDepth
+                    runtimeType (.object runtimeType identity)
+                    (GraphQL.Execution.mergedFieldSelectionSet (field :: prefixTail))
+                    (.object [])))
+    (hchildren
+      : ∀ prefixTail later,
+          later ∈ fields
+          -> ∀ childDepth runtimeType identity,
+              childDepth < depth
+              -> ExecutionStateEquivalent
+                  {
+                    window :=
+                      {
+                        schema := schema
+                        resolvers := resolvers
+                        variableValues := variableValues
+                        depth := childDepth
+                        parentType := runtimeType
+                        source := .object runtimeType identity
+                        selectionSet :=
+                          GraphQL.Execution.mergedFieldSelectionSet
+                            ((field :: prefixTail) ++ [later])
+                      }
+                    initial := .object []
+                  })
+    : ExecutedFieldGroup schema resolvers variableValues depth parentType source
+        responseName field fields := by
   let hstate :
       ExecutedFieldAppendPlanState schema resolvers variableValues depth field
         fields [] fields :=
@@ -932,14 +936,14 @@ def ExecutedFieldGroup.of_collected_group_state
     (hparents : CollectedGroupsParent parentType groups)
     (hcompatible : CollectedGroupsFieldValidationMergeCompatible groups)
     (hstable : CollectedGroupsResolveStable resolvers source groups)
-    (hfieldLookup :
-      ∃ fieldDefinition, schema.lookupField parentType field.fieldName =
-        some fieldDefinition)
-    (hstate :
-      ExecutedFieldAppendPlanState schema resolvers variableValues depth field
-        fields [] fields) :
-    ExecutedFieldGroup schema resolvers variableValues depth parentType source
-      responseName field fields :=
+    (hfieldLookup
+      : ∃ fieldDefinition,
+          schema.lookupField parentType field.fieldName = some fieldDefinition)
+    (hstate
+      : ExecutedFieldAppendPlanState schema resolvers variableValues depth field
+          fields [] fields)
+    : ExecutedFieldGroup schema resolvers variableValues depth parentType source
+        responseName field fields :=
   ExecutedFieldGroup.of_collected_appendPlan schema resolvers variableValues
     depth parentType source groups responseName field fields hgroup hresponses
     hparents hfieldLookup
@@ -1235,13 +1239,15 @@ theorem executeRootSelectionSet_eq_spec_of_collected_field_group_state_of_invari
       = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
           (depth + 1) parentType source selectionSet :=
   executeRootSelectionSet_eq_spec_of_state_equivalent_auto_nodup
-    { schema := schema
+    {
+      schema := schema
       resolvers := resolvers
       variableValues := variableValues
       depth := depth + 1
       parentType := parentType
       source := source
-      selectionSet := selectionSet }
+      selectionSet := selectionSet
+    }
     (stateEquivalent_of_collected_field_group_state_of_invariant schema
       resolvers variableValues depth parentType source selectionSet groups
       responseName field fields hcollect hgroup hexact hdirect hinvariant
@@ -1963,13 +1969,15 @@ theorem executeRootSelectionSet_eq_spec_of_collected_field_group_of_invariant
       = GraphQL.Execution.executeRootSelectionSet schema resolvers variableValues
           (depth + 1) parentType source selectionSet :=
   executeRootSelectionSet_eq_spec_of_state_equivalent_auto_nodup
-    { schema := schema
+    {
+      schema := schema
       resolvers := resolvers
       variableValues := variableValues
       depth := depth + 1
       parentType := parentType
       source := source
-      selectionSet := selectionSet }
+      selectionSet := selectionSet
+    }
     (stateEquivalent_of_collected_field_group_of_invariant schema resolvers
       variableValues depth parentType source selectionSet groups responseName
       field fields hcollect hgroup hexact hdirect hinvariant hcompatible

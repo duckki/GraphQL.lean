@@ -9,6 +9,7 @@ This module starts with the response-object key mismatch facts used by the
 response-name diff constructors. Later probe-execution lemmas can feed concrete
 executions into these theorems.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

@@ -14,6 +14,7 @@ Spec reference: GraphQL September 2025.
 - 5.5.2.3 Fragment Spread Is Possible: possible-object helpers model the spec's
   `GetPossibleTypes` basis for overlap checks.
 -/
+
 namespace GraphQL
 
 -- Spec 2.1.8 `Name`: partial; raw `String` does not enforce the GraphQL name grammar or

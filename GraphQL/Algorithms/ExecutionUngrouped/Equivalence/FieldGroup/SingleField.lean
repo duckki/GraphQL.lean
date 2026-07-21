@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.FieldGroup.CompleteAppe
 /-!
 Single executable-field execution helpers for field-group equivalence.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

@@ -4,6 +4,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.Collection.GroupPrefix
 /-!
 Generated-field and field-normality lemmas for ungrouped execution.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

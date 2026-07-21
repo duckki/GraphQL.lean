@@ -3,6 +3,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.FocusedSelectedPath
 /-!
 Recursive observable-path and same-field selected-path separation.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

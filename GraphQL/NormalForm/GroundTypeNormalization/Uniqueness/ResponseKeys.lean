@@ -7,6 +7,7 @@ GraphQL response semantic equivalence ignores sibling response-field order by
 canonicalizing object fields. These lemmas recover response-name membership from
 canonical object equality.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

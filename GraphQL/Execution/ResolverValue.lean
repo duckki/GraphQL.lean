@@ -4,6 +4,7 @@ import GraphQL.Execution
 Compatibility helpers for treating optional resolver values as nullable internal
 resolver values.
 -/
+
 namespace GraphQL
 
 namespace Execution

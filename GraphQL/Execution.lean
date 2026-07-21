@@ -16,6 +16,7 @@ Spec reference: GraphQL September 2025.
   response data plus a `Nat` execution-error count, omitting error details, paths,
   locations, extensions, and request error results.
 -/
+
 namespace GraphQL
 
 namespace Execution

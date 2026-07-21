@@ -5,6 +5,7 @@ import GraphQL.NormalForm.Shared.FieldMergeLookup
 /-!
 Basic validity support facts for ground-type normalization.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

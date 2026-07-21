@@ -1,6 +1,7 @@
 import GraphQL.NormalForm.GroundTypeNormalization.Validity.SelectionSet
 
 /-! Operation-level validity preservation for ground-type normalization. -/
+
 namespace GraphQL
 
 namespace NormalForm

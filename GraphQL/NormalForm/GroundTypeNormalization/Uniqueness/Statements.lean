@@ -6,6 +6,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Validity
 Theorem-facing selection-set semantic predicates and assumption bundles for
 ground-type normal-form uniqueness.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

@@ -10,6 +10,7 @@ These lemmas compose the root projection fallback resolver with the parent-objec
 probe resolver. At the selected parent field, execution is reduced to the child
 selection-set response produced by an arbitrary base resolver environment.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

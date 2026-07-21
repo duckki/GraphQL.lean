@@ -7,6 +7,7 @@ These declarations are compatibility helpers for proof surfaces that reason only
 response data. The spec-facing executor in `GraphQL.Execution` returns a response
 envelope with data and execution-error count.
 -/
+
 namespace GraphQL
 
 namespace Execution

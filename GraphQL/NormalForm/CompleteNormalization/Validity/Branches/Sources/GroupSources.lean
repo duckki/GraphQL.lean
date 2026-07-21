@@ -3,6 +3,7 @@ import GraphQL.NormalForm.CompleteNormalization.Validity.Branches.FieldMerge
 /-!
 Normalized group-source collection facts for complete-normalization branch validity.
 -/
+
 namespace GraphQL
 
 namespace NormalForm
@@ -224,57 +225,55 @@ def normalizedFieldGroupSource_fieldHead
     (parentType responseName fieldName : Name)
     (arguments : List Argument) (directives : List DirectiveApplication)
     (subselections rest : List Selection)
-    (fieldDefinition : FieldDefinition) :
-    SchemaWellFormedness.schemaWellFormed schema ->
-    schema.objectType parentType ->
-    selectionSetSemanticsReady schema parentType
-      (Selection.field responseName fieldName arguments directives
-        subselections :: rest) ->
-    selectionSetLookupValid schema parentType rest ->
-    selectionSetLookupValid schema parentType
-      (Selection.field responseName fieldName arguments directives
-        subselections :: rest) ->
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType
-      (Selection.field responseName fieldName arguments directives
-        subselections :: rest) ->
-    FieldMerge.fieldsInSetCanMerge schema parentType
-      (Selection.field responseName fieldName arguments directives
-        subselections :: rest) ->
-    selectionSetDirectiveFree
-      (Selection.field responseName fieldName arguments directives
-        subselections :: rest) ->
-    objectSatisfiesTypeConditionStack schema parentType typeConditions ->
-    selectionSetTypeConditionFeasible schema parentType typeConditions
-      .allFields
-      (Selection.field responseName fieldName arguments directives
-        subselections :: rest) ->
-    schema.lookupField parentType fieldName = some fieldDefinition ->
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        (Selection.field responseName fieldName arguments directives
-          subselections :: rest)
-        {
-          parentType := parentType,
-          responseName := responseName,
-          fieldName := fieldName,
-          arguments := arguments,
-          outputType := fieldDefinition.outputType,
-          selectionSet :=
-            if objectTypeNameBool schema fieldDefinition.outputType.namedType then
-              normalizeSelectionSet schema fieldDefinition.outputType.namedType
-                (subselections ++
-                  mergeSelectionSets
-                    (fieldSelectionsWithResponseNameInScope schema parentType
-                      responseName rest))
-            else
-              GroundTypeNormalization.possibleTypeNormalizations schema
-                (schema.getPossibleTypes
-                  fieldDefinition.outputType.namedType)
-                (subselections ++
-                  mergeSelectionSets
-                    (fieldSelectionsWithResponseNameInScope schema parentType
-                      responseName rest))
-        } := by
+    (fieldDefinition : FieldDefinition)
+    : SchemaWellFormedness.schemaWellFormed schema -> schema.objectType parentType
+      -> selectionSetSemanticsReady schema parentType
+          (Selection.field responseName fieldName arguments directives subselections
+            :: rest)
+      -> selectionSetLookupValid schema parentType rest
+      -> selectionSetLookupValid schema parentType
+          (Selection.field responseName fieldName arguments directives subselections
+            :: rest)
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType
+          (Selection.field responseName fieldName arguments directives subselections
+            :: rest)
+      -> FieldMerge.fieldsInSetCanMerge schema parentType
+          (Selection.field responseName fieldName arguments directives subselections
+            :: rest)
+      -> selectionSetDirectiveFree
+          (Selection.field responseName fieldName arguments directives subselections
+            :: rest)
+      -> objectSatisfiesTypeConditionStack schema parentType typeConditions
+      -> selectionSetTypeConditionFeasible schema parentType typeConditions
+          .allFields
+          (Selection.field responseName fieldName arguments directives subselections
+            :: rest)
+      -> schema.lookupField parentType fieldName = some fieldDefinition
+      -> NormalizedFieldGroupSource schema variableDefinitions parentType
+          (Selection.field responseName fieldName arguments directives subselections
+            :: rest)
+          {
+            parentType := parentType,
+            responseName := responseName,
+            fieldName := fieldName,
+            arguments := arguments,
+            outputType := fieldDefinition.outputType,
+            selectionSet :=
+              if objectTypeNameBool schema fieldDefinition.outputType.namedType then
+                normalizeSelectionSet schema fieldDefinition.outputType.namedType
+                  (subselections
+                    ++ mergeSelectionSets
+                        (fieldSelectionsWithResponseNameInScope schema parentType
+                          responseName rest))
+              else
+                GroundTypeNormalization.possibleTypeNormalizations schema
+                  (schema.getPossibleTypes fieldDefinition.outputType.namedType)
+                  (subselections
+                    ++ mergeSelectionSets
+                        (fieldSelectionsWithResponseNameInScope schema parentType
+                          responseName rest))
+          } := by
   intro hschema hobject hready htailLookup hlookupValid himplementation
     hmerge hfree hstack hfeasible hlookup
   have hselectionFree := selectionSetDirectiveFree_head hfree
@@ -435,14 +434,15 @@ def NormalizedFieldGroupSource.mapCollectFields
     {parentType : Name}
     {sourceSet targetSet : List Selection}
     {normalized : FieldMerge.ScopedField}
-    (hgroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        sourceSet normalized)
-    (hmap : ∀ scopedField,
-      scopedField ∈ FieldMerge.collectFields schema parentType sourceSet ->
-        scopedField ∈ FieldMerge.collectFields schema parentType targetSet)
-    (hsize : SelectionSet.size sourceSet ≤ SelectionSet.size targetSet) :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
+    (hgroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          sourceSet normalized)
+    (hmap
+      : ∀ scopedField,
+          scopedField ∈ FieldMerge.collectFields schema parentType sourceSet
+          -> scopedField ∈ FieldMerge.collectFields schema parentType targetSet)
+    (hsize : SelectionSet.size sourceSet ≤ SelectionSet.size targetSet)
+    : NormalizedFieldGroupSource schema variableDefinitions parentType
         targetSet normalized := by
   refine ⟨hgroup.source, hmap hgroup.source hgroup.sourceMem,
     hgroup.sourceRel, hgroup.group, hgroup.childSource,
@@ -466,18 +466,15 @@ noncomputable def NormalizedFieldGroupSource.mapInlineSomeOverlap
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (hobject : schema.objectType parentType)
     (hpossible : parentType ∈ schema.getPossibleTypes typeCondition)
-    (hbodyParentLookup :
-      selectionSetLookupValid schema parentType selectionSet)
-    (hbodyTypeLookup :
-      selectionSetLookupValid schema typeCondition selectionSet)
-    (hrestLookup :
-      selectionSetLookupValid schema parentType rest)
-    (hgroup :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        (selectionSet ++ rest) normalized) :
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        (Selection.inlineFragment (some typeCondition) directives
-          selectionSet :: rest) normalized := by
+    (hbodyParentLookup : selectionSetLookupValid schema parentType selectionSet)
+    (hbodyTypeLookup : selectionSetLookupValid schema typeCondition selectionSet)
+    (hrestLookup : selectionSetLookupValid schema parentType rest)
+    (hgroup
+      : NormalizedFieldGroupSource schema variableDefinitions parentType
+          (selectionSet ++ rest) normalized)
+    : NormalizedFieldGroupSource schema variableDefinitions parentType
+        (Selection.inlineFragment (some typeCondition) directives selectionSet :: rest)
+        normalized := by
   classical
   let targetSet : List Selection :=
     Selection.inlineFragment (some typeCondition) directives selectionSet
@@ -1125,21 +1122,22 @@ noncomputable def collectFields_normalizeSelectionSet_mem_groupSource
     (variableDefinitions : List VariableDefinition)
     (hschema : SchemaWellFormedness.schemaWellFormed schema)
     (parentType : Name) (selectionSet : List Selection)
-    (normalizedField : FieldMerge.ScopedField) :
-    schema.objectType parentType ->
-    selectionSetSemanticsReady schema parentType selectionSet ->
-    selectionSetLookupValid schema parentType selectionSet ->
-    Validation.selectionSetValidInPossibleTypes schema
-      variableDefinitions parentType selectionSet ->
-    FieldMerge.fieldsInSetCanMerge schema parentType selectionSet ->
-    selectionSetDirectiveFree selectionSet ->
-    selectionSetTypeConditionFeasible schema parentType [parentType]
-      .allFields selectionSet ->
-    normalizedField ∈ FieldMerge.collectFields schema parentType
-      (normalizeSelectionSet schema parentType selectionSet) ->
-      NormalizedFieldGroupSource schema variableDefinitions parentType
-        selectionSet
-        normalizedField := by
+    (normalizedField : FieldMerge.ScopedField)
+    : schema.objectType parentType
+      -> selectionSetSemanticsReady schema parentType selectionSet
+      -> selectionSetLookupValid schema parentType selectionSet
+      -> Validation.selectionSetValidInPossibleTypes schema
+          variableDefinitions parentType selectionSet
+      -> FieldMerge.fieldsInSetCanMerge schema parentType selectionSet
+      -> selectionSetDirectiveFree selectionSet
+      -> selectionSetTypeConditionFeasible schema parentType [parentType]
+          .allFields selectionSet
+      -> normalizedField
+          ∈ FieldMerge.collectFields schema parentType
+              (normalizeSelectionSet schema parentType selectionSet)
+      -> NormalizedFieldGroupSource schema variableDefinitions parentType
+          selectionSet
+          normalizedField := by
   intro hobject hready hlookupValid himplementation hmerge hfree hfeasible
     hfield
   have hstack :

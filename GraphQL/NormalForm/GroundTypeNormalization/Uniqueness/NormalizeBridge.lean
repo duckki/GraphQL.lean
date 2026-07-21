@@ -7,6 +7,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Validity
 Bridge from uniqueness of already-normal operations to uniqueness of normalized
 operations.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

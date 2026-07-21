@@ -8,6 +8,7 @@ response object and contribute one execution error. Later visits to the same res
 name see the sentinel and contribute no new error. The proofs in this file therefore
 separate status counting from intermediate response-object shape.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

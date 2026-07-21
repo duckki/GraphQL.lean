@@ -4,6 +4,7 @@ import GraphQL.NormalForm.Shared.ResponseNameFree
 /-!
 Normality, ground-typedness, and non-redundancy proofs for ground-type normalization.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

@@ -3,17 +3,21 @@ import GraphQL.Execution.SemanticEquivalence
 import GraphQL.NamedFragment.Operation
 
 /-! Fragment-aware execution for named-fragment operations. -/
+
 namespace GraphQL
 namespace NamedFragment
 namespace Execution
 
 abbrev ResolverValue (ObjectRef : Type := PUnit) :=
   GraphQL.Execution.ResolverValue ObjectRef
+
 abbrev ResponseValue := GraphQL.Execution.ResponseValue
 abbrev Response := GraphQL.Execution.Response
 abbrev Result (α : Type) := GraphQL.Execution.Result α
+
 abbrev Resolvers (ObjectRef : Type := PUnit) :=
   GraphQL.Execution.Resolvers ObjectRef
+
 abbrev VariableValues := GraphQL.Execution.VariableValues
 
 variable {ObjectRef : Type}
@@ -41,10 +45,9 @@ def mergeExecutableGroups (left right : List (Name × List ExecutableField))
   right.foldl (fun grouped group => addExecutableGroup group grouped) left
 
 mutual
-  def collectSelection
-      (schema : Schema) (variableValues : VariableValues) :
-      List FragmentDefinition -> Name -> ResolverValue ObjectRef -> Selection ->
-        List (Name × List ExecutableField)
+  def collectSelection (schema : Schema) (variableValues : VariableValues)
+      : List FragmentDefinition -> Name -> ResolverValue ObjectRef -> Selection
+        -> List (Name × List ExecutableField)
     | fragments, parentType, _source,
         .field responseName fieldName arguments directives selectionSet =>
         if GraphQL.Execution.selectionDirectivesAllowBool variableValues
@@ -109,10 +112,9 @@ mutual
           apply Prod.Lex.right
           omega
 
-  def collectFields
-      (schema : Schema) (variableValues : VariableValues) :
-      List FragmentDefinition -> Name -> ResolverValue ObjectRef -> List Selection ->
-        List (Name × List ExecutableField)
+  def collectFields (schema : Schema) (variableValues : VariableValues)
+      : List FragmentDefinition -> Name -> ResolverValue ObjectRef -> List Selection
+        -> List (Name × List ExecutableField)
     | _fragments, _parentType, _source, [] => []
     | fragments, parentType, source, selection :: rest =>
         mergeExecutableGroups

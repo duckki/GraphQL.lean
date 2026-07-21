@@ -4,6 +4,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Normality
 /-!
 Abstract return grounding semantics for ground-type normalization.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

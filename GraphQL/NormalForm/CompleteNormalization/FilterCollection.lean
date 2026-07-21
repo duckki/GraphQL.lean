@@ -4,6 +4,7 @@ import GraphQL.NormalForm.CompleteNormalization.InlineDirectiveExecution
 /-!
 Field-collection facts for Boolean case filtering.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

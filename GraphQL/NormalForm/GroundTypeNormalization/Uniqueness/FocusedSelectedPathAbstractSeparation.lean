@@ -3,6 +3,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.FocusedSelectedPath
 /-!
 Abstract-inline-fragment execution, pruning, and response-data separation.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

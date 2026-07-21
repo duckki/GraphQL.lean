@@ -4,6 +4,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.AppendSelection.SingleF
 /-!
 Flat-spec conversions for field-group append-step witnesses.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -434,17 +435,16 @@ def of_appendPlan
       : ExecutedFieldAppendPlan schema resolvers variableValues depth parentType
           source responseName field resolved [] fields)
     : ExecutedFieldGroup schema resolvers variableValues depth parentType source
-        responseName field fields
-  where
-    resolved := resolved
-    responseName_eq := hresponse
-    parent_eq := hparent
-    resolved_eq := hresolve
-    headLookup := hfieldLookup
-    headChildren := hfieldChildren
-    appendSteps :=
-      ExecutedFieldAppendPlan.toAppendSteps schema resolvers variableValues
-        depth parentType source responseName field resolved [] fields plan
+        responseName field fields where
+  resolved := resolved
+  responseName_eq := hresponse
+  parent_eq := hparent
+  resolved_eq := hresolve
+  headLookup := hfieldLookup
+  headChildren := hfieldChildren
+  appendSteps :=
+    ExecutedFieldAppendPlan.toAppendSteps schema resolvers variableValues
+      depth parentType source responseName field resolved [] fields plan
 
 theorem field_responseName
     {ObjectIdentity : Type}
@@ -699,18 +699,17 @@ def ExecutedFieldGroup.of_collected_appendSteps
           (resolvers.resolve field.parentType field.fieldName field.arguments source)
           [] fields)
     : ExecutedFieldGroup schema resolvers variableValues depth parentType source
-        responseName field fields
-  where
-    resolved :=
-      resolvers.resolve field.parentType field.fieldName field.arguments source
-    responseName_eq :=
-      hresponses responseName (field :: fields) hgroup
-    parent_eq :=
-      hparents responseName (field :: fields) hgroup
-    resolved_eq := rfl
-    headLookup := hfieldLookup
-    headChildren := hfieldChildren
-    appendSteps := hsteps
+        responseName field fields where
+  resolved :=
+    resolvers.resolve field.parentType field.fieldName field.arguments source
+  responseName_eq :=
+    hresponses responseName (field :: fields) hgroup
+  parent_eq :=
+    hparents responseName (field :: fields) hgroup
+  resolved_eq := rfl
+  headLookup := hfieldLookup
+  headChildren := hfieldChildren
+  appendSteps := hsteps
 
 def ExecutedFieldGroup.of_collected_appendPlan
     {ObjectIdentity : Type}

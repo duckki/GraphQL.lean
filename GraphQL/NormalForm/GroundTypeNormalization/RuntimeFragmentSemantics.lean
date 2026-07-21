@@ -4,6 +4,7 @@ import GraphQL.Execution.FieldCollection
 /-!
 Runtime fragment-application facts for ground-type normalization semantics.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

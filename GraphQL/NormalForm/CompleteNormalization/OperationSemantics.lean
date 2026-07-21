@@ -2,6 +2,7 @@ import GraphQL.NormalForm.CompleteNormalization.RootFilterSemantics
 import GraphQL.NormalForm.GroundTypeNormalization.SelectionSetSemantics
 
 /-! Operation-level semantic preservation for complete normalization. -/
+
 namespace GraphQL
 
 namespace NormalForm

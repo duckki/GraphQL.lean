@@ -5,6 +5,7 @@ import GraphQL.NormalForm.Shared.DirectiveFree
 /-!
 Static collection facts for complete normalization.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

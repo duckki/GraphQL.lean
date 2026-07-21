@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupList.FreshPrefixPl
 /-!
 Fresh-plan normalization witnesses for group-list selection sets.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -44,9 +45,11 @@ theorem nil
     FreshPrefixSelectionPlan.nil (schema := schema) (resolvers := resolvers)
       (variableValues := variableValues) (completionDepth := completionDepth)
       (parentType := parentType) (source := source)
-  { collect_eq := rfl
+  {
+    collect_eq := rfl
     rawFreshFlat := FreshPrefixSelectionPlan.freshFlat plan
-    normalizedPlan := plan }
+    normalizedPlan := plan
+  }
 
 theorem of_plan
     {ObjectIdentity : Type}
@@ -59,9 +62,11 @@ theorem of_plan
           parentType source selectionSet)
     : SelectionSetFreshPlanNormalizes schema resolvers variableValues
         completionDepth parentType source selectionSet selectionSet :=
-  { collect_eq := rfl
+  {
+    collect_eq := rfl
     rawFreshFlat := FreshPrefixSelectionPlan.freshFlat plan
-    normalizedPlan := plan }
+    normalizedPlan := plan
+  }
 
 theorem of_derivation
     {ObjectIdentity : Type}
@@ -128,13 +133,15 @@ theorem of_rawFreshFlat_collectedCollectFields
           (collectedExecutableFields
             (GraphQL.Execution.collectFields schema variableValues parentType
               source raw))) :=
-  { collect_eq :=
+  {
+    collect_eq :=
       (collectFields_executableFieldSelections_collectedExecutableFields_collectFields
         schema variableValues parentType source raw).symm
     rawFreshFlat := hrawFreshFlat
     normalizedPlan :=
       FreshPrefixSelectionPlan.of_collectedCollectFields schema resolvers
-        variableValues completionDepth parentType source raw }
+        variableValues completionDepth parentType source raw
+  }
 
 theorem of_derivation_collectedCollectFields
     {ObjectIdentity : Type}
@@ -1603,7 +1610,8 @@ theorem duplicateFieldBlockNormalize
                   (GraphQL.Execution.collectFields schema variableValues parentType
                     source middle)))
           ++ suffix) :=
-  { collect_eq :=
+  {
+    collect_eq :=
       collectFields_duplicate_field_middle_append_eq_collected_middle schema
         variableValues parentType source first later middle suffix
         hsameResponse hnotMiddle
@@ -1611,7 +1619,8 @@ theorem duplicateFieldBlockNormalize
       (FreshPrefixSelectionPlan.duplicateFieldBlockNormalize first later middle
         suffix hsameResponse hlaterLookup hnotMiddle hmiddle
         hnormalized).freshFlat
-    normalizedPlan := hnormalized }
+    normalizedPlan := hnormalized
+  }
 
 theorem duplicateFieldBlockNormalizeTrans
     {ObjectIdentity : Type}

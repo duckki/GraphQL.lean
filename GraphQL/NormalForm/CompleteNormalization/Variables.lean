@@ -3,6 +3,7 @@ import GraphQL.NormalForm
 /-!
 Boolean-variable and boolCase facts for complete normalization.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

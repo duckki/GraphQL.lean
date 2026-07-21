@@ -3,13 +3,13 @@ import GraphQL.NamedFragment.Validation
 import GraphQL.SchemaWellFormedness
 
 /-! Named-fragment inlining for the fragment-aware syntax. -/
+
 namespace GraphQL
 namespace NamedFragment
 namespace Inline
 
 mutual
-  def inlineSelection :
-      List FragmentDefinition -> Selection -> Selection
+  def inlineSelection : List FragmentDefinition -> Selection -> Selection
     | fragments, .field responseName fieldName arguments directives selectionSet =>
         .field responseName fieldName arguments directives
           (inlineSelectionSet fragments selectionSet)
@@ -39,8 +39,7 @@ mutual
           apply Prod.Lex.right
           omega
 
-  def inlineSelectionSet :
-      List FragmentDefinition -> List Selection -> List Selection
+  def inlineSelectionSet : List FragmentDefinition -> List Selection -> List Selection
     | _fragments, [] => []
     | fragments, selection :: rest =>
         inlineSelection fragments selection

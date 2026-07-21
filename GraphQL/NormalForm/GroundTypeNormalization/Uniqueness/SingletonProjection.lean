@@ -8,6 +8,7 @@ Singleton response projection lemmas.
 These are algebraic/execution facts used to recover a singleton target field from
 a whole selection-set response after successful tail execution has been appended.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

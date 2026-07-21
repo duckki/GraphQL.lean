@@ -8,6 +8,7 @@ This module packages the invariant used by the semantic-difference induction: a
 selection set is separated by running the same tagged resolver environment with a
 left and right tag at one concrete runtime object.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

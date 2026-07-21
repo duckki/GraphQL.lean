@@ -8,6 +8,7 @@ The support predicate is local to the split context: only sibling child
 selection sets for the same field head and equivalent arguments must be
 executable under the shared child object.
 -/
+
 namespace GraphQL
 
 namespace NormalForm
@@ -26,8 +27,8 @@ def focusedSelectionSetTargetChildrenSupported
     -> support childSelectionSet
 
 noncomputable def focusedSelectionSetTargetChildSelectionSets
-    (targetField : Name) (leftArguments rightArguments : List Argument) :
-    List Selection -> List (List Selection)
+    (targetField : Name) (leftArguments rightArguments : List Argument)
+    : List Selection -> List (List Selection)
   | [] => []
   | Selection.field _responseName fieldName arguments _directives
       childSelectionSet :: rest => by

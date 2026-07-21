@@ -8,6 +8,7 @@ Selection-set success helpers for tagged uniqueness probes.
 These lemmas package the field-level tagged probe execution facts into the
 `field_ok` shape consumed by the semantic-separation helpers.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

@@ -1,6 +1,7 @@
 import GraphQL.NormalForm.CompleteNormalization.Validity.Branches
 
 /-! Operation-level validity preservation for complete normalization. -/
+
 namespace GraphQL
 
 namespace NormalForm

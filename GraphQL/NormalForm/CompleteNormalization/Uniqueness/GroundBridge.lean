@@ -5,6 +5,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness
 Execution transport and the ground selection-set uniqueness bridge used by complete
 normalization uniqueness.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

@@ -8,6 +8,7 @@ The executable normalizer keeps the public API unscoped. This proof layer makes
 the per-selection lookup context explicit, which is needed when merged response
 groups contain fields collected through different typed inline fragments.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

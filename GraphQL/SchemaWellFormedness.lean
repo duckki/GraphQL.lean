@@ -12,6 +12,7 @@ Spec reference: GraphQL September 2025.
   interface cycles, input-object cycles/default cycles, directive validation, extensions,
   OneOf, mutation/subscription roots, and introspection.
 -/
+
 namespace GraphQL
 
 namespace SchemaWellFormedness

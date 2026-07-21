@@ -1,6 +1,7 @@
 import GraphQL.NamedFragment.Validation.Lookup
 
 /-! Basic consequences of named-fragment acyclicness. -/
+
 namespace GraphQL
 namespace NamedFragment
 namespace Validation

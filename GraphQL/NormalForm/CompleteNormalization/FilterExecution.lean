@@ -3,6 +3,7 @@ import GraphQL.NormalForm.CompleteNormalization.FilterCollection
 /-!
 Execution facts for Boolean case filtering.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

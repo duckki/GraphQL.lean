@@ -5,6 +5,7 @@ import GraphQL.Validation.FieldMerge
 /-!
 Resolver probes used by the semantic-separation part of uniqueness.
 -/
+
 namespace GraphQL
 
 namespace NormalForm
@@ -117,8 +118,8 @@ theorem argumentsEquivalent_trans {left middle right : List Argument}
       exact ⟨leftArgument, hleftArgument,
         argumentEquivalent_trans hequivalentLeft hequivalentRight⟩⟩
 
-def fieldFailureResolvers {ObjectRef : Type}
-    (targetParent targetField : Name) : Execution.Resolvers ObjectRef where
+def fieldFailureResolvers {ObjectRef : Type} (targetParent targetField : Name)
+    : Execution.Resolvers ObjectRef where
   resolve parentType fieldName _arguments _source :=
     if parentType == targetParent && fieldName == targetField then
       none
@@ -151,8 +152,7 @@ def schemaSuccessResolverValueWithRef {ObjectRef : Type}
   | .nonNull inner =>
       schemaSuccessResolverValueWithRef schema objectRef inner
 
-def schemaSuccessResolvers (schema : Schema) :
-    Execution.Resolvers PUnit where
+def schemaSuccessResolvers (schema : Schema) : Execution.Resolvers PUnit where
   resolve parentType fieldName _arguments _source :=
     match schema.lookupField parentType fieldName with
     | none => none
@@ -164,8 +164,8 @@ def schemaSuccessResolvers (schema : Schema) :
     rfl
 
 def schemaSuccessResolversWithRef {ObjectRef : Type}
-    (schema : Schema) (objectRef : ObjectRef) :
-    Execution.Resolvers ObjectRef where
+    (schema : Schema) (objectRef : ObjectRef)
+    : Execution.Resolvers ObjectRef where
   resolve parentType fieldName _arguments _source :=
     match schema.lookupField parentType fieldName with
     | none => none
@@ -197,9 +197,8 @@ def abstractRuntimeForField? (fieldName : Name) : List Selection -> Option Name
         abstractRuntimeForField? fieldName rest
   | _selection :: rest => abstractRuntimeForField? fieldName rest
 
-def abstractRuntimeForFieldDeep? (schema : Schema)
-    (targetParent targetField : Name) :
-    Name -> List Selection -> Option Name
+def abstractRuntimeForFieldDeep? (schema : Schema) (targetParent targetField : Name)
+    : Name -> List Selection -> Option Name
   | _currentParent, [] => none
   | currentParent,
       Selection.field _responseName candidateFieldName _arguments
@@ -248,8 +247,8 @@ decreasing_by
     omega
 
 noncomputable def abstractRuntimeForFieldHeadDeep? (schema : Schema)
-    (targetParent targetField : Name) (targetArguments : List Argument) :
-    Name -> List Selection -> Option Name
+    (targetParent targetField : Name) (targetArguments : List Argument)
+    : Name -> List Selection -> Option Name
   | _currentParent, [] => none
   | currentParent,
       Selection.field _responseName candidateFieldName arguments
@@ -577,8 +576,8 @@ def deepSelectionSetProbeResolverValue (schema : Schema)
       deepSelectionSetProbeResolverValue schema rootSelectionSet parentType
         fieldName inner
 
-def selectionSetSuccessResolvers (schema : Schema)
-    (rootSelectionSet : List Selection) : Execution.Resolvers PUnit where
+def selectionSetSuccessResolvers (schema : Schema) (rootSelectionSet : List Selection)
+    : Execution.Resolvers PUnit where
   resolve parentType fieldName _arguments _source :=
     match schema.lookupField parentType fieldName with
     | none => none
@@ -591,8 +590,8 @@ def selectionSetSuccessResolvers (schema : Schema)
       _harguments
     rfl
 
-def deepSelectionSetSuccessResolvers (schema : Schema)
-    (rootSelectionSet : List Selection) : Execution.Resolvers PUnit where
+def deepSelectionSetSuccessResolvers (schema : Schema) (rootSelectionSet : List Selection)
+    : Execution.Resolvers PUnit where
   resolve parentType fieldName _arguments _source :=
     match schema.lookupField parentType fieldName with
     | none => none
@@ -607,7 +606,8 @@ def deepSelectionSetSuccessResolvers (schema : Schema)
 
 def deepSelectionSetSuccessResolversWithRef {ObjectRef : Type}
     (schema : Schema) (rootSelectionSet : List Selection)
-    (objectRef : ObjectRef) : Execution.Resolvers ObjectRef where
+    (objectRef : ObjectRef)
+    : Execution.Resolvers ObjectRef where
   resolve parentType fieldName _arguments _source :=
     match schema.lookupField parentType fieldName with
     | none => none
@@ -621,8 +621,8 @@ def deepSelectionSetSuccessResolversWithRef {ObjectRef : Type}
       _harguments
     rfl
 
-def deepSelectionSetProbeResolvers (schema : Schema)
-    (rootSelectionSet : List Selection) : Execution.Resolvers PUnit where
+def deepSelectionSetProbeResolvers (schema : Schema) (rootSelectionSet : List Selection)
+    : Execution.Resolvers PUnit where
   resolve parentType fieldName _arguments _source :=
     match schema.lookupField parentType fieldName with
     | none => none
@@ -812,7 +812,8 @@ theorem deepSelectionSetSuccessResolverValue_named_abstract
 
 noncomputable def argumentClassScalarResolvers {ObjectRef : Type}
     (targetParent targetField : Name) (targetArguments : List Argument)
-    (matched missed : String) : Execution.Resolvers ObjectRef where
+    (matched missed : String)
+    : Execution.Resolvers ObjectRef where
   resolve parentType fieldName arguments _source := by
     classical
     exact
@@ -911,8 +912,8 @@ theorem argumentClassScalarResolvers_other_field
   simp [argumentClassScalarResolvers, hfieldNe]
 
 def fieldScalarResolvers {ObjectRef : Type}
-    (targetParent targetField : Name) (value : String) :
-    Execution.Resolvers ObjectRef where
+    (targetParent targetField : Name) (value : String)
+    : Execution.Resolvers ObjectRef where
   resolve parentType fieldName _arguments _source :=
     if parentType == targetParent then
       if fieldName == targetField then
@@ -2137,9 +2138,8 @@ theorem deepFieldSelectionSetExecutionReadyWithRef_composite_execute
           _hruntime, hinclude, hexecute⟩
       exact ⟨runtimeType, responseFields, errors, hinclude, hexecute⟩
 
-def schemaLeafProbeResolvers {ObjectRef : Type}
-    (schema : Schema) (value : String) :
-    Execution.Resolvers ObjectRef where
+def schemaLeafProbeResolvers {ObjectRef : Type} (schema : Schema) (value : String)
+    : Execution.Resolvers ObjectRef where
   resolve parentType fieldName _arguments _source :=
     match schema.lookupField parentType fieldName with
     | none => Execution.Option.null
@@ -2165,7 +2165,8 @@ theorem schemaLeafProbeResolvers_resolve_lookup
 noncomputable def argumentClassLeafProbeValue
     (targetParent targetField : Name) (targetArguments : List Argument)
     (matched missed fallback : String)
-    (parentType fieldName : Name) (arguments : List Argument) : String := by
+    (parentType fieldName : Name) (arguments : List Argument)
+    : String := by
   classical
   exact
     if parentType == targetParent then
@@ -2220,7 +2221,8 @@ theorem argumentClassLeafProbeValue_other_field
 noncomputable def schemaArgumentClassLeafProbeResolvers {ObjectRef : Type}
     (schema : Schema) (targetParent targetField : Name)
     (targetArguments : List Argument)
-    (matched missed fallback : String) : Execution.Resolvers ObjectRef where
+    (matched missed fallback : String)
+    : Execution.Resolvers ObjectRef where
   resolve parentType fieldName arguments _source := by
     classical
     exact
@@ -2510,8 +2512,8 @@ theorem executeSelectionSetAsResponse_singleton_named_object_of_resolve
     Execution.mergeExecutableGroups, Execution.executeCollectedFields,
     hfield, Execution.Result.combine]
 
-def selectionSetDeepProbeFuel (schema : Schema) (parentType : Name) :
-    List Selection -> Nat
+def selectionSetDeepProbeFuel (schema : Schema) (parentType : Name)
+    : List Selection -> Nat
   | [] => 1
   | Selection.field _responseName fieldName _arguments _directives
       childSelectionSet :: rest =>

@@ -3,6 +3,7 @@ import GraphQL.NormalForm.CompleteNormalization.Validity.Branches.Sources.ChildP
 /-!
 Abstract-branch merge assembly facts for complete-normalization branch validity.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

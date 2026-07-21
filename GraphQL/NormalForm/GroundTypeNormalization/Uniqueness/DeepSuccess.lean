@@ -6,6 +6,7 @@ Selection-set success helpers for deep uniqueness probes.
 These lemmas generalize the object-only deep-success readiness theorem to the
 abstract-parent case used when lifting differences through abstract fields.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

@@ -10,6 +10,7 @@ import GraphQL.Execution.ResolverValue
 /-!
 Shared collect/execute field-group helpers for complete normalization.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

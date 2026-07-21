@@ -7,6 +7,7 @@ Readiness facts for deep-success uniqueness probes.
 These lemmas bridge normal/valid selection-set structure to the stronger
 execution readiness predicate used by semantic separation.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

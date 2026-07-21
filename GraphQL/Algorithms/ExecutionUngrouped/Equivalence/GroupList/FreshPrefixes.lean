@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupList
 /-!
 Fresh-prefix visit witnesses for group-list selection sets.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

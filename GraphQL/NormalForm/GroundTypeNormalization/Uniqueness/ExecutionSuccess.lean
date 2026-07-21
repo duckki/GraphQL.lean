@@ -4,6 +4,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.ExecutionResponseKe
 /-!
 Successful execution shape lemmas for uniqueness probes.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

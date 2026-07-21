@@ -8,6 +8,7 @@ because they are normalizer validity assumptions rather than spec validation
 rules. The aliases below keep existing validation-facing proof scripts readable
 without moving those predicates back into `GraphQL.Validation`.
 -/
+
 namespace GraphQL
 
 namespace Validation

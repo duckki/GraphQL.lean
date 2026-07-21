@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupList.FreshPrefixes
 /-!
 Duplicate-field middle rewrites for group-list selection sets.
 -/
+
 namespace GraphQL
 
 namespace Algorithms

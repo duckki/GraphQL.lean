@@ -1,6 +1,7 @@
 import GraphQL.NormalForm.Shared.SemanticReadiness.LookupTransport
 
 /-! Field-head lookup and readiness facts. -/
+
 namespace GraphQL
 
 namespace NormalForm

@@ -12,6 +12,7 @@ The projection resolver has three reference modes:
 This first slice proves the target-mode execution bridge. Later separation lemmas
 can combine it with object probes and sibling-success facts.
 -/
+
 namespace GraphQL
 
 namespace NormalForm
@@ -404,8 +405,8 @@ noncomputable def fieldPairOrDeepSuccessResolvers {ObjectRef : Type}
     (schema : Schema) (rootSelectionSet : List Selection)
     (base : Execution.Resolvers ObjectRef)
     (targetParent leftField rightField : Name)
-    (leftArguments rightArguments : List Argument) :
-    Execution.Resolvers (ProjectionResolverRef ObjectRef) where
+    (leftArguments rightArguments : List Argument)
+    : Execution.Resolvers (ProjectionResolverRef ObjectRef) where
   resolve parentType fieldName arguments source := by
     classical
     let success :=

@@ -3,6 +3,7 @@ import GraphQL.Algorithms.ExecutionUngrouped.Equivalence.GroupList.FreshPlanNorm
 /-!
 Normalization-tree witnesses for group-list fresh plans.
 -/
+
 namespace GraphQL
 
 namespace Algorithms
@@ -436,8 +437,7 @@ theorem of_rawFreshFlat_collectedCollectFields
             (GraphQL.Execution.collectFields schema variableValues parentType
               source raw))) :=
   .ofNormalizes
-    (SelectionSetFreshPlanNormalizes.of_rawFreshFlat_collectedCollectFields
-      hrawFreshFlat)
+    (SelectionSetFreshPlanNormalizes.of_rawFreshFlat_collectedCollectFields hrawFreshFlat)
 
 theorem fieldAllowedDropDirectives
     {ObjectIdentity : Type}

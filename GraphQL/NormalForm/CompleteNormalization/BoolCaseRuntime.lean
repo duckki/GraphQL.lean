@@ -3,6 +3,7 @@ import GraphQL.NormalForm.CompleteNormalization.StaticMergeReadiness
 /-!
 Runtime selection facts for generated boolCase-wrapper branches.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

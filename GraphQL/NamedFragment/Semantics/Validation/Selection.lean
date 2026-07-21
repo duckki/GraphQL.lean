@@ -2,6 +2,7 @@ import GraphQL.NamedFragment.Semantics.Validation.FieldMerge
 import GraphQL.NamedFragment.Validation.Lookup
 
 /-! Named-fragment validation preservation proofs. -/
+
 namespace GraphQL
 namespace NamedFragment
 namespace Semantics

@@ -4,6 +4,7 @@ import GraphQL.NormalForm.CompleteNormalization.Uniqueness.RestrictedSemantics
 /-!
 Operation-level assembly for complete-normalization uniqueness.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

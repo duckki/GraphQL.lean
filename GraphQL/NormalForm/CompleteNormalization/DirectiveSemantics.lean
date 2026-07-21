@@ -3,6 +3,7 @@ import GraphQL.NormalForm.CompleteNormalization.Variables
 /-!
 Directive evaluation facts for complete normalization boolCases.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

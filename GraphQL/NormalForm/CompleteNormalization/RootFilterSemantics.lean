@@ -4,6 +4,7 @@ import GraphQL.NormalForm.CompleteNormalization.BoolCaseRuntime
 /-!
 Root Boolean-case selection facts for the current complete normalizer.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

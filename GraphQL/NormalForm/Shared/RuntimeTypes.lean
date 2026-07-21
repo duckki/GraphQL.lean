@@ -5,6 +5,7 @@ import GraphQL.Validation.SelectionValidity
 /-!
 Schema and possible-type facts used by ground-type normalization proofs.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

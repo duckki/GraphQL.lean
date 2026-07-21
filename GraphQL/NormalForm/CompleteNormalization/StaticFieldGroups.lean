@@ -3,6 +3,7 @@ import GraphQL.NormalForm.CompleteNormalization.InlineDirectiveExecution
 /-!
 Static scoped field-group projection facts for complete normalization.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

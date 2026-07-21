@@ -1,6 +1,7 @@
 import GraphQL.NamedFragment.Inline
 
 /-! Basic facts about named-fragment inlining. -/
+
 namespace GraphQL
 namespace NamedFragment
 namespace Inline

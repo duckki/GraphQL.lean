@@ -4,6 +4,7 @@ import GraphQL.NormalForm.Shared.SemanticReadiness
 /-!
 Semantic-readiness facts for Boolean case filtering.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

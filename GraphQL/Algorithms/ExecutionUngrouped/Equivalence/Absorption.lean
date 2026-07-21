@@ -420,8 +420,7 @@ mutual
               (match (visitSelection schema resolvers variableValues depth parentType
                         source selection (.object fields)).fst with
                 | .object outputFields => outputFields
-                | _ => fields)
-    := by
+                | _ => fields) := by
       intro selection fields hnodup
       cases selection with
       | field responseName fieldName arguments directives selectionSet =>
@@ -500,8 +499,7 @@ mutual
               (match (visitSubfields schema resolvers variableValues depth parentType
                         source selectionSet (.object fields)).fst with
                 | .object outputFields => outputFields
-                | _ => fields)
-    := by
+                | _ => fields) := by
       intro selectionSet fields hnodup
       cases selectionSet with
       | nil =>

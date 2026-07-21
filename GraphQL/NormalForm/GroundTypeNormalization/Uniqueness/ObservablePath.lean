@@ -7,6 +7,7 @@ The tagged semantic separator ultimately needs a concrete field below a
 possibly-composite selection.  This module proves the proof-only syntactic fact
 that a valid, normal, nonempty selection set always contains such a finite path.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

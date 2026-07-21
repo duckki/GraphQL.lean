@@ -3,6 +3,7 @@ import GraphQL.SchemaWellFormedness.FieldLookup
 /-!
 Possible-type and object implementation facts derived from schema well-formedness.
 -/
+
 namespace GraphQL
 
 namespace SchemaWellFormedness
@@ -117,8 +118,7 @@ theorem typeIncludesObjectBool_of_outputTypeSubtype_namedType (schema : Schema)
     : ∀ {implementation expected : TypeRef} {objectType : Name},
         schema.outputTypeSubtype implementation expected
         -> schema.typeIncludesObjectBool implementation.namedType objectType = true
-        -> schema.typeIncludesObjectBool expected.namedType objectType = true
-    := by
+        -> schema.typeIncludesObjectBool expected.namedType objectType = true := by
   intro implementation
   induction implementation with
   | named implementationName =>

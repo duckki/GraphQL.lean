@@ -3,6 +3,7 @@ import GraphQL.NormalForm.Shared.RuntimeTypes
 /-!
 Response-name-free structural facts shared by NormalForm proof modules.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

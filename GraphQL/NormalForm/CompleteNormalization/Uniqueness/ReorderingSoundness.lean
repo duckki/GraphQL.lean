@@ -7,6 +7,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness
 Semantic soundness of complete-normal equality up to branch, stem, and sibling
 reordering.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

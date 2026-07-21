@@ -2,6 +2,7 @@ import GraphQL.NamedFragment.Semantics.Validation.Selection
 import GraphQL.NamedFragment.Validation.Acyclic
 
 /-! Named-fragment validation preservation proofs. -/
+
 namespace GraphQL
 namespace NamedFragment
 namespace Semantics

@@ -3,6 +3,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.FocusedPathProbeSel
 /-!
 Selected-path response execution and semantic parent lifts for focused probes.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

@@ -10,6 +10,7 @@ two fields with the same response name can change which field heads the collecte
 group. Normal selection sets exclude that case. This module proves soundness in the
 directive-free normal-form scope used by the public uniqueness theorems.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

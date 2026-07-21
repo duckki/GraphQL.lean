@@ -3,6 +3,7 @@ import GraphQL.Execution
 /-!
 Algebra facts for execution field-collection helpers and collected subfields.
 -/
+
 namespace GraphQL
 
 namespace Execution

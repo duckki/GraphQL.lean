@@ -3,6 +3,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Validity.Support.FieldHeads
 /-!
 Type-condition feasibility facts for ground-type normalization validity.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

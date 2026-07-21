@@ -5,6 +5,7 @@ import GraphQL.NormalForm.CompleteNormalization.Uniqueness.RestrictedSemantics
 Validity and semantic equivalence of ground-normal bodies selected from complete-normal
 Boolean branches.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

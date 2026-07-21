@@ -5,6 +5,7 @@ import GraphQL.NormalForm.GroundTypeNormalization.Uniqueness.SyntaxDiff
 /-!
 Field-collection key facts for uniqueness semantic separation.
 -/
+
 namespace GraphQL
 
 namespace NormalForm

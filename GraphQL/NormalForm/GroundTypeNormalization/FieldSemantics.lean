@@ -430,7 +430,7 @@ theorem normalizeSelectionSet_executeSelectionSet_field_head_case
           (Selection.field responseName fieldName arguments [] subselections :: rest)
       -> schema.lookupField parentType fieldName = some fieldDefinition
       -> normalizedSubselections
-          = ( let matching :=
+          = (let matching :=
                 fieldSelectionsWithResponseNameInScope schema parentType responseName rest
               let mergedSubselections := subselections ++ mergeSelectionSets matching
               let returnType := fieldDefinition.outputType.namedType

@@ -31,7 +31,7 @@ theorem staticCollectForGround_field_allowed
             boolCase
             (Selection.field responseName fieldName arguments directives selectionSet
               :: rest)
-          = ( let collectedRest :=
+          = (let collectedRest :=
                 staticCollectForGround schema variables lookupParent groundType
                   boolCase rest
               match schema.lookupField lookupParent fieldName with

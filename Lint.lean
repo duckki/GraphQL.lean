@@ -246,11 +246,11 @@ def main (_args : List String) : IO UInt32 := do
     else
       pure 1
   pure
-    ( if buildExit == 0
-          && commentExit == 0
-          && styleExit == 0
-          && importClosureExit == 0
-          && leanExit == 0 then
+    (if buildExit == 0
+        && commentExit == 0
+        && styleExit == 0
+        && importClosureExit == 0
+        && leanExit == 0 then
         0
       else
         1)

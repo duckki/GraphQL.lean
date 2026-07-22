@@ -360,7 +360,7 @@ mutual
   def selectionSetGroundTyped (schema : Schema)
       (parentType : Name) (selectionSet : List Selection)
       : Prop :=
-    ( if objectTypeNameBool schema parentType then
+    (if objectTypeNameBool schema parentType then
         selectionsAllFields selectionSet
       else
         selectionsAllInlineFragments selectionSet)

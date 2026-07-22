@@ -721,7 +721,7 @@ theorem visitSubfields_normalizedFieldSubselections_eq_spec_of_runtime
                   (NormalForm.normalizeSelectionSet schema runtimeType selectionSet)))
       -> (visitSubfields schema resolvers variableValues depth runtimeType
             (Execution.ResolverValue.object runtimeType ref)
-            ( if NormalForm.objectTypeNameBool schema childType then
+            (if NormalForm.objectTypeNameBool schema childType then
                 NormalForm.normalizeSelectionSet schema childType selectionSet
               else
                 NormalForm.GroundTypeNormalization.possibleTypeNormalizations schema
@@ -731,7 +731,7 @@ theorem visitSubfields_normalizedFieldSubselections_eq_spec_of_runtime
               (Execution.Result.getD []
                 (Execution.executeSelectionSet schema resolvers variableValues depth
                   runtimeType (Execution.ResolverValue.object runtimeType ref)
-                  ( if NormalForm.objectTypeNameBool schema childType then
+                  (if NormalForm.objectTypeNameBool schema childType then
                       NormalForm.normalizeSelectionSet schema childType selectionSet
                     else
                       NormalForm.GroundTypeNormalization.possibleTypeNormalizations

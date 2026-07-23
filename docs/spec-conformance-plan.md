@@ -118,7 +118,7 @@ the fragment-free execution model live under `Tests/Conformance/Execution/` and
 are regenerated with:
 
 ```sh
-node scripts/gen-graphql-js-conformance.mjs
+npm --prefix conformance run gen:graphql-js
 lake build Tests.Conformance.Execution
 ```
 
@@ -126,9 +126,7 @@ Named-fragment fixtures live under `conformance/graphql-js/named-fragment-cases/
 and are regenerated with:
 
 ```sh
-node scripts/gen-graphql-js-conformance.mjs \
-  --cases conformance/graphql-js/named-fragment-cases \
-  --target named-fragment
+npm --prefix conformance run gen:graphql-js:named-fragment
 lake build Tests.Conformance.NamedFragment
 ```
 
@@ -136,13 +134,13 @@ When a local graphql-js package or checkout is available, the same fixtures can
 be checked against graphql-js with:
 
 ```sh
-GRAPHQL_JS_MODULE=graphql node scripts/graphql-js-oracle.mjs --check
+GRAPHQL_JS_MODULE=graphql npm --prefix conformance run oracle:graphql-js
 ```
 
 The named-fragment oracle can be checked with:
 
 ```sh
-npm run oracle:graphql-js:named-fragment
+npm --prefix conformance run oracle:graphql-js:named-fragment
 ```
 
 ## Related Documentation

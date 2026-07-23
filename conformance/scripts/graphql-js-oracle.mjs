@@ -2,12 +2,15 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const DEFAULT_CASE_DIR = 'conformance/graphql-js/cases';
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const CONFORMANCE_DIR = path.resolve(SCRIPT_DIR, '..');
+
+const DEFAULT_CASE_DIR = path.join(CONFORMANCE_DIR, 'graphql-js/cases');
 
 const args = parseArgs(process.argv.slice(2));
-const caseDir = args.cases ?? DEFAULT_CASE_DIR;
+const caseDir = args.cases === undefined ? DEFAULT_CASE_DIR : path.resolve(args.cases);
 const graphql = await importGraphQL();
 
 const suiteFiles = fs
@@ -329,7 +332,7 @@ function parseArgs(argv) {
     } else if (arg === '--help' || arg === '-h') {
       console.log(
         [
-          'Usage: node scripts/graphql-js-oracle.mjs [--cases DIR] [--check] [--update]',
+          'Usage: node conformance/scripts/graphql-js-oracle.mjs [--cases DIR] [--check] [--update]',
           '',
           'Set GRAPHQL_JS_MODULE to choose the graphql-js import specifier.',
         ].join('\n'),

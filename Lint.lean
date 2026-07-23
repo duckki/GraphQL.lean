@@ -1,4 +1,4 @@
-import LeanImportClosure
+import Lint.ImportClosure
 import Lake
 
 open System
@@ -10,10 +10,10 @@ def commentWidth : Nat := lineWidth
 def fileLineLimit : Nat := 1500
 
 def rootLeanFiles : List FilePath :=
-  ["GraphQL.lean", "Lint.lean", "LeanImportClosure.lean", "LeanImportClosureMain.lean"]
+  ["GraphQL.lean", "Lint.lean"]
 
 def sourceDirs : List FilePath :=
-  ["GraphQL"]
+  ["GraphQL", "Lint"]
 
 def textFiles : List FilePath :=
   ["README.md"]
@@ -231,7 +231,7 @@ def buildProject : IO UInt32 := do
     pure output.exitCode
 
 def checkLeanImportClosure : IO UInt32 := do
-  LeanImportClosure.checkLeanImportClosure
+  Lint.ImportClosure.checkLeanImportClosure
 
 def main (_args : List String) : IO UInt32 := do
   let files ← allLeanFiles

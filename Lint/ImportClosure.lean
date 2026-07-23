@@ -2,10 +2,10 @@ import Lake
 
 open System
 
-namespace LeanImportClosure
+namespace Lint.ImportClosure
 
 def defaultRoots : List String :=
-  ["GraphQL", "Tests", "Lint", "LeanImportClosureMain"]
+  ["GraphQL", "Tests", "Lint", "Lint.ImportClosureMain"]
 
 def usage : String :=
   s!"Usage: lake exe import-closure [ROOT ...]\n\n"
@@ -110,4 +110,4 @@ def main (args : List String) : IO UInt32 := do
       IO.eprintln s!"lean-import-closure: {message}"
       pure 1
 
-end LeanImportClosure
+end Lint.ImportClosure

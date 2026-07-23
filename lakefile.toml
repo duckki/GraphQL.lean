@@ -15,7 +15,7 @@ name = "GraphQL"
 name = "Tests"
 
 [[lean_lib]]
-name = "LeanImportClosure"
+name = "Lint.ImportClosure"
 
 [[lean_exe]]
 name = "lint"
@@ -23,4 +23,4 @@ root = "Lint"
 
 [[lean_exe]]
 name = "import-closure"
-root = "LeanImportClosureMain"
+root = "Lint.ImportClosureMain"

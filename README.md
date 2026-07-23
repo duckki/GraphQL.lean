@@ -41,13 +41,13 @@ This package uses LeanFmt from
 Format all Lean sources:
 
 ```sh
-lake exe fmt --recursive *.lean GraphQL Tests
+lake exe fmt --recursive *.lean GraphQL Tests Lint
 ```
 
 Check formatting without rewriting files:
 
 ```sh
-lake exe fmt --check --recursive *.lean GraphQL Tests
+lake exe fmt --check --recursive *.lean GraphQL Tests Lint
 ```
 
 The lint target runs Lean's built-in linters with documentation warnings disabled.
@@ -57,7 +57,7 @@ whitespace or tabs, no unscoped diagnostic/resource `set_option`, no bare
 `open Classical`, no lambda or dollar syntax, no double underscores in
 declaration names, a 1500-line soft file limit, and no tracked Lean files
 outside the transitive import closure of `GraphQL`, `Tests`, `Lint`, and
-`LeanImportClosureMain`.
+`Lint.ImportClosureMain`.
 
 The main top-level libraries are:
 

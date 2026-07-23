@@ -13,4 +13,4 @@ jobs:
       - uses: actions/checkout@v5
       - uses: leanprover/lean-action@v1
       - name: Check formatting
-        run: lake exe fmt --check --recursive GraphQL.lean Tests.lean Lint.lean GraphQL Tests
+        run: lake exe fmt --check --recursive *.lean GraphQL Tests

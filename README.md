@@ -41,17 +41,13 @@ This package uses LeanFmt from
 Format all Lean sources:
 
 ```sh
-lake exe fmt --recursive \
-  GraphQL.lean Tests.lean Lint.lean LeanImportClosure.lean \
-  LeanImportClosureMain.lean GraphQL Tests
+lake exe fmt --recursive *.lean GraphQL Tests
 ```
 
 Check formatting without rewriting files:
 
 ```sh
-lake exe fmt --check --recursive \
-  GraphQL.lean Tests.lean Lint.lean LeanImportClosure.lean \
-  LeanImportClosureMain.lean GraphQL Tests
+lake exe fmt --check --recursive *.lean GraphQL Tests
 ```
 
 The lint target runs Lean's built-in linters with documentation warnings disabled.
